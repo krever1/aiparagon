@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Paragon - AI Growth Assessment</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --warm-off-white: #F5F2EC;
+            --white: #FFFFFF;
+            --cream: #EDE6D9;
+            --deep-navy: #1E3A5F;
+            --gold-light: #CAA537;
+            --gold-primary: #C9A24C;
+            --gold-muted: #B9924A;
+            --near-black: #0A0A0A;
+            --dark-gray: #3F3F3F;
+            --warm-gray: #7A7A65;
+            --border: #DCD4C9;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--warm-off-white);
+            color: var(--near-black);
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        .top-banner {
+            background: var(--near-black);
+            color: var(--white);
+            text-align: center;
+            padding: 12px 20px;
+            font-size: 14px;
+        }
+
+        .top-banner strong {
+            color: var(--gold-primary);
+        }
+
+        nav {
+            background: var(--white);
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .logo {
+            height: 50px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--near-black);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--gold-primary);
+        }
+
+        .nav-cta {
+            padding: 12px 28px;
+            background: var(--gold-primary);
+            color: var(--white);
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-cta:hover {
+            background: var(--gold-light);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(201, 162, 76, 0.3);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--near-black);
+        }
+
+        /* Survey Container */
+        .survey-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            min-height: calc(100vh - 140px);
+        }
+
+        .survey-container {
+            max-width: 720px;
+            width: 100%;
+            background: var(--white);
+            border-radius: 24px;
+            box-shadow: 0 32px 64px rgba(30, 58, 95, 0.08);
+            overflow: hidden;
+            animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(32px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .progress-bar-container {
+            height: 6px;
+            background: var(--cream);
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold-light), var(--gold-primary));
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 0%;
+        }
+
+        .survey-header {
+            padding: 48px 48px 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(201, 162, 76, 0.1);
+            color: var(--gold-primary);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            border-radius: 24px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 36px;
+            font-weight: 600;
+            color: var(--near-black);
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+
+        .survey-description {
+            font-size: 16px;
+            color: var(--dark-gray);
+            line-height: 1.7;
+        }
+
+        .survey-body {
+            padding: 48px;
+        }
+
+        .question-container {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .question-container.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(24px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .question-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .question-number {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gold-primary);
+            letter-spacing: 1px;
+        }
+
+        .step-count {
+            font-size: 13px;
+            color: var(--warm-gray);
+        }
+
+        .question-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--near-black);
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .question-subtitle {
+            font-size: 14px;
+            color: var(--dark-gray);
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .options-grid {
+            display: grid;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .option-card {
+            padding: 20px 24px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--white);
+            position: relative;
+        }
+
+        .option-card:hover {
+            border-color: var(--gold-primary);
+            background: rgba(201, 162, 76, 0.02);
+            transform: translateX(4px);
+        }
+
+        .option-card.selected {
+            border-color: var(--gold-primary);
+            background: rgba(201, 162, 76, 0.05);
+        }
+
+        .option-card.selected::before {
+            content: '✓';
+            position: absolute;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gold-primary);
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .option-label {
+            font-weight: 500;
+            color: var(--near-black);
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .option-label input[type="radio"],
+        .option-label input[type="checkbox"] {
+            margin: 0;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--gold-primary);
+        }
+
+        /* Dropdown styles */
+        .custom-select {
+            position: relative;
+            width: 100%;
+        }
+
+        .select-trigger {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: var(--white);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            color: var(--near-black);
+        }
+
+        .select-trigger:hover {
+            border-color: var(--gold-primary);
+            background: rgba(201, 162, 76, 0.02);
+        }
+
+        .select-trigger.active {
+            border-color: var(--gold-primary);
+        }
+
+        .select-trigger .placeholder {
+            color: var(--warm-gray);
+        }
+
+        .select-arrow {
+            transition: transform 0.3s ease;
+            color: var(--gold-primary);
+        }
+
+        .select-trigger.active .select-arrow {
+            transform: rotate(180deg);
+        }
+
+        .select-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background: var(--white);
+            border: 2px solid var(--gold-primary);
+            border-radius: 12px;
+            box-shadow: 0 12px 24px rgba(30, 58, 95, 0.1);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+
+        .select-dropdown.active {
+            display: block;
+            animation: dropdownSlide 0.3s ease;
+        }
+
+        @keyframes dropdownSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .select-option {
+            padding: 14px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .select-option:last-child {
+            border-bottom: none;
+        }
+
+        .select-option:hover {
+            background: rgba(201, 162, 76, 0.05);
+            padding-left: 24px;
+        }
+
+        .select-option.selected {
+            background: rgba(201, 162, 76, 0.1);
+            color: var(--gold-primary);
+            font-weight: 600;
+        }
+
+        /* Text inputs */
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--near-black);
+            font-size: 15px;
+        }
+
+        .form-group label .required {
+            color: var(--gold-primary);
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="email"],
+        .form-group input[type="tel"],
+        .form-group input[type="url"] {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            background: var(--white);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--gold-primary);
+            background: rgba(201, 162, 76, 0.02);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* Navigation buttons */
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 40px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            background: var(--cream);
+            color: var(--near-black);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .btn-primary {
+            background: var(--gold-primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--gold-light);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(201, 162, 76, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Success message */
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 64px 48px;
+        }
+
+        .success-message.active {
+            display: block;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(201, 162, 76, 0.15), rgba(201, 162, 76, 0.05));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 32px;
+            font-size: 40px;
+        }
+
+        .success-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--near-black);
+        }
+
+        .success-text {
+            font-size: 16px;
+            color: var(--dark-gray);
+            margin-bottom: 32px;
+            line-height: 1.7;
+        }
+
+        /* CENTERED RETURN HOME BUTTON */
+        .success-message .btn-primary {
+            margin: 0 auto;
+            display: inline-flex;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .survey-header,
+            .survey-body {
+                padding: 32px 24px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            .question-title {
+                font-size: 22px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .navigation-buttons {
+                flex-direction: column-reverse;
+                gap: 12px;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Banner -->
+    <div class="top-banner">
+        <strong>AI Profit Growth</strong> for Wealth Management Agencies & Financial Advisory Firms | From Strategy to Scaled Execution
+    </div>
+
+    <!-- Navigation -->
+    <nav>
+        <img src="logo.png" alt="AI Paragon" class="logo">
+        <ul class="nav-links">
+            <li><a href="#about">About</a></li>
+            <li><a href="#case-studies">Case Studies</a></li>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#process">Process</a></li>
+            <li><a href="#faq">FAQ</a></li>
+        </ul>
+        <a href="#book-call" class="nav-cta">Book a Call</a>
+        <button class="mobile-menu-btn">☰</button>
+    </nav>
+
+    <div class="survey-wrapper">
+        <div class="survey-container">
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+
+            <div class="survey-header">
+                <div class="badge">AI GROWTH ASSESSMENT</div>
+                <h1>Find Your Firm's Highest-Value AI Opportunities</h1>
+                <p class="survey-description">This short assessment helps us understand your firm's size, current AI maturity, and biggest operational growth opportunities so we can identify where AI may create the greatest leverage.</p>
+            </div>
+
+            <div class="survey-body">
+                <!-- Question 1: What brings you here -->
+                <div class="question-container active" data-question="1">
+                    <div class="question-header">
+                        <div class="question-number">STEP 1</div>
+                        <div class="step-count">1 of 6</div>
+                    </div>
+                    <h2 class="question-title">What brings you here today?</h2>
+                    <div class="options-grid">
+                        <div class="option-card" onclick="selectOption(this, 'q1', 'exploring')">
+                            <label class="option-label">
+                                <input type="radio" name="q1" value="exploring">
+                                I'm exploring how AI could help my firm
+                            </label>
+                        </div>
+                        <div class="option-card" onclick="selectOption(this, 'q1', 'specific-need')">
+                            <label class="option-label">
+                                <input type="radio" name="q1" value="specific-need">
+                                I have a specific challenge I need to solve
+                            </label>
+                        </div>
+                        <div class="option-card" onclick="selectOption(this, 'q1', 'ready-implement')">
+                            <label class="option-label">
+                                <input type="radio" name="q1" value="ready-implement">
+                                I'm ready to implement AI workflows
+                            </label>
+                        </div>
+                        <div class="option-card" onclick="selectOption(this, 'q1', 'scale-existing')">
+                            <label class="option-label">
+                                <input type="radio" name="q1" value="scale-existing">
+                                I want to scale existing AI initiatives
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question 2: Firm type -->
+                <div class="question-container" data-question="2">
+                    <div class="question-header">
+                        <div class="question-number">STEP 2</div>
+                        <div class="step-count">2 of 6</div>
+                    </div>
+                    <h2 class="question-title">What type of firm do you represent?</h2>
+                    
+                    <div class="custom-select">
+                        <div class="select-trigger" onclick="toggleDropdown('firmType')">
+                            <span class="selected-value placeholder">Select your firm type...</span>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                        <div class="select-dropdown" id="firmType">
+                            <div class="select-option" onclick="selectDropdownOption('q2', 'ria', 'Registered Investment Advisor / RIA', 'firmType')">Registered Investment Advisor / RIA</div>
+                            <div class="select-option" onclick="selectDropdownOption('q2', 'wealth', 'Wealth Management Firm', 'firmType')">Wealth Management Firm</div>
+                            <div class="select-option" onclick="selectDropdownOption('q2', 'advisory', 'Financial Advisory Practice', 'firmType')">Financial Advisory Practice</div>
+                            <div class="select-option" onclick="selectDropdownOption('q2', 'family-office', 'Family Office', 'firmType')">Family Office</div>
+                            <div class="select-option" onclick="selectDropdownOption('q2', 'investment', 'Investment Management Firm', 'firmType')">Investment Management Firm</div>
+                            <div class="select-option" onclick="selectDropdownOption('q2', 'fintech', 'Fintech / WealthTech Company', 'firmType')">Fintech / WealthTech Company</div>
+                            <div class="select-option" onclick="selectDropdownOption('q2', 'other', 'Other', 'firmType')">Other</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question 3: AI interests (moved up) -->
+                <div class="question-container" data-question="3">
+                    <div class="question-header">
+                        <div class="question-number">STEP 3</div>
+                        <div class="step-count">3 of 6</div>
+                    </div>
+                    <h2 class="question-title">Where are you most interested in using AI?</h2>
+                    <p class="question-subtitle">Select all that apply.</p>
+                    <div class="options-grid">
+                        <div class="option-card" onclick="toggleCheckbox(this, 'advisor-productivity')">
+                            <label class="option-label">
+                                <input type="checkbox" name="q3" value="advisor-productivity">
+                                Advisor productivity and meeting follow-up
+                            </label>
+                        </div>
+                        <div class="option-card" onclick="toggleCheckbox(this, 'client-service')">
+                            <label class="option-label">
+                                <input type="checkbox" name="q3" value="client-service">
+                                Client service and onboarding
+                            </label>
+                        </div>
+                        <div class="option-card" onclick="toggleCheckbox(this, 'marketing')">
+                            <label class="option-label">
+                                <input type="checkbox" name="q3" value="marketing">
+                                Marketing and client communications
+                            </label>
+                        </div>
+                        <div class="option-card" onclick="toggleCheckbox(this, 'knowledge-base')">
+                            <label class="option-label">
+                                <input type="checkbox" name="q3" value="knowledge-base">
+                                Knowledge management and SOPs
+                            </label>
+                        </div>
+                        <div class="option-card" onclick="toggleCheckbox(this, 'operations')">
+                            <label class="option-label">
+                                <input type="checkbox" name="q3" value="operations">
+                                Operations and workflow automation
+                            </label>
+                        </div>
+                        <div class="option-card" onclick="toggleCheckbox(this, 'strategy')">
+                            <label class="option-label">
+                                <input type="checkbox" name="q3" value="strategy">
+                                AI strategy and governance
+                            </label>
+                        </div>
+                        <div class="option-card" onclick="toggleCheckbox(this, 'not-sure')">
+                            <label class="option-label">
+                                <input type="checkbox" name="q3" value="not-sure">
+                                Not sure — help me identify opportunities
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question 4: Current AI stage -->
+                <div class="question-container" data-question="4">
+                    <div class="question-header">
+                        <div class="question-number">STEP 4</div>
+                        <div class="step-count">4 of 6</div>
+                    </div>
+                    <h2 class="question-title">What best describes your current AI adoption stage?</h2>
+                    <div class="options-grid">
+                        <div class="option-card" onclick="selectOption(this, 'q4', 'exploring')">
+                            <label class="option-label">
+                                <input type="radio" name="q4" value="exploring">
+                                Exploring — we don't know where to start
+                            </label>
+                        </div>
+                        <div class="option-card" onclick="selectOption(this, 'q4', 'basic-tools')">
+                            <label class="option-label">
+                                <input type="radio" name="q4" value="basic-tools">
+                                Experimenting — using ChatGPT or Copilot informally
+                            </label>
+                        </div>
+                        <div class="option-card" onclick="selectOption(this, 'q4', 'tested')">
+                            <label class="option-label">
+                                <input type="radio" name="q4" value="tested">
+                                Testing — need clearer strategy and governance
+                            </label>
+                        </div>
+                        <div class="option-card" onclick="selectOption(this, 'q4', 'ready')">
+                            <label class="option-label">
+                                <input type="radio" name="q4" value="ready">
+                                Implementing — ready to deploy across the firm
+                            </label>
+                        </div>
+                        <div class="option-card" onclick="selectOption(this, 'q4', 'scaling')">
+                            <label class="option-label">
+                                <input type="radio" name="q4" value="scaling">
+                                Scaling — already using AI, want to expand strategically
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question 5: Firm size -->
+                <div class="question-container" data-question="5">
+                    <div class="question-header">
+                        <div class="question-number">STEP 5</div>
+                        <div class="step-count">5 of 6</div>
+                    </div>
+                    <h2 class="question-title">What is your firm's approximate size?</h2>
+                    
+                    <div class="custom-select">
+                        <div class="select-trigger" onclick="toggleDropdown('firmSize')">
+                            <span class="selected-value placeholder">Select firm size...</span>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                        <div class="select-dropdown" id="firmSize">
+                            <div class="select-option" onclick="selectDropdownOption('q5', 'under-100m', 'Under $100M AUM', 'firmSize')">Under $100M AUM</div>
+                            <div class="select-option" onclick="selectDropdownOption('q5', '100m-500m', '$100M–$500M AUM', 'firmSize')">$100M–$500M AUM</div>
+                            <div class="select-option" onclick="selectDropdownOption('q5', '500m-1b', '$500M–$1B AUM', 'firmSize')">$500M–$1B AUM</div>
+                            <div class="select-option" onclick="selectDropdownOption('q5', '1b-5b', '$1B–$5B AUM', 'firmSize')">$1B–$5B AUM</div>
+                            <div class="select-option" onclick="selectDropdownOption('q5', '5b-plus', 'Over $5B AUM', 'firmSize')">Over $5B AUM</div>
+                            <div class="select-option" onclick="selectDropdownOption('q5', 'prefer-not', 'Prefer not to say', 'firmSize')">Prefer not to say</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question 6: Contact Info + How did you hear -->
+                <div class="question-container" data-question="6">
+                    <div class="question-header">
+                        <div class="question-number">FINAL STEP</div>
+                        <div class="step-count">6 of 6</div>
+                    </div>
+                    <h2 class="question-title">Where should we send your AI Growth Assessment?</h2>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><span class="required">*</span> First Name</label>
+                            <input type="text" id="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label><span class="required">*</span> Last Name</label>
+                            <input type="text" id="lastName" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><span class="required">*</span> Business Email</label>
+                        <input type="email" id="email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label><span class="required">*</span> Firm Name</label>
+                        <input type="text" id="firmName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel" id="phone" placeholder="+1 (555) 123-4567">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Website</label>
+                        <input type="url" id="website" placeholder="https://yourfirm.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label><span class="required">*</span> How did you hear about us?</label>
+                        <div class="custom-select">
+                            <div class="select-trigger" onclick="toggleDropdown('hearAbout')">
+                                <span class="selected-value placeholder">Select one...</span>
+                                <span class="select-arrow">▼</span>
+                            </div>
+                            <div class="select-dropdown" id="hearAbout">
+                                <div class="select-option" onclick="selectDropdownOption('q6_hear', 'google', 'Google search', 'hearAbout')">Google search</div>
+                                <div class="select-option" onclick="selectDropdownOption('q6_hear', 'linkedin', 'LinkedIn', 'hearAbout')">LinkedIn</div>
+                                <div class="select-option" onclick="selectDropdownOption('q6_hear', 'referral', 'Referral from colleague', 'hearAbout')">Referral from colleague</div>
+                                <div class="select-option" onclick="selectDropdownOption('q6_hear', 'conference', 'Conference or event', 'hearAbout')">Conference or event</div>
+                                <div class="select-option" onclick="selectDropdownOption('q6_hear', 'newsletter', 'Newsletter or blog', 'hearAbout')">Newsletter or blog</div>
+                                <div class="select-option" onclick="selectDropdownOption('q6_hear', 'podcast', 'Podcast', 'hearAbout')">Podcast</div>
+                                <div class="select-option" onclick="selectDropdownOption('q6_hear', 'youtube', 'YouTube', 'hearAbout')">YouTube</div>
+                                <div class="select-option" onclick="selectDropdownOption('q6_hear', 'facebook', 'Facebook or Instagram', 'hearAbout')">Facebook or Instagram</div>
+                                <div class="select-option" onclick="selectDropdownOption('q6_hear', 'other', 'Other', 'hearAbout')">Other</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><span class="required">*</span> Preferred Follow-Up Method</label>
+                        <div class="options-grid">
+                            <div class="option-card" onclick="selectOption(this, 'q6_followup', 'email')">
+                                <label class="option-label">
+                                    <input type="radio" name="q6_followup" value="email">
+                                    Email
+                                </label>
+                            </div>
+                            <div class="option-card" onclick="selectOption(this, 'q6_followup', 'phone')">
+                                <label class="option-label">
+                                    <input type="radio" name="q6_followup" value="phone">
+                                    Phone
+                                </label>
+                            </div>
+                            <div class="option-card" onclick="selectOption(this, 'q6_followup', 'zoom')">
+                                <label class="option-label">
+                                    <input type="radio" name="q6_followup" value="zoom">
+                                    Zoom
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Success Message -->
+                <div class="success-message">
+                    <div class="success-icon">✓</div>
+                    <h2 class="success-title">Thank You!</h2>
+                    <p class="success-text">Your AI Growth Assessment has been submitted successfully. We'll analyze your responses and reach out to you shortly with personalized insights on how AI can transform your firm's operations.</p>
+                    <button class="btn btn-primary" onclick="window.location.href='/'">
+                        Return to Home
+                    </button>
+                </div>
+
+                <!-- Navigation -->
+                <div class="navigation-buttons" id="navigationButtons">
+                    <button class="btn btn-secondary" id="prevBtn" onclick="previousQuestion()">
+                        ← Back
+                    </button>
+                    <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()">
+                        Next →
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentQuestion = 1;
+        const totalQuestions = 6;
+        const responses = {};
+
+        function updateProgress() {
+            const progress = (currentQuestion / totalQuestions) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        function selectOption(card, questionName, value) {
+            const container = card.closest('.question-container');
+            container.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            
+            const radio = card.querySelector('input[type="radio"]');
+            if (radio) {
+                radio.checked = true;
+                responses[questionName] = value;
+            }
+        }
+
+        function toggleCheckbox(card, value) {
+            const checkbox = card.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            card.classList.toggle('selected');
+            
+            if (!responses['q3']) responses['q3'] = [];
+            
+            if (checkbox.checked) {
+                if (!responses['q3'].includes(value)) {
+                    responses['q3'].push(value);
+                }
+            } else {
+                responses['q3'] = responses['q3'].filter(v => v !== value);
+            }
+        }
+
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const trigger = dropdown.previousElementSibling;
+            
+            document.querySelectorAll('.select-dropdown').forEach(d => {
+                if (d.id !== dropdownId) {
+                    d.classList.remove('active');
+                    d.previousElementSibling.classList.remove('active');
+                }
+            });
+            
+            dropdown.classList.toggle('active');
+            trigger.classList.toggle('active');
+        }
+
+        function selectDropdownOption(questionName, value, displayText, dropdownId) {
+            responses[questionName] = value;
+            
+            const trigger = document.getElementById(dropdownId).previousElementSibling;
+            const selectedValue = trigger.querySelector('.selected-value');
+            selectedValue.textContent = displayText;
+            selectedValue.classList.remove('placeholder');
+            
+            document.querySelectorAll(`#${dropdownId} .select-option`).forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            toggleDropdown(dropdownId);
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.custom-select')) {
+                document.querySelectorAll('.select-dropdown').forEach(d => {
+                    d.classList.remove('active');
+                    d.previousElementSibling.classList.remove('active');
+                });
+            }
+        });
+
+        function validateCurrentQuestion() {
+            if (currentQuestion === 3) {
+                return responses['q3'] && responses['q3'].length > 0;
+            } else if (currentQuestion === 6) {
+                const firstName = document.getElementById('firstName').value;
+                const lastName = document.getElementById('lastName').value;
+                const email = document.getElementById('email').value;
+                const firmName = document.getElementById('firmName').value;
+                const hearAbout = responses['q6_hear'];
+                const followup = responses['q6_followup'];
+                
+                return firstName && lastName && email && firmName && hearAbout && followup;
+            } else if (currentQuestion === 2 || currentQuestion === 5) {
+                const questionKey = 'q' + currentQuestion;
+                return responses[questionKey] !== undefined;
+            } else {
+                const questionKey = 'q' + currentQuestion;
+                return responses[questionKey] !== undefined;
+            }
+        }
+
+        function nextQuestion() {
+            if (!validateCurrentQuestion()) {
+                alert('Please complete this question before proceeding.');
+                return;
+            }
+
+            if (currentQuestion === 6) {
+                submitForm();
+                return;
+            }
+
+            document.querySelector(`[data-question="${currentQuestion}"]`).classList.remove('active');
+            currentQuestion++;
+            document.querySelector(`[data-question="${currentQuestion}"]`).classList.add('active');
+            
+            updateProgress();
+            updateButtons();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function previousQuestion() {
+            if (currentQuestion === 1) return;
+            
+            document.querySelector(`[data-question="${currentQuestion}"]`).classList.remove('active');
+            currentQuestion--;
+            document.querySelector(`[data-question="${currentQuestion}"]`).classList.add('active');
+            
+            updateProgress();
+            updateButtons();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateButtons() {
+            const nextBtn = document.getElementById('nextBtn');
+            
+            if (currentQuestion === 6) {
+                nextBtn.innerHTML = 'Request AI Growth Assessment →';
+            } else {
+                nextBtn.innerHTML = 'Next →';
+            }
+        }
+
+        function submitForm() {
+            const formData = {
+                ...responses,
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                firmName: document.getElementById('firmName').value,
+                phone: document.getElementById('phone').value,
+                website: document.getElementById('website').value
+            };
+            
+            console.log('Form submitted:', formData);
+            
+            document.querySelector(`[data-question="${currentQuestion}"]`).classList.remove('active');
+            document.querySelector('.success-message').classList.add('active');
+            document.getElementById('navigationButtons').style.display = 'none';
+            document.getElementById('progressBar').style.width = '100%';
+        }
+
+        updateProgress();
+    </script>
+</body>
+</html>
