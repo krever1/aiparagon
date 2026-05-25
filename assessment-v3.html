@@ -1076,27 +1076,20 @@
             console.log('Sending to webhook:', webhookUrl);
             
             // Try without authentication first
-            fetch(webhookUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            })
-            .then(response => {
-                console.log('Response status:', response.status);
-                console.log('Response statusText:', response.statusText);
-                console.log('Response ok:', response.ok);
-                return response.text();
-            })
-            .then(text => {
-                console.log('Raw response:', text);
-                try {
-                    const data = text ? JSON.parse(text) : {};
-                    console.log('Parsed response data:', data);
-                } catch (e) {
-                    console.log('Response is not JSON:', text);
-                }
+           fetch(webhookUrl, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {
+        'Content-Type': 'text/plain'
+    },
+    body: JSON.stringify(formData)
+})
+.then(() => {
+    console.log('Submitted!');
+})
+.catch(error => {
+    console.error(error);
+});
                 // Show success message
                 document.querySelector(`[data-question="${currentQuestion}"]`).classList.remove('active');
                 document.querySelector('.success-message').classList.add('active');
