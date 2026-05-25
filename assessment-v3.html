@@ -1034,21 +1034,87 @@
 
         function submitForm() {
             const formData = {
-                ...responses,
+                // Question 1: What brings you here
+                whatBringsYouHere: responses.q1,
+                
+                // Question 2: Firm type
+                firmType: responses.q2,
+                
+                // Question 3: AI interests (array)
+                aiInterests: responses.q3 || [],
+                
+                // Question 4: Current AI stage
+                currentAIStage: responses.q4,
+                
+                // Question 5: Firm size
+                firmSize: responses.q5,
+                
+                // Question 6: Contact info
                 firstName: document.getElementById('firstName').value,
                 lastName: document.getElementById('lastName').value,
                 email: document.getElementById('email').value,
                 firmName: document.getElementById('firmName').value,
-                phone: document.getElementById('phone').value,
-                website: document.getElementById('website').value
+                phone: document.getElementById('phone').value || '',
+                website: document.getElementById('website').value || '',
+                
+                // How did you hear about us
+                hearAboutUs: responses.q6_hear,
+                
+                // Preferred follow-up
+                preferredFollowUp: responses.q6_followup,
+                
+                // Metadata
+                submittedAt: new Date().toISOString(),
+                formVersion: 'v3'
             };
             
-            console.log('Form submitted:', formData);
+            console.log('Form data being sent:', JSON.stringify(formData, null, 2));
             
-            document.querySelector(`[data-question="${currentQuestion}"]`).classList.remove('active');
-            document.querySelector('.success-message').classList.add('active');
-            document.getElementById('navigationButtons').style.display = 'none';
-            document.getElementById('progressBar').style.width = '100%';
+            // Send to n8n webhook
+            const webhookUrl = 'https://n8n.aiparagonconsulting.com/webhook/f59820ad-6925-4852-a474-40899506b21d';
+            
+            console.log('Sending to webhook:', webhookUrl);
+            
+            // Try without authentication first
+            fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response statusText:', response.statusText);
+                console.log('Response ok:', response.ok);
+                return response.text();
+            })
+            .then(text => {
+                console.log('Raw response:', text);
+                try {
+                    const data = text ? JSON.parse(text) : {};
+                    console.log('Parsed response data:', data);
+                } catch (e) {
+                    console.log('Response is not JSON:', text);
+                }
+                // Show success message
+                document.querySelector(`[data-question="${currentQuestion}"]`).classList.remove('active');
+                document.querySelector('.success-message').classList.add('active');
+                document.getElementById('navigationButtons').style.display = 'none';
+                document.getElementById('progressBar').style.width = '100%';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            })
+            .catch(error => {
+                console.error('Webhook error details:', error);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
+                // Still show success message to user even if webhook fails
+                document.querySelector(`[data-question="${currentQuestion}"]`).classList.remove('active');
+                document.querySelector('.success-message').classList.add('active');
+                document.getElementById('navigationButtons').style.display = 'none';
+                document.getElementById('progressBar').style.width = '100%';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
         }
 
         updateProgress();
