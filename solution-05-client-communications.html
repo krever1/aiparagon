@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Client Communications & Engagement | AI Paragon</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --warm-off-white: #F5F2EC;
+            --white: #FFFFFF;
+            --cream: #EDE6D9;
+            --deep-navy: #1E3A5F;
+            --gold-light: #D4AF5A;
+            --gold-primary: #C9A24C;
+            --gold-muted: #B9924A;
+            --near-black: #0A0A0A;
+            --dark-gray: #3F3F3F;
+            --warm-gray: #7A7A65;
+            --border: #DCD4C9;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--warm-off-white);
+            color: var(--near-black);
+            line-height: 1.6;
+        }
+
+        .top-banner {
+            background: var(--near-black);
+            color: var(--white);
+            text-align: center;
+            padding: 12px 20px;
+            font-size: 14px;
+        }
+
+        .top-banner strong { color: var(--gold-primary); }
+
+        nav {
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px);
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .logo { height: 50px; }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+            list-style: none;
+        }
+
+        .nav-item > a {
+            color: var(--near-black);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            position: relative;
+            transition: color 0.3s ease;
+        }
+
+        .nav-item > a::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -8px;
+            width: 0;
+            height: 2px;
+            background: var(--gold-primary);
+            transition: width 0.3s ease;
+        }
+
+        .nav-item > a:hover { color: var(--gold-primary); }
+        .nav-item > a:hover::after { width: 100%; }
+
+        .nav-cta {
+            padding: 13px 28px;
+            background: var(--gold-primary);
+            color: var(--white);
+            border-radius: 10px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-cta:hover {
+            background: var(--gold-light);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(201,162,76,0.28);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, rgba(30,58,95,0.03) 0%, rgba(201,162,76,0.05) 100%);
+            padding: 90px 40px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .hero-text {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            background: rgba(201,162,76,0.1);
+            color: var(--gold-primary);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+            border-radius: 999px;
+            align-self: flex-start;
+        }
+
+        .hero h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 58px;
+            font-weight: 600;
+            line-height: 1.1;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            color: var(--dark-gray);
+            line-height: 1.8;
+        }
+
+        .hero-stats {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 42px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+        }
+
+        .stat-item { margin-bottom: 34px; }
+        .stat-item:last-child { margin-bottom: 0; }
+
+        .stat-number {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 54px;
+            font-weight: 600;
+            color: var(--gold-primary);
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 16px;
+            color: var(--dark-gray);
+            line-height: 1.6;
+        }
+
+        .case-study-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--gold-primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 24px;
+            padding: 16px 18px;
+            border-radius: 0px;
+            transition: all 0.3s ease;
+        }
+
+        .case-study-link:hover {
+            background: linear-gradient(135deg, rgba(201,162,76,0.12), rgba(201,162,76,0.04));
+            color: var(--gold-light);
+            gap: 14px;
+            box-shadow: inset 0 0 0 1px rgba(201,162,76,0.15), 0 8px 18px rgba(201,162,76,0.10);
+        }
+
+        .case-study-link svg { flex-shrink: 0; }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 90px 40px;
+        }
+
+        .section { margin-bottom: 100px; }
+
+        .section-label {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--gold-primary);
+            margin-bottom: 16px;
+        }
+
+        .section h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 46px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            line-height: 1.2;
+        }
+
+        .section-intro {
+            font-size: 20px;
+            color: var(--dark-gray);
+            margin-bottom: 56px;
+            line-height: 1.8;
+            max-width: 760px;
+        }
+
+        .capabilities-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 32px;
+            align-items: stretch;
+        }
+
+        .capability-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+        }
+
+        .capability-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(201,162,76,0.03), rgba(201,162,76,0));
+            opacity: 0;
+            transition: opacity 0.35s ease;
+            pointer-events: none;
+        }
+
+        .capability-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(201,162,76,0.4);
+            box-shadow: 0 22px 45px rgba(0,0,0,0.06), 0 10px 24px rgba(201,162,76,0.12);
+        }
+
+        .capability-card:hover::before { opacity: 1; }
+
+        .capability-icon {
+            width: 58px;
+            height: 58px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(201,162,76,0.18), rgba(201,162,76,0.05));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .capability-card:hover .capability-icon { transform: scale(1.05); }
+
+        .capability-icon svg {
+            width: 28px;
+            height: 28px;
+            color: var(--gold-primary);
+        }
+
+        .capability-card h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 30px;
+            font-weight: 600;
+            line-height: 1.25;
+            margin-bottom: 14px;
+        }
+
+        .capability-card p {
+            font-size: 15px;
+            color: var(--dark-gray);
+            line-height: 1.85;
+            margin-bottom: 28px;
+            flex-grow: 1;
+        }
+
+        .tools-list {
+            margin-top: auto;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .tool-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.4px;
+            color: var(--gold-primary);
+            margin-bottom: 16px;
+        }
+
+        .tool-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-radius: 14px;
+            color: var(--near-black);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.28s ease;
+            margin-bottom: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-link:last-child { margin-bottom: 0; }
+
+        .tool-link::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(201,162,76,0.12), rgba(201,162,76,0.04));
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .tool-link:hover::before { opacity: 1; }
+
+        .tool-link:hover {
+            color: var(--gold-primary);
+            transform: translateX(4px);
+            box-shadow: inset 0 0 0 1px rgba(201,162,76,0.18), 0 6px 18px rgba(201,162,76,0.08);
+        }
+
+        .tool-link span { position: relative; z-index: 2; }
+
+        .demo-badge {
+            font-size: 12px;
+            color: var(--gold-primary);
+            font-weight: 600;
+            opacity: 0;
+            transform: translateX(-4px);
+            transition: all 0.25s ease;
+        }
+
+        .tool-link:hover .demo-badge {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .cta-section {
+            background: linear-gradient(135deg, var(--deep-navy), #2a4a6f);
+            color: var(--white);
+            padding: 90px 40px;
+            text-align: center;
+            border-radius: 28px;
+            margin: 100px 40px 60px;
+        }
+
+        .cta-section h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 48px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .cta-section p {
+            font-size: 20px;
+            margin-bottom: 42px;
+            opacity: 0.92;
+            max-width: 760px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 18px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            padding: 16px 40px;
+            background: var(--gold-primary);
+            color: var(--white);
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: var(--gold-light);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(201,162,76,0.3);
+        }
+
+        .btn-secondary {
+            padding: 16px 40px;
+            background: transparent;
+            color: var(--white);
+            border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: var(--white);
+            color: var(--deep-navy);
+        }
+
+        @media (max-width: 1024px) {
+            .hero-content { grid-template-columns: 1fr; }
+            .capabilities-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            nav { padding: 18px 20px; }
+            .nav-links { display: none; }
+            .mobile-menu-btn { display: block; }
+            .hero { padding: 70px 20px; }
+            .hero h1 { font-size: 40px; }
+            .hero-subtitle { font-size: 18px; }
+            .section h2 { font-size: 36px; }
+            .container { padding: 60px 20px; }
+            .capability-card { padding: 30px; }
+            .cta-section { margin: 80px 20px 40px; padding: 60px 24px; }
+            .cta-section h2 { font-size: 36px; }
+            .cta-section p { font-size: 18px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="top-banner">
+        <strong>AI Profit Growth</strong>
+        for Wealth Management Agencies & Financial Advisory Firms |
+        From Strategy to Scaled Execution
+    </div>
+
+    <nav>
+        <img src="logo.png" alt="AI Paragon" class="logo">
+        <ul class="nav-links">
+            <li class="nav-item"><a href="#about">About</a></li>
+            <li class="nav-item"><a href="#case-studies">Case Studies</a></li>
+            <li class="nav-item"><a href="solutions-v3.html">Solutions</a></li>
+            <li class="nav-item"><a href="#process">Process</a></li>
+            <li class="nav-item"><a href="#faq">FAQ</a></li>
+        </ul>
+        <a href="#book-call" class="nav-cta">Discover Our Tailored Solutions</a>
+        <button class="mobile-menu-btn">☰</button>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-content">
+
+            <div class="hero-text">
+                <div class="hero-badge">05 · CLIENT EXPERIENCE</div>
+
+                <h1>Client Communications & Engagement</h1>
+
+                <p class="hero-subtitle">
+                    Trigger-based workflows that handle the recurring,
+                    low-complexity communications consuming the largest
+                    share of daily staff time — drafting firm-compliant,
+                    client-specific communications in the advisor's voice
+                    and routing them automatically.
+                </p>
+            </div>
+
+            <div class="hero-stats">
+
+                <div class="stat-item">
+                    <div class="stat-number">80%</div>
+                    <div class="stat-label">
+                        Reduction in routine administrative task volume
+                    </div>
+                </div>
+
+                <div class="stat-item">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">
+                        Of client touchpoints stay on-brand and compliant
+                    </div>
+                </div>
+
+                <div class="stat-item">
+                    <div class="stat-number">Auto</div>
+                    <div class="stat-label">
+                        Life-event detection and re-engagement triggers
+                    </div>
+                </div>
+
+                <a href="#case-study" class="case-study-link">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    View Case Study:
+                    How a Wealth Firm Reclaimed 80% of Admin Hours
+                </a>
+
+            </div>
+
+        </div>
+    </section>
+
+    <!-- MAIN CONTENT -->
+    <div class="container">
+
+        <section class="section">
+
+            <div class="section-label">KEY CAPABILITIES</div>
+
+            <h2>Automate Routine Touchpoints. Protect Billable Time.</h2>
+
+            <p class="section-intro">
+                Reclaim the hours your team loses to repetitive, low-judgment
+                communications — without losing the personal touch.
+            </p>
+
+            <div class="capabilities-grid">
+
+                <!-- CARD 1: Onboarding sequences -->
+                <div class="capability-card">
+
+                    <div class="capability-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                    </div>
+
+                    <h3>Client Onboarding Sequences</h3>
+
+                    <p>
+                        From welcome email to document collection,
+                        introductory call scheduling, and first-90-day
+                        check-ins — AI runs the entire onboarding sequence
+                        with personalized, firm-compliant touchpoints
+                        so no new client falls through the cracks.
+                    </p>
+
+                    <div class="tools-list">
+                        <div class="tool-label">Recommended Tools:</div>
+                        <a href="#" class="tool-link">
+                            <span>HubSpot AI</span>
+                            <span class="demo-badge">View Demo</span>
+                        </a>
+                        <a href="#" class="tool-link">
+                            <span>Wealthbox AI</span>
+                            <span class="demo-badge">View Demo</span>
+                        </a>
+                        <a href="#" class="tool-link">
+                            <span>Zapier AI</span>
+                            <span class="demo-badge">View Demo</span>
+                        </a>
+                    </div>
+
+                </div>
+
+                <!-- CARD 2: Life-event alerts -->
+                <div class="capability-card">
+
+                    <div class="capability-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                    </div>
+
+                    <h3>Life-Event & Compliance Alerts</h3>
+
+                    <p>
+                        AI continuously monitors client signals — birthdays,
+                        retirements, marriages, inheritances — and triggers
+                        timely, personalized outreach. Tax deadlines, RMD
+                        reminders, and contribution windows are surfaced
+                        automatically before they're missed.
+                    </p>
+
+                    <div class="tools-list">
+                        <div class="tool-label">Recommended Tools:</div>
+                        <a href="#" class="tool-link">
+                            <span>Wealthbox AI</span>
+                            <span class="demo-badge">View Demo</span>
+                        </a>
+                        <a href="#" class="tool-link">
+                            <span>Salesforce Einstein</span>
+                            <span class="demo-badge">View Demo</span>
+                        </a>
+                        <a href="#" class="tool-link">
+                            <span>Redtail CRM AI</span>
+                            <span class="demo-badge">View Demo</span>
+                        </a>
+                    </div>
+
+                </div>
+
+                <!-- CARD 3: Meeting transcription / action-item routing -->
+                <div class="capability-card">
+
+                    <div class="capability-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                        </svg>
+                    </div>
+
+                    <h3>Meeting Follow-Up & Action-Item Routing</h3>
+
+                    <p>
+                        AI transcribes client meetings, extracts
+                        commitments and next steps, then drafts the
+                        follow-up email and assigns internal tasks to the
+                        right team member with full context — closing the
+                        loop in minutes, not days.
+                    </p>
+
+                    <div class="tools-list">
+                        <div class="tool-label">Recommended Tools:</div>
+                        <a href="#" class="tool-link">
+                            <span>Fathom</span>
+                            <span class="demo-badge">View Demo</span>
+                        </a>
+                        <a href="#" class="tool-link">
+                            <span>Fireflies.ai</span>
+                            <span class="demo-badge">View Demo</span>
+                        </a>
+                        <a href="#" class="tool-link">
+                            <span>Microsoft Copilot</span>
+                            <span class="demo-badge">View Demo</span>
+                        </a>
+                    </div>
+
+                </div>
+
+                <!-- CARD 4: Re-engagement campaigns -->
+                <div class="capability-card">
+
+                    <div class="capability-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </div>
+
+                    <h3>Re-Engagement for Lapsed Contacts</h3>
+
+                    <p>
+                        Identify clients who haven't been contacted in
+                        meaningful ways recently and launch personalized,
+                        compliant re-engagement sequences — bringing
+                        dormant relationships back into active dialogue
+                        without manual outreach lists.
+                    </p>
+
+                    <div class="tools-list">
+                        <div class="tool-label">Recommended Tools:</div>
+                        <a href="#" class="tool-link">
+                            <span>HubSpot AI</span>
+                            <span class="demo-badge">View Demo</span>
+                        </a>
+                        <a href="#" class="tool-link">
+                            <span>Mailchimp Intuit AI</span>
+                            <span class="demo-badge">View Demo</span>
+                        </a>
+                        <a href="#" class="tool-link">
+                            <span>Salesforce Einstein</span>
+                            <span class="demo-badge">View Demo</span>
+                        </a>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    <!-- CTA -->
+    <section class="cta-section">
+
+        <h2>Ready to Eliminate 80% of Routine Admin?</h2>
+
+        <p>
+            Discover how Client Communications & Engagement automates
+            the recurring touchpoints that consume your team's time —
+            without sacrificing personalization or compliance.
+        </p>
+
+        <div class="cta-buttons">
+            <a href="assessment-v3.html" class="btn-primary">
+                Schedule a Customized Strategy Session
+            </a>
+            <a href="https://calendly.com/erica-aiparagonconsulting/ai-paragon-consulting-erica-dresslar" class="btn-secondary">
+                See How This Solution Fits Your Team
+            </a>
+        </div>
+
+    </section>
+
+</body>
+</html>
