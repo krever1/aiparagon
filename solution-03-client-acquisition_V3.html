@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paragon Pipeline | AI Paragon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        :root {
+            --warm-off-white: #F5F2EC; --white: #FFFFFF; --cream: #EDE9DF;
+            --gold-primary: #C9A84C; --gold-muted: #B9924A; --gold-light: #CAA537;
+            --near-black: #0A0A0A; --dark-gray: #3F3F3F; --warm-gray: #7A7A65;
+            --border: #DCD4C9; --case-bg: #111110;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--warm-off-white); color: var(--near-black); line-height: 1.6; }
+
+        /* TOP BANNER */
+        .top-banner { background: var(--near-black); color: var(--white); text-align: center; padding: 12px 20px; font-size: 13px; letter-spacing: 0.3px; position: relative; z-index: 10; }
+        .top-banner strong { color: var(--gold-primary); }
+
+        /* NAV */
+        nav { padding: 22px 48px; display: flex; align-items: center; justify-content: space-between; position: absolute; left: 0; right: 0; z-index: 900; transition: background 0.3s ease, border-bottom 0.3s ease; }
+        nav.scrolled { position: fixed; top: 0; background: var(--white); border-bottom: 1px solid var(--border); }
+        .logo { height: 44px; }
+        .nav-links { display: flex; gap: 40px; align-items: center; list-style: none; }
+        .nav-item > a { color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 500; font-size: 14px; transition: color 0.25s ease; }
+        nav.scrolled .nav-item > a { color: var(--warm-gray); }
+        .nav-item > a:hover { color: var(--white); }
+        nav.scrolled .nav-item > a:hover { color: var(--near-black); }
+        .nav-cta { padding: 11px 26px; background: var(--gold-primary); color: var(--white); border-radius: 8px; font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.25s ease; }
+        .nav-cta:hover { background: var(--white); color: var(--near-black); }
+        nav.scrolled .nav-cta { background: var(--near-black); }
+        nav.scrolled .nav-cta:hover { background: var(--gold-primary); color: var(--white); }
+        .mobile-menu-btn { display: none; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--white); }
+        nav.scrolled .mobile-menu-btn { color: var(--near-black); }
+
+        /* HERO */
+        .hero { position: relative; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; background-image: url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?fm=jpg&q=60&w=3000&auto=format&fit=crop'); background-size: cover; background-position: center; background-repeat: no-repeat; background-color: #181714; }
+        .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.52) 45%, rgba(0,0,0,0.18) 100%); z-index: 1; }
+        .hero-content { position: relative; z-index: 2; max-width: 1400px; width: 100%; margin: 0 auto; padding: 120px 48px 96px; }
+
+        /* EYEBROW */
+        .hero-eyebrow { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+        .hero-eyebrow-num { font-size: 22px; font-weight: 600; color: var(--gold-primary); letter-spacing: 2px; }
+        .hero-eyebrow-dot { width: 5px; height: 5px; background: var(--gold-primary); border-radius: 50%; }
+        .hero-eyebrow-cat { font-size: 16px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--gold-primary); }
+
+        /* H1 */
+        .hero h1 { font-family: 'Cormorant Garamond', serif; font-size: clamp(56px,7vw,100px); font-weight: 600; color: var(--white); line-height: 1.0; margin-bottom: 16px; letter-spacing: -0.5px; }
+
+        /* SUBTITLE */
+        .hero-subtitle { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; }
+        .hero-subtitle-name { font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.85); letter-spacing: 0.2px; }
+
+        .hero-divider { width: 560px; max-width: 100%; height: 1px; background: rgba(255,255,255,0.15); margin-bottom: 32px; }
+        .hero-description { font-size: 16px; color: rgba(255,255,255,0.72); line-height: 1.9; margin-bottom: 40px; max-width: 680px; }
+        .hero-ctas { display: flex; flex-direction: row; align-items: center; gap: 32px; flex-wrap: wrap; }
+
+        /* BUTTONS */
+        .btn-primary { display: inline-flex; align-items: center; gap: 10px; padding: 15px 32px; background: var(--gold-primary); color: var(--white); border-radius: 8px; font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.25s ease; letter-spacing: 0.2px; white-space: nowrap; }
+        .btn-primary:hover { background: var(--white); color: var(--near-black); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,0.28); }
+        .btn-primary svg { transition: transform 0.25s ease; flex-shrink: 0; }
+        .btn-primary:hover svg { transform: translateX(4px); }
+        .btn-primary.dark { background: var(--near-black); }
+        .btn-primary.dark:hover { background: var(--gold-primary); color: var(--white); }
+        .btn-text-link { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.65); text-decoration: none; transition: color 0.25s ease; white-space: nowrap; }
+        .btn-text-link:hover { color: var(--gold-primary); }
+        .btn-text-link span { text-decoration: underline; text-decoration-color: rgba(255,255,255,0.25); text-underline-offset: 3px; transition: text-decoration-color 0.25s ease; }
+        .btn-text-link:hover span { text-decoration-color: var(--gold-primary); }
+
+        /* BREADCRUMB */
+        .breadcrumb { background: var(--white); border-bottom: 1px solid var(--border); padding: 14px 48px; }
+        .breadcrumb-inner { max-width: 1400px; margin: 0 auto; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--warm-gray); }
+        .breadcrumb-inner a { color: var(--gold-primary); text-decoration: none; }
+        .breadcrumb-inner a:hover { text-decoration: underline; }
+
+        /* METRICS */
+        .metrics-strip { background: var(--cream); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        .metrics-inner { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; }
+        .metric-block { padding: 56px 64px; }
+        .metric-block:first-child { border-right: 1px solid var(--border); }
+        .metric-value { font-family: 'Cormorant Garamond', serif; font-size: 72px; font-weight: 600; line-height: 1; color: var(--near-black); margin-bottom: 12px; display: flex; align-items: baseline; gap: 4px; }
+        .metric-value em { font-style: italic; color: var(--gold-primary); font-size: 40px; }
+        .metric-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--warm-gray); margin-bottom: 10px; }
+        .metric-description { font-size: 14px; color: var(--dark-gray); line-height: 1.7; max-width: 340px; }
+
+        /* EVIDENCE */
+        .evidence { background: var(--white); border-bottom: 1px solid var(--border); padding: 64px 48px; }
+        .evidence-inner { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 280px 1fr; gap: 64px; align-items: start; }
+        .evidence-label { font-size: 10px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold-primary); padding-top: 4px; }
+        .evidence-text { font-size: 15px; color: var(--dark-gray); line-height: 1.85; }
+        .evidence-text strong { color: var(--near-black); font-weight: 600; }
+
+        /* CASE STUDY */
+        .case-study { background: var(--case-bg); padding: 96px 48px; }
+        .case-study-inner { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 80px; align-items: start; }
+        .case-study-left { position: sticky; top: 100px; }
+        .case-label { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+        .case-label-line { width: 28px; height: 1px; background: var(--gold-primary); }
+        .case-label-text { font-size: 10px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold-primary); }
+        .case-study h2 { font-family: 'Cormorant Garamond', serif; font-size: clamp(36px,3.5vw,52px); font-weight: 600; color: var(--white); line-height: 1.12; margin-bottom: 24px; }
+        .case-study h2 em { font-style: italic; color: var(--gold-primary); }
+        .case-study-intro { font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.8; }
+        .case-study-right { display: flex; flex-direction: column; }
+        .case-block { padding: 36px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .case-block:first-child { padding-top: 0; }
+        .case-block:last-child { border-bottom: none; }
+        .case-block-label { font-size: 10px; font-weight: 700; letter-spacing: 2.2px; text-transform: uppercase; color: var(--gold-primary); margin-bottom: 16px; }
+        .case-block-text { font-size: 16px; color: rgba(255,255,255,0.82); line-height: 1.85; }
+        .case-stats { max-width: 1400px; margin: 64px auto 0; display: grid; grid-template-columns: repeat(3,1fr); border-top: 1px solid rgba(255,255,255,0.08); }
+        .case-stat { padding: 48px; border-right: 1px solid rgba(255,255,255,0.08); }
+        .case-stat:last-child { border-right: none; }
+        .case-stat-value { font-family: 'Cormorant Garamond', serif; font-size: 60px; font-weight: 600; color: var(--gold-primary); line-height: 1; margin-bottom: 10px; display: flex; align-items: baseline; gap: 2px; }
+        .case-stat-sup { font-size: 24px; font-style: italic; }
+        .case-stat-label { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.6; }
+
+        /* WORKFLOWS */
+        .workflows { max-width: 1400px; margin: 0 auto; padding: 96px 48px; }
+        .workflows-header { margin-bottom: 64px; }
+        .section-label { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+        .section-label-line { width: 28px; height: 1px; background: var(--gold-primary); }
+        .section-label-text { font-size: 10px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold-primary); }
+        .workflows h2 { font-family: 'Cormorant Garamond', serif; font-size: clamp(36px,4vw,58px); font-weight: 600; color: var(--near-black); line-height: 1.1; max-width: 780px; }
+        .workflows h2 em { font-style: italic; color: var(--gold-primary); }
+        .workflows-grid { display: grid; grid-template-columns: repeat(2,1fr); border: 1px solid var(--border); border-radius: 2px; }
+        .workflow-card { padding: 48px 44px 40px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); transition: background 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease; position: relative; overflow: hidden; }
+        .workflow-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--gold-primary), transparent); opacity: 0; transition: opacity 0.4s ease; }
+        .workflow-card:hover::after { opacity: 1; }
+        .workflow-card:nth-child(2), .workflow-card:nth-child(4) { border-right: none; }
+        .workflow-card:nth-child(3), .workflow-card:nth-child(4) { border-bottom: none; }
+        .workflow-card:hover { background: rgba(201,168,76,0.05); transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.08), 0 0 0 1px rgba(201,168,76,0.2); z-index: 1; }
+        .workflow-card:hover .workflow-title { color: var(--gold-muted); }
+        .workflow-number { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; color: var(--gold-primary); margin-bottom: 20px; }
+        .workflow-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: var(--near-black); line-height: 1.2; margin-bottom: 16px; transition: color 0.35s ease; }
+        .workflow-description { font-size: 15px; color: var(--dark-gray); line-height: 1.8; }
+
+        /* CTA */
+        .cta-section { background: var(--cream); border-top: 1px solid var(--border); padding: 96px 48px; text-align: center; }
+        .cta-inner { max-width: 680px; margin: 0 auto; }
+        .cta-section h2 { font-family: 'Cormorant Garamond', serif; font-size: clamp(34px,3.5vw,50px); font-weight: 600; color: var(--near-black); line-height: 1.12; margin-bottom: 20px; }
+        .cta-section h2 em { font-style: italic; color: var(--gold-primary); }
+        .cta-section p { font-size: 16px; color: var(--dark-gray); line-height: 1.8; margin-bottom: 40px; }
+
+        /* FOOTER */
+        .site-footer { padding: 32px 48px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; max-width: 1400px; margin: 0 auto; }
+        .site-footer p { font-size: 13px; color: var(--warm-gray); }
+
+        /* ANIMATIONS */
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+        .hero-eyebrow, .hero h1, .hero-subtitle, .hero-description, .hero-ctas { opacity: 0; animation: fadeInUp 0.7s ease forwards; }
+        .hero-eyebrow   { animation-delay: 0.05s; }
+        .hero h1        { animation-delay: 0.14s; }
+        .hero-subtitle  { animation-delay: 0.22s; }
+        .hero-description { animation-delay: 0.30s; }
+        .hero-ctas      { animation-delay: 0.38s; }
+        @keyframes sectionReveal { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+        .case-study.flash-in .case-study-inner, .case-study.flash-in .case-stats { animation: sectionReveal 0.7s cubic-bezier(0.4,0,0.2,1) forwards; }
+        .case-study.flash-in .case-stats { animation-delay: 0.15s; opacity: 0; }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .evidence-inner { grid-template-columns: 1fr; gap: 24px; }
+            .case-study-inner { grid-template-columns: 1fr; gap: 48px; }
+            .case-study-left { position: static; }
+            .workflows-grid { grid-template-columns: 1fr; }
+            .workflow-card { border-right: none !important; }
+            .workflow-card:nth-child(3) { border-bottom: 1px solid var(--border) !important; }
+            .case-stats { grid-template-columns: 1fr; }
+            .case-stat { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); }
+            .case-stat:last-child { border-bottom: none; }
+        }
+        @media (max-width: 768px) {
+            nav { padding: 18px 24px; }
+            .nav-links { display: none; }
+            .mobile-menu-btn { display: block; }
+            .hero-content { padding: 100px 24px 64px; }
+            .hero h1 { font-size: 48px; }
+            .breadcrumb { padding: 14px 24px; }
+            .metrics-inner { grid-template-columns: 1fr; }
+            .metric-block:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+            .metric-block { padding: 40px 24px; }
+            .evidence { padding: 48px 24px; }
+            .case-study { padding: 64px 24px; }
+            .case-stat { padding: 32px 24px; }
+            .workflows { padding: 64px 24px; }
+            .workflow-card { padding: 36px 28px; }
+            .cta-section { padding: 64px 24px; }
+            .site-footer { flex-direction: column; gap: 12px; text-align: center; padding: 28px 24px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-banner">
+        <strong>AI Profit Growth</strong> for Wealth Management Agencies &amp; Financial Advisory Firms &nbsp;·&nbsp; From Strategy to Scaled Execution
+    </div>
+
+    <nav id="main-nav">
+        <img src="logo.png" alt="AI Paragon" class="logo">
+        <ul class="nav-links">
+            <li class="nav-item"><a href="#about">About</a></li>
+            <li class="nav-item"><a href="#case-studies">Case Studies</a></li>
+            <li class="nav-item"><a href="landing-page-v2.html">Solutions</a></li>
+            <li class="nav-item"><a href="#process">Process</a></li>
+            <li class="nav-item"><a href="#faq">FAQ</a></li>
+        </ul>
+        <a href="#cta" class="nav-cta">Book a 20-Minute Workflow Audit</a>
+        <button class="mobile-menu-btn">&#9776;</button>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-eyebrow">
+                <span class="hero-eyebrow-num">03</span>
+                <div class="hero-eyebrow-dot"></div>
+                <span class="hero-eyebrow-cat">Growth</span>
+            </div>
+            <h1>Paragon Pipeline</h1>
+            <div class="hero-subtitle">
+                <span class="hero-subtitle-name">Client Acquisition &amp; Marketing Suite</span>
+            </div>
+            <div class="hero-divider"></div>
+            <p class="hero-description">
+                Paragon Pipeline turns your CRM and market data into a pre-qualified pipeline. It models your best clients to define a precise ideal-client profile, then finds and scores look-alike prospects. Website chat qualifies visitors and books discovery calls around the clock, while compliant, personalized outreach — pre-screened for SEC and state advertising rules and written in your firm's voice — runs at scale. Qualified prospects route to the right advisor with a full briefing; the rest enter automated nurture.
+            </p>
+            <div class="hero-ctas">
+                <a href="#cta" class="btn-primary">
+                    Book a 20-Minute Workflow Audit
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
+                <a href="#case-study" class="btn-text-link">
+                    <span>See the proof</span>
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <div class="breadcrumb">
+        <div class="breadcrumb-inner">
+            <a href="landing-page-v2.html">Solutions</a>
+            <span>&#8250;</span>
+            <span>Paragon Pipeline</span>
+        </div>
+    </div>
+
+    <div class="metrics-strip">
+        <div class="metrics-inner">
+            <div class="metric-block">
+                <div class="metric-label">% Efficiency · Lead-to-Opportunity Conversion</div>
+                <div class="metric-value">+15<em>–20%</em></div>
+                <p class="metric-description">Lift in lead-to-opportunity conversion with AI nurturing and personalized outreach.</p>
+            </div>
+            <div class="metric-block">
+                <div class="metric-label">Hours Saved · Outreach Admin Per Week</div>
+                <div class="metric-value">3<em>–5hrs</em></div>
+                <p class="metric-description">Reclaimed per advisor per week on outreach admin — redirected to high-value client conversations.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="evidence">
+        <div class="evidence-inner">
+            <div class="evidence-label">Supporting Case Studies</div>
+            <p class="evidence-text">
+                Salesforce's 2024 State of Marketing report (5,000+ organizations) found B2B firms using AI lead generation saw an average <strong>73% increase in qualified leads within six months</strong>, while Gartner measured a <strong>43% improvement in lead-to-opportunity conversion</strong> from AI-powered nurturing and BCG put average ROI at <strong>4.2x after 18 months</strong>. Nurtured leads also make purchases roughly <strong>47% larger than non-nurtured ones</strong> — directly relevant to attracting higher-AUM households.
+            </p>
+        </div>
+    </div>
+
+    <section id="case-study" class="case-study">
+        <div class="case-study-inner">
+            <div class="case-study-left">
+                <div class="case-label">
+                    <div class="case-label-line"></div>
+                    <span class="case-label-text">Case Study</span>
+                </div>
+                <h2>How a $900M RIA <em>grew qualified leads by 34%</em> without adding marketing staff.</h2>
+                <p class="case-study-intro">A fee-only advisory firm in the Pacific Northwest had an underutilized CRM containing 1,200 prospects and 340 referral relationships — none of them systematically engaged. Marketing was a quarterly newsletter and word of mouth.</p>
+            </div>
+            <div class="case-study-right">
+                <div class="case-block">
+                    <div class="case-block-label">The Situation</div>
+                    <p class="case-block-text">The firm had no structured process for identifying which cold contacts were closest to AUM thresholds, life-stage triggers, or values alignment — meaning high-potential prospects were aging untouched in the database.</p>
+                </div>
+                <div class="case-block">
+                    <div class="case-block-label">The Intervention</div>
+                    <p class="case-block-text">We deployed Paragon Pipeline — an AI lead-scoring and outreach engine that analyzes CRM data against ideal-client profiles, assigns priority tiers automatically, and generates personalized, compliance-reviewed outreach sequences for each segment.</p>
+                </div>
+                <div class="case-block">
+                    <div class="case-block-label">The Outcome — 90 Days In</div>
+                    <p class="case-block-text">34% more prospects converted to discovery calls. The firm onboarded 11 new households representing $47M in new AUM — all sourced from contacts already in their system, with no new marketing spend.</p>
+                </div>
+            </div>
+        </div>
+        <div class="case-stats">
+            <div class="case-stat">
+                <div class="case-stat-value">+34<span class="case-stat-sup">%</span></div>
+                <div class="case-stat-label">More qualified discovery calls booked</div>
+            </div>
+            <div class="case-stat">
+                <div class="case-stat-value">11</div>
+                <div class="case-stat-label">New households from existing CRM contacts</div>
+            </div>
+            <div class="case-stat">
+                <div class="case-stat-value">$47<span class="case-stat-sup">M</span></div>
+                <div class="case-stat-label">New AUM — no new marketing spend</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="workflows">
+        <div class="workflows-header">
+            <div class="section-label">
+                <div class="section-label-line"></div>
+                <span class="section-label-text">What We Build &amp; Operate: Paragon Pipeline</span>
+            </div>
+            <h2>Four integrated workflows. <em>One outcome:</em> a qualified pipeline that fills itself — compliantly.</h2>
+        </div>
+        <div class="workflows-grid">
+            <div class="workflow-card">
+                <div class="workflow-number">01</div>
+                <h3 class="workflow-title">Ideal-Client Profile Modeling</h3>
+                <p class="workflow-description">Analyzes your best clients across CRM, AUM, life stage, and values to build a precise ideal-client profile, then identifies matching prospects and look-alikes so spend goes where it converts.</p>
+            </div>
+            <div class="workflow-card">
+                <div class="workflow-number">02</div>
+                <h3 class="workflow-title">Lead Generation &amp; Funnel Optimization</h3>
+                <p class="workflow-description">AI qualifies visitors in real time, books discovery calls, and captures intent — while continuously testing funnels to surface the highest-converting paths per segment.</p>
+            </div>
+            <div class="workflow-card">
+                <div class="workflow-number">03</div>
+                <h3 class="workflow-title">Compliant Personalized Outreach at Scale</h3>
+                <p class="workflow-description">Email sequences and nurture campaigns tailored to each prospect's life stage and goals, pre-screened for SEC and state advertising rules, sent in your firm's voice, and tracked end to end.</p>
+            </div>
+            <div class="workflow-card">
+                <div class="workflow-number">04</div>
+                <h3 class="workflow-title">Automated Lead Scoring &amp; Routing</h3>
+                <p class="workflow-description">Every inbound contact is scored on AUM signals, life stage, and fit; qualified prospects route instantly to the right advisor with a briefing, while the rest enter automated re-engagement.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="cta" class="cta-section">
+        <div class="cta-inner">
+            <h2>Ready to activate <em>the pipeline you already have?</em></h2>
+            <p>Discover how Paragon Pipeline can convert your existing CRM contacts into qualified prospects — without adding headcount or marketing budget.</p>
+            <a href="https://calendly.com/erica-aiparagonconsulting/ai-paragon-consulting-erica-dresslar" class="btn-primary dark" style="display:inline-flex;margin:0 auto;">
+                Book a 20-Minute Workflow Audit
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <p>&#169; 2025 AI Paragon. All rights reserved.</p>
+        <p>SOC 2 · FINRA-Aware · Built for regulated firms</p>
+    </footer>
+
+    <script>
+        const nav = document.getElementById('main-nav');
+        const hero = document.querySelector('.hero');
+        function updateNav() { nav.classList.toggle('scrolled', hero.getBoundingClientRect().bottom <= 0); }
+        window.addEventListener('scroll', updateNav, { passive: true });
+        updateNav();
+        document.querySelectorAll('a[href="#case-study"]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.getElementById('case-study');
+                if (!target) return;
+                target.classList.remove('flash-in');
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setTimeout(() => target.classList.add('flash-in'), 600);
+            });
+        });
+    </script>
+</body>
+</html>
