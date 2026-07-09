@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skip Pre-Qual Intake | AI Paragon Consulting Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1D2C4F;
+    --navy-soft: #33436B;
+    --gold: #BA8F1A;
+    --gold-soft: #D8B45C;
+    --cream: #FAF7F0;
+    --paper: #FFFFFF;
+    --ink: #2B2F38;
+    --muted: #6E7686;
+    --line: #E4DED2;
+    --error: #A3402F;
+    --ok: #2A6B3C;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+  .topbar {
+    background: var(--navy);
+    color: #F5F1E6;
+    padding: 18px 32px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .topbar .brand {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+  }
+  .topbar .brand em { color: var(--gold-soft); font-style: normal; }
+  .topbar .tool-name {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--gold-soft);
+  }
+  .intro {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 36px 32px 8px;
+  }
+  .intro h1 {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: clamp(30px, 4vw, 42px);
+    font-weight: 600;
+    color: var(--navy);
+    line-height: 1.15;
+  }
+  .intro h1::after {
+    content: "";
+    display: block;
+    width: 64px;
+    height: 3px;
+    background: var(--gold);
+    margin-top: 12px;
+  }
+  .intro p {
+    margin-top: 14px;
+    max-width: 640px;
+    color: var(--muted);
+  }
+  main {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 32px 80px;
+    display: grid;
+    grid-template-columns: minmax(320px, 460px) 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 26px 26px 30px;
+  }
+  .section-title {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 21px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .section-sub {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .section + .section { margin-top: 30px; padding-top: 26px; border-top: 1px solid var(--line); }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .row.single { grid-template-columns: 1fr; }
+  .field { margin-bottom: 14px; }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--navy-soft);
+    margin-bottom: 6px;
+  }
+  label .req { color: var(--gold); }
+  input[type="text"], input[type="email"], input[type="url"],
+  input[type="tel"], input[type="date"], select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    font: inherit;
+    font-size: 14.5px;
+    color: var(--ink);
+    background: #FDFCF9;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(186, 143, 26, 0.18);
+  }
+  select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236E7686'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+  .checks label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--ink);
+    cursor: pointer;
+    margin: 0;
+  }
+  .checks input[type="checkbox"] {
+    width: 16px; height: 16px;
+    accent-color: var(--gold);
+    flex: none;
+  }
+  textarea { resize: vertical; }
+  /* Transcript panel */
+  .transcript-card { display: flex; flex-direction: column; min-height: 640px; }
+  .transcript-card textarea {
+    flex: 1;
+    min-height: 420px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    background: #FDFCF7;
+  }
+  .transcript-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .transcript-meta .count.ok { color: var(--ok); }
+  .actions {
+    margin-top: 22px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  button.submit {
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    color: #FFF;
+    background: var(--navy);
+    border: none;
+    border-radius: 4px;
+    padding: 13px 28px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  button.submit:hover { background: var(--navy-soft); }
+  button.submit:active { transform: translateY(1px); }
+  button.submit:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  button.submit:disabled { background: #9AA1AF; cursor: wait; }
+  .hint { font-size: 12.5px; color: var(--muted); max-width: 340px; }
+  /* Status banners */
+  .banner {
+    display: none;
+    margin-top: 18px;
+    padding: 14px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    border: 1px solid;
+  }
+  .banner.show { display: block; }
+  .banner.error { background: #FBEFEC; border-color: #E3C0B7; color: var(--error); }
+  .banner.success { background: #EFF6F0; border-color: #BFD9C5; color: var(--ok); }
+  .banner.success strong { display: block; font-size: 15px; margin-bottom: 4px; }
+  /* Success overlay state */
+  .done-panel {
+    display: none;
+    max-width: 640px;
+    margin: 60px auto;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-top: 4px solid var(--gold);
+    border-radius: 6px;
+    padding: 44px 40px;
+    text-align: center;
+  }
+  .done-panel.show { display: block; }
+  .done-panel h2 {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 30px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 12px;
+  }
+  .done-panel p { color: var(--muted); margin-bottom: 8px; }
+  .done-panel .steps {
+    text-align: left;
+    margin: 22px auto 26px;
+    max-width: 420px;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .done-panel .steps div { padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .done-panel .steps div:last-child { border-bottom: none; }
+  .done-panel .steps span { color: var(--gold); font-weight: 700; margin-right: 10px; }
+  .done-panel button {
+    font: inherit; font-size: 14px; font-weight: 600;
+    background: none; border: 1px solid var(--navy);
+    color: var(--navy); border-radius: 4px;
+    padding: 10px 22px; cursor: pointer;
+  }
+  .done-panel button:hover { background: var(--navy); color: #FFF; }
+  .done-panel button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+    .transcript-card { min-height: 0; }
+    .transcript-card textarea { min-height: 320px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">AI <em>Paragon</em> Consulting Group</div>
+  <div class="tool-name">Skip Pre-Qual Intake</div>
+</header>
+
+<section class="intro" id="intro">
+  <h1>Run the Discovery Call Agent directly</h1>
+  <p>For prospects skipping the lead research and interview script agents. Paste the Fathom transcript, add what you know, and the pipeline runs straight through to the Growth Plan.</p>
+</section>
+
+<main id="formWrap">
+  <!-- Left: prospect details -->
+  <form id="intakeForm" class="card" novalidate>
+    <div class="section">
+      <div class="section-title">Prospect</div>
+      <div class="section-sub">Who Erica is meeting</div>
+      <div class="row">
+        <div class="field">
+          <label for="prospectName">Full name <span class="req">*</span></label>
+          <input type="text" id="prospectName" name="prospectName" required autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="prospectTitle">Title / role</label>
+          <input type="text" id="prospectTitle" name="prospectTitle" placeholder="e.g. Managing Partner">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="emailAddress">Email <span class="req">*</span></label>
+          <input type="email" id="emailAddress" name="emailAddress" required>
+        </div>
+        <div class="field">
+          <label for="phone">Phone</label>
+          <input type="tel" id="phone" name="phone">
+        </div>
+      </div>
+      <div class="row single">
+        <div class="field">
+          <label for="linkedInUrl">LinkedIn URL</label>
+          <input type="url" id="linkedInUrl" name="linkedInUrl" placeholder="https://linkedin.com/in/...">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Firm</div>
+      <div class="section-sub">Company context for the framework</div>
+      <div class="row">
+        <div class="field">
+          <label for="companyName">Company name <span class="req">*</span></label>
+          <input type="text" id="companyName" name="companyName" required>
+        </div>
+        <div class="field">
+          <label for="companyUrl">Website</label>
+          <input type="url" id="companyUrl" name="companyUrl" placeholder="https://">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="firmType">Firm type</label>
+          <select id="firmType" name="firmType">
+            <option value="">Select...</option>
+            <option>RIA</option>
+            <option>Wealth Management</option>
+            <option>Family Office</option>
+            <option>Broker-Dealer</option>
+            <option>Financial Planning</option>
+            <option>Financial Services - Other</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="firmSize">Firm size</label>
+          <select id="firmSize" name="firmSize">
+            <option value="">Select...</option>
+            <option>1-5</option>
+            <option>6-10</option>
+            <option>11-25</option>
+            <option>26-50</option>
+            <option>51-100</option>
+            <option>100+</option>
+          </select>
+        </div>
+      </div>
+      <div class="row single">
+        <div class="field">
+          <label for="aumOrRevenue">AUM or revenue, if known</label>
+          <input type="text" id="aumOrRevenue" name="aumOrRevenue" placeholder="e.g. $250M AUM">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Call context</div>
+      <div class="section-sub">What the agent should plan around</div>
+      <div class="row">
+        <div class="field">
+          <label for="callDate">Discovery call date</label>
+          <input type="date" id="callDate" name="callDate">
+        </div>
+        <div class="field">
+          <label for="hearAboutUs">Lead source</label>
+          <input type="text" id="hearAboutUs" name="hearAboutUs" placeholder="Referral, LinkedIn, event...">
+        </div>
+      </div>
+      <div class="row single">
+        <div class="field">
+          <label for="currentAIStage">Current AI stage</label>
+          <select id="currentAIStage" name="currentAIStage">
+            <option value="">Select...</option>
+            <option>Not started</option>
+            <option>Exploring / researching</option>
+            <option>Piloting tools</option>
+            <option>Some AI in production</option>
+            <option>Advanced adoption</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>AI interests</label>
+        <div class="checks">
+          <label><input type="checkbox" name="aiInterests" value="Meeting notes and documentation"> Meeting notes and docs</label>
+          <label><input type="checkbox" name="aiInterests" value="Client onboarding"> Client onboarding</label>
+          <label><input type="checkbox" name="aiInterests" value="Compliance and documentation"> Compliance</label>
+          <label><input type="checkbox" name="aiInterests" value="Content and communications"> Content and comms</label>
+          <label><input type="checkbox" name="aiInterests" value="Reporting automation"> Reporting automation</label>
+          <label><input type="checkbox" name="aiInterests" value="Prospecting and follow-up"> Prospecting follow-up</label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="notes">Notes for the agent</label>
+        <textarea id="notes" name="notes" rows="3" placeholder="Anything else worth knowing: goals, sensitivities, context from earlier emails..."></textarea>
+      </div>
+    </div>
+  </form>
+
+  <!-- Right: transcript -->
+  <div class="card transcript-card">
+    <div class="section-title">Fathom call transcript</div>
+    <div class="section-sub">In Fathom: open the call, Copy Transcript, paste here. Pasted text is what the agent works from.</div>
+    <div class="field">
+      <label for="fathomUrl">Fathom recording link (reference only)</label>
+      <input type="url" id="fathomUrl" name="fathomUrl" placeholder="https://fathom.video/share/...">
+    </div>
+    <label for="transcript" style="margin-top:6px;">Transcript <span class="req">*</span></label>
+    <textarea id="transcript" name="transcript" required placeholder="Paste the full call transcript..."></textarea>
+    <div class="transcript-meta">
+      <span>Full transcript recommended, speaker labels included</span>
+      <span class="count" id="charCount">0 characters</span>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="submit" id="submitBtn">Run Discovery Call Agent</button>
+      <span class="hint">Runs in about 5-10 minutes. Output posts to Slack #new-leads-notification and the Discovery Call Script Agent folder in Drive.</span>
+    </div>
+    <div class="banner error" id="errorBanner" role="alert"></div>
+  </div>
+</main>
+
+<!-- Success state -->
+<section class="done-panel" id="donePanel">
+  <h2>Pipeline running</h2>
+  <p id="doneWho"></p>
+  <div class="steps">
+    <div><span>1</span>Transcript extraction and intake doc</div>
+    <div><span>2</span>Discovery Call Framework (11 sections, PDF to Drive)</div>
+    <div><span>3</span>Notion, Slack, and HubSpot updates</div>
+    <div><span>4</span>Growth Plan Proposal Agent</div>
+  </div>
+  <p style="margin-bottom:24px;">Watch Slack for the Discovery Call output link.</p>
+  <button type="button" id="anotherBtn">Submit another prospect</button>
+</section>
+
+<script>
+  // ── Configuration ─────────────────────────────────────────────
+  // Production URL (workflow must be published in n8n):
+  var WEBHOOK_URL = 'https://n8n.aiparagonconsulting.com/webhook/discovery-skip-prequal';
+  // For testing against an unpublished draft, swap to:
+  // var WEBHOOK_URL = 'https://n8n.aiparagonconsulting.com/webhook-test/discovery-skip-prequal';
+
+  var form = document.getElementById('intakeForm');
+  var transcriptEl = document.getElementById('transcript');
+  var fathomUrlEl = document.getElementById('fathomUrl');
+  var charCount = document.getElementById('charCount');
+  var submitBtn = document.getElementById('submitBtn');
+  var errorBanner = document.getElementById('errorBanner');
+  var donePanel = document.getElementById('donePanel');
+  var formWrap = document.getElementById('formWrap');
+  var intro = document.getElementById('intro');
+
+  transcriptEl.addEventListener('input', function () {
+    var n = transcriptEl.value.length;
+    charCount.textContent = n.toLocaleString() + ' characters';
+    charCount.classList.toggle('ok', n > 1000);
+  });
+
+  function showError(msg) {
+    errorBanner.textContent = msg;
+    errorBanner.classList.add('show');
+    errorBanner.scrollIntoView({ block: 'nearest' });
+  }
+
+  function clearError() {
+    errorBanner.classList.remove('show');
+    errorBanner.textContent = '';
+  }
+
+  submitBtn.addEventListener('click', function () {
+    clearError();
+
+    var data = {
+      prospectName: form.prospectName.value.trim(),
+      prospectTitle: form.prospectTitle.value.trim(),
+      emailAddress: form.emailAddress.value.trim(),
+      phone: form.phone.value.trim(),
+      linkedInUrl: form.linkedInUrl.value.trim(),
+      companyName: form.companyName.value.trim(),
+      companyUrl: form.companyUrl.value.trim(),
+      firmType: form.firmType.value,
+      firmSize: form.firmSize.value,
+      aumOrRevenue: form.aumOrRevenue.value.trim(),
+      callDate: form.callDate.value,
+      hearAboutUs: form.hearAboutUs.value.trim(),
+      currentAIStage: form.currentAIStage.value,
+      aiInterests: Array.prototype.slice.call(
+        form.querySelectorAll('input[name="aiInterests"]:checked')
+      ).map(function (c) { return c.value; }),
+      notes: form.notes.value.trim(),
+      fathomUrl: fathomUrlEl.value.trim(),
+      transcript: transcriptEl.value.trim()
+    };
+
+    var missing = [];
+    if (!data.prospectName) missing.push('prospect name');
+    if (!data.emailAddress || data.emailAddress.indexOf('@') === -1) missing.push('a valid email');
+    if (!data.companyName) missing.push('company name');
+    if (!data.transcript) missing.push('the transcript');
+    if (missing.length) {
+      showError('Add ' + missing.join(', ') + ' before running the agent.');
+      return;
+    }
+    if (data.transcript.length < 500) {
+      showError('That transcript looks too short (' + data.transcript.length + ' characters). Paste the full Fathom transcript so the agent has real material to work from.');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending to n8n...';
+
+    fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error('Webhook responded ' + res.status);
+        document.getElementById('doneWho').textContent =
+          data.prospectName + ' at ' + data.companyName + ' is in the pipeline.';
+        intro.style.display = 'none';
+        formWrap.style.display = 'none';
+        donePanel.classList.add('show');
+        window.scrollTo(0, 0);
+      })
+      .catch(function (err) {
+        showError('Could not reach the workflow: ' + err.message + '. Check that the n8n workflow is published, then try again.');
+      })
+      .finally(function () {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Run Discovery Call Agent';
+      });
+  });
+
+  document.getElementById('anotherBtn').addEventListener('click', function () {
+    donePanel.classList.remove('show');
+    intro.style.display = '';
+    formWrap.style.display = '';
+    form.reset();
+    transcriptEl.value = '';
+    fathomUrlEl.value = '';
+    charCount.textContent = '0 characters';
+    charCount.classList.remove('ok');
+    window.scrollTo(0, 0);
+  });
+</script>
+</body>
+</html>
