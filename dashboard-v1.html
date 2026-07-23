@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Paragon — Intelligence Dashboard</title>
+<link rel="icon" href="https://www.aiparagonconsulting.com/logo.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+<style>
+  :root{
+    --bg:#F5F2EC; --cream:#EDE9DF; --navy:#1E3A5F; --gold:#C9A84C;
+    --ink:#22293A; --muted:#6E6A5E; --line:#DDD7C9; --white:#FFFFFF;
+    --good:#3E7A5B; --warn:#B07A2A; --bad:#A94438;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:15px}
+  body{background:var(--bg);color:var(--ink);font-family:'Inter',-apple-system,'Segoe UI',sans-serif;line-height:1.55}
+  @import url('');
+  /* ---------- layout ---------- */
+  .app{display:flex;min-height:100vh}
+  .sidebar{width:236px;flex-shrink:0;background:var(--bg);border-right:1px solid var(--line);
+    padding:26px 18px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+  .main{flex:1;min-width:0;padding:34px 44px 80px}
+  @media(max-width:820px){
+    .app{flex-direction:column}
+    .sidebar{width:100%;height:auto;position:static;flex-direction:row;flex-wrap:wrap;align-items:center;border-right:none;border-bottom:1px solid var(--line)}
+    .main{padding:22px 16px 60px}
+  }
+  /* ---------- brand ---------- */
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .brand img{width:30px;height:30px;object-fit:contain}
+  .brand .word{font-family:Georgia,'Times New Roman',serif;font-size:1.16rem;font-weight:700;letter-spacing:.01em;color:var(--ink)}
+  .brand .word em{font-style:normal;color:var(--gold)}
+  /* ---------- engine switcher ---------- */
+  .engines{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-radius:10px;background:var(--white);padding:5px;margin-bottom:16px}
+  .engines button{all:unset;cursor:pointer;padding:7px 10px;border-radius:7px;font-size:.82rem;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .engines button:hover{background:var(--cream)}
+  .engines button.active{background:var(--navy);color:#fff}
+  .engines button .tag{font-size:.62rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
+  .engines button.active .tag{color:var(--gold)}
+  .engines button.soon .tag{color:var(--muted)}
+  /* ---------- nav ---------- */
+  .navlabel{font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:8px 6px 4px}
+  .nav button{all:unset;cursor:pointer;display:block;width:100%;padding:8px 10px;border-radius:8px;font-size:.9rem;color:var(--ink)}
+  .nav button:hover{background:var(--cream)}
+  .nav button.active{background:var(--cream);color:var(--navy);font-weight:650;box-shadow:inset 3px 0 0 var(--gold)}
+  .side-foot{margin-top:auto;font-size:.7rem;color:var(--muted);padding:6px}
+  /* ---------- headers ---------- */
+  h1.page{font-family:Georgia,serif;font-size:1.9rem;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+  .page-sub{color:var(--muted);margin-top:4px;font-size:.92rem}
+  .page-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:26px;border-bottom:2px solid var(--navy);padding-bottom:16px}
+  /* ---------- controls ---------- */
+  select,input[type=search]{font:inherit;font-size:.86rem;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--white);color:var(--ink)}
+  select:focus,input:focus,button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .controls label{font-size:.72rem;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-right:2px}
+  /* ---------- cards ---------- */
+  .grid{display:grid;gap:16px}
+  .grid.cols3{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  .card{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .card h3{font-family:Georgia,serif;font-size:1.05rem;color:var(--navy);margin-bottom:2px}
+  .card .agent-kind{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);font-weight:700}
+  .statline{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .chip{font-size:.72rem;background:var(--cream);border:1px solid var(--line);padding:3px 9px;border-radius:99px;color:var(--ink)}
+  .chip b{color:var(--navy)}
+  .datestamp{font-size:.76rem;color:var(--muted);margin-top:10px;display:flex;gap:8px;align-items:center}
+  .dot{width:8px;height:8px;border-radius:99px;display:inline-block}
+  .dot.fresh{background:var(--good)} .dot.stale{background:var(--warn)} .dot.old{background:var(--bad)} .dot.none{background:var(--line)}
+  .card .go{margin-top:12px}
+  .go button{all:unset;cursor:pointer;font-size:.8rem;font-weight:650;color:var(--navy)}
+  .go button::after{content:" →";color:var(--gold)}
+  /* ---------- pills ---------- */
+  .pill{font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:99px;border:1px solid transparent}
+  .pill.high{background:#F4EBD3;color:#7A5E12;border-color:#E2CD8E}
+  .pill.medium{background:var(--cream);color:var(--muted);border-color:var(--line)}
+  .pill.low{background:var(--bg);color:var(--muted);border-color:var(--line)}
+  .pill.pending{background:#EFE8D6;color:#7A5E12}
+  .pill.approved{background:#E2EEE7;color:var(--good)}
+  .pill.rejected{background:#F3E2DF;color:var(--bad)}
+  .pill.posted{background:#E4E9F1;color:var(--navy)}
+  .pill.platform{background:var(--navy);color:#fff}
+  /* ---------- tabs ---------- */
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:20px 0 18px;flex-wrap:wrap}
+  .tabs button{all:unset;cursor:pointer;padding:8px 14px;font-size:.86rem;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tabs button.active{color:var(--navy);border-bottom-color:var(--gold)}
+  /* ---------- brief rendering ---------- */
+  .brief{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:30px 36px;max-width:920px}
+  .brief h1{font-family:Georgia,serif;font-size:1.5rem;color:var(--ink);border-bottom:2px solid var(--navy);padding-bottom:8px;margin-bottom:12px}
+  .brief h2{font-family:Georgia,serif;font-size:1.12rem;color:var(--navy);margin:26px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+  .brief h3{font-size:.98rem;color:var(--ink);margin:16px 0 6px}
+  .brief p{margin:8px 0}
+  .brief ul,.brief ol{margin:8px 0 8px 22px}
+  .brief li{margin:4px 0}
+  .brief a{color:var(--navy);text-decoration:underline;text-decoration-color:var(--gold)}
+  .brief table{border-collapse:collapse;width:100%;margin:12px 0;font-size:.86rem}
+  .brief th,.brief td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  .brief th{background:var(--cream);font-weight:650}
+  .brief hr{border:none;border-top:1px solid var(--line);margin:20px 0}
+  .brief em{color:var(--muted)}
+  /* ---------- tables ---------- */
+  .tbl{width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:.85rem}
+  .tbl th{background:var(--cream);text-align:left;padding:9px 12px;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .tbl td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:top}
+  .tbl tr:hover td{background:var(--bg)}
+  .tbl a{color:var(--navy)}
+  .tbl-wrap{overflow-x:auto;border-radius:12px}
+  /* ---------- draft cards ---------- */
+  .draft{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px}
+  .draft .top{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+  .draft .who{font-weight:650;color:var(--navy)}
+  .draft .text{white-space:pre-wrap;font-size:.9rem;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:8px 0}
+  .draft .meta{font-size:.76rem;color:var(--muted)}
+  /* ---------- ad cards ---------- */
+  .adgrid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+  .adcard{background:var(--white);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+  .adcard img{width:100%;max-height:230px;object-fit:cover;border-bottom:1px solid var(--line);background:var(--cream)}
+  .adcard .body{padding:14px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .adcard .hook{font-size:.9rem;font-weight:600;color:var(--ink)}
+  .adcard .bodytext{font-size:.8rem;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .adcard .foot{margin-top:auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.74rem;color:var(--muted)}
+  .longevity{font-weight:700;color:var(--good)}
+  /* ---------- notices ---------- */
+  .notice{border:1px solid var(--line);border-left:4px solid var(--gold);background:var(--white);border-radius:10px;padding:16px 18px;margin:14px 0;font-size:.9rem}
+  .notice.err{border-left-color:var(--bad)}
+  .notice code{background:var(--cream);padding:1px 6px;border-radius:5px;font-size:.82rem}
+  .empty{padding:46px 20px;text-align:center;color:var(--muted);background:var(--white);border:1px dashed var(--line);border-radius:12px}
+  .empty .big{font-family:Georgia,serif;font-size:1.1rem;color:var(--ink);margin-bottom:6px}
+  .loading{color:var(--muted);font-size:.9rem;padding:20px 0}
+  .lineage{font-size:.78rem;color:var(--muted);background:var(--cream);border:1px solid var(--line);border-radius:8px;padding:8px 12px;display:inline-block;margin-bottom:14px}
+  .lineage b{color:var(--navy)}
+  section.block{margin-bottom:34px}
+  section.block>h2{font-family:Georgia,serif;font-size:1.15rem;color:var(--ink);margin-bottom:12px;display:flex;align-items:center;gap:10px}
+  section.block>h2 .count{font-family:Inter,sans-serif;font-size:.72rem;background:var(--navy);color:#fff;border-radius:99px;padding:2px 9px;font-weight:600}
+</style>
+</head>
+<body>
+<div id="lockScreen" style="position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px">
+  <img src="https://www.aiparagonconsulting.com/logo.png" alt="" style="width:52px;height:52px;object-fit:contain" onerror="this.style.display='none'">
+  <div style="font-family:Georgia,serif;font-size:1.4rem;color:var(--ink)">AI <span style="color:var(--gold)">Paragon</span> — Intelligence Dashboard</div>
+  <div style="display:flex;gap:8px">
+    <input id="pwInput" type="password" placeholder="Password" autocomplete="current-password"
+      style="font:inherit;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--white);min-width:220px"
+      onkeydown="if(event.key==='Enter')tryUnlock()">
+    <button onclick="tryUnlock()" style="font:inherit;font-weight:650;padding:10px 18px;border:none;border-radius:8px;background:var(--navy);color:#fff;cursor:pointer">Enter</button>
+  </div>
+  <div id="pwError" style="color:var(--bad);font-size:.85rem;min-height:1.2em"></div>
+</div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="https://www.aiparagonconsulting.com/logo.png" alt="" onerror="this.style.display='none'">
+      <div class="word">AI <em>Paragon</em></div>
+    </div>
+    <div class="engines" id="engineSwitch"></div>
+    <div class="navlabel" id="navLabel">Engine 3 · Marketing Intelligence</div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">Internal dashboard · data refreshes on page load</div>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+
+<script>
+/* ================= CONFIG ================= */
+const SUPABASE_URL = "https://lesyptuwllcgajdxzjje.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxlc3lwdHV3bGxjZ2FqZHh6amplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NDAzMDEsImV4cCI6MjA5ODQxNjMwMX0.81-nHOWy8w48weqcL8Yrvv5RGHFlfeSDAo3BZf90DSs";
+
+const ENGINES = [
+  {id:"e1", name:"Engine 1", tag:"Client Delivery", soon:false},
+  {id:"e2", name:"Engine 2", tag:"Coming soon", soon:true},
+  {id:"e3", name:"Engine 3", tag:"Marketing", soon:false},
+];
+const E1_VIEWS = [
+  {id:"e1overview", name:"Overview"},
+  {id:"e1pipeline", name:"Lead Pipeline"},
+];
+/* Engine 1 pipeline stages, in order. urlCol maps to e1_leads columns. */
+const E1_STAGES = [
+  {agent:"lead_research",    label:"Lead Research",              short:"Research",   urlCol:"lead_research_url", kind:"Agent 1 · Prospect intelligence"},
+  {agent:"interview_script", label:"Interview Script",           short:"Interview",  urlCol:"interview_url",     kind:"Agent 2 · Prequal call guide"},
+  {agent:"anonymizer",       label:"Assessment + Anonymizer",    short:"Assessment", urlCol:"assessment_url",    kind:"Agent 3 · Anonymized synthesis"},
+  {agent:"discovery_call",   label:"Discovery Call Framework",   short:"Discovery",  urlCol:"discovery_url",     kind:"Agent 4 · Discovery framework"},
+  {agent:"growth_plan",      label:"Growth Plan Proposal",       short:"Growth Plan",urlCol:"growth_plan_url",   kind:"Agent 5 · Proposal & deck"},
+];
+const E1_AGENT_FILTER = "agent=in.(" + E1_STAGES.map(s=>s.agent).join(",") + ")";
+const E3_VIEWS = [
+  {id:"overview", name:"Overview"},
+  {id:"intel", name:"Intel Tracker"},
+  {id:"ads", name:"Ad Strategist"},
+  {id:"funnel", name:"Low-Ticket Agent"},
+  {id:"testing", name:"Ad Testing"},
+];
+const AGENTS = {
+  intel_tracker:{label:"Intel Tracker", kind:"Agent 1 · Organic intelligence", view:"intel"},
+  ad_strategist:{label:"Ad Strategist", kind:"Agent 2 · Paid-ad intelligence", view:"ads"},
+  low_ticket_content:{label:"Low-Ticket Content Agent", kind:"Agent 3 · Funnel production", view:"funnel"},
+};
+
+let state = {engine:"e3", view:"overview", intelRun:null, adsRun:null, funnelRun:null,
+             filters:{platform:"", type:"", acv:"", q:""}, funnelTab:0,
+             e1Lead:null, e1Q:""};
+const cache = {};
+
+function asObj(v){ if(typeof v === "string"){ try{ return JSON.parse(v); }catch(e){ return {}; } } return (v && typeof v === "object") ? v : {}; }
+
+async function sbPatch(path, body){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method: "PATCH",
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation"
+    },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok){
+    const t = await res.text();
+    const err = new Error(`${res.status}`); err.body = t; err.status = res.status; throw err;
+  }
+  return res.json();
+}
+
+async function setDraftStatus(id, status, btn){
+  const card = btn.closest(".draft");
+  card.querySelectorAll("button").forEach(b=>b.disabled=true);
+  try{
+    const rows = await sbPatch(`engagement_drafts?id=eq.${encodeURIComponent(id)}`, { status });
+    if(!rows.length) throw Object.assign(new Error("0 rows updated"), {status: 403, body: "row-level security"});
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("engagement_drafts")) delete cache[k]; });
+    renderIntel();
+  }catch(e){
+    card.querySelectorAll("button").forEach(b=>b.disabled=false);
+    const denied = e.status===401 || e.status===403 || (e.body||"").includes("row-level security") || (e.body||"").includes("permission");
+    alert(denied
+      ? "Supabase is blocking the update. Run this SQL once:\n\ncreate policy \"anon_update_draft_status\" on engagement_drafts\n  for update to anon using (true)\n  with check (status in ('pending','approved','rejected','posted'));"
+      : "Update failed: " + (e.message || e));
+  }
+}
+
+/* ================= DATA ================= */
+async function sb(path){
+  if(cache[path]) return cache[path];
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers:{apikey:SUPABASE_ANON_KEY, Authorization:`Bearer ${SUPABASE_ANON_KEY}`}
+  });
+  if(!res.ok){
+    const body = await res.text();
+    const err = new Error(`${res.status}`); err.body = body; err.status = res.status; throw err;
+  }
+  const data = await res.json();
+  cache[path] = data;
+  return data;
+}
+const esc = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+function fmtDate(d){ if(!d) return "—"; const dt = new Date(d); if(isNaN(dt)) return esc(d);
+  return dt.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}); }
+function fmtDateTime(d){ if(!d) return "—"; const dt = new Date(d); if(isNaN(dt)) return esc(d);
+  return dt.toLocaleDateString("en-GB",{day:"numeric",month:"short"}) + " · " + dt.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}); }
+function freshness(d){ if(!d) return "none"; const days = (Date.now()-new Date(d))/864e5;
+  return days<=1.5?"fresh":days<=4?"stale":"old"; }
+function errNotice(e, what){
+  const denied = e && (e.status===401 || e.status===403 || (e.body||"").includes("permission denied") || (e.body||"").includes("row-level security"));
+  if(denied) return `<div class="notice err"><b>Can't read ${esc(what)} yet.</b> The table is blocking anonymous reads (row-level security).
+    In Supabase run: <code>alter table ${esc(what)} enable row level security;</code> then
+    <code>create policy "read_${esc(what)}" on ${esc(what)} for select to anon using (true);</code></div>`;
+  if(e && e.status===404) return `<div class="notice"><b>${esc(what)}</b> table doesn't exist yet — it appears after the setup SQL is run.</div>`;
+  return `<div class="notice err"><b>Couldn't load ${esc(what)}.</b> ${esc(e && e.message || "")}</div>`;
+}
+
+/* ================= SHELL ================= */
+function renderShell(){
+  document.getElementById("engineSwitch").innerHTML = ENGINES.map(e=>`
+    <button class="${e.soon?'soon':''} ${state.engine===e.id?'active':''}" onclick="setEngine('${e.id}')">
+      <span>${e.name}</span><span class="tag">${e.tag}</span>
+    </button>`).join("");
+  const nav = document.getElementById("nav");
+  const label = document.getElementById("navLabel");
+  if(state.engine==="e3"){
+    label.textContent = "Engine 3 · Marketing Intelligence";
+    nav.innerHTML = E3_VIEWS.map(v=>`<button class="${state.view===v.id?'active':''}" onclick="setView('${v.id}')">${v.name}</button>`).join("");
+  } else if(state.engine==="e1"){
+    label.textContent = "Engine 1 · Client Service & Delivery";
+    nav.innerHTML = E1_VIEWS.map(v=>`<button class="${state.view===v.id || (v.id==='e1pipeline' && state.view==='e1lead')?'active':''}" onclick="setView('${v.id}')">${v.name}</button>`).join("");
+  } else {
+    label.textContent = ENGINES.find(e=>e.id===state.engine).name;
+    nav.innerHTML = "";
+  }
+}
+function setEngine(id){ state.engine=id; state.view = id==="e3"?"overview":id==="e1"?"e1overview":"placeholder"; render(); }
+function setView(id){ state.view=id; render(); }
+function render(){
+  renderShell();
+  const main = document.getElementById("main");
+  if(state.engine==="e1"){
+    ({e1overview:renderE1Overview, e1pipeline:renderE1Pipeline, e1lead:renderE1Lead})[state.view]();
+    return;
+  }
+  if(state.engine!=="e3"){ 
+    const e = ENGINES.find(x=>x.id===state.engine);
+    main.innerHTML = `<div class="page-head"><div><h1 class="page">${e.name}</h1>
+      <div class="page-sub">Not wired up yet</div></div></div>
+      <div class="empty"><div class="big">${e.name} lives here next</div>
+      This dashboard is built to host every engine. When ${e.name}'s agents write to the shared knowledge base, their output appears in this space with the same layout as Engine 3.</div>`;
+    return;
+  }
+  ({overview:renderOverview, intel:renderIntel, ads:renderAds, funnel:renderFunnel, testing:renderTesting})[state.view]();
+}
+
+/* ================= OVERVIEW ================= */
+async function renderOverview(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="page-head"><div><h1 class="page">Engine 3 — Overview</h1>
+    <div class="page-sub">Latest run from each agent. Everything reads from the shared knowledge base.</div></div></div>
+    <div class="grid cols3" id="ovCards"><div class="loading">Loading latest runs…</div></div>
+    <div id="ovTesting" style="margin-top:26px"></div>`;
+  let runs=[], outputs=[];
+  let runErr=null;
+  try{ runs = await sb("runs?select=*&order=started_at.desc&limit=60"); }catch(e){ runErr=e; }
+  try{ outputs = await sb("agent_outputs?select=run_id,agent,output_type,title,created_at&order=created_at.desc&limit=60"); }catch(e){ if(!runErr) runErr=e; }
+  const cards = Object.entries(AGENTS).map(([key,a])=>{
+    const run = runs.find(r=>r.agent===key);
+    const out = outputs.find(o=>o.agent===key);
+    const when = run?.started_at || out?.created_at;
+    const f = freshness(when);
+    let stats = run?.stats || {};
+    if(typeof stats === "string"){ try{ stats = JSON.parse(stats); }catch(e){ stats = {}; } }
+    if(typeof stats !== "object" || Array.isArray(stats) || stats === null) stats = {};
+    const chips = Object.entries(stats).slice(0,4).map(([k,v])=>
+      typeof v==="object" ? "" : `<span class="chip">${esc(k.replace(/_/g," "))}: <b>${esc(v)}</b></span>`).join("");
+    return `<div class="card">
+      <div class="agent-kind">${a.kind}</div><h3>${a.label}</h3>
+      <div class="datestamp"><span class="dot ${f}"></span>
+        ${when ? `Last run ${fmtDateTime(when)}` : "No runs recorded yet"}
+        ${run?.status ? ` · ${esc(run.status)}` : ""}</div>
+      ${chips ? `<div class="statline">${chips}</div>` : ""}
+      ${out ? `<div class="datestamp">Latest output: ${esc(out.title || out.output_type)}</div>` : ""}
+      <div class="go"><button onclick="setView('${a.view}')">Open ${a.label}</button></div>
+    </div>`;
+  }).join("");
+  document.getElementById("ovCards").innerHTML = cards;
+  renderOvTesting();
+  if(runErr && !runs.length && !outputs.length){
+    main.insertAdjacentHTML("beforeend", errNotice(runErr, "runs") + 
+      `<div class="empty"><div class="big">No agent runs yet</div>
+       Once the updated workflows run, each agent's latest brief, items, and drafts appear here automatically — newest first, dated.</div>`);
+  }
+}
+
+/* ================= RUN PICKER ================= */
+async function getRuns(agent){
+  try{
+    const outs = await sb(`agent_outputs?select=run_id,created_at,title&agent=eq.${agent}&order=created_at.desc&limit=40`);
+    if(outs.length) return outs.map(o=>({run_id:o.run_id, when:o.created_at, title:o.title}));
+  }catch(e){}
+  try{
+    const runs = await sb(`runs?select=run_id,started_at&agent=eq.${agent}&order=started_at.desc&limit=40`);
+    return runs.map(r=>({run_id:r.run_id, when:r.started_at}));
+  }catch(e){ return []; }
+}
+function friendlyRunLabel(when){
+  if(!when) return "Unknown date";
+  const dt = new Date(when); if(isNaN(dt)) return esc(when);
+  const now = new Date();
+  const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diffDays = Math.round((startOfDay(now) - startOfDay(dt)) / 864e5);
+  const time = dt.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  if(diffDays === 0) return `Today · ${time}`;
+  if(diffDays === 1) return `Yesterday · ${time}`;
+  const date = dt.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+  return `${date} · ${time}`;
+}
+function runPicker(runs, current, cb){
+  if(!runs.length) return "";
+  const seen = {};
+  const opts = runs.map(r=>{
+    let label = friendlyRunLabel(r.when);
+    if(seen[label]) label += ` (${++seen[label]})`; else seen[label] = 1;
+    return `<option value="${esc(r.run_id)}" ${r.run_id===current?"selected":""}>${label}</option>`;
+  }).join("");
+  return `<div class="controls"><label>Run</label><select onchange="${cb}(this.value)">${opts}</select></div>`;
+}
+
+/* ================= INTEL TRACKER ================= */
+async function renderIntel(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="page-head"><div><h1 class="page">Intel Tracker</h1>
+    <div class="page-sub">Agent 1 · What competitors are saying — organic posts, keyword search, engagement drafts.</div></div>
+    <div id="intelPicker"></div></div><div id="intelBody"><div class="loading">Loading…</div></div>`;
+  const runs = await getRuns("intel_tracker");
+  if(!state.intelRun && runs.length) state.intelRun = runs[0].run_id;
+  document.getElementById("intelPicker").innerHTML = runPicker(runs, state.intelRun, "pickIntelRun");
+  const body = document.getElementById("intelBody");
+  if(!runs.length){
+    body.innerHTML = `<div class="empty"><div class="big">No intel runs yet</div>
+      The daily brief, item explorer and engagement queue appear here after the first run of the updated workflow.</div>`;
+    return;
+  }
+  const rid = state.intelRun;
+  let briefHtml="", itemsHtml="", draftsHtml="";
+  /* brief */
+  try{
+    const outs = await sb(`agent_outputs?select=*&agent=eq.intel_tracker&run_id=eq.${encodeURIComponent(rid)}&order=created_at.desc&limit=1`);
+    briefHtml = outs.length
+      ? `<div class="brief">${marked.parse(outs[0].content_md || "_Brief text missing for this run._")}</div>`
+      : `<div class="empty">No rendered brief stored for this run.</div>`;
+  }catch(e){ briefHtml = errNotice(e,"agent_outputs"); }
+  /* items */
+  let items=[];
+  try{
+    items = await sb(`intel_items?select=*&run_id=eq.${encodeURIComponent(rid)}&order=engagement_total.desc.nullslast&limit=500`);
+  }catch(e){
+    try{ items = await sb(`intel_items?select=*&order=created_at.desc&limit=200`); }
+    catch(e2){ itemsHtml = errNotice(e2,"intel_items"); }
+  }
+  /* enrich: competitor names, url-derived source, parsed themes */
+  let compMap = {};
+  try{
+    const comps = await sb(`competitors?select=id,name`);
+    comps.forEach(c=>{ compMap[c.id] = c.name; });
+  }catch(e){}
+  const domainOf = u => { try{ return new URL(u).hostname.replace(/^www\./,""); }catch(e){ return ""; } };
+  items.forEach(i=>{
+    i._source = compMap[i.competitor_id] || (i.platform==="linkedin" && i.source==="keyword_search" ? "LinkedIn search" : "") || domainOf(i.url) || "—";
+    if(typeof i.themes === "string"){ try{ i.themes = JSON.parse(i.themes); }catch(e){ i.themes = [i.themes]; } }
+    if(!Array.isArray(i.themes)) i.themes = [];
+  });
+  /* drafts */
+  let drafts=[];
+  try{ drafts = await sb(`engagement_drafts?select=*&run_id=eq.${encodeURIComponent(rid)}&order=created_at.desc&limit=100`); }
+  catch(e){ draftsHtml = errNotice(e,"engagement_drafts"); }
+
+  body.innerHTML = `
+    <section class="block"><h2>Daily brief <span class="count">${fmtDate(runs.find(r=>r.run_id===rid)?.when)}</span></h2>${briefHtml}</section>
+    <section class="block"><h2>Engagement queue <span class="count">${drafts.length}</span></h2>
+      ${draftsHtml || (drafts.length ? drafts.map(d=>`
+        <div class="draft">
+          <div class="top"><span class="who">${esc(d.competitor_name||"—")}</span>
+            <span class="pill platform">${esc(d.platform||"")}</span>
+            <span class="chip">${esc(d.action||"")}</span>
+            <span class="pill ${esc(d.status||"pending")}">${esc(d.status||"pending")}</span></div>
+          <div class="text">${esc(d.draft||"")}</div>
+          <div class="meta">${d.source_url?`<a href="${esc(d.source_url)}" target="_blank" rel="noopener">Source post ↗</a> · `:""}${fmtDateTime(d.created_at)} · requires human approval, never auto-posted</div>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            ${d.status==="pending"||!d.status?`
+              <button onclick="setDraftStatus('${esc(d.id)}','approved',this)" style="font:inherit;font-size:.8rem;font-weight:650;padding:6px 14px;border:none;border-radius:7px;background:var(--good);color:#fff;cursor:pointer">Approve</button>
+              <button onclick="setDraftStatus('${esc(d.id)}','rejected',this)" style="font:inherit;font-size:.8rem;font-weight:650;padding:6px 14px;border:1px solid var(--line);border-radius:7px;background:var(--white);color:var(--bad);cursor:pointer">Reject</button>`:""}
+            ${d.status==="approved"?`
+              <button onclick="setDraftStatus('${esc(d.id)}','posted',this)" style="font:inherit;font-size:.8rem;font-weight:650;padding:6px 14px;border:none;border-radius:7px;background:var(--navy);color:#fff;cursor:pointer">Mark posted</button>
+              <button onclick="setDraftStatus('${esc(d.id)}','rejected',this)" style="font:inherit;font-size:.8rem;font-weight:650;padding:6px 14px;border:1px solid var(--line);border-radius:7px;background:var(--white);color:var(--bad);cursor:pointer">Reject</button>`:""}
+            ${d.status==="rejected"||d.status==="posted"?`
+              <button onclick="setDraftStatus('${esc(d.id)}','pending',this)" style="font:inherit;font-size:.8rem;font-weight:600;padding:6px 14px;border:1px solid var(--line);border-radius:7px;background:var(--white);color:var(--muted);cursor:pointer">Reopen</button>`:""}
+          </div>
+        </div>`).join("") : `<div class="empty">No engagement drafts for this run.</div>`)}
+    </section>
+    <section class="block"><h2>Item explorer <span class="count" id="itemCount">${items.length}</span></h2>
+      <div class="controls" style="margin-bottom:12px">
+        <label>Platform</label><select onchange="intelFilter('platform',this.value)">
+          <option value="">All</option>${[...new Set(items.map(i=>i.platform).filter(Boolean))].map(p=>`<option ${state.filters.platform===p?"selected":""}>${esc(p)}</option>`).join("")}</select>
+        <label>Type</label><select onchange="intelFilter('type',this.value)">
+          <option value="">All</option>${[...new Set(items.map(i=>i.type).filter(Boolean))].map(t=>`<option ${state.filters.type===t?"selected":""}>${esc(t)}</option>`).join("")}</select>
+        <label>Ad value</label><select onchange="intelFilter('acv',this.value)">
+          <option value="">All</option><option ${state.filters.acv==="high"?"selected":""}>high</option><option ${state.filters.acv==="medium"?"selected":""}>medium</option><option ${state.filters.acv==="low"?"selected":""}>low</option></select>
+        <input type="search" placeholder="Search summaries…" value="${esc(state.filters.q)}" oninput="intelFilter('q',this.value)">
+      </div>
+      ${itemsHtml || `<div class="tbl-wrap"><table class="tbl"><thead><tr>
+        <th>Source</th><th>Platform</th><th>Type</th><th>Summary</th><th>Ad value</th><th>Engage­ment</th><th>Link</th>
+      </tr></thead><tbody id="itemRows"></tbody></table></div>`}
+    </section>`;
+  window._intelItems = items;
+  paintItems();
+}
+function pickIntelRun(v){ state.intelRun=v; renderIntel(); }
+function intelFilter(k,v){ state.filters[k]=v; paintItems(); }
+function paintItems(){
+  const rows = document.getElementById("itemRows"); if(!rows) return;
+  const f = state.filters;
+  const items = (window._intelItems||[]).filter(i=>
+    (!f.platform || i.platform===f.platform) &&
+    (!f.type || i.type===f.type) &&
+    (!f.acv || i.ad_context_value===f.acv) &&
+    (!f.q || (String(i.summary||"")+String(i.signal||"")+String(i._source||"")+(i.themes||[]).join(" ")).toLowerCase().includes(f.q.toLowerCase()))
+  );
+  const cnt = document.getElementById("itemCount"); if(cnt) cnt.textContent = items.length;
+  rows.innerHTML = items.length ? items.map(i=>`<tr>
+    <td><b>${esc(i._source||"—")}</b>${i.published_at?`<div style="color:var(--muted);font-size:.72rem;margin-top:2px">${fmtDate(i.published_at)}</div>`:""}</td>
+    <td><span class="pill platform">${esc(i.platform||"")}</span></td>
+    <td>${esc((i.type||"").replace(/_/g," "))}</td>
+    <td>${esc(i.summary||"")}
+      ${i.signal?`<div style="color:var(--muted);font-size:.78rem;margin-top:3px">${esc(i.signal)}</div>`:""}
+      ${(i.themes||[]).length?`<div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${i.themes.map(t=>`<span class="chip" style="font-size:.66rem">${esc(t)}</span>`).join("")}</div>`:""}</td>
+    <td><span class="pill ${esc(i.ad_context_value||"low")}">${esc(i.ad_context_value||"—")}</span></td>
+    <td>${i.engagement_total!=null?`<b>${esc(i.engagement_total)}</b>${i.engagement_score!=null?`<div style="color:var(--muted);font-size:.72rem">score ${Number(i.engagement_score).toFixed(2)}</div>`:""}`:`<span style="color:var(--muted)">n/a</span>`}</td>
+    <td>${i.url?`<a href="${esc(i.url)}" target="_blank" rel="noopener">Open ↗</a>`:"—"}</td>
+  </tr>`).join("") : `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:22px">No items match these filters.</td></tr>`;
+}
+
+/* ================= AD STRATEGIST ================= */
+async function renderAds(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="page-head"><div><h1 class="page">Ad Strategist</h1>
+    <div class="page-sub">Agent 2 · What competitors are advertising — long-running winners, hooks, and the creative brief.</div></div>
+    <div id="adsPicker"></div></div><div id="adsBody"><div class="loading">Loading…</div></div>`;
+  const runs = await getRuns("ad_strategist");
+  if(!state.adsRun && runs.length) state.adsRun = runs[0].run_id;
+  document.getElementById("adsPicker").innerHTML = runPicker(runs, state.adsRun, "pickAdsRun");
+  const body = document.getElementById("adsBody");
+  let briefHtml="", lineage="";
+  if(runs.length){
+    try{
+      const outs = await sb(`agent_outputs?select=*&agent=eq.ad_strategist&run_id=eq.${encodeURIComponent(state.adsRun)}&order=created_at.desc&limit=1`);
+      if(outs.length){
+        briefHtml = `<div class="brief">${marked.parse(outs[0].content_md||"")}</div>`;
+        const src = asObj(outs[0].data).source_intel_run;
+        if(src) lineage = `<div class="lineage">Built from Intel Tracker run <b>${esc(src)}</b></div>`;
+      }
+    }catch(e){ briefHtml = errNotice(e,"agent_outputs"); }
+  }
+  let ads=[], adsErr="";
+  try{
+    ads = state.adsRun
+      ? await sb(`winner_creatives?select=*&run_id=eq.${encodeURIComponent(state.adsRun)}&order=days_running.desc.nullslast&limit=200`)
+      : await sb(`winner_creatives?select=*&order=days_running.desc.nullslast&limit=100`);
+    if(!ads.length && state.adsRun) ads = await sb(`winner_creatives?select=*&order=days_running.desc.nullslast&limit=100`);
+  }catch(e){ adsErr = errNotice(e,"winner_creatives"); }
+  const img = a => a.image_url || a.creative_url || a.thumbnail_url || (a.raw && a.raw.image_url) || "";
+  body.innerHTML = `
+    ${runs.length ? `<section class="block"><h2>Creative brief <span class="count">${fmtDate(runs.find(r=>r.run_id===state.adsRun)?.when)}</span></h2>${lineage}${briefHtml||`<div class="empty">No creative brief stored for this run.</div>`}</section>` : ""}
+    <section class="block"><h2>Winner ads <span class="count">${ads.length}</span></h2>
+      ${adsErr || (ads.length ? `<div class="adgrid">${ads.map(a=>`
+        <div class="adcard">
+          ${img(a)?`<img src="${esc(img(a))}" alt="" loading="lazy" onerror="this.remove()">`:""}
+          <div class="body">
+            <div class="top" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              <span class="pill platform">${esc(a.platform||"meta")}</span>
+              ${a.source?`<span class="chip">${esc(String(a.source).replace(/_/g," "))}</span>`:""}
+              ${a.days_running!=null?`<span class="longevity">${esc(a.days_running)}d running</span>`:""}
+            </div>
+            ${a.hook?`<div class="hook">${esc(a.hook)}</div>`:""}
+            ${a.body?`<div class="bodytext">${esc(a.body)}</div>`:""}
+            <div class="foot">
+              ${a.offer_inferred?`<span class="chip">Offer: ${esc(a.offer_inferred)}${a.price_point_inferred?` · ${esc(a.price_point_inferred)}`:""}</span>`:""}
+              ${a.copy_formula?`<span class="chip">${esc(a.copy_formula)}</span>`:""}
+              ${a.performance_score!=null?`<span class="chip">score <b>${Number(a.performance_score).toFixed(2)}</b> (inferred)</span>`:""}
+              ${a.ad_library_url?`<a href="${esc(a.ad_library_url)}" target="_blank" rel="noopener">Ad Library ↗</a>`:""}
+            </div>
+          </div>
+        </div>`).join("")}</div>`
+      : `<div class="empty"><div class="big">No ad records yet</div>Winner ads (6+ weeks running) and swipe-file entries appear here after the next Ad Strategist run.</div>`)}
+    </section>`;
+}
+function pickAdsRun(v){ state.adsRun=v; renderAds(); }
+
+/* ================= LOW-TICKET ================= */
+async function renderFunnel(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="page-head"><div><h1 class="page">Low-Ticket Content Agent</h1>
+    <div class="page-sub">Agent 3 · The production end — a four-asset funnel built from the latest creative brief.</div></div>
+    <div id="fPicker"></div></div><div id="fBody"><div class="loading">Loading…</div></div>`;
+  const runs = await getRuns("low_ticket_content");
+  if(!state.funnelRun && runs.length) state.funnelRun = runs[0].run_id;
+  document.getElementById("fPicker").innerHTML = runPicker(runs, state.funnelRun, "pickFunnelRun");
+  const body = document.getElementById("fBody");
+  if(!runs.length){
+    body.innerHTML = `<div class="empty"><div class="big">No funnel packages yet</div>
+      When Agent 3 runs, the ad (with hook variations and the branded image), pre-qual survey, landing page and booking page appear here as one package.</div>`;
+    return;
+  }
+  let out=null, err="";
+  try{
+    const outs = await sb(`agent_outputs?select=*&agent=eq.low_ticket_content&run_id=eq.${encodeURIComponent(state.funnelRun)}&order=created_at.desc&limit=1`);
+    out = outs[0]||null;
+  }catch(e){ err = errNotice(e,"agent_outputs"); }
+  if(err || !out){ body.innerHTML = err || `<div class="empty">No package stored for this run.</div>`; return; }
+  const d = asObj(out.data);
+  const lineage = d.source_brief_run || d.source_brief_id
+    ? `<div class="lineage">Built from Ad Strategist brief <b>${esc(d.source_brief_run || d.source_brief_id)}</b>${d.source_intel_run?` · intel run <b>${esc(d.source_intel_run)}</b>`:""}</div>` : "";
+  const assets = Array.isArray(d.assets) && d.assets.length
+    ? d.assets
+    : [{title: out.title || "Funnel package", content_md: out.content_md || ""}];
+  const slug = s => String(s||"offer").toLowerCase().replace(/[^a-z0-9]+/g,"-").slice(0,40);
+  const adImg = d.ad_image_url || d.image_url ||
+    `${SUPABASE_URL}/storage/v1/object/public/creatives/concept-${slug(d.offer_name)}-${encodeURIComponent(state.funnelRun)}.png`;
+  if(state.funnelTab >= assets.length) state.funnelTab = 0;
+  body.innerHTML = `
+    ${lineage}
+    ${adImg?`<section class="block" id="adImgBlock"><h2>Generated ad creative</h2>
+      <div class="adcard" style="max-width:430px"><img src="${esc(adImg)}" alt="Generated ad" style="max-height:none" onerror="var b=document.getElementById('adImgBlock'); if(b) b.remove();"></div></section>`:""}
+    <div class="tabs">${assets.map((a,i)=>`<button class="${i===state.funnelTab?'active':''}" onclick="pickFunnelTab(${i})">${esc(a.title||("Asset "+(i+1)))}</button>`).join("")}</div>
+    <div class="brief">${marked.parse(assets[state.funnelTab].content_md || assets[state.funnelTab].content || "_Empty asset._")}</div>
+    <div class="datestamp" style="margin-top:14px">Package created ${fmtDateTime(out.created_at)} · requires human approval before launch</div>`;
+}
+function pickFunnelRun(v){ state.funnelRun=v; state.funnelTab=0; renderFunnel(); }
+function pickFunnelTab(i){ state.funnelTab=i; renderFunnel(); }
+
+/* ================= ENGINE 1 ================= */
+async function e1Data(){
+  let leads=[], outs=[], err=null;
+  try{ leads = await sb("e1_leads?select=*&order=updated_at.desc&limit=300"); }catch(e){ err=e; }
+  try{ outs = await sb(`agent_outputs?select=run_id,agent,title,created_at,data&${E1_AGENT_FILTER}&order=created_at.desc&limit=1000`); }catch(e){ if(!err) err=e; }
+  return {leads, outs, err};
+}
+function e1StageState(lead, outs, stage){
+  const out = outs.find(o=>o.run_id===(lead?lead.email:null) && o.agent===stage.agent);
+  const url = (lead && lead[stage.urlCol]) || (out && (asObj(out.data).pdfUrl || asObj(out.data).pdf_url)) || null;
+  return {done: !!(out || url), out, url};
+}
+function fitPill(f){
+  if(!f) return "";
+  const cls = /strong/i.test(f)?"approved":/weak|disq/i.test(f)?"rejected":"pending";
+  return `<span class="pill ${cls}">${esc(f)}</span>`;
+}
+
+async function renderE1Overview(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="page-head"><div><h1 class="page">Engine 1 — Overview</h1>
+    <div class="page-sub">Client Service &amp; Delivery · lead-to-proposal pipeline. One run per prospect, five agents deep.</div></div></div>
+    <div class="grid cols3" id="e1Cards"><div class="loading">Loading pipeline…</div></div>
+    <div id="e1OvFoot"></div>`;
+  const {leads, outs, err} = await e1Data();
+  const cards = E1_STAGES.map(s=>{
+    const latest = outs.find(o=>o.agent===s.agent);
+    const doneCount = new Set(outs.filter(o=>o.agent===s.agent).map(o=>o.run_id)).size ||
+                      leads.filter(l=>l[s.urlCol]).length;
+    const when = latest?.created_at;
+    const f = freshness(when);
+    return `<div class="card">
+      <div class="agent-kind">${esc(s.kind)}</div><h3>${esc(s.label)}</h3>
+      <div class="datestamp"><span class="dot ${f}"></span>
+        ${when ? `Last output ${fmtDateTime(when)}` : "No outputs recorded yet"}</div>
+      <div class="statline"><span class="chip">leads processed: <b>${doneCount}</b></span></div>
+      ${latest ? `<div class="datestamp">Latest: ${esc(latest.title || latest.run_id)}</div>` : ""}
+      <div class="go"><button onclick="setView('e1pipeline')">Open pipeline</button></div>
+    </div>`;
+  }).join("");
+  document.getElementById("e1Cards").innerHTML = cards;
+  const strong = leads.filter(l=>/strong/i.test(l.fit_rating||"")).length;
+  const foot = document.getElementById("e1OvFoot");
+  if(err && !leads.length && !outs.length){
+    foot.innerHTML = errNotice(err, "e1_leads") +
+      `<div class="empty"><div class="big">No pipeline data yet</div>
+       Once the updated workflows run with the Supabase save nodes, every prospect appears here automatically — newest first, with all five stage outputs linked.</div>`;
+  } else {
+    foot.innerHTML = `<section class="block" style="margin-top:26px"><h2>Pipeline at a glance
+      <span class="count">${leads.length} lead${leads.length===1?"":"s"}</span></h2>
+      <div class="statline">
+        <span class="chip">strong fit (pre-call): <b>${strong}</b></span>
+        <span class="chip">completed full pipeline: <b>${leads.filter(l=>E1_STAGES.every(s=>e1StageState(l,outs,s).done)).length}</b></span>
+      </div></section>`;
+  }
+}
+
+async function renderE1Pipeline(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="page-head"><div><h1 class="page">Lead Pipeline</h1>
+    <div class="page-sub">Every prospect that entered Engine 1, with stage-by-stage completion and links to each deliverable.</div></div>
+    <div class="controls"><input type="search" placeholder="Search name, company, email…" value="${esc(state.e1Q)}" oninput="e1Search(this.value)"></div></div>
+    <div id="e1Body"><div class="loading">Loading leads…</div></div>`;
+  const {leads, outs, err} = await e1Data();
+  window._e1 = {leads, outs};
+  const body = document.getElementById("e1Body");
+  if(err && !leads.length && !outs.length){ body.innerHTML = errNotice(err, "e1_leads"); return; }
+  if(!leads.length && !outs.length){
+    body.innerHTML = `<div class="empty"><div class="big">No leads yet</div>
+      New webhook submissions appear here after the first run with the dashboard save nodes in place.</div>`;
+    return;
+  }
+  /* leads may lag outputs if e1_leads insert failed — synthesize rows from outputs */
+  const known = new Set(leads.map(l=>l.email));
+  outs.forEach(o=>{ if(!known.has(o.run_id)){ known.add(o.run_id);
+    leads.push({email:o.run_id, prospect_name:asObj(o.data).prospectName||"", company_name:asObj(o.data).companyName||"", updated_at:o.created_at}); }});
+  paintE1Rows();
+}
+function e1Search(v){ state.e1Q=v; paintE1Rows(); }
+function paintE1Rows(){
+  const body = document.getElementById("e1Body"); if(!body || !window._e1) return;
+  const {leads, outs} = window._e1;
+  const q = state.e1Q.toLowerCase();
+  const rows = leads.filter(l=>!q || (String(l.prospect_name||"")+String(l.company_name||"")+String(l.email||"")).toLowerCase().includes(q));
+  body.innerHTML = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
+      <th>Prospect</th><th>Company</th><th>Stages</th><th>Fit</th><th>Updated</th><th></th>
+    </tr></thead><tbody>
+    ${rows.length ? rows.map(l=>{
+      const chips = E1_STAGES.map(s=>{
+        const st = e1StageState(l, outs, s);
+        return st.url
+          ? `<a class="chip" style="text-decoration:none" href="${esc(st.url)}" target="_blank" rel="noopener" title="${esc(s.label)} — open PDF">${esc(s.short)} ✓</a>`
+          : `<span class="chip" style="opacity:${st.done?1:.45}">${esc(s.short)}${st.done?" ✓":""}</span>`;
+      }).join(" ");
+      return `<tr>
+        <td><b>${esc(l.prospect_name||"—")}</b><div style="color:var(--muted);font-size:.78rem">${esc(l.email)}</div></td>
+        <td>${esc(l.company_name||"—")}${l.firm_type?`<div style="color:var(--muted);font-size:.78rem">${esc(l.firm_type)}</div>`:""}</td>
+        <td><div class="statline" style="margin:0">${chips}</div></td>
+        <td>${fitPill(l.fit_rating)}</td>
+        <td>${fmtDate(l.updated_at||l.created_at)}</td>
+        <td><button class="chip" style="cursor:pointer" onclick="openE1Lead('${esc(l.email)}')">Open →</button></td>
+      </tr>`;
+    }).join("") : `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:22px">No leads match this search.</td></tr>`}
+    </tbody></table></div>`;
+}
+function openE1Lead(email){ state.e1Lead=email; state.view="e1lead"; render(); }
+
+async function renderE1Lead(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="loading">Loading lead…</div>`;
+  const {leads, outs, err} = await e1Data();
+  const lead = leads.find(l=>l.email===state.e1Lead) || {email:state.e1Lead};
+  const lo = outs.filter(o=>o.run_id===state.e1Lead);
+  const name = lead.prospect_name || asObj(lo[0]?.data).prospectName || lead.email;
+  main.innerHTML = `<div class="page-head"><div>
+      <div class="lineage" style="cursor:pointer" onclick="setView('e1pipeline')">← Back to pipeline</div>
+      <h1 class="page">${esc(name)}</h1>
+      <div class="page-sub">${esc(lead.company_name||"")}${lead.prospect_title?` · ${esc(lead.prospect_title)}`:""} · ${esc(lead.email)}</div></div>
+    <div class="statline">
+      ${lead.firm_type?`<span class="chip">${esc(lead.firm_type)}</span>`:""}
+      ${lead.firm_size?`<span class="chip">${esc(lead.firm_size)}</span>`:""}
+      ${lead.lead_source?`<span class="chip">via ${esc(lead.lead_source)}</span>`:""}
+      ${lead.ai_readiness?`<span class="chip">AI readiness: <b>${esc(lead.ai_readiness)}</b></span>`:""}
+      ${fitPill(lead.fit_rating)}
+    </div></div>
+    ${err?errNotice(err,"agent_outputs"):""}
+    ${E1_STAGES.map((s,i)=>{
+      const st = e1StageState(lead, outs, s);
+      const d = asObj(st.out?.data);
+      const docLink = d.documentId ? `https://docs.google.com/document/d/${esc(d.documentId)}/edit` : null;
+      return `<section class="block">
+        <h2>${i+1}. ${esc(s.label)} ${st.done?`<span class="count">${st.out?fmtDate(st.out.created_at):"done"}</span>`:`<span class="chip" style="opacity:.6">not run yet</span>`}</h2>
+        ${st.done ? `<div class="card">
+          ${st.out?.title?`<div style="font-weight:650;color:var(--navy);margin-bottom:6px">${esc(st.out.title)}</div>`:""}
+          <div class="statline" style="margin-top:4px">
+            ${st.url?`<a class="chip" style="text-decoration:none" href="${esc(st.url)}" target="_blank" rel="noopener">Open PDF ↗</a>`:""}
+            ${docLink?`<a class="chip" style="text-decoration:none" href="${docLink}" target="_blank" rel="noopener">Open Google Doc ↗</a>`:""}
+            ${d.status?`<span class="chip">status: <b>${esc(d.status)}</b></span>`:""}
+            ${d.callDate?`<span class="chip">call: ${esc(d.callDate)}</span>`:""}
+          </div>
+        </div>` : `<div class="empty" style="padding:22px">This stage hasn't produced output for this lead yet.</div>`}
+      </section>`;
+    }).join("")}`;
+}
+
+
+/* ================= AD TESTING (A/B) ================= */
+async function renderOvTesting(){
+  const el = document.getElementById("ovTesting"); if(!el) return;
+  let rows=[], live=true;
+  try{ rows = await sb("test_results?select=*&order=created_at.desc&limit=200"); }catch(e){}
+  if(!rows.length){ rows = TESTING_SAMPLE; live=false; }
+  const enr = rows.map(r=>{
+    const cpqb = (r.spend!=null && Number(r.qualified_bookings)) ? r.spend/r.qualified_bookings : null;
+    return {...r, cpqb};
+  });
+  const totals = enr.reduce((t,r)=>({spend:t.spend+(Number(r.spend)||0), qb:t.qb+(Number(r.qualified_bookings)||0), compl:t.compl+(Number(r.completions)||0)}), {spend:0,qb:0,compl:0});
+  const winner = [...enr].filter(r=>r.cpqb!=null).sort((a,b)=>a.cpqb-b.cpqb)[0]||null;
+  const active = enr.filter(r=>r.status==="active").length;
+  el.innerHTML = `<section class="block"><h2>Ad testing ${live?"":'<span class="pill medium">sample data</span>'}
+      <span class="count">${enr.length} variant${enr.length===1?"":"s"}</span></h2>
+    <div class="grid cols3">
+      <div class="card"><div class="agent-kind">Live experiment</div><h3>${active} active variant${active===1?"":"s"}</h3>
+        <div class="statline"><span class="chip">total spend: <b>${tMoney(totals.spend)}</b></span>
+        <span class="chip">completions: <b>${totals.compl}</b></span>
+        <span class="chip">qualified bookings: <b>${totals.qb}</b></span></div></div>
+      <div class="card"><div class="agent-kind">Blended economics</div><h3>${totals.qb?tMoney(totals.spend/totals.qb):"—"} / qualified booking</h3>
+        <div class="statline"><span class="chip">CPL: <b>${totals.compl?tMoney(totals.spend/totals.compl):"—"}</b></span></div></div>
+      <div class="card"><div class="agent-kind">Current leader</div><h3>${winner?("Variant "+esc(winner.variant)):"—"}</h3>
+        ${winner?`<div class="datestamp">${tMoney(winner.cpqb)} per qualified booking</div>
+        <div class="datestamp" style="font-size:.8rem">"${esc(String(winner.hook||"").slice(0,80))}${String(winner.hook||"").length>80?"…":""}"</div>`:`<div class="datestamp">No variant with bookings yet</div>`}
+        <div class="go"><button onclick="setView('testing')">Open Ad Testing</button></div></div>
+    </div></section>`;
+}
+
+const TESTING_SAMPLE = [
+  {variant:"A", hook:"If your firm is still running client ops on spreadsheets, you're not facing a technology problem.", phase:1, status:"active",  spend:412, impressions:38200, clicks:684, completions:59, qualified_bookings:19, shows:14, start_date:"2026-07-24"},
+  {variant:"B", hook:"Stop paying the manual tax. Every week of repetitive admin is revenue capacity you never recover.", phase:1, status:"active",  spend:398, impressions:41500, clicks:512, completions:38, qualified_bookings:9,  shows:6,  start_date:"2026-07-24"},
+  {variant:"C", hook:"The AI tools exist. The compliance frameworks exist. So why are most $1M–$10M firms still stuck?", phase:1, status:"paused",  spend:187, impressions:19800, clicks:198, completions:11, qualified_bookings:2,  shows:1,  start_date:"2026-07-24"}
+];
+function tNum(v){ return v==null||isNaN(v) ? null : Number(v); }
+function tPct(a,b){ a=tNum(a); b=tNum(b); return (a==null||!b) ? null : (a/b*100); }
+function tMoney(v){ return v==null ? "—" : "$"+Number(v).toLocaleString(undefined,{maximumFractionDigits:0}); }
+function tShow(v,suffix){ return v==null ? "—" : Number(v).toFixed(v<10?2:1)+(suffix||""); }
+function tBar(v,max,label){
+  if(v==null||!max) return "—";
+  const w = Math.max(3, Math.round(v/max*100));
+  return `<div style="min-width:120px"><div style="font-size:.8rem;font-weight:650">${label}</div>
+    <div style="height:7px;border-radius:99px;background:var(--cream);margin-top:3px"><div style="height:7px;border-radius:99px;width:${w}%;background:linear-gradient(90deg,var(--gold),#a8853a)"></div></div></div>`;
+}
+async function renderTesting(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="page-head"><div><h1 class="page">Ad Testing</h1>
+    <div class="page-sub">A/B performance for Low-Ticket funnel ads — spend, qualification, and booking economics per variant.</div></div></div>
+    <div id="tBody"><div class="loading">Loading test results…</div></div>`;
+  let rows=[], live=true, err=null;
+  try{ rows = await sb("test_results?select=*&order=created_at.desc&limit=200"); }catch(e){ err=e; }
+  if(!rows.length){ rows = TESTING_SAMPLE; live=false; }
+  rows = rows.map(r=>{
+    const ctr = tPct(r.clicks, r.impressions);
+    const complRate = tPct(r.completions, r.clicks);
+    const bookRate = tPct(r.qualified_bookings, r.completions);
+    const showRate = tPct(r.shows, r.qualified_bookings);
+    const cpl = (tNum(r.spend)!=null && tNum(r.completions)) ? r.spend/r.completions : null;
+    const cpqb = (tNum(r.spend)!=null && tNum(r.qualified_bookings)) ? r.spend/r.qualified_bookings : null;
+    return {...r, ctr, complRate, bookRate, showRate, cpl, cpqb};
+  });
+  const ranked = [...rows].filter(r=>r.cpqb!=null).sort((a,b)=>a.cpqb-b.cpqb);
+  const winner = ranked[0]||null;
+  const maxCtr = Math.max(...rows.map(r=>r.ctr||0), 0.001);
+  const totals = rows.reduce((t,r)=>({spend:t.spend+(tNum(r.spend)||0), qb:t.qb+(tNum(r.qualified_bookings)||0), compl:t.compl+(tNum(r.completions)||0)}), {spend:0,qb:0,compl:0});
+  document.getElementById("tBody").innerHTML = `
+    ${live ? "" : `<div class="notice"><b>Sample data.</b> No rows in <code>test_results</code> yet — this is a placeholder layout with fake numbers so you can see the format. Once real ad metrics are written to the table (manually, via CSV import, or a Meta-metrics workflow), this page switches to live data automatically.</div>`}
+    ${err && live===false && err.status!==404 ? "" : ""}
+    <div class="grid cols3" style="margin-bottom:26px">
+      <div class="card"><div class="agent-kind">Across all variants</div><h3>${tMoney(totals.spend)} spent</h3>
+        <div class="statline"><span class="chip">scorecard completions: <b>${totals.compl}</b></span>
+        <span class="chip">qualified bookings: <b>${totals.qb}</b></span></div></div>
+      <div class="card"><div class="agent-kind">Blended economics</div><h3>${totals.qb?tMoney(totals.spend/totals.qb):"—"} / qualified booking</h3>
+        <div class="statline"><span class="chip">CPL: <b>${totals.compl?tMoney(totals.spend/totals.compl):"—"}</b></span></div></div>
+      <div class="card"><div class="agent-kind">Current leader</div><h3>${winner?("Variant "+esc(winner.variant)):"—"}</h3>
+        ${winner?`<div class="datestamp">${tMoney(winner.cpqb)} per qualified booking · booking rate ${tShow(winner.bookRate,"%")}</div>
+        <div class="datestamp" style="font-size:.8rem">"${esc(String(winner.hook||"").slice(0,90))}${String(winner.hook||"").length>90?"…":""}"</div>`:`<div class="datestamp">Needs at least one variant with bookings</div>`}</div>
+    </div>
+    <section class="block"><h2>Variant leaderboard <span class="count">${rows.length}</span></h2>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr>
+      <th>Variant</th><th>Hook</th><th>Status</th><th>Spend</th><th>CTR</th><th>Compl. rate</th><th>Booking rate</th><th>Show rate</th><th>CPL</th><th>$ / qual. booking</th>
+    </tr></thead><tbody>
+    ${rows.map(r=>`<tr ${winner&&r===winner?'style="background:#FBF6E7"':''}>
+      <td><b>${esc(r.variant||"—")}</b>${winner&&r===winner?'<div class="pill high" style="margin-top:3px">leader</div>':""}${r.phase?`<div style="color:var(--muted);font-size:.72rem;margin-top:2px">phase ${esc(r.phase)}</div>`:""}</td>
+      <td style="max-width:280px">${esc(r.hook||"—")}</td>
+      <td><span class="pill ${r.status==="active"?"approved":r.status==="paused"?"rejected":"medium"}">${esc(r.status||"—")}</span></td>
+      <td>${tMoney(r.spend)}</td>
+      <td>${tBar(r.ctr, maxCtr, tShow(r.ctr,"%"))}</td>
+      <td>${tShow(r.complRate,"%")}</td>
+      <td>${tShow(r.bookRate,"%")} <span style="color:var(--muted);font-size:.74rem">(target 30%+)</span></td>
+      <td>${tShow(r.showRate,"%")} <span style="color:var(--muted);font-size:.74rem">(target 70%+)</span></td>
+      <td>${r.cpl!=null?tMoney(r.cpl):"—"}</td>
+      <td><b>${r.cpqb!=null?tMoney(r.cpqb):"—"}</b></td>
+    </tr>`).join("")}
+    </tbody></table></div></section>
+    <div class="notice">Optimization rule from the test plan: don't optimize CPL alone — a cheap lead that never books is worse than an expensive one that does. Rank by <b>$ / qualified booking</b>, give every variant 3–5 days before judging, and don't ramp spend past $50/day until one variant produces 5+ qualified bookings.</div>`;
+}
+
+/* ================= PASSWORD GATE ================= */
+async function sha256Hex(s){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+const PW_HASH = "34431cf74164d84fd4a1ba7a9d6cb3c4f2483fa257a956dcff4777f42a0f6648";
+async function tryUnlock(){
+  const v = document.getElementById("pwInput").value;
+  if((await sha256Hex(v)) === PW_HASH){
+    sessionStorage.setItem("aip_unlocked","1");
+    document.getElementById("lockScreen").remove();
+    render();
+  } else {
+    document.getElementById("pwError").textContent = "Incorrect password.";
+    document.getElementById("pwInput").select();
+  }
+}
+if(sessionStorage.getItem("aip_unlocked")==="1"){
+  document.getElementById("lockScreen").remove();
+  render();
+} else {
+  setTimeout(()=>document.getElementById("pwInput").focus(), 50);
+}
+</script>
+</body>
+</html>
