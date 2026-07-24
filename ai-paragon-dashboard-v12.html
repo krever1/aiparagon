@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Paragon — Intelligence Dashboard</title>
+<link rel="icon" href="https://www.aiparagonconsulting.com/logo.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/turndown/7.1.2/turndown.min.js"></script>
+<style>
+  :root{
+    --bg:#F5F2EC; --cream:#EDE9DF; --navy:#1E3A5F; --navy-deep:#162C49;
+    --gold:#C9A84C; --gold-soft:#F3EBD7; --navy-soft:#E7EDF5;
+    --ink:#22293A; --muted:#6E6A5E; --line:#E6E1D5; --white:#FFFFFF;
+    --good:#3E7A5B; --good-soft:#E2EEE7; --warn:#B07A2A; --bad:#A94438;
+    --shadow:0 1px 2px rgba(30,58,95,.05),0 10px 30px rgba(30,58,95,.08);
+    --shadow-sm:0 1px 2px rgba(30,58,95,.04),0 4px 12px rgba(30,58,95,.05);
+    --r:20px; --r-sm:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:15px}
+  body{background:var(--bg);color:var(--ink);font-family:'Inter',-apple-system,'Segoe UI',sans-serif;line-height:1.5}
+  /* ---------- layout ---------- */
+  .app{display:flex;min-height:100vh}
+  .main>*{max-width:1380px}
+  .sidebar{width:250px;flex-shrink:0;background:var(--white);border-right:1px solid var(--line);
+    padding:26px 16px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh}
+  .main{flex:1;min-width:0;padding:26px 36px 80px}
+  @media(max-width:820px){
+    .app{flex-direction:column}
+    .sidebar{width:100%;height:auto;position:static;flex-direction:row;flex-wrap:wrap;align-items:center;border-right:none;border-bottom:1px solid var(--line)}
+    .main{padding:18px 14px 60px}
+  }
+  /* ---------- brand ---------- */
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;padding:0 8px}
+  .brand img{width:34px;height:34px;object-fit:contain}
+  .brand .word{font-family:Georgia,'Times New Roman',serif;font-size:1.14rem;font-weight:700;letter-spacing:.01em;color:var(--navy)}
+  .brand .word em{font-style:normal;color:var(--gold)}
+  /* ---------- engine switcher ---------- */
+  .engines{display:flex;flex-direction:column;gap:3px;margin-bottom:14px}
+  .engines button{all:unset;box-sizing:border-box;width:100%;cursor:pointer;padding:11px 12px;border-radius:var(--r-sm);font-size:.85rem;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:8px;transition:background .15s}
+  .engines button:hover{background:var(--bg)}
+  .engines button.active{background:var(--navy);color:#fff;box-shadow:var(--shadow-sm)}
+  .engines button .tag{font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--gold)}
+  .engines button.active .tag{color:var(--gold)}
+  .engines button.soon{opacity:.55}
+  .engines button.soon .tag{color:var(--muted)}
+  /* ---------- nav ---------- */
+  .navlabel{font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:12px 10px 8px}
+  .nav button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:10px 12px;border-radius:var(--r-sm);font-size:.9rem;font-weight:500;color:var(--ink);transition:background .15s}
+  .nav .n{font-size:.66rem;font-weight:700;background:var(--gold);color:#fff;border-radius:99px;padding:1px 8px}
+  .nav button:hover{background:var(--bg)}
+  .nav button.active{background:var(--gold-soft);color:var(--navy);font-weight:650}
+  .side-foot{margin-top:auto;background:var(--bg);border-radius:14px;padding:14px;font-size:.72rem;color:var(--muted);line-height:1.5}
+  /* ---------- topbar ---------- */
+  .topbar{display:flex;align-items:center;gap:14px;margin-bottom:24px;flex-wrap:wrap}
+  .topbar .spacer{flex:1}
+  .sync{font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:7px;background:var(--white);border-radius:99px;padding:9px 16px;box-shadow:var(--shadow-sm)}
+  .sync .dot{width:8px;height:8px;border-radius:99px;background:var(--good)}
+  .userchip{display:flex;align-items:center;gap:10px;background:var(--white);border-radius:99px;
+    padding:6px 16px 6px 6px;box-shadow:var(--shadow-sm);font-size:.85rem;font-weight:600;color:var(--navy)}
+  .userchip .av{width:32px;height:32px;border-radius:99px;background:var(--gold-soft);color:var(--navy);
+    display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700}
+  /* ---------- page head as hero ---------- */
+  .page-head{background:linear-gradient(115deg,var(--navy) 0%,var(--navy-deep) 70%);border-radius:22px;
+    padding:28px 32px;color:#fff;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;
+    gap:16px;margin-bottom:26px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+  .page-head::after{content:"";position:absolute;right:-60px;top:-80px;width:280px;height:280px;
+    border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.26),transparent 65%);pointer-events:none}
+  .page-head>*{position:relative;z-index:1}
+  h1.page{font-family:Georgia,serif;font-size:1.7rem;font-weight:700;color:#fff;letter-spacing:-.01em}
+  .page-sub{color:#C7D1DF;margin-top:6px;font-size:.88rem;max-width:560px}
+  .page-head .chip{background:rgba(255,255,255,.12);color:#E8EDF4}
+  .page-head .chip b{color:var(--gold)}
+  .page-head .lineage{background:rgba(255,255,255,.12);color:#E8EDF4;box-shadow:none}
+  .page-head .lineage b{color:var(--gold)}
+  .page-head .controls label{color:#C7D1DF}
+  /* ---------- controls ---------- */
+  select,input[type=search]{font:inherit;font-size:.86rem;padding:9px 14px;border:none;border-radius:var(--r-sm);background:var(--white);color:var(--ink);box-shadow:var(--shadow-sm)}
+  select:focus,input:focus,button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .controls label{font-size:.72rem;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-right:2px}
+  /* ---------- cards ---------- */
+  .grid{display:grid;gap:20px}
+  .grid.cols3{grid-template-columns:repeat(auto-fit,minmax(255px,1fr))}
+  .card{background:var(--white);border-radius:var(--r);padding:24px;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
+  .card:hover{transform:translateY(-3px);box-shadow:0 3px 6px rgba(30,58,95,.07),0 16px 40px rgba(30,58,95,.12)}
+  .card h3{font-family:Georgia,serif;font-size:1.1rem;color:var(--navy);margin-bottom:2px}
+  .card .agent-kind{font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:4px}
+  .statline{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .chip{font-size:.71rem;background:var(--bg);padding:4px 11px;border-radius:99px;color:var(--muted)}
+  .chip b{color:var(--navy);font-weight:700}
+  .datestamp{font-size:.76rem;color:var(--muted);margin-top:10px;display:flex;gap:8px;align-items:center}
+  .dot{width:8px;height:8px;border-radius:99px;display:inline-block}
+  .dot.fresh{background:var(--good)} .dot.stale{background:var(--warn)} .dot.old{background:var(--bad)} .dot.none{background:var(--line)}
+  .card .go{margin-top:16px}
+  .go button{all:unset;cursor:pointer;font-size:.8rem;font-weight:650;color:var(--navy);background:var(--gold-soft);padding:8px 16px;border-radius:10px;transition:background .15s,color .15s}
+  .go button:hover{background:var(--gold);color:#fff}
+  /* ---------- pills ---------- */
+  .pill{font-size:.64rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:99px}
+  .pill.high{background:var(--gold-soft);color:#7A5E12}
+  .pill.medium{background:var(--cream);color:var(--muted)}
+  .pill.low{background:var(--bg);color:var(--muted)}
+  .pill.pending{background:var(--gold-soft);color:#7A5E12}
+  .pill.approved{background:var(--good-soft);color:var(--good)}
+  .pill.rejected{background:#F3E2DF;color:var(--bad)}
+  .pill.posted{background:var(--navy-soft);color:var(--navy)}
+  .pill.platform{background:var(--navy);color:#fff}
+  /* ---------- tabs ---------- */
+  .tabs{display:flex;gap:8px;margin:20px 0 18px;flex-wrap:wrap}
+  .tabs button{all:unset;cursor:pointer;padding:9px 18px;border-radius:99px;font-size:.84rem;font-weight:600;color:var(--muted);background:var(--white);box-shadow:var(--shadow-sm);transition:all .15s}
+  .tabs button:hover{color:var(--navy)}
+  .tabs button.active{background:var(--navy);color:#fff}
+  /* ---------- brief rendering ---------- */
+  .brief{background:var(--white);border-radius:var(--r);padding:32px 38px;max-width:920px;box-shadow:var(--shadow)}
+  .brief h1{font-family:Georgia,serif;font-size:1.5rem;color:var(--navy);border-bottom:2px solid var(--gold);padding-bottom:8px;margin-bottom:12px}
+  .brief h2{font-family:Georgia,serif;font-size:1.12rem;color:var(--navy);margin:26px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+  .brief h3{font-size:.98rem;color:var(--ink);margin:16px 0 6px}
+  .brief p{margin:8px 0}
+  .brief ul,.brief ol{margin:8px 0 8px 22px}
+  .brief li{margin:4px 0}
+  .brief a{color:var(--navy);text-decoration:underline;text-decoration-color:var(--gold)}
+  .brief table{border-collapse:collapse;width:100%;margin:12px 0;font-size:.86rem}
+  .brief th,.brief td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+  .brief th{background:var(--cream);font-weight:650}
+  .brief hr{border:none;border-top:1px solid var(--line);margin:20px 0}
+  .brief em{color:var(--muted)}
+  /* ---------- tables ---------- */
+  .tbl{width:100%;border-collapse:collapse;background:var(--white);font-size:.85rem}
+  .tbl th{background:var(--cream);text-align:left;padding:11px 14px;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .tbl td{padding:13px 14px;border-top:1px solid var(--line);vertical-align:top}
+  .tbl tr:hover td{background:var(--bg)}
+  .tbl a{color:var(--navy)}
+  .tbl-wrap{overflow-x:auto;border-radius:var(--r);box-shadow:var(--shadow)}
+  /* ---------- draft cards ---------- */
+  .draft{background:var(--white);border-radius:var(--r);padding:18px 20px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+  .draft .top{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+  .draft .who{font-weight:700;color:var(--navy)}
+  .draft .text{white-space:pre-wrap;font-size:.88rem;background:var(--bg);border-radius:var(--r-sm);padding:13px 15px;margin:8px 0;line-height:1.5}
+  .draft .meta{font-size:.72rem;color:var(--muted)}
+  /* ---------- ad cards ---------- */
+  .adgrid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+  .adcard{background:var(--white);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
+  .adcard:hover{transform:translateY(-3px);box-shadow:0 3px 6px rgba(30,58,95,.07),0 16px 40px rgba(30,58,95,.12)}
+  .adcard img{width:100%;max-height:230px;object-fit:cover;background:var(--cream)}
+  .adcard .body{padding:16px 18px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .adcard .hook{font-size:.9rem;font-weight:600;color:var(--ink)}
+  .adcard .bodytext{font-size:.8rem;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .adcard .foot{margin-top:auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.74rem;color:var(--muted)}
+  .longevity{font-weight:700;color:var(--good)}
+  /* ---------- notices ---------- */
+  .notice{border-left:4px solid var(--gold);background:var(--white);border-radius:var(--r-sm);padding:16px 18px;margin:14px 0;font-size:.9rem;box-shadow:var(--shadow-sm)}
+  .notice.err{border-left-color:var(--bad)}
+  .notice code{background:var(--cream);padding:1px 6px;border-radius:5px;font-size:.82rem}
+  .empty{padding:52px 20px;text-align:center;color:var(--muted);background:var(--white);border-radius:var(--r);box-shadow:var(--shadow-sm)}
+  .empty .big{font-family:Georgia,serif;font-size:1.1rem;color:var(--navy);margin-bottom:6px}
+  .loading{color:var(--muted);font-size:.9rem;padding:20px 0}
+  .lineage{font-size:.78rem;color:var(--muted);background:var(--white);border-radius:99px;padding:8px 15px;display:inline-block;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+  .lineage b{color:var(--navy)}
+  section.block{margin-bottom:38px}
+  section.block>h2{font-family:Georgia,serif;font-size:1.15rem;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  section.block>h2 .count{font-family:Inter,sans-serif;font-size:.7rem;background:var(--gold-soft);color:#7A5E12;border-radius:99px;padding:3px 10px;font-weight:700}
+
+  /* ---------- redesign: hero extras ---------- */
+  .page-head .eyebrow{font-size:.66rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+  .hero-cta{all:unset;cursor:pointer;background:var(--gold);color:var(--navy-deep);font-weight:700;font-size:.85rem;padding:12px 22px;border-radius:12px;white-space:nowrap;transition:opacity .15s}
+  .hero-cta:hover{opacity:.88}
+  /* ---------- redesign: topbar search ---------- */
+  .search{flex:1;max-width:440px;display:flex;align-items:center;gap:8px;background:var(--white);border-radius:99px;padding:3px 8px 3px 18px;box-shadow:var(--shadow-sm)}
+  .search svg{width:16px;height:16px;color:var(--muted);flex-shrink:0}
+  .search input{border:none;box-shadow:none;flex:1;padding:9px 6px;background:transparent;font:inherit;font-size:.88rem;color:var(--ink)}
+  .search input:focus{outline:none}
+  /* ---------- redesign: view pills ---------- */
+  .views{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
+  .views:empty{display:none}
+  .views button{all:unset;cursor:pointer;padding:9px 18px;border-radius:99px;font-size:.84rem;font-weight:600;color:var(--muted);background:var(--white);box-shadow:var(--shadow-sm);transition:all .15s}
+  .views button:hover{color:var(--navy)}
+  .views button.active{background:var(--navy);color:#fff}
+  /* ---------- redesign: agent cards ---------- */
+  .card.agent{display:flex;flex-direction:column;gap:12px}
+  .agent-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .agent .ic{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.25rem}
+  .ic.a1{background:var(--gold-soft)} .ic.a2{background:var(--navy-soft)} .ic.a3{background:var(--good-soft)}
+  .fresh{display:flex;align-items:center;gap:7px;font-size:.74rem;color:var(--muted);margin-top:4px}
+  .card.agent .go{margin-top:auto}
+  .card.agent .datestamp{margin-top:0}
+  /* ---------- redesign: overview two-column ---------- */
+  .cols{display:grid;grid-template-columns:1.65fr 1fr;gap:20px;align-items:start;margin-top:30px}
+  @media(max-width:1080px){.cols{grid-template-columns:1fr}}
+  .panel{background:var(--white);border-radius:var(--r);padding:24px;box-shadow:var(--shadow)}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .panel-head h2{font-family:Georgia,serif;font-size:1.12rem;color:var(--navy);display:flex;align-items:center;gap:10px}
+  .panel-head .count{font-size:.7rem;background:var(--gold-soft);color:#7A5E12;border-radius:99px;padding:3px 10px;font-weight:700;font-family:Inter,sans-serif}
+  .panel-head a{font-size:.8rem;font-weight:600;color:var(--muted);text-decoration:none;cursor:pointer}
+  .panel-head a:hover{color:var(--navy)}
+  .item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+  .item:last-child{border-bottom:none;padding-bottom:0}
+  .srcav{width:40px;height:40px;border-radius:12px;background:var(--bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;color:var(--navy)}
+  .item .txt{flex:1;min-width:0}
+  .item .txt p{font-size:.87rem;line-height:1.45}
+  .item .txt small{color:var(--muted);font-size:.74rem}
+  .brief-teaser{border-left:3px solid var(--gold);padding-left:16px;margin-bottom:10px}
+  .brief-teaser h4{font-family:Georgia,serif;font-size:.95rem;color:var(--navy);margin-bottom:4px}
+  .brief-teaser p{font-size:.83rem;color:var(--muted)}
+  .qdraft{background:var(--bg);border-radius:14px;padding:15px 16px;margin-bottom:12px}
+  .qdraft:last-child{margin-bottom:0}
+  .qdraft .top{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+  .qdraft .who{font-size:.85rem;font-weight:700;color:var(--navy)}
+  .qbody{font-size:.82rem;color:var(--ink);background:var(--white);border-radius:10px;padding:11px 13px;margin-bottom:10px;line-height:1.5;max-height:150px;overflow-y:auto}
+  .qbody::-webkit-scrollbar{width:6px}
+  .qbody::-webkit-scrollbar-thumb{background:var(--cream);border-radius:99px}
+  .qdraft .actions{display:flex;gap:8px}
+  .qmeta{font-size:.7rem;color:var(--muted);margin-top:8px}
+  /* ---------- redesign: buttons ---------- */
+  .btn{all:unset;cursor:pointer;font-size:.76rem;font-weight:700;padding:7px 14px;border-radius:9px;transition:opacity .15s}
+  .btn:hover{opacity:.85}
+  .btn.ok{background:var(--good);color:#fff}
+  .btn.no{background:var(--white);color:var(--bad);box-shadow:inset 0 0 0 1px var(--line)}
+  .btn.navy{background:var(--navy);color:#fff}
+  .btn.ghost{background:var(--white);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+
+
+  /* ---------- anchored comments ---------- */
+  .brief-wrap{display:flex;gap:18px;align-items:flex-start}
+  .brief-main{flex:1;min-width:0;position:relative}
+  .c-rail{width:290px;flex-shrink:0;position:relative;min-height:60px}
+  @media(max-width:1100px){.brief-wrap{flex-direction:column}.c-rail{width:100%;position:static}.c-card{position:static !important;margin-bottom:10px}}
+  .brief [data-cidx]{border-radius:6px;transition:background .15s;cursor:pointer}
+  .brief [data-cidx]:hover{background:#F6F0DC;box-shadow:0 0 0 6px #F6F0DC}
+  .brief [data-cidx].hl{background:#FBF2D8;box-shadow:0 0 0 6px #FBF2D8;border-right:3px solid var(--gold)}
+  .brief [data-cidx].hl-active{background:#F6E7B8;box-shadow:0 0 0 6px #F6E7B8}
+  .c-card{position:absolute;left:0;right:0;background:var(--white);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:0 4px 16px rgba(30,58,95,.08);font-size:.84rem}
+  .c-card .c-anchor{color:var(--muted);font-size:.72rem;font-style:italic;border-left:3px solid var(--gold);padding-left:8px;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .c-card .c-msg{margin-bottom:8px}
+  .c-card .c-msg .c-who{font-size:.76rem}
+  .c-card .c-msg .c-who b{color:var(--navy)}
+  .c-card .c-reply{margin-left:12px;border-left:2px solid var(--cream);padding-left:10px}
+  .c-card input{width:100%;font:inherit;font-size:.82rem;padding:7px 10px;border:1px solid var(--line);border-radius:7px;margin-top:6px}
+  .c-card .c-actions{display:flex;gap:10px;margin-top:4px}
+  .c-card .c-actions a{font-size:.76rem;color:var(--navy);cursor:pointer;font-weight:650}
+  .pencil-btn{position:absolute;top:14px;right:14px;z-index:5;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:.85rem;color:var(--navy);font-weight:650;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+  .pencil-btn:hover{background:var(--cream)}
+  .score-btn{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:650;color:var(--navy);background:var(--cream);border:1px solid var(--line);border-radius:99px;padding:2px 10px;cursor:pointer}
+  .score-btn:hover{background:#EFE5C8}
+  .editing-bar{position:sticky;bottom:12px;display:flex;gap:8px;background:var(--white);border:1px solid var(--line);border-radius:10px;padding:10px 14px;box-shadow:0 6px 24px rgba(0,0,0,.12);margin-top:12px;align-items:center;z-index:6}
+
+
+  /* ---------- brief formatting upgrades ---------- */
+  .meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;background:var(--cream);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0 18px}
+  .meta-grid .mg-label{font-size:.66rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:750;margin-bottom:2px}
+  .meta-grid .mg-value{font-size:.86rem;font-weight:600;color:var(--ink);line-height:1.35}
+  .shift-card{border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:10px;padding:12px 16px;margin:12px 0;background:var(--white)}
+  .shift-card .s-row{display:flex;gap:10px;margin:7px 0;font-size:.9rem;line-height:1.5;align-items:flex-start}
+  .shift-card .s-tag{flex-shrink:0;font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:99px;background:var(--navy);color:#fff;margin-top:2px}
+  .shift-card .s-tag.ev{background:var(--cream);color:var(--navy);border:1px solid var(--line)}
+  .shift-card .s-tag.imp{background:var(--gold);color:var(--navy)}
+  .vcard{display:flex;flex-direction:column;background:var(--white);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .vcard img{width:100%;display:block}
+  .vcard .v-info{padding:12px 14px;display:flex;flex-direction:column;flex:1}
+  .vcard .v-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .vcard .v-fb{font-size:.78rem;color:var(--muted);margin-top:6px}
+  .vcard .v-btns{display:flex;gap:8px;margin-top:auto;padding-top:12px}
+  .vcard .v-btns .btn{flex:1;justify-content:center;text-align:center}
+
+</style>
+</head>
+<body>
+<div id="lockScreen" style="position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px">
+  <img src="https://www.aiparagonconsulting.com/logo.png" alt="" style="width:52px;height:52px;object-fit:contain" onerror="this.style.display='none'">
+  <div style="font-family:Georgia,serif;font-size:1.4rem;color:var(--ink)">AI <span style="color:var(--gold)">Paragon</span> — Intelligence Dashboard</div>
+  <div style="display:flex;flex-direction:column;gap:8px;min-width:280px">
+    <input id="userInput" type="text" placeholder="Username" autocomplete="username"
+      style="font:inherit;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--white)"
+      onkeydown="if(event.key==='Enter')document.getElementById('pwInput').focus()">
+    <input id="pwInput" type="password" placeholder="Password" autocomplete="current-password"
+      style="font:inherit;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--white)"
+      onkeydown="if(event.key==='Enter')tryUnlock()">
+    <button onclick="tryUnlock()" style="font:inherit;font-weight:650;padding:10px 18px;border:none;border-radius:8px;background:var(--navy);color:#fff;cursor:pointer">Sign in</button>
+  </div>
+  <div id="pwError" style="color:var(--bad);font-size:.85rem;min-height:1.2em"></div>
+</div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="https://www.aiparagonconsulting.com/logo.png" alt="" onerror="this.style.display='none'">
+      <div class="word">AI <em>Paragon</em></div>
+    </div>
+    <div class="navlabel">Engines</div>
+    <div class="engines" id="engineSwitch"></div>
+    <div class="navlabel" id="navLabel">Engine 3 · Marketing Intelligence</div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot"><b style="display:block;color:var(--navy);font-size:.8rem;margin-bottom:2px">Internal dashboard</b>Data refreshes on page load from the shared knowledge base.</div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div class="search">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="globalSearch" type="text" placeholder="Search summaries, competitors, drafts…" onkeydown="if(event.key==='Enter')globalSearch(this.value)">
+      </div>
+      <div class="spacer"></div>
+      <div class="sync"><span class="dot"></span>Synced on page load</div>
+      <div class="userchip"><span class="av">AP</span>AI Paragon</div>
+    </div>
+    <div class="views" id="viewTabs"></div>
+    <div id="main"></div>
+  </main>
+</div>
+
+<script>
+/* ================= CONFIG ================= */
+const SUPABASE_URL = "https://lesyptuwllcgajdxzjje.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxlc3lwdHV3bGxjZ2FqZHh6amplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NDAzMDEsImV4cCI6MjA5ODQxNjMwMX0.81-nHOWy8w48weqcL8Yrvv5RGHFlfeSDAo3BZf90DSs";
+
+const ENGINES = [
+  {id:"e1", name:"Engine 1", tag:"Client Delivery", soon:false},
+  {id:"e2", name:"Engine 2", tag:"Coming soon", soon:true},
+  {id:"e3", name:"Engine 3", tag:"Marketing", soon:false},
+];
+const E1_VIEWS = [
+  {id:"e1overview", name:"Overview"},
+  {id:"e1pipeline", name:"Lead Pipeline"},
+];
+/* Engine 1 pipeline stages, in order. urlCol maps to e1_leads columns. */
+const E1_STAGES = [
+  {agent:"lead_research",    label:"Lead Research",              short:"Research",   urlCol:"lead_research_url", kind:"Agent 1 · Prospect intelligence"},
+  {agent:"interview_script", label:"Interview Script",           short:"Interview",  urlCol:"interview_url",     kind:"Agent 2 · Prequal call guide"},
+  {agent:"anonymizer",       label:"Assessment + Anonymizer",    short:"Assessment", urlCol:"assessment_url",    kind:"Agent 3 · Anonymized synthesis"},
+  {agent:"discovery_call",   label:"Discovery Call Framework",   short:"Discovery",  urlCol:"discovery_url",     kind:"Agent 4 · Discovery framework"},
+  {agent:"growth_plan",      label:"Growth Plan Proposal",       short:"Growth Plan",urlCol:"growth_plan_url",   kind:"Agent 5 · Proposal & deck"},
+];
+const E1_AGENT_FILTER = "agent=in.(" + E1_STAGES.map(s=>s.agent).join(",") + ")";
+const E3_VIEWS = [
+  {id:"overview", name:"Overview"},
+  {id:"intel", name:"Intel Tracker"},
+  {id:"ads", name:"Ad Strategist"},
+  {id:"funnel", name:"Low-Ticket Agent"},
+  {id:"testing", name:"Ad Testing"},
+];
+const AGENTS = {
+  intel_tracker:{label:"Intel Tracker", kind:"Agent 1 · Organic intelligence", view:"intel"},
+  ad_strategist:{label:"Ad Strategist", kind:"Agent 2 · Paid-ad intelligence", view:"ads"},
+  low_ticket_content:{label:"Low-Ticket Content Agent", kind:"Agent 3 · Funnel production", view:"funnel"},
+};
+
+let state = {engine:"e3", view:"overview", intelRun:null, adsRun:null, funnelRun:null,
+             filters:{platform:"", type:"", acv:"", q:""}, funnelTab:0,
+             e1Lead:null, e1Q:""};
+const cache = {};
+
+function asObj(v){ if(typeof v === "string"){ try{ return JSON.parse(v); }catch(e){ return {}; } } return (v && typeof v === "object") ? v : {}; }
+
+async function sbPatch(path, body){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method: "PATCH",
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation"
+    },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok){
+    const t = await res.text();
+    const err = new Error(`${res.status}`); err.body = t; err.status = res.status; throw err;
+  }
+  return res.json();
+}
+
+async function setDraftStatus(id, status, btn){
+  const card = btn.closest(".draft");
+  card.querySelectorAll("button").forEach(b=>b.disabled=true);
+  try{
+    const rows = await sbPatch(`engagement_drafts?id=eq.${encodeURIComponent(id)}`, { status });
+    if(!rows.length) throw Object.assign(new Error("0 rows updated"), {status: 403, body: "row-level security"});
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("engagement_drafts")) delete cache[k]; });
+    renderIntel();
+  }catch(e){
+    card.querySelectorAll("button").forEach(b=>b.disabled=false);
+    const denied = e.status===401 || e.status===403 || (e.body||"").includes("row-level security") || (e.body||"").includes("permission");
+    showAlert(denied
+      ? "Supabase is blocking the update. Run the engagement_drafts update policy from the setup SQL."
+      : "Update failed: " + (e.message || e), "Update failed");
+  }
+}
+
+
+async function sbPost(path, body){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json", Prefer: "return=representation" },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok){ const t = await res.text(); const err = new Error(`${res.status}`); err.body=t; err.status=res.status; throw err; }
+  return res.json();
+}
+function whoAmI(){ return sessionStorage.getItem("aip_user") || "Team"; }
+
+function showAlert(msg, title){
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "position:fixed;inset:0;z-index:998;background:rgba(30,40,60,.45);display:flex;align-items:center;justify-content:center;padding:20px";
+  wrap.innerHTML = `<div style="background:var(--white);border-radius:14px;max-width:460px;width:100%;padding:22px 24px;box-shadow:0 18px 60px rgba(0,0,0,.25)">
+    <div style="font-family:Georgia,serif;font-size:1.1rem;color:var(--ink);margin-bottom:8px">${title||"Notice"}</div>
+    <div style="font-size:.9rem;white-space:pre-wrap;color:var(--ink)">${msg}</div>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn navy" id="alertOk">OK</button></div></div>`;
+  document.body.appendChild(wrap);
+  const close = ()=>wrap.remove();
+  wrap.querySelector("#alertOk").onclick = close;
+  wrap.onclick = e=>{ if(e.target===wrap) close(); };
+}
+function openScoreModal(title, current, onSave){
+  const cur = current!=null ? Number(current) : 0.5;
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "position:fixed;inset:0;z-index:998;background:rgba(30,40,60,.45);display:flex;align-items:center;justify-content:center;padding:20px";
+  wrap.innerHTML = `<div style="background:var(--white);border-radius:14px;max-width:420px;width:100%;padding:24px 26px;box-shadow:0 18px 60px rgba(0,0,0,.25)">
+    <div style="font-family:Georgia,serif;font-size:1.15rem;color:var(--ink);margin-bottom:4px">${title}</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:14px">This override is saved to the knowledge base and logged as feedback for the agents.</div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <input id="scoreRange" type="range" min="0" max="1" step="0.01" value="${cur.toFixed(2)}" style="flex:1;accent-color:var(--gold)">
+      <input id="scoreNum" type="number" min="0" max="1" step="0.01" value="${cur.toFixed(2)}" style="width:84px;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;text-align:center">
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-top:4px"><span>0 · irrelevant</span><span>1 · top signal</span></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+      <button class="btn ghost" id="scoreCancel">Cancel</button>
+      <button class="btn navy" id="scoreSave">Save score</button>
+    </div></div>`;
+  document.body.appendChild(wrap);
+  const range = wrap.querySelector("#scoreRange"), num = wrap.querySelector("#scoreNum");
+  range.oninput = ()=>{ num.value = Number(range.value).toFixed(2); };
+  num.oninput = ()=>{ const v = Math.max(0, Math.min(1, Number(num.value)||0)); range.value = v; };
+  const close = ()=>wrap.remove();
+  wrap.querySelector("#scoreCancel").onclick = close;
+  wrap.onclick = e=>{ if(e.target===wrap) close(); };
+  wrap.querySelector("#scoreSave").onclick = async ()=>{
+    const v = Number(num.value);
+    if(isNaN(v) || v<0 || v>1){ num.style.borderColor = "var(--bad)"; return; }
+    wrap.querySelector("#scoreSave").disabled = true;
+    try{ await onSave(Number(v.toFixed(2))); close(); }
+    catch(e){ wrap.querySelector("#scoreSave").disabled = false; showAlert(String(e.body||e.message||e), "Save failed"); }
+  };
+}
+
+function openModal(title, placeholder, onSave){
+  const wrap = document.createElement("div");
+  wrap.id = "aipModal";
+  wrap.style.cssText = "position:fixed;inset:0;z-index:998;background:rgba(30,40,60,.45);display:flex;align-items:center;justify-content:center;padding:20px";
+  wrap.innerHTML = `<div style="background:var(--white);border-radius:14px;max-width:560px;width:100%;padding:24px 26px;box-shadow:0 18px 60px rgba(0,0,0,.25)">
+    <div style="font-family:Georgia,serif;font-size:1.15rem;color:var(--ink);margin-bottom:10px">${title}</div>
+    <textarea id="aipModalText" placeholder="${placeholder}" style="width:100%;min-height:120px;font:inherit;font-size:.9rem;padding:10px 12px;border:1px solid var(--line);border-radius:8px;resize:vertical"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button id="aipModalCancel" class="btn ghost">Cancel</button>
+      <button id="aipModalSave" class="btn navy">Save</button>
+    </div></div>`;
+  document.body.appendChild(wrap);
+  document.getElementById("aipModalText").focus();
+  const close = ()=>wrap.remove();
+  document.getElementById("aipModalCancel").onclick = close;
+  wrap.onclick = e=>{ if(e.target===wrap) close(); };
+  document.getElementById("aipModalSave").onclick = async ()=>{
+    const v = document.getElementById("aipModalText").value.trim();
+    document.getElementById("aipModalSave").disabled = true;
+    try{ await onSave(v); close(); }
+    catch(e){ document.getElementById("aipModalSave").disabled = false; showAlert(String(e.body||e.message||e), "Save failed"); }
+  };
+}
+async function saveFeedback(rec){
+  try{ await sbPost("agent_feedback", Object.assign({ author: whoAmI() }, rec)); }
+  catch(e){
+    if(e.status===404 || e.status===401 || e.status===403 || (e.body||"").includes("row-level")){
+      showAlert("The agent_feedback table/policy isn't set up yet — run the setup SQL, then retry.", "Feedback not saved");
+    }
+    throw e;
+  }
+}
+async function editScore(kind, table, id, current, chipEl){
+  openScoreModal(`Set ${kind} score`, current, async (num)=>{
+    const col = table==="winner_creatives" ? "performance_score" : "engagement_score";
+    const rows = await sbPatch(`${table}?id=eq.${encodeURIComponent(id)}`, { [col]: num, score_overridden: true });
+    if(!rows.length) throw Object.assign(new Error("Supabase is blocking score updates — run the score-override policies from the setup SQL."), {status:403});
+    await saveFeedback({ agent: table==="winner_creatives"?"ad_strategist":"intel_tracker", target_type: kind+"_score_override",
+      target_id: String(id), action: "score_override", feedback: `Score manually set to ${num} (was ${current!=null?Number(current).toFixed(2):"n/a"})` }).catch(()=>{});
+    Object.keys(cache).forEach(k=>delete cache[k]);
+    if(state.view==="ads") renderAds(); else renderIntel();
+  });
+}
+function rejectWithFeedback(id, btn, agent, targetType, contextLabel){
+  openModal(`Reject — why?`, `What's wrong with this ${contextLabel}? (tone, angle, accuracy, not our voice…) This is saved and used to steer future outputs. Leave empty to reject without feedback.`, async (text)=>{
+    if(text) await saveFeedback({ agent, target_type: targetType, target_id: String(id), action: "rejected", feedback: text });
+    await setDraftStatus(id, "rejected", btn);
+  });
+}
+/* ---- comments ---- */
+async function commentsBlock(targetKey, elId){
+  let comments=[];
+  try{ comments = await sb(`dashboard_comments?select=*&target_key=eq.${encodeURIComponent(targetKey)}&order=created_at.asc&limit=100`); }
+  catch(e){ return `<div class="notice">Comments need the <code>dashboard_comments</code> table — run the setup SQL.</div>`; }
+  return `<div id="${elId}" style="margin-top:14px">
+    <div style="font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:8px">Comments (${comments.length})</div>
+    ${comments.map(c=>`<div style="background:var(--white);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:8px">
+      <div style="font-size:.78rem"><b style="color:var(--navy)">${esc(c.author||"Team")}</b> <span style="color:var(--muted)">· ${fmtDateTime(c.created_at)}</span></div>
+      <div style="font-size:.88rem;margin-top:3px;white-space:pre-wrap">${esc(c.body||"")}</div></div>`).join("")}
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <input id="${elId}_in" type="text" placeholder="Add a comment…" style="flex:1;font:inherit;font-size:.88rem;padding:9px 12px;border:1px solid var(--line);border-radius:8px"
+        onkeydown="if(event.key==='Enter')addComment('${esc(targetKey)}','${elId}')">
+      <button class="btn navy" onclick="addComment('${esc(targetKey)}','${elId}')">Comment</button>
+    </div></div>`;
+}
+async function addComment(targetKey, elId){
+  const inp = document.getElementById(elId+"_in");
+  const body = (inp.value||"").trim(); if(!body) return;
+  try{
+    await sbPost("dashboard_comments", { target_key: targetKey, author: whoAmI(), body });
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("dashboard_comments")) delete cache[k]; });
+    const html = await commentsBlock(targetKey, elId);
+    document.getElementById(elId).outerHTML = html;
+  }catch(e){ showAlert(String(e.body||e.message), "Comment failed — is the dashboard_comments table + policy set up?"); }
+}
+/* ---- editable brief ---- */
+function editBrief(outputId, btn){
+  const briefEl = document.querySelector("#briefBox .brief");
+  if(!briefEl) return;
+  window._briefEditing = true;
+  briefEl.contentEditable = "true";
+  briefEl.style.outline = "2px solid var(--gold)";
+  briefEl.style.outlineOffset = "8px";
+  briefEl.focus();
+  if(btn) btn.style.display = "none";
+  const bar = document.createElement("div");
+  bar.className = "editing-bar"; bar.id = "briefEditBar";
+  bar.innerHTML = `<span style="font-size:.82rem;color:var(--muted)">Editing — change the text directly, formatting is preserved.</span>
+    <span style="flex:1"></span>
+    <button class="btn ghost" onclick="window._briefEditing=false;renderIntel()">Cancel</button>
+    <button class="btn navy" onclick="saveBrief('${esc(outputId)}')">Save changes</button>`;
+  document.getElementById("briefBox").appendChild(bar);
+}
+async function saveBrief(outputId){
+  const briefEl = document.querySelector("#briefBox .brief");
+  if(!briefEl) return;
+  const clone = briefEl.cloneNode(true);
+  clone.querySelectorAll(".pill").forEach(p=>p.replaceWith(document.createTextNode(p.textContent)));
+  let md;
+  try{
+    const td = new TurndownService({ headingStyle: "atx", hr: "---", bulletListMarker: "-" });
+    td.keep(["table","thead","tbody","tr","th","td"]);
+    md = td.turndown(clone.innerHTML);
+  }catch(e){ md = clone.innerText; }
+  try{
+    const rows = await sbPatch(`agent_outputs?id=eq.${encodeURIComponent(outputId)}`, { content_md: md, edited_by_human: true });
+    if(!rows.length) throw Object.assign(new Error("0 rows"), {status:403, body:"row-level security"});
+    await saveFeedback({ agent:"intel_tracker", target_type:"brief_edit", target_id: String(outputId), action:"edited", feedback:"Brief manually edited on dashboard" }).catch(()=>{});
+    window._briefEditing = false;
+    Object.keys(cache).forEach(k=>delete cache[k]);
+    renderIntel();
+  }catch(e){
+    showAlert((e.status===403||e.status===401||(e.body||"").includes("row-level"))
+      ? "Supabase is blocking brief edits — run the agent_outputs update policy from the setup SQL."
+      : "Save failed: "+(e.body||e.message), "Brief not saved");
+  }
+}
+/* ---- live-sync brief engagement table with current draft statuses ---- */
+function syncBriefQueue(drafts){
+  const brief = document.querySelector("#briefBox .brief"); if(!brief || !drafts.length) return;
+  const cells = brief.querySelectorAll("table td");
+  for(const d of drafts){
+    const snippet = String(d.draft||"").slice(0, 40).trim(); if(snippet.length < 15) continue;
+    for(const td of cells){
+      if(td.textContent.includes(snippet.slice(0, 30))){
+        const row = td.parentElement; const last = row.lastElementChild;
+        if(last){ last.innerHTML = `<span class="pill ${esc(d.status||"pending")}">${esc(d.status||"pending")}</span>`; }
+        break;
+      }
+    }
+  }
+}
+
+/* ================= DATA ================= */
+async function sb(path){
+  if(cache[path]) return cache[path];
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers:{apikey:SUPABASE_ANON_KEY, Authorization:`Bearer ${SUPABASE_ANON_KEY}`}
+  });
+  if(!res.ok){
+    const body = await res.text();
+    const err = new Error(`${res.status}`); err.body = body; err.status = res.status; throw err;
+  }
+  const data = await res.json();
+  cache[path] = data;
+  return data;
+}
+const esc = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+function fmtDate(d){ if(!d) return "—"; const dt = new Date(d); if(isNaN(dt)) return esc(d);
+  return dt.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}); }
+function fmtDateTime(d){ if(!d) return "—"; const dt = new Date(d); if(isNaN(dt)) return esc(d);
+  return dt.toLocaleDateString("en-GB",{day:"numeric",month:"short"}) + " · " + dt.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}); }
+function freshness(d){ if(!d) return "none"; const days = (Date.now()-new Date(d))/864e5;
+  return days<=1.5?"fresh":days<=4?"stale":"old"; }
+function errNotice(e, what){
+  const denied = e && (e.status===401 || e.status===403 || (e.body||"").includes("permission denied") || (e.body||"").includes("row-level security"));
+  if(denied) return `<div class="notice err"><b>Can't read ${esc(what)} yet.</b> The table is blocking anonymous reads (row-level security).
+    In Supabase run: <code>alter table ${esc(what)} enable row level security;</code> then
+    <code>create policy "read_${esc(what)}" on ${esc(what)} for select to anon using (true);</code></div>`;
+  if(e && e.status===404) return `<div class="notice"><b>${esc(what)}</b> table doesn't exist yet — it appears after the setup SQL is run.</div>`;
+  return `<div class="notice err"><b>Couldn't load ${esc(what)}.</b> ${esc(e && e.message || "")}</div>`;
+}
+
+/* ================= SHELL ================= */
+function renderShell(){
+  document.getElementById("engineSwitch").innerHTML = ENGINES.map(e=>`
+    <button class="${e.soon?'soon':''} ${state.engine===e.id?'active':''}" onclick="setEngine('${e.id}')">
+      <span>${e.name}</span><span class="tag">${e.tag}</span>
+    </button>`).join("");
+  const nav = document.getElementById("nav");
+  const label = document.getElementById("navLabel");
+  if(state.engine==="e3"){
+    label.textContent = "Engine 3 · Marketing Intelligence";
+    nav.innerHTML = E3_VIEWS.map(v=>`<button data-view-btn="${v.id}" class="${state.view===v.id?'active':''}" onclick="setView('${v.id}')"><span>${v.name}</span></button>`).join("");
+  } else if(state.engine==="e1"){
+    label.textContent = "Engine 1 · Client Service & Delivery";
+    nav.innerHTML = E1_VIEWS.map(v=>`<button class="${state.view===v.id || (v.id==='e1pipeline' && state.view==='e1lead')?'active':''}" onclick="setView('${v.id}')">${v.name}</button>`).join("");
+  } else {
+    label.textContent = ENGINES.find(e=>e.id===state.engine).name;
+    nav.innerHTML = "";
+  }
+  updateIntelBadge();
+  const vt = document.getElementById("viewTabs");
+  if(vt){
+    if(state.engine==="e3"){
+      vt.innerHTML = E3_VIEWS.map(v=>`<button class="${state.view===v.id?'active':''}" onclick="setView('${v.id}')">${v.name}</button>`).join("");
+    } else if(state.engine==="e1"){
+      vt.innerHTML = E1_VIEWS.map(v=>`<button class="${state.view===v.id || (v.id==='e1pipeline' && state.view==='e1lead')?'active':''}" onclick="setView('${v.id}')">${v.name}</button>`).join("");
+    } else vt.innerHTML = "";
+  }
+}
+async function updateIntelBadge(){
+  if(state.engine!=="e3") return;
+  try{
+    const drafts = await sb("engagement_drafts?select=id,status&order=created_at.desc&limit=200");
+    const n = drafts.filter(d=>!d.status||d.status==="pending").length;
+    const btn = document.querySelector('#nav [data-view-btn="intel"]');
+    if(!btn) return;
+    let s = btn.querySelector(".n");
+    if(n){ if(!s){ s=document.createElement("span"); s.className="n"; btn.appendChild(s); } s.textContent=n; }
+    else if(s) s.remove();
+  }catch(e){}
+}
+function globalSearch(v){
+  if(!v) return;
+  if(state.engine==="e1"){ state.e1Q = v; state.view="e1pipeline"; render(); return; }
+  state.engine="e3"; state.filters.q = v; state.view="intel"; render();
+}
+function setEngine(id){ state.engine=id; state.view = id==="e3"?"overview":id==="e1"?"e1overview":"placeholder"; render(); }
+function setView(id){ state.view=id; render(); }
+function render(){
+  renderShell();
+  const main = document.getElementById("main");
+  if(state.engine==="e1"){
+    ({e1overview:renderE1Overview, e1pipeline:renderE1Pipeline, e1lead:renderE1Lead})[state.view]();
+    return;
+  }
+  if(state.engine!=="e3"){ 
+    const e = ENGINES.find(x=>x.id===state.engine);
+    main.innerHTML = `<div class="page-head"><div><h1 class="page">${e.name}</h1>
+      <div class="page-sub">Not wired up yet</div></div></div>
+      <div class="empty"><div class="big">${e.name} lives here next</div>
+      This dashboard is built to host every engine. When ${e.name}'s agents write to the shared knowledge base, their output appears in this space with the same layout as Engine 3.</div>`;
+    return;
+  }
+  ({overview:renderOverview, intel:renderIntel, ads:renderAds, funnel:renderFunnel, testing:renderTesting})[state.view]();
+}
+
+/* ================= OVERVIEW ================= */
+async function renderOverview(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div id="ovHero"></div>
+    <div class="grid cols3" id="ovCards"><div class="loading">Loading latest runs…</div></div>
+    <div class="cols" id="ovCols"></div>`;
+  let runs=[], outputs=[], drafts=[], items=[];
+  let runErr=null;
+  try{ runs = await sb("runs?select=*&order=started_at.desc&limit=60"); }catch(e){ runErr=e; }
+  try{ outputs = await sb("agent_outputs?select=run_id,agent,output_type,title,created_at&order=created_at.desc&limit=60"); }catch(e){ if(!runErr) runErr=e; }
+  try{ drafts = await sb("engagement_drafts?select=*&order=created_at.desc&limit=30"); }catch(e){}
+  try{ items = await sb("intel_items?select=*&order=created_at.desc&limit=30"); }catch(e){}
+
+  /* hero */
+  const pending = drafts.filter(d=>!d.status || d.status==="pending");
+  const hour = new Date().getHours();
+  const greet = hour<12?"Good morning":hour<18?"Good afternoon":"Good evening";
+  const headline = pending.length
+    ? `${greet}. ${pending.length} draft${pending.length===1?"":"s"} need${pending.length===1?"s":""} your approval.`
+    : `${greet}. Everything is up to date.`;
+  document.getElementById("ovHero").innerHTML = `<div class="page-head"><div>
+      <div class="eyebrow">Engine 3 · Marketing Intelligence</div>
+      <h1 class="page">${headline}</h1>
+      <div class="page-sub">Latest run from each agent. Everything reads from the shared knowledge base.</div></div>
+    ${pending.length?`<button class="hero-cta" onclick="setView('intel')">Review queue →</button>`:""}</div>`;
+
+  /* agent cards */
+  const ICONS = {intel_tracker:["🔎","a1"], ad_strategist:["📣","a2"], low_ticket_content:["🧩","a3"]};
+  const cards = Object.entries(AGENTS).map(([key,a])=>{
+    const run = runs.find(r=>r.agent===key);
+    const out = outputs.find(o=>o.agent===key);
+    const when = run?.started_at || out?.created_at;
+    const f = freshness(when);
+    let stats = run?.stats || {};
+    if(typeof stats === "string"){ try{ stats = JSON.parse(stats); }catch(e){ stats = {}; } }
+    if(typeof stats !== "object" || Array.isArray(stats) || stats === null) stats = {};
+    const chips = Object.entries(stats).slice(0,4).map(([k,v])=>
+      typeof v==="object" ? "" : `<span class="chip">${esc(k.replace(/_/g," "))}: <b>${esc(v)}</b></span>`).join("");
+    const icon = ICONS[key]||["⚙","a1"];
+    return `<div class="card agent">
+      <div class="agent-top">
+        <div class="ic ${icon[1]}">${icon[0]}</div>
+        <div class="fresh"><span class="dot ${f}"></span>${when?friendlyRunLabel(when):"No runs yet"}${run?.status?` · ${esc(run.status)}`:""}</div>
+      </div>
+      <div><div class="agent-kind">${a.kind}</div><h3>${a.label}</h3></div>
+      ${chips ? `<div class="statline" style="margin-top:0">${chips}</div>` : ""}
+      ${out ? `<div class="datestamp">Latest: ${esc(out.title || out.output_type)}</div>` : ""}
+      <div class="go"><button onclick="setView('${a.view}')">Open ${a.label}</button></div>
+    </div>`;
+  }).join("");
+  document.getElementById("ovCards").innerHTML = cards;
+
+  /* two-column: latest intel + engagement queue */
+  let compMap = {};
+  try{ (await sb(`competitors?select=id,name`)).forEach(c=>{ compMap[c.id]=c.name; }); }catch(e){}
+  const initials = s => String(s||"").replace(/[^A-Za-z0-9 ]/g,"").trim().split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase() || "•";
+  const latestBrief = outputs.find(o=>o.agent==="intel_tracker");
+  const topItems = items.slice().sort((a,b)=>(Number(b.engagement_total)||0)-(Number(a.engagement_total)||0)).slice(0,4);
+  const colL = `<div class="panel"><div class="panel-head">
+      <h2>Latest intel <span class="count">${items.length} item${items.length===1?"":"s"}</span>${items.length?`<span class="count">${fmtDate(items[0].created_at||items[0].published_at)}</span>`:""}</h2>
+      <a onclick="setView('intel')">View all →</a></div>
+    ${latestBrief?`<div class="brief-teaser"><h4>Daily brief · ${fmtDate(latestBrief.created_at)}</h4><p>${esc(latestBrief.title||"Latest intelligence brief from Agent 1.")}</p></div>`:""}
+    ${topItems.length ? topItems.map(i=>{
+      const src = compMap[i.competitor_id] || i.platform || "—";
+      return `<div class="item"><div class="srcav">${initials(src)}</div>
+        <div class="txt"><p>${esc(i.summary||"—")}</p>
+        <small>${esc(i.platform||"")}${i.published_at?` · ${fmtDate(i.published_at)}`:""}${i.engagement_total!=null?` · engagement ${esc(i.engagement_total)}`:""}</small></div>
+        ${i.ad_context_value==="high"?`<span class="pill high">High</span>`:i.platform?`<span class="pill platform">${esc(i.platform)}</span>`:""}</div>`;
+    }).join("") : `<div class="loading">No intel items yet — they appear after the first Intel Tracker run.</div>`}</div>`;
+  const qDrafts = (pending.length?pending:drafts).slice(0,3);
+  const colR = `<div class="panel"><div class="panel-head">
+      <h2>Engagement queue <span class="count">${pending.length}</span></h2>
+      <a onclick="setView('intel')">View queue →</a></div>
+    ${qDrafts.length ? qDrafts.map(d=>`<div class="qdraft">
+      <div class="top"><span class="who">${esc(d.competitor_name||"—")}</span>
+        <span class="pill platform">${esc(d.platform||"")}</span>
+        <span class="pill ${esc(d.status||"pending")}">${esc(d.status||"pending")}</span></div>
+      <div class="qbody">${esc(d.draft||"")}</div>
+      <div class="actions">
+        ${d.status==="pending"||!d.status?`<button class="btn ok" onclick="ovDraftStatus('${esc(d.id)}','approved',this)">Approve</button>
+          <button class="btn no" onclick="ovDraftStatus('${esc(d.id)}','rejected',this)">Reject</button>`:""}
+        ${d.status==="approved"?`<button class="btn navy" onclick="ovDraftStatus('${esc(d.id)}','posted',this)">Mark posted</button>
+          <button class="btn no" onclick="ovDraftStatus('${esc(d.id)}','rejected',this)">Reject</button>`:""}
+      </div>
+      <div class="qmeta">Requires human approval · never auto-posted</div>
+    </div>`).join("") : `<div class="loading">No drafts yet — the queue fills after the next Intel Tracker run.</div>`}</div>`;
+  document.getElementById("ovCols").innerHTML = colL + colR;
+
+  if(runErr && !runs.length && !outputs.length){
+    main.insertAdjacentHTML("beforeend", errNotice(runErr, "runs") +
+      `<div class="empty"><div class="big">No agent runs yet</div>
+       Once the updated workflows run, each agent's latest brief, items, and drafts appear here automatically — newest first, dated.</div>`);
+  }
+}
+async function ovDraftStatus(id, status, btn){
+  const card = btn.closest(".qdraft");
+  card.querySelectorAll("button").forEach(b=>b.disabled=true);
+  try{
+    const rows = await sbPatch(`engagement_drafts?id=eq.${encodeURIComponent(id)}`, { status });
+    if(!rows.length) throw Object.assign(new Error("0 rows updated"), {status: 403, body: "row-level security"});
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("engagement_drafts")) delete cache[k]; });
+    renderOverview();
+  }catch(e){
+    card.querySelectorAll("button").forEach(b=>b.disabled=false);
+    showAlert("Update failed: " + (e.message || e), "Update failed");
+  }
+}
+
+/* ================= RUN PICKER ================= */
+async function getRuns(agent){
+  try{
+    const outs = await sb(`agent_outputs?select=run_id,created_at,title&agent=eq.${agent}&order=created_at.desc&limit=40`);
+    if(outs.length) return outs.map(o=>({run_id:o.run_id, when:o.created_at, title:o.title}));
+  }catch(e){}
+  try{
+    const runs = await sb(`runs?select=run_id,started_at&agent=eq.${agent}&order=started_at.desc&limit=40`);
+    return runs.map(r=>({run_id:r.run_id, when:r.started_at}));
+  }catch(e){ return []; }
+}
+function friendlyRunLabel(when){
+  if(!when) return "Unknown date";
+  const dt = new Date(when); if(isNaN(dt)) return esc(when);
+  const now = new Date();
+  const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diffDays = Math.round((startOfDay(now) - startOfDay(dt)) / 864e5);
+  const time = dt.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  if(diffDays === 0) return `Today · ${time}`;
+  if(diffDays === 1) return `Yesterday · ${time}`;
+  const date = dt.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+  return `${date} · ${time}`;
+}
+function runPicker(runs, current, cb){
+  if(!runs.length) return "";
+  const seen = {};
+  const opts = runs.map(r=>{
+    let label = friendlyRunLabel(r.when);
+    if(seen[label]) label += ` (${++seen[label]})`; else seen[label] = 1;
+    return `<option value="${esc(r.run_id)}" ${r.run_id===current?"selected":""}>${label}</option>`;
+  }).join("");
+  return `<div class="controls"><label>Run</label><select onchange="${cb}(this.value)">${opts}</select></div>`;
+}
+
+/* ================= INTEL TRACKER ================= */
+async function renderIntel(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="page-head"><div><h1 class="page">Intel Tracker</h1>
+    <div class="page-sub">Agent 1 · What competitors are saying — organic posts, keyword search, engagement drafts.</div></div>
+    <div id="intelPicker"></div></div><div id="intelBody"><div class="loading">Loading…</div></div>`;
+  const runs = await getRuns("intel_tracker");
+  if(!state.intelRun && runs.length) state.intelRun = runs[0].run_id;
+  document.getElementById("intelPicker").innerHTML = runPicker(runs, state.intelRun, "pickIntelRun");
+  const body = document.getElementById("intelBody");
+  if(!runs.length){
+    body.innerHTML = `<div class="empty"><div class="big">No intel runs yet</div>
+      The daily brief, item explorer and engagement queue appear here after the first run of the updated workflow.</div>`;
+    return;
+  }
+  const rid = state.intelRun;
+  let briefHtml="", itemsHtml="", draftsHtml="";
+  /* brief */
+  try{
+    const outs = await sb(`agent_outputs?select=*&agent=eq.intel_tracker&run_id=eq.${encodeURIComponent(rid)}&order=created_at.desc&limit=1`);
+    window._briefMd = outs.length ? (outs[0].content_md||"") : "";
+    window._briefOutId = outs.length ? outs[0].id : null;
+    briefHtml = outs.length
+      ? `<div class="brief-wrap"><div class="brief-main" id="briefBox">
+           <button class="pencil-btn" id="editBriefBtn" title="Edit this brief" onclick="editBrief('${esc(outs[0].id)}',this)">✎ Edit</button>
+           ${outs[0].edited_by_human?`<span class="chip" style="position:absolute;top:18px;right:92px;z-index:5">edited</span>`:""}
+           <div class="brief">${marked.parse(outs[0].content_md || "_Brief text missing for this run._")}</div>
+         </div><div class="c-rail" id="cRail"></div></div>
+         <div style="margin-top:8px;color:var(--muted);font-size:.78rem">💬 Click any paragraph in the brief to comment on it — comments appear in the margin, Google-Docs style.</div>`
+      : `<div class="empty">No rendered brief stored for this run.</div>`;
+  }catch(e){ briefHtml = errNotice(e,"agent_outputs"); }
+  /* items */
+  let items=[];
+  try{
+    items = await sb(`intel_items?select=*&run_id=eq.${encodeURIComponent(rid)}&order=engagement_total.desc.nullslast&limit=500`);
+  }catch(e){
+    try{ items = await sb(`intel_items?select=*&order=created_at.desc&limit=200`); }
+    catch(e2){ itemsHtml = errNotice(e2,"intel_items"); }
+  }
+  /* enrich: competitor names, url-derived source, parsed themes */
+  let compMap = {};
+  try{
+    const comps = await sb(`competitors?select=id,name`);
+    comps.forEach(c=>{ compMap[c.id] = c.name; });
+  }catch(e){}
+  const domainOf = u => { try{ return new URL(u).hostname.replace(/^www\./,""); }catch(e){ return ""; } };
+  items.forEach(i=>{
+    i._source = compMap[i.competitor_id] || (i.platform==="linkedin" && i.source==="keyword_search" ? "LinkedIn search" : "") || domainOf(i.url) || "—";
+    if(typeof i.themes === "string"){ try{ i.themes = JSON.parse(i.themes); }catch(e){ i.themes = [i.themes]; } }
+    if(!Array.isArray(i.themes)) i.themes = [];
+  });
+  /* drafts */
+  let drafts=[];
+  try{ drafts = await sb(`engagement_drafts?select=*&run_id=eq.${encodeURIComponent(rid)}&order=created_at.desc&limit=100`); }
+  catch(e){ draftsHtml = errNotice(e,"engagement_drafts"); }
+
+  body.innerHTML = `
+    <section class="block"><h2>Daily brief <span class="count">${fmtDate(runs.find(r=>r.run_id===rid)?.when)}</span></h2>${briefHtml}</section>
+    <section class="block"><h2>Engagement queue <span class="count">${drafts.length}</span></h2>
+      ${draftsHtml || (drafts.length ? drafts.map(d=>`
+        <div class="draft">
+          <div class="top"><span class="who">${esc(d.competitor_name||"—")}</span>
+            <span class="pill platform">${esc(d.platform||"")}</span>
+            <span class="chip">${esc(d.action||"")}</span>
+            <span class="pill ${esc(d.status||"pending")}">${esc(d.status||"pending")}</span></div>
+          <div class="text">${esc(d.draft||"")}</div>
+          <div class="meta" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">${d.source_url?`<a href="${esc(d.source_url)}" target="_blank" rel="noopener">Source post ↗</a> · `:""}${fmtDateTime(d.created_at)} · requires human approval, never auto-posted
+            ${(()=>{const it=(items||[]).find(x=>x.url===d.source_url); return it&&it.engagement_total!=null?`<button class="score-btn" onclick="editScore('engagement','intel_items','${esc(it.id)}',${it.engagement_score!=null?Number(it.engagement_score):null},this)">engagement ${esc(it.engagement_total)} · score ${it.engagement_score!=null?Number(it.engagement_score).toFixed(2):"—"}${it.score_overridden?" ✎":""} — edit</button>`:""})()}</div>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            ${d.status==="pending"||!d.status?`
+              <button onclick="setDraftStatus('${esc(d.id)}','approved',this)" class="btn ok">Approve</button>
+              <button onclick="rejectWithFeedback('${esc(d.id)}',this,'intel_tracker','engagement_draft','engagement draft')" class="btn no">Reject</button>`:""}
+            ${d.status==="approved"?`
+              <button onclick="setDraftStatus('${esc(d.id)}','posted',this)" class="btn navy">Mark posted</button>
+              <button onclick="rejectWithFeedback('${esc(d.id)}',this,'intel_tracker','engagement_draft','engagement draft')" class="btn no">Reject</button>`:""}
+            ${d.status==="rejected"||d.status==="posted"?`
+              <button onclick="setDraftStatus('${esc(d.id)}','pending',this)" class="btn ghost">Reopen</button>`:""}
+          </div>
+        </div>`).join("") : `<div class="empty">No engagement drafts for this run.</div>`)}
+    </section>
+    <section class="block"><h2>Item explorer <span class="count" id="itemCount">${items.length}</span></h2>
+      <div class="controls" style="margin-bottom:12px">
+        <label>Platform</label><select onchange="intelFilter('platform',this.value)">
+          <option value="">All</option>${[...new Set(items.map(i=>i.platform).filter(Boolean))].map(p=>`<option ${state.filters.platform===p?"selected":""}>${esc(p)}</option>`).join("")}</select>
+        <label>Type</label><select onchange="intelFilter('type',this.value)">
+          <option value="">All</option>${[...new Set(items.map(i=>i.type).filter(Boolean))].map(t=>`<option ${state.filters.type===t?"selected":""}>${esc(t)}</option>`).join("")}</select>
+        <label>Ad value</label><select onchange="intelFilter('acv',this.value)">
+          <option value="">All</option><option ${state.filters.acv==="high"?"selected":""}>high</option><option ${state.filters.acv==="medium"?"selected":""}>medium</option><option ${state.filters.acv==="low"?"selected":""}>low</option></select>
+        <input type="search" placeholder="Search summaries…" value="${esc(state.filters.q)}" oninput="intelFilter('q',this.value)">
+      </div>
+      ${itemsHtml || `<div class="tbl-wrap"><table class="tbl"><thead><tr>
+        <th>Source</th><th>Platform</th><th>Type</th><th>Summary</th><th>Ad value</th><th>Engage­ment</th><th>Link</th>
+      </tr></thead><tbody id="itemRows"></tbody></table></div>`}
+    </section>`;
+  window._intelItems = items;
+  window._intelDrafts = drafts;
+  paintItems();
+  enhanceAllBriefs();
+  syncBriefQueue(drafts);
+  initBriefComments("brief:"+rid);
+}
+function pickIntelRun(v){ state.intelRun=v; renderIntel(); }
+function intelFilter(k,v){ state.filters[k]=v; paintItems(); }
+function paintItems(){
+  const rows = document.getElementById("itemRows"); if(!rows) return;
+  const f = state.filters;
+  const items = (window._intelItems||[]).filter(i=>
+    (!f.platform || i.platform===f.platform) &&
+    (!f.type || i.type===f.type) &&
+    (!f.acv || i.ad_context_value===f.acv) &&
+    (!f.q || (String(i.summary||"")+String(i.signal||"")+String(i._source||"")+(i.themes||[]).join(" ")).toLowerCase().includes(f.q.toLowerCase()))
+  );
+  const cnt = document.getElementById("itemCount"); if(cnt) cnt.textContent = items.length;
+  rows.innerHTML = items.length ? items.map(i=>`<tr>
+    <td><b>${esc(i._source||"—")}</b>${i.published_at?`<div style="color:var(--muted);font-size:.72rem;margin-top:2px">${fmtDate(i.published_at)}</div>`:""}</td>
+    <td><span class="pill platform">${esc(i.platform||"")}</span></td>
+    <td>${esc((i.type||"").replace(/_/g," "))}</td>
+    <td>${esc(i.summary||"")}
+      ${i.signal?`<div style="color:var(--muted);font-size:.78rem;margin-top:3px">${esc(i.signal)}</div>`:""}
+      ${(i.themes||[]).length?`<div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${i.themes.map(t=>`<span class="chip" style="font-size:.66rem">${esc(t)}</span>`).join("")}</div>`:""}</td>
+    <td><span class="pill ${esc(i.ad_context_value||"low")}">${esc(i.ad_context_value||"—")}</span></td>
+    <td>${i.engagement_total!=null?`<b>${esc(i.engagement_total)}</b><div style="margin-top:4px"><button class="score-btn" title="Override score" onclick="editScore('engagement','intel_items','${esc(i.id)}',${i.engagement_score!=null?Number(i.engagement_score):null},this)">${i.engagement_score!=null?Number(i.engagement_score).toFixed(2):"—"}${i.score_overridden?" ✎":""} · edit</button></div>`:`<span style="color:var(--muted)">n/a</span>`}</td>
+    <td>${i.url?`<a href="${esc(i.url)}" target="_blank" rel="noopener">Open ↗</a>`:"—"}</td>
+  </tr>`).join("") : `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:22px">No items match these filters.</td></tr>`;
+}
+
+/* ================= AD STRATEGIST ================= */
+async function renderAds(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="page-head"><div><h1 class="page">Ad Strategist</h1>
+    <div class="page-sub">Agent 2 · What competitors are advertising — long-running winners, hooks, and the creative brief.</div></div>
+    <div id="adsPicker"></div></div><div id="adsBody"><div class="loading">Loading…</div></div>`;
+  const runs = await getRuns("ad_strategist");
+  if(!state.adsRun && runs.length) state.adsRun = runs[0].run_id;
+  document.getElementById("adsPicker").innerHTML = runPicker(runs, state.adsRun, "pickAdsRun");
+  const body = document.getElementById("adsBody");
+  let briefHtml="", lineage="";
+  if(runs.length){
+    try{
+      const outs = await sb(`agent_outputs?select=*&agent=eq.ad_strategist&run_id=eq.${encodeURIComponent(state.adsRun)}&order=created_at.desc&limit=1`);
+      if(outs.length){
+        briefHtml = `<div class="brief">${marked.parse(outs[0].content_md||"")}</div>`;
+        const src = asObj(outs[0].data).source_intel_run;
+        if(src) lineage = `<div class="lineage">Built from Intel Tracker run <b>${esc(src)}</b></div>`;
+      }
+    }catch(e){ briefHtml = errNotice(e,"agent_outputs"); }
+  }
+  let ads=[], adsErr="";
+  try{
+    ads = state.adsRun
+      ? await sb(`winner_creatives?select=*&run_id=eq.${encodeURIComponent(state.adsRun)}&order=days_running.desc.nullslast&limit=200`)
+      : await sb(`winner_creatives?select=*&order=days_running.desc.nullslast&limit=100`);
+    if(!ads.length && state.adsRun) ads = await sb(`winner_creatives?select=*&order=days_running.desc.nullslast&limit=100`);
+  }catch(e){ adsErr = errNotice(e,"winner_creatives"); }
+  const img = a => a.image_url || a.creative_url || a.thumbnail_url || (a.raw && a.raw.image_url) || "";
+  body.innerHTML = `
+    ${runs.length ? `<section class="block"><h2>Creative brief <span class="count">${fmtDate(runs.find(r=>r.run_id===state.adsRun)?.when)}</span></h2>${lineage}${briefHtml||`<div class="empty">No creative brief stored for this run.</div>`}</section>` : ""}
+    <section class="block"><h2>Winner ads <span class="count">${ads.length}</span></h2>
+      ${adsErr || (ads.length ? `<div class="adgrid">${ads.map(a=>`
+        <div class="adcard">
+          ${img(a)?`<img src="${esc(img(a))}" alt="" loading="lazy" onerror="this.remove()">`:""}
+          <div class="body">
+            <div class="top" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              <span class="pill platform">${esc(a.platform||"meta")}</span>
+              ${a.source?`<span class="chip">${esc(String(a.source).replace(/_/g," "))}</span>`:""}
+              ${a.days_running!=null?`<span class="longevity">${esc(a.days_running)}d running</span>`:""}
+            </div>
+            ${a.hook?`<div class="hook">${esc(a.hook)}</div>`:""}
+            ${a.body?`<div class="bodytext">${esc(a.body)}</div>`:""}
+            <div class="foot">
+              ${a.offer_inferred?`<span class="chip">Offer: ${esc(a.offer_inferred)}${a.price_point_inferred?` · ${esc(a.price_point_inferred)}`:""}</span>`:""}
+              ${a.copy_formula?`<span class="chip">${esc(a.copy_formula)}</span>`:""}
+              <button class="score-btn" title="Override score" onclick="editScore('performance','winner_creatives','${esc(a.id)}',${a.performance_score!=null?Number(a.performance_score):null},this)">score ${a.performance_score!=null?Number(a.performance_score).toFixed(2):"—"} ${a.score_overridden?"✎ manual":"inferred"} · edit</button>
+              ${a.ad_library_url?`<a href="${esc(a.ad_library_url)}" target="_blank" rel="noopener">Ad Library ↗</a>`:""}
+            </div>
+          </div>
+        </div>`).join("")}</div>`
+      : `<div class="empty"><div class="big">No ad records yet</div>Winner ads (6+ weeks running) and swipe-file entries appear here after the next Ad Strategist run.</div>`)}
+    </section>`;
+  enhanceAllBriefs();
+}
+function pickAdsRun(v){ state.adsRun=v; renderAds(); }
+
+/* ================= LOW-TICKET ================= */
+async function renderFunnel(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="page-head"><div><h1 class="page">Low-Ticket Content Agent</h1>
+    <div class="page-sub">Agent 3 · The production end — a four-asset funnel built from the latest creative brief.</div></div>
+    <div id="fPicker"></div></div><div id="fBody"><div class="loading">Loading…</div></div>`;
+  const runs = await getRuns("low_ticket_content");
+  if(!state.funnelRun && runs.length) state.funnelRun = runs[0].run_id;
+  document.getElementById("fPicker").innerHTML = runPicker(runs, state.funnelRun, "pickFunnelRun");
+  const body = document.getElementById("fBody");
+  if(!runs.length){
+    body.innerHTML = `<div class="empty"><div class="big">No funnel packages yet</div>
+      When Agent 3 runs, the ad (with hook variations and the branded image), pre-qual survey, landing page and booking page appear here as one package.</div>`;
+    return;
+  }
+  let out=null, err="";
+  try{
+    const outs = await sb(`agent_outputs?select=*&agent=eq.low_ticket_content&run_id=eq.${encodeURIComponent(state.funnelRun)}&order=created_at.desc&limit=1`);
+    out = outs[0]||null;
+  }catch(e){ err = errNotice(e,"agent_outputs"); }
+  if(err || !out){ body.innerHTML = err || `<div class="empty">No package stored for this run.</div>`; return; }
+  const d = asObj(out.data);
+  const lineage = d.source_brief_run || d.source_brief_id
+    ? `<div class="lineage">Built from Ad Strategist brief <b>${esc(d.source_brief_run || d.source_brief_id)}</b>${d.source_intel_run?` · intel run <b>${esc(d.source_intel_run)}</b>`:""}</div>` : "";
+  const assets = Array.isArray(d.assets) && d.assets.length
+    ? d.assets
+    : [{title: out.title || "Funnel package", content_md: out.content_md || ""}];
+  const slug = s => String(s||"offer").toLowerCase().replace(/[^a-z0-9]+/g,"-").slice(0,40);
+  let adImages = Array.isArray(d.ad_images) ? d.ad_images.filter(v=>v && v.url) : [];
+  if(!adImages.length){
+    const single = d.ad_image_url || d.image_url ||
+      `${SUPABASE_URL}/storage/v1/object/public/creatives/concept-${slug(d.offer_name)}-${encodeURIComponent(state.funnelRun)}.png`;
+    adImages = [{ variant:"A", label:"Ad concept", url:single, file:(single.split("/").pop()||"concept.png") }];
+  }
+  let vfb = [];
+  try{ vfb = await sb(`agent_feedback?select=target_id,action,feedback,author,created_at&target_type=eq.ad_image_variant&order=created_at.desc&limit=200`); }catch(e){}
+  const statusOf = f => { const hits = vfb.filter(r=>r.target_id===f); return hits.length ? hits[0] : null; };
+  if(state.funnelTab >= assets.length) state.funnelTab = 0;
+  body.innerHTML = `
+    ${lineage}
+    <section class="block" id="adImgBlock"><h2>Ad creative variants <span class="count">${adImages.length}</span></h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px">
+      ${adImages.map(v=>{
+        const st = statusOf(v.file);
+        const stName = st ? st.action : "pending";
+        return `<div class="vcard">
+          <img src="${esc(v.url)}" alt="Variant ${esc(v.variant)}" onerror="this.closest('.vcard').style.display='none'">
+          <div class="v-info">
+            <div class="v-head">
+              <b>Variant ${esc(v.variant)}</b><span style="color:var(--muted);font-size:.8rem">${esc(v.label||"")}</span>
+              <span class="pill ${stName==="approved"?"approved":stName==="rejected"?"rejected":"medium"}" style="margin-left:auto">${esc(stName)}</span>
+            </div>
+            ${st && st.action==="rejected" && st.feedback ? `<div class="v-fb"><b>${esc(st.author||"")}</b>: ${esc(st.feedback)}</div>` : ""}
+            <div class="v-btns">
+              <button class="btn navy" ${stName==="approved"?"disabled":""} onclick="variantDecision('${esc(v.file)}','approved',this)">✓ Approve</button>
+              <button class="btn no" ${stName==="rejected"?"disabled":""} onclick="variantDecision('${esc(v.file)}','rejected',this)">✕ Deny</button>
+            </div>
+          </div>
+        </div>`;
+      }).join("")}
+      </div>
+      <div style="margin-top:10px;color:var(--muted);font-size:.78rem">Deny asks for a reason — the reason is fed back into the next generation run so the AI learns your taste.</div>
+    </section>
+    <div class="tabs">${assets.map((a,i)=>`<button class="${i===state.funnelTab?'active':''}" onclick="pickFunnelTab(${i})">${esc(a.title||("Asset "+(i+1)))}</button>`).join("")}</div>
+    <div class="brief">${marked.parse(assets[state.funnelTab].content_md || assets[state.funnelTab].content || "_Empty asset._")}</div>
+    <div class="datestamp" style="margin-top:14px">Package created ${fmtDateTime(out.created_at)} · requires human approval before launch</div>`;
+  enhanceAllBriefs();
+}
+function pickFunnelRun(v){ state.funnelRun=v; state.funnelTab=0; renderFunnel(); }
+function pickFunnelTab(i){ state.funnelTab=i; renderFunnel(); }
+
+/* ================= ENGINE 1 ================= */
+async function e1Data(){
+  let leads=[], outs=[], err=null;
+  try{ leads = await sb("e1_leads?select=*&order=updated_at.desc&limit=300"); }catch(e){ err=e; }
+  try{ outs = await sb(`agent_outputs?select=run_id,agent,title,created_at,data&${E1_AGENT_FILTER}&order=created_at.desc&limit=1000`); }catch(e){ if(!err) err=e; }
+  return {leads, outs, err};
+}
+function e1StageState(lead, outs, stage){
+  const out = outs.find(o=>o.run_id===(lead?lead.email:null) && o.agent===stage.agent);
+  const url = (lead && lead[stage.urlCol]) || (out && (asObj(out.data).pdfUrl || asObj(out.data).pdf_url)) || null;
+  return {done: !!(out || url), out, url};
+}
+function fitPill(f){
+  if(!f) return "";
+  const cls = /strong/i.test(f)?"approved":/weak|disq/i.test(f)?"rejected":"pending";
+  return `<span class="pill ${cls}">${esc(f)}</span>`;
+}
+
+async function renderE1Overview(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div id="e1Hero"></div>
+    <div class="grid cols3" id="e1Cards"><div class="loading">Loading pipeline…</div></div>
+    <div class="cols" id="e1Cols"></div>
+    <div id="e1OvFoot"></div>`;
+  const {leads, outs, err} = await e1Data();
+  const strong = leads.filter(l=>/strong/i.test(l.fit_rating||"")).length;
+  const completed = leads.filter(l=>E1_STAGES.every(s=>e1StageState(l,outs,s).done)).length;
+  const hour = new Date().getHours();
+  const greet = hour<12?"Good morning":hour<18?"Good afternoon":"Good evening";
+  const headline = leads.length
+    ? `${greet}. ${leads.length} lead${leads.length===1?"":"s"} in the pipeline.`
+    : `${greet}. The pipeline is waiting for its first lead.`;
+  document.getElementById("e1Hero").innerHTML = `<div class="page-head"><div>
+      <div class="eyebrow">Engine 1 · Client Service &amp; Delivery</div>
+      <h1 class="page">${headline}</h1>
+      <div class="page-sub">Lead-to-proposal pipeline. One run per prospect, five agents deep.</div>
+      <div class="statline">
+        <span class="chip">strong fit (pre-call): <b>${strong}</b></span>
+        <span class="chip">completed full pipeline: <b>${completed}</b></span>
+      </div></div>
+    ${leads.length?`<button class="hero-cta" onclick="setView('e1pipeline')">Open pipeline →</button>`:""}</div>`;
+
+  const E1_ICONS = [["🔎","a1"],["📞","a2"],["🧾","a3"],["🗺️","a1"],["📈","a2"]];
+  const cards = E1_STAGES.map((s,idx)=>{
+    const latest = outs.find(o=>o.agent===s.agent);
+    const doneCount = new Set(outs.filter(o=>o.agent===s.agent).map(o=>o.run_id)).size ||
+                      leads.filter(l=>l[s.urlCol]).length;
+    const when = latest?.created_at;
+    const f = freshness(when);
+    const icon = E1_ICONS[idx]||["⚙","a1"];
+    return `<div class="card agent">
+      <div class="agent-top">
+        <div class="ic ${icon[1]}">${icon[0]}</div>
+        <div class="fresh"><span class="dot ${f}"></span>${when?friendlyRunLabel(when):"No outputs yet"}</div>
+      </div>
+      <div><div class="agent-kind">${esc(s.kind)}</div><h3>${esc(s.label)}</h3></div>
+      <div class="statline" style="margin-top:0"><span class="chip">leads processed: <b>${doneCount}</b></span></div>
+      ${latest ? `<div class="datestamp">Latest: ${esc(latest.title || latest.run_id)}</div>` : ""}
+      <div class="go"><button onclick="setView('e1pipeline')">Open pipeline</button></div>
+    </div>`;
+  }).join("");
+  document.getElementById("e1Cards").innerHTML = cards;
+
+  /* two-column: recent leads + stage completion */
+  const initials = s => String(s||"").replace(/[^A-Za-z0-9 ]/g,"").trim().split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase() || "•";
+  const recent = leads.slice(0,4);
+  const colL = `<div class="panel"><div class="panel-head">
+      <h2>Recent leads <span class="count">${leads.length} total</span></h2>
+      <a onclick="setView('e1pipeline')">View all →</a></div>
+    ${recent.length ? recent.map(l=>{
+      const done = E1_STAGES.filter(s=>e1StageState(l,outs,s).done).length;
+      return `<div class="item" style="cursor:pointer" onclick="openE1Lead('${esc(l.email)}')">
+        <div class="srcav">${initials(l.prospect_name||l.company_name||l.email)}</div>
+        <div class="txt"><p><b>${esc(l.prospect_name||"—")}</b>${l.company_name?` · ${esc(l.company_name)}`:""}</p>
+        <small>${esc(l.email)} · ${done}/${E1_STAGES.length} stages · updated ${fmtDate(l.updated_at||l.created_at)}</small></div>
+        ${fitPill(l.fit_rating)||`<span class="pill medium">no rating</span>`}</div>`;
+    }).join("") : `<div class="loading">No leads yet — new webhook submissions appear here automatically.</div>`}</div>`;
+
+  const colR = `<div class="panel"><div class="panel-head">
+      <h2>Stage completion</h2></div>
+    ${E1_STAGES.map(s=>{
+      const done = leads.length ? leads.filter(l=>e1StageState(l,outs,s).done).length : 0;
+      const pct = leads.length ? Math.round(done/leads.length*100) : 0;
+      return `<div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;font-size:.8rem;font-weight:600;color:var(--ink);margin-bottom:5px">
+          <span>${esc(s.short)}</span><span style="color:var(--muted)">${done}/${leads.length}</span></div>
+        <div style="height:7px;border-radius:99px;background:var(--cream)">
+          <div style="height:7px;border-radius:99px;width:${Math.max(pct,2)}%;background:linear-gradient(90deg,var(--gold),#a8853a)"></div></div>
+      </div>`;
+    }).join("")}</div>`;
+  document.getElementById("e1Cols").innerHTML = colL + colR;
+
+  if(err && !leads.length && !outs.length){
+    document.getElementById("e1OvFoot").innerHTML = errNotice(err, "e1_leads") +
+      `<div class="empty"><div class="big">No pipeline data yet</div>
+       Once the updated workflows run with the Supabase save nodes, every prospect appears here automatically — newest first, with all five stage outputs linked.</div>`;
+  }
+}
+
+async function renderE1Pipeline(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="page-head"><div><h1 class="page">Lead Pipeline</h1>
+    <div class="page-sub">Every prospect that entered Engine 1, with stage-by-stage completion and links to each deliverable.</div></div>
+    <div class="controls"><input type="search" placeholder="Search name, company, email…" value="${esc(state.e1Q)}" oninput="e1Search(this.value)"></div></div>
+    <div id="e1Body"><div class="loading">Loading leads…</div></div>`;
+  const {leads, outs, err} = await e1Data();
+  window._e1 = {leads, outs};
+  const body = document.getElementById("e1Body");
+  if(err && !leads.length && !outs.length){ body.innerHTML = errNotice(err, "e1_leads"); return; }
+  if(!leads.length && !outs.length){
+    body.innerHTML = `<div class="empty"><div class="big">No leads yet</div>
+      New webhook submissions appear here after the first run with the dashboard save nodes in place.</div>`;
+    return;
+  }
+  /* leads may lag outputs if e1_leads insert failed — synthesize rows from outputs */
+  const known = new Set(leads.map(l=>l.email));
+  outs.forEach(o=>{ if(!known.has(o.run_id)){ known.add(o.run_id);
+    leads.push({email:o.run_id, prospect_name:asObj(o.data).prospectName||"", company_name:asObj(o.data).companyName||"", updated_at:o.created_at}); }});
+  paintE1Rows();
+}
+function e1Search(v){ state.e1Q=v; paintE1Rows(); }
+function paintE1Rows(){
+  const body = document.getElementById("e1Body"); if(!body || !window._e1) return;
+  const {leads, outs} = window._e1;
+  const q = state.e1Q.toLowerCase();
+  const rows = leads.filter(l=>!q || (String(l.prospect_name||"")+String(l.company_name||"")+String(l.email||"")).toLowerCase().includes(q));
+  body.innerHTML = `<div class="tbl-wrap"><table class="tbl"><thead><tr>
+      <th>Prospect</th><th>Company</th><th>Stages</th><th>Fit</th><th>Updated</th><th></th>
+    </tr></thead><tbody>
+    ${rows.length ? rows.map(l=>{
+      const chips = E1_STAGES.map(s=>{
+        const st = e1StageState(l, outs, s);
+        return st.url
+          ? `<a class="chip" style="text-decoration:none" href="${esc(st.url)}" target="_blank" rel="noopener" title="${esc(s.label)} — open PDF">${esc(s.short)} ✓</a>`
+          : `<span class="chip" style="opacity:${st.done?1:.45}">${esc(s.short)}${st.done?" ✓":""}</span>`;
+      }).join(" ");
+      return `<tr>
+        <td><b>${esc(l.prospect_name||"—")}</b><div style="color:var(--muted);font-size:.78rem">${esc(l.email)}</div></td>
+        <td>${esc(l.company_name||"—")}${l.firm_type?`<div style="color:var(--muted);font-size:.78rem">${esc(l.firm_type)}</div>`:""}</td>
+        <td><div class="statline" style="margin:0">${chips}</div></td>
+        <td>${fitPill(l.fit_rating)}</td>
+        <td>${fmtDate(l.updated_at||l.created_at)}</td>
+        <td><button class="chip" style="cursor:pointer" onclick="openE1Lead('${esc(l.email)}')">Open →</button></td>
+      </tr>`;
+    }).join("") : `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:22px">No leads match this search.</td></tr>`}
+    </tbody></table></div>`;
+}
+function openE1Lead(email){ state.e1Lead=email; state.view="e1lead"; render(); }
+
+async function renderE1Lead(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="loading">Loading lead…</div>`;
+  const {leads, outs, err} = await e1Data();
+  const lead = leads.find(l=>l.email===state.e1Lead) || {email:state.e1Lead};
+  const lo = outs.filter(o=>o.run_id===state.e1Lead);
+  const name = lead.prospect_name || asObj(lo[0]?.data).prospectName || lead.email;
+  main.innerHTML = `<div class="page-head"><div>
+      <div class="lineage" style="cursor:pointer" onclick="setView('e1pipeline')">← Back to pipeline</div>
+      <h1 class="page">${esc(name)}</h1>
+      <div class="page-sub">${esc(lead.company_name||"")}${lead.prospect_title?` · ${esc(lead.prospect_title)}`:""} · ${esc(lead.email)}</div></div>
+    <div class="statline">
+      ${lead.firm_type?`<span class="chip">${esc(lead.firm_type)}</span>`:""}
+      ${lead.firm_size?`<span class="chip">${esc(lead.firm_size)}</span>`:""}
+      ${lead.lead_source?`<span class="chip">via ${esc(lead.lead_source)}</span>`:""}
+      ${lead.ai_readiness?`<span class="chip">AI readiness: <b>${esc(lead.ai_readiness)}</b></span>`:""}
+      ${fitPill(lead.fit_rating)}
+    </div></div>
+    ${err?errNotice(err,"agent_outputs"):""}
+    ${E1_STAGES.map((s,i)=>{
+      const st = e1StageState(lead, outs, s);
+      const d = asObj(st.out?.data);
+      const docLink = d.documentId ? `https://docs.google.com/document/d/${esc(d.documentId)}/edit` : null;
+      return `<section class="block">
+        <h2>${i+1}. ${esc(s.label)} ${st.done?`<span class="count">${st.out?fmtDate(st.out.created_at):"done"}</span>`:`<span class="chip" style="opacity:.6">not run yet</span>`}</h2>
+        ${st.done ? `<div class="card">
+          ${st.out?.title?`<div style="font-weight:650;color:var(--navy);margin-bottom:6px">${esc(st.out.title)}</div>`:""}
+          <div class="statline" style="margin-top:4px">
+            ${st.url?`<a class="chip" style="text-decoration:none" href="${esc(st.url)}" target="_blank" rel="noopener">Open PDF ↗</a>`:""}
+            ${docLink?`<a class="chip" style="text-decoration:none" href="${docLink}" target="_blank" rel="noopener">Open Google Doc ↗</a>`:""}
+            ${d.status?`<span class="chip">status: <b>${esc(d.status)}</b></span>`:""}
+            ${d.callDate?`<span class="chip">call: ${esc(d.callDate)}</span>`:""}
+          </div>
+        </div>` : `<div class="empty" style="padding:22px">This stage hasn't produced output for this lead yet.</div>`}
+      </section>`;
+    }).join("")}`;
+}
+
+
+/* ================= AD TESTING (A/B) ================= */
+const TESTING_SAMPLE = [
+  {variant:"A", hook:"If your firm is still running client ops on spreadsheets, you're not facing a technology problem.", phase:1, status:"active",  spend:412, impressions:38200, clicks:684, completions:59, qualified_bookings:19, shows:14, start_date:"2026-07-24"},
+  {variant:"B", hook:"Stop paying the manual tax. Every week of repetitive admin is revenue capacity you never recover.", phase:1, status:"active",  spend:398, impressions:41500, clicks:512, completions:38, qualified_bookings:9,  shows:6,  start_date:"2026-07-24"},
+  {variant:"C", hook:"The AI tools exist. The compliance frameworks exist. So why are most $1M–$10M firms still stuck?", phase:1, status:"paused",  spend:187, impressions:19800, clicks:198, completions:11, qualified_bookings:2,  shows:1,  start_date:"2026-07-24"}
+];
+function tNum(v){ return v==null||isNaN(v) ? null : Number(v); }
+function tPct(a,b){ a=tNum(a); b=tNum(b); return (a==null||!b) ? null : (a/b*100); }
+function tMoney(v){ return v==null ? "—" : "$"+Number(v).toLocaleString(undefined,{maximumFractionDigits:0}); }
+function tShow(v,suffix){ return v==null ? "—" : Number(v).toFixed(v<10?2:1)+(suffix||""); }
+function tBar(v,max,label){
+  if(v==null||!max) return "—";
+  const w = Math.max(3, Math.round(v/max*100));
+  return `<div style="min-width:120px"><div style="font-size:.8rem;font-weight:650">${label}</div>
+    <div style="height:7px;border-radius:99px;background:var(--cream);margin-top:3px"><div style="height:7px;border-radius:99px;width:${w}%;background:linear-gradient(90deg,var(--gold),#a8853a)"></div></div></div>`;
+}
+async function renderTesting(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="page-head"><div><h1 class="page">Ad Testing</h1>
+    <div class="page-sub">A/B performance for Low-Ticket funnel ads — spend, qualification, and booking economics per variant.</div></div></div>
+    <div id="tBody"><div class="loading">Loading test results…</div></div>`;
+  let rows=[], live=true, err=null;
+  try{ rows = await sb("test_results?select=*&order=created_at.desc&limit=200"); }catch(e){ err=e; }
+  if(!rows.length){ rows = TESTING_SAMPLE; live=false; }
+  rows = rows.map(r=>{
+    const ctr = tPct(r.clicks, r.impressions);
+    const complRate = tPct(r.completions, r.clicks);
+    const bookRate = tPct(r.qualified_bookings, r.completions);
+    const showRate = tPct(r.shows, r.qualified_bookings);
+    const cpl = (tNum(r.spend)!=null && tNum(r.completions)) ? r.spend/r.completions : null;
+    const cpqb = (tNum(r.spend)!=null && tNum(r.qualified_bookings)) ? r.spend/r.qualified_bookings : null;
+    return {...r, ctr, complRate, bookRate, showRate, cpl, cpqb};
+  });
+  const ranked = [...rows].filter(r=>r.cpqb!=null).sort((a,b)=>a.cpqb-b.cpqb);
+  const winner = ranked[0]||null;
+  const maxCtr = Math.max(...rows.map(r=>r.ctr||0), 0.001);
+  const totals = rows.reduce((t,r)=>({spend:t.spend+(tNum(r.spend)||0), qb:t.qb+(tNum(r.qualified_bookings)||0), compl:t.compl+(tNum(r.completions)||0)}), {spend:0,qb:0,compl:0});
+  document.getElementById("tBody").innerHTML = `
+    ${live ? "" : `<div class="notice"><b>Sample data.</b> No rows in <code>test_results</code> yet — this is a placeholder layout with fake numbers so you can see the format. Once real ad metrics are written to the table (manually, via CSV import, or a Meta-metrics workflow), this page switches to live data automatically.</div>`}
+    ${err && live===false && err.status!==404 ? "" : ""}
+    <div class="grid cols3" style="margin-bottom:26px">
+      <div class="card"><div class="agent-kind">Across all variants</div><h3>${tMoney(totals.spend)} spent</h3>
+        <div class="statline"><span class="chip">scorecard completions: <b>${totals.compl}</b></span>
+        <span class="chip">qualified bookings: <b>${totals.qb}</b></span></div></div>
+      <div class="card"><div class="agent-kind">Blended economics</div><h3>${totals.qb?tMoney(totals.spend/totals.qb):"—"} / qualified booking</h3>
+        <div class="statline"><span class="chip">CPL: <b>${totals.compl?tMoney(totals.spend/totals.compl):"—"}</b></span></div></div>
+      <div class="card"><div class="agent-kind">Current leader</div><h3>${winner?("Variant "+esc(winner.variant)):"—"}</h3>
+        ${winner?`<div class="datestamp">${tMoney(winner.cpqb)} per qualified booking · booking rate ${tShow(winner.bookRate,"%")}</div>
+        <div class="datestamp" style="font-size:.8rem">"${esc(String(winner.hook||"").slice(0,90))}${String(winner.hook||"").length>90?"…":""}"</div>`:`<div class="datestamp">Needs at least one variant with bookings</div>`}</div>
+    </div>
+    <section class="block"><h2>Variant leaderboard <span class="count">${rows.length}</span></h2>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr>
+      <th>Variant</th><th>Hook</th><th>Status</th><th>Spend</th><th>CTR</th><th>Compl. rate</th><th>Booking rate</th><th>Show rate</th><th>CPL</th><th>$ / qual. booking</th>
+    </tr></thead><tbody>
+    ${rows.map(r=>`<tr ${winner&&r===winner?'style="background:#FBF6E7"':''}>
+      <td><b>${esc(r.variant||"—")}</b>${winner&&r===winner?'<div class="pill high" style="margin-top:3px">leader</div>':""}${r.phase?`<div style="color:var(--muted);font-size:.72rem;margin-top:2px">phase ${esc(r.phase)}</div>`:""}</td>
+      <td style="max-width:280px">${esc(r.hook||"—")}</td>
+      <td><span class="pill ${r.status==="active"?"approved":r.status==="paused"?"rejected":"medium"}">${esc(r.status||"—")}</span></td>
+      <td>${tMoney(r.spend)}</td>
+      <td>${tBar(r.ctr, maxCtr, tShow(r.ctr,"%"))}</td>
+      <td>${tShow(r.complRate,"%")}</td>
+      <td>${tShow(r.bookRate,"%")} <span style="color:var(--muted);font-size:.74rem">(target 30%+)</span></td>
+      <td>${tShow(r.showRate,"%")} <span style="color:var(--muted);font-size:.74rem">(target 70%+)</span></td>
+      <td>${r.cpl!=null?tMoney(r.cpl):"—"}</td>
+      <td><b>${r.cpqb!=null?tMoney(r.cpqb):"—"}</b></td>
+    </tr>`).join("")}
+    </tbody></table></div></section>
+    <div class="notice">Optimization rule from the test plan: don't optimize CPL alone — a cheap lead that never books is worse than an expensive one that does. Rank by <b>$ / qualified booking</b>, give every variant 3–5 days before judging, and don't ramp spend past $50/day until one variant produces 5+ qualified bookings.</div>`;
+}
+
+
+/* ============ ANCHORED COMMENTS (Google-Docs style) ============ */
+async function initBriefComments(targetKey){
+  const brief = document.querySelector("#briefBox .brief"); const rail = document.getElementById("cRail");
+  if(!brief || !rail) return;
+  const blocks = [...brief.children].filter(el=>!["HR"].includes(el.tagName));
+  blocks.forEach((el,i)=>{ el.dataset.cidx = i; el.title = "Click to comment on this section";
+    el.addEventListener("click", (e)=>{ if(window._briefEditing) return; if(e.target.closest("a,button")) return; openComposer(targetKey, i, el); });
+  });
+  await paintRail(targetKey);
+}
+async function fetchBriefComments(targetKey){
+  try{ return await sb(`dashboard_comments?select=*&target_key=eq.${encodeURIComponent(targetKey)}&order=created_at.asc&limit=200`); }
+  catch(e){ return null; }
+}
+async function paintRail(targetKey){
+  const brief = document.querySelector("#briefBox .brief"); const rail = document.getElementById("cRail");
+  if(!brief || !rail) return;
+  const comments = await fetchBriefComments(targetKey);
+  if(comments===null){ rail.innerHTML = `<div class="notice">Comments need the <code>dashboard_comments</code> table + SQL.</div>`; return; }
+  brief.querySelectorAll("[data-cidx]").forEach(el=>el.classList.remove("hl","hl-active"));
+  rail.innerHTML = "";
+  const byAnchor = {};
+  comments.filter(c=>!c.parent_id).forEach(c=>{
+    const k = c.anchor_index==null ? "general" : String(c.anchor_index);
+    (byAnchor[k] = byAnchor[k]||[]).push(c);
+  });
+  const replies = pid => comments.filter(c=>String(c.parent_id)===String(pid));
+  let lastBottom = 0;
+  const keys = Object.keys(byAnchor).sort((a,b)=>(a==="general"?-1:b==="general"?1:Number(a)-Number(b)));
+  for(const k of keys){
+    const list = byAnchor[k];
+    let top = 0, anchorText = "";
+    if(k!=="general"){
+      const el = brief.querySelector(`[data-cidx="${k}"]`);
+      if(el){ el.classList.add("hl"); top = el.offsetTop; anchorText = el.textContent.slice(0,110); }
+    }
+    const card = document.createElement("div");
+    card.className = "c-card";
+    card.innerHTML = `
+      ${anchorText?`<div class="c-anchor">"${esc(anchorText)}…"</div>`:`<div class="c-anchor" style="border-color:var(--line)">General comment</div>`}
+      ${list.map(c=>`
+        <div class="c-msg">
+          <div class="c-who"><b>${esc(c.author||"Team")}</b> <span style="color:var(--muted)">· ${fmtDateTime(c.created_at)}</span></div>
+          <div style="white-space:pre-wrap">${esc(c.body||"")}</div>
+          ${replies(c.id).map(r=>`<div class="c-msg c-reply"><div class="c-who"><b>${esc(r.author||"Team")}</b> <span style="color:var(--muted)">· ${fmtDateTime(r.created_at)}</span></div><div style="white-space:pre-wrap">${esc(r.body||"")}</div></div>`).join("")}
+          <div class="c-actions"><a onclick="toggleReply('${esc(c.id)}')">Reply</a></div>
+          <div id="rep_${esc(c.id)}" style="display:none"><input placeholder="Reply…" onkeydown="if(event.key==='Enter')sendReply('${esc(targetKey)}','${esc(c.id)}',${c.anchor_index==null?"null":Number(c.anchor_index)},this)"></div>
+        </div>`).join("")}`;
+    card.addEventListener("mouseenter", ()=>{ if(k!=="general"){ const el=brief.querySelector(`[data-cidx="${k}"]`); if(el) el.classList.add("hl-active"); } });
+    card.addEventListener("mouseleave", ()=>{ if(k!=="general"){ const el=brief.querySelector(`[data-cidx="${k}"]`); if(el) el.classList.remove("hl-active"); } });
+    rail.appendChild(card);
+    card.style.top = Math.max(top, lastBottom) + "px";
+    lastBottom = Math.max(top, lastBottom) + card.offsetHeight + 12;
+  }
+  rail.style.minHeight = lastBottom + "px";
+}
+function openComposer(targetKey, idx, el){
+  document.querySelectorAll(".c-compose").forEach(x=>x.remove());
+  document.querySelectorAll("#briefBox .brief [data-cidx].hl-active").forEach(x=>x.classList.remove("hl-active"));
+  const rail = document.getElementById("cRail");
+  const card = document.createElement("div");
+  card.className = "c-card c-compose";
+  card.style.top = el.offsetTop + "px";
+  card.innerHTML = `<div class="c-anchor">"${esc(el.textContent.slice(0,110))}…"</div>
+    <input id="cComposeIn" placeholder="Comment on this section… (Enter to post)"
+      onkeydown="if(event.key==='Enter')submitAnchored('${esc(targetKey)}',${idx},this)">
+    <div class="c-actions"><a onclick="cancelCompose(${idx});">Cancel</a></div>`;
+  rail.appendChild(card);
+  el.classList.add("hl-active");
+  card.querySelector("input").focus();
+}
+
+function cancelCompose(idx){
+  document.querySelectorAll(".c-compose").forEach(x=>x.remove());
+  const brief = document.querySelector("#briefBox .brief");
+  const el = brief && brief.querySelector(`[data-cidx="${idx}"]`);
+  if(el && !el.classList.contains("hl")) el.classList.remove("hl-active");
+  else if(el) el.classList.remove("hl-active");
+}
+
+async function submitAnchored(targetKey, idx, inp){
+  const body = (inp.value||"").trim(); if(!body) return;
+  const brief = document.querySelector("#briefBox .brief");
+  const el = brief && brief.querySelector(`[data-cidx="${idx}"]`);
+  try{
+    await sbPost("dashboard_comments", { target_key: targetKey, author: whoAmI(), body,
+      anchor_index: idx, anchor_text: el ? el.textContent.slice(0,200) : null });
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("dashboard_comments")) delete cache[k]; });
+    await paintRail(targetKey);
+  }catch(e){ showAlert(String(e.body||e.message), "Comment failed — run the setup SQL for dashboard_comments"); }
+}
+function toggleReply(id){ const b=document.getElementById("rep_"+id); if(b){ b.style.display = b.style.display==="none"?"block":"none"; const i=b.querySelector("input"); if(i) i.focus(); } }
+async function sendReply(targetKey, parentId, anchorIdx, inp){
+  const body = (inp.value||"").trim(); if(!body) return;
+  try{
+    await sbPost("dashboard_comments", { target_key: targetKey, author: whoAmI(), body, parent_id: parentId, anchor_index: anchorIdx });
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("dashboard_comments")) delete cache[k]; });
+    await paintRail(targetKey);
+  }catch(e){ showAlert(String(e.body||e.message), "Reply failed"); }
+}
+
+
+async function variantDecision(file, action, btn){
+  const doSave = async (reason)=>{
+    await saveFeedback({ agent:"low_ticket_content", target_type:"ad_image_variant", target_id:file, action, feedback: reason || (action==="approved"?"Approved on dashboard":"") });
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("agent_feedback")) delete cache[k]; });
+    renderFunnel();
+  };
+  if(action==="rejected"){
+    openModal("Deny this variant — why?", "What's wrong with it? (layout, colors, tone, readability, wrong vibe…) This is saved and injected into the AI's next image-generation prompts.", async (text)=>{ await doSave(text); });
+  } else {
+    btn.disabled = true;
+    try{ await doSave(); }catch(e){ btn.disabled=false; showAlert(String(e.body||e.message||e), "Save failed"); }
+  }
+}
+
+
+/* ---------- brief formatting: meta grid + shift cards ---------- */
+function pairsFromHtml(html){
+  const parts = String(html).split(/<strong>/i);
+  const out = [];
+  for(let i=1;i<parts.length;i++){
+    const seg = parts[i];
+    const close = seg.search(/<\/strong>/i);
+    if(close < 0) continue;
+    const label = seg.slice(0, close).replace(/:\s*$/,"").trim();
+    let val = seg.slice(close).replace(/^<\/strong>/i,"");
+    val = val.replace(/^\s*:?\s*/,"").replace(/\s*·\s*$/,"").trim();
+    out.push({ label, html: val });
+  }
+  return out;
+}
+function enhanceBriefFormatting(root){
+  if(!root) return;
+  root.querySelectorAll("p").forEach(p=>{
+    if(p.dataset.fmt) return;
+    const firstStrong = p.querySelector("strong");
+    if(!firstStrong) return;
+    const lead = firstStrong.textContent.replace(/:\s*$/,"").trim();
+    if(lead === "Prepared by"){
+      const pairs = pairsFromHtml(p.innerHTML);
+      if(pairs.length >= 2){
+        const grid = document.createElement("div");
+        grid.className = "meta-grid"; grid.dataset.fmt = "1";
+        grid.innerHTML = pairs.map(x=>`<div><div class="mg-label">${esc(x.label)}</div><div class="mg-value">${x.html}</div></div>`).join("");
+        p.replaceWith(grid);
+      }
+    } else if(lead === "Shift"){
+      const pairs = pairsFromHtml(p.innerHTML);
+      if(pairs.length){
+        const card = document.createElement("div");
+        card.className = "shift-card"; card.dataset.fmt = "1";
+        card.innerHTML = pairs.map(x=>{
+          const l = x.label.toLowerCase();
+          const cls = l.startsWith("implication") ? "imp" : l.startsWith("evidence") ? "ev" : "";
+          const tag = l.startsWith("implication") ? "For our ads" : x.label;
+          return `<div class="s-row"><span class="s-tag ${cls}">${esc(tag)}</span><span>${x.html}</span></div>`;
+        }).join("");
+        p.replaceWith(card);
+      }
+    }
+    p.dataset && (p.dataset.fmt = "1");
+  });
+}
+function enhanceAllBriefs(){
+  document.querySelectorAll("#main .brief").forEach(enhanceBriefFormatting);
+}
+
+/* ================= PASSWORD GATE ================= */
+async function sha256Hex(s){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function tryUnlock(){
+  const u = (document.getElementById("userInput").value||"").trim().toLowerCase();
+  const v = document.getElementById("pwInput").value;
+  const errEl = document.getElementById("pwError");
+  if(!u || !v){ errEl.textContent = "Enter username and password."; return; }
+  errEl.textContent = "";
+  let rows;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/dashboard_users?username=eq.${encodeURIComponent(u)}&active=is.true&select=username,display_name,salt,password_hash`,
+      { headers:{ apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
+    if(!res.ok) throw new Error(await res.text());
+    rows = await res.json();
+  }catch(e){
+    errEl.textContent = "Can't reach the user directory — is the dashboard_users table set up?";
+    return;
+  }
+  const user = rows && rows[0];
+  if(user && (await sha256Hex((user.salt||"") + v)) === user.password_hash){
+    sessionStorage.setItem("aip_unlocked","1");
+    sessionStorage.setItem("aip_user", user.display_name || (u.charAt(0).toUpperCase()+u.slice(1)));
+    document.getElementById("lockScreen").remove();
+    render();
+  } else {
+    errEl.textContent = "Incorrect username or password.";
+    document.getElementById("pwInput").select();
+  }
+}
+if(sessionStorage.getItem("aip_unlocked")==="1" && sessionStorage.getItem("aip_user")){
+  document.getElementById("lockScreen").remove();
+  render();
+} else {
+  sessionStorage.removeItem("aip_unlocked");
+  setTimeout(()=>document.getElementById("userInput").focus(), 50);
+}
+</script>
+</body>
+</html>
