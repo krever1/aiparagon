@@ -262,6 +262,40 @@
   .vcard .v-btns{display:flex;gap:8px;margin-top:auto;padding-top:12px}
   .vcard .v-btns .btn{flex:1;justify-content:center;text-align:center}
 
+
+  .notif-item{display:flex;gap:10px;padding:9px 8px;border-radius:10px;cursor:pointer;font-size:.84rem;line-height:1.4}
+  .notif-item:hover{background:var(--cream)}
+  .notif-item .nt{font-size:.72rem;color:var(--muted);margin-top:2px}
+
+
+  .score-btn{white-space:nowrap}
+  .open-btn{display:inline-block;white-space:nowrap;border:1px solid var(--line);border-radius:8px;padding:5px 11px;font-size:.78rem;font-weight:650;color:var(--navy);text-decoration:none;background:var(--white)}
+  .open-btn:hover{background:var(--cream)}
+
+
+  /* ---------- tasks (asana) ---------- */
+  .tcheck{all:unset;box-sizing:border-box;cursor:pointer;width:22px;height:22px;border-radius:99px;
+    border:2px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    font-size:.7rem;color:transparent;transition:all .15s;margin-top:2px}
+  .tcheck:hover{border-color:var(--good);color:var(--good)}
+  .tcheck.done{background:var(--good);border-color:var(--good);color:#fff}
+  .task-name{font-size:.9rem;line-height:1.4}
+  .task-name.done{text-decoration:line-through;color:var(--muted)}
+  .due{font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--bg);color:var(--muted);flex-shrink:0}
+  .due.overdue{background:#F3E2DF;color:var(--bad)}
+  .due.today{background:var(--gold-soft);color:#7A5E12}
+  .stepnum{width:40px;height:40px;border-radius:12px;background:var(--navy);color:var(--gold);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-weight:700;font-size:1rem}
+  .tokenrow{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .tokenrow input{flex:1;min-width:220px;font:inherit;font-size:.86rem;padding:10px 14px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--white)}
+  .addrow{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .addrow input{flex:1;min-width:200px;font:inherit;font-size:.88rem;padding:10px 14px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg)}
+  .asg{font-size:.72rem;background:var(--navy-soft);color:var(--navy);padding:3px 9px;border-radius:99px;font-weight:600;flex-shrink:0}
+  /* ---------- inline e1 briefs ---------- */
+  .e1brief{display:none;margin-top:16px;border-top:1px solid var(--line);padding-top:16px}
+  .e1brief.open{display:block}
+  .e1brief .brief{box-shadow:none;padding:0;max-width:100%}
+
 </style>
 </head>
 <body>
@@ -289,6 +323,12 @@
     <div class="engines" id="engineSwitch"></div>
     <div class="navlabel" id="navLabel">Engine 3 · Marketing Intelligence</div>
     <nav class="nav" id="nav"></nav>
+    <div class="navlabel">Workspace</div>
+    <nav class="nav" id="wsNav">
+      <button data-ws-btn="tasks" onclick="setView('tasks')"><span>Tasks</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">ASANA</span></button>
+      <button data-ws-btn="notion" onclick="setView('notion')"><span>Notes</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">NOTION</span></button>
+      <button data-ws-btn="profile" onclick="setView('profile')"><span>Profile</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">COMPANY</span></button>
+    </nav>
     <div class="side-foot"><b style="display:block;color:var(--navy);font-size:.8rem;margin-bottom:2px">Internal dashboard</b>Data refreshes on page load from the shared knowledge base.</div>
   </aside>
   <main class="main">
@@ -298,6 +338,7 @@
         <input id="globalSearch" type="text" placeholder="Search summaries, competitors, drafts…" onkeydown="if(event.key==='Enter')globalSearch(this.value)">
       </div>
       <div class="spacer"></div>
+      <button id="notifBell" onclick="toggleNotif()" title="Notifications" style="position:relative;background:var(--white);border:1px solid var(--line);border-radius:99px;width:38px;height:38px;cursor:pointer;font-size:1rem">🔔<span id="notifCount" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--bad);color:#fff;font-size:.62rem;font-weight:800;border-radius:99px;min-width:17px;height:17px;line-height:17px;padding:0 3px">0</span></button>
       <div class="sync"><span class="dot"></span>Synced on page load</div>
       <div class="userchip"><span class="av">AP</span>AI Paragon</div>
     </div>
@@ -622,10 +663,12 @@ function renderShell(){
     label.textContent = ENGINES.find(e=>e.id===state.engine).name;
     nav.innerHTML = "";
   }
-  updateIntelBadge();
+  refreshNotifications();
+  document.querySelectorAll('#wsNav [data-ws-btn]').forEach(b=>b.classList.toggle("active", state.view===b.dataset.wsBtn));
   const vt = document.getElementById("viewTabs");
   if(vt){
-    if(state.engine==="e3"){
+    if(state.view==="tasks"||state.view==="notion"||state.view==="profile"){ vt.innerHTML=""; }
+    else if(state.engine==="e3"){
       vt.innerHTML = E3_VIEWS.map(v=>`<button class="${state.view===v.id?'active':''}" onclick="setView('${v.id}')">${v.name}</button>`).join("");
     } else if(state.engine==="e1"){
       vt.innerHTML = E1_VIEWS.map(v=>`<button class="${state.view===v.id || (v.id==='e1pipeline' && state.view==='e1lead')?'active':''}" onclick="setView('${v.id}')">${v.name}</button>`).join("");
@@ -650,10 +693,13 @@ function globalSearch(v){
   state.engine="e3"; state.filters.q = v; state.view="intel"; render();
 }
 function setEngine(id){ state.engine=id; state.view = id==="e3"?"overview":id==="e1"?"e1overview":"placeholder"; render(); }
-function setView(id){ state.view=id; render(); }
+function setView(id){ state.view=id; render(); if(["intel","ads","funnel"].includes(id)) setTimeout(()=>markViewSeen(id), 800); }
 function render(){
   renderShell();
   const main = document.getElementById("main");
+  if(state.view==="tasks"){ renderTasks(); return; }
+  if(state.view==="notion"){ renderNotion(); return; }
+  if(state.view==="profile"){ renderProfile(); return; }
   if(state.engine==="e1"){
     ({e1overview:renderE1Overview, e1pipeline:renderE1Pipeline, e1lead:renderE1Lead})[state.view]();
     return;
@@ -932,8 +978,8 @@ function paintItems(){
       ${i.signal?`<div style="color:var(--muted);font-size:.78rem;margin-top:3px">${esc(i.signal)}</div>`:""}
       ${(i.themes||[]).length?`<div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${i.themes.map(t=>`<span class="chip" style="font-size:.66rem">${esc(t)}</span>`).join("")}</div>`:""}</td>
     <td><span class="pill ${esc(i.ad_context_value||"low")}">${esc(i.ad_context_value||"—")}</span></td>
-    <td>${i.engagement_total!=null?`<b>${esc(i.engagement_total)}</b><div style="margin-top:4px"><button class="score-btn" title="Override score" onclick="editScore('engagement','intel_items','${esc(i.id)}',${i.engagement_score!=null?Number(i.engagement_score):null},this)">${i.engagement_score!=null?Number(i.engagement_score).toFixed(2):"—"}${i.score_overridden?" ✎":""} · edit</button></div>`:`<span style="color:var(--muted)">n/a</span>`}</td>
-    <td>${i.url?`<a href="${esc(i.url)}" target="_blank" rel="noopener">Open ↗</a>`:"—"}</td>
+    <td style="white-space:nowrap">${i.engagement_total!=null?`<b>${esc(i.engagement_total)}</b><div style="margin-top:5px"><button class="score-btn" title="Override score" onclick="editScore('engagement','intel_items','${esc(i.id)}',${i.engagement_score!=null?Number(i.engagement_score):null},this)">✎ ${i.engagement_score!=null?Number(i.engagement_score).toFixed(2):"—"}${i.score_overridden?" (manual)":""}</button></div>`:`<span style="color:var(--muted)">n/a</span>`}</td>
+    <td>${i.url?`<a class="open-btn" href="${esc(i.url)}" target="_blank" rel="noopener">Open ↗</a>`:"—"}</td>
   </tr>`).join("") : `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:22px">No items match these filters.</td></tr>`;
 }
 
@@ -952,7 +998,8 @@ async function renderAds(){
     try{
       const outs = await sb(`agent_outputs?select=*&agent=eq.ad_strategist&run_id=eq.${encodeURIComponent(state.adsRun)}&order=created_at.desc&limit=1`);
       if(outs.length){
-        briefHtml = `<div class="brief">${marked.parse(outs[0].content_md||"")}</div>`;
+        briefHtml = `<div class="brief-wrap"><div class="brief-main" id="adsBriefBox"><div class="brief">${marked.parse(outs[0].content_md||"")}</div></div><div class="c-rail" id="adsRail"></div></div>
+          <div style="margin-top:8px;color:var(--muted);font-size:.78rem">💬 Click any paragraph to comment — visible to the whole team.</div>`;
         const src = asObj(outs[0].data).source_intel_run;
         if(src) lineage = `<div class="lineage">Built from Intel Tracker run <b>${esc(src)}</b></div>`;
       }
@@ -991,6 +1038,7 @@ async function renderAds(){
       : `<div class="empty"><div class="big">No ad records yet</div>Winner ads (6+ weeks running) and swipe-file entries appear here after the next Ad Strategist run.</div>`)}
     </section>`;
   enhanceAllBriefs();
+  if(document.getElementById("adsBriefBox")) initBriefComments("adsbrief:"+state.adsRun, "#adsBriefBox .brief", "#adsRail");
 }
 function pickAdsRun(v){ state.adsRun=v; renderAds(); }
 
@@ -1058,9 +1106,10 @@ async function renderFunnel(){
       <div style="margin-top:10px;color:var(--muted);font-size:.78rem">Deny asks for a reason — the reason is fed back into the next generation run so the AI learns your taste.</div>
     </section>
     <div class="tabs">${assets.map((a,i)=>`<button class="${i===state.funnelTab?'active':''}" onclick="pickFunnelTab(${i})">${esc(a.title||("Asset "+(i+1)))}</button>`).join("")}</div>
-    <div class="brief">${marked.parse(assets[state.funnelTab].content_md || assets[state.funnelTab].content || "_Empty asset._")}</div>
+    <div class="brief-wrap"><div class="brief-main" id="funnelBriefBox"><div class="brief">${marked.parse(assets[state.funnelTab].content_md || assets[state.funnelTab].content || "_Empty asset._")}</div></div><div class="c-rail" id="funnelRail"></div></div>
     <div class="datestamp" style="margin-top:14px">Package created ${fmtDateTime(out.created_at)} · requires human approval before launch</div>`;
   enhanceAllBriefs();
+  initBriefComments(`funnel:${state.funnelRun}:tab${state.funnelTab}`, "#funnelBriefBox .brief", "#funnelRail");
 }
 function pickFunnelRun(v){ state.funnelRun=v; state.funnelTab=0; renderFunnel(); }
 function pickFunnelTab(i){ state.funnelTab=i; renderFunnel(); }
@@ -1069,7 +1118,7 @@ function pickFunnelTab(i){ state.funnelTab=i; renderFunnel(); }
 async function e1Data(){
   let leads=[], outs=[], err=null;
   try{ leads = await sb("e1_leads?select=*&order=updated_at.desc&limit=300"); }catch(e){ err=e; }
-  try{ outs = await sb(`agent_outputs?select=run_id,agent,title,created_at,data&${E1_AGENT_FILTER}&order=created_at.desc&limit=1000`); }catch(e){ if(!err) err=e; }
+  try{ outs = await sb(`agent_outputs?select=id,run_id,agent,title,created_at,data,content_md&${E1_AGENT_FILTER}&order=created_at.desc&limit=1000`); }catch(e){ if(!err) err=e; }
   return {leads, outs, err};
 }
 function e1StageState(lead, outs, stage){
@@ -1237,21 +1286,55 @@ async function renderE1Lead(){
       const st = e1StageState(lead, outs, s);
       const d = asObj(st.out?.data);
       const docLink = d.documentId ? `https://docs.google.com/document/d/${esc(d.documentId)}/edit` : null;
+      const hasMd = !!(st.out && st.out.content_md);
       return `<section class="block">
         <h2>${i+1}. ${esc(s.label)} ${st.done?`<span class="count">${st.out?fmtDate(st.out.created_at):"done"}</span>`:`<span class="chip" style="opacity:.6">not run yet</span>`}</h2>
         ${st.done ? `<div class="card">
           ${st.out?.title?`<div style="font-weight:650;color:var(--navy);margin-bottom:6px">${esc(st.out.title)}</div>`:""}
           <div class="statline" style="margin-top:4px">
+            ${hasMd?`<button class="btn navy" id="e1bBtn${i}" onclick="toggleE1Brief(${i}, '${esc(s.agent)}')">Read inline ▾</button>`:""}
             ${st.url?`<a class="chip" style="text-decoration:none" href="${esc(st.url)}" target="_blank" rel="noopener">Open PDF ↗</a>`:""}
             ${docLink?`<a class="chip" style="text-decoration:none" href="${docLink}" target="_blank" rel="noopener">Open Google Doc ↗</a>`:""}
             ${d.status?`<span class="chip">status: <b>${esc(d.status)}</b></span>`:""}
             ${d.callDate?`<span class="chip">call: ${esc(d.callDate)}</span>`:""}
           </div>
+          ${hasMd?`<div class="e1brief" id="e1Brief${i}">
+            <div class="brief-wrap"><div class="brief-main" id="e1BriefBox${i}"><div class="brief">${marked.parse(st.out.content_md)}</div></div>
+            <div class="c-rail" id="e1Rail${i}"></div></div>
+            <div style="margin-top:8px;color:var(--muted);font-size:.78rem">💬 Click any paragraph to comment on it — comments appear in the margin, same as Engine 3 briefs.</div>
+          </div>`:
+            `<div style="margin-top:10px;font-size:.78rem;color:var(--muted)">Inline view appears once the workflow saves this stage's text to the knowledge base — older runs only stored the document link.</div>`}
         </div>` : `<div class="empty" style="padding:22px">This stage hasn't produced output for this lead yet.</div>`}
       </section>`;
     }).join("")}`;
 }
 
+
+function toggleE1Brief(i, agent){
+  /* accordion: close other open briefs so the comment rail is always unambiguous */
+  document.querySelectorAll(".e1brief.open").forEach(b=>{
+    if(b.id !== "e1Brief"+i){
+      b.classList.remove("open");
+      const otherBtn = document.getElementById("e1bBtn"+b.id.replace("e1Brief",""));
+      if(otherBtn) otherBtn.textContent = "Read inline ▾";
+    }
+  });
+  const box = document.getElementById("e1Brief"+i);
+  const btn = document.getElementById("e1bBtn"+i);
+  if(!box) return;
+  const open = box.classList.toggle("open");
+  if(btn) btn.textContent = open ? "Hide inline ▴" : "Read inline ▾";
+  if(!open) return;
+  if(!box.dataset.fmt){ box.dataset.fmt="1"; try{ enhanceBriefFormatting(box.querySelector(".brief")); }catch(e){} }
+  const targetKey = `e1:${state.e1Lead}:${agent}`;
+  if(!box.dataset.cc){
+    box.dataset.cc = "1";
+    initBriefComments(targetKey, `#e1BriefBox${i} .brief`, `#e1Rail${i}`);
+  } else {
+    window._ccSel = { briefSel: `#e1BriefBox${i} .brief`, railSel: `#e1Rail${i}`, targetKey };
+    paintRail(targetKey);
+  }
+}
 
 /* ================= AD TESTING (A/B) ================= */
 const TESTING_SAMPLE = [
@@ -1325,8 +1408,11 @@ async function renderTesting(){
 
 
 /* ============ ANCHORED COMMENTS (Google-Docs style) ============ */
-async function initBriefComments(targetKey){
-  const brief = document.querySelector("#briefBox .brief"); const rail = document.getElementById("cRail");
+function ccBrief(){ return document.querySelector((window._ccSel&&window._ccSel.briefSel)||"#briefBox .brief"); }
+function ccRail(){ return document.querySelector((window._ccSel&&window._ccSel.railSel)||"#cRail"); }
+async function initBriefComments(targetKey, briefSel, railSel){
+  window._ccSel = { briefSel: briefSel||"#briefBox .brief", railSel: railSel||"#cRail", targetKey };
+  const brief = ccBrief(); const rail = ccRail();
   if(!brief || !rail) return;
   const blocks = [...brief.children].filter(el=>!["HR"].includes(el.tagName));
   blocks.forEach((el,i)=>{ el.dataset.cidx = i; el.title = "Click to comment on this section";
@@ -1339,7 +1425,7 @@ async function fetchBriefComments(targetKey){
   catch(e){ return null; }
 }
 async function paintRail(targetKey){
-  const brief = document.querySelector("#briefBox .brief"); const rail = document.getElementById("cRail");
+  const brief = ccBrief(); const rail = ccRail();
   if(!brief || !rail) return;
   const comments = await fetchBriefComments(targetKey);
   if(comments===null){ rail.innerHTML = `<div class="notice">Comments need the <code>dashboard_comments</code> table + SQL.</div>`; return; }
@@ -1382,8 +1468,8 @@ async function paintRail(targetKey){
 }
 function openComposer(targetKey, idx, el){
   document.querySelectorAll(".c-compose").forEach(x=>x.remove());
-  document.querySelectorAll("#briefBox .brief [data-cidx].hl-active").forEach(x=>x.classList.remove("hl-active"));
-  const rail = document.getElementById("cRail");
+  document.querySelectorAll(".brief [data-cidx].hl-active").forEach(x=>x.classList.remove("hl-active"));
+  const rail = ccRail();
   const card = document.createElement("div");
   card.className = "c-card c-compose";
   card.style.top = el.offsetTop + "px";
@@ -1398,7 +1484,7 @@ function openComposer(targetKey, idx, el){
 
 function cancelCompose(idx){
   document.querySelectorAll(".c-compose").forEach(x=>x.remove());
-  const brief = document.querySelector("#briefBox .brief");
+  const brief = ccBrief();
   const el = brief && brief.querySelector(`[data-cidx="${idx}"]`);
   if(el && !el.classList.contains("hl")) el.classList.remove("hl-active");
   else if(el) el.classList.remove("hl-active");
@@ -1406,7 +1492,7 @@ function cancelCompose(idx){
 
 async function submitAnchored(targetKey, idx, inp){
   const body = (inp.value||"").trim(); if(!body) return;
-  const brief = document.querySelector("#briefBox .brief");
+  const brief = ccBrief();
   const el = brief && brief.querySelector(`[data-cidx="${idx}"]`);
   try{
     await sbPost("dashboard_comments", { target_key: targetKey, author: whoAmI(), body,
@@ -1490,6 +1576,745 @@ function enhanceBriefFormatting(root){
 }
 function enhanceAllBriefs(){
   document.querySelectorAll("#main .brief").forEach(enhanceBriefFormatting);
+}
+
+
+/* ============ NOTIFICATIONS + PER-USER SEEN BADGES ============ */
+function seenKey(k){ return "aip_seen_" + (sessionStorage.getItem("aip_user")||"team").toLowerCase() + "_" + k; }
+function viewOfTargetKey(tk){
+  if(tk.startsWith("adsbrief:")) return "ads";
+  if(tk.startsWith("funnel:")) return "funnel";
+  if(tk.startsWith("e1:")) return "e1:" + (tk.split(":")[1]||"");
+  return "intel";
+}
+async function collectSignals(){
+  const me = sessionStorage.getItem("aip_user")||"";
+  const out = { pendingDrafts:0, latestDraftTs:null, latestAdsTs:null, latestFunnelTs:null, pendingVariants:0, comments:[] };
+  try{
+    const drafts = await sb("engagement_drafts?select=id,status,created_at&order=created_at.desc&limit=200");
+    const pend = drafts.filter(d=>!d.status||d.status==="pending");
+    out.pendingDrafts = pend.length;
+    out.latestDraftTs = pend.length ? pend[0].created_at : null;
+  }catch(e){}
+  try{
+    const ao = await sb("agent_outputs?select=agent,created_at,data&order=created_at.desc&limit=30");
+    const ads = ao.find(o=>o.agent==="ad_strategist");
+    if(ads) out.latestAdsTs = ads.created_at;
+    const fn = ao.find(o=>o.agent==="low_ticket_content");
+    if(fn){
+      out.latestFunnelTs = fn.created_at;
+      const imgs = (asObj(fn.data).ad_images||[]).map(v=>v.file).filter(Boolean);
+      if(imgs.length){
+        try{
+          const fb = await sb("agent_feedback?select=target_id&target_type=eq.ad_image_variant&limit=300");
+          const decided = new Set(fb.map(r=>r.target_id));
+          out.pendingVariants = imgs.filter(f=>!decided.has(f)).length;
+        }catch(e){ out.pendingVariants = imgs.length; }
+      }
+    }
+  }catch(e){}
+  try{
+    const cs = await sb("dashboard_comments?select=id,target_key,author,body,created_at,parent_id&order=created_at.desc&limit=60");
+    const lastSeen = localStorage.getItem(seenKey("comments")) || "1970-01-01";
+    out.comments = cs.filter(c=>(c.author||"") !== me && c.created_at > lastSeen);
+  }catch(e){}
+  return out;
+}
+async function refreshNotifications(){
+  const sig = await collectSignals();
+  window._navSig = sig;
+  /* nav badges — hidden once the user has viewed the current state */
+  const badge = (view, count, ts)=>{
+    const btn = document.querySelector(`#nav [data-view-btn="${view}"]`); if(!btn) return;
+    let el = btn.querySelector(".n");
+    const seenTs = localStorage.getItem(seenKey("view_"+view)) || "";
+    const isNew = count>0 && (!ts || ts > seenTs);
+    if(isNew){ if(!el){ el=document.createElement("span"); el.className="n"; btn.appendChild(el); } el.textContent = count; }
+    else if(el) el.remove();
+  };
+  badge("intel", sig.pendingDrafts, sig.latestDraftTs);
+  badge("ads", sig.latestAdsTs ? 1 : 0, sig.latestAdsTs);
+  badge("funnel", sig.pendingVariants, sig.latestFunnelTs);
+  /* bell */
+  const actions = (sig.pendingDrafts?1:0) + (sig.pendingVariants?1:0);
+  const total = sig.comments.length + actions;
+  const cEl = document.getElementById("notifCount");
+  if(cEl){ cEl.style.display = total ? "block" : "none"; cEl.textContent = total; }
+}
+function markViewSeen(view){
+  const sig = window._navSig || {};
+  const ts = view==="intel" ? sig.latestDraftTs : view==="ads" ? sig.latestAdsTs : view==="funnel" ? sig.latestFunnelTs : null;
+  if(ts) localStorage.setItem(seenKey("view_"+view), ts);
+  const btn = document.querySelector(`#nav [data-view-btn="${view}"] .n`); if(btn) btn.remove();
+}
+function toggleNotif(){
+  const ex = document.getElementById("notifPanel");
+  if(ex){ ex.remove(); return; }
+  const sig = window._navSig || { comments:[], pendingDrafts:0, pendingVariants:0 };
+  const bell = document.getElementById("notifBell");
+  const r = bell.getBoundingClientRect();
+  const p = document.createElement("div");
+  p.id = "notifPanel";
+  p.style.cssText = `position:fixed;top:${r.bottom+8}px;right:${Math.max(12, window.innerWidth-r.right)}px;z-index:997;width:340px;max-height:70vh;overflow:auto;background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 44px rgba(30,58,95,.18);padding:14px`;
+  const items = [];
+  if(sig.pendingDrafts) items.push(`<div class="notif-item" onclick="notifGo('intel')"><span style="font-size:1rem">📝</span><div><b>${sig.pendingDrafts} engagement draft${sig.pendingDrafts===1?"":"s"}</b> awaiting approval<div class="nt">Intel Tracker</div></div></div>`);
+  if(sig.pendingVariants) items.push(`<div class="notif-item" onclick="notifGo('funnel')"><span style="font-size:1rem">🖼️</span><div><b>${sig.pendingVariants} ad variant${sig.pendingVariants===1?"":"s"}</b> awaiting approve/deny<div class="nt">Low-Ticket Agent</div></div></div>`);
+  for(const c of (sig.comments||[]).slice(0,12)){
+    const v = viewOfTargetKey(c.target_key||"");
+    items.push(`<div class="notif-item" onclick="notifGo('${v}')"><span style="font-size:1rem">💬</span><div><b>${esc(c.author||"Team")}</b> ${c.parent_id?"replied":"commented"}: ${esc(String(c.body||"").slice(0,70))}${String(c.body||"").length>70?"…":""}<div class="nt">${v.startsWith("e1:")?"Engine 1 · "+esc(v.slice(3)):v==="ads"?"Ad Strategist":v==="funnel"?"Low-Ticket Agent":"Intel Tracker"} · ${fmtDateTime(c.created_at)}</div></div></div>`);
+  }
+  p.innerHTML = `<div style="display:flex;align-items:center;margin-bottom:10px"><b style="font-family:Georgia,serif">Notifications</b>
+    <a style="margin-left:auto;font-size:.76rem;color:var(--navy);cursor:pointer;font-weight:650" onclick="markAllRead()">Mark all read</a></div>
+    ${items.length ? items.join("") : `<div style="color:var(--muted);font-size:.85rem;padding:8px 0">You're all caught up 🎉</div>`}`;
+  document.body.appendChild(p);
+  const close = ev=>{ if(!p.contains(ev.target) && ev.target!==bell){ p.remove(); document.removeEventListener("click", close, true); } };
+  setTimeout(()=>document.addEventListener("click", close, true), 0);
+}
+function notifGo(v){
+  const p=document.getElementById("notifPanel"); if(p) p.remove();
+  if(v.startsWith("e1:")){ state.engine="e1"; state.e1Lead=v.slice(3); state.view="e1lead"; render(); return; }
+  state.engine="e3"; setView(v);
+}
+function markAllRead(){
+  localStorage.setItem(seenKey("comments"), new Date().toISOString());
+  ["intel","ads","funnel"].forEach(markViewSeen);
+  const p=document.getElementById("notifPanel"); if(p) p.remove();
+  refreshNotifications();
+}
+
+
+/* ================= TASKS (ASANA) ================= */
+const ASANA_API = "https://app.asana.com/api/1.0";
+const aCache = {};
+function aStore(k,v){ v ? localStorage.setItem("asana_"+k, v) : localStorage.removeItem("asana_"+k); }
+function aRead(k){ return localStorage.getItem("asana_"+k) || ""; }
+
+async function asana(path, method="GET", body=null, useCache=true){
+  const ck = method+path;
+  if(method==="GET" && useCache && aCache[ck] && (Date.now()-aCache[ck].t)<45000) return aCache[ck].v;
+  const res = await fetch(ASANA_API+path, {
+    method,
+    headers: { Authorization: "Bearer "+aRead("pat"), ...(body?{"Content-Type":"application/json"}:{}) },
+    body: body ? JSON.stringify({data: body}) : null
+  });
+  if(res.status===401) throw Object.assign(new Error("Asana rejected the token."), {auth:true});
+  if(!res.ok){
+    let msg = ""; try{ msg = (await res.json()).errors?.[0]?.message || ""; }catch(e){}
+    throw new Error(msg || `Asana error ${res.status}`);
+  }
+  const v = (await res.json()).data;
+  if(method==="GET") aCache[ck] = {t: Date.now(), v};
+  return v;
+}
+function aClearCache(){ Object.keys(aCache).forEach(k=>delete aCache[k]); }
+
+function tasksHero(sub, right){
+  return `<div class="page-head"><div>
+    <div class="eyebrow">Workspace · Task Management</div>
+    <h1 class="page">Tasks</h1>
+    <div class="page-sub">${sub}</div></div>${right||""}</div>`;
+}
+
+async function renderTasks(){
+  const main = document.getElementById("main");
+  if(!aRead("pat")){
+    main.innerHTML = tasksHero("Connect your Asana account to see and manage tasks without leaving the dashboard.") + `
+    <div class="cols" style="margin-top:0">
+      <div class="panel">
+        <div class="panel-head"><h2>Connect Asana in 3 steps</h2></div>
+        <div class="item"><div class="stepnum">1</div><div class="txt">
+          <p><b>Create a Personal Access Token</b></p>
+          <small>Open <a href="https://app.asana.com/0/my-apps" target="_blank" rel="noopener" style="color:var(--navy);text-decoration:underline;text-decoration-color:var(--gold)">app.asana.com/0/my-apps</a> → "Personal access tokens" → "Create new token". Name it "AI Paragon Dashboard" and copy it.</small>
+        </div></div>
+        <div class="item"><div class="stepnum">2</div><div class="txt">
+          <p><b>Paste the token below</b></p>
+          <small>It's stored only in this browser (localStorage) — it never touches our database or any server.</small>
+        </div></div>
+        <div class="item"><div class="stepnum">3</div><div class="txt">
+          <p><b>Connect</b></p>
+          <small>We verify the token with Asana, then load your workspaces and projects.</small>
+        </div></div>
+        <div class="tokenrow">
+          <input id="asanaTok" type="password" placeholder="Paste your Asana token (starts with 1/ or 2/)…" onkeydown="if(event.key==='Enter')connectAsana()">
+          <button class="btn navy" style="padding:10px 20px" onclick="connectAsana()">Connect</button>
+        </div>
+        <div id="asanaConnErr" style="color:var(--bad);font-size:.82rem;margin-top:10px;min-height:1.2em"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>What you get</h2></div>
+        <div class="item"><div class="srcav">✓</div><div class="txt"><p>See open tasks from any project</p><small>With assignee, due date, and overdue highlighting.</small></div></div>
+        <div class="item"><div class="srcav">＋</div><div class="txt"><p>Add tasks in one line</p><small>Quick-add straight into the selected project.</small></div></div>
+        <div class="item"><div class="srcav">✔</div><div class="txt"><p>Tick tasks off from here</p><small>Complete tasks without opening Asana. Every task links back for the full detail.</small></div></div>
+      </div>
+    </div>`;
+    return;
+  }
+
+  main.innerHTML = tasksHero("Loading your Asana workspace…");
+  let me, workspaces;
+  try{
+    me = await asana("/users/me?opt_fields=name,gid");
+    workspaces = await asana("/workspaces?limit=100");
+  }catch(e){ return tasksAuthFail(e); }
+
+  if(!aRead("ws") || !workspaces.find(w=>w.gid===aRead("ws"))) aStore("ws", workspaces[0]?.gid || "");
+  let projects = [];
+  try{ projects = await asana(`/projects?workspace=${aRead("ws")}&archived=false&limit=100&opt_fields=name`); }
+  catch(e){ return tasksAuthFail(e); }
+  if(!aRead("project") || !projects.find(p=>p.gid===aRead("project"))) aStore("project", projects[0]?.gid || "");
+
+  const filter = aRead("filter") || "open";
+  const wsSel = workspaces.length>1 ? `<label>Workspace</label>
+      <select onchange="aStore('ws',this.value);aStore('project','');renderTasks()">
+        ${workspaces.map(w=>`<option value="${w.gid}" ${w.gid===aRead("ws")?"selected":""}>${esc(w.name)}</option>`).join("")}
+      </select>` : "";
+  main.innerHTML = tasksHero(
+      `Connected as <b style="color:#fff">${esc(me.name)}</b> · ${projects.length} project${projects.length===1?"":"s"} in this workspace.`,
+      `<button class="btn ghost" style="background:rgba(255,255,255,.12);color:#E8EDF4;box-shadow:none" onclick="disconnectAsana()">Disconnect</button>`) + `
+    <div class="controls" style="margin-bottom:18px">
+      ${wsSel}
+      <label>Project</label>
+      <select onchange="aStore('project',this.value);renderTasks()">
+        ${projects.length ? projects.map(p=>`<option value="${p.gid}" ${p.gid===aRead("project")?"selected":""}>${esc(p.name)}</option>`).join("") : `<option>No projects found</option>`}
+      </select>
+      <label>Show</label>
+      <select onchange="aStore('filter',this.value);renderTasks()">
+        <option value="open" ${filter==="open"?"selected":""}>All open</option>
+        <option value="mine" ${filter==="mine"?"selected":""}>My tasks</option>
+        <option value="done" ${filter==="done"?"selected":""}>Recently completed</option>
+      </select>
+      <button class="btn ghost" onclick="aClearCache();renderTasks()">↻ Refresh</button>
+    </div>
+    <div class="panel">
+      <div class="addrow">
+        <input id="newTask" type="text" placeholder="Add a task and press Enter…" onkeydown="if(event.key==='Enter')addAsanaTask()">
+        <button class="btn navy" style="padding:10px 20px" onclick="addAsanaTask()">Add task</button>
+      </div>
+      <div id="taskList"><div class="loading">Loading tasks…</div></div>
+    </div>
+    <div class="notice" style="margin-top:18px">Tasks live in <b>Asana</b> — this view reads and updates them through your personal token. Click any task name to open it in Asana.</div>`;
+
+  loadAsanaTasks(me);
+}
+
+async function loadAsanaTasks(me){
+  const list = document.getElementById("taskList");
+  if(!aRead("project")){ list.innerHTML = `<div class="empty"><div class="big">No project selected</div>Create a project in Asana, then hit Refresh.</div>`; return; }
+  let tasks;
+  try{
+    tasks = await asana(`/projects/${aRead("project")}/tasks?limit=100&opt_fields=name,completed,completed_at,due_on,assignee.name,assignee.gid,permalink_url`);
+  }catch(e){ list.innerHTML = errNotice(e, "asana_tasks"); return; }
+  const filter = aRead("filter") || "open";
+  let rows = tasks;
+  if(filter==="open") rows = tasks.filter(t=>!t.completed);
+  if(filter==="mine") rows = tasks.filter(t=>!t.completed && t.assignee && me && t.assignee.gid===me.gid);
+  if(filter==="done") rows = tasks.filter(t=>t.completed).sort((a,b)=>String(b.completed_at||"").localeCompare(String(a.completed_at||""))).slice(0,30);
+  if(!rows.length){
+    list.innerHTML = `<div class="empty"><div class="big">${filter==="done"?"Nothing completed recently":"All clear 🎉"}</div>${filter==="done"?"Completed tasks will show up here.":"No open tasks in this view."}</div>`;
+    return;
+  }
+  const today = new Date().toISOString().slice(0,10);
+  list.innerHTML = rows.map(t=>{
+    let due = "";
+    if(t.due_on){
+      const cls = t.completed ? "" : (t.due_on < today ? "overdue" : (t.due_on === today ? "today" : ""));
+      due = `<span class="due ${cls}">${t.due_on === today ? "Today" : fmtDate(t.due_on)}</span>`;
+    }
+    return `<div class="item">
+      <button class="tcheck ${t.completed?"done":""}" title="${t.completed?"Reopen":"Mark complete"}" onclick="toggleAsanaTask('${t.gid}', ${t.completed?"false":"true"}, this)">✓</button>
+      <div class="txt"><p class="task-name ${t.completed?"done":""}"><a href="${esc(t.permalink_url||"#")}" target="_blank" rel="noopener">${esc(t.name||"(untitled)")}</a></p></div>
+      ${t.assignee ? `<span class="asg">${esc(t.assignee.name)}</span>` : ""}
+      ${due}
+    </div>`;
+  }).join("");
+}
+
+async function toggleAsanaTask(gid, completed, btn){
+  btn.disabled = true;
+  try{
+    await asana(`/tasks/${gid}`, "PUT", {completed});
+    aClearCache();
+    const me = await asana("/users/me?opt_fields=name,gid");
+    loadAsanaTasks(me);
+  }catch(e){ btn.disabled=false; showAlert ? showAlert("Asana update failed: "+(e.message||e)) : alert("Asana update failed: "+(e.message||e)); }
+}
+
+async function addAsanaTask(){
+  const inp = document.getElementById("newTask");
+  const name = (inp.value||"").trim();
+  if(!name) return;
+  inp.disabled = true;
+  try{
+    await asana("/tasks", "POST", {name, projects:[aRead("project")]});
+    inp.value = ""; inp.disabled = false; inp.focus();
+    aClearCache();
+    const me = await asana("/users/me?opt_fields=name,gid");
+    loadAsanaTasks(me);
+  }catch(e){ inp.disabled=false; showAlert ? showAlert("Couldn't add task: "+(e.message||e)) : alert("Couldn't add task: "+(e.message||e)); }
+}
+
+async function connectAsana(){
+  const tok = (document.getElementById("asanaTok").value||"").trim();
+  const err = document.getElementById("asanaConnErr");
+  if(!tok){ err.textContent = "Paste your token first."; return; }
+  err.textContent = "";
+  aStore("pat", tok);
+  try{
+    await asana("/users/me?opt_fields=name,gid", "GET", null, false);
+    aClearCache();
+    renderTasks();
+  }catch(e){
+    aStore("pat","");
+    err.textContent = e.auth ? "Asana didn't accept that token — copy it again from app.asana.com/0/my-apps." : "Couldn't reach Asana: "+(e.message||e);
+  }
+}
+function disconnectAsana(){
+  ["pat","ws","project","filter"].forEach(k=>aStore(k,""));
+  aClearCache();
+  renderTasks();
+}
+function tasksAuthFail(e){
+  const main = document.getElementById("main");
+  if(e.auth){
+    main.innerHTML = tasksHero("Your saved Asana token stopped working.") +
+      `<div class="notice err">Asana rejected the saved token — it may have been revoked. Disconnect and paste a fresh one.
+       <div style="margin-top:10px"><button class="btn navy" onclick="disconnectAsana()">Disconnect &amp; reconnect</button></div></div>`;
+  } else {
+    main.innerHTML = tasksHero("Couldn't reach Asana.") + errNotice(e, "asana");
+  }
+}
+
+
+/* ================= COMPANY PROFILE & COMPETITORS ================= */
+function pRead(k){ return localStorage.getItem("profile_"+k) || ""; }
+function pStore(k,v){ v ? localStorage.setItem("profile_"+k, v) : localStorage.removeItem("profile_"+k); }
+function pFresh(path){ delete cache[path]; return sb(path); }
+const P_INPUT = 'style="font:inherit;font-size:.86rem;padding:9px 12px;border:1px solid #e2ddd2;border-radius:9px;background:var(--white);color:var(--ink);width:100%;box-sizing:border-box"';
+const P_LABEL = 'style="font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#8a8374;margin-bottom:4px"';
+const P_FIELDS = [
+  ["business_name","Business name",false],
+  ["contact_name","Contact name",false],
+  ["website","Website",false],
+  ["industry","Industry",false],
+  ["description","What the business does",true],
+  ["services","Services / offers",true],
+  ["target_market","Target market",true]
+];
+
+function pSetupSql(){
+  return `<div class="notice"><b>One-time setup.</b> Run this in the Supabase SQL editor, then refresh:<pre style="white-space:pre-wrap;font-size:.76rem;margin-top:8px">create table if not exists company_profile (
+  id int primary key,
+  business_name text, contact_name text, website text,
+  industry text, description text, services text, target_market text,
+  updated_by text, updated_at timestamptz default now()
+);
+create table if not exists competitors (
+  id uuid primary key default gen_random_uuid(),
+  name text not null, website text, notes text,
+  status text default 'suggested',
+  source text default 'manual',
+  added_by text, created_at timestamptz default now()
+);
+alter table company_profile enable row level security;
+alter table competitors enable row level security;
+create policy "read_company_profile" on company_profile for select to anon using (true);
+create policy "write_company_profile" on company_profile for insert to anon with check (true);
+create policy "update_company_profile" on company_profile for update to anon using (true);
+create policy "read_competitors" on competitors for select to anon using (true);
+create policy "write_competitors" on competitors for insert to anon with check (true);
+create policy "update_competitors" on competitors for update to anon using (true);</pre></div>`;
+}
+
+function pCompCard(c, suggested){
+  const site = c.website ? `<a href="${esc(/^https?:\/\//i.test(c.website)?c.website:"https://"+c.website)}" target="_blank" style="color:var(--navy)">${esc(String(c.website).replace(/^https?:\/\//i,""))}</a>` : "";
+  return `<div class="card" style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:8px;padding:12px 14px">
+    <div style="min-width:0">
+      <b style="color:var(--ink)">${esc(c.name)}</b>
+      <span class="pill" style="margin-left:6px">${c.source==="manual"?"manual":"AI"}</span>
+      <div style="font-size:.82rem;color:#6d675b;margin-top:3px">${site}${site&&c.notes?" · ":""}${esc(c.notes||"")}</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      ${suggested
+        ? `<button class="btn navy" onclick="pCompSet('${c.id}','approved',this)">Approve</button>
+           <button class="btn ghost" onclick="pCompSet('${c.id}','denied',this)">Deny</button>`
+        : `<button class="btn ghost" onclick="pCompSet('${c.id}','denied',this)">Stop tracking</button>`}
+    </div>
+  </div>`;
+}
+
+async function renderProfile(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="page-head"><div>
+      <div class="eyebrow">Workspace · Company</div>
+      <h1 class="page">Company Profile</h1>
+      <div class="page-sub">The business context and competitor watchlist every engine draws from.</div></div></div>
+    <div id="pBody"><div class="loading">Loading profile…</div></div>`;
+
+  let profile=null, comps=null, pErr=null, cErr=null;
+  try{ const r = await pFresh("company_profile?select=*&order=id.asc&limit=1"); profile = r[0]||{}; }catch(e){ pErr=e; }
+  try{ comps = await pFresh("competitors?select=*&order=created_at.desc&limit=300"); }catch(e){ cErr=e; }
+  if(pErr || cErr){
+    document.getElementById("pBody").innerHTML =
+      (pErr?errNotice(pErr,"company_profile"):"") + (cErr?errNotice(cErr,"competitors"):"") + pSetupSql();
+    return;
+  }
+  profile = profile||{}; comps = comps||[];
+  const sug = comps.filter(c=>c.status==="suggested");
+  const ok  = comps.filter(c=>c.status==="approved");
+  const no  = comps.filter(c=>c.status==="denied");
+
+  document.getElementById("pBody").innerHTML = `
+  <div class="panel" style="margin-bottom:18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+      <b style="color:var(--navy)">Business details</b>
+      <div style="display:flex;gap:8px">
+        <button class="btn navy" id="pAnalyzeBtn" onclick="pAnalyze()">✦ Analyze website</button>
+        <button class="btn ghost" onclick="pSave(this,true)">Save profile</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+      ${P_FIELDS.map(([k,label,long])=>`
+        <div style="${long?'grid-column:1/-1':''}">
+          <div ${P_LABEL}>${label}</div>
+          ${long
+            ? `<textarea id="pf_${k}" rows="2" ${P_INPUT}>${esc(profile[k]||"")}</textarea>`
+            : `<input id="pf_${k}" type="text" ${P_INPUT} value="${esc(profile[k]||"")}">`}
+        </div>`).join("")}
+    </div>
+    <div style="margin-top:14px">
+      <div ${P_LABEL}>Enrichment webhook (n8n)</div>
+      <input type="text" ${P_INPUT} placeholder="https://n8n.aiparagonconsulting.com/webhook/profile-enrich" value="${esc(pRead("webhook"))}" onchange="pStore('webhook',this.value.trim())">
+      <div style="font-size:.76rem;color:#8a8374;margin-top:4px">Import <b>profile-enrichment-workflow.json</b> into n8n, pick your Anthropic credential on the model node, activate, and paste the production webhook URL here.</div>
+    </div>
+    <div id="pMsg"></div>
+  </div>
+
+  <div class="panel" style="margin-bottom:18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+      <b style="color:var(--navy)">AI-suggested competitors ${sug.length?`<span class="pill">${sug.length} to review</span>`:""}</b>
+      <button class="btn ghost" id="pRecBtn" onclick="pRecommend()">✦ Suggest more</button>
+    </div>
+    ${sug.length ? sug.map(c=>pCompCard(c,true)).join("")
+      : `<div style="font-size:.86rem;color:#8a8374">No pending suggestions. Run "Analyze website" or "Suggest more" and review what comes back here.</div>`}
+  </div>
+
+  <div class="panel" style="margin-bottom:18px">
+    <b style="color:var(--navy)">Tracked competitors ${ok.length?`<span class="pill">${ok.length}</span>`:""}</b>
+    <div style="font-size:.78rem;color:#8a8374;margin:4px 0 12px">Approved competitors live in the shared <code>competitors</code> table — every engine's workflows can read this list.</div>
+    ${ok.length ? ok.map(c=>pCompCard(c,false)).join("") : `<div style="font-size:.86rem;color:#8a8374;margin-bottom:10px">Nothing tracked yet.</div>`}
+    <div style="display:grid;grid-template-columns:1.2fr 1fr 1.6fr auto;gap:8px;margin-top:12px;align-items:end">
+      <div><div ${P_LABEL}>Add manually — name</div><input id="pcName" type="text" ${P_INPUT}></div>
+      <div><div ${P_LABEL}>Website</div><input id="pcSite" type="text" ${P_INPUT}></div>
+      <div><div ${P_LABEL}>Why watch them</div><input id="pcNotes" type="text" ${P_INPUT}></div>
+      <button class="btn navy" onclick="pCompAdd(this)" style="height:38px">Add</button>
+    </div>
+  </div>
+
+  ${no.length?`<details style="margin-bottom:18px"><summary style="cursor:pointer;font-size:.84rem;color:#8a8374">Denied (${no.length})</summary>
+    <div style="margin-top:10px">${no.map(c=>`<div class="card" style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px;padding:10px 14px;opacity:.7">
+      <div><b>${esc(c.name)}</b> <span style="font-size:.8rem;color:#8a8374">${esc(c.notes||"")}</span></div>
+      <button class="btn ghost" onclick="pCompSet('${c.id}','approved',this)">Re-approve</button></div>`).join("")}</div></details>`:""}`;
+}
+
+function pVal(k){ const el = document.getElementById("pf_"+k); return el ? el.value.trim() : ""; }
+function pMsg(t){ const el = document.getElementById("pMsg"); if(!el) return;
+  el.innerHTML = `<div style="font-size:.82rem;color:#2A6B3C;margin-top:10px">${esc(t)}</div>`;
+  setTimeout(()=>{ if(el) el.innerHTML=""; }, 4000); }
+function pDbHint(e){
+  if(e && e.status===404) return "The table doesn't exist yet — run the setup SQL shown on this page after a refresh.";
+  if(e && (e.status===401||e.status===403||(e.body||"").includes("row-level security")||(e.body||"").includes("permission")))
+    return "Supabase is blocking the write. Run the insert/update policies from the setup SQL.";
+  return (e && (e.message||String(e))) || "Unknown error";
+}
+
+async function pSave(btn, announce){
+  if(btn) btn.disabled = true;
+  const body = {}; P_FIELDS.forEach(([k])=>body[k]=pVal(k));
+  body.updated_by = whoAmI(); body.updated_at = new Date().toISOString();
+  try{
+    const rows = await sbPatch("company_profile?id=eq.1", body);
+    if(!rows.length) await sbPost("company_profile", Object.assign({id:1}, body));
+    delete cache["company_profile?select=*&order=id.asc&limit=1"];
+    if(announce) pMsg("Profile saved.");
+  }catch(e){ showAlert(pDbHint(e), "Save failed"); }
+  if(btn) btn.disabled = false;
+}
+
+async function pCallEnrich(payload){
+  const hook = pRead("webhook");
+  if(!hook){ showAlert("Add the n8n enrichment webhook URL first (bottom of the Business details panel).","No webhook set"); return null; }
+  const res = await fetch(hook, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+  if(!res.ok) throw new Error("Webhook error "+res.status+" — is the n8n workflow active?");
+  return res.json();
+}
+
+async function pInsertSuggestions(list, existingNames){
+  const names = new Set(existingNames.map(n=>String(n||"").toLowerCase()));
+  let added = 0;
+  for(const c of (list||[])){
+    if(!c || !c.name || names.has(String(c.name).toLowerCase())) continue;
+    await sbPost("competitors", { name:c.name, website:c.website||null, notes:c.reason||"", status:"suggested", source:"ai", added_by: whoAmI() });
+    names.add(String(c.name).toLowerCase()); added++;
+  }
+  return added;
+}
+
+async function pAnalyze(){
+  const website = pVal("website");
+  if(!website){ showAlert("Enter the website first, then hit Analyze.","No website"); return; }
+  const btn = document.getElementById("pAnalyzeBtn");
+  btn.disabled = true; btn.textContent = "Analyzing…";
+  try{
+    const existing = (await pFresh("competitors?select=name")).map(c=>c.name);
+    const out = await pCallEnrich({ website, businessName: pVal("business_name"),
+      context: [pVal("industry"), pVal("description")].filter(Boolean).join(" — "), existing });
+    if(!out){ btn.disabled=false; btn.textContent="✦ Analyze website"; return; }
+    const p = out.profile || {};
+    P_FIELDS.forEach(([k])=>{
+      if(k==="contact_name"||k==="website") return;
+      const el = document.getElementById("pf_"+k); if(!el) return;
+      if(p[k] && (!el.value.trim() || ["industry","description","services","target_market"].includes(k))) el.value = p[k];
+    });
+    await pSave(null,false);
+    await pInsertSuggestions(out.competitors, existing);
+    renderProfile();
+  }catch(e){
+    showAlert(e.message||String(e), "Analyze failed");
+    btn.disabled = false; btn.textContent = "✦ Analyze website";
+  }
+}
+
+async function pRecommend(){
+  const btn = document.getElementById("pRecBtn");
+  btn.disabled = true; btn.textContent = "Thinking…";
+  try{
+    const existing = (await pFresh("competitors?select=name")).map(c=>c.name);
+    const context = P_FIELDS.map(([k,label])=>{ const v=pVal(k); return v?`${label}: ${v}`:""; }).filter(Boolean).join("\n");
+    const out = await pCallEnrich({ website: pVal("website"), businessName: pVal("business_name"), context, existing });
+    if(!out){ btn.disabled=false; btn.textContent="✦ Suggest more"; return; }
+    const added = await pInsertSuggestions(out.competitors, existing);
+    if(!added) showAlert("No new competitors found beyond what's already listed.","Nothing new");
+    renderProfile();
+  }catch(e){
+    showAlert(e.message||String(e), "Suggestion failed");
+    btn.disabled = false; btn.textContent = "✦ Suggest more";
+  }
+}
+
+async function pCompSet(id, status, btn){
+  if(btn) btn.disabled = true;
+  try{
+    const rows = await sbPatch(`competitors?id=eq.${encodeURIComponent(id)}`, { status });
+    if(!rows.length) throw Object.assign(new Error("0 rows updated"), {status:403, body:"row-level security"});
+    renderProfile();
+  }catch(e){ if(btn) btn.disabled=false; showAlert(pDbHint(e), "Update failed"); }
+}
+
+async function pCompAdd(btn){
+  const name = (document.getElementById("pcName").value||"").trim();
+  if(!name){ showAlert("Competitor name is required.","Missing name"); return; }
+  btn.disabled = true;
+  try{
+    await sbPost("competitors", { name,
+      website: (document.getElementById("pcSite").value||"").trim() || null,
+      notes: (document.getElementById("pcNotes").value||"").trim(),
+      status: "approved", source: "manual", added_by: whoAmI() });
+    renderProfile();
+  }catch(e){ btn.disabled=false; showAlert(pDbHint(e), "Add failed"); }
+}
+
+
+/* ================= NOTES (NOTION) ================= */
+const nCache = {};
+function nStore(k,v){ v ? localStorage.setItem("notion_"+k, v) : localStorage.removeItem("notion_"+k); }
+function nRead(k){ return localStorage.getItem("notion_"+k) || ""; }
+function nClearCache(){ Object.keys(nCache).forEach(k=>delete nCache[k]); }
+
+async function notion(path, method="GET", body=null, useCache=true){
+  const ck = method+path+JSON.stringify(body||"");
+  if(useCache && nCache[ck] && (Date.now()-nCache[ck].t)<45000) return nCache[ck].v;
+  const res = await fetch(nRead("proxy"), {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ path, method, token: nRead("secret"), body })
+  });
+  if(!res.ok) throw new Error(`Proxy error ${res.status} — is the n8n workflow active?`);
+  const v = await res.json();
+  if(v && v.object==="error"){
+    const e = new Error(v.message || v.code || "Notion error");
+    if(v.status===401 || v.code==="unauthorized") e.auth = true;
+    throw e;
+  }
+  nCache[ck] = {t: Date.now(), v};
+  return v;
+}
+
+function notionHero(sub, right){
+  return `<div class="page-head"><div>
+    <div class="eyebrow">Workspace · Notes</div>
+    <h1 class="page">Notion</h1>
+    <div class="page-sub">${sub}</div></div>${right||""}</div>`;
+}
+function nTitle(page){
+  const props = page.properties||{};
+  for(const k in props){ if(props[k].type==="title") return (props[k].title||[]).map(t=>t.plain_text).join("") || "(untitled)"; }
+  return "(untitled)";
+}
+function nStatus(page){
+  const props = page.properties||{};
+  for(const k in props){
+    if(props[k].type==="status" && props[k].status) return props[k].status.name;
+    if(props[k].type==="select" && props[k].select) return props[k].select.name;
+  }
+  return "";
+}
+
+async function renderNotion(){
+  const main = document.getElementById("main");
+  if(!nRead("secret") || !nRead("proxy")){
+    main.innerHTML = notionHero("Connect Notion to browse and add database entries from here. Needs a one-time proxy setup because Notion's API can't be called from a browser directly.") + `
+    <div class="cols" style="margin-top:0">
+      <div class="panel">
+        <div class="panel-head"><h2>Connect Notion in 4 steps</h2></div>
+        <div class="item"><div class="stepnum">1</div><div class="txt">
+          <p><b>Create a Notion integration</b></p>
+          <small>Open <a href="https://www.notion.so/my-integrations" target="_blank" rel="noopener" style="color:var(--navy);text-decoration:underline;text-decoration-color:var(--gold)">notion.so/my-integrations</a> → "New integration" → copy the Internal Integration Secret.</small>
+        </div></div>
+        <div class="item"><div class="stepnum">2</div><div class="txt">
+          <p><b>Share your database with it</b></p>
+          <small>In Notion, open the database → ••• menu → "Connections" → add your integration. Only shared databases are visible.</small>
+        </div></div>
+        <div class="item"><div class="stepnum">3</div><div class="txt">
+          <p><b>Import the proxy workflow into n8n</b></p>
+          <small>Import <b>notion-proxy-workflow.json</b> (provided with this dashboard) into n8n, activate it, and copy the production webhook URL. This tiny workflow only forwards requests — the secret is never stored in n8n.</small>
+        </div></div>
+        <div class="item"><div class="stepnum">4</div><div class="txt">
+          <p><b>Paste both below and connect</b></p>
+        </div></div>
+        <div class="tokenrow">
+          <input id="notionProxy" type="text" placeholder="n8n webhook URL, e.g. https://n8n.aiparagonconsulting.com/webhook/notion-proxy" value="${esc(nRead("proxy"))}">
+        </div>
+        <div class="tokenrow">
+          <input id="notionSecret" type="password" placeholder="Notion integration secret (starts with ntn_ or secret_)…" onkeydown="if(event.key==='Enter')connectNotion()">
+          <button class="btn navy" style="padding:10px 20px" onclick="connectNotion()">Connect</button>
+        </div>
+        <div id="notionConnErr" style="color:var(--bad);font-size:.82rem;margin-top:10px;min-height:1.2em"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>What you get</h2></div>
+        <div class="item"><div class="srcav">▤</div><div class="txt"><p>Browse any shared database</p><small>Entries with status and last-edited date, newest first.</small></div></div>
+        <div class="item"><div class="srcav">＋</div><div class="txt"><p>Quick-add entries</p><small>Type a title, press Enter, it lands in the selected database.</small></div></div>
+        <div class="item"><div class="srcav">↗</div><div class="txt"><p>One click to the full page</p><small>Every entry links straight into Notion.</small></div></div>
+        <div class="notice" style="margin-top:14px">Your secret is stored only in this browser and sent through your own n8n instance — never to any third party.</div>
+      </div>
+    </div>`;
+    return;
+  }
+
+  main.innerHTML = notionHero("Loading your Notion databases…");
+  let dbs;
+  try{
+    const r = await notion("/search", "POST", {filter:{property:"object", value:"database"}, page_size: 50});
+    dbs = (r.results||[]).map(d=>({id:d.id, name:(d.title||[]).map(t=>t.plain_text).join("")||"(untitled database)"}));
+  }catch(e){ return notionFail(e); }
+
+  if(!dbs.length){
+    main.innerHTML = notionHero("Connected, but no databases are shared with the integration yet.",
+      `<button class="btn ghost" style="background:rgba(255,255,255,.12);color:#E8EDF4;box-shadow:none" onclick="disconnectNotion()">Disconnect</button>`) +
+      `<div class="empty"><div class="big">Share a database with your integration</div>
+       In Notion: open the database → ••• → Connections → add your integration. Then hit refresh.
+       <div style="margin-top:14px"><button class="btn navy" onclick="nClearCache();renderNotion()">↻ Refresh</button></div></div>`;
+    return;
+  }
+  if(!nRead("db") || !dbs.find(d=>d.id===nRead("db"))) nStore("db", dbs[0].id);
+
+  main.innerHTML = notionHero(`Connected · ${dbs.length} database${dbs.length===1?"":"s"} shared with the integration.`,
+      `<button class="btn ghost" style="background:rgba(255,255,255,.12);color:#E8EDF4;box-shadow:none" onclick="disconnectNotion()">Disconnect</button>`) + `
+    <div class="controls" style="margin-bottom:18px">
+      <label>Database</label>
+      <select onchange="nStore('db',this.value);renderNotion()">
+        ${dbs.map(d=>`<option value="${d.id}" ${d.id===nRead("db")?"selected":""}>${esc(d.name)}</option>`).join("")}
+      </select>
+      <button class="btn ghost" onclick="nClearCache();renderNotion()">↻ Refresh</button>
+    </div>
+    <div class="panel">
+      <div class="addrow">
+        <input id="newNote" type="text" placeholder="Add an entry and press Enter…" onkeydown="if(event.key==='Enter')addNotionPage()">
+        <button class="btn navy" style="padding:10px 20px" onclick="addNotionPage()">Add entry</button>
+      </div>
+      <div id="noteList"><div class="loading">Loading entries…</div></div>
+    </div>
+    <div class="notice" style="margin-top:18px">Entries live in <b>Notion</b> — click any title to open the full page there.</div>`;
+
+  loadNotionPages();
+}
+
+async function loadNotionPages(){
+  const list = document.getElementById("noteList");
+  try{
+    const r = await notion(`/databases/${nRead("db")}/query`, "POST",
+      {page_size: 50, sorts:[{timestamp:"last_edited_time", direction:"descending"}]});
+    const pages = r.results||[];
+    if(!pages.length){ list.innerHTML = `<div class="empty"><div class="big">No entries yet</div>Add the first one above.</div>`; return; }
+    list.innerHTML = pages.map(p=>`<div class="item">
+      <div class="srcav">▤</div>
+      <div class="txt"><p><a href="${esc(p.url||"#")}" target="_blank" rel="noopener" style="color:var(--ink)">${esc(nTitle(p))}</a></p>
+      <small>edited ${fmtDate(p.last_edited_time)}</small></div>
+      ${nStatus(p)?`<span class="pill posted">${esc(nStatus(p))}</span>`:""}
+    </div>`).join("");
+  }catch(e){ list.innerHTML = errNotice(e, "notion"); }
+}
+
+async function addNotionPage(){
+  const inp = document.getElementById("newNote");
+  const name = (inp.value||"").trim();
+  if(!name) return;
+  inp.disabled = true;
+  try{
+    const db = await notion(`/databases/${nRead("db")}`);
+    let titleProp = "Name";
+    for(const k in (db.properties||{})){ if(db.properties[k].type==="title"){ titleProp = k; break; } }
+    await notion("/pages", "POST", {
+      parent: {database_id: nRead("db")},
+      properties: { [titleProp]: { title: [{ text: { content: name } }] } }
+    }, false);
+    inp.value = ""; inp.disabled = false; inp.focus();
+    nClearCache();
+    loadNotionPages();
+  }catch(e){ inp.disabled=false; showAlert ? showAlert("Couldn't add entry: "+(e.message||e)) : alert("Couldn't add entry: "+(e.message||e)); }
+}
+
+async function connectNotion(){
+  const proxy = (document.getElementById("notionProxy").value||"").trim();
+  const secret = (document.getElementById("notionSecret").value||"").trim();
+  const err = document.getElementById("notionConnErr");
+  if(!proxy || !secret){ err.textContent = "Both the webhook URL and the secret are needed."; return; }
+  err.textContent = "";
+  nStore("proxy", proxy); nStore("secret", secret);
+  try{
+    await notion("/users/me", "GET", null, false);
+    nClearCache();
+    renderNotion();
+  }catch(e){
+    nStore("secret","");
+    err.textContent = e.auth ? "Notion didn't accept that secret — copy it again from notion.so/my-integrations."
+      : "Connection failed: "+(e.message||e);
+  }
+}
+function disconnectNotion(){
+  ["secret","db"].forEach(k=>nStore(k,""));
+  nClearCache();
+  renderNotion();
+}
+function notionFail(e){
+  const main = document.getElementById("main");
+  if(e.auth){
+    main.innerHTML = notionHero("Your saved Notion secret stopped working.") +
+      `<div class="notice err">Notion rejected the saved secret — it may have been revoked.
+       <div style="margin-top:10px"><button class="btn navy" onclick="disconnectNotion()">Disconnect &amp; reconnect</button></div></div>`;
+  } else {
+    main.innerHTML = notionHero("Couldn't reach Notion through the proxy.") + errNotice(e, "notion");
+  }
 }
 
 /* ================= PASSWORD GATE ================= */
