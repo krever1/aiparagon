@@ -380,6 +380,55 @@
   .fsteps button.on .n{background:var(--gold);color:var(--navy)}
   .fsteps .arr{color:var(--muted);font-size:.85rem}
 
+
+  /* ---------- funnel studio ---------- */
+  .studio{display:flex;gap:20px;align-items:flex-start}
+  .studio-canvas{flex:1;min-width:0;background:radial-gradient(circle, #D8D2C2 1px, transparent 1px);background-size:18px 18px;background-color:#EFEBE0;border:1px solid var(--line);border-radius:16px;padding:28px 20px;display:flex;justify-content:center;align-items:flex-start;gap:18px;flex-wrap:wrap}
+  .studio-side{width:310px;flex-shrink:0;background:var(--white);border:1px solid var(--line);border-radius:14px;padding:16px}
+  @media(max-width:1100px){.studio{flex-direction:column}.studio-side{width:100%}}
+  .studio-side .sec-title{font-family:Georgia,serif;font-size:.98rem;margin-bottom:2px}
+  .studio-side .sec-sub{font-size:.74rem;color:var(--muted);margin-bottom:12px}
+  .insp-label{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:750;margin:10px 0 4px}
+  .insp-in, .studio-side textarea, .studio-side input{width:100%;font:inherit;font-size:.83rem;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#FDFCF9}
+  .studio-side textarea{resize:vertical}
+  .device{max-width:480px;width:100%;background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 34px rgba(30,58,95,.12);overflow:hidden}
+  .live-edit{outline:2px dashed var(--gold);outline-offset:2px;border-radius:4px;cursor:text;min-height:1em}
+  .live-edit:focus{outline-style:solid;background:#FFFDF4}
+  .edit-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--cream);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:10px}
+  .edit-bar select{font:inherit;font-size:.76rem;padding:5px 7px;border:1px solid var(--line);border-radius:7px;max-width:180px}
+
+
+  .device .btn{white-space:normal;line-height:1.4;height:auto}
+  .device button{white-space:normal}
+  .feed-link{flex-wrap:wrap}
+  .feed-link .fl-title{white-space:normal;overflow:visible;text-overflow:unset}
+  .vcard.editing .feed-link{flex-direction:column;align-items:stretch;gap:8px}
+  .vcard.editing .feed-cta{white-space:normal;text-align:center;cursor:text}
+  .vcard.editing .feed-more{display:none}
+  .vcard.editing .feed-text{max-height:none}
+  .edit-bar .score-btn{flex-shrink:0}
+  .edit-bar select{flex:1;min-width:120px}
+  .live-edit:empty::before{content:"(click to type)";color:var(--muted);font-style:italic;font-size:.8em}
+
+
+  .src-card{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+  .src-card.flash{animation:srcflash 2s ease}
+  @keyframes srcflash{0%{background:#FBF2D8;box-shadow:0 0 0 3px var(--gold)}100%{background:var(--white);box-shadow:none}}
+
+
+  /* ---------- focus mode + rich toolbar + theme ---------- */
+  #adImgBlock.studio-full{position:fixed;inset:0;z-index:900;overflow:auto;background:var(--bg);margin:0;border-radius:0;padding:26px 30px;box-shadow:none}
+  #fmtBar{position:fixed;z-index:960;display:none;gap:2px;background:var(--navy);border-radius:10px;padding:5px 6px;box-shadow:0 8px 26px rgba(0,0,0,.3)}
+  #fmtBar button{border:none;background:transparent;color:#fff;font:inherit;font-size:.78rem;font-weight:700;padding:5px 9px;border-radius:6px;cursor:pointer;min-width:28px}
+  #fmtBar button:hover{background:rgba(255,255,255,.18)}
+  #fmtBar .sep{width:1px;background:rgba(255,255,255,.25);margin:3px 3px}
+  .hero-title{font-family:Georgia,serif;font-size:1.9rem;line-height:1.15}
+  .hero-blurb{font-size:1.02rem;line-height:1.65;max-width:760px;opacity:.94}
+  .hero-chip{font-size:.9rem;padding:8px 14px !important}
+  .big-stat{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:16px 18px;text-align:center}
+  .big-stat .n{font-family:Georgia,serif;font-size:1.9rem;color:var(--navy);line-height:1.1}
+  .big-stat .l{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:750;margin-top:4px}
+
 </style>
 </head>
 <body>
@@ -403,6 +452,9 @@
       <img src="https://www.aiparagonconsulting.com/logo.png" alt="" onerror="this.style.display='none'">
       <div class="word">AI <em>Paragon</em></div>
     </div>
+    <nav class="nav" style="margin-bottom:6px">
+      <button id="homeBtn" onclick="setEngine('home')"><span>🏠 Home</span></button>
+    </nav>
     <div class="navlabel">Engines</div>
     <div class="engines" id="engineSwitch"></div>
     <div class="navlabel" id="navLabel">Engine 3 · Marketing Intelligence</div>
@@ -422,6 +474,7 @@
         <input id="globalSearch" type="text" placeholder="Search summaries, competitors, drafts…" onkeydown="if(event.key==='Enter')globalSearch(this.value)">
       </div>
       <div class="spacer"></div>
+      <button id="themeBtn" onclick="openThemeModal()" title="Customize theme" style="background:var(--white);border:1px solid var(--line);border-radius:99px;width:38px;height:38px;cursor:pointer;font-size:1rem">🎨</button>
       <button id="notifBell" onclick="toggleNotif()" title="Notifications" style="position:relative;background:var(--white);border:1px solid var(--line);border-radius:99px;width:38px;height:38px;cursor:pointer;font-size:1rem">🔔<span id="notifCount" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--bad);color:#fff;font-size:.62rem;font-weight:800;border-radius:99px;min-width:17px;height:17px;line-height:17px;padding:0 3px">0</span></button>
       <div class="sync"><span class="dot"></span>Synced on page load</div>
       <div class="userchip"><span class="av">AP</span>AI Paragon</div>
@@ -438,6 +491,7 @@ const SUPABASE_URL = "https://lesyptuwllcgajdxzjje.supabase.co";
 const E1_FULL_RUN_WEBHOOK   = "https://n8n.aiparagonconsulting.com/webhook/f59820ad-6925-4852-a474-40899506b21d";
 const E1_CUSTOM_RUN_WEBHOOK = "https://n8n.aiparagonconsulting.com/webhook/e1-custom-run";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxlc3lwdHV3bGxjZ2FqZHh6amplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NDAzMDEsImV4cCI6MjA5ODQxNjMwMX0.81-nHOWy8w48weqcL8Yrvv5RGHFlfeSDAo3BZf90DSs";
+const REGEN_WEBHOOK_URL = "https://n8n.aiparagonconsulting.com/webhook/regen-ad-image";
 
 const ENGINES = [
   {id:"e1", name:"Engine 1", tag:"Client Delivery", soon:false},
@@ -470,7 +524,7 @@ const AGENTS = {
   low_ticket_content:{label:"Low-Ticket Content Agent", kind:"Agent 3 · Funnel production", view:"funnel"},
 };
 
-let state = {engine:"e3", view:"overview", intelRun:null, adsRun:null, funnelRun:null,
+let state = {engine:"home", view:"home", intelRun:null, adsRun:null, funnelRun:null,
              filters:{platform:"", type:"", acv:"", q:""}, funnelTab:0,
              e1Lead:null, e1Q:"", e1Stage:"", adsAdv:"", adsActiveOnly:false, adsQ:"", adsSource:"", funnelSkin:"meta", funnelStep:"ad"};
 const cache = {};
@@ -649,6 +703,7 @@ function editBrief(outputId, btn){
   const briefEl = document.querySelector("#briefBox .brief");
   if(!briefEl) return;
   window._briefEditing = true;
+  briefEl.innerHTML = marked.parse(window._briefMd || "");   /* edit the raw brief, not the display-formatted cards */
   briefEl.contentEditable = "true";
   briefEl.style.outline = "2px solid var(--gold)";
   briefEl.style.outlineOffset = "8px";
@@ -656,7 +711,7 @@ function editBrief(outputId, btn){
   if(btn) btn.style.display = "none";
   const bar = document.createElement("div");
   bar.className = "editing-bar"; bar.id = "briefEditBar";
-  bar.innerHTML = `<span style="font-size:.82rem;color:var(--muted)">Editing — change the text directly, formatting is preserved.</span>
+  bar.innerHTML = `<span style="font-size:.82rem;color:var(--muted)">Editing — type directly; a formatting toolbar (bold, headings, lists) appears above the text.</span>
     <span style="flex:1"></span>
     <button class="btn ghost" onclick="window._briefEditing=false;renderIntel()">Cancel</button>
     <button class="btn navy" onclick="saveBrief('${esc(outputId)}')">Save changes</button>`;
@@ -734,6 +789,7 @@ function errNotice(e, what){
 
 /* ================= SHELL ================= */
 function renderShell(){
+  applySavedTheme();
   document.getElementById("engineSwitch").innerHTML = ENGINES.map(e=>`
     <button class="${e.soon?'soon':''} ${state.engine===e.id?'active':''}" onclick="setEngine('${e.id}')">
       <span>${e.name}</span><span class="tag">${e.tag}</span>
@@ -746,15 +802,19 @@ function renderShell(){
   } else if(state.engine==="e1"){
     label.textContent = "Engine 1 · Client Service & Delivery";
     nav.innerHTML = E1_VIEWS.map(v=>`<button class="${state.view===v.id || (v.id==='e1pipeline' && state.view==='e1lead')?'active':''}" onclick="setView('${v.id}')">${v.name}</button>`).join("");
+  } else if(state.engine==="home"){
+    label.textContent = "Welcome";
+    nav.innerHTML = "";
   } else {
     label.textContent = ENGINES.find(e=>e.id===state.engine).name;
     nav.innerHTML = "";
   }
+  const hb = document.getElementById("homeBtn"); if(hb) hb.classList.toggle("active", state.engine==="home");
   refreshNotifications();
   document.querySelectorAll('#wsNav [data-ws-btn]').forEach(b=>b.classList.toggle("active", state.view===b.dataset.wsBtn));
   const vt = document.getElementById("viewTabs");
   if(vt){
-    if(state.view==="tasks"||state.view==="notion"||state.view==="profile"){ vt.innerHTML=""; }
+    if(state.view==="tasks"||state.view==="notion"||state.view==="profile"||state.engine==="home"){ vt.innerHTML=""; }
     else if(state.engine==="e3"){
       vt.innerHTML = E3_VIEWS.map(v=>`<button class="${state.view===v.id?'active':''}" onclick="setView('${v.id}')">${v.name}</button>`).join("");
     } else if(state.engine==="e1"){
@@ -779,11 +839,12 @@ function globalSearch(v){
   if(state.engine==="e1"){ state.e1Q = v; state.view="e1pipeline"; render(); return; }
   state.engine="e3"; state.filters.q = v; state.view="intel"; render();
 }
-function setEngine(id){ state.engine=id; state.view = id==="e3"?"overview":id==="e1"?"e1overview":"placeholder"; render(); }
+function setEngine(id){ state.engine=id; state.view = id==="e3"?"overview":id==="e1"?"e1overview":id==="home"?"home":"placeholder"; render(); }
 function setView(id){ state.view=id; render(); if(["intel","ads","funnel"].includes(id)) setTimeout(()=>markViewSeen(id), 800); }
 function render(){
   renderShell();
   const main = document.getElementById("main");
+  if(state.engine==="home" && state.view==="home"){ renderHome(); return; }
   if(state.view==="tasks"){ renderTasks(); return; }
   if(state.view==="notion"){ renderNotion(); return; }
   if(state.view==="profile"){ renderProfile(); return; }
@@ -1037,13 +1098,15 @@ async function renderIntel(){
       ${itemsHtml || `<div class="tbl-wrap"><table class="tbl"><thead><tr>
         <th>Source</th><th>Platform</th><th>Type</th><th>Summary</th><th>Ad value</th><th>Engage­ment</th><th>Link</th>
       </tr></thead><tbody id="itemRows"></tbody></table></div>`}
-    </section>`;
+    </section>
+    ${srcPostsSection(items)}`;
   window._intelItems = items;
   window._intelDrafts = drafts;
   paintItems();
   enhanceAllBriefs();
   syncBriefQueue(drafts);
   initBriefComments("brief:"+rid);
+  hookBriefSourceLinks();
 }
 function pickIntelRun(v){ state.intelRun=v; renderIntel(); }
 function intelFilter(k,v){ state.filters[k]=v; paintItems(); }
@@ -1150,11 +1213,17 @@ async function renderFunnel(){
   }
   let vfb = [];
   try{ vfb = await sb(`agent_feedback?select=target_id,action,feedback,author,created_at&target_type=eq.ad_image_variant&order=created_at.desc&limit=200`); }catch(e){}
+  try{ window._fpAssetFb = await sb(`agent_feedback?select=target_id,action,feedback,author,created_at&target_type=eq.funnel_asset&order=created_at.desc&limit=100`); }catch(e){ window._fpAssetFb = []; }
   let adCopy = {}, fpId = null, vCopy = {};
   try{
-    const fpRows = await sb(`funnel_packages?select=id,ad_variations,variant_copy,survey,landing_page,booking_page&run_id=eq.${encodeURIComponent(state.funnelRun)}&limit=1`);
+    const fpRows = await sb(`funnel_packages?select=id,ad_variations,variant_copy,survey,landing_page,booking_page,original_snapshot&run_id=eq.${encodeURIComponent(state.funnelRun)}&limit=1`);
     if(fpRows.length){ adCopy = asObj(fpRows[0].ad_variations); fpId = fpRows[0].id; vCopy = asObj(fpRows[0].variant_copy);
-      window._fpParts = { survey: asObj(fpRows[0].survey), landing: asObj(fpRows[0].landing_page), booking: asObj(fpRows[0].booking_page) }; }
+      window._fpParts = { survey: asObj(fpRows[0].survey), landing: asObj(fpRows[0].landing_page), booking: asObj(fpRows[0].booking_page) };
+      if(!window._fpDraft || window._fpDraftRun !== state.funnelRun){ window._fpDraft = JSON.parse(JSON.stringify(window._fpParts)); window._fpDraftRun = state.funnelRun; }
+      window._fpAdVar = adCopy;
+      window._fpVCopyLive = vCopy;
+      const snapRaw = fpRows[0].original_snapshot;
+      window._fpOrig = snapRaw ? asObj(snapRaw) : null; }
   }catch(e){}
   window._fpId = fpId; window._fpVCopy = vCopy;
   const fHooks = Array.isArray(adCopy.hook_variations) ? adCopy.hook_variations : [];
@@ -1166,11 +1235,16 @@ async function renderFunnel(){
   if(state.funnelTab >= assets.length) state.funnelTab = 0;
   body.innerHTML = `
     ${lineage}
-    <section class="block" id="adImgBlock"><h2>Funnel preview <span class="count">prospect journey</span></h2>
-      <div class="fsteps">${[["ad","Ad creatives"],["survey","Qualification survey"],["landing","Landing page"],["booking","Booking page"]].map((sp,i)=>`<button class="${(state.funnelStep||"ad")===sp[0]?"on":""}" onclick="state.funnelStep='${sp[0]}';renderFunnel()"><span class="n">${i+1}</span>${sp[1]}${sp[0]==="ad"?` (${adImages.length})`:""}</button>${i<3?'<span class="arr">→</span>':""}`).join("")}</div>
-      ${(state.funnelStep||"ad")!=="ad" ? (funnelAssetPreview({survey:"survey",landing:"landing page",booking:"booking page"}[state.funnelStep]) || `<div class="notice">No structured ${esc(state.funnelStep)} data stored for this run — see the full spec below.</div>`) : `
+    <section class="block ${state.studioFull?'studio-full':''}" id="adImgBlock"><h2>Funnel preview <span class="count">prospect journey</span>
+      <button class="score-btn" style="margin-left:auto" onclick="state.studioFull=!state.studioFull;renderFunnel();setTimeout(()=>{if(state.studioFull)document.getElementById('adImgBlock').scrollIntoView()},50)">${state.studioFull?"✕ Exit focus":"⛶ Focus mode"}</button></h2>
+      <div class="fsteps">${[["ad","Ad creatives"],["survey","Qualification survey"],["landing","Landing page"],["booking","Booking page"]].map((sp,i)=>`<button class="${(state.funnelStep||"ad")===sp[0]?"on":""}" onclick="state.funnelStep='${sp[0]}';state.funnelTab=${i+1};renderFunnel()"><span class="n">${i+1}</span>${sp[1]}${sp[0]==="ad"?` (${adImages.length})`:""}</button>${i<3?'<span class="arr">→</span>':""}`).join("")}</div>
+      ${(state.funnelStep||"ad")!=="ad" ? `
+      <div class="studio">
+        <div class="studio-canvas" id="fsCanvas">${funnelAssetPreview({survey:"survey",landing:"landing page",booking:"booking page"}[state.funnelStep]) || `<div class="notice" style="max-width:480px">No structured ${esc(state.funnelStep)} data stored for this run — see the full spec below.</div>`}</div>
+        <div class="studio-side">${funnelInspector(state.funnelStep)}</div>
+      </div>` : `
       <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><span class="skin-toggle"><button class="${state.funnelSkin==="meta"?"on":""}" onclick="state.funnelSkin='meta';renderFunnel()">Meta feed</button><button class="${state.funnelSkin==="linkedin"?"on":""}" onclick="state.funnelSkin='linkedin';renderFunnel()">LinkedIn feed</button></span></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px">
+      <div class="studio-canvas" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px;justify-content:stretch">
       ${adImages.map((v,vi)=>{
         const st = statusOf(v.file);
         const stName = st ? st.action : "pending";
@@ -1187,12 +1261,12 @@ async function renderFunnel(){
             <div><div class="feed-name">AI Paragon Consulting Group</div>
             <div class="feed-sub">${li?"2,481 followers<br>Promoted":"Sponsored · 🌐"}</div></div>
           </div>
-          ${(hook||vBody)?`<div class="feed-text clamped" id="${txtId}">${hook?`<div class="hookline">${esc(hook)}</div>`:""}${vBody?`<div class="bodypart">${esc(vBody)}</div><span class="feed-more" onclick="const t=document.getElementById('${txtId}'); const c=t.classList.toggle('clamped'); this.textContent=c?'…see more':'see less'">…see more</span>`:""}</div>`:""}
+          <div class="feed-text clamped" id="${txtId}"><div class="hookline" id="vh_${vi}">${esc(hook)}</div><div class="bodypart" id="vb_${vi}">${esc(vBody)}</div><span class="feed-more" onclick="const t=document.getElementById('${txtId}'); const c=t.classList.toggle('clamped'); this.textContent=c?'…see more':'see less'">…see more</span></div>
           <img src="${esc(v.url)}" alt="Variant ${esc(v.variant)}" onerror="this.closest('.vcard').style.display='none'">
           <div class="feed-link">
             <div class="fl-meta"><div class="fl-domain">aiparagonconsulting.com</div>
             <div class="fl-title">Book your free 20-minute AI Readiness Diagnostic</div></div>
-            <button class="feed-cta">${esc(String(vCta).length>28?"Learn more":vCta)}</button>
+            <button class="feed-cta" id="vc_${vi}" data-full="${esc(vCta)}">${esc(String(vCta).length>28?"Learn more":vCta)}</button>
           </div>
           <div class="feed-react">${li?"<span>👍 Like</span><span>💬 Comment</span><span>🔁 Repost</span><span>➤ Send</span>":"<span>👍 Like</span><span>💬 Comment</span><span>↗ Share</span>"}</div>
           <div class="v-info">
@@ -1201,9 +1275,15 @@ async function renderFunnel(){
               <span class="pill ${stName==="approved"?"approved":stName==="rejected"?"rejected":"medium"}" style="margin-left:auto">${esc(stName)}</span>
             </div>
             ${st && st.action==="rejected" && st.feedback ? `<div class="v-fb"><b>${esc(st.author||"")}</b>: ${esc(st.feedback)}</div>` : ""}
-            <div id="aded_${vi}" style="display:none"></div>
-            <div class="v-btns">
-              <button class="btn ghost" onclick='openAdEditor(${vi}, ${JSON.stringify(String(v.file))}, ${JSON.stringify(String(hook))}, ${JSON.stringify(String(vBody))}, ${JSON.stringify(String(vCta))})'>✎ Edit ad copy${edited?" (customized)":""}</button>
+            <div class="edit-bar" id="veb_${vi}" style="display:none">
+              <select onchange="if(this.value!=='_')document.getElementById('vh_${vi}').textContent=this.value"><option value="_">Swap hook…</option>${(window._fpHooks||[]).map((h,i)=>`<option value="${esc(h)}">Hook ${i+1}: ${esc(h.slice(0,50))}…</option>`).join("")}</select>
+              <button class="score-btn" onclick="saveAdEditDirect(${vi},'${esc(v.file)}')">✓ Save</button>
+              <button class="score-btn" onclick="regenImage('${esc(v.file)}',${vi})">🎨 New image</button>
+              <button class="score-btn" onclick="resetAdCopy('${esc(v.file)}')">↺ AI original</button>
+              <button class="score-btn" onclick="renderFunnel()">Cancel</button>
+            </div>
+            <div class="v-btns" id="vbt_${vi}">
+              <button class="btn ghost" onclick="startAdEdit(${vi})">✎ Edit${edited?" (customized)":""}</button>
               <button class="btn navy" ${stName==="approved"?"disabled":""} onclick="variantDecision('${esc(v.file)}','approved',this)">✓ Approve</button>
               <button class="btn no" ${stName==="rejected"?"disabled":""} onclick="variantDecision('${esc(v.file)}','rejected',this)">✕ Deny</button>
             </div>
@@ -1214,13 +1294,15 @@ async function renderFunnel(){
       <div style="margin-top:10px;color:var(--muted);font-size:.78rem">Deny asks for a reason — the reason is fed back into the next generation run so the AI learns your taste.</div>`}
     </section>
     <div class="tabs">${assets.map((a,i)=>`<button class="${i===state.funnelTab?'active':''}" onclick="pickFunnelTab(${i})">${esc(a.title||("Asset "+(i+1)))}</button>`).join("")}</div>
-    <div class="brief-wrap"><div class="brief-main" id="funnelBriefBox"><div class="brief">${marked.parse(assets[state.funnelTab].content_md || assets[state.funnelTab].content || "_Empty asset._")}</div></div><div class="c-rail" id="funnelRail"></div></div>
+    ${[1,2,3,4].includes(state.funnelTab)?`<div style="display:flex;align-items:center;gap:10px;margin:4px 0 10px"><span class="chip">⚡ live spec — synced with your studio edits above</span><button class="score-btn" onclick="document.getElementById('adImgBlock').scrollIntoView({behavior:'smooth'})">✎ Edit in studio ↑</button></div>`:""}
+    <div class="brief-wrap"><div class="brief-main" id="funnelBriefBox">
+      ${![1,2,3,4].includes(state.funnelTab)?`<button class="pencil-btn" id="specEditPencil" onclick="editSpecDoc('${esc(out.id)}')">✎ Edit</button>`:""}<div class="brief">${marked.parse(buildLiveSpec(state.funnelTab) ?? (assets[state.funnelTab].content_md || assets[state.funnelTab].content || "_Empty asset._"))}</div></div><div class="c-rail" id="funnelRail"></div></div>
     <div class="datestamp" style="margin-top:14px">Package created ${fmtDateTime(out.created_at)} · requires human approval before launch</div>`;
   enhanceAllBriefs();
   initBriefComments(`funnel:${state.funnelRun}:tab${state.funnelTab}`, "#funnelBriefBox .brief", "#funnelRail");
 }
 function pickFunnelRun(v){ state.funnelRun=v; state.funnelTab=0; renderFunnel(); }
-function pickFunnelTab(i){ state.funnelTab=i; renderFunnel(); }
+function pickFunnelTab(i){ state.funnelTab=i; const m=[null,"ad","survey","landing","booking"]; if(m[i]) state.funnelStep=m[i]; renderFunnel(); }
 
 /* ================= ENGINE 1 ================= */
 async function e1Data(){
@@ -1467,10 +1549,14 @@ function openE1RunModal(){
         <div id="rFileMsg" style="font-size:.72rem;color:var(--muted);margin-top:3px"></div></div>
       <div class="e1p-savewrap" style="margin-top:12px">
         <button class="btn navy" id="rGo" onclick="submitE1Run()">Start run ▶</button>
+        <span id="rMode" class="chip" style="font-size:.72rem"></span>
         <span id="rMsg" style="font-size:.75rem;color:var(--muted)"></span>
       </div>
     </div>`;
   document.body.appendChild(bg); document.body.appendChild(m);
+  const modeLbl = {full:"Full pipeline \u00b7 starts at Lead Research", interview_script:"Skip Research \u00b7 starts at Interview", anonymizer:"Skip Research + Interview \u00b7 starts at Anonymizer"};
+  const updMode = ()=>{ const e=document.querySelector('input[name="e1entry"]:checked')?.value||"full"; const el=document.getElementById("rMode"); if(el) el.textContent = modeLbl[e]; };
+  m.querySelectorAll('input[name="e1entry"]').forEach(r=>r.addEventListener("change", updMode)); updMode();
   requestAnimationFrame(()=>m.classList.add("open"));
 }
 let _e1RunFileText = "";
@@ -1490,12 +1576,15 @@ async function submitE1Run(){
   const btn = document.getElementById("rGo"), msg = document.getElementById("rMsg");
   const email = v("rEmail");
   if(!email){ msg.textContent = "Email is required — it's the run ID across the pipeline."; return; }
+  if(entry==="full" && (v("rTranscript") || _e1RunFileText)){
+    if(!confirm("You added a transcript/document, but 'Full pipeline' is selected \u2014 source material is only used on skip runs (it replaces the skipped stages). Start a FULL run anyway and ignore it?\n\nTip: pick 'Skip Lead Research' or 'Skip Research + Interview' at the top of this form to use your material.")) { msg.textContent="Pick a start option at the top of the form."; return; }
+  }
   if(entry!=="full" && !v("rTranscript") && !_e1RunFileText){
     msg.textContent = "Add a transcript or document — the AI needs it in place of the skipped stages."; return;
   }
   const base = { firstName:v("rFirst"), lastName:v("rLast"), prospectName:(v("rFirst")+" "+v("rLast")).trim(),
     prospectTitle:v("rTitle"), firmName:v("rCompany"), companyName:v("rCompany"), companyUrl:v("rUrl"),
-    emailAddress:email, phone:v("rPhone"), firmType:v("rFirmType"), firmSize:v("rFirmSize"),
+    emailAddress:email, email:email, website:v("rUrl"), phone:v("rPhone"), firmType:v("rFirmType"), firmSize:v("rFirmSize"),
     hearAboutUs:"Dashboard run", whatBringsYouHere:"", aiInterests:[], currentAIStage:"", preferredFollowUp:"" };
   const url  = entry==="full" ? E1_FULL_RUN_WEBHOOK : E1_CUSTOM_RUN_WEBHOOK;
   const body = entry==="full" ? base : { ...base, entry, transcript:v("rTranscript"), extraDoc:_e1RunFileText };
@@ -2084,6 +2173,7 @@ function markAllRead(){
   localStorage.setItem(seenKey("comments"), new Date().toISOString());
   ["intel","ads","funnel"].forEach(markViewSeen);
   const p=document.getElementById("notifPanel"); if(p) p.remove();
+  const hb = document.getElementById("homeBtn"); if(hb) hb.classList.toggle("active", state.engine==="home");
   refreshNotifications();
 }
 
@@ -2800,57 +2890,32 @@ function paintWinnerAds(keepChips){
 
 
 /* ---------- lightweight ad copy editor (per variant, persisted to funnel_packages.variant_copy) ---------- */
-function openAdEditor(vi, file, curHook, curBody, curCta){
-  const box = document.getElementById("aded_"+vi); if(!box) return;
-  if(box.style.display !== "none"){ box.style.display="none"; box.innerHTML=""; return; }
-  const hooks = window._fpHooks || [];
-  const selIdx = hooks.indexOf(curHook);
-  box.style.display = "block";
-  box.innerHTML = `
-    <div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:10px;background:var(--cream)">
-      <div class="mg-label" style="margin-bottom:4px">Hook — pick one, then fine-tune</div>
-      <select id="adh_sel_${vi}" style="width:100%;font:inherit;font-size:.82rem;padding:7px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px"
-        onchange="const t=document.getElementById('adh_${vi}'); if(this.value!=='custom') t.value=this.value;">
-        ${hooks.map((h,i)=>`<option value="${esc(h)}" ${i===selIdx?"selected":""}>Hook ${i+1}: ${esc(h.slice(0,70))}${h.length>70?"…":""}</option>`).join("")}
-        <option value="custom" ${selIdx<0?"selected":""}>Custom…</option>
-      </select>
-      <textarea id="adh_${vi}" style="width:100%;min-height:54px;font:inherit;font-size:.84rem;padding:8px 10px;border:1px solid var(--line);border-radius:8px;resize:vertical">${esc(curHook)}</textarea>
-      <div class="mg-label" style="margin:8px 0 4px">Stable body</div>
-      <textarea id="adb_${vi}" style="width:100%;min-height:90px;font:inherit;font-size:.84rem;padding:8px 10px;border:1px solid var(--line);border-radius:8px;resize:vertical">${esc(curBody)}</textarea>
-      <div class="mg-label" style="margin:8px 0 4px">CTA button (28 chars max shows verbatim)</div>
-      <input id="adc_${vi}" value="${esc(curCta)}" style="width:100%;font:inherit;font-size:.84rem;padding:8px 10px;border:1px solid var(--line);border-radius:8px">
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn navy" onclick="saveAdCopy(${vi}, '${esc(file)}')">Save & preview</button>
-        <button class="btn ghost" onclick="resetAdCopy('${esc(file)}')">Reset to generated</button>
-        <button class="btn ghost" onclick="this.closest('[id^=aded_]').style.display='none'">Cancel</button>
-      </div>
-    </div>`;
+function startAdEdit(vi){
+  const bar0 = document.getElementById("veb_"+vi);
+  const card = bar0 ? bar0.closest(".vcard") : null;
+  if(card) card.classList.add("editing");
+  ["vh_","vb_"].forEach(p=>{ const el=document.getElementById(p+vi); if(el){ el.contentEditable="true"; el.classList.add("live-edit"); } });
+  const cta = document.getElementById("vc_"+vi);
+  if(cta){ cta.contentEditable="true"; cta.classList.add("live-edit"); cta.textContent = cta.dataset.full || cta.textContent; }
+  const txt = document.getElementById("ftext_"+vi); if(txt) txt.classList.remove("clamped");
+  const bar = document.getElementById("veb_"+vi); if(bar) bar.style.display="flex";
+  const btns = document.getElementById("vbt_"+vi); if(btns) btns.style.display="none";
+  const h = document.getElementById("vh_"+vi); if(h) h.focus();
 }
-async function persistVCopy(file, ov){
-  if(!window._fpId){ showAlert("The funnel package row couldn't be loaded — run the funnel_packages read/update policies from the setup SQL, then refresh.", "Can't save"); return false; }
-  const vc = Object.assign({}, window._fpVCopy || {});
-  if(ov === null) delete vc[file]; else vc[file] = ov;
-  try{
-    const rows = await sbPatch(`funnel_packages?id=eq.${encodeURIComponent(window._fpId)}`, { variant_copy: vc });
-    if(!rows.length) throw Object.assign(new Error("Supabase blocked the update — add the funnel_packages update policy from the setup SQL."), {status:403});
-    window._fpVCopy = vc;
-    Object.keys(cache).forEach(k=>{ if(k.startsWith("funnel_packages")) delete cache[k]; });
-    return true;
-  }catch(e){ showAlert(String(e.body||e.message), "Save failed"); return false; }
-}
-async function saveAdCopy(vi, file){
-  const hook = (document.getElementById("adh_"+vi).value||"").trim();
-  const body = (document.getElementById("adb_"+vi).value||"").trim();
-  const cta = (document.getElementById("adc_"+vi).value||"").trim();
+async function saveAdEditDirect(vi, file){
+  const hook = (document.getElementById("vh_"+vi)?.textContent||"").trim();
+  const body = (document.getElementById("vb_"+vi)?.textContent||"").trim();
+  const cta = (document.getElementById("vc_"+vi)?.textContent||"").trim();
   const d = window._fpDefaults || {};
   const hooks = window._fpHooks || [];
   const ov = {};
-  if(hook && hook !== (hooks[vi % Math.max(hooks.length,1)]||"")) ov.hook = hook; else if(hook) ov.hook = hook;
+  const defHook = hooks.length ? hooks[vi % hooks.length] : "";
+  if(hook !== defHook) ov.hook = hook;
   if(body !== (d.body||"")) ov.body = body;
   if(cta !== (d.cta||"")) ov.cta = cta;
   const ok = await persistVCopy(file, Object.keys(ov).length ? ov : null);
   if(ok){
-    saveFeedback({ agent:"low_ticket_content", target_type:"ad_copy_edit", target_id:file, action:"edited", feedback:`Ad copy customized on dashboard (hook/body/cta)` }).catch(()=>{});
+    saveFeedback({ agent:"low_ticket_content", target_type:"ad_copy_edit", target_id:file, action:"edited", feedback:"Ad copy edited directly on preview" }).catch(()=>{});
     renderFunnel();
   }
 }
@@ -2868,9 +2933,8 @@ function parseSurveyOptions(qtext){
 }
 function funnelAssetPreview(title){
   const t = String(title||"").toLowerCase();
-  const p = window._fpParts || {};
-  const wrap = inner => `<div style="margin:16px 0 22px;display:flex;justify-content:center"><div style="max-width:520px;width:100%;background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 34px rgba(30,58,95,.10);overflow:hidden">${inner}</div></div>
-    <div style="text-align:center;color:var(--muted);font-size:.76rem;margin:-12px 0 18px">Live preview generated from this package — full spec below.</div>`;
+  const p = window._fpDraft || window._fpParts || {};
+  const wrap = inner => `<div class="device">${inner}</div>`;
 
   if(t==="survey" && p.survey && Array.isArray(p.survey.questions) && p.survey.questions.length){
     const qs = p.survey.questions;
@@ -2940,6 +3004,512 @@ function funnelAssetPreview(title){
     return wrap(inner);
   }
   return "";
+}
+
+
+/* ---------- funnel inspector: edit survey / landing / booking ---------- */
+const FS_COLMAP = { survey:"survey", landing:"landing_page", booking:"booking_page" };
+function fsDraft(step){ window._fpDraft = window._fpDraft || JSON.parse(JSON.stringify(window._fpParts||{})); return (window._fpDraft[step] = window._fpDraft[step] || {}); }
+function fsRepaint(){
+  const c = document.getElementById("fsCanvas");
+  if(c) c.innerHTML = funnelAssetPreview({survey:"survey",landing:"landing page",booking:"booking page"}[state.funnelStep]) || c.innerHTML;
+  const specBrief = document.querySelector("#funnelBriefBox .brief");
+  if(specBrief && [1,2,3,4].includes(state.funnelTab)){
+    const md = buildLiveSpec(state.funnelTab);
+    if(md != null){ specBrief.innerHTML = marked.parse(md); enhanceAllBriefs(); }
+  }
+}
+function fsSet(step, field, value){ fsDraft(step)[field] = value; fsRepaint(); }
+function fsSetLines(step, field, value){ fsDraft(step)[field] = value.split("\n").map(x=>x.trim()).filter(Boolean); fsRepaint(); }
+function fsSetQ(step, i, value){ const d=fsDraft(step); if(Array.isArray(d.questions) && d.questions[i]) { d.questions[i].question = value; fsRepaint(); } }
+function funnelInspector(step){
+  const d = fsDraft(step);
+  const T = (label, field, val, rows) => `<div class="insp-label">${label}</div><textarea rows="${rows||2}" oninput="fsSet('${step}','${field}',this.value)">${esc(val||"")}</textarea>`;
+  const L = (label, field, arr, rows) => `<div class="insp-label">${label} — one per line</div><textarea rows="${rows||4}" oninput="fsSetLines('${step}','${field}',this.value)">${esc((arr||[]).join("\n"))}</textarea>`;
+  let fields = "";
+  if(step==="survey"){
+    fields = (Array.isArray(d.questions)?d.questions:[]).map((q,i)=>
+      `<div class="insp-label">Question ${i+1}${q.type?` · ${esc(q.type)}`:""}</div><textarea rows="3" oninput="fsSetQ('survey',${i},this.value)">${esc(q.question||"")}</textarea>`).join("")
+      + T("Transition line","transition_line", d.transition_line);
+  } else if(step==="landing"){
+    fields = T("Headline","headline", d.headline)
+      + T("Subheadline","subheadline", d.subheadline, 3)
+      + L("Benefit bullets","benefit_bullets", d.benefit_bullets, 5)
+      + T("Offer block","offer_block", d.offer_block, 4)
+      + T("CTA","cta", d.cta, 1);
+  } else if(step==="booking"){
+    fields = T("Headline","headline", d.headline)
+      + T("Reassurance subhead","reassurance_subhead", d.reassurance_subhead, 3)
+      + L("What happens next","what_happens_next", d.what_happens_next, 5)
+      + T("Primary action","primary_action", d.primary_action, 1)
+      + T("Confirmation microcopy","confirmation_microcopy", d.confirmation_microcopy, 3);
+  }
+  const fbKey = String(window._fpId||"pkg")+":"+step;
+  const afb = (window._fpAssetFb||[]).filter(r=>r.target_id===fbKey);
+  const ast = afb.length ? afb[0] : null;
+  const astName = ast ? ast.action : "pending";
+  return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <span class="sec-title" style="margin:0">${step==="survey"?"Qualification survey":step==="landing"?"Landing page":"Booking page"}</span>
+      <span class="pill ${astName==="approved"?"approved":astName==="rejected"?"rejected":"medium"}" style="margin-left:auto">${esc(astName)}</span>
+    </div>
+    ${ast && ast.action==="rejected" && ast.feedback?`<div style="font-size:.76rem;color:var(--muted);margin-bottom:8px"><b>${esc(ast.author||"")}</b>: ${esc(ast.feedback)}</div>`:""}
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn navy" style="flex:1;justify-content:center" ${astName==="approved"?"disabled":""} onclick="assetDecision('${step}','approved')">✓ Approve</button>
+      <button class="btn no" style="flex:1;justify-content:center" ${astName==="rejected"?"disabled":""} onclick="assetDecision('${step}','rejected')">✕ Deny</button>
+    </div>
+    <div class="sec-sub">Changes preview live on the left. Save writes to the shared package — visible to the whole team and used at launch.</div>
+    ${fields}
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn navy" style="flex:1;justify-content:center" onclick="fsSave('${step}')">Save changes</button>
+      <button class="btn ghost" onclick="window._fpDraft=null;renderFunnel()">Discard</button>
+      <button class="btn ghost" style="width:100%;justify-content:center" onclick="revertStep('${step}')">↺ Revert to AI original</button>
+    </div>`;
+}
+async function fsSave(step){
+  if(!window._fpId){ showAlert("The funnel package row couldn't be loaded — run the funnel_packages policies SQL, then refresh.", "Can't save"); return; }
+  await ensureOriginalSnapshot();
+  const col = FS_COLMAP[step];
+  try{
+    const rows = await sbPatch(`funnel_packages?id=eq.${encodeURIComponent(window._fpId)}`, { [col]: fsDraft(step), status: "pending_approval" });
+    if(!rows.length) throw Object.assign(new Error("Supabase blocked the update — add the funnel_packages update policy."), {status:403});
+    window._fpParts[step] = JSON.parse(JSON.stringify(fsDraft(step)));
+    fsRepaint();
+    saveFeedback({ agent:"low_ticket_content", target_type:"funnel_asset_edit", target_id:String(window._fpId), action:"edited", feedback:`${step} edited on dashboard` }).catch(()=>{});
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("funnel_packages")) delete cache[k]; });
+    showAlert("Saved — the package now carries your edited "+step+".", "Saved");
+  }catch(e){ showAlert(String(e.body||e.message), "Save failed"); }
+}
+/* ---------- regenerate ad image via n8n webhook ---------- */
+function regenImage(file, vi){
+  openModal("Regenerate this image — what should change?", "Describe what you want different (layout, colors, style, message emphasis…). Takes ~1–2 minutes; the card updates when done.", async (notes)=>{
+    const hook = (document.getElementById("vh_"+vi)?.textContent||"").trim();
+    const body = (document.getElementById("vb_"+vi)?.textContent||"").trim();
+    const cta = (document.getElementById("vc_"+vi)?.textContent||"").trim();
+    const card = document.getElementById("veb_"+vi)?.closest(".vcard");
+    const img = card ? card.querySelector("img[alt^='Variant']") : null;
+    if(img) img.style.opacity = "0.35";
+    const badge = document.createElement("div");
+    badge.textContent = "🎨 Generating new image… ~1–2 min";
+    badge.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--navy);color:#fff;padding:10px 16px;border-radius:99px;font-size:.8rem;font-weight:650;z-index:3";
+    if(card){ card.style.position="relative"; card.appendChild(badge); }
+    try{
+      const res = await fetch(REGEN_WEBHOOK_URL, { method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ file, hook, body, cta, notes, author: whoAmI() }) });
+      if(!res.ok) throw new Error(await res.text());
+      const out = await res.json().catch(()=>({}));
+      saveFeedback({ agent:"low_ticket_content", target_type:"ad_image_variant", target_id:file, action:"regenerated", feedback:notes||"Regenerated without notes" }).catch(()=>{});
+      if(img){ img.src = (out.url || img.src.split("?")[0]) + "?v=" + Date.now(); img.style.opacity="1"; }
+      badge.remove();
+      showAlert("New image generated and swapped into the preview (and storage).", "Done");
+    }catch(e){
+      badge.remove(); if(img) img.style.opacity="1";
+      showAlert("Regeneration failed — is the 'Ad Image Regenerator' workflow published in n8n with its credentials set? Detail: "+String(e.message||e).slice(0,300), "Failed");
+    }
+  });
+}
+
+
+/* ---------- source posts: full original text + brief-link scroll ---------- */
+function srcAuthorLine(i){
+  const name = i.author_name || i.author || null;
+  const bits = [i.author_title, i.author_company].filter(Boolean).join(", ");
+  if(name) return `<b>${esc(name)}</b>${bits?` <span style="color:var(--muted)">· ${esc(bits)}</span>`:""}`;
+  let host = "";
+  try{ host = new URL(i.url).hostname.replace("www.",""); }catch(e){}
+  return `<b>${esc(i.source || host || "Unknown source")}</b>`;
+}
+function srcPostsSection(items){
+  const list = (items||[]).filter(i=>i && i.url);
+  if(!list.length) return "";
+  window._srcIndex = {};
+  list.forEach((i,idx)=>{ window._srcIndex[i.url] = idx; });
+  return `<section class="block" id="srcPosts"><h2>Source posts <span class="count">${list.length}</span></h2>
+    <div style="color:var(--muted);font-size:.8rem;margin-bottom:14px">The original posts behind this brief. Click any evidence link in the brief above to jump to its source here.</div>
+    ${list.map((i,idx)=>`
+    <div class="src-card" id="sp_${idx}">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+        ${srcAuthorLine(i)}
+        <span class="pill platform">${esc(i.platform||"web")}</span>
+        ${i.type?`<span class="chip">${esc(i.type)}</span>`:""}
+        <span style="color:var(--muted);font-size:.76rem">${i.published_at?fmtDate(i.published_at):(i.created_at?fmtDate(i.created_at):"")}</span>
+        <a class="open-btn" style="margin-left:auto" href="${esc(i.url)}" target="_blank" rel="noopener">Open original ↗</a>
+      </div>
+      ${(i.raw_text || i.full_text || i.post_text)
+        ? `<div style="white-space:pre-wrap;font-size:.88rem;line-height:1.55">${esc(i.raw_text || i.full_text || i.post_text)}</div>`
+        : `<div style="font-size:.88rem;line-height:1.55">${esc(i.summary||"")}</div>
+           ${i.signal?`<div style="font-size:.82rem;color:var(--muted);margin-top:5px">${esc(i.signal)}</div>`:""}
+           <div style="font-size:.74rem;color:var(--muted);margin-top:7px;font-style:italic">Full post text isn't captured for this item yet — showing the extracted takeaway. New runs will store the complete original post.</div>`}
+    </div>`).join("")}
+  </section>`;
+}
+function hookBriefSourceLinks(){
+  const brief = document.querySelector("#briefBox .brief"); if(!brief || !window._srcIndex) return;
+  brief.querySelectorAll("a[href]").forEach(a=>{
+    const idx = window._srcIndex[a.getAttribute("href")];
+    if(idx === undefined) return;
+    a.title = "Click to view the full source post below";
+    a.addEventListener("click", ev=>{
+      if(ev.metaKey || ev.ctrlKey || ev.shiftKey) return;   /* modifier-click still opens the site */
+      ev.preventDefault();
+      const card = document.getElementById("sp_"+idx);
+      if(card){ card.scrollIntoView({behavior:"smooth", block:"center"}); card.classList.remove("flash"); void card.offsetWidth; card.classList.add("flash"); }
+    });
+  });
+}
+
+
+/* ---------- persist per-variant ad copy (restored + snapshot-aware) ---------- */
+async function persistVCopy(file, ov){
+  await ensureOriginalSnapshot();
+  if(!window._fpId){ showAlert("The funnel package row couldn't be loaded — run the funnel_packages read/update policies SQL, then refresh.", "Can't save"); return false; }
+  const vc = Object.assign({}, window._fpVCopy || window._fpVCopyLive || {});
+  if(ov === null) delete vc[file]; else vc[file] = ov;
+  try{
+    const rows = await sbPatch(`funnel_packages?id=eq.${encodeURIComponent(window._fpId)}`, { variant_copy: vc });
+    if(!rows.length) throw Object.assign(new Error("Supabase blocked the update — add the funnel_packages update policy from the setup SQL."), {status:403});
+    window._fpVCopy = vc; window._fpVCopyLive = vc;
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("funnel_packages")) delete cache[k]; });
+    return true;
+  }catch(e){ showAlert(String(e.body||e.message), "Save failed"); return false; }
+}
+/* ---------- live spec: single source of truth rendered below the studio ---------- */
+function buildLiveSpec(tab){
+  const ad = window._fpAdVar || {};
+  const vc = window._fpVCopyLive || {};
+  const d = window._fpDraft || window._fpParts || {};
+  if(tab===1 && (ad.stable_body || (ad.hook_variations||[]).length)){
+    const L = [];
+    L.push('## Asset 1 — Static Ad');
+    L.push('**Stable body:**'); L.push(ad.stable_body||''); L.push('');
+    L.push('**Hook variations (rotate against the stable body):**');
+    (ad.hook_variations||[]).forEach((h,i)=>L.push((i+1)+'. '+h));
+    L.push(''); L.push('**CTA:** '+(ad.cta||''));
+    const ov = Object.entries(vc||{});
+    if(ov.length){
+      L.push(''); L.push('**Per-variant customizations (edited on dashboard):**');
+      ov.forEach(([file,o])=>{
+        const bits = [o.hook?('hook: "'+o.hook+'"'):null, o.body?'custom body':null, o.cta?('cta: "'+o.cta+'"'):null].filter(Boolean).join(' · ');
+        L.push('- `'+file.split('-').slice(-1)[0].replace('.png','')+'` — '+(bits||'customized'));
+      });
+    }
+    return L.join('\n');
+  }
+  if(tab===2 && d.survey && Array.isArray(d.survey.questions) && d.survey.questions.length){
+    const q = d.survey; const L = [];
+    L.push('## Asset 2 — Qualification Survey');
+    q.questions.forEach((x,i)=>L.push((i+1)+'. ['+(x.type||'context')+'] '+(x.question||'')+(x.disqualify_on?'  · Disqualify on: '+x.disqualify_on:'')));
+    L.push('');
+    if(q.branching_notes){ L.push('**Routing / branching:** '+q.branching_notes); }
+    L.push('**Transition line:** '+(q.transition_line||''));
+    return L.join('\n');
+  }
+  if(tab===3 && d.landing && (d.landing.headline||d.landing.subheadline)){
+    const p = d.landing; const L = [];
+    L.push('## Asset 3 — Landing Page ('+(p.vsl_state||'image_led')+')');
+    L.push('**Headline:** '+(p.headline||''));
+    L.push('**Subheadline:** '+(p.subheadline||'')); L.push('');
+    L.push('**Benefit bullets:**'); (p.benefit_bullets||[]).forEach(b=>L.push('- '+b)); L.push('');
+    L.push('**Offer block:** '+(p.offer_block||''));
+    if(p.proof_note) L.push('**Proof:** '+p.proof_note);
+    L.push('**CTA:** '+(p.cta||''));
+    if((p.faq||[]).length){ L.push(''); L.push('**Objection FAQ:**'); p.faq.forEach(f=>L.push('- **'+(f.objection||'')+'** — '+(f.answer||''))); }
+    return L.join('\n');
+  }
+  if(tab===4 && d.booking && d.booking.headline){
+    const p = d.booking; const L = [];
+    L.push('## Asset 4 — Booking Page');
+    L.push('**Headline:** '+(p.headline||''));
+    L.push('**Reassurance subhead:** '+(p.reassurance_subhead||'')); L.push('');
+    L.push('**What happens next:**'); (p.what_happens_next||[]).forEach((st,i)=>L.push((i+1)+'. '+st)); L.push('');
+    L.push('**Primary action:** '+(p.primary_action||''));
+    L.push('**Confirmation microcopy:** '+(p.confirmation_microcopy||''));
+    if(p.no_show_reminder_draft) L.push('**No-show reminder draft:** '+p.no_show_reminder_draft);
+    return L.join('\n');
+  }
+  return null;
+}
+/* ---------- preserve the AI original before first human save; enable revert ---------- */
+async function ensureOriginalSnapshot(){
+  if(window._fpOrig || !window._fpId) return;
+  const snap = {
+    ad_variations: window._fpAdVar || {},
+    survey: (window._fpParts||{}).survey || {},
+    landing: (window._fpParts||{}).landing || {},
+    booking: (window._fpParts||{}).booking || {}
+  };
+  try{
+    await sbPatch(`funnel_packages?id=eq.${encodeURIComponent(window._fpId)}`, { original_snapshot: snap });
+    window._fpOrig = snap;
+  }catch(e){}
+}
+function revertStep(step){
+  const o = window._fpOrig;
+  if(!o || !o[step]){ showAlert("No AI-original snapshot stored for this asset yet — snapshots are captured automatically on your first save.", "Nothing to revert to"); return; }
+  window._fpDraft[step] = JSON.parse(JSON.stringify(o[step]));
+  fsRepaint();
+  const side = document.querySelector(".studio-side");
+  if(side) side.innerHTML = funnelInspector(step);
+  showAlert("Restored the AI's original "+step+" into the editor — click Save changes to keep it.", "Reverted (unsaved)");
+}
+
+
+/* ================= HOME ================= */
+async function renderHome(){
+  const main = document.getElementById("main");
+  const me = whoAmI();
+  const hour = new Date().getHours();
+  const greet = hour<12?"Good morning":hour<18?"Good afternoon":"Good evening";
+  main.innerHTML = `
+    <div style="background:linear-gradient(135deg, var(--navy) 0%, #16294a 100%);border-radius:18px;padding:34px 36px;color:#fff;margin-bottom:26px;position:relative;overflow:hidden">
+      <div style="position:absolute;right:-30px;top:-30px;width:220px;height:220px;border-radius:99px;background:radial-gradient(circle, rgba(201,168,76,.25), transparent 70%)"></div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px">
+        <img src="https://www.aiparagonconsulting.com/logo.png" style="width:44px;height:44px;object-fit:contain" onerror="this.remove()">
+        <div>
+          <div class="hero-title">AI <span style="color:var(--gold)">Paragon</span> Consulting Group</div>
+          <div style="font-size:.88rem;opacity:.8"><a href="https://www.aiparagonconsulting.com" target="_blank" rel="noopener" style="color:inherit">aiparagonconsulting.com</a> · Intelligence & Delivery Dashboard</div>
+        </div>
+      </div>
+      <div class="hero-blurb">${greet}, ${esc(me)}. AI-automation consulting for financial services and professional services firms — mapping where AI reclaims capacity across sales pipeline, research & analysis, and client operations, then building the production systems that deliver it.</div>
+      <div class="statline" id="homeStats" style="margin-top:16px"><span class="chip" style="background:rgba(255,255,255,.12);border-color:transparent;color:#fff">Loading live stats…</span></div>
+    </div>
+    <div class="grid cols3" id="homeEngines"></div>
+    <div id="homeInsights" style="margin-top:24px"></div>
+    <div id="homeActions" style="margin-top:24px"></div>`;
+
+  /* gather live data */
+  let runs=[], drafts=[], leads=[], outputs=[];
+  try{ runs = await sb("runs?select=agent,run_id,run_date,finished_at,status&order=finished_at.desc&limit=30"); }catch(e){}
+  try{ drafts = await sb("engagement_drafts?select=id,status&limit=300"); }catch(e){}
+  try{ leads = await sb("e1_leads?select=id,status&limit=500"); }catch(e){}
+  try{ outputs = await sb("agent_outputs?select=agent,title,created_at&order=created_at.desc&limit=10"); }catch(e){}
+  const latest = a => runs.find(r=>r.agent===a);
+  const pend = drafts.filter(d=>!d.status||d.status==="pending").length;
+  const sig = window._navSig || {};
+  const pendVar = sig.pendingVariants || 0;
+
+  const st = document.getElementById("homeStats");
+  const hchip = (label, val) => `<span class="chip hero-chip" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.25);color:#fff !important">${label}: <b style="color:var(--gold)">${val}</b></span>`;
+  if(st) st.innerHTML = [
+    hchip("agents live","3"),
+    hchip("runs recorded", `${runs.length}${runs.length>=30?"+":""}`),
+    hchip("client leads", leads.length),
+    (pend+pendVar)?`<span class="chip" style="background:var(--gold);border-color:transparent;color:var(--navy) !important;font-weight:700">⚡ ${pend+pendVar} item${pend+pendVar===1?"":"s"} need review</span>`:hchip("pending","none ✓")
+  ].join("");
+
+  const engCard = (title, tag, desc, stats, cta, onclick, live) => `
+    <div class="card" style="display:flex;flex-direction:column">
+      <div class="agent-kind">${tag}</div>
+      <h3>${title}</h3>
+      <div style="font-size:.85rem;color:var(--muted);line-height:1.5;margin:6px 0 10px">${desc}</div>
+      <div class="statline" style="margin-bottom:12px">${stats}</div>
+      <div style="margin-top:auto">${live?`<button class="btn navy" style="width:100%;justify-content:center;font-size:.92rem;padding:11px" onclick="${onclick}">${cta}</button>`:`<span class="pill medium">coming soon</span>`}</div>
+    </div>`;
+
+  const r1=latest("intel_tracker"), r2=latest("ad_strategist"), r3=latest("low_ticket_content");
+  const runChip = r => r ? `<span class="chip">last run: <b>${fmtDate(r.run_date||r.finished_at)}</b></span>` : `<span class="chip">no runs yet</span>`;
+  document.getElementById("homeEngines").innerHTML =
+    engCard("Engine 1", "Client Service & Delivery",
+      "Five-agent client pipeline: lead research, anonymized assessment, discovery framework, and growth plan — every stage reviewable per lead.",
+      `<span class="chip">leads: <b>${leads.length}</b></span>`,
+      "Open Client Delivery →", "setEngine('e1')", true)
+    + engCard("Engine 2", "Coming soon",
+      "Reserved for the next automation engine.",
+      `<span class="chip">in planning</span>`, "", "", false)
+    + engCard("Engine 3", "Marketing Intelligence",
+      "Three agents on one knowledge base: competitor intel (daily), paid-ad strategy (weekly), and funnel production with a full editing studio.",
+      runChip(r1)+runChip(r2)+runChip(r3)+(pend?`<span class="chip" style="background:#FBF2D8">drafts: <b>${pend}</b></span>`:""),
+      "Open Marketing →", "setEngine('e3')", true);
+
+  const acts = [];
+  if(pend) acts.push(`<div class="notif-item" onclick="state.engine='e3';setView('intel')"><span>📝</span><div><b>${pend} engagement draft${pend===1?"":"s"}</b> awaiting approval<div class="nt">Engine 3 · Intel Tracker</div></div></div>`);
+  if(pendVar) acts.push(`<div class="notif-item" onclick="state.engine='e3';setView('funnel')"><span>🖼️</span><div><b>${pendVar} ad variant${pendVar===1?"":"s"}</b> awaiting approve/deny<div class="nt">Engine 3 · Low-Ticket Agent</div></div></div>`);
+  outputs.slice(0,4).forEach(o=>{
+    const v = o.agent==="ad_strategist"?"ads":o.agent==="low_ticket_content"?"funnel":"intel";
+    acts.push(`<div class="notif-item" onclick="state.engine='e3';setView('${v}')"><span>🗂️</span><div>${esc(o.title||o.agent)}<div class="nt">${fmtDateTime(o.created_at)}</div></div></div>`);
+  });
+  document.getElementById("homeActions").innerHTML = acts.length
+    ? `<section class="block"><h2>Needs attention & recent outputs</h2>${acts.join("")}</section>` : "";
+  renderHomeInsights(outputs);
+}
+async function renderHomeInsights(outputs){
+  const el = document.getElementById("homeInsights"); if(!el) return;
+  let ads = [];
+  try{ ads = await sb("winner_creatives?select=advertiser_name,is_active,last_seen,stale_days,performance_score,hook,days_running&order=performance_score.desc&limit=300"); }catch(e){}
+  if(!ads.length){ el.innerHTML = ""; return; }
+  const activeAds = ads.filter(a=>adActive(a));
+  const advs = [...new Set(ads.map(a=>(a.advertiser_name||"Unknown").trim()))];
+  const leader = activeAds[0] || ads[0];
+  const briefOut = (outputs||[]).find(o=>o.agent==="ad_strategist");
+  let briefData = {};
+  if(briefOut){
+    try{ const full = await sb(`agent_outputs?select=data&agent=eq.ad_strategist&order=created_at.desc&limit=1`); if(full.length) briefData = asObj(full[0].data); }catch(e){}
+  }
+  const hooks = Array.isArray(briefData.winning_hooks) ? briefData.winning_hooks.slice(0,3) : [];
+  el.innerHTML = `<section class="block"><h2>Ad intelligence at a glance</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px">
+      <div class="big-stat"><div class="n">${ads.length}</div><div class="l">ads tracked</div></div>
+      <div class="big-stat"><div class="n">${activeAds.length}</div><div class="l">running now</div></div>
+      <div class="big-stat"><div class="n">${advs.length}</div><div class="l">advertisers</div></div>
+      ${briefData.confidence!=null?`<div class="big-stat"><div class="n">${briefData.confidence}</div><div class="l">brief confidence</div></div>`:""}
+      ${briefData.sophistication_level?`<div class="big-stat"><div class="n" style="font-size:1.3rem;padding-top:8px">${esc(briefData.sophistication_level)}</div><div class="l">sophistication</div></div>`:""}
+    </div>
+    <div class="grid cols2">
+      <div class="card"><div class="agent-kind">Strongest live competitor ad</div>
+        ${leader?`<div style="font-size:.9rem;line-height:1.5;margin:6px 0">"${esc(String(leader.hook||"").slice(0,140))}${String(leader.hook||"").length>140?"…":""}"</div>
+        <div class="statline"><span class="chip"><b>${esc((leader.advertiser_name||"Unknown").trim())}</b></span>
+        <span class="pill ${adActive(leader)?"approved":"rejected"}">${adActive(leader)?"ACTIVE":"ended"}</span>
+        ${leader.days_running!=null?`<span class="chip">${esc(leader.days_running)}d running</span>`:""}</div>
+        <div class="go"><button onclick="state.engine='e3';setView('ads')">Open Ad Strategist</button></div>`:`<div class="datestamp">No ads yet</div>`}</div>
+      <div class="card"><div class="agent-kind">Hooks worth testing (latest brief)</div>
+        ${hooks.length?hooks.map((h,i)=>`<div style="display:flex;gap:8px;font-size:.86rem;margin:7px 0;line-height:1.45"><span style="flex-shrink:0;width:18px;height:18px;border-radius:99px;background:var(--gold);color:var(--navy);font-weight:800;font-size:.66rem;display:flex;align-items:center;justify-content:center">${i+1}</span><span>${esc(h)}</span></div>`).join("")
+        :`<div class="datestamp">Run the Ad Strategist to generate hook patterns.</div>`}
+      </div>
+    </div></section>`;
+}
+
+
+async function assetDecision(step, action){
+  const fbKey = String(window._fpId||"pkg")+":"+step;
+  const doSave = async (reason)=>{
+    await saveFeedback({ agent:"low_ticket_content", target_type:"funnel_asset", target_id:fbKey, action, feedback: reason || (action==="approved"?"Approved on dashboard":"") });
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("agent_feedback")) delete cache[k]; });
+    try{ window._fpAssetFb = await sb(`agent_feedback?select=target_id,action,feedback,author,created_at&target_type=eq.funnel_asset&order=created_at.desc&limit=100`); }catch(e){}
+    const side = document.querySelector(".studio-side");
+    if(side) side.innerHTML = funnelInspector(step);
+  };
+  if(action==="rejected"){
+    openModal("Deny this "+step+" — why?", "What needs to change? (questions, framing, routing, tone…) This is saved and steers the next generation run.", async (text)=>{ await doSave(text); });
+  } else {
+    try{ await doSave(); }catch(e){ showAlert(String(e.body||e.message||e), "Save failed"); }
+  }
+}
+
+
+/* ---------- floating formatting toolbar for rich editors ---------- */
+function ensureFmtBar(){
+  if(document.getElementById("fmtBar")) return;
+  const bar = document.createElement("div");
+  bar.id = "fmtBar"; bar.style.display = "none";
+  const B = (label, cmd, val, title) => `<button title="${title||label}" onmousedown="event.preventDefault();document.execCommand('${cmd}'${val?",false,'"+val+"'":""})">${label}</button>`;
+  bar.innerHTML = B("B","bold") + B("<i>I</i>","italic") + B("<u>U</u>","underline")
+    + '<div class="sep"></div>'
+    + B("H1","formatBlock","H2","Heading") + B("H2","formatBlock","H3","Subheading") + B("¶","formatBlock","P","Paragraph")
+    + '<div class="sep"></div>'
+    + B("• List","insertUnorderedList") + B("1. List","insertOrderedList")
+    + '<div class="sep"></div>'
+    + B("⌫ Clear","removeFormat","", "Remove formatting");
+  document.body.appendChild(bar);
+  document.addEventListener("focusin", e=>{
+    const t = e.target.closest && e.target.closest('[contenteditable="true"]');
+    if(t && (t.classList.contains("brief") || t.closest(".brief"))){
+      const r = t.getBoundingClientRect();
+      bar.style.display = "flex";
+      bar.style.top = Math.max(8, r.top - 46) + "px";
+      bar.style.left = Math.max(8, r.left) + "px";
+    }
+  });
+  document.addEventListener("focusout", e=>{
+    setTimeout(()=>{ const a=document.activeElement; if(!a || (!a.closest("#fmtBar") && !(a.closest && a.closest('[contenteditable="true"]')))) bar.style.display="none"; }, 150);
+  });
+  window.addEventListener("scroll", ()=>{ bar.style.display="none"; }, true);
+}
+ensureFmtBar();
+/* ---------- WYSIWYG editing for the funnel spec doc (Overview / Test Plan tabs) ---------- */
+function editSpecDoc(outputId){
+  const el = document.querySelector("#funnelBriefBox .brief"); if(!el) return;
+  el.contentEditable = "true"; el.style.outline = "2px solid var(--gold)"; el.style.outlineOffset = "8px"; el.focus();
+  const bar = document.createElement("div"); bar.className = "editing-bar"; bar.id = "specEditBar";
+  bar.innerHTML = `<span style="font-size:.82rem;color:var(--muted)">Editing — use the formatting toolbar (bold, headings, lists) that appears above the text.</span>
+    <span style="flex:1"></span>
+    <button class="btn ghost" onclick="renderFunnel()">Cancel</button>
+    <button class="btn navy" onclick="saveSpecDoc('${esc(outputId)}')">Save changes</button>`;
+  document.getElementById("funnelBriefBox").appendChild(bar);
+  const p = document.getElementById("specEditPencil"); if(p) p.style.display="none";
+}
+async function saveSpecDoc(outputId){
+  const el = document.querySelector("#funnelBriefBox .brief"); if(!el) return;
+  let md;
+  try{ const td = new TurndownService({ headingStyle:"atx", hr:"---", bulletListMarker:"-" }); td.keep(["table","thead","tbody","tr","th","td"]); md = td.turndown(el.innerHTML); }
+  catch(e){ md = el.innerText; }
+  try{
+    const rows = await sbPatch(`agent_outputs?id=eq.${encodeURIComponent(outputId)}`, { content_md: md, edited_by_human: true });
+    if(!rows.length) throw Object.assign(new Error("Supabase blocked the edit — check the agent_outputs update policy."), {status:403});
+    Object.keys(cache).forEach(k=>delete cache[k]);
+    renderFunnel();
+  }catch(e){ showAlert(String(e.body||e.message), "Save failed"); }
+}
+
+
+/* ---------- per-user theme customization ---------- */
+const THEME_PRESETS = {
+  "Classic Paragon": { bg:"#F5F2EC", navy:"#1E3A5F", gold:"#C9A84C", cream:"#EDE9DF" },
+  "Midnight":        { bg:"#12161F", navy:"#2C4A73", gold:"#D4B15F", cream:"#1C2230" },
+  "Slate":           { bg:"#F0F2F4", navy:"#2F3B4C", gold:"#7A8CA6", cream:"#E3E7EC" },
+  "Forest":          { bg:"#F2F4EE", navy:"#24402E", gold:"#A8893B", cream:"#E5EADD" },
+  "Burgundy":        { bg:"#F6F1EE", navy:"#4A2230", gold:"#C08A3E", cream:"#EDE2DB" }
+};
+function themeKey(){ return "aip_theme_" + (sessionStorage.getItem("aip_user")||"team").toLowerCase(); }
+function applyTheme(t){
+  if(!t) return;
+  const r = document.documentElement.style;
+  if(t.bg) r.setProperty("--bg", t.bg);
+  if(t.navy){ r.setProperty("--navy", t.navy); r.setProperty("--ink", t.navy); }
+  if(t.gold) r.setProperty("--gold", t.gold);
+  if(t.cream) r.setProperty("--cream", t.cream);
+}
+function applySavedTheme(){
+  try{ const t = JSON.parse(localStorage.getItem(themeKey())||"null"); if(t) applyTheme(t); }catch(e){}
+}
+function openThemeModal(){
+  const cur = (()=>{ try{ return JSON.parse(localStorage.getItem(themeKey())||"null"); }catch(e){ return null; } })() || THEME_PRESETS["Classic Paragon"];
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "position:fixed;inset:0;z-index:998;background:rgba(30,40,60,.45);display:flex;align-items:center;justify-content:center;padding:20px";
+  wrap.innerHTML = `<div style="background:var(--white);border-radius:14px;max-width:470px;width:100%;padding:24px 26px;box-shadow:0 18px 60px rgba(0,0,0,.25)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <img src="https://www.aiparagonconsulting.com/logo.png" style="width:26px;height:26px;object-fit:contain" onerror="this.remove()">
+      <div style="font-family:Georgia,serif;font-size:1.15rem;color:var(--ink)">Customize your theme</div>
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:14px">Your colors, saved just for you (${esc(whoAmI())}). The AI Paragon logo always stays.</div>
+    <div class="insp-label">Presets</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      ${Object.entries(THEME_PRESETS).map(([name,t])=>`<button class="score-btn" style="display:inline-flex;gap:6px;align-items:center" onclick='pickThemePreset(${JSON.stringify(name)})'>
+        <span style="width:12px;height:12px;border-radius:99px;background:${t.navy};display:inline-block"></span>
+        <span style="width:12px;height:12px;border-radius:99px;background:${t.gold};display:inline-block"></span>${esc(name)}</button>`).join("")}
+    </div>
+    <div class="insp-label">Fine-tune</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+      ${[["Primary","navy"],["Accent","gold"],["Background","bg"],["Panels","cream"]].map(([l,k])=>`
+        <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:7px 10px">
+          <input type="color" id="th_${k}" value="${cur[k]||"#000000"}" style="width:30px;height:26px;border:none;background:none;padding:0;cursor:pointer" oninput="previewTheme()">${l}</label>`).join("")}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn navy" style="flex:1;justify-content:center" onclick="saveTheme(this)">Save my theme</button>
+      <button class="btn ghost" onclick="resetTheme()">Reset to default</button>
+      <button class="btn ghost" onclick="this.closest('div[style*=fixed]').remove();applySavedTheme()">Close</button>
+    </div></div>`;
+  document.body.appendChild(wrap);
+  wrap.onclick = e=>{ if(e.target===wrap){ wrap.remove(); applySavedTheme(); } };
+}
+function currentPickerTheme(){
+  return { navy:document.getElementById("th_navy").value, gold:document.getElementById("th_gold").value,
+           bg:document.getElementById("th_bg").value, cream:document.getElementById("th_cream").value };
+}
+function previewTheme(){ applyTheme(currentPickerTheme()); }
+function pickThemePreset(name){
+  const t = THEME_PRESETS[name]; if(!t) return;
+  [["navy",t.navy],["gold",t.gold],["bg",t.bg],["cream",t.cream]].forEach(([k,v])=>{ const el=document.getElementById("th_"+k); if(el) el.value=v; });
+  applyTheme(t);
+}
+function saveTheme(btn){
+  localStorage.setItem(themeKey(), JSON.stringify(currentPickerTheme()));
+  const m = btn.closest('div[style*="fixed"]'); if(m) m.remove();
+  showAlert("Theme saved — it will follow you on this browser every time you sign in.", "Saved");
+}
+function resetTheme(){
+  localStorage.removeItem(themeKey());
+  const r = document.documentElement.style;
+  ["--bg","--navy","--ink","--gold","--cream"].forEach(v=>r.removeProperty(v));
+  showAlert("Back to Classic Paragon.", "Reset");
 }
 
 /* ================= PASSWORD GATE ================= */
