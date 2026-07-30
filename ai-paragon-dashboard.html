@@ -266,6 +266,22 @@
   .notif-item{display:flex;gap:10px;padding:9px 8px;border-radius:10px;cursor:pointer;font-size:.84rem;line-height:1.4}
   .notif-item:hover{background:var(--cream)}
   .notif-item .nt{font-size:.72rem;color:var(--muted);margin-top:2px}
+  .attn-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:10px;background:var(--cream);cursor:pointer;margin-top:10px;font-size:.85rem;line-height:1.4;transition:box-shadow .15s,transform .15s}
+  .attn-row:hover{box-shadow:var(--shadow-sm);transform:translateY(-1px)}
+  .attn-row .go{margin-left:auto;font-weight:700;color:var(--navy);font-size:.78rem;white-space:nowrap}
+  .out-row{display:flex;align-items:center;gap:10px;padding:10px 6px;border-bottom:1px solid var(--line);cursor:pointer;font-size:.85rem;border-radius:8px}
+  .out-row:last-child{border-bottom:none}
+  .out-row:hover{background:var(--cream)}
+  .out-row .ot{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+  .out-row .od{color:var(--muted);font-size:.74rem;white-space:nowrap}
+  .out-row .on{background:var(--gold-soft);color:#7A5E12;font-size:.68rem;font-weight:800;border-radius:99px;padding:2px 8px}
+  .eng-cta{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 16px;border:1.5px solid var(--navy);border-radius:11px;background:transparent;color:var(--navy);font-size:.88rem;font-weight:700;transition:background .18s,color .18s;box-sizing:border-box}
+  .eng-cta:hover{background:var(--navy);color:#fff}
+  .eng-cta .arr{transition:transform .18s}
+  .eng-cta:hover .arr{transform:translateX(4px)}
+  .th-preset{all:unset;cursor:pointer;display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:.8rem;font-weight:600;color:var(--ink);transition:border-color .15s,background .15s}
+  .th-preset:hover{background:var(--cream)}
+  .th-preset.active{border-color:var(--navy);background:var(--cream)}
 
 
   .score-btn{white-space:nowrap}
@@ -464,6 +480,8 @@
       <button data-ws-btn="tasks" onclick="setView('tasks')"><span>Tasks</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">ASANA</span></button>
       <button data-ws-btn="notion" onclick="setView('notion')"><span>Notes</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">NOTION</span></button>
       <button data-ws-btn="profile" onclick="setView('profile')"><span>Profile</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">COMPANY</span></button>
+      <button data-ws-btn="ask" onclick="askToggle()"><span>Ask</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">AI</span></button>
+      <button data-ws-btn="hubspot" onclick="setView('hubspot')"><span>HubSpot</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">CRM</span></button>
     </nav>
     <div class="side-foot"><b style="display:block;color:var(--navy);font-size:.8rem;margin-bottom:2px">Internal dashboard</b>Data refreshes on page load from the shared knowledge base.</div>
   </aside>
@@ -814,7 +832,7 @@ function renderShell(){
   document.querySelectorAll('#wsNav [data-ws-btn]').forEach(b=>b.classList.toggle("active", state.view===b.dataset.wsBtn));
   const vt = document.getElementById("viewTabs");
   if(vt){
-    if(state.view==="tasks"||state.view==="notion"||state.view==="profile"||state.engine==="home"){ vt.innerHTML=""; }
+    if(state.view==="tasks"||state.view==="notion"||state.view==="profile"||state.view==="ask"||state.view==="hubspot"||state.engine==="home"){ vt.innerHTML=""; }
     else if(state.engine==="e3"){
       vt.innerHTML = E3_VIEWS.map(v=>`<button class="${state.view===v.id?'active':''}" onclick="setView('${v.id}')">${v.name}</button>`).join("");
     } else if(state.engine==="e1"){
@@ -847,7 +865,10 @@ function render(){
   if(state.engine==="home" && state.view==="home"){ renderHome(); return; }
   if(state.view==="tasks"){ renderTasks(); return; }
   if(state.view==="notion"){ renderNotion(); return; }
+  askEnsureWidget();
   if(state.view==="profile"){ renderProfile(); return; }
+  if(state.view==="ask"){ state.view="home"; render(); askToggle(); return; }
+  if(state.view==="hubspot"){ renderHubspot(); return; }
   if(state.engine==="e1"){
     ({e1overview:renderE1Overview, e1pipeline:renderE1Pipeline, e1lead:renderE1Lead})[state.view]();
     return;
@@ -1704,6 +1725,17 @@ async function renderE1Lead(){
   const leads = mergeE1Leads(rawLeads);
   const lead = leads.find(l=>(l.emails||[l.email]).includes(state.e1Lead)) || {email:state.e1Lead, emails:[state.e1Lead]};
   const lo = outs.filter(o=>(lead.emails||[lead.email]).includes(o.run_id));
+  let files=[], filesErr=null;
+  try{
+    const emails = (lead.emails||[lead.email]).map(e=>'"'+e+'"').join(",");
+    files = await sb(`lead_files?select=*&lead_email=in.(${emails})&order=created_at.desc&limit=200`);
+  }catch(e){ filesErr=e; }
+  let hs=null, hsErr=null;
+  try{
+    const emails = (lead.emails||[lead.email]).map(e=>'"'+e+'"').join(",");
+    const hrows = await sb(`hubspot_contacts?select=*&email=in.(${emails})&limit=1`);
+    hs = hrows[0]||null;
+  }catch(e){ hsErr=e; }
   const name = lead.prospect_name || asObj(lo[0]?.data).prospectName || lead.email;
   main.innerHTML = `<div class="page-head"><div>
       <div class="lineage" style="cursor:pointer" onclick="setView('e1pipeline')">← Back to pipeline</div>
@@ -1718,6 +1750,8 @@ async function renderE1Lead(){
       ${fitPill(lead.fit_rating)}
     </div></div>
     ${err?errNotice(err,"agent_outputs"):""}
+    ${e1FilesSection(lead, outs, files, filesErr)}
+    ${e1HubspotSection(hs, hsErr)}
     ${E1_STAGES.map((s,i)=>{
       const st = e1StageState(lead, outs, s);
       const d = asObj(st.out?.data);
@@ -1745,6 +1779,279 @@ async function renderE1Lead(){
     }).join("")}`;
 }
 
+
+/* ================= HUBSPOT CRM PAGE ================= */
+async function renderHubspot(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="page-head"><div>
+      <div class="eyebrow">Workspace · CRM</div>
+      <h1 class="page">HubSpot Contacts</h1>
+      <div class="page-sub">Synced from HubSpot into the shared knowledge base every 6 hours.</div></div></div>
+    <div id="hsBody"><div class="loading">Loading contacts…</div></div>`;
+  let rows=[], err=null; const leadEmails=new Set();
+  try{ rows = await pFresh("hubspot_contacts?select=*&order=synced_at.desc&limit=500"); }catch(e){ err=e; }
+  try{ (await sb("e1_leads?select=email&limit=2000")).forEach(l=>leadEmails.add(String(l.email||"").toLowerCase())); }catch(e){}
+  const body = document.getElementById("hsBody");
+  if(err){
+    body.innerHTML = errNotice(err,"hubspot_contacts") + `<div class="notice">Run the <b>hubspot_contacts</b> setup SQL in Supabase, then activate the <b>HubSpot Contact Sync</b> workflow in n8n and execute it once to backfill.</div>`;
+    return;
+  }
+  window._hsRows = rows; window._hsLeads = leadEmails;
+  const last = rows.length ? fmtDateTime(rows[0].synced_at) : null;
+  body.innerHTML = `<div class="card">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+      <b style="color:var(--navy)">Contacts</b><span class="pill">${rows.length}</span>
+      ${last?`<span class="chip">last sync: <b>${last}</b></span>`:""}
+      <input type="search" placeholder="Search name, email, company…" style="margin-left:auto;min-width:220px" oninput="hsFilter(this.value)">
+    </div>
+    <div id="hsTable">${hsRowsHtml(rows)}</div>
+  </div>`;
+}
+function hsRowsHtml(rows){
+  if(!rows.length) return `<div style="font-size:.85rem;color:var(--muted);padding:10px 2px">No contacts synced yet — activate the HubSpot Contact Sync workflow in n8n and execute it once.</div>`;
+  return rows.map(c=>{
+    const name = [c.first_name,c.last_name].filter(Boolean).join(" ") || c.email;
+    const isLead = window._hsLeads && window._hsLeads.has(String(c.email||"").toLowerCase());
+    return `<div class="out-row" style="cursor:default">
+      <span style="font-size:1rem">👤</span>
+      <div style="flex:1;min-width:0">
+        <b style="color:var(--ink)">${esc(name)}</b>
+        <span style="color:var(--muted);font-size:.78rem"> · ${esc(c.email||"")}</span>
+        <div class="nt">${esc([c.company,c.job_title].filter(Boolean).join(" · "))}</div>
+      </div>
+      ${c.lifecycle_stage?`<span class="pill">${esc(c.lifecycle_stage)}</span>`:""}
+      ${c.lead_status?`<span class="chip">${esc(c.lead_status)}</span>`:""}
+      ${isLead?`<button class="chip" style="cursor:pointer" onclick="openE1Lead('${esc(c.email)}')">Open lead →</button>`:""}
+    </div>`;
+  }).join("");
+}
+function hsFilter(v){
+  const q = String(v||"").toLowerCase();
+  const rows = (window._hsRows||[]).filter(c=>
+    !q || [c.first_name,c.last_name,c.email,c.company,c.job_title].some(x=>String(x||"").toLowerCase().includes(q)));
+  const t = document.getElementById("hsTable"); if(t) t.innerHTML = hsRowsHtml(rows);
+}
+
+/* ================= HUBSPOT CARD ================= */
+function e1HubspotSection(hs, hsErr){
+  if(hsErr) return "";  /* table missing or blocked — stay quiet until sync is set up */
+  if(!hs) return `<section class="block"><h2>HubSpot</h2>
+    <div class="card" style="font-size:.85rem;color:var(--muted)">No HubSpot contact synced for this email yet. The sync workflow runs every 6 hours — or trigger it manually in n8n.</div></section>`;
+  const chip = (l,v)=>v?`<span class="chip">${l}: <b>${esc(v)}</b></span>`:"";
+  const name = [hs.first_name, hs.last_name].filter(Boolean).join(" ");
+  return `<section class="block"><h2>HubSpot <span class="count">synced ${fmtDateTime(hs.synced_at)}</span></h2>
+    <div class="card"><div class="statline">
+      ${chip("name", name)}
+      ${chip("company", hs.company)}
+      ${chip("title", hs.job_title)}
+      ${chip("phone", hs.phone)}
+      ${chip("lifecycle", hs.lifecycle_stage)}
+      ${chip("lead status", hs.lead_status)}
+      ${hs.website?`<a class="chip" style="text-decoration:none" href="${esc(/^https?:/.test(hs.website)?hs.website:"https://"+hs.website)}" target="_blank" rel="noopener">website ↗</a>`:""}
+      ${hs.hs_id?`<a class="chip" style="text-decoration:none" href="https://app.hubspot.com/contacts" target="_blank" rel="noopener">open in HubSpot ↗</a>`:""}
+    </div></div></section>`;
+}
+
+/* ================= ASK (AI QUERY BOT — FLOATING WIDGET) ================= */
+function kRead(k){ return localStorage.getItem("ask_"+k) || (k==="webhook" ? "https://n8n.aiparagonconsulting.com/webhook/ask-bot" : ""); }
+function kStore(k,v){ v ? localStorage.setItem("ask_"+k, v) : localStorage.removeItem("ask_"+k); }
+window._askSession = window._askSession || (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8));
+window._askLog = window._askLog || [];
+const ASK_EXAMPLES = ["What files do we have for our newest lead, by stage?",
+  "Which leads are stuck before the discovery stage?",
+  "What pain points did the last growth plan mention?",
+  "List approved competitors and why we track them"];
+
+function askEnsureWidget(){
+  if(document.getElementById("askBubble")) return;
+  const b = document.createElement("button");
+  b.id = "askBubble"; b.title = "Ask the knowledge base";
+  b.style.cssText = "position:fixed;right:22px;bottom:22px;z-index:900;width:54px;height:54px;border:none;border-radius:99px;background:var(--navy);color:#fff;font-size:1.3rem;cursor:pointer;box-shadow:0 10px 28px rgba(30,58,95,.35);transition:transform .15s";
+  b.onmouseenter = ()=>b.style.transform = "scale(1.07)";
+  b.onmouseleave = ()=>b.style.transform = "";
+  b.textContent = "✦";
+  b.onclick = askToggle;
+  document.body.appendChild(b);
+}
+function askToggle(){
+  askEnsureWidget();
+  const ex = document.getElementById("askPanel");
+  if(ex){ ex.remove(); document.getElementById("askBubble").textContent = "✦"; return; }
+  const p = document.createElement("div");
+  p.id = "askPanel";
+  p.style.cssText = "position:fixed;right:22px;bottom:86px;z-index:901;width:min(400px,calc(100vw - 32px));height:min(560px,calc(100vh - 120px));display:flex;flex-direction:column;background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 50px rgba(30,58,95,.25);overflow:hidden";
+  p.innerHTML = `
+    <div style="background:var(--navy);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:9px">
+      <span style="font-size:1.05rem">✦</span>
+      <b style="font-size:.95rem;flex:1">Ask AI Paragon</b>
+      <button onclick="askConfigToggle()" title="Webhook settings" style="all:unset;cursor:pointer;font-size:.95rem;opacity:.85">⚙</button>
+      <button onclick="askToggle()" title="Close" style="all:unset;cursor:pointer;font-size:1rem;opacity:.85;padding:0 2px">✕</button>
+    </div>
+    <div id="askConfig" style="display:${kRead("webhook")?"none":"block"};padding:10px 14px;border-bottom:1px solid var(--line);background:var(--cream)">
+      <div style="font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#8a8374;margin-bottom:4px">Ask-bot webhook (n8n)</div>
+      <input type="text" style="font:inherit;font-size:.82rem;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--white);width:100%;box-sizing:border-box" placeholder="https://n8n.aiparagonconsulting.com/webhook/ask-bot" value="${esc(kRead("webhook"))}" onchange="kStore('webhook',this.value.trim())">
+      <div style="font-size:.72rem;color:var(--muted);margin-top:4px">From <b>ask-bot-workflow.json</b> — activate it in n8n, paste the production URL.</div>
+    </div>
+    <div id="askLog" style="flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:14px"></div>
+    <div id="askHints" style="display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 8px"></div>
+    <div style="display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line)">
+      <input id="askInput" type="text" placeholder="Ask about leads, files, briefs…" style="font:inherit;font-size:.88rem;padding:10px 13px;border:1px solid var(--line);border-radius:11px;background:var(--white);flex:1;min-width:0" onkeydown="if(event.key==='Enter')askSend()">
+      <button class="btn navy" id="askBtn" onclick="askSend()" style="padding:10px 16px">Ask</button>
+    </div>`;
+  document.body.appendChild(p);
+  document.getElementById("askBubble").textContent = "▾";
+  document.getElementById("askHints").innerHTML = window._askLog.length ? "" :
+    ASK_EXAMPLES.map(q=>`<button class="chip" style="cursor:pointer;border:none;font-size:.72rem" onclick="document.getElementById('askInput').value=this.textContent;askSend()">${esc(q)}</button>`).join("");
+  askPaint();
+  const inp = document.getElementById("askInput"); if(inp) inp.focus();
+}
+function askConfigToggle(forceOpen){
+  const c = document.getElementById("askConfig"); if(!c) return;
+  c.style.display = (forceOpen || c.style.display==="none") ? "block" : "none";
+}
+function askPaint(){
+  const log = document.getElementById("askLog"); if(!log) return;
+  log.innerHTML = window._askLog.map(m=>{
+    if(m.role==="user") return `<div style="align-self:flex-end;max-width:85%;background:var(--navy);color:#fff;border-radius:13px 13px 4px 13px;padding:9px 13px;font-size:.86rem">${esc(m.text)}</div>`;
+    if(m.role==="wait") return `<div style="align-self:flex-start;color:var(--muted);font-size:.82rem;padding:2px 2px">Thinking & querying…</div>`;
+    return `<div style="align-self:flex-start;max-width:92%;background:var(--cream);border:1px solid var(--line);border-radius:13px 13px 13px 4px;padding:10px 14px;font-size:.86rem;overflow-wrap:anywhere" class="brief">${m.err?`<span style="color:#a33">${esc(m.text)}</span>`:marked.parse(m.text)}</div>`;
+  }).join("");
+  log.scrollTop = log.scrollHeight;
+}
+async function askSend(){
+  const hook = kRead("webhook");
+  const inp = document.getElementById("askInput");
+  const q = (inp.value||"").trim();
+  if(!q) return;
+  if(!hook){ askConfigToggle(true); showAlert("Add the ask-bot webhook URL first (⚙ in the chat header).","No webhook set"); return; }
+  inp.value = "";
+  const hints = document.getElementById("askHints"); if(hints) hints.innerHTML = "";
+  const btn = document.getElementById("askBtn"); if(btn) btn.disabled = true;
+  window._askLog.push({role:"user", text:q});
+  window._askLog.push({role:"wait"});
+  askPaint();
+  try{
+    const res = await fetch(hook, { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ question:q, sessionId: window._askSession }) });
+    const raw = await res.text();
+    if(!res.ok) throw new Error("Webhook error "+res.status+" — is the ask-bot workflow active? "+raw.slice(0,160));
+    let out = {};
+    try{ out = JSON.parse(raw); }
+    catch(e){ throw new Error(raw.trim()
+      ? "Unexpected reply from webhook: "+raw.slice(0,200)
+      : "Empty reply from the webhook — open the ask-bot workflow in n8n, check its latest execution for the error, and make sure the newest version is published."); }
+    window._askLog.pop();
+    window._askLog.push({role:"bot", text: String(out.answer||"(empty answer)")});
+  }catch(e){
+    window._askLog.pop();
+    window._askLog.push({role:"bot", err:true, text: e.message||String(e)});
+  }
+  if(btn) btn.disabled = false;
+  askPaint();
+  const el = document.getElementById("askInput"); if(el) el.focus();
+}
+
+/* ================= LEAD FILES ================= */
+function e1FileIcon(n){
+  const x = String(n||"").toLowerCase();
+  if(x.includes(".pdf")||x.includes("pdf")) return "📄";
+  if(/\.(doc|docx)/.test(x)||x.includes("google doc")) return "📝";
+  if(/\.(xls|xlsx|csv)/.test(x)) return "📊";
+  if(/\.(png|jpe?g|gif|webp)/.test(x)) return "🖼️";
+  if(/\.(ppt|pptx)/.test(x)||x.includes("slide")) return "📽️";
+  return "📁";
+}
+function e1FilesSection(lead, outs, files, filesErr){
+  const stageName = a => a==="manual" ? "General" : ((E1_STAGES.find(s=>s.agent===a)||{}).short || a);
+  const agentFiles = [];
+  E1_STAGES.forEach(s=>{
+    const st = e1StageState(lead, outs, s);
+    if(!st.done) return;
+    const d = asObj(st.out?.data);
+    const base = st.out?.title || s.label;
+    if(st.url || d.pdfUrl) agentFiles.push({stage:s.agent, name: base + " (PDF)", url: st.url || d.pdfUrl});
+    if(d.documentId) agentFiles.push({stage:s.agent, name: base + " — Google Doc", url: `https://docs.google.com/document/d/${d.documentId}/edit`});
+    if(d.gammaDocUrl) agentFiles.push({stage:s.agent, name: "Gamma slide notes — Google Doc", url: d.gammaDocUrl});
+  });
+  const order = a => a==="manual" ? 99 : E1_STAGES.findIndex(s=>s.agent===a);
+  const rows = [
+    ...agentFiles.map(f=>({...f, source:"agent"})),
+    ...(files||[]).map(f=>({stage:f.stage||"manual", name:f.file_name, url:f.file_url, source:"upload", id:f.id, path:f.file_path||"", note:f.note, by:f.uploaded_by, at:f.created_at}))
+  ].sort((a,b)=>order(a.stage)-order(b.stage));
+  const stageOpts = E1_STAGES.map(s=>`<option value="${s.agent}">${s.short}</option>`).join("") + `<option value="manual" selected>General / manual</option>`;
+  return `<section class="block"><h2>Files <span class="count">${rows.length}</span></h2>
+    <div class="card">
+      ${filesErr?`<div class="notice" style="margin-bottom:10px"><b>Uploads need one-time setup.</b> Agent documents still show below — run the lead-files SQL in Supabase to enable uploads.</div>`:""}
+      ${rows.length?rows.map(f=>`
+        <div class="out-row" style="cursor:default">
+          <span style="font-size:1rem">${e1FileIcon(f.name)}</span>
+          <span class="pill" style="flex-shrink:0">${esc(stageName(f.stage))}</span>
+          <a class="ot" style="text-decoration:none;color:var(--navy);font-weight:600" href="${esc(f.url)}" target="_blank" rel="noopener" title="${esc(f.name)}">${esc(f.name)}</a>
+          ${f.note?`<span style="color:var(--muted);font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px" title="${esc(f.note)}">${esc(f.note)}</span>`:""}
+          <span class="chip" style="flex-shrink:0;opacity:.85">${f.source==="agent"?"agent":"upload"+(f.by?" · "+esc(f.by):"")}</span>
+          ${f.at?`<span class="od">${fmtDate(f.at)}</span>`:""}
+          ${f.source==="upload"?`<button class="btn ghost" style="padding:4px 9px;font-size:.7rem" title="Delete file" onclick="e1DeleteFile('${f.id}','${esc(f.path)}',this)">✕</button>`:""}
+        </div>`).join(""):`<div style="font-size:.85rem;color:var(--muted);padding:6px 0 12px">No files yet for this lead.</div>`}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
+        <input type="file" id="e1FileInput" style="font-size:.8rem;max-width:230px">
+        <select id="e1FileStage">${stageOpts}</select>
+        <input type="text" id="e1FileNote" placeholder="Note (optional)" style="font:inherit;font-size:.82rem;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--white);flex:1;min-width:140px">
+        <button class="btn navy" onclick="e1UploadFile(this)">Upload</button>
+      </div>
+      <div style="font-size:.74rem;color:var(--muted);margin-top:8px">Agent rows come straight from the pipeline output. Uploads land in the shared knowledge base — use them for anything you'd otherwise chase across email or Drive, including docs for skipped stages.</div>
+    </div></section>`;
+}
+async function e1UploadFile(btn){
+  const inp = document.getElementById("e1FileInput");
+  const file = inp && inp.files && inp.files[0];
+  if(!file){ showAlert("Choose a file first.","No file"); return; }
+  if(file.size > 25*1024*1024){ showAlert("Keep uploads under 25 MB.","Too large"); return; }
+  btn.disabled = true; btn.textContent = "Uploading…";
+  const email = state.e1Lead;
+  const path = `${email}/${Date.now()}-${file.name.replace(/[^\w.\-]+/g,"_")}`;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/lead-files/${path}`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, "x-upsert": "true" },
+      body: file
+    });
+    if(!res.ok){
+      const t = await res.text();
+      throw Object.assign(new Error(res.status===404
+        ? "The lead-files storage bucket doesn't exist yet — run the setup SQL."
+        : "Storage upload failed ("+res.status+"). "+t.slice(0,140)), {status:res.status});
+    }
+    await sbPost("lead_files", {
+      lead_email: email, file_name: file.name,
+      file_url: `${SUPABASE_URL}/storage/v1/object/public/lead-files/${path}`,
+      file_path: path,
+      stage: document.getElementById("e1FileStage").value,
+      note: (document.getElementById("e1FileNote").value||"").trim() || null,
+      source: "upload", uploaded_by: whoAmI()
+    });
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("lead_files")) delete cache[k]; });
+    renderE1Lead();
+  }catch(e){
+    btn.disabled = false; btn.textContent = "Upload";
+    showAlert(e.message||String(e), "Upload failed");
+  }
+}
+async function e1DeleteFile(id, path, btn){
+  btn.disabled = true;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/lead_files?id=eq.${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    if(!res.ok) throw new Error("Delete blocked ("+res.status+") — run the lead_files delete policy from the setup SQL.");
+    if(path) await fetch(`${SUPABASE_URL}/storage/v1/object/lead-files/${path}`, {
+      method: "DELETE",
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+    }).catch(()=>{});
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("lead_files")) delete cache[k]; });
+    renderE1Lead();
+  }catch(e){ btn.disabled=false; showAlert(e.message||String(e), "Delete failed"); }
+}
 
 function toggleE1Brief(i, agent){
   /* accordion: close other open briefs so the comment rail is always unambiguous */
@@ -2381,7 +2688,7 @@ function tasksAuthFail(e){
 
 
 /* ================= COMPANY PROFILE & COMPETITORS ================= */
-function pRead(k){ return localStorage.getItem("profile_"+k) || ""; }
+function pRead(k){ return localStorage.getItem("profile_"+k) || (k==="webhook" ? "https://n8n.aiparagonconsulting.com/webhook/profile-enrich" : ""); }
 function pStore(k,v){ v ? localStorage.setItem("profile_"+k, v) : localStorage.removeItem("profile_"+k); }
 function pFresh(path){ delete cache[path]; return sb(path); }
 const P_INPUT = 'style="font:inherit;font-size:.86rem;padding:9px 12px;border:1px solid #e2ddd2;border-radius:9px;background:var(--white);color:var(--ink);width:100%;box-sizing:border-box"';
@@ -3293,7 +3600,7 @@ async function renderHome(){
     hchip("agents live","3"),
     hchip("runs recorded", `${runs.length}${runs.length>=30?"+":""}`),
     hchip("client leads", leads.length),
-    (pend+pendVar)?`<span class="chip" style="background:var(--gold);border-color:transparent;color:var(--navy) !important;font-weight:700">⚡ ${pend+pendVar} item${pend+pendVar===1?"":"s"} need review</span>`:hchip("pending","none ✓")
+    (pend+pendVar)?`<span class="chip hero-chip" onclick="state.engine='e3';setView('${pend?"intel":"funnel"}')" style="background:var(--gold);border-color:transparent;color:var(--navy) !important;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px;line-height:1">⚡ ${pend+pendVar} item${pend+pendVar===1?"":"s"} need review <b style="color:var(--navy)">→</b></span>`:hchip("pending","none ✓")
   ].join("");
 
   const engCard = (title, tag, desc, stats, cta, onclick, live) => `
@@ -3302,7 +3609,7 @@ async function renderHome(){
       <h3>${title}</h3>
       <div style="font-size:.85rem;color:var(--muted);line-height:1.5;margin:6px 0 10px">${desc}</div>
       <div class="statline" style="margin-bottom:12px">${stats}</div>
-      <div style="margin-top:auto">${live?`<button class="btn navy" style="width:100%;justify-content:center;font-size:.92rem;padding:11px" onclick="${onclick}">${cta}</button>`:`<span class="pill medium">coming soon</span>`}</div>
+      <div style="margin-top:auto">${live?`<button class="btn eng-cta" onclick="${onclick}"><span>${cta.replace(" →","")}</span><span class="arr">→</span></button>`:`<span class="pill medium">coming soon</span>`}</div>
     </div>`;
 
   const r1=latest("intel_tracker"), r2=latest("ad_strategist"), r3=latest("low_ticket_content");
@@ -3320,15 +3627,38 @@ async function renderHome(){
       runChip(r1)+runChip(r2)+runChip(r3)+(pend?`<span class="chip" style="background:#FBF2D8">drafts: <b>${pend}</b></span>`:""),
       "Open Marketing →", "setEngine('e3')", true);
 
-  const acts = [];
-  if(pend) acts.push(`<div class="notif-item" onclick="state.engine='e3';setView('intel')"><span>📝</span><div><b>${pend} engagement draft${pend===1?"":"s"}</b> awaiting approval<div class="nt">Engine 3 · Intel Tracker</div></div></div>`);
-  if(pendVar) acts.push(`<div class="notif-item" onclick="state.engine='e3';setView('funnel')"><span>🖼️</span><div><b>${pendVar} ad variant${pendVar===1?"":"s"}</b> awaiting approve/deny<div class="nt">Engine 3 · Low-Ticket Agent</div></div></div>`);
-  outputs.slice(0,4).forEach(o=>{
-    const v = o.agent==="ad_strategist"?"ads":o.agent==="low_ticket_content"?"funnel":"intel";
-    acts.push(`<div class="notif-item" onclick="state.engine='e3';setView('${v}')"><span>🗂️</span><div>${esc(o.title||o.agent)}<div class="nt">${fmtDateTime(o.created_at)}</div></div></div>`);
+  const E1_AGENTS = ["lead_research","interview_script","assessment","anonymizing","discovery_call","growth_plan"];
+  const outGo = o => E1_AGENTS.some(a=>(o.agent||"").includes(a))
+    ? "state.engine='e1';setView('e1pipeline')"
+    : `state.engine='e3';setView('${o.agent==="ad_strategist"?"ads":o.agent==="low_ticket_content"?"funnel":"intel"}')`;
+  const outIcon = o => (o.agent||"").includes("growth")?"📈":(o.agent||"").includes("discovery")?"🎯":o.agent==="ad_strategist"?"📣":o.agent==="low_ticket_content"?"🖼️":"🗂️";
+  const need = [];
+  if(pend) need.push({icon:"📝", html:`<b>${pend} engagement draft${pend===1?"":"s"}</b> awaiting approval`, sub:"Engine 3 · Intel Tracker", go:"state.engine='e3';setView('intel')"});
+  if(pendVar) need.push({icon:"🖼️", html:`<b>${pendVar} ad variant${pendVar===1?"":"s"}</b> awaiting approve/deny`, sub:"Engine 3 · Low-Ticket Agent", go:"state.engine='e3';setView('funnel')"});
+  const grouped = new Map();
+  outputs.forEach(o=>{
+    const k = String(o.title||o.agent||"").trim();
+    const g = grouped.get(k);
+    if(g){ g.n++; if((o.created_at||"") > (g.o.created_at||"")) g.o = o; }
+    else grouped.set(k, { o, n:1 });
   });
-  document.getElementById("homeActions").innerHTML = acts.length
-    ? `<section class="block"><h2>Needs attention & recent outputs</h2>${acts.join("")}</section>` : "";
+  const recent = [...grouped.values()].slice(0,6);
+  document.getElementById("homeActions").innerHTML = (need.length || recent.length) ? `
+    <section class="block"><h2>Needs attention & recent outputs</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start">
+      <div class="card">
+        <div class="agent-kind">Needs attention${need.length?` <span style="font-family:Inter,sans-serif;font-size:.7rem;background:var(--gold-soft);color:#7A5E12;border-radius:99px;padding:3px 10px;font-weight:700;margin-left:6px">${pend+pendVar}</span>`:""}</div>
+        ${need.length
+          ? need.map(n=>`<div class="attn-row" onclick="${n.go}"><span style="font-size:1.05rem">${n.icon}</span><div style="min-width:0">${n.html}<div class="nt">${n.sub}</div></div><span class="go">Review →</span></div>`).join("")
+          : `<div style="font-size:.85rem;color:var(--muted);padding:14px 4px">✓ Nothing pending — all reviews are cleared.</div>`}
+      </div>
+      <div class="card">
+        <div class="agent-kind">Recent outputs</div>
+        ${recent.length
+          ? recent.map(g=>`<div class="out-row" onclick="${outGo(g.o)}"><span style="font-size:1rem">${outIcon(g.o)}</span><span class="ot" title="${esc(g.o.title||g.o.agent)}">${esc(g.o.title||g.o.agent)}</span>${g.n>1?`<span class="on">×${g.n}</span>`:""}<span class="od">${fmtDateTime(g.o.created_at)}</span></div>`).join("")
+          : `<div style="font-size:.85rem;color:var(--muted);padding:14px 4px">No agent outputs recorded yet.</div>`}
+      </div>
+    </div></section>` : "";
   renderHomeInsights(outputs);
 }
 async function renderHomeInsights(outputs){
@@ -3461,34 +3791,45 @@ function applySavedTheme(){
   try{ const t = JSON.parse(localStorage.getItem(themeKey())||"null"); if(t) applyTheme(t); }catch(e){}
 }
 function openThemeModal(){
+  const ex = document.getElementById("themePanel");
+  if(ex){ ex.remove(); applySavedTheme(); return; }
   const cur = (()=>{ try{ return JSON.parse(localStorage.getItem(themeKey())||"null"); }catch(e){ return null; } })() || THEME_PRESETS["Classic Paragon"];
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "position:fixed;inset:0;z-index:998;background:rgba(30,40,60,.45);display:flex;align-items:center;justify-content:center;padding:20px";
-  wrap.innerHTML = `<div style="background:var(--white);border-radius:14px;max-width:470px;width:100%;padding:24px 26px;box-shadow:0 18px 60px rgba(0,0,0,.25)">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-      <img src="https://www.aiparagonconsulting.com/logo.png" style="width:26px;height:26px;object-fit:contain" onerror="this.remove()">
-      <div style="font-family:Georgia,serif;font-size:1.15rem;color:var(--ink)">Customize your theme</div>
+  const activePreset = Object.entries(THEME_PRESETS).find(([,t])=>["navy","gold","bg","cream"].every(k=>String(t[k]).toLowerCase()===String(cur[k]||"").toLowerCase()));
+  const btnEl = document.getElementById("themeBtn");
+  const r = btnEl.getBoundingClientRect();
+  const p = document.createElement("div");
+  p.id = "themePanel";
+  p.style.cssText = `position:fixed;top:${r.bottom+8}px;right:${Math.max(12, window.innerWidth-r.right)}px;z-index:997;width:min(370px, calc(100vw - 24px));max-height:78vh;overflow:auto;background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 44px rgba(30,58,95,.18);padding:16px`;
+  p.innerHTML = `
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:2px">
+      <img src="https://www.aiparagonconsulting.com/logo.png" style="width:22px;height:22px;object-fit:contain" onerror="this.remove()">
+      <b style="font-family:Georgia,serif;font-size:1.02rem;color:var(--ink)">Customize your theme</b>
     </div>
-    <div style="font-size:.78rem;color:var(--muted);margin-bottom:14px">Your colors, saved just for you (${esc(whoAmI())}). The AI Paragon logo always stays.</div>
+    <div style="font-size:.75rem;color:var(--muted);margin-bottom:12px">Saved just for you (${esc(whoAmI())}) on this browser. Changes preview live.</div>
     <div class="insp-label">Presets</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-      ${Object.entries(THEME_PRESETS).map(([name,t])=>`<button class="score-btn" style="display:inline-flex;gap:6px;align-items:center" onclick='pickThemePreset(${JSON.stringify(name)})'>
-        <span style="width:12px;height:12px;border-radius:99px;background:${t.navy};display:inline-block"></span>
-        <span style="width:12px;height:12px;border-radius:99px;background:${t.gold};display:inline-block"></span>${esc(name)}</button>`).join("")}
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">
+      ${Object.entries(THEME_PRESETS).map(([name,t])=>`<button class="th-preset ${activePreset&&activePreset[0]===name?"active":""}" data-preset="${esc(name)}" onclick='pickThemePreset(${JSON.stringify(name)})'>
+        <span style="display:inline-flex">
+          <span style="width:14px;height:14px;border-radius:99px;background:${t.navy};display:inline-block;border:1px solid rgba(0,0,0,.08)"></span>
+          <span style="width:14px;height:14px;border-radius:99px;background:${t.gold};display:inline-block;margin-left:-5px;border:1px solid rgba(0,0,0,.08)"></span>
+        </span>${esc(name)}</button>`).join("")}
     </div>
     <div class="insp-label">Fine-tune</div>
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
       ${[["Primary","navy"],["Accent","gold"],["Background","bg"],["Panels","cream"]].map(([l,k])=>`
-        <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;border:1px solid var(--line);border-radius:8px;padding:7px 10px">
-          <input type="color" id="th_${k}" value="${cur[k]||"#000000"}" style="width:30px;height:26px;border:none;background:none;padding:0;cursor:pointer" oninput="previewTheme()">${l}</label>`).join("")}
+        <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;border:1px solid var(--line);border-radius:9px;padding:7px 10px;cursor:pointer">
+          <input type="color" id="th_${k}" value="${cur[k]||"#000000"}" style="width:28px;height:24px;border:none;background:none;padding:0;cursor:pointer" oninput="previewTheme();markPresetActive(null)">${l}</label>`).join("")}
     </div>
-    <div style="display:flex;gap:8px;margin-top:16px">
-      <button class="btn navy" style="flex:1;justify-content:center" onclick="saveTheme(this)">Save my theme</button>
-      <button class="btn ghost" onclick="resetTheme()">Reset to default</button>
-      <button class="btn ghost" onclick="this.closest('div[style*=fixed]').remove();applySavedTheme()">Close</button>
-    </div></div>`;
-  document.body.appendChild(wrap);
-  wrap.onclick = e=>{ if(e.target===wrap){ wrap.remove(); applySavedTheme(); } };
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn navy" style="flex:1;justify-content:center;text-align:center" onclick="saveTheme(this)">Save my theme</button>
+      <button class="btn ghost" onclick="resetTheme()">Reset</button>
+    </div>`;
+  document.body.appendChild(p);
+  const close = ev=>{ if(!p.contains(ev.target) && ev.target!==btnEl){ p.remove(); applySavedTheme(); document.removeEventListener("click", close, true); } };
+  setTimeout(()=>document.addEventListener("click", close, true), 0);
+}
+function markPresetActive(name){
+  document.querySelectorAll(".th-preset").forEach(b=>b.classList.toggle("active", !!name && b.dataset.preset===name));
 }
 function currentPickerTheme(){
   return { navy:document.getElementById("th_navy").value, gold:document.getElementById("th_gold").value,
@@ -3498,17 +3839,20 @@ function previewTheme(){ applyTheme(currentPickerTheme()); }
 function pickThemePreset(name){
   const t = THEME_PRESETS[name]; if(!t) return;
   [["navy",t.navy],["gold",t.gold],["bg",t.bg],["cream",t.cream]].forEach(([k,v])=>{ const el=document.getElementById("th_"+k); if(el) el.value=v; });
-  applyTheme(t);
+  applyTheme(t);  markPresetActive(name);
 }
 function saveTheme(btn){
   localStorage.setItem(themeKey(), JSON.stringify(currentPickerTheme()));
-  const m = btn.closest('div[style*="fixed"]'); if(m) m.remove();
+  const m = document.getElementById("themePanel") || btn.closest('div[style*="fixed"]'); if(m) m.remove();
   showAlert("Theme saved — it will follow you on this browser every time you sign in.", "Saved");
 }
 function resetTheme(){
   localStorage.removeItem(themeKey());
   const r = document.documentElement.style;
   ["--bg","--navy","--ink","--gold","--cream"].forEach(v=>r.removeProperty(v));
+  const t = THEME_PRESETS["Classic Paragon"];
+  [["navy",t.navy],["gold",t.gold],["bg",t.bg],["cream",t.cream]].forEach(([k,v])=>{ const el=document.getElementById("th_"+k); if(el) el.value=v; });
+  markPresetActive("Classic Paragon");
   showAlert("Back to Classic Paragon.", "Reset");
 }
 
