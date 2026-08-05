@@ -117,6 +117,8 @@ a{color:inherit}
   display:grid;place-items:center;font-size:15px;box-shadow:var(--shadow-sm);position:relative;
 }
 .icon-btn:hover{border-color:#D8D2C2}
+.icon-btn .msgb{position:absolute;top:-5px;right:-5px;background:var(--bad);color:#fff;border-radius:20px;
+  font-size:10px;font-weight:700;min-width:17px;height:17px;display:grid;place-items:center;padding:0 4px;border:1.5px solid var(--bg)}
 .icon-btn .dotn{position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--bad);border:1.5px solid #fff}
 .role-pill{
   display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;background:var(--white);
@@ -604,6 +606,8 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xm
         <span class="k">/</span>
       </div>
       <div class="tb-spacer"></div>
+      <button class="icon-btn" onclick="go('calendar')" title="Calendar">▤</button>
+      <button class="icon-btn" onclick="go('messages')" title="Messages">✉<span class="msgb" id="msgBadge" style="display:none"></span></button>
       <div class="role-pill"><span class="rp-d"></span><span id="rolePillTxt">Director view</span></div>
       <button class="icon-btn" onclick="openAlerts()">🔔<span class="dotn" id="notifDot"></span></button>
       <button class="icon-btn" onclick="signOut()" title="Sign out">⏻</button>
@@ -784,10 +788,37 @@ const CHECKLIST = [
     {t:'Special Incident Reports filed on time', s:'warn', d:'1 open with a deadline', c:'§ 80061'}]}
 ];
 const GUIDES = [
+  {t:'Privacy & responsible AI use policy', r:'New — review required', a:'2 of 6 acknowledged', s:'warn'},
   {t:'Special Incident Report — reporting path', r:'Reviewed Jun 2026', a:'6 of 6 acknowledged', s:'ok'},
   {t:'Missing person protocol', r:'Reviewed Jun 2026', a:'6 of 6 acknowledged', s:'ok'},
   {t:'Wildfire evacuation plan', r:'Review due Aug 2026', a:'4 of 6 acknowledged', s:'warn'},
   {t:'Power outage — medication cold chain', r:'Reviewed Mar 2026', a:'6 of 6 acknowledged', s:'ok'}
+];
+
+const WEEKLY = {
+  c1:[{t:'Check if bathroom items need to be replaced',d:1,by:'M.R.',at:'Mon 9:20 AM'},{t:'Clean room',d:1,by:'M.R.',at:'Mon 9:40 AM'},{t:'Change bed linens',d:0},{t:'Restock personal supplies',d:0},{t:'Check clothing for repairs or replacement',d:0}],
+  c2:[{t:'Clean room',d:1,by:'T.I.',at:'Mon 10:05 AM'},{t:'Check bathroom supplies',d:0},{t:'Review meal plan with client',d:0}],
+  c3:[{t:'Clean room',d:0},{t:'Check mobility equipment',d:1,by:'D.C.',at:'Sun 4:10 PM'},{t:'Inspect grab bars and fall mats',d:0}],
+  c4:[{t:'Clean room',d:0},{t:'Check bathroom supplies',d:0}],
+  c5:[{t:'Clean room',d:1,by:'A.O.',at:'Mon 8:15 AM'},{t:'Check thickener stock',d:0},{t:'Inspect transfer equipment',d:0}],
+  c6:[{t:'Clean room',d:0},{t:'Restock art supplies',d:0}]
+};
+const INVOICES = [
+  {no:'INV-2026-041', cid:'c1', period:'July 2026', amt:'$3,180.00', issued:'2026-08-01', st:'Outstanding'},
+  {no:'INV-2026-042', cid:'c2', period:'July 2026', amt:'$2,940.00', issued:'2026-08-01', st:'Outstanding'},
+  {no:'INV-2026-036', cid:'c3', period:'June 2026', amt:'$3,455.00', issued:'2026-07-02', st:'Paid'},
+  {no:'INV-2026-037', cid:'c4', period:'June 2026', amt:'$2,760.00', issued:'2026-07-02', st:'Paid'},
+  {no:'INV-2026-038', cid:'c5', period:'June 2026', amt:'$3,120.00', issued:'2026-07-02', st:'Paid'},
+  {no:'INV-2026-039', cid:'c6', period:'June 2026', amt:'$2,410.00', issued:'2026-07-05', st:'Paid'}
+];
+let LEDGER = [
+  {cid:'c1', date:iso(addDays(TODAY,-3)), type:'Rent received', desc:'August room and board', amt:1150, receipt:''},
+  {cid:'c1', date:iso(addDays(TODAY,-6)), type:'Personal expense', desc:'Haircut', amt:-35, receipt:'receipt-haircut.jpg'},
+  {cid:'c1', date:iso(addDays(TODAY,-11)), type:'Funds received', desc:'SSI personal allowance', amt:120, receipt:''},
+  {cid:'c1', date:iso(addDays(TODAY,-14)), type:'Personal expense', desc:'Clothing — two shirts', amt:-42, receipt:'receipt-clothing.pdf'},
+  {cid:'c2', date:iso(addDays(TODAY,-3)), type:'Rent received', desc:'August room and board', amt:1150, receipt:''},
+  {cid:'c2', date:iso(addDays(TODAY,-9)), type:'Personal expense', desc:'Pharmacy co-pay', amt:-15, receipt:'receipt-pharmacy.jpg'},
+  {cid:'c3', date:iso(addDays(TODAY,-4)), type:'Rent received', desc:'August room and board', amt:1150, receipt:''}
 ];
 
 const SHIFTS = [
@@ -848,10 +879,10 @@ const FAQ = [
 const TRAINING = [
   {id:'tr1', n:'Medication administration', req:true, mins:45, done:['s1','s2','s3','s5','s6']},
   {id:'tr2', n:'HIPAA and client privacy', req:true, mins:30, done:['s1','s2','s3','s4','s5']},
-  {id:'tr3', n:'CPR and first aid', req:true, mins:120, done:['s1','s3','s4','s5','s6']},
+  {id:'tr3', n:'CPR and first aid', req:true, mins:120, done:['s1','s3','s4','s5','s6'], link:'https://www.redcross.org/take-a-class'},
   {id:'tr4', n:'Incident reporting', req:true, mins:25, done:['s1','s2','s3','s5','s6']},
-  {id:'tr5', n:'De-escalation basics', req:false, mins:60, done:['s3'], asg:['s1','s2'], due:'Aug 20'},
-  {id:'tr6', n:'HIPAA annual refresher', req:true, mins:20, done:['s2','s3','s5','s6'], due:'Aug 15'}
+  {id:'tr5', n:'De-escalation basics', req:false, mins:60, done:['s3'], asg:['s1','s2'], due:'Aug 20', link:'https://www.crisisprevention.com'},
+  {id:'tr6', n:'HIPAA annual refresher', req:true, mins:20, done:['s2','s3','s5','s6'], due:'Aug 15', link:'https://www.hhs.gov/hipaa/for-professionals/training/index.html'}
 ];
 
 const ONBOARD = [
@@ -888,15 +919,15 @@ const AUDIT = [
 /* ══════════════ STATE ══════════════ */
 const NAV = {
   director:[
-    {g:'Today'},   {id:'home',t:'Home',i:'⌂'}, {id:'calendar',t:'Calendar',i:'▤'}, {id:'tasks',t:'Tasks',i:'☑'},
+    {g:'Today'},   {id:'home',t:'Home',i:'⌂'}, {id:'tasks',t:'Tasks',i:'☑'},
     {g:'Care'},    {id:'clients',t:'Clients',i:'☺'}, {id:'meds',t:'Medications',i:'⊕'}, {id:'incidents',t:'Incidents',i:'⚠'},
-    {g:'Agency'},  {id:'billing',t:'Attendance & billing',i:'▦'}, {id:'team',t:'Team',i:'⚇'}, {id:'messages',t:'Messages',i:'✉'}, {id:'compliance',t:'Compliance',i:'▣'},
+    {g:'Agency'},  {id:'billing',t:'Attendance & billing',i:'▦'}, {id:'team',t:'Team',i:'⚇'}, {id:'compliance',t:'Compliance',i:'▣'},
     {g:'Setup'},   {id:'templates',t:'Templates',i:'◫'}, {id:'integrations',t:'Integrations',i:'⇄'}
   ],
   staff:[
-    {g:'Today'},   {id:'home',t:'My shift',i:'⌂'}, {id:'calendar',t:'Calendar',i:'▤'}, {id:'tasks',t:'My tasks',i:'☑'},
+    {g:'Today'},   {id:'home',t:'My shift',i:'⌂'}, {id:'tasks',t:'My tasks',i:'☑'},
     {g:'Care'},    {id:'clients',t:'Clients',i:'☺'}, {id:'meds',t:'Med pass',i:'⊕'}, {id:'incidents',t:'Incidents',i:'⚠'},
-    {g:'Support'}, {id:'messages',t:'Messages',i:'✉'}, {id:'training',t:'Training & FAQ',i:'◉'}
+    {g:'Support'}, {id:'training',t:'Training & FAQ',i:'◉'}
   ],
   family:[
     {g:'James Whitfield'},
@@ -921,6 +952,8 @@ const client = id => CLIENTS.find(c=>c.id===id);
 const staff  = id => STAFF.find(s=>s.id===id);
 const visibleClients = () => state.role==='family' ? CLIENTS.filter(c=>c.id==='c1') : CLIENTS;
 
+const meInit=()=>ME[state.role].name.split(' ').map(w=>w[0]+'.').join('');
+function logAudit(act,obj){ AUDIT.unshift({at:'Just now',who:meInit(),act,obj}); if(AUDIT.length>40) AUDIT.pop(); }
 function toast(msg){ el('toastTxt').textContent=msg; el('toast').classList.add('on'); clearTimeout(window._tt); window._tt=setTimeout(()=>el('toast').classList.remove('on'),2400); }
 function toMin(hm){ const [h,m]=hm.split(':').map(Number); return h*60+m; }
 function pctOfDay(hm){ const START=6*60, END=22*60; return Math.max(0,Math.min(100,(toMin(hm)-START)/(END-START)*100)); }
@@ -964,6 +997,9 @@ function renderNav(){
     return `<button class="nav-item ${state.view===n.id?'active':''}" onclick="go('${n.id}')"><span class="ni">${n.i}</span>${esc(n.t)}${badge}</button>`;
   }).join('');
   sideProg();
+  const un=THREADS.reduce((a,t)=>a+t.unread,0);
+  const mb=el('msgBadge'); if(mb){ mb.style.display=un?'grid':'none'; mb.textContent=un; }
+  const nd=el('notifDot'); if(nd){ nd.style.display=(un||INCIDENTS.some(i=>i.status!=='Closed')||TASKS.some(t=>t.stage==='Overdue'))?'block':'none'; }
 }
 function sideProg(){
   const cl=visibleClients().map(c=>c.id);
@@ -1047,7 +1083,7 @@ function tlCard(full){
       tip:`${hm12(t)} pass — ${done} of ${n} recorded`,on:"go('meds')"});
   }).join('');
 
-  const apptBars=APPTS.filter(a=>a.date===T&&cl.includes(a.cid)).map(a=>
+  const apptBars=APPTS.filter(a=>a.date===T&&cl.includes(a.cid)&&!a.cancelled).map(a=>
     tlBar({l:tlPx(a.time),w:Math.max(58,a.dur/60*TL.hw),cls:a.flag?'b-flag':'b-appt',
       txt:`${a.flag?'⚑ ':''}${esc(client(a.cid).init)} ${esc(a.title)}`,
       tip:`${a.title} — ${client(a.cid).name} at ${hm12(a.time)}`,on:`openAppt('${a.id}')`})).join('');
@@ -1083,7 +1119,7 @@ function tlCard(full){
           tip:`${m.name} ${m.dose} at ${hm12(t)} — ${l?l.status:late?'not recorded':D<T?'no record':'due later'}`,
           on:(D===T&&!l&&state.role!=='family')?`openDose('${m.id}','${t}')`:`openMed('${m.id}')`});
       }));
-      if(tlState.kind!=='meds') APPTS.filter(a=>a.cid===c.id&&a.date===D).forEach(a=>bars.push({l:tlPx(a.time),w:Math.max(58,a.dur/60*TL.hw),
+      if(tlState.kind!=='meds') APPTS.filter(a=>a.cid===c.id&&a.date===D&&!a.cancelled).forEach(a=>bars.push({l:tlPx(a.time),w:Math.max(58,a.dur/60*TL.hw),
         cls:a.flag?'b-flag':'b-appt',txt:`${a.flag?'⚑ ':''}${esc(a.title)}`,
         tip:`${a.title} at ${hm12(a.time)} · ${a.loc}`,on:`openAppt('${a.id}')`}));
       rows.push({dot:c.tag==='gr'?'#C9A84C':'#3A6EA5',lab:esc(c.name),sub:esc(c.home),bars:bars.map(tlBar).join(''),
@@ -1292,7 +1328,7 @@ function viewHome(){
             <tr class="click" onclick="openAppt('${a.id}')">
               <td style="width:96px"><b>${hm12(a.time)}</b></td>
               <td><div class="tb-name"><span class="av-sm ${client(a.cid).tag}">${client(a.cid).init}</span><div><div>${esc(a.title)}</div><div class="tiny muted">${esc(client(a.cid).name)} · ${esc(a.loc)}</div></div></div></td>
-              <td style="text-align:right">${a.flag?`<span class="pill warn">⚑ Review</span>`:`<span class="pill neutral">${esc(a.type)}</span>`}${a.ride!==undefined?(a.ride?`<div class="tiny muted" style="margin-top:3px">🚐 ${esc(a.ride)}</div>`:'<div class="tiny" style="color:var(--bad);font-weight:700;margin-top:3px">🚐 No ride arranged</div>'):''}</td>
+              <td style="text-align:right">${a.cancelled?'<span class="pill neutral">✕ Cancelled</span>':a.flag?`<span class="pill warn">⚑ Review</span>`:`<span class="pill neutral">${esc(a.type)}</span>`}${a.ride!==undefined&&!a.cancelled?(a.ride?`<div class="tiny muted" style="margin-top:3px">🚐 ${esc(a.ride)}</div>`:'<div class="tiny" style="color:var(--bad);font-weight:700;margin-top:3px">🚐 No ride arranged</div>'):''}</td>
             </tr>`).join('')}</tbody></table>`
           : `<div class="empty"><b>No appointments today</b>Next one is ${upcoming.length?relDay(upcoming[0].date).toLowerCase():'not scheduled'}.</div>`}
         </div>
@@ -1445,12 +1481,43 @@ function viewClient(id){
    : clientOverview(c) }`;
 }
 
+function wkMonday(){ return fmtDate(addDays(TODAY,-((TODAY.getDay()+6)%7))); }
+function wkToggle(cid,i){
+  const w=WEEKLY[cid][i]; w.d=w.d?0:1;
+  if(w.d){ w.by=meInit(); w.at='just now'; } else { w.by=''; w.at=''; }
+  logAudit('Updated weekly checklist',`${client(cid).name} · ${w.t}`);
+  render();
+}
+function wkAdd(cid){
+  const v=el('wkNew').value.trim(); if(!v) return;
+  WEEKLY[cid]=WEEKLY[cid]||[]; WEEKLY[cid].push({t:v,d:0});
+  logAudit('Added weekly checklist item',`${client(cid).name} · ${v}`);
+  render(); toast('Added to the weekly checklist.');
+}
+function weeklyCard(c){
+  const list=WEEKLY[c.id]||[];
+  const done=list.filter(x=>x.d).length;
+  return `<section class="card">
+    <div class="card-h"><h2>Weekly checklist</h2><div class="sub">Week of ${wkMonday()} · resets Monday</div>
+      <div class="right"><span class="pill ${done===list.length&&list.length?'ok':'neutral'}">${done}/${list.length} done</span></div></div>
+    <div class="card-b flush">
+      ${list.map((w,i)=>`<div class="checkrow" style="cursor:pointer" onclick="wkToggle('${c.id}',${i})">
+        <div class="cb ${w.d?'on':''}">✓</div>
+        <div class="ct ${w.d?'done':''}">${esc(w.t)}</div>
+        <span class="tiny muted">${w.d?`${esc(w.by)} · ${esc(w.at)}`:''}</span></div>`).join('')||'<div class="empty">No weekly items yet.</div>'}
+      ${state.role!=='family'?`<div style="display:flex;gap:8px;padding:12px 18px">
+        <input class="inp" id="wkNew" placeholder="Add a weekly item…" style="height:34px" onkeydown="if(event.key==='Enter')wkAdd('${c.id}')">
+        <button class="btn ghost sm" onclick="wkAdd('${c.id}')">Add</button>
+      </div>`:''}
+    </div></section>`;
+}
 function clientOverview(c){
   const meds=MEDS.filter(m=>m.cid===c.id&&m.status==='active');
   const todayLogs=LOGS.filter(l=>l.cid===c.id&&l.date===T);
   return `
   <div class="grid-side">
     <div>
+      ${weeklyCard(c)}
       <section class="card">
         <div class="card-h"><h2>Today's med pass</h2><div class="right"><button class="btn ghost sm" onclick="state.tab='meds';render()">Full list</button></div></div>
         <div class="card-b flush">
@@ -1566,7 +1633,7 @@ function clientAppts(c){
   <div class="card-b flush"><table class="tb"><thead><tr><th>Date</th><th>Appointment</th><th>Provider</th><th>Location</th><th>Status</th></tr></thead>
   <tbody>${list.map(a=>`<tr class="click" onclick="openAppt('${a.id}')"><td><b>${relDay(a.date)}</b><div class="tiny muted">${hm12(a.time)}</div></td>
   <td>${esc(a.title)}<div class="tiny muted">${esc(a.type)}</div></td><td>${esc(a.provider)}</td><td class="muted">${esc(a.loc)}</td>
-  <td>${a.flag?'<span class="pill warn">⚑ Review</span>':a.date<T?'<span class="pill neutral">Completed</span>':'<span class="pill info">Scheduled</span>'}</td></tr>`).join('')}</tbody></table></div></section>`;
+  <td>${a.cancelled?'<span class="pill neutral">✕ Cancelled</span>':a.flag?'<span class="pill warn">⚑ Review</span>':a.date<T?'<span class="pill neutral">Completed</span>':'<span class="pill info">Scheduled</span>'}</td></tr>`).join('')}</tbody></table></div></section>`;
 }
 
 function clientDocs(c){
@@ -1678,7 +1745,7 @@ function listView(list){
         <td style="width:96px"><b>${hm12(a.time)}</b><div class="tiny muted">${a.dur} min</div></td>
         <td><div class="tb-name"><span class="av-sm ${client(a.cid).tag}">${client(a.cid).init}</span>
           <div><div>${esc(a.title)}</div><div class="tiny muted">${esc(client(a.cid).name)} · ${esc(a.provider)} · ${esc(a.loc)}</div></div></div></td>
-        <td style="text-align:right">${a.flag?'<span class="pill warn">⚑ Review</span>':`<span class="pill neutral">${esc(a.type)}</span>`}
+        <td style="text-align:right">${a.cancelled?'<span class="pill neutral">✕ Cancelled</span>':a.flag?'<span class="pill warn">⚑ Review</span>':`<span class="pill neutral">${esc(a.type)}</span>`}
           ${a.files.length?`<span class="pill info">${a.files.length} file</span>`:''}</td>
       </tr>`).join('')}</tbody></table>`).join('');
 }
@@ -1711,7 +1778,7 @@ function viewTasks(){
   return `
   <div class="page-h">
     <div><h1>${state.role==='staff'?'My tasks':'Tasks'}</h1><div class="sub">${open.length} open · ${open.filter(t=>t.due<=T).length} due today or earlier</div></div>
-    ${state.role==='director'?`<div class="right"><button class="btn navy" onclick="openAssign()">＋ Assign task</button></div>`:''}
+    <div class="right"><button class="btn navy" onclick="openAssign()">＋ ${state.role==='director'?'Assign task':'Add task'}</button></div>
   </div>
 
   ${state.role==='director'?`
@@ -1791,6 +1858,44 @@ function viewBilling(){
         <td>${x.st==='absent'?'<span class="muted">—</span>':x.gap&&x.gap.includes('note')?'<span class="pill warn">Missing</span>':'<span class="pill ok">Filed</span>'}</td>
         <td>${x.billed?'<span class="pill ok">Ready</span>':x.st==='absent'?'<span class="pill neutral">No claim</span>':'<span class="pill bad">Blocked</span>'}</td>
       </tr>`}).join('')}</tbody></table></div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>Invoices</h2><div class="sub">Dated, per client, with payment status</div>
+      <div class="right"><button class="btn ghost sm" onclick="toast('Invoice generated for the current period.')">＋ New invoice</button></div></div>
+    <div class="card-b flush"><table class="tb">
+      <thead><tr><th>Invoice</th><th>Client</th><th>Period</th><th>Amount</th><th>Issued</th><th>Status</th><th></th></tr></thead>
+      <tbody>${INVOICES.map(v=>`<tr>
+        <td><b>${v.no}</b></td>
+        <td><div class="tb-name"><span class="av-sm ${client(v.cid).tag}">${client(v.cid).init}</span>${esc(client(v.cid).name)}</div></td>
+        <td>${v.period}</td><td><b>${v.amt}</b></td><td>${fmtDate(v.issued)}</td>
+        <td>${v.st==='Paid'?'<span class="pill ok">Paid</span>':'<span class="pill warn">Outstanding</span>'}</td>
+        <td style="text-align:right"><button class="btn ghost sm" onclick="toast('Opening ${v.no} as PDF.')">View</button></td></tr>`).join('')}</tbody></table></div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>Client funds</h2><div class="sub">Rent and cash received, personal expenditures, receipts on file</div>
+      <div class="right">
+        <select class="inp" style="height:32px;width:auto;font-size:12.6px" onchange="state.ledger=this.value;render()">
+          ${CLIENTS.map(c=>`<option value="${c.id}" ${ (state.ledger||'c1')===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
+        </select>
+        <button class="btn ghost sm" onclick="toast('Entry form opens here.')">＋ Add entry</button>
+      </div></div>
+    <div class="card-b flush">
+      ${(()=>{const cid=state.ledger||'c1';const rows=LEDGER.filter(l=>l.cid===cid);const bal=rows.reduce((a,l)=>a+l.amt,0);
+      return (rows.length?`<table class="tb">
+        <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Amount</th><th>Receipt</th></tr></thead>
+        <tbody>${rows.map(l=>`<tr>
+          <td>${fmtDate(l.date)}</td>
+          <td><span class="pill ${l.type==='Personal expense'?'neutral':'ok'}">${l.type}</span></td>
+          <td>${esc(l.desc)}</td>
+          <td style="font-variant-numeric:tabular-nums"><b style="color:${l.amt<0?'var(--bad)':'var(--good)'}">${l.amt<0?'−':'+'}$${Math.abs(l.amt).toFixed(2)}</b></td>
+          <td>${l.receipt?`<button class="btn ghost sm" onclick="toast('Opening ${esc(l.receipt)}')">${esc(l.receipt)}</button>`:'<span class="muted tiny">—</span>'}</td></tr>`).join('')}</tbody></table>
+        <div style="display:flex;justify-content:space-between;padding:13px 18px;border-top:1px solid var(--line)">
+          <span class="tiny muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.07em">Month-to-date balance</span>
+          <b style="font-variant-numeric:tabular-nums">$${bal.toFixed(2)}</b></div>`
+      :'<div class="empty"><b>No entries this month</b>Rent, cash received and expenditures will appear here.</div>');})()}
+    </div>
   </section>
 
   <section class="card">
@@ -1882,6 +1987,21 @@ function viewTeam(){
   </section>
 
   <section class="card">
+    <div class="card-h"><h2>Training library</h2><div class="sub">Courses with links, videos and documents — assign to specific staff</div>
+      <div class="right"><button class="btn navy sm" onclick="openTrainingForm()">＋ Add training</button></div></div>
+    <div class="card-b flush">
+      ${TRAINING.map(t=>{
+        const appl=STAFF.filter(s=>t.req||(t.asg||[]).includes(s.id));
+        return `<div class="docrow"><div class="di">◉</div>
+        <div class="dt"><b>${esc(t.n)}</b>${t.req?' <span class="pill neutral">Required — everyone</span>':` <span class="pill info">Assigned: ${(t.asg||[]).map(id=>staff(id).init).join(', ')||'no one yet'}</span>`}
+          <span>${t.mins} min${t.due?` · due ${esc(t.due)}`:''} · ${appl.filter(s=>t.done.includes(s.id)).length}/${appl.length} complete${t.link?' · link attached':''}${t.files?` · ${t.files} file${t.files>1?'s':''}`:''}</span></div>
+        ${t.link?`<a class="btn ghost sm" href="${t.link}" target="_blank" rel="noopener">Open link ↗</a>`:''}
+        ${t.req?'':`<button class="btn ghost sm" onclick="assignTraining('${t.id}')">Assign</button>`}</div>`;
+      }).join('')}
+    </div>
+  </section>
+
+  <section class="card">
     <div class="card-h"><h2>Readiness guides</h2><div class="sub">Protocols staff sign off on — licensing checks acknowledgment, not just existence</div></div>
     <div class="card-b flush">${GUIDES.map(g=>`
       <div class="docrow"><div class="di">▤</div>
@@ -1905,6 +2025,12 @@ function trainPending(sid){
   const c=(CREDS[sid]||[]).filter(x=>x.s!=='ok');
   return {t,c,n:t.length+c.length};
 }
+function attachCred(sid,i){
+  const c=CREDS[sid][i];
+  c.doc={n:c.c.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'-certificate.pdf', at:'just now', by:meInit()};
+  logAudit('Attached certification record',`${staff(sid).name} · ${c.c}`);
+  openStaff(sid); toast('Certificate stored on the record.');
+}
 function credCell(sid){
   const cs=CREDS[sid]||[];
   const bad=cs.filter(c=>c.s==='bad'), warn=cs.filter(c=>c.s==='warn');
@@ -1912,13 +2038,51 @@ function credCell(sid){
   if(warn.length) return `<span class="pill warn">${esc(warn[0].c)} — ${esc(warn[0].d)}</span>`;
   return '<span class="pill ok">All current</span>';
 }
+function openTrainingForm(){
+  openModal('Add a training',`
+    <div class="field"><label>Training name</label><input class="inp" id="trName" placeholder="e.g. Safe lifting refresher"></div>
+    <div class="row2">
+      <div class="field"><label>Length (minutes)</label><input class="inp" type="number" id="trMins" value="30"></div>
+      <div class="field"><label>Due</label><input class="inp" id="trDue" placeholder="e.g. Sep 1 (optional)"></div>
+    </div>
+    <div class="field"><label>Link to course or video (optional)</label><input class="inp" id="trLink" placeholder="https://…"></div>
+    <div class="field"><label>Materials</label><div class="drop" onclick="this.innerHTML='<b>training-slides.pdf attached</b><span>1 file ready</span>';window._trFiles=1"><b>Upload video or documents</b><span>Slides, handouts, a recorded walkthrough</span></div></div>
+    <div class="field"><label>Assign to</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="trWho">${STAFF.map(s=>`<button class="btn ghost sm" data-sid="${s.id}" onclick="this.classList.toggle('navy');this.classList.toggle('ghost')">${esc(s.name)}</button>`).join('')}</div></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveTraining()">Add training</button>`);
+  window._trFiles=0;
+}
+function saveTraining(){
+  const n=el('trName').value.trim(); if(!n) return toast('Give the training a name.');
+  const asg=[...el('trWho').querySelectorAll('.navy')].map(b=>b.dataset.sid);
+  TRAINING.push({id:'tr'+Date.now(), n, req:false, mins:+el('trMins').value||30, done:[], asg,
+    due:el('trDue').value.trim(), link:el('trLink').value.trim(), files:window._trFiles||0});
+  logAudit('Added training',`${n} · assigned to ${asg.length} staff`);
+  closeAll(); renderNav(); render(); toast(asg.length?`Training added and assigned to ${asg.length} staff.`:'Training added to the library.');
+}
+function assignTraining(tid){
+  const t=TRAINING.find(x=>x.id===tid);
+  openModal(`Assign — ${esc(t.n)}`,`
+    <div class="field"><label>Who needs this?</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="asWho">${STAFF.map(s=>`<button class="btn ${(t.asg||[]).includes(s.id)?'navy':'ghost'} sm" data-sid="${s.id}" onclick="this.classList.toggle('navy');this.classList.toggle('ghost')">${esc(s.name)}</button>`).join('')}</div></div>
+    <div class="tiny muted">Assigned staff see it on their dashboard as a pending action.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveAssignTraining('${tid}')">Save assignment</button>`);
+}
+function saveAssignTraining(tid){
+  const t=TRAINING.find(x=>x.id===tid);
+  t.asg=[...el('asWho').querySelectorAll('.navy')].map(b=>b.dataset.sid);
+  logAudit('Assigned training',`${t.n} → ${t.asg.map(id=>staff(id).init).join(', ')||'no one'}`);
+  closeAll(); renderNav(); render(); toast('Assignment saved. It shows on their dashboards now.');
+}
 function openStaff(sid){
   const s=staff(sid);
   openDrawer(esc(s.name),`${esc(s.role)} · ${esc(s.home)}`,`
-    <section class="card"><div class="card-h"><h2>Certifications & renewals</h2></div><div class="card-b flush">
-      ${(CREDS[sid]||[]).map(c=>`<div class="docrow"><div class="di">${c.s==='ok'?'✓':'!'}</div>
-      <div class="dt"><b>${esc(c.c)}</b><span>${esc(c.d)}</span></div>
-      <span class="pill ${c.s}">${c.s==='ok'?'Current':c.s==='warn'?'Due soon':'Expired'}</span></div>`).join('')}
+    <section class="card"><div class="card-h"><h2>Certifications & renewals</h2><div class="sub">Attach the certificate so the record lives here</div></div><div class="card-b flush">
+      ${(CREDS[sid]||[]).map((c,i)=>`<div class="docrow"><div class="di">${c.s==='ok'?'✓':'!'}</div>
+      <div class="dt"><b>${esc(c.c)}</b><span>${esc(c.d)}${c.doc?` · <b>${esc(c.doc.n)}</b> uploaded ${esc(c.doc.at)} by ${esc(c.doc.by)}`:''}</span></div>
+      <span class="pill ${c.s}">${c.s==='ok'?'Current':c.s==='warn'?'Due soon':'Expired'}</span>
+      ${state.role==='director'?(c.doc?`<button class="btn ghost sm" onclick="toast('Opening ${esc(c.doc.n)}')">Open</button>`
+        :`<button class="btn ghost sm" onclick="attachCred('${sid}',${i})">Attach record</button>`):''}</div>`).join('')}
     </div></section>
     <section class="card"><div class="card-h"><h2>Training courses</h2></div><div class="card-b flush">
       ${TRAINING.map(t=>`<div class="checkrow"><div class="cb ${t.done.includes(sid)?'on':''}">✓</div>
@@ -1981,15 +2145,34 @@ function faqCard(){
 }
 
 /* ══════════════ TRAINING (staff) ══════════════ */
+function openPolicy(){
+  openModal('Privacy & responsible AI use policy',`
+    <p class="muted" style="margin-top:0;font-size:13px">The short version every staff member signs. The full policy lives in the knowledge base.</p>
+    ${[['Initials only in shared views','Client names never appear on screens visible to others — first and last initial only, adding a second initial when two people match.'],
+       ['Exports stay in the portal','Downloaded or printed records are never stored on personal devices, USB drives, email, or anywhere a third party could find them. Print, use, shred.'],
+       ['The assistant respects your role','Ask Meridian only answers from records your login can see. Never paste client details into outside AI tools, search engines, or personal apps.'],
+       ['Lock the screen, every time','Stepping away from a shared workstation means locking it. Sessions auto-expire after 15 minutes.'],
+       ['Report privacy incidents fast','A misdirected message, a lost printout, a screen left open — report it like any other incident, within the hour.']]
+      .map(([t,s],i)=>`<div class="guide-step" style="padding:12px 0"><div class="gn">${i+1}</div><div><b>${t}</b><span>${s}</span></div></div>`).join('')}`,
+    `<button class="btn ghost" onclick="closeAll()">Close</button><button class="btn navy" onclick="closeAll();logAudit('Acknowledged privacy policy',ME[state.role].name);toast('Acknowledgment recorded with your name and the time.')">I've read and agree</button>`);
+}
 function viewTraining(){
   const me=staff('s1');
   return `
   <div class="page-h"><div><h1>Training & FAQ</h1><div class="sub">Your courses and the answers staff ask for most</div></div></div>
   <section class="card">
+    <div class="card-h"><h2>Privacy & responsible use</h2><span class="pill warn">Sign-off required</span>
+      <div class="right"><button class="btn gold sm" onclick="openPolicy()">Read & acknowledge</button></div></div>
+    <div class="card-b" style="font-size:13.3px;color:#4A4F60;line-height:1.6">
+      Five rules that keep client information safe: initials only on shared screens, exports never stored outside the portal,
+      the assistant only within your role, screens locked when you step away, privacy incidents reported within the hour.
+    </div>
+  </section>
+  <section class="card">
     <div class="card-h"><h2>Your training</h2><div class="right"><span class="pill ok">${TRAINING.filter(t=>t.done.includes('s1')).length}/${TRAINING.length} complete</span></div></div>
     <div class="card-b flush">${TRAINING.map(t=>`<div class="checkrow"><div class="cb ${t.done.includes('s1')?'on':''}">✓</div>
       <div class="ct">${esc(t.n)}${t.req?' <span class="pill neutral">Required</span>':''}<div class="tiny muted">${t.mins} minutes</div></div>
-      ${t.done.includes('s1')?'<span class="pill ok">Current</span>':`${t.due?`<span class="pill warn">Due ${esc(t.due)}</span> `:''}<button class="btn gold sm" onclick="toast('Course opened.')">Start</button>`}</div>`).join('')}</div>
+      ${t.link?`<a class="btn ghost sm" href="${t.link}" target="_blank" rel="noopener">Open link ↗</a>`:''}${t.done.includes('s1')?'<span class="pill ok">Current</span>':`${t.due?`<span class="pill warn">Due ${esc(t.due)}</span> `:''}<button class="btn gold sm" onclick="toast('Course opened.')">Start</button>`}</div>`).join('')}</div>
   </section>
   <section class="card">
     <div class="card-h"><h2>How to use the portal</h2><div class="sub">Short walkthroughs from the director</div></div>
@@ -2113,6 +2296,7 @@ function viewTemplates(){
          ['Annual care plan review','No examples yet','bad']]
         .map(([t,s,k])=>`<div class="docrow"><div class="di">◫</div><div class="dt"><b>${t}</b><span>${s}</span></div>
         <span class="pill ${k}">${k==='ok'?'Ready':k==='warn'?'Needs more':'Not set up'}</span>
+        ${k==='ok'?`<button class="btn gold sm" onclick="createFromTemplate('${t}')">＋ Create</button>`:''}
         <button class="btn ghost sm" onclick="toast('Opening ${t} template')">Manage</button></div>`).join('')}
     </div>
   </section>
@@ -2120,7 +2304,7 @@ function viewTemplates(){
   <section class="card">
     <div class="card-h"><h2>Knowledge base</h2><div class="sub">Policies and manuals the assistant can answer from</div></div>
     <div class="card-b flush">
-      ${[['Employee handbook 2026.pdf','Policy · 48 pages'],['Medication administration policy.pdf','Policy · 12 pages'],
+      ${[['Responsible AI & privacy policy.pdf','Policy · 4 pages'],['Employee handbook 2026.pdf','Policy · 48 pages'],['Medication administration policy.pdf','Policy · 12 pages'],
          ['State licensing requirements.pdf','Regulation · 90 pages'],['De-escalation protocol.docx','Protocol · 6 pages']]
         .map(([n,s])=>`<div class="docrow"><div class="di">${n.split('.').pop().toUpperCase().slice(0,3)}</div>
         <div class="dt"><b>${n}</b><span>${s} · indexed</span></div><span class="pill ok">Searchable</span></div>`).join('')}
@@ -2136,6 +2320,37 @@ function viewTemplates(){
       <button class="btn ghost sm" onclick="uploadDoc(null,'${s}')">Upload example</button></div>`).join('')}
     </div>
   </section>`;
+}
+
+function createFromTemplate(name){
+  const month=TODAY.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  openModal(`New ${esc(name.toLowerCase())}`,`
+    <div class="field"><label>Client</label><select class="inp" id="tpClient">${CLIENTS.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div>
+    <div class="field"><label>Title</label><input class="inp" id="tpTitle" value="${esc(name)} — ${month}"></div>
+    <div class="row2">
+      <div class="field"><label>Report date</label><input class="inp" type="date" value="${T}"></div>
+      <div class="field"><label>Prepared by</label><input class="inp" value="${esc(ME[state.role].name)}" disabled></div>
+    </div>
+    <div class="field"><label>Draft — pre-filled from portal data, edit the brackets</label>
+      <textarea class="inp" id="tpBody" style="min-height:150px">Summary
+[The assistant drafts this section from this month's progress notes, med pass record and appointments — matched to your uploaded examples.]
+
+Goals progress
+[Pulled from IPP goal tracking.]
+
+Health and medications
+[Pulled from the medication record and appointment notes.]
+
+Recommendations
+[Your input.]</textarea></div>
+    <div class="tiny muted">Saving posts the finished document straight to the client's Documents tab.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveFromTemplate()">Save to client page</button>`);
+}
+function saveFromTemplate(){
+  const cid=el('tpClient').value, title=el('tpTitle').value.trim()||'Report';
+  DOCS.unshift({cid, n:title+'.docx', cat:'Report', by:meInit(), at:T, s:'14 KB'});
+  logAudit('Created report from template',`${client(cid).name} · ${title}`);
+  closeAll(); toast(`Saved to ${client(cid).name}'s Documents.`);
 }
 
 /* ══════════════ INTEGRATIONS ══════════════ */
@@ -2184,6 +2399,19 @@ function openAppt(id){
   const canEdit = state.role!=='family';
   openDrawer(esc(a.title), `${esc(c.name)} · ${relDay(a.date)} at ${hm12(a.time)}`, `
     ${a.flag?`<div class="sec-note" style="background:var(--warn-soft);border-color:#EBD7B2;color:#8A5A16;margin-bottom:14px"><span>⚑</span><div><b>Flagged for review</b>${esc(a.flag)}</div></div>`:''}
+    ${a.cancelled?`<div class="sec-note" style="background:var(--cream);border-color:var(--line);color:#5C5A50;margin-bottom:14px"><span>✕</span><div><b>Cancelled</b>${esc(a.cxBy||'')} — the record is kept for the client file.</div></div>`:''}
+    ${canEdit&&!a.cancelled?`<section class="card"><div class="card-h"><h2>Reschedule</h2></div><div class="card-b">
+      <div class="row2">
+        <div class="field"><label>Date</label><input class="inp" type="date" id="apDate" value="${a.date}"></div>
+        <div class="field"><label>Time</label><input class="inp" type="time" id="apTime" value="${a.time}"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn navy sm" onclick="saveAppt('${a.id}')">Save new time</button>
+        <button class="btn danger sm" onclick="cancelAppt('${a.id}')">Cancel appointment</button>
+      </div>
+      <div class="tiny muted" style="margin-top:8px">Changes sync to Google Calendar and are logged with your name.</div>
+    </div></section>`:''}
+    ${canEdit&&a.cancelled?`<div style="margin-bottom:14px"><button class="btn ghost sm" onclick="restoreAppt('${a.id}')">Restore appointment</button></div>`:''}
     <section class="card"><div class="card-h"><h2>Details</h2></div><div class="card-b">
       ${[['Client',c.name],['Type',a.type],['Provider',a.provider],['Location',a.loc],['Duration',a.dur+' minutes'],['Date',fmtLong(a.date)+' at '+hm12(a.time)],...(a.ride!==undefined?[['Transport',a.ride||'Not arranged yet']]:[])]
         .map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)"><span class="muted tiny">${k}</span><b style="font-size:13.2px;text-align:right">${esc(v)}</b></div>`).join('')}
@@ -2204,10 +2432,31 @@ function openAppt(id){
     canEdit?`<button class="btn ghost" onclick="closeAll()">Close</button><button class="btn navy" onclick="closeAll();toast('Appointment updated.')">Save changes</button>`
            :`<button class="btn ghost" onclick="closeAll()">Close</button>`);
 }
+function saveAppt(id){
+  const a=APPTS.find(x=>x.id===id);
+  const d=el('apDate').value, t=el('apTime').value;
+  if(!d||!t) return toast('Pick a date and a time.');
+  a.date=d; a.time=t;
+  logAudit('Rescheduled appointment',`${client(a.cid).name} · ${a.title} → ${relDay(d)} ${hm12(t)}`);
+  render(); openAppt(id); toast(`Moved to ${relDay(d).toLowerCase()} at ${hm12(t)}. Calendar synced.`);
+}
+function cancelAppt(id){
+  const a=APPTS.find(x=>x.id===id);
+  a.cancelled=1; a.cxBy=`Cancelled by ${meInit()} · just now`;
+  logAudit('Cancelled appointment',`${client(a.cid).name} · ${a.title}`);
+  render(); openAppt(id); toast('Appointment cancelled. Guardian and staff can see the change.');
+}
+function restoreAppt(id){
+  const a=APPTS.find(x=>x.id===id);
+  a.cancelled=0; a.cxBy='';
+  logAudit('Restored appointment',`${client(a.cid).name} · ${a.title}`);
+  render(); openAppt(id); toast('Appointment restored.');
+}
 function addApptNote(id){
   const v=el('apptNote').value.trim(); if(!v) return toast('Write something first.');
   const a=APPTS.find(x=>x.id===id);
-  a.notes.push({by:ME[state.role].name.split(' ')[0][0]+'. '+ME[state.role].name.split(' ')[1],at:'Just now',txt:v});
+  a.notes.push({by:meInit(),at:'Just now',txt:v});
+  logAudit('Added appointment note',`${client(a.cid).name} · ${a.title}`);
   openAppt(id); toast('Note saved to the client record.');
 }
 function attachToAppt(id){
@@ -2243,26 +2492,50 @@ function openMed(id){
 function openTask(id){
   const t=TASKS.find(x=>x.id===id);
   openDrawer(esc(t.title), `Assigned to ${staff(t.sid).init} · due ${relDay(t.due)}`,`
-    <section class="card"><div class="card-h"><h2>Details</h2></div><div class="card-b">
-      ${[['Stage',t.stage],['Priority',t.pri],['Client',t.cid?client(t.cid).name:'Not client-specific'],['Due',fmtLong(t.due)]]
-        .map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)"><span class="muted tiny">${k}</span><b style="font-size:13.2px">${esc(v)}</b></div>`).join('')}
+    <section class="card"><div class="card-h"><h2>Edit task</h2>${t.ed?`<div class="sub">Last edited ${esc(t.ed)}</div>`:''}</div><div class="card-b">
+      <div class="field"><label>Task</label><input class="inp" id="tkTitle" value="${esc(t.title)}"></div>
+      <div class="row2">
+        <div class="field"><label>Due date</label><input class="inp" type="date" id="tkDue" value="${t.due}"></div>
+        <div class="field"><label>Priority</label><select class="inp" id="tkPri">${['High','Medium','Low'].map(p=>`<option ${t.pri===p?'selected':''}>${p}</option>`).join('')}</select></div>
+      </div>
+      <button class="btn navy sm" onclick="saveTaskEdit('${t.id}')">Save changes</button>
     </div></section>
-    ${t.subs.length?`<section class="card"><div class="card-h"><h2>Steps</h2></div><div class="card-b flush">
+    <section class="card"><div class="card-h"><h2>Steps</h2></div><div class="card-b flush">
       ${t.subs.map((s,i)=>`<div class="checkrow" onclick="toggleSub('${t.id}',${i})" style="cursor:pointer">
-      <div class="cb ${s.d?'on':''}">✓</div><div class="ct ${s.d?'done':''}">${esc(s.t)}</div></div>`).join('')}</div></section>`:''}
+      <div class="cb ${s.d?'on':''}">✓</div><div class="ct ${s.d?'done':''}">${esc(s.t)}${s.by?` <span class="tiny muted">· ${esc(s.by)} ${esc(s.at||'')}</span>`:''}</div></div>`).join('')||''}
+      <div style="display:flex;gap:8px;padding:12px 18px">
+        <input class="inp" id="tkStep" placeholder="Add a step…" style="height:34px" onkeydown="if(event.key==='Enter')addStep('${t.id}')">
+        <button class="btn ghost sm" onclick="addStep('${t.id}')">Add</button>
+      </div>
+    </section>
     <section class="card"><div class="card-h"><h2>Move to</h2></div><div class="card-b">
       <div style="display:flex;gap:8px;flex-wrap:wrap">${['Not started','In progress','Done'].map(s=>
         `<button class="btn ${t.stage===s?'navy':'ghost'} sm" onclick="setStage('${t.id}','${s}')">${s}</button>`).join('')}</div>
     </div></section>`,
     `<button class="btn ghost" onclick="closeAll()">Close</button><button class="btn navy" onclick="setStage('${t.id}','Done');closeAll()">Mark done</button>`);
 }
-function toggleSub(id,i){ const t=TASKS.find(x=>x.id===id); t.subs[i].d=t.subs[i].d?0:1; openTask(id); }
+function toggleSub(id,i){ const t=TASKS.find(x=>x.id===id); const s=t.subs[i]; s.d=s.d?0:1; if(s.d){s.by=meInit();s.at='just now';}else{s.by='';s.at='';} openTask(id); }
+function addStep(id){
+  const v=el('tkStep').value.trim(); if(!v) return;
+  const t=TASKS.find(x=>x.id===id); t.subs.push({t:v,d:0});
+  logAudit('Added task step',`${t.title} · ${v}`);
+  openTask(id); toast('Step added.');
+}
+function saveTaskEdit(id){
+  const t=TASKS.find(x=>x.id===id);
+  const ti=el('tkTitle').value.trim(); if(!ti) return toast('The task needs a name.');
+  t.title=ti; t.due=el('tkDue').value; t.pri=el('tkPri').value; t.ed=`${meInit()} · just now`;
+  if(t.stage==='Overdue'&&t.due>=T) t.stage='In progress';
+  logAudit('Edited task',ti);
+  renderNav(); render(); openTask(id); toast('Task updated.');
+}
 function setStage(id,s){ const t=TASKS.find(x=>x.id===id); t.stage=s; renderNav(); render(); if(el('drawer').classList.contains('on')) openTask(id); toast(`Task moved to ${s.toLowerCase()}.`); }
 function openAssign(){
   openModal('Assign a task',`
     <div class="field"><label>Task</label><input class="inp" id="ntTitle" placeholder="What needs doing?"></div>
     <div class="row2">
-      <div class="field"><label>Assign to</label><select class="inp" id="ntWho">${STAFF.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></div>
+      ${state.role==='director'?`<div class="field"><label>Assign to</label><select class="inp" id="ntWho">${STAFF.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></div>`
+        :`<div class="field"><label>Assigned to</label><input class="inp" value="You" disabled></div>`}
       <div class="field"><label>Due date</label><input class="inp" type="date" id="ntDue" value="${T}"></div>
     </div>
     <div class="row2">
@@ -2273,9 +2546,10 @@ function openAssign(){
 }
 function saveTask(){
   const t=el('ntTitle').value.trim(); if(!t) return toast('Give the task a name.');
-  TASKS.unshift({id:'t'+Date.now(),title:t,sid:el('ntWho').value,cid:el('ntClient').value||null,
-    due:el('ntDue').value,stage:'Not started',pri:el('ntPri').value,subs:[]});
-  closeAll(); renderNav(); render(); toast('Task assigned.');
+  TASKS.unshift({id:'t'+Date.now(),title:t,sid:state.role==='director'?el('ntWho').value:'s1',cid:el('ntClient').value||null,
+    due:el('ntDue').value,stage:'Not started',pri:el('ntPri').value,subs:[],by:meInit(),at:'just now'});
+  logAudit(state.role==='director'?'Assigned task':'Created task',t);
+  closeAll(); renderNav(); render(); toast(state.role==='director'?'Task assigned.':'Task added to your list.');
 }
 
 function openIncident(id){
@@ -2302,7 +2576,8 @@ function openIncident(id){
 }
 function markNotified(id,ix){
   const i=INCIDENTS.find(x=>x.id===id);
-  i.recips[ix].at='Just now'; i.recips[ix].by='You';
+  i.recips[ix].at='Just now'; i.recips[ix].by=meInit();
+  logAudit('Logged incident notification',`${client(i.cid).name} · ${i.recips[ix].who}`);
   if(i.recips.every(r=>r.at)) i.hoursLeft=null;
   openIncident(id); toast('Notification logged with time and name.');
 }
@@ -2331,7 +2606,9 @@ function openIncidentForm(cid){
 function saveIncident(){
   const s=el('icSum').value.trim(); if(!s) return toast('Describe what happened before filing.');
   INCIDENTS.unshift({id:'i'+Date.now(),cid:el('icClient').value,type:el('icType').value,date:el('icDate').value,
-    time:el('icTime').value,sev:el('icSev').value,status:'Follow-up due',by:ME[state.role].init,summary:s,notified:['Shift lead']});
+    time:el('icTime').value,sev:el('icSev').value,status:'Follow-up due',by:meInit(),summary:s,notified:['Shift lead'],
+    recips:[{who:'Regional center',how:'Phone',at:null,by:null},{who:'Guardian',how:'Phone',at:null,by:null},{who:'Licensing (CCLD) — written report',how:'Written',at:null,by:null}],hoursLeft:24});
+  logAudit('Created incident report',`${client(el('icClient').value).name} · ${el('icType').value}`);
   closeAll(); renderNav(); render(); toast('Report filed and timestamped.');
 }
 
@@ -2357,10 +2634,15 @@ function uploadDoc(cid,cat){
 
 function openAlerts(){
   const attn=attentionItems(); window._attn=attn;
-  openDrawer('Notifications',`${attn.length} items need attention`,
-    attn.length?attn.map((a,i)=>`<div class="card" style="margin-bottom:10px"><div class="attn" style="border:none" onclick="closeAll();_attn[${i}].go()">
+  const un=THREADS.filter(t=>t.unread);
+  const msgHtml=un.length?`<section class="card"><div class="card-h"><h2>Messages & questions</h2><div class="right"><span class="pill bad">${un.reduce((a,t)=>a+t.unread,0)} unread</span></div></div>
+    <div class="card-b flush">${un.map(t=>`<div class="attn" onclick="closeAll();state.thread='${t.id}';t_unread('${t.id}');go('messages')">
+      <div class="ai info">✉</div><div class="at"><b>${esc(t.who)} — ${esc(t.sub)}</b><span>${esc(t.last)}</span></div>
+      <div class="aa">Open →</div></div>`).join('')}</div></section>`:'';
+  openDrawer('Notifications',`${un.length?un.reduce((a,t)=>a+t.unread,0)+' unread messages · ':''}${attn.length} items need attention`,
+    msgHtml+(attn.length?attn.map((a,i)=>`<div class="card" style="margin-bottom:10px"><div class="attn" style="border:none" onclick="closeAll();_attn[${i}].go()">
       <div class="ai ${a.k}">${a.ic}</div><div class="at"><b>${a.t}</b><span>${a.s}</span></div></div></div>`).join('')
-    :'<div class="empty"><b>All clear</b>Nothing needs your attention right now.</div>',
+    :(un.length?'':'<div class="empty"><b>All clear</b>Nothing needs your attention right now.</div>')),
     `<button class="btn ghost" onclick="closeAll()">Close</button>`);
 }
 
@@ -2541,6 +2823,7 @@ function commitShiftMove(sid,dx){
   ns=Math.max(TL.s,Math.min(TL.e-dur,ns));
   if(mmhh(ns)===s.start){ refreshTL(); return; }
   s.start=mmhh(ns); s.end=mmhh(ns+dur);
+  logAudit('Changed shift',`${staff(sid).name} → ${hm12(s.start)} – ${hm12(s.end)}`);
   refreshTL();
   toast(`${staff(sid).init} moved to ${hm12(s.start)} – ${hm12(s.end)}. Every staff view is updated.`);
 }
@@ -2591,6 +2874,7 @@ function saveShift(sid){
   if(toMin(en)<=toMin(st)) return toast('The shift has to end after it starts.');
   const s=SHIFTS.find(x=>x.sid===sid);
   s.start=st; s.end=en; s.home=el('shHome').value;
+  logAudit('Changed shift',`${staff(sid).name} → ${hm12(st)} – ${hm12(en)} · ${s.home}`);
   closeAll(); refreshTL();
   toast(`Shift saved: ${staff(sid).init}, ${hm12(st)} – ${hm12(en)}. Every staff view is updated.`);
 }
@@ -2692,8 +2976,10 @@ function pickReason(i){
 }
 function saveDose(){
   const me=ME[state.role];
-  LOGS.unshift({id:'l'+Date.now(), cid:MEDS.find(m=>m.id===doseSel.mid).cid, mid:doseSel.mid,
+  const _m=MEDS.find(m=>m.id===doseSel.mid);
+  LOGS.unshift({id:'l'+Date.now(), cid:_m.cid, mid:doseSel.mid,
     date:T, time:doseSel.t, status:doseSel.status, by:me.name.split(' ').map(w=>w[0]+'.').join(''), sig:'✓ e-signed'});
+  logAudit('Recorded med pass',`${client(_m.cid).name} · ${_m.name} ${hm12(doseSel.t)} — ${doseSel.status}`);
   closeAll(); render(); renderNav();
   toast(doseSel.status==='given'?'Dose recorded and signed.':`Recorded as ${doseSel.status}${doseSel.reason?' — '+doseSel.reason.toLowerCase():''}. Shift lead can see this now.`);
 }
