@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AI Paragon — Intelligence Dashboard</title>
 <link rel="icon" href="https://www.aiparagonconsulting.com/logo.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
@@ -13,28 +13,86 @@
     --gold:#C9A84C; --gold-soft:#F3EBD7; --navy-soft:#E7EDF5;
     --ink:#22293A; --muted:#6E6A5E; --line:#E6E1D5; --white:#FFFFFF;
     --good:#3E7A5B; --good-soft:#E2EEE7; --warn:#B07A2A; --bad:#A94438;
-    --shadow:0 1px 2px rgba(30,58,95,.05),0 10px 30px rgba(30,58,95,.08);
-    --shadow-sm:0 1px 2px rgba(30,58,95,.04),0 4px 12px rgba(30,58,95,.05);
-    --r:20px; --r-sm:12px;
+    --accent2:#4E86B5;
+    --shadow:0 2px 4px rgba(30,58,95,.05),0 16px 40px rgba(30,58,95,.10);
+    --shadow-sm:0 1px 2px rgba(30,58,95,.04),0 6px 16px rgba(30,58,95,.06);
+    --r:18px; --r-sm:12px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{font-size:15px}
   body{background:var(--bg);color:var(--ink);font-family:'Inter',-apple-system,'Segoe UI',sans-serif;line-height:1.5}
   /* ---------- layout ---------- */
   .app{display:flex;min-height:100vh}
+  /* ---------- sidebar user card ---------- */
+  .usercard{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--line);
+    border-radius:14px;margin-bottom:16px;background:var(--white);cursor:pointer;transition:background .15s,border-color .15s}
+  .usercard:hover{background:var(--bg);border-color:var(--gold)}
+  .usercard:hover .uchev{color:var(--navy)}
+  .usercard .uav{width:34px;height:34px;border-radius:99px;background:var(--navy);color:#fff;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:700;position:relative}
+  .usercard .uav::after{content:"";position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:99px;
+    background:var(--good);border:2px solid var(--white)}
+  .usercard .uname{font-size:.88rem;font-weight:700;color:var(--ink);line-height:1.2}
+  .usercard .ustat{font-size:.7rem;color:var(--good);font-weight:600}
+  .usercard .uchev{margin-left:auto;color:var(--muted);font-size:.7rem}
+  /* ---------- nav icons ---------- */
+  .nav button .ni{width:20px;display:inline-flex;justify-content:center;flex-shrink:0;font-size:.95rem}
+  .nav button>span:first-child{display:flex;align-items:center;gap:10px;min-width:0}
+  .engines button .ni{width:20px;display:inline-flex;justify-content:center;flex-shrink:0;font-size:.95rem}
+  .engines button>span:first-child{display:flex;align-items:center;gap:10px;min-width:0}
+  .side-settings{margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
+  /* ---------- greeting hero (Prodify) ---------- */
+  .greet{background:var(--white);border-radius:22px;padding:30px 34px;margin-bottom:22px;position:relative;
+    overflow:hidden;box-shadow:var(--shadow);
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:46px 46px;background-position:-1px -1px}
+  .greet>*{position:relative;z-index:1}
+  .greet .g-date{font-size:.8rem;color:var(--muted);font-weight:600;margin-bottom:10px}
+  .greet .g-hi{font-size:2rem;font-weight:800;letter-spacing:-.025em;color:var(--ink);line-height:1.12}
+  .greet .g-q{font-size:2rem;font-weight:700;letter-spacing:-.025em;line-height:1.12;
+    background:linear-gradient(90deg,var(--accent2),var(--navy));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .greet .g-sub{font-size:.86rem;color:var(--muted);margin-top:12px;max-width:600px;line-height:1.55}
+  @media(max-width:900px){ .greet .g-hi,.greet .g-q{font-size:1.5rem} }
+  /* ---------- task-table card (Prodify) ---------- */
+  .tcard{background:var(--white);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 22px;margin-bottom:20px}
+  .tcard-head{display:flex;align-items:center;gap:9px;font-size:1.02rem;font-weight:700;color:var(--ink);margin-bottom:6px}
+  .tgroup{margin-top:14px}
+  .tgroup-head{display:flex;align-items:center;gap:10px;padding:6px 0 8px}
+  .tgroup-head .caret{all:unset;cursor:pointer;color:var(--muted);font-size:.7rem;width:18px;text-align:center;transition:transform .15s}
+  .tgroup-head .caret.closed{transform:rotate(-90deg)}
+  .tstatus{font-size:.66rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 11px;border-radius:8px}
+  .tstatus.review{background:var(--gold-soft);color:#7A5E12}
+  .tstatus.done{background:var(--good-soft);color:var(--good)}
+  .tstatus.todo{background:var(--navy-soft);color:var(--navy)}
+  .tgroup-head .tcount{font-size:.76rem;color:var(--muted)}
+  .trow-head,.trow{display:grid;grid-template-columns:22px 1fr 110px 120px;gap:10px;align-items:center;padding:11px 4px}
+  .trow-head{font-size:.72rem;color:var(--muted);font-weight:600;padding:4px 4px 6px;border-bottom:1px solid var(--line)}
+  .trow{border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
+  .trow:hover{background:var(--bg)}
+  .trow .tname{display:flex;align-items:center;gap:9px;min-width:0;font-size:.88rem;color:var(--ink)}
+  .trow .tname .tdot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+  .trow .tname .ttxt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .trow .tchev{color:var(--muted);font-size:.7rem;text-align:center}
+  .tprio{font-size:.72rem;font-weight:700;padding:3px 11px;border-radius:8px;display:inline-block}
+  .tprio.high{background:#FBE4E2;color:var(--bad)}
+  .tprio.normal{background:var(--navy-soft);color:var(--navy)}
+  .tprio.low{background:var(--bg);color:var(--muted)}
+  .tdue{font-size:.8rem;color:var(--muted);text-align:right}
+  .tdue.now{color:var(--bad);font-weight:650}
+  .tadd{all:unset;cursor:pointer;display:block;padding:11px 4px;font-size:.84rem;color:var(--muted);font-weight:600}
+  .tadd:hover{color:var(--navy)}
+  @media(max-width:720px){ .trow-head,.trow{grid-template-columns:18px 1fr 88px} .trow-head span:nth-child(4),.trow .tdue{display:none} }
   .main>*{max-width:1380px}
-  .sidebar{width:250px;flex-shrink:0;background:var(--white);border-right:1px solid var(--line);
+  .sidebar{width:250px;flex-shrink:0;background:var(--white);border-right:none;box-shadow:var(--shadow-sm);
     padding:26px 16px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh}
   .main{flex:1;min-width:0;padding:26px 36px 80px}
-  @media(max-width:820px){
-    .app{flex-direction:column}
-    .sidebar{width:100%;height:auto;position:static;flex-direction:row;flex-wrap:wrap;align-items:center;border-right:none;border-bottom:1px solid var(--line)}
-    .main{padding:18px 14px 60px}
-  }
+  .navtoggle{display:none}
+  .scrim{display:none}
+
   /* ---------- brand ---------- */
   .brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;padding:0 8px}
   .brand img{width:34px;height:34px;object-fit:contain}
-  .brand .word{font-family:Georgia,'Times New Roman',serif;font-size:1.14rem;font-weight:700;letter-spacing:.01em;color:var(--navy)}
+  .brand .word{font-family:'Inter',sans-serif;font-size:1.14rem;font-weight:700;letter-spacing:.01em;color:var(--navy)}
   .brand .word em{font-style:normal;color:var(--gold)}
   /* ---------- engine switcher ---------- */
   .engines{display:flex;flex-direction:column;gap:3px;margin-bottom:14px}
@@ -62,19 +120,20 @@
   .userchip .av{width:32px;height:32px;border-radius:99px;background:var(--gold-soft);color:var(--navy);
     display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700}
   /* ---------- page head as hero ---------- */
-  .page-head{background:linear-gradient(115deg,var(--navy) 0%,var(--navy-deep) 70%);border-radius:22px;
-    padding:28px 32px;color:#fff;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;
+  .page-head{background:var(--white);border-radius:22px;
+    padding:28px 32px;color:var(--ink);display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;
     gap:16px;margin-bottom:26px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
-  .page-head::after{content:"";position:absolute;right:-60px;top:-80px;width:280px;height:280px;
-    border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.26),transparent 65%);pointer-events:none}
+  .page-head::after{content:"";position:absolute;right:-70px;top:-90px;width:300px;height:300px;
+    border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.24),rgba(78,134,181,.12) 55%,transparent 70%);pointer-events:none}
   .page-head>*{position:relative;z-index:1}
-  h1.page{font-family:Georgia,serif;font-size:1.7rem;font-weight:700;color:#fff;letter-spacing:-.01em}
-  .page-sub{color:#C7D1DF;margin-top:6px;font-size:.88rem;max-width:560px}
-  .page-head .chip{background:rgba(255,255,255,.12);color:#E8EDF4}
-  .page-head .chip b{color:var(--gold)}
-  .page-head .lineage{background:rgba(255,255,255,.12);color:#E8EDF4;box-shadow:none}
-  .page-head .lineage b{color:var(--gold)}
-  .page-head .controls label{color:#C7D1DF}
+  h1.page{font-size:1.75rem;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+  .page-sub{margin-top:6px;font-size:.98rem;max-width:620px;font-weight:650;
+    background:linear-gradient(90deg,var(--accent2),var(--navy));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .page-head .chip{background:var(--cream);color:var(--muted)}
+  .page-head .chip b{color:var(--navy)}
+  .page-head .lineage{background:var(--cream);color:var(--muted);box-shadow:none}
+  .page-head .lineage b{color:var(--navy)}
+  .page-head .controls label{color:var(--muted)}
   /* ---------- controls ---------- */
   select,input[type=search]{font:inherit;font-size:.86rem;padding:9px 14px;border:none;border-radius:var(--r-sm);background:var(--white);color:var(--ink);box-shadow:var(--shadow-sm)}
   select:focus,input:focus,button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
@@ -85,7 +144,7 @@
   .grid.cols3{grid-template-columns:repeat(auto-fit,minmax(255px,1fr))}
   .card{background:var(--white);border-radius:var(--r);padding:24px;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
   .card:hover{transform:translateY(-3px);box-shadow:0 3px 6px rgba(30,58,95,.07),0 16px 40px rgba(30,58,95,.12)}
-  .card h3{font-family:Georgia,serif;font-size:1.1rem;color:var(--navy);margin-bottom:2px}
+  .card h3{font-family:'Inter',sans-serif;font-size:1.1rem;color:var(--navy);margin-bottom:2px}
   .card .agent-kind{font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:4px}
   .statline{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
   .chip{font-size:.71rem;background:var(--bg);padding:4px 11px;border-radius:99px;color:var(--muted)}
@@ -113,8 +172,8 @@
   .tabs button.active{background:var(--navy);color:#fff}
   /* ---------- brief rendering ---------- */
   .brief{background:var(--white);border-radius:var(--r);padding:32px 38px;max-width:920px;box-shadow:var(--shadow)}
-  .brief h1{font-family:Georgia,serif;font-size:1.5rem;color:var(--navy);border-bottom:2px solid var(--gold);padding-bottom:8px;margin-bottom:12px}
-  .brief h2{font-family:Georgia,serif;font-size:1.12rem;color:var(--navy);margin:26px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+  .brief h1{font-family:'Inter',sans-serif;font-size:1.5rem;color:var(--navy);border-bottom:2px solid var(--gold);padding-bottom:8px;margin-bottom:12px}
+  .brief h2{font-family:'Inter',sans-serif;font-size:1.12rem;color:var(--navy);margin:26px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--line)}
   .brief h3{font-size:.98rem;color:var(--ink);margin:16px 0 6px}
   .brief p{margin:8px 0}
   .brief ul,.brief ol{margin:8px 0 8px 22px}
@@ -153,12 +212,12 @@
   .notice.err{border-left-color:var(--bad)}
   .notice code{background:var(--cream);padding:1px 6px;border-radius:5px;font-size:.82rem}
   .empty{padding:52px 20px;text-align:center;color:var(--muted);background:var(--white);border-radius:var(--r);box-shadow:var(--shadow-sm)}
-  .empty .big{font-family:Georgia,serif;font-size:1.1rem;color:var(--navy);margin-bottom:6px}
+  .empty .big{font-family:'Inter',sans-serif;font-size:1.1rem;color:var(--navy);margin-bottom:6px}
   .loading{color:var(--muted);font-size:.9rem;padding:20px 0}
   .lineage{font-size:.78rem;color:var(--muted);background:var(--white);border-radius:99px;padding:8px 15px;display:inline-block;margin-bottom:14px;box-shadow:var(--shadow-sm)}
   .lineage b{color:var(--navy)}
   section.block{margin-bottom:38px}
-  section.block>h2{font-family:Georgia,serif;font-size:1.15rem;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  section.block>h2{font-family:'Inter',sans-serif;font-size:1.15rem;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:10px}
   section.block>h2 .count{font-family:Inter,sans-serif;font-size:.7rem;background:var(--gold-soft);color:#7A5E12;border-radius:99px;padding:3px 10px;font-weight:700}
 
   /* ---------- redesign: hero extras ---------- */
@@ -189,7 +248,7 @@
   @media(max-width:1080px){.cols{grid-template-columns:1fr}}
   .panel{background:var(--white);border-radius:var(--r);padding:24px;box-shadow:var(--shadow)}
   .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-  .panel-head h2{font-family:Georgia,serif;font-size:1.12rem;color:var(--navy);display:flex;align-items:center;gap:10px}
+  .panel-head h2{font-family:'Inter',sans-serif;font-size:1.12rem;color:var(--navy);display:flex;align-items:center;gap:10px}
   .panel-head .count{font-size:.7rem;background:var(--gold-soft);color:#7A5E12;border-radius:99px;padding:3px 10px;font-weight:700;font-family:Inter,sans-serif}
   .panel-head a{font-size:.8rem;font-weight:600;color:var(--muted);text-decoration:none;cursor:pointer}
   .panel-head a:hover{color:var(--navy)}
@@ -200,7 +259,7 @@
   .item .txt p{font-size:.87rem;line-height:1.45}
   .item .txt small{color:var(--muted);font-size:.74rem}
   .brief-teaser{border-left:3px solid var(--gold);padding-left:16px;margin-bottom:10px}
-  .brief-teaser h4{font-family:Georgia,serif;font-size:.95rem;color:var(--navy);margin-bottom:4px}
+  .brief-teaser h4{font-family:'Inter',sans-serif;font-size:.95rem;color:var(--navy);margin-bottom:4px}
   .brief-teaser p{font-size:.83rem;color:var(--muted)}
   .qdraft{background:var(--bg);border-radius:14px;padding:15px 16px;margin-bottom:12px}
   .qdraft:last-child{margin-bottom:0}
@@ -301,7 +360,7 @@
   .due.overdue{background:#F3E2DF;color:var(--bad)}
   .due.today{background:var(--gold-soft);color:#7A5E12}
   .stepnum{width:40px;height:40px;border-radius:12px;background:var(--navy);color:var(--gold);flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-weight:700;font-size:1rem}
+    display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif;font-weight:700;font-size:1rem}
   .tokenrow{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
   .tokenrow input{flex:1;min-width:220px;font:inherit;font-size:.86rem;padding:10px 14px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--white)}
   .addrow{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
@@ -352,6 +411,18 @@
   border-radius:8px;font:inherit;font-size:.83rem;color:var(--ink);resize:vertical}
 #e1Run textarea:focus{outline:2px solid var(--gold);border-color:var(--gold)}
 .e1run-2col{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+#e3TrackBg{position:fixed;inset:0;background:rgba(20,30,45,.32);z-index:62}
+#e3Track{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%) scale(.98);opacity:0;
+  width:min(560px,94vw);max-height:88vh;background:#fff;z-index:63;border-radius:16px;
+  box-shadow:0 24px 70px rgba(20,30,45,.3);display:flex;flex-direction:column;
+  transition:opacity .18s ease, transform .18s ease}
+#e3Track.open{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#e3Track .e1p-body{overflow-y:auto}
+#e3Track textarea,#e3Track select{width:100%;box-sizing:border-box;padding:8px 10px;
+  border:1px solid var(--line,#e2dccc);border-radius:8px;font:inherit;font-size:.83rem;color:var(--ink);resize:vertical}
+#e3Track textarea:focus,#e3Track select:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+.hs-cta{cursor:pointer;border:1px solid var(--line,#e8e2d6);background:var(--white,#fff)}
+.hs-cta:hover{border-color:var(--gold);color:var(--navy)}
 .e1run-opts{display:flex;flex-direction:column;gap:7px;margin-bottom:8px}
 .e1run-opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line,#e8e2d6);
   border-radius:10px;padding:10px 12px;cursor:pointer}
@@ -402,7 +473,7 @@
   .studio-canvas{flex:1;min-width:0;background:radial-gradient(circle, #D8D2C2 1px, transparent 1px);background-size:18px 18px;background-color:#EFEBE0;border:1px solid var(--line);border-radius:16px;padding:28px 20px;display:flex;justify-content:center;align-items:flex-start;gap:18px;flex-wrap:wrap}
   .studio-side{width:310px;flex-shrink:0;background:var(--white);border:1px solid var(--line);border-radius:14px;padding:16px}
   @media(max-width:1100px){.studio{flex-direction:column}.studio-side{width:100%}}
-  .studio-side .sec-title{font-family:Georgia,serif;font-size:.98rem;margin-bottom:2px}
+  .studio-side .sec-title{font-family:'Inter',sans-serif;font-size:.98rem;margin-bottom:2px}
   .studio-side .sec-sub{font-size:.74rem;color:var(--muted);margin-bottom:12px}
   .insp-label{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:750;margin:10px 0 4px}
   .insp-in, .studio-side textarea, .studio-side input{width:100%;font:inherit;font-size:.83rem;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#FDFCF9}
@@ -438,19 +509,118 @@
   #fmtBar button{border:none;background:transparent;color:#fff;font:inherit;font-size:.78rem;font-weight:700;padding:5px 9px;border-radius:6px;cursor:pointer;min-width:28px}
   #fmtBar button:hover{background:rgba(255,255,255,.18)}
   #fmtBar .sep{width:1px;background:rgba(255,255,255,.25);margin:3px 3px}
-  .hero-title{font-family:Georgia,serif;font-size:1.9rem;line-height:1.15}
+  .hero-title{font-family:'Inter',sans-serif;font-size:1.9rem;line-height:1.15}
   .hero-blurb{font-size:1.02rem;line-height:1.65;max-width:760px;opacity:.94}
   .hero-chip{font-size:.9rem;padding:8px 14px !important}
   .big-stat{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:16px 18px;text-align:center}
-  .big-stat .n{font-family:Georgia,serif;font-size:1.9rem;color:var(--navy);line-height:1.1}
+  .big-stat .n{font-family:'Inter',sans-serif;font-size:1.9rem;color:var(--navy);line-height:1.1}
   .big-stat .l{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:750;margin-top:4px}
+
+  /* ================= ONBOARDING ================= */
+  .ob{position:fixed;inset:0;z-index:1200;background:var(--bg);overflow-y:auto;display:flex;flex-direction:column}
+  .ob-bar{height:4px;background:var(--line);flex-shrink:0}
+  .ob-bar>i{display:block;height:100%;background:var(--gold);transition:width .3s}
+  .ob-wrap{flex:1;width:100%;max-width:720px;margin:0 auto;padding:40px 26px 60px;display:flex;flex-direction:column}
+  .ob-step{font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+  .ob h2{font-size:1.7rem;font-weight:800;letter-spacing:-.02em;color:var(--ink);margin:6px 0 6px}
+  .ob .ob-sub{font-size:.92rem;color:var(--muted);margin-bottom:24px;line-height:1.55}
+  .ob label{display:block;font-size:.76rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin:14px 0 5px}
+  .ob input[type=text],.ob input[type=email],.ob input[type=url],.ob textarea,.ob select{
+    font:inherit;font-size:.92rem;padding:11px 14px;border:1px solid var(--line);border-radius:11px;
+    background:var(--white);width:100%;box-sizing:border-box;color:var(--ink)}
+  .ob textarea{min-height:78px;resize:vertical}
+  .ob input:focus,.ob textarea:focus,.ob select:focus{outline:none;border-color:var(--gold)}
+  .ob-two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .ob-nav{display:flex;gap:10px;align-items:center;margin-top:30px;padding-top:18px;border-top:1px solid var(--line)}
+  .ob-nav .btn{padding:11px 22px;font-size:.9rem}
+  .ob-skip{all:unset;cursor:pointer;font-size:.82rem;color:var(--muted);margin-left:auto}
+  .ob-skip:hover{color:var(--navy)}
+  .ob-drop{border:1.5px dashed var(--line);border-radius:14px;padding:16px;background:var(--white);margin-bottom:12px}
+  .ob-drop b{font-size:.9rem;color:var(--ink)}
+  .ob-drop p{font-size:.8rem;color:var(--muted);margin:3px 0 10px;line-height:1.5}
+  .ob-file{display:flex;align-items:center;gap:9px;font-size:.84rem;padding:8px 11px;background:var(--cream);
+    border-radius:9px;margin-top:8px}
+  .ob-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+  .ob-chip{all:unset;cursor:pointer;border:1px solid var(--line);border-radius:99px;padding:8px 15px;
+    font-size:.84rem;color:var(--ink);background:var(--white);transition:border-color .15s,background .15s}
+  .ob-chip:hover{background:var(--cream)}
+  .ob-chip.on{border-color:var(--navy);background:var(--navy);color:#fff;font-weight:650}
+  @media(max-width:640px){ .ob-two{grid-template-columns:1fr} .ob h2{font-size:1.35rem} .ob-wrap{padding:26px 16px 50px} }
+  /* ================= GUIDED TOUR ================= */
+  .tour-hole{position:fixed;z-index:1100;border-radius:14px;pointer-events:none;
+    box-shadow:0 0 0 9999px rgba(23,41,66,.62), 0 0 0 3px var(--gold);transition:all .28s cubic-bezier(.4,0,.2,1)}
+  .tour-pop{position:fixed;z-index:1101;width:min(340px,calc(100vw - 24px));background:var(--white);
+    border-radius:15px;padding:18px 20px;box-shadow:0 20px 50px rgba(23,41,66,.3);transition:all .28s cubic-bezier(.4,0,.2,1)}
+  .tour-pop .tt{font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+  .tour-pop h4{font-size:1.04rem;font-weight:750;color:var(--ink);margin:5px 0 7px;letter-spacing:-.01em}
+  .tour-pop p{font-size:.87rem;color:var(--muted);line-height:1.6;margin:0}
+  .tour-nav{display:flex;align-items:center;gap:8px;margin-top:15px}
+  .tour-nav .btn{padding:8px 16px;font-size:.82rem}
+  .tour-dots{font-size:.75rem;color:var(--muted);margin-right:auto}
+  .tour-x{all:unset;cursor:pointer;color:var(--muted);font-size:.8rem}
+  .tour-x:hover{color:var(--navy)}
+
+  /* ================= MOBILE (must stay last to win the cascade) ================= */
+  .search input{min-width:0}
+  @media(max-width:820px){
+    html{font-size:14.5px}
+    .app{display:block}
+    .sidebar{position:fixed;top:0;left:0;z-index:940;width:270px;max-width:86vw;height:100dvh;
+      overflow-y:auto;transform:translateX(-102%);transition:transform .22s ease;box-shadow:0 0 44px rgba(30,58,95,.22)}
+    body.nav-open .sidebar{transform:translateX(0)}
+    .scrim{display:block;position:fixed;inset:0;z-index:930;background:rgba(30,58,95,.34);opacity:0;
+      pointer-events:none;transition:opacity .22s}
+    body.nav-open .scrim{opacity:1;pointer-events:auto}
+    .navtoggle{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+      width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--white);
+      cursor:pointer;font-size:1.15rem;color:var(--navy);box-shadow:var(--shadow-sm)}
+    .main{padding:14px 13px 96px}
+    /* row 1: menu + icons + status · row 2: full-width search */
+    .topbar{gap:8px;margin-bottom:16px;align-items:center}
+    .navtoggle{order:1}
+    #themeBtn,#notifBell{order:2;width:36px;height:36px;font-size:.92rem}
+    .sync{order:3;font-size:.7rem;padding:6px 10px;white-space:nowrap}
+    .topbar .spacer{display:none}
+    .search{order:4;flex:1 1 100%;max-width:none;min-width:0;padding:2px 6px 2px 14px}
+    .search input{font-size:.84rem;padding:8px 4px;min-width:0;width:100%}
+    /* view pills scroll instead of stacking */
+    .views{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
+      margin-bottom:16px;padding-bottom:5px;scrollbar-width:none}
+    .views::-webkit-scrollbar{display:none}
+    .views button{flex:0 0 auto;white-space:nowrap}
+    /* content sizing */
+    .greet{padding:20px 16px;border-radius:16px;background-size:34px 34px}
+    .greet .g-date{font-size:.74rem}
+    .greet .g-sub{font-size:.82rem}
+    .page-head{padding:18px 16px;border-radius:16px;gap:12px}
+    h1.page{font-size:1.3rem}
+    .card,.panel,.tcard{padding:15px 14px;border-radius:15px}
+    .grid{gap:13px}
+    .grid.cols3,.grid.cols2{grid-template-columns:1fr}
+    section.block>h2{font-size:1rem}
+    .statline{gap:6px}
+    select,input[type=search],.btn{min-height:38px}
+    table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}
+    /* floating widgets */
+    #askPanel{right:9px !important;left:9px;bottom:74px !important;width:auto !important;
+      height:min(72dvh,540px) !important}
+    #askBubble{right:14px !important;bottom:14px !important;width:48px !important;height:48px !important}
+    #themePanel{right:9px !important;left:9px !important;width:auto !important}
+  }
+  @media(max-width:560px){
+    .greet .g-hi,.greet .g-q{font-size:1.3rem}
+    .chip{font-size:.68rem;padding:4px 9px}
+    .sync{font-size:0;padding:6px;gap:0}
+    .sync .dot{margin:0}
+    h1.page{font-size:1.2rem}
+  }
 
 </style>
 </head>
 <body>
 <div id="lockScreen" style="position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px">
   <img src="https://www.aiparagonconsulting.com/logo.png" alt="" style="width:52px;height:52px;object-fit:contain" onerror="this.style.display='none'">
-  <div style="font-family:Georgia,serif;font-size:1.4rem;color:var(--ink)">AI <span style="color:var(--gold)">Paragon</span> — Intelligence Dashboard</div>
+  <div style="font-family:'Inter',sans-serif;font-size:1.4rem;color:var(--ink)">AI <span style="color:var(--gold)">Paragon</span> — Intelligence Dashboard</div>
   <div style="display:flex;flex-direction:column;gap:8px;min-width:280px">
     <input id="userInput" type="text" placeholder="Username" autocomplete="username"
       style="font:inherit;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--white)"
@@ -463,13 +633,22 @@
   <div id="pwError" style="color:var(--bad);font-size:.85rem;min-height:1.2em"></div>
 </div>
 <div class="app">
+  <div class="scrim" onclick="closeNav()"></div>
   <aside class="sidebar">
     <div class="brand">
       <img src="https://www.aiparagonconsulting.com/logo.png" alt="" onerror="this.style.display='none'">
       <div class="word">AI <em>Paragon</em></div>
     </div>
+    <div class="usercard" id="sideUser" onclick="openThemeModal(this)" title="Settings & theme">
+      <span class="uav">AP</span>
+      <div style="min-width:0">
+        <div class="uname">AI Paragon</div>
+        <div class="ustat">Online</div>
+      </div>
+      <span class="uchev">⚙</span>
+    </div>
     <nav class="nav" style="margin-bottom:6px">
-      <button id="homeBtn" onclick="setEngine('home')"><span>🏠 Home</span></button>
+      <button id="homeBtn" onclick="setEngine('home')"><span><span class="ni">⌂</span>Home</span></button>
     </nav>
     <div class="navlabel">Engines</div>
     <div class="engines" id="engineSwitch"></div>
@@ -477,16 +656,24 @@
     <nav class="nav" id="nav"></nav>
     <div class="navlabel">Workspace</div>
     <nav class="nav" id="wsNav">
-      <button data-ws-btn="tasks" onclick="setView('tasks')"><span>Tasks</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">ASANA</span></button>
-      <button data-ws-btn="notion" onclick="setView('notion')"><span>Notes</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">NOTION</span></button>
-      <button data-ws-btn="profile" onclick="setView('profile')"><span>Profile</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">COMPANY</span></button>
-      <button data-ws-btn="ask" onclick="askToggle()"><span>Ask</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">AI</span></button>
-      <button data-ws-btn="hubspot" onclick="setView('hubspot')"><span>HubSpot</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">CRM</span></button>
+      <button data-ws-btn="tasks" onclick="setView('tasks')"><span><span class="ni">☑</span>Tasks</span><span id="wsTasksN" style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">ASANA</span></button>
+      <button data-ws-btn="notion" onclick="setView('notion')"><span><span class="ni">✎</span>Notes</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">NOTION</span></button>
+      <button data-ws-btn="files" onclick="setView('files')"><span><span class="ni">🗂</span>Files</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">ALL DOCS</span></button>
+      <button data-ws-btn="hubspot" onclick="setView('hubspot')"><span><span class="ni">◍</span>HubSpot</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">CRM</span></button>
+      <button data-ws-btn="profile" onclick="setView('profile')"><span><span class="ni">◎</span>Profile</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">COMPANY</span></button>
+      <button data-ws-btn="ask" onclick="askToggle()"><span><span class="ni">✦</span>Ask AI</span><span style="font-size:.6rem;color:var(--gold);font-weight:700;letter-spacing:.06em">BOT</span></button>
     </nav>
-    <div class="side-foot"><b style="display:block;color:var(--navy);font-size:.8rem;margin-bottom:2px">Internal dashboard</b>Data refreshes on page load from the shared knowledge base.</div>
+    <div class="side-settings">
+      <nav class="nav">
+        <button onclick="tourMenu()"><span><span class="ni">◔</span>Guided tour</span></button>
+        <button onclick="openThemeModal(this)"><span><span class="ni">⚙</span>Settings</span></button>
+        <button onclick="confirmLogout()"><span><span class="ni">⏻</span>Sign out</span></button>
+      </nav>
+    </div>
   </aside>
   <main class="main">
     <div class="topbar">
+      <button class="navtoggle" onclick="toggleNav()" aria-label="Menu">☰</button>
       <div class="search">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <input id="globalSearch" type="text" placeholder="Search summaries, competitors, drafts…" onkeydown="if(event.key==='Enter')globalSearch(this.value)">
@@ -495,7 +682,6 @@
       <button id="themeBtn" onclick="openThemeModal()" title="Customize theme" style="background:var(--white);border:1px solid var(--line);border-radius:99px;width:38px;height:38px;cursor:pointer;font-size:1rem">🎨</button>
       <button id="notifBell" onclick="toggleNotif()" title="Notifications" style="position:relative;background:var(--white);border:1px solid var(--line);border-radius:99px;width:38px;height:38px;cursor:pointer;font-size:1rem">🔔<span id="notifCount" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--bad);color:#fff;font-size:.62rem;font-weight:800;border-radius:99px;min-width:17px;height:17px;line-height:17px;padding:0 3px">0</span></button>
       <div class="sync"><span class="dot"></span>Synced on page load</div>
-      <div class="userchip"><span class="av">AP</span>AI Paragon</div>
     </div>
     <div class="views" id="viewTabs"></div>
     <div id="main"></div>
@@ -567,6 +753,24 @@ async function sbPatch(path, body){
   return res.json();
 }
 
+async function sbInsert(path, body){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation"
+    },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok){
+    const t = await res.text();
+    const err = new Error(`${res.status}`); err.body = t; err.status = res.status; throw err;
+  }
+  return res.json();
+}
+
 async function setDraftStatus(id, status, btn){
   const card = btn.closest(".draft");
   card.querySelectorAll("button").forEach(b=>b.disabled=true);
@@ -595,13 +799,84 @@ async function sbPost(path, body){
   if(!res.ok){ const t = await res.text(); const err = new Error(`${res.status}`); err.body=t; err.status=res.status; throw err; }
   return res.json();
 }
+function fitSearchPlaceholder(){
+  const el = document.getElementById("globalSearch"); if(!el) return;
+  el.placeholder = window.innerWidth <= 560 ? "Search…"
+    : window.innerWidth <= 820 ? "Search summaries, drafts…"
+    : "Search summaries, competitors, drafts…";
+}
+window.addEventListener("resize", fitSearchPlaceholder);
+document.addEventListener("DOMContentLoaded", fitSearchPlaceholder);
+function toggleNav(){ document.body.classList.toggle("nav-open"); }
+function closeNav(){ document.body.classList.remove("nav-open"); }
+function myAvatar(){ return sessionStorage.getItem("aip_avatar") || ""; }
+function myEmail(){ return sessionStorage.getItem("aip_email") || ""; }
+function myUsername(){ return sessionStorage.getItem("aip_username") || ""; }
+function initialsOf(n){ return String(n||"").split(/[\s@._-]+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase() || "AP"; }
+function paintAvatarEl(el, name){
+  if(!el) return;
+  const url = myAvatar();
+  if(url){
+    el.textContent = "";
+    el.style.backgroundImage = `url("${url}")`;
+    el.style.backgroundSize = "cover";
+    el.style.backgroundPosition = "center";
+  } else {
+    el.style.backgroundImage = "";
+    el.textContent = initialsOf(name);
+  }
+}
+function paintSideUser(){
+  const n = whoAmI();
+  const el = document.getElementById("sideUser");
+  if(el){
+    paintAvatarEl(el.querySelector(".uav"), n);
+    el.querySelector(".uname").textContent = n;
+  }
+  const chip = document.querySelector(".userchip");
+  if(chip){
+    paintAvatarEl(chip.querySelector(".av"), n);
+    chip.childNodes.forEach(nd=>{ if(nd.nodeType===3) nd.textContent = n; });
+  }
+}
+function doLogout(){
+  // wipe the session identity; keep per-user theme/tour prefs in localStorage
+  ["aip_unlocked","aip_user","aip_username","aip_email","aip_avatar"].forEach(k=>sessionStorage.removeItem(k));
+  try{
+    // clear cached data and any open overlays so nothing leaks to the next person
+    Object.keys(cache).forEach(k=>delete cache[k]);
+    window._askLog = [];
+    window._afRows = null; window._hsRows = null;
+    ["askPanel","askBubble","themePanel","tourHole","tourPop","tourMenuWrap","obOverlay","notifPanel"].forEach(id=>{
+      const el = document.getElementById(id); if(el) el.remove();
+    });
+  }catch(e){}
+  location.reload();
+}
+function confirmLogout(){
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "position:fixed;inset:0;z-index:1300;background:rgba(30,40,60,.45);display:flex;align-items:center;justify-content:center;padding:20px";
+  const box = document.createElement("div");
+  box.style.cssText = "background:var(--white);border-radius:15px;max-width:360px;width:100%;padding:22px 24px;box-shadow:0 18px 60px rgba(0,0,0,.25)";
+  box.innerHTML = `<div style="font-size:1.05rem;font-weight:750;color:var(--ink);margin-bottom:5px">Sign out?</div>
+    <div style="font-size:.86rem;color:var(--muted);line-height:1.55;margin-bottom:16px">You'll need your username and password to get back in. Your theme and tour progress are kept on this browser.</div>`;
+  const row = document.createElement("div");
+  row.style.cssText = "display:flex;gap:8px;justify-content:flex-end";
+  const cancel = document.createElement("button");
+  cancel.className = "btn ghost"; cancel.textContent = "Cancel"; cancel.onclick = ()=>wrap.remove();
+  const go = document.createElement("button");
+  go.className = "btn navy"; go.textContent = "Sign out"; go.onclick = doLogout;
+  row.appendChild(cancel); row.appendChild(go); box.appendChild(row); wrap.appendChild(box);
+  document.body.appendChild(wrap);
+  wrap.onclick = e=>{ if(e.target===wrap) wrap.remove(); };
+}
 function whoAmI(){ return sessionStorage.getItem("aip_user") || "Team"; }
 
 function showAlert(msg, title){
   const wrap = document.createElement("div");
   wrap.style.cssText = "position:fixed;inset:0;z-index:998;background:rgba(30,40,60,.45);display:flex;align-items:center;justify-content:center;padding:20px";
   wrap.innerHTML = `<div style="background:var(--white);border-radius:14px;max-width:460px;width:100%;padding:22px 24px;box-shadow:0 18px 60px rgba(0,0,0,.25)">
-    <div style="font-family:Georgia,serif;font-size:1.1rem;color:var(--ink);margin-bottom:8px">${title||"Notice"}</div>
+    <div style="font-family:'Inter',sans-serif;font-size:1.1rem;color:var(--ink);margin-bottom:8px">${title||"Notice"}</div>
     <div style="font-size:.9rem;white-space:pre-wrap;color:var(--ink)">${msg}</div>
     <div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn navy" id="alertOk">OK</button></div></div>`;
   document.body.appendChild(wrap);
@@ -614,7 +889,7 @@ function openScoreModal(title, current, onSave){
   const wrap = document.createElement("div");
   wrap.style.cssText = "position:fixed;inset:0;z-index:998;background:rgba(30,40,60,.45);display:flex;align-items:center;justify-content:center;padding:20px";
   wrap.innerHTML = `<div style="background:var(--white);border-radius:14px;max-width:420px;width:100%;padding:24px 26px;box-shadow:0 18px 60px rgba(0,0,0,.25)">
-    <div style="font-family:Georgia,serif;font-size:1.15rem;color:var(--ink);margin-bottom:4px">${title}</div>
+    <div style="font-family:'Inter',sans-serif;font-size:1.15rem;color:var(--ink);margin-bottom:4px">${title}</div>
     <div style="font-size:.82rem;color:var(--muted);margin-bottom:14px">This override is saved to the knowledge base and logged as feedback for the agents.</div>
     <div style="display:flex;align-items:center;gap:14px">
       <input id="scoreRange" type="range" min="0" max="1" step="0.01" value="${cur.toFixed(2)}" style="flex:1;accent-color:var(--gold)">
@@ -646,7 +921,7 @@ function openModal(title, placeholder, onSave){
   wrap.id = "aipModal";
   wrap.style.cssText = "position:fixed;inset:0;z-index:998;background:rgba(30,40,60,.45);display:flex;align-items:center;justify-content:center;padding:20px";
   wrap.innerHTML = `<div style="background:var(--white);border-radius:14px;max-width:560px;width:100%;padding:24px 26px;box-shadow:0 18px 60px rgba(0,0,0,.25)">
-    <div style="font-family:Georgia,serif;font-size:1.15rem;color:var(--ink);margin-bottom:10px">${title}</div>
+    <div style="font-family:'Inter',sans-serif;font-size:1.15rem;color:var(--ink);margin-bottom:10px">${title}</div>
     <textarea id="aipModalText" placeholder="${placeholder}" style="width:100%;min-height:120px;font:inherit;font-size:.9rem;padding:10px 12px;border:1px solid var(--line);border-radius:8px;resize:vertical"></textarea>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
       <button id="aipModalCancel" class="btn ghost">Cancel</button>
@@ -809,17 +1084,17 @@ function errNotice(e, what){
 function renderShell(){
   applySavedTheme();
   document.getElementById("engineSwitch").innerHTML = ENGINES.map(e=>`
-    <button class="${e.soon?'soon':''} ${state.engine===e.id?'active':''}" onclick="setEngine('${e.id}')">
-      <span>${e.name}</span><span class="tag">${e.tag}</span>
+    <button data-eng="${e.id}" class="${e.soon?'soon':''} ${state.engine===e.id?'active':''}" onclick="setEngine('${e.id}')">
+      <span><span class="ni">${e.id==='e1'?'◧':e.id==='e2'?'◇':'◈'}</span>${e.name}</span><span class="tag">${e.tag}</span>
     </button>`).join("");
   const nav = document.getElementById("nav");
   const label = document.getElementById("navLabel");
   if(state.engine==="e3"){
     label.textContent = "Engine 3 · Marketing Intelligence";
-    nav.innerHTML = E3_VIEWS.map(v=>`<button data-view-btn="${v.id}" class="${state.view===v.id?'active':''}" onclick="setView('${v.id}')"><span>${v.name}</span></button>`).join("");
+    nav.innerHTML = E3_VIEWS.map(v=>`<button data-view-btn="${v.id}" class="${state.view===v.id?'active':''}" onclick="setView('${v.id}')"><span><span class="ni">${({intel:'◍',ads:'◫',funnel:'◨',studio:'✎'})[v.id]||'•'}</span>${v.name}</span></button>`).join("");
   } else if(state.engine==="e1"){
     label.textContent = "Engine 1 · Client Service & Delivery";
-    nav.innerHTML = E1_VIEWS.map(v=>`<button class="${state.view===v.id || (v.id==='e1pipeline' && state.view==='e1lead')?'active':''}" onclick="setView('${v.id}')">${v.name}</button>`).join("");
+    nav.innerHTML = E1_VIEWS.map(v=>`<button class="${state.view===v.id || (v.id==='e1pipeline' && state.view==='e1lead')?'active':''}" onclick="setView('${v.id}')"><span><span class="ni">${({e1pipeline:'◧',e1leads:'☰'})[v.id]||'•'}</span>${v.name}</span></button>`).join("");
   } else if(state.engine==="home"){
     label.textContent = "Welcome";
     nav.innerHTML = "";
@@ -832,7 +1107,7 @@ function renderShell(){
   document.querySelectorAll('#wsNav [data-ws-btn]').forEach(b=>b.classList.toggle("active", state.view===b.dataset.wsBtn));
   const vt = document.getElementById("viewTabs");
   if(vt){
-    if(state.view==="tasks"||state.view==="notion"||state.view==="profile"||state.view==="ask"||state.view==="hubspot"||state.engine==="home"){ vt.innerHTML=""; }
+    if(state.view==="tasks"||state.view==="notion"||state.view==="profile"||state.view==="ask"||state.view==="hubspot"||state.view==="files"||state.engine==="home"){ vt.innerHTML=""; }
     else if(state.engine==="e3"){
       vt.innerHTML = E3_VIEWS.map(v=>`<button class="${state.view===v.id?'active':''}" onclick="setView('${v.id}')">${v.name}</button>`).join("");
     } else if(state.engine==="e1"){
@@ -865,9 +1140,11 @@ function render(){
   if(state.engine==="home" && state.view==="home"){ renderHome(); return; }
   if(state.view==="tasks"){ renderTasks(); return; }
   if(state.view==="notion"){ renderNotion(); return; }
-  askEnsureWidget();
+  askEnsureWidget(); paintSideUser(); closeNav(); fitSearchPlaceholder();
+  setTimeout(()=>{ try{ tourAutoStart(); }catch(e){} }, 0);
   if(state.view==="profile"){ renderProfile(); return; }
   if(state.view==="ask"){ state.view="home"; render(); askToggle(); return; }
+  if(state.view==="files"){ renderAllFiles(); return; }
   if(state.view==="hubspot"){ renderHubspot(); return; }
   if(state.engine==="e1"){
     ({e1overview:renderE1Overview, e1pipeline:renderE1Pipeline, e1lead:renderE1Lead})[state.view]();
@@ -1535,7 +1812,7 @@ function paintE1Rows(){
 }
 /* ---------- New run modal (full or custom with skipped stages) ---------- */
 function closeE1RunModal(){ document.getElementById("e1Run")?.remove(); document.getElementById("e1RunBg")?.remove(); }
-function openE1RunModal(){
+function openE1RunModal(prefill){
   closeE1RunModal(); closeE1Panel();
   const bg = document.createElement("div"); bg.id="e1RunBg"; bg.onclick=closeE1RunModal;
   const m = document.createElement("div"); m.id="e1Run";
@@ -1578,6 +1855,15 @@ function openE1RunModal(){
   const modeLbl = {full:"Full pipeline \u00b7 starts at Lead Research", interview_script:"Skip Research \u00b7 starts at Interview", anonymizer:"Skip Research + Interview \u00b7 starts at Anonymizer"};
   const updMode = ()=>{ const e=document.querySelector('input[name="e1entry"]:checked')?.value||"full"; const el=document.getElementById("rMode"); if(el) el.textContent = modeLbl[e]; };
   m.querySelectorAll('input[name="e1entry"]').forEach(r=>r.addEventListener("change", updMode)); updMode();
+  if(prefill && typeof prefill === "object"){
+    const set = (id, val) => { const el = document.getElementById(id); if(el && val) el.value = val; };
+    const site = prefill.website ? (/^https?:/.test(prefill.website) ? prefill.website : "https://" + prefill.website) : "";
+    set("rFirst", prefill.first_name); set("rLast", prefill.last_name); set("rTitle", prefill.job_title);
+    set("rCompany", prefill.company); set("rUrl", site);
+    set("rEmail", prefill.email); set("rPhone", prefill.phone);
+    const msg = document.getElementById("rMsg");
+    if(msg) msg.textContent = "Prefilled from HubSpot — fill any gaps, then start.";
+  }
   requestAnimationFrame(()=>m.classList.add("open"));
 }
 let _e1RunFileText = "";
@@ -1728,7 +2014,7 @@ async function renderE1Lead(){
   let files=[], filesErr=null;
   try{
     const emails = (lead.emails||[lead.email]).map(e=>'"'+e+'"').join(",");
-    files = await sb(`lead_files?select=*&lead_email=in.(${emails})&order=created_at.desc&limit=200`);
+    files = await sb(`lead_files?select=id,lead_email,file_name,file_url,file_path,stage,source,note,uploaded_by,indexed_at,created_at&lead_email=in.(${emails})&order=created_at.desc&limit=200`);
   }catch(e){ filesErr=e; }
   let hs=null, hsErr=null;
   try{
@@ -1750,8 +2036,6 @@ async function renderE1Lead(){
       ${fitPill(lead.fit_rating)}
     </div></div>
     ${err?errNotice(err,"agent_outputs"):""}
-    ${e1FilesSection(lead, outs, files, filesErr)}
-    ${e1HubspotSection(hs, hsErr)}
     ${E1_STAGES.map((s,i)=>{
       const st = e1StageState(lead, outs, s);
       const d = asObj(st.out?.data);
@@ -1769,16 +2053,82 @@ async function renderE1Lead(){
             ${d.callDate?`<span class="chip">call: ${esc(d.callDate)}</span>`:""}
           </div>
           ${hasMd?`<div class="e1brief" id="e1Brief${i}">
-            <div class="brief-wrap"><div class="brief-main" id="e1BriefBox${i}"><div class="brief">${marked.parse(st.out.content_md)}</div></div>
+            <div class="brief-wrap"><div class="brief-main" id="e1BriefBox${i}"><div class="brief">${marked.parse(e1MdClean(st.out.content_md))}</div></div>
             <div class="c-rail" id="e1Rail${i}"></div></div>
             <div style="margin-top:8px;color:var(--muted);font-size:.78rem">💬 Click any paragraph to comment on it — comments appear in the margin, same as Engine 3 briefs.</div>
           </div>`:
             `<div style="margin-top:10px;font-size:.78rem;color:var(--muted)">Inline view appears once the workflow saves this stage's text to the knowledge base — older runs only stored the document link.</div>`}
         </div>` : `<div class="empty" style="padding:22px">This stage hasn't produced output for this lead yet.</div>`}
       </section>`;
-    }).join("")}`;
+    }).join("")}
+    ${e1FilesSection(lead, outs, files, filesErr)}
+    ${e1HubspotSection(hs, hsErr)}`;
 }
 
+
+/* ================= ALL FILES (workspace) ================= */
+async function renderAllFiles(){
+  const main = document.getElementById("main");
+  main.innerHTML = `<div class="page-head"><div>
+      <div class="eyebrow">Workspace · Documents</div>
+      <h1 class="page">Files</h1>
+      <div class="page-sub">Every document across the pipeline — agent output, team uploads, and format guides.</div></div></div>
+    <div id="afBody"><div class="loading">Loading files…</div></div>`;
+  let lf=[], gf=[], outs=[], leads=[], err=null;
+  try{ lf = await sb("lead_files?select=id,lead_email,file_name,file_url,stage,source,note,uploaded_by,indexed_at,created_at&order=created_at.desc&limit=500"); }catch(e){ err=e; }
+  try{ gf = await sb("guide_files?select=id,engine,file_name,file_url,indexed_at,created_at&order=created_at.desc&limit=100"); }catch(e){}
+  try{ outs = await sb("agent_outputs?select=run_id,agent,title,data,created_at&order=created_at.desc&limit=400"); }catch(e){}
+  try{ leads = await sb("e1_leads?select=email,prospect_name,company_name&limit=800"); }catch(e){}
+  const nameOf = {}; leads.forEach(l=>{ nameOf[String(l.email||"").toLowerCase()] = l.prospect_name || l.company_name || l.email; });
+
+  const rows = [];
+  outs.forEach(o=>{
+    const d = asObj(o.data);
+    const who = nameOf[String(o.run_id||"").toLowerCase()] || o.run_id || "—";
+    if(d.pdfUrl)   rows.push({who, email:o.run_id, name:(o.title||o.agent)+" (PDF)", url:d.pdfUrl, stage:o.agent, kind:"agent", at:o.created_at});
+    if(d.documentId) rows.push({who, email:o.run_id, name:(o.title||o.agent)+" — Google Doc", url:`https://docs.google.com/document/d/${d.documentId}/edit`, stage:o.agent, kind:"agent", at:o.created_at});
+  });
+  lf.forEach(f=>rows.push({who: nameOf[String(f.lead_email||"").toLowerCase()] || f.lead_email, email:f.lead_email,
+    name:f.file_name, url:f.file_url, stage:f.stage||"manual", kind:"upload", note:f.note, by:f.uploaded_by, at:f.created_at, indexed:!!f.indexed_at}));
+  gf.forEach(f=>rows.push({who:"Format guide", email:"", name:f.file_name, url:f.file_url,
+    stage:({e1:"Engine 1",e3:"Engine 3",all:"Company-wide"})[f.engine]||f.engine, kind:"guide", at:f.created_at, indexed:!!f.indexed_at}));
+  window._afRows = rows;
+
+  document.getElementById("afBody").innerHTML = `${err?errNotice(err,"lead_files"):""}
+    <div class="card">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <b style="color:var(--navy)">All documents</b><span class="pill" id="afCount">${rows.length}</span>
+        <select id="afKind" onchange="afFilter()" style="min-width:130px">
+          <option value="">All sources</option><option value="agent">Agent output</option>
+          <option value="upload">Team uploads</option><option value="guide">Format guides</option>
+        </select>
+        <input type="search" id="afQ" placeholder="Search by person, company, or file name…" style="margin-left:auto;min-width:250px;flex:1" oninput="afFilter()">
+      </div>
+      <div id="afTable">${afRowsHtml(rows)}</div>
+    </div>`;
+}
+function afRowsHtml(rows){
+  if(!rows.length) return `<div style="font-size:.85rem;color:var(--muted);padding:12px 2px">No documents match that search.</div>`;
+  return rows.slice(0,300).map(f=>`<div class="out-row" style="cursor:default">
+      <span style="font-size:1rem">${f.kind==="guide"?"📐":e1FileIcon(f.name)}</span>
+      <span class="pill" style="flex-shrink:0">${esc(String(f.stage||"").replace(/_/g," "))}</span>
+      <a class="ot" style="text-decoration:none;color:var(--navy);font-weight:600" href="${esc(f.url)}" target="_blank" rel="noopener" title="${esc(f.name)}">${esc(f.name)}</a>
+      ${f.email?`<button class="chip" style="cursor:pointer;flex-shrink:0" onclick="openE1Lead('${esc(f.email)}')">${esc(f.who||f.email)} →</button>`
+               :`<span class="chip" style="flex-shrink:0">${esc(f.who||"")}</span>`}
+      <span class="chip" style="flex-shrink:0;opacity:.8">${f.kind}</span>
+      ${f.kind!=="agent"&&f.indexed?`<span class="chip" style="flex-shrink:0;background:var(--good-soft);color:var(--good);border-color:transparent">✦</span>`:""}
+      <span class="od">${fmtDate(f.at)}</span>
+    </div>`).join("");
+}
+function afFilter(){
+  const q = (document.getElementById("afQ").value||"").toLowerCase().trim();
+  const kind = document.getElementById("afKind").value;
+  const rows = (window._afRows||[]).filter(f=>
+    (!kind || f.kind===kind) &&
+    (!q || [f.name,f.who,f.email,f.stage,f.note].some(x=>String(x||"").toLowerCase().includes(q))));
+  document.getElementById("afTable").innerHTML = afRowsHtml(rows);
+  document.getElementById("afCount").textContent = rows.length;
+}
 
 /* ================= HUBSPOT CRM PAGE ================= */
 async function renderHubspot(){
@@ -1821,6 +2171,8 @@ function hsRowsHtml(rows){
       </div>
       ${c.lifecycle_stage?`<span class="pill">${esc(c.lifecycle_stage)}</span>`:""}
       ${c.lead_status?`<span class="chip">${esc(c.lead_status)}</span>`:""}
+      <button class="chip hs-cta" title="Start an Engine 1 client-delivery run for this contact" onclick="hsRunE1('${esc(c.email)}')">▶ Engine 1</button>
+      <button class="chip hs-cta" title="Add this company to the Engine 3 scrape watchlist" onclick="hsTrackE3('${esc(c.email)}')">◎ Engine 3</button>
       ${isLead?`<button class="chip" style="cursor:pointer" onclick="openE1Lead('${esc(c.email)}')">Open lead →</button>`:""}
     </div>`;
   }).join("");
@@ -1830,6 +2182,96 @@ function hsFilter(v){
   const rows = (window._hsRows||[]).filter(c=>
     !q || [c.first_name,c.last_name,c.email,c.company,c.job_title].some(x=>String(x||"").toLowerCase().includes(q)));
   const t = document.getElementById("hsTable"); if(t) t.innerHTML = hsRowsHtml(rows);
+}
+
+/* ---------- HubSpot row CTAs: send a contact into Engine 1 or Engine 3 ---------- */
+function hsFind(email){
+  const key = String(email||"").toLowerCase();
+  return (window._hsRows||[]).find(c => String(c.email||"").toLowerCase() === key) || {};
+}
+function hsRunE1(email){ openE1RunModal(hsFind(email)); }
+function hsTrackE3(email){ openE3TrackModal(hsFind(email)); }
+
+/* Pull a usable page identifier out of whatever the user pastes:
+   an Ad Library URL, a facebook.com page URL, or a raw id/slug. */
+function metaPageIdFrom(v){
+  const t = String(v||"").trim();
+  if(!t) return "";
+  const byParam = t.match(/[?&]view_all_page_id=(\d+)/) || t.match(/[?&]page_id=(\d+)/);
+  if(byParam) return byParam[1];
+  const byUrl = t.match(/facebook\.com\/(?:pg\/)?([^\/?#]+)/i);
+  if(byUrl && byUrl[1].toLowerCase() !== "ads") return byUrl[1];
+  return t;
+}
+function closeE3TrackModal(){ document.getElementById("e3Track")?.remove(); document.getElementById("e3TrackBg")?.remove(); }
+function openE3TrackModal(prefill){
+  closeE3TrackModal(); closeE1Panel();
+  const p = prefill || {};
+  const bg = document.createElement("div"); bg.id="e3TrackBg"; bg.onclick=closeE3TrackModal;
+  const m = document.createElement("div"); m.id="e3Track";
+  const fld = (label, id, ph, val, hint) => `<div class="e1p-field"><label>${label}</label>
+    <input id="${id}" type="text" placeholder="${esc(ph||"")}" value="${esc(val||"")}">
+    ${hint?`<div style="font-size:.7rem;color:var(--muted);margin-top:4px;line-height:1.45">${hint}</div>`:""}</div>`;
+  const site = p.website ? (/^https?:/.test(p.website) ? p.website : "https://" + p.website) : "";
+  const guess = p.company || [p.first_name, p.last_name].filter(Boolean).join(" ");
+  m.innerHTML = `
+    <div class="e1p-head"><div class="e1p-name">Track in Engine 3</div>
+      <button class="e1p-x" onclick="closeE3TrackModal()">✕</button></div>
+    <div class="e1p-body">
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:14px;line-height:1.5">
+        Adds this company to the <b>competitors</b> watchlist. Agent 1 scrapes their posts on its next daily run; Agent 2 pulls their Meta ads on the next weekly run. Each field below is a scrape target — whatever you leave blank simply is not scraped.</div>
+      <div class="e1p-sec">Who are we tracking?</div>
+      ${fld("Company / advertiser name","e3Name","e.g. Summit Ridge Wealth Advisors", guess)}
+      ${fld("Website","e3Site","https://…", site)}
+      <div class="e1p-sec" style="margin-top:14px">Scrape targets</div>
+      ${fld("Meta page — paste the Ad Library link","e3Meta","https://www.facebook.com/ads/library/?...view_all_page_id=123456789","",
+        'Open the <a href="https://www.facebook.com/ads/library" target="_blank" rel="noopener">Meta Ad Library ↗</a>, search the company, open their ads, then paste that URL here — the page ID gets extracted automatically. Leave blank if they run no Meta ads.')}
+      <div class="e1run-2col">${fld("X / Twitter handle","e3X","without the @")}${fld("LinkedIn","e3Li","company/acme or in/jane-doe")}</div>
+      <div class="e1p-field"><label>Priority</label>
+        <select id="e3Prio"><option value="high">high</option><option value="medium" selected>medium</option><option value="low">low</option></select></div>
+      <div class="e1p-field"><label>Why are we tracking them?</label>
+        <textarea id="e3Notes" rows="3" placeholder="e.g. Direct competitor in wealth-management AI — watch their offer angle">${esc(p.email ? ("Added from HubSpot contact " + p.email) : "")}</textarea></div>
+      <div class="e1p-savewrap" style="margin-top:12px">
+        <button class="btn navy" id="e3Go" onclick="submitE3Track()">Add to watchlist</button>
+        <span id="e3Msg" style="font-size:.75rem;color:var(--muted)"></span>
+      </div>
+    </div>`;
+  document.body.appendChild(bg); document.body.appendChild(m);
+  requestAnimationFrame(()=>m.classList.add("open"));
+}
+async function submitE3Track(){
+  const v = id => document.getElementById(id)?.value.trim() || "";
+  const btn = document.getElementById("e3Go"), msg = document.getElementById("e3Msg");
+  const name = v("e3Name");
+  if(!name){ msg.textContent = "A company name is required."; return; }
+  const meta = metaPageIdFrom(v("e3Meta"));
+  if(/^<.*>$/.test(meta) || /^page_id$/i.test(meta) || /_here$/i.test(meta)){
+    msg.textContent = "That is still a placeholder — paste the real Ad Library link, or leave it blank."; return;
+  }
+  const x  = v("e3X").replace(/^@/,"");
+  const li = v("e3Li").replace(/^https?:\/\/(www\.)?linkedin\.com\//i,"").replace(/\/+$/,"");
+  if(!meta && !x && !li){ msg.textContent = "Add at least one scrape target — Meta page, X handle, or LinkedIn."; return; }
+  btn.disabled = true; msg.textContent = "Adding…";
+  try{
+    const existing = await pFresh("competitors?select=name&limit=500");
+    if(existing.some(c => String(c.name||"").toLowerCase() === name.toLowerCase())){
+      btn.disabled = false; msg.textContent = name + " is already on the watchlist."; return;
+    }
+    await sbInsert("competitors", [{
+      name, handle_x: x || null, handle_linkedin: li || null, meta_page_id: meta || null,
+      category: "ads_strategist", priority: v("e3Prio") || "medium", notes: v("e3Notes") || null
+    }]);
+    delete cache["competitors?select=name&limit=500"];
+    closeE3TrackModal();
+    showAlert(name + " is on the Engine 3 watchlist. Agent 1 picks them up on its next daily run"
+      + (meta ? "; Agent 2 pulls their Meta ads on the next weekly run." : ". No Meta page ID was given, so no ads will be pulled for them."),
+      "Tracking started");
+  }catch(e){
+    btn.disabled = false;
+    msg.textContent = (e.status===401 || e.status===403)
+      ? "Supabase blocked the insert — the competitors table needs an anon insert policy."
+      : ("Could not add: " + (e.body || e.message || e));
+  }
 }
 
 /* ================= HUBSPOT CARD ================= */
@@ -1862,6 +2304,8 @@ const ASK_EXAMPLES = ["What files do we have for our newest lead, by stage?",
   "What pain points did the last growth plan mention?",
   "List approved competitors and why we track them"];
 
+document.addEventListener("DOMContentLoaded", ()=>{ try{ askEnsureWidget(); }catch(e){} });
+window.addEventListener("load", ()=>{ try{ askEnsureWidget(); }catch(e){} });
 function askEnsureWidget(){
   if(document.getElementById("askBubble")) return;
   const b = document.createElement("button");
@@ -1879,12 +2323,14 @@ function askToggle(){
   if(ex){ ex.remove(); document.getElementById("askBubble").textContent = "✦"; return; }
   const p = document.createElement("div");
   p.id = "askPanel";
-  p.style.cssText = "position:fixed;right:22px;bottom:86px;z-index:901;width:min(400px,calc(100vw - 32px));height:min(560px,calc(100vh - 120px));display:flex;flex-direction:column;background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 50px rgba(30,58,95,.25);overflow:hidden";
+  p.style.cssText = "position:fixed;right:22px;bottom:86px;z-index:901;display:flex;flex-direction:column;background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 50px rgba(30,58,95,.25);overflow:hidden;transition:width .18s,height .18s";
+  askApplySize(p);
   p.innerHTML = `
     <div style="background:var(--navy);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:9px">
       <span style="font-size:1.05rem">✦</span>
       <b style="font-size:.95rem;flex:1">Ask AI Paragon</b>
       <button onclick="askConfigToggle()" title="Webhook settings" style="all:unset;cursor:pointer;font-size:.95rem;opacity:.85">⚙</button>
+      <button id="askExpandBtn" onclick="askExpand()" title="Expand" style="all:unset;cursor:pointer;font-size:.95rem;opacity:.85">⤢</button>
       <button onclick="askToggle()" title="Close" style="all:unset;cursor:pointer;font-size:1rem;opacity:.85;padding:0 2px">✕</button>
     </div>
     <div id="askConfig" style="display:${kRead("webhook")?"none":"block"};padding:10px 14px;border-bottom:1px solid var(--line);background:var(--cream)">
@@ -1905,6 +2351,20 @@ function askToggle(){
   askPaint();
   const inp = document.getElementById("askInput"); if(inp) inp.focus();
 }
+function askIsBig(){ return localStorage.getItem("ask_big") === "1"; }
+function askApplySize(p){
+  p = p || document.getElementById("askPanel"); if(!p) return;
+  const big = askIsBig();
+  p.style.width  = big ? "min(880px, calc(100vw - 44px))" : "min(400px, calc(100vw - 32px))";
+  p.style.height = big ? "min(760px, calc(100vh - 120px))" : "min(560px, calc(100vh - 120px))";
+  const b = document.getElementById("askExpandBtn");
+  if(b){ b.textContent = big ? "⤡" : "⤢"; b.title = big ? "Shrink" : "Expand"; }
+}
+function askExpand(){
+  localStorage.setItem("ask_big", askIsBig() ? "0" : "1");
+  askApplySize();
+  askPaint();
+}
 function askConfigToggle(forceOpen){
   const c = document.getElementById("askConfig"); if(!c) return;
   c.style.display = (forceOpen || c.style.display==="none") ? "block" : "none";
@@ -1912,9 +2372,9 @@ function askConfigToggle(forceOpen){
 function askPaint(){
   const log = document.getElementById("askLog"); if(!log) return;
   log.innerHTML = window._askLog.map(m=>{
-    if(m.role==="user") return `<div style="align-self:flex-end;max-width:85%;background:var(--navy);color:#fff;border-radius:13px 13px 4px 13px;padding:9px 13px;font-size:.86rem">${esc(m.text)}</div>`;
+    if(m.role==="user") return `<div style="align-self:flex-end;max-width:${askIsBig()?"70%":"85%"};background:var(--navy);color:#fff;border-radius:13px 13px 4px 13px;padding:9px 13px;font-size:.86rem">${esc(m.text)}</div>`;
     if(m.role==="wait") return `<div style="align-self:flex-start;color:var(--muted);font-size:.82rem;padding:2px 2px">Thinking & querying…</div>`;
-    return `<div style="align-self:flex-start;max-width:92%;background:var(--cream);border:1px solid var(--line);border-radius:13px 13px 13px 4px;padding:10px 14px;font-size:.86rem;overflow-wrap:anywhere" class="brief">${m.err?`<span style="color:#a33">${esc(m.text)}</span>`:marked.parse(m.text)}</div>`;
+    return `<div style="align-self:flex-start;max-width:${askIsBig()?"80%":"92%"};background:var(--cream);border:1px solid var(--line);border-radius:13px 13px 13px 4px;padding:10px 14px;font-size:.86rem;overflow-wrap:anywhere" class="brief">${m.err?`<span style="color:#a33">${esc(m.text)}</span>`:marked.parse(m.text)}</div>`;
   }).join("");
   log.scrollTop = log.scrollHeight;
 }
@@ -1952,6 +2412,12 @@ async function askSend(){
 }
 
 /* ================= LEAD FILES ================= */
+function e1MdClean(s){
+  return String(s ?? "")
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")          /* literal backslash-n sequences from over-escaped agent output */
+    .replace(/^ *_{5,} *$/gm, "\n---\n");
+}
 function e1FileIcon(n){
   const x = String(n||"").toLowerCase();
   if(x.includes(".pdf")||x.includes("pdf")) return "📄";
@@ -1969,37 +2435,66 @@ function e1FilesSection(lead, outs, files, filesErr){
     if(!st.done) return;
     const d = asObj(st.out?.data);
     const base = st.out?.title || s.label;
-    if(st.url || d.pdfUrl) agentFiles.push({stage:s.agent, name: base + " (PDF)", url: st.url || d.pdfUrl});
-    if(d.documentId) agentFiles.push({stage:s.agent, name: base + " — Google Doc", url: `https://docs.google.com/document/d/${d.documentId}/edit`});
-    if(d.gammaDocUrl) agentFiles.push({stage:s.agent, name: "Gamma slide notes — Google Doc", url: d.gammaDocUrl});
+    const at = st.out?.created_at || null;
+    if(st.url || d.pdfUrl) agentFiles.push({stage:s.agent, name: base + " (PDF)", url: st.url || d.pdfUrl, at});
+    if(d.documentId) agentFiles.push({stage:s.agent, name: base + " — Google Doc", url: `https://docs.google.com/document/d/${d.documentId}/edit`, at});
+    if(d.gammaDocUrl) agentFiles.push({stage:s.agent, name: "Gamma slide notes — Google Doc", url: d.gammaDocUrl, at});
   });
   const order = a => a==="manual" ? 99 : E1_STAGES.findIndex(s=>s.agent===a);
   const rows = [
     ...agentFiles.map(f=>({...f, source:"agent"})),
-    ...(files||[]).map(f=>({stage:f.stage||"manual", name:f.file_name, url:f.file_url, source:"upload", id:f.id, path:f.file_path||"", note:f.note, by:f.uploaded_by, at:f.created_at}))
+    ...(files||[]).map(f=>({stage:f.stage||"manual", name:f.file_name, url:f.file_url, source:"upload", id:f.id, path:f.file_path||"", note:f.note, by:f.uploaded_by, at:f.created_at, indexed:!!f.indexed_at}))
   ].sort((a,b)=>order(a.stage)-order(b.stage));
+  const groups = [];
+  rows.forEach(f=>{ let g = groups.find(x=>x.stage===f.stage); if(!g){ g = {stage:f.stage, rows:[]}; groups.push(g); } g.rows.push(f); });
+  const rowHtml = f => `
+        <div class="out-row" style="cursor:default" data-frow data-fsearch="${esc((f.name+" "+stageName(f.stage)+" "+(f.note||"")+" "+(f.by||"")).toLowerCase())}">
+          <span style="font-size:1rem">${e1FileIcon(f.name)}</span>
+          <a class="ot" style="text-decoration:none;color:var(--navy);font-weight:600" href="${esc(f.url)}" target="_blank" rel="noopener" title="${esc(f.name)}">${esc(f.name)}</a>
+          ${f.note?`<span style="color:var(--muted);font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px" title="${esc(f.note)}">${esc(f.note)}</span>`:""}
+          <span class="chip" style="flex-shrink:0;opacity:.85">${f.source==="agent"?"agent":"upload"+(f.by?" · "+esc(f.by):"")}</span>
+          ${f.source==="upload"
+            ? (f.indexed
+                ? `<span class="chip" style="flex-shrink:0;background:var(--good-soft);color:var(--good);border-color:transparent" title="Text extracted — the Ask bot can read this">✦ searchable</span><button class="btn ghost" style="padding:4px 9px;font-size:.7rem;flex-shrink:0" title="Extract the text again (use if the Ask bot says the content is empty)" onclick="e1IndexFile('${f.id}','${esc(f.url)}','${esc(f.name)}',this)">Re-index</button>`
+                : `<button class="btn ghost" style="padding:4px 9px;font-size:.7rem;flex-shrink:0" title="Extract the text so the Ask bot can read this document" onclick="e1IndexFile('${f.id}','${esc(f.url)}','${esc(f.name)}',this)">Index</button>`)
+            : ""}
+          ${f.at?`<span class="od" title="${f.source==="agent"?"Generated":"Uploaded"} ${esc(fmtDateTime(f.at))}">${f.source==="agent"?"generated":"uploaded"} ${fmtDate(f.at)}</span>`:""}
+          ${f.source==="upload"?`<button class="btn ghost" style="padding:4px 9px;font-size:.7rem" title="Delete file" onclick="e1DeleteFile('${f.id}','${esc(f.path)}',this)">✕</button>`:""}
+        </div>`;
   const stageOpts = E1_STAGES.map(s=>`<option value="${s.agent}">${s.short}</option>`).join("") + `<option value="manual" selected>General / manual</option>`;
   return `<section class="block"><h2>Files <span class="count">${rows.length}</span></h2>
     <div class="card">
       ${filesErr?`<div class="notice" style="margin-bottom:10px"><b>Uploads need one-time setup.</b> Agent documents still show below — run the lead-files SQL in Supabase to enable uploads.</div>`:""}
-      ${rows.length?rows.map(f=>`
-        <div class="out-row" style="cursor:default">
-          <span style="font-size:1rem">${e1FileIcon(f.name)}</span>
-          <span class="pill" style="flex-shrink:0">${esc(stageName(f.stage))}</span>
-          <a class="ot" style="text-decoration:none;color:var(--navy);font-weight:600" href="${esc(f.url)}" target="_blank" rel="noopener" title="${esc(f.name)}">${esc(f.name)}</a>
-          ${f.note?`<span style="color:var(--muted);font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px" title="${esc(f.note)}">${esc(f.note)}</span>`:""}
-          <span class="chip" style="flex-shrink:0;opacity:.85">${f.source==="agent"?"agent":"upload"+(f.by?" · "+esc(f.by):"")}</span>
-          ${f.at?`<span class="od">${fmtDate(f.at)}</span>`:""}
-          ${f.source==="upload"?`<button class="btn ghost" style="padding:4px 9px;font-size:.7rem" title="Delete file" onclick="e1DeleteFile('${f.id}','${esc(f.path)}',this)">✕</button>`:""}
+      ${rows.length?`<input type="text" id="e1FileSearch" placeholder="Search files by name or category…" oninput="e1FilterFiles(this.value)" style="font:inherit;font-size:.82rem;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--white);width:100%;max-width:340px;margin-bottom:12px">`:""}
+      ${rows.length?groups.map(g=>`
+        <div data-fgroup>
+          <div style="font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:10px 0 4px;display:flex;align-items:center;gap:7px">📁 ${esc(stageName(g.stage))} <span style="font-weight:600;opacity:.7">${g.rows.length}</span></div>
+          ${g.rows.map(rowHtml).join("")}
         </div>`).join(""):`<div style="font-size:.85rem;color:var(--muted);padding:6px 0 12px">No files yet for this lead.</div>`}
+      <div id="e1FileNoHits" style="display:none;font-size:.85rem;color:var(--muted);padding:6px 0 4px">No files match that search.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
         <input type="file" id="e1FileInput" style="font-size:.8rem;max-width:230px">
         <select id="e1FileStage">${stageOpts}</select>
         <input type="text" id="e1FileNote" placeholder="Note (optional)" style="font:inherit;font-size:.82rem;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--white);flex:1;min-width:140px">
         <button class="btn navy" onclick="e1UploadFile(this)">Upload</button>
       </div>
-      <div style="font-size:.74rem;color:var(--muted);margin-top:8px">Agent rows come straight from the pipeline output. Uploads land in the shared knowledge base — use them for anything you'd otherwise chase across email or Drive, including docs for skipped stages.</div>
+      <div style="font-size:.74rem;color:var(--muted);margin-top:8px">Agent rows come straight from the pipeline output. Uploads land in the shared knowledge base — use them for anything you'd otherwise chase across email or Drive, including docs for skipped stages. Uploads are text-indexed automatically so the ✦ Ask bot can read them; PDFs, Word (.docx), and plain-text formats are supported. If the Ask bot says a document's content is empty, press Re-index on that file.</div>
     </div></section>`;
+}
+function e1FilterFiles(q){
+  q = String(q||"").trim().toLowerCase();
+  let hits = 0;
+  document.querySelectorAll("[data-frow]").forEach(r=>{
+    const show = !q || (r.getAttribute("data-fsearch")||"").includes(q);
+    r.style.display = show ? "" : "none";
+    if(show) hits++;
+  });
+  document.querySelectorAll("[data-fgroup]").forEach(g=>{
+    const any = Array.from(g.querySelectorAll("[data-frow]")).some(r=>r.style.display!=="none");
+    g.style.display = any ? "" : "none";
+  });
+  const none = document.getElementById("e1FileNoHits");
+  if(none) none.style.display = hits ? "none" : "";
 }
 async function e1UploadFile(btn){
   const inp = document.getElementById("e1FileInput");
@@ -2021,19 +2516,89 @@ async function e1UploadFile(btn){
         ? "The lead-files storage bucket doesn't exist yet — run the setup SQL."
         : "Storage upload failed ("+res.status+"). "+t.slice(0,140)), {status:res.status});
     }
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/lead-files/${path}`;
     await sbPost("lead_files", {
       lead_email: email, file_name: file.name,
-      file_url: `${SUPABASE_URL}/storage/v1/object/public/lead-files/${path}`,
+      file_url: publicUrl,
       file_path: path,
       stage: document.getElementById("e1FileStage").value,
       note: (document.getElementById("e1FileNote").value||"").trim() || null,
       source: "upload", uploaded_by: whoAmI()
     });
     Object.keys(cache).forEach(k=>{ if(k.startsWith("lead_files")) delete cache[k]; });
+    btn.textContent = "Indexing…";
+    try{
+      const created = await sb(`lead_files?select=id&file_path=eq.${encodeURIComponent(path)}&limit=1`);
+      if(created && created[0]){
+        if(isDocx(file.name)){
+          const text = await docxToText(await file.arrayBuffer());
+          await e1SaveFileText(created[0].id, text);
+        } else {
+          await e1IngestFile(created[0].id, publicUrl, file.name);
+        }
+      }
+    }catch(e){ /* indexing is best-effort — the file is already saved */ }
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("lead_files")) delete cache[k]; });
     renderE1Lead();
   }catch(e){
     btn.disabled = false; btn.textContent = "Upload";
     showAlert(e.message||String(e), "Upload failed");
+  }
+}
+/* ---- client-side DOCX text extraction (mammoth) ---- */
+function loadMammoth(){
+  if(window.mammoth) return Promise.resolve();
+  if(window._mammothP) return window._mammothP;
+  window._mammothP = new Promise((res,rej)=>{
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js";
+    s.onload = ()=>res(); s.onerror = ()=>rej(new Error("Couldn't load the .docx reader (network blocked?)"));
+    document.head.appendChild(s);
+  });
+  return window._mammothP;
+}
+function isDocx(name){ return /\.docx$/i.test(String(name||"")); }
+async function docxToText(arrayBuffer){
+  await loadMammoth();
+  const out = await window.mammoth.extractRawText({ arrayBuffer });
+  return String(out && out.value || "").trim();
+}
+async function e1SaveFileText(fileId, text, table){
+  await sbPatch(`${table||"lead_files"}?id=eq.${encodeURIComponent(fileId)}`,
+    { file_text: text || null, indexed_at: text ? new Date().toISOString() : null });
+}
+function ingestHook(){
+  return localStorage.getItem("ask_ingest") || "https://n8n.aiparagonconsulting.com/webhook/file-ingest";
+}
+async function e1IngestFile(fileId, fileUrl, fileName, table){
+  if(isDocx(fileName)){
+    const fr = await fetch(fileUrl);
+    if(!fr.ok) throw new Error("Couldn't download the file for extraction ("+fr.status+")");
+    const text = await docxToText(await fr.arrayBuffer());
+    await e1SaveFileText(fileId, text, table);
+    return { extracted: !!text, chars: text.length };
+  }
+  const res = await fetch(ingestHook(), {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileId, fileUrl, fileName, table: table || "lead_files" })
+  });
+  const raw = await res.text();
+  if(!res.ok) throw new Error("Indexer returned " + res.status + " — is the Lead File Text Ingest workflow active? " + raw.slice(0,140));
+  let out = {}; try{ out = JSON.parse(raw); }catch(e){}
+  return out;
+}
+async function e1IndexFile(fileId, fileUrl, fileName, btn){
+  btn.disabled = true; btn.textContent = "Indexing…";
+  try{
+    const out = await e1IngestFile(fileId, fileUrl, fileName);
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("lead_files")) delete cache[k]; });
+    if(out && out.extracted === false){
+      showAlert("No readable text found in this file. PDFs, Word (.docx), txt, csv, md, and html work; scanned images need OCR or a PDF export first.", "Nothing to index");
+    }
+    renderE1Lead();
+  }catch(e){
+    btn.disabled = false; btn.textContent = "Index";
+    showAlert(e.message||String(e), "Indexing failed");
   }
 }
 async function e1DeleteFile(id, path, btn){
@@ -2464,7 +3029,7 @@ function toggleNotif(){
     const v = viewOfTargetKey(c.target_key||"");
     items.push(`<div class="notif-item" onclick="notifGo('${v}')"><span style="font-size:1rem">💬</span><div><b>${esc(c.author||"Team")}</b> ${c.parent_id?"replied":"commented"}: ${esc(String(c.body||"").slice(0,70))}${String(c.body||"").length>70?"…":""}<div class="nt">${v.startsWith("e1:")?"Engine 1 · "+esc(v.slice(3)):v==="ads"?"Ad Strategist":v==="funnel"?"Low-Ticket Agent":"Intel Tracker"} · ${fmtDateTime(c.created_at)}</div></div></div>`);
   }
-  p.innerHTML = `<div style="display:flex;align-items:center;margin-bottom:10px"><b style="font-family:Georgia,serif">Notifications</b>
+  p.innerHTML = `<div style="display:flex;align-items:center;margin-bottom:10px"><b style="font-family:'Inter',sans-serif">Notifications</b>
     <a style="margin-left:auto;font-size:.76rem;color:var(--navy);cursor:pointer;font-weight:650" onclick="markAllRead()">Mark all read</a></div>
     ${items.length ? items.join("") : `<div style="color:var(--muted);font-size:.85rem;padding:8px 0">You're all caught up 🎉</div>`}`;
   document.body.appendChild(p);
@@ -2698,9 +3263,12 @@ const P_FIELDS = [
   ["contact_name","Contact name",false],
   ["website","Website",false],
   ["industry","Industry",false],
+  ["company_size","Company size",false],
+  ["primary_goal","Primary goal right now",false],
   ["description","What the business does",true],
   ["services","Services / offers",true],
-  ["target_market","Target market",true]
+  ["target_market","Target market",true],
+  ["brand_voice","Brand voice / tone notes",true]
 ];
 
 function pSetupSql(){
@@ -2755,6 +3323,8 @@ async function renderProfile(){
   let profile=null, comps=null, pErr=null, cErr=null;
   try{ const r = await pFresh("company_profile?select=*&order=id.asc&limit=1"); profile = r[0]||{}; }catch(e){ pErr=e; }
   try{ comps = await pFresh("competitors?select=*&order=created_at.desc&limit=300"); }catch(e){ cErr=e; }
+  let guides=[];
+  try{ guides = await pFresh("guide_files?select=id,engine,file_name,file_url,file_path,uploaded_by,indexed_at,created_at&order=created_at.desc&limit=50"); }catch(e){ guides=[]; }
   if(pErr || cErr){
     document.getElementById("pBody").innerHTML =
       (pErr?errNotice(pErr,"company_profile"):"") + (cErr?errNotice(cErr,"competitors"):"") + pSetupSql();
@@ -2791,6 +3361,8 @@ async function renderProfile(){
     <div id="pMsg"></div>
   </div>
 
+  ${pGuidesPanel(guides)}
+
   <div class="panel" style="margin-bottom:18px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
       <b style="color:var(--navy)">AI-suggested competitors ${sug.length?`<span class="pill">${sug.length} to review</span>`:""}</b>
@@ -2818,10 +3390,83 @@ async function renderProfile(){
       <button class="btn ghost" onclick="pCompSet('${c.id}','approved',this)">Re-approve</button></div>`).join("")}</div></details>`:""}`;
 }
 
+const GUIDE_ENGINES = [["e1","Engine 1 · Client Delivery"],["e3","Engine 3 · Marketing Intelligence"],["all","Company-wide"]];
+function pGuidesPanel(guides){
+  return `<div class="panel" style="margin-bottom:18px">
+    <b style="color:var(--navy)">Output format guides</b>
+    <div style="font-size:.78rem;color:#8a8374;margin:4px 0 12px">Reference documents that show the agents how you want deliverables to look. Their text is extracted so agents and the Ask bot can read them.</div>
+    ${GUIDE_ENGINES.map(([eng,label])=>{
+      const mine = (guides||[]).filter(g=>g.engine===eng);
+      return `<div style="margin-bottom:12px">
+        <div style="font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#8a8374;margin-bottom:5px">${label}</div>
+        ${mine.map(g=>`<div class="out-row" style="cursor:default">
+          <span style="font-size:1rem">📄</span>
+          <a class="ot" style="text-decoration:none;color:var(--navy);font-weight:600" href="${esc(g.file_url)}" target="_blank" rel="noopener">${esc(g.file_name)}</a>
+          ${g.indexed_at?`<span class="chip" style="background:var(--good-soft);color:var(--good);border-color:transparent;flex-shrink:0">✦ readable</span>`:`<button class="btn ghost" style="padding:4px 9px;font-size:.7rem" onclick="pIndexGuide('${g.id}','${esc(g.file_url)}','${esc(g.file_name)}',this)">Index</button>`}
+          <button class="btn ghost" style="padding:4px 9px;font-size:.7rem" onclick="pDeleteGuide('${g.id}','${esc(g.file_path||"")}',this)">✕</button>
+        </div>`).join("")}
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+          <input type="file" id="gf_${eng}" accept=".pdf,.txt,.md,.csv,.html,.json" style="font-size:.78rem;max-width:230px">
+          <button class="btn ghost" style="padding:5px 11px;font-size:.74rem" onclick="pUploadGuide('${eng}',this)">Upload</button>
+        </div>
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+async function pUploadGuide(engine, btn){
+  const inp = document.getElementById("gf_"+engine);
+  const file = inp && inp.files && inp.files[0];
+  if(!file){ showAlert("Choose a document first.","No file"); return; }
+  if(file.size > 15*1024*1024){ showAlert("Keep guide documents under 15 MB.","Too large"); return; }
+  btn.disabled = true; btn.textContent = "Uploading…";
+  try{
+    const path = `${engine}/${Date.now()}-${file.name.replace(/[^\w.\-]+/g,"_")}`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/guide-files/${path}`, {
+      method:"POST", headers:{ apikey: SUPABASE_ANON_KEY, Authorization:`Bearer ${SUPABASE_ANON_KEY}`, "x-upsert":"true" }, body: file });
+    if(!res.ok) throw new Error(res.status===404 ? "The guide-files storage bucket doesn't exist yet — run the setup SQL." : "Upload failed ("+res.status+")");
+    const url = `${SUPABASE_URL}/storage/v1/object/public/guide-files/${path}`;
+    const created = await sbPost("guide_files", { engine, file_name:file.name, file_url:url, file_path:path, uploaded_by:whoAmI() });
+    const row = Array.isArray(created)?created[0]:created;
+    btn.textContent = "Indexing…";
+    if(row && row.id) await e1IngestFile(row.id, url, file.name, "guide_files").catch(()=>{});
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("guide_files")) delete cache[k]; });
+    renderProfile();
+  }catch(e){ btn.disabled=false; btn.textContent="Upload"; showAlert(e.message||String(e),"Upload failed"); }
+}
+async function pIndexGuide(id, url, name, btn){
+  btn.disabled = true; btn.textContent = "Indexing…";
+  try{
+    await e1IngestFile(id, url, name, "guide_files");
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("guide_files")) delete cache[k]; });
+    renderProfile();
+  }catch(e){ btn.disabled=false; btn.textContent="Index"; showAlert(e.message||String(e),"Indexing failed"); }
+}
+async function pDeleteGuide(id, path, btn){
+  btn.disabled = true;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/guide_files?id=eq.${encodeURIComponent(id)}`, {
+      method:"DELETE", headers:{ apikey: SUPABASE_ANON_KEY, Authorization:`Bearer ${SUPABASE_ANON_KEY}` } });
+    if(!res.ok) throw new Error("Delete blocked ("+res.status+") — add the guide_files delete policy.");
+    if(path) await fetch(`${SUPABASE_URL}/storage/v1/object/guide-files/${path}`, {
+      method:"DELETE", headers:{ apikey: SUPABASE_ANON_KEY, Authorization:`Bearer ${SUPABASE_ANON_KEY}` } }).catch(()=>{});
+    Object.keys(cache).forEach(k=>{ if(k.startsWith("guide_files")) delete cache[k]; });
+    renderProfile();
+  }catch(e){ btn.disabled=false; showAlert(e.message||String(e),"Delete failed"); }
+}
 function pVal(k){ const el = document.getElementById("pf_"+k); return el ? el.value.trim() : ""; }
 function pMsg(t){ const el = document.getElementById("pMsg"); if(!el) return;
   el.innerHTML = `<div style="font-size:.82rem;color:#2A6B3C;margin-top:10px">${esc(t)}</div>`;
   setTimeout(()=>{ if(el) el.innerHTML=""; }, 4000); }
+function sbErrText(e){
+  if(!e) return "Unknown error";
+  let detail = "";
+  try{
+    const b = JSON.parse(e.body||"{}");
+    detail = [b.message, b.details, b.hint].filter(Boolean).join(" — ");
+  }catch(_){ detail = (e.body||"").slice(0,200); }
+  const code = e.status ? `HTTP ${e.status}` : "";
+  return [detail, code].filter(Boolean).join(" · ") || (e.message||String(e));
+}
 function pDbHint(e){
   if(e && e.status===404) return "The table doesn't exist yet — run the setup SQL shown on this page after a refresh.";
   if(e && (e.status===401||e.status===403||(e.body||"").includes("row-level security")||(e.body||"").includes("permission")))
@@ -2852,12 +3497,21 @@ async function pCallEnrich(payload){
 
 async function pInsertSuggestions(list, existingNames){
   const names = new Set(existingNames.map(n=>String(n||"").toLowerCase()));
-  let added = 0;
+  let added = 0, firstErr = null;
   for(const c of (list||[])){
     if(!c || !c.name || names.has(String(c.name).toLowerCase())) continue;
-    await sbPost("competitors", { name:c.name, website:c.website||null, notes:c.reason||"", status:"suggested", source:"ai", added_by: whoAmI() });
+    const full = { name:c.name, website:c.website||null, notes:c.reason||"", status:"suggested", source:"ai", added_by: whoAmI() };
+    try{
+      await sbPost("competitors", full);
+    }catch(e1){
+      // older competitors tables may not have source/added_by — retry with the core columns only
+      try{
+        await sbPost("competitors", { name:c.name, website:c.website||null, notes:c.reason||"", status:"suggested" });
+      }catch(e2){ if(!firstErr) firstErr = e2; continue; }
+    }
     names.add(String(c.name).toLowerCase()); added++;
   }
+  if(!added && firstErr) throw firstErr;
   return added;
 }
 
@@ -2881,7 +3535,7 @@ async function pAnalyze(){
     await pInsertSuggestions(out.competitors, existing);
     renderProfile();
   }catch(e){
-    showAlert(e.message||String(e), "Analyze failed");
+    showAlert(sbErrText(e), "Analyze failed");
     btn.disabled = false; btn.textContent = "✦ Analyze website";
   }
 }
@@ -2898,7 +3552,7 @@ async function pRecommend(){
     if(!added) showAlert("No new competitors found beyond what's already listed.","Nothing new");
     renderProfile();
   }catch(e){
-    showAlert(e.message||String(e), "Suggestion failed");
+    showAlert(sbErrText(e), "Suggestion failed");
     btn.disabled = false; btn.textContent = "✦ Suggest more";
   }
 }
@@ -3247,7 +3901,7 @@ function funnelAssetPreview(title){
     const qs = p.survey.questions;
     const inner = `
       <div style="background:var(--navy);color:#fff;padding:16px 20px">
-        <div style="font-family:Georgia,serif;font-size:1.05rem">Quick fit check</div>
+        <div style="font-family:'Inter',sans-serif;font-size:1.05rem">Quick fit check</div>
         <div style="font-size:.78rem;opacity:.8">Takes 3–5 minutes · ${qs.length} questions</div>
         <div style="height:6px;border-radius:99px;background:rgba(255,255,255,.25);margin-top:10px"><div style="height:6px;border-radius:99px;width:30%;background:var(--gold)"></div></div>
       </div>
@@ -3273,7 +3927,7 @@ function funnelAssetPreview(title){
     const inner = `
       <div style="background:var(--navy);color:#fff;padding:26px 22px;text-align:center">
         <img src="https://www.aiparagonconsulting.com/logo.png" style="width:34px;height:34px;object-fit:contain;margin-bottom:10px" onerror="this.remove()">
-        <div style="font-family:Georgia,serif;font-size:1.25rem;line-height:1.3">${esc(L.headline||"")}</div>
+        <div style="font-family:'Inter',sans-serif;font-size:1.25rem;line-height:1.3">${esc(L.headline||"")}</div>
         ${L.subheadline?`<div style="font-size:.84rem;opacity:.85;margin-top:8px;line-height:1.5">${esc(L.subheadline)}</div>`:""}
         <button class="btn" style="background:var(--gold);color:var(--navy);font-weight:700;border:none;margin-top:14px;padding:10px 22px;border-radius:8px">${esc(L.cta||"Book your free 20-minute diagnostic")}</button>
         ${L.vsl_state==="ai_vsl_placeholder"||L.vsl_state==="image_led"?`<div style="font-size:.68rem;opacity:.6;margin-top:8px">${L.vsl_state==="image_led"?"image-led (VSL added after validation)":"AI VSL placeholder"}</div>`:""}
@@ -3292,7 +3946,7 @@ function funnelAssetPreview(title){
     const slots = ["9:00","9:30","10:00","11:30","1:00","2:30"];
     const inner = `
       <div style="padding:22px 22px 6px;text-align:center">
-        <div style="font-family:Georgia,serif;font-size:1.15rem">${esc(B.headline)}</div>
+        <div style="font-family:'Inter',sans-serif;font-size:1.15rem">${esc(B.headline)}</div>
         ${B.reassurance_subhead?`<div style="font-size:.82rem;color:var(--muted);margin-top:6px;line-height:1.5">${esc(B.reassurance_subhead)}</div>`:""}
       </div>
       <div style="display:flex;gap:14px;padding:14px 20px">
@@ -3566,18 +4220,14 @@ async function renderHome(){
   const me = whoAmI();
   const hour = new Date().getHours();
   const greet = hour<12?"Good morning":hour<18?"Good afternoon":"Good evening";
+  const dstr = new Date().toLocaleDateString(undefined,{weekday:"short",month:"long",day:"numeric"});
   main.innerHTML = `
-    <div style="background:linear-gradient(135deg, var(--navy) 0%, #16294a 100%);border-radius:18px;padding:34px 36px;color:#fff;margin-bottom:26px;position:relative;overflow:hidden">
-      <div style="position:absolute;right:-30px;top:-30px;width:220px;height:220px;border-radius:99px;background:radial-gradient(circle, rgba(201,168,76,.25), transparent 70%)"></div>
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px">
-        <img src="https://www.aiparagonconsulting.com/logo.png" style="width:44px;height:44px;object-fit:contain" onerror="this.remove()">
-        <div>
-          <div class="hero-title">AI <span style="color:var(--gold)">Paragon</span> Consulting Group</div>
-          <div style="font-size:.88rem;opacity:.8"><a href="https://www.aiparagonconsulting.com" target="_blank" rel="noopener" style="color:inherit">aiparagonconsulting.com</a> · Intelligence & Delivery Dashboard</div>
-        </div>
-      </div>
-      <div class="hero-blurb">${greet}, ${esc(me)}. AI-automation consulting for financial services and professional services firms — mapping where AI reclaims capacity across sales pipeline, research & analysis, and client operations, then building the production systems that deliver it.</div>
-      <div class="statline" id="homeStats" style="margin-top:16px"><span class="chip" style="background:rgba(255,255,255,.12);border-color:transparent;color:#fff">Loading live stats…</span></div>
+    <div class="greet">
+      <div class="g-date">${dstr}</div>
+      <div class="g-hi">${greet}, ${esc(me.split(/[\s@._-]+/)[0]||me)}</div>
+      <div class="g-q">How can I help you today?</div>
+      <div class="g-sub">AI-automation consulting for financial services and professional services firms — mapping where AI reclaims capacity, then building the systems that deliver it.</div>
+      <div class="statline" id="homeStats" style="margin-top:16px"><span class="chip">Loading live stats…</span></div>
     </div>
     <div class="grid cols3" id="homeEngines"></div>
     <div id="homeInsights" style="margin-top:24px"></div>
@@ -3595,18 +4245,18 @@ async function renderHome(){
   const pendVar = sig.pendingVariants || 0;
 
   const st = document.getElementById("homeStats");
-  const hchip = (label, val) => `<span class="chip hero-chip" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.25);color:#fff !important">${label}: <b style="color:var(--gold)">${val}</b></span>`;
+  const hchip = (label, val) => `<span class="chip">${label}: <b style="color:var(--navy)">${val}</b></span>`;
   if(st) st.innerHTML = [
     hchip("agents live","3"),
     hchip("runs recorded", `${runs.length}${runs.length>=30?"+":""}`),
     hchip("client leads", leads.length),
-    (pend+pendVar)?`<span class="chip hero-chip" onclick="state.engine='e3';setView('${pend?"intel":"funnel"}')" style="background:var(--gold);border-color:transparent;color:var(--navy) !important;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px;line-height:1">⚡ ${pend+pendVar} item${pend+pendVar===1?"":"s"} need review <b style="color:var(--navy)">→</b></span>`:hchip("pending","none ✓")
+    (pend+pendVar)?`<span class="chip hero-chip" onclick="state.engine='e3';setView('${pend?"intel":"funnel"}')" style="background:var(--gold-soft);border-color:transparent;color:#7A5E12 !important;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px;line-height:1">⚡ ${pend+pendVar} item${pend+pendVar===1?"":"s"} need review <b style="color:#7A5E12">→</b></span>`:hchip("pending","none ✓")
   ].join("");
 
   const engCard = (title, tag, desc, stats, cta, onclick, live) => `
     <div class="card" style="display:flex;flex-direction:column">
-      <div class="agent-kind">${tag}</div>
-      <h3>${title}</h3>
+      <div class="agent-kind" style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:3px;background:${live?"var(--navy)":"var(--line)"};display:inline-block"></span>${tag}</div>
+      <h3 style="font-weight:800;letter-spacing:-.015em">${title}</h3>
       <div style="font-size:.85rem;color:var(--muted);line-height:1.5;margin:6px 0 10px">${desc}</div>
       <div class="statline" style="margin-bottom:12px">${stats}</div>
       <div style="margin-top:auto">${live?`<button class="btn eng-cta" onclick="${onclick}"><span>${cta.replace(" →","")}</span><span class="arr">→</span></button>`:`<span class="pill medium">coming soon</span>`}</div>
@@ -3633,8 +4283,36 @@ async function renderHome(){
     : `state.engine='e3';setView('${o.agent==="ad_strategist"?"ads":o.agent==="low_ticket_content"?"funnel":"intel"}')`;
   const outIcon = o => (o.agent||"").includes("growth")?"📈":(o.agent||"").includes("discovery")?"🎯":o.agent==="ad_strategist"?"📣":o.agent==="low_ticket_content"?"🖼️":"🗂️";
   const need = [];
-  if(pend) need.push({icon:"📝", html:`<b>${pend} engagement draft${pend===1?"":"s"}</b> awaiting approval`, sub:"Engine 3 · Intel Tracker", go:"state.engine='e3';setView('intel')"});
-  if(pendVar) need.push({icon:"🖼️", html:`<b>${pendVar} ad variant${pendVar===1?"":"s"}</b> awaiting approve/deny`, sub:"Engine 3 · Low-Ticket Agent", go:"state.engine='e3';setView('funnel')"});
+  if(pend) need.push({icon:"📝", pri:"High", html:`<b>${pend} engagement draft${pend===1?"":"s"}</b> awaiting approval`, sub:"Engine 3 · Intel Tracker", go:"state.engine='e3';setView('intel')"});
+  if(pendVar) need.push({icon:"🖼️", pri:"High", html:`<b>${pendVar} ad variant${pendVar===1?"":"s"}</b> awaiting approve/deny`, sub:"Engine 3 · Low-Ticket Agent", go:"state.engine='e3';setView('funnel')"});
+
+  /* extra signals — each best-effort so one missing table never blanks the card */
+  let compPending=0, unindexed=0, guideCount=0, hsSynced=null, fullLeads=[];
+  try{ compPending = (await sb("competitors?select=id&status=eq.suggested&limit=200")).length; }catch(e){}
+  try{ unindexed = (await sb("lead_files?select=id&source=eq.upload&indexed_at=is.null&limit=200")).length; }catch(e){}
+  try{ guideCount = (await sb("guide_files?select=id&limit=50")).length; }catch(e){}
+  try{ const h = await sb("hubspot_contacts?select=synced_at&order=synced_at.desc&limit=1"); hsSynced = h[0]?.synced_at||null; }catch(e){}
+  try{ fullLeads = await sb("e1_leads?select=email,prospect_name,company_name,status,updated_at,created_at&order=updated_at.desc&limit=300"); }catch(e){}
+
+  const noStart = (fullLeads||[]).filter(l=>!l.status || l.status==="new").length;
+  if(noStart) need.push({icon:"🆕", pri:"High", html:`<b>${noStart} new lead${noStart===1?"":"s"}</b> haven't started the pipeline yet`, sub:"Engine 1", go:"state.engine='e1';setView('e1pipeline')"});
+  if(compPending) need.push({icon:"🔍", pri:"Normal", html:`<b>${compPending} AI-suggested competitor${compPending===1?"":"s"}</b> awaiting approve/deny`, sub:"Company profile", go:"setView('profile')"});
+  const stalled = (fullLeads||[]).filter(l=>{
+    if((l.status||"")==="growth_plan") return false;
+    const t = new Date(l.updated_at||l.created_at||0).getTime();
+    return t && (Date.now()-t)/864e5 > 7;
+  });
+  if(stalled.length){
+    const oldest = stalled[stalled.length-1];
+    const days = Math.round((Date.now()-new Date(oldest.updated_at||oldest.created_at))/864e5);
+    need.push({icon:"⏳", pri:"Normal",
+      html:`<b>${stalled.length} lead${stalled.length===1?"":"s"} stalled</b> mid-pipeline — oldest sat ${days} days`,
+      sub:"Engine 1", go:`openE1Lead('${esc(oldest.email)}')`});
+  }
+  if(unindexed) need.push({icon:"📄", pri:"Low", html:`<b>${unindexed} uploaded file${unindexed===1?"":"s"}</b> not text-indexed — Ask can't read them`, sub:"Files", go:"setView('files')"});
+  if(!guideCount) need.push({icon:"📐", pri:"Low", html:`<b>No output format guides</b> — agents write without a reference document`, sub:"Company profile", go:"setView('profile')"});
+  if(hsSynced && (Date.now()-new Date(hsSynced))/36e5 > 24)
+    need.push({icon:"🔄", pri:"Low", html:`<b>HubSpot last synced ${fmtDate(hsSynced)}</b> — the sync may have stopped`, sub:"HubSpot", go:"setView('hubspot')"});
   const grouped = new Map();
   outputs.forEach(o=>{
     const k = String(o.title||o.agent||"").trim();
@@ -3643,23 +4321,64 @@ async function renderHome(){
     else grouped.set(k, { o, n:1 });
   });
   const recent = [...grouped.values()].slice(0,6);
-  document.getElementById("homeActions").innerHTML = (need.length || recent.length) ? `
-    <section class="block"><h2>Needs attention & recent outputs</h2>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start">
-      <div class="card">
-        <div class="agent-kind">Needs attention${need.length?` <span style="font-family:Inter,sans-serif;font-size:.7rem;background:var(--gold-soft);color:#7A5E12;border-radius:99px;padding:3px 10px;font-weight:700;margin-left:6px">${pend+pendVar}</span>`:""}</div>
-        ${need.length
-          ? need.map(n=>`<div class="attn-row" onclick="${n.go}"><span style="font-size:1.05rem">${n.icon}</span><div style="min-width:0">${n.html}<div class="nt">${n.sub}</div></div><span class="go">Review →</span></div>`).join("")
-          : `<div style="font-size:.85rem;color:var(--muted);padding:14px 4px">✓ Nothing pending — all reviews are cleared.</div>`}
+  const stageName = a => (a||"").includes("growth")?"Growth Plan":(a||"").includes("discovery")?"Discovery Call":
+    (a||"").includes("anonym")||(a||"").includes("assessment")?"Assessment":(a||"").includes("interview")?"Interview Script":
+    (a||"").includes("lead_research")?"Lead Research":a==="ad_strategist"?"Ad Strategist":a==="low_ticket_content"?"Funnel Content":"Intel Tracker";
+  const dotColor = o => E1_AGENTS.some(a=>(o.agent||"").includes(a)) ? "var(--navy)" : "var(--gold)";
+  document.getElementById("homeActions").innerHTML = `
+    <div class="tcard">
+      <div class="tcard-head">📋 Pipeline &amp; reviews</div>
+      <div class="tgroup">
+        <div class="tgroup-head">
+          <button class="caret" onclick="tToggle(this,'gNeed')">▾</button>
+          <span class="tstatus review">Needs review</span>
+          <span class="tcount">• ${need.length} item${need.length===1?"":"s"}</span>
+        </div>
+        <div id="gNeed">
+          ${need.length?`<div class="trow-head"><span></span><span>Name</span><span>Priority</span><span style="text-align:right">Action</span></div>`:""}
+          ${need.length
+            ? need.map(n=>`<div class="trow" onclick="${n.go}">
+                <span class="tchev">›</span>
+                <span class="tname"><span class="tdot" style="background:${(n.pri==="Low")?"var(--line)":(n.pri==="Normal")?"var(--navy)":"var(--gold)"}"></span><span class="ttxt">${n.icon||""} ${n.html.replace(/<\/?b>/g,"")}</span></span>
+                <span><span class="tprio ${(n.pri||"High").toLowerCase()}">${n.pri||"High"}</span></span>
+                <span class="tdue ${(n.pri||"High")==="High"?"now":""}">Open →</span></div>`).join("")
+            : `<div style="font-size:.85rem;color:var(--muted);padding:12px 4px">✓ Nothing pending — all reviews are cleared.</div>`}
+          <button class="tadd" onclick="state.engine='e1';setView('e1pipeline')">+ Open the lead pipeline</button>
+        </div>
       </div>
-      <div class="card">
-        <div class="agent-kind">Recent outputs</div>
-        ${recent.length
-          ? recent.map(g=>`<div class="out-row" onclick="${outGo(g.o)}"><span style="font-size:1rem">${outIcon(g.o)}</span><span class="ot" title="${esc(g.o.title||g.o.agent)}">${esc(g.o.title||g.o.agent)}</span>${g.n>1?`<span class="on">×${g.n}</span>`:""}<span class="od">${fmtDateTime(g.o.created_at)}</span></div>`).join("")
-          : `<div style="font-size:.85rem;color:var(--muted);padding:14px 4px">No agent outputs recorded yet.</div>`}
+      <div class="tgroup">
+        <div class="tgroup-head">
+          <button class="caret" onclick="tToggle(this,'gOut')">▾</button>
+          <span class="tstatus done">Recent outputs</span>
+          <span class="tcount">• ${recent.length} item${recent.length===1?"":"s"}</span>
+        </div>
+        <div id="gOut">
+          ${recent.length?`<div class="trow-head"><span></span><span>Name</span><span>Stage</span><span style="text-align:right">Created</span></div>`:""}
+          ${recent.length
+            ? recent.map(g=>`<div class="trow" onclick="${outGo(g.o)}">
+                <span class="tchev">›</span>
+                <span class="tname"><span class="tdot" style="background:${dotColor(g.o)}"></span><span class="ttxt" title="${esc(g.o.title||g.o.agent)}">${esc(g.o.title||g.o.agent)}</span>${g.n>1?`<span class="on">×${g.n}</span>`:""}</span>
+                <span><span class="tprio ${E1_AGENTS.some(a=>(g.o.agent||"").includes(a))?"normal":"low"}">${stageName(g.o.agent)}</span></span>
+                <span class="tdue">${fmtDateTime(g.o.created_at)}</span></div>`).join("")
+            : `<div style="font-size:.85rem;color:var(--muted);padding:12px 4px">No agent outputs recorded yet.</div>`}
+          <button class="tadd" onclick="state.engine='e3';setView('intel')">+ Open marketing intelligence</button>
+        </div>
       </div>
-    </div></section>` : "";
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:13px;border-top:1px solid var(--line)">
+        <button class="btn ghost" onclick="state.engine='e1';setView('e1leads')">☰ All leads</button>
+        <button class="btn ghost" onclick="setView('files')">🗂 All files</button>
+        <button class="btn ghost" onclick="setView('hubspot')">◍ HubSpot</button>
+        <button class="btn ghost" onclick="setView('profile')">◎ Company profile</button>
+        <button class="btn ghost" onclick="askToggle()">✦ Ask</button>
+      </div>
+    </div>`;
   renderHomeInsights(outputs);
+}
+function tToggle(btn, id){
+  const el = document.getElementById(id); if(!el) return;
+  const open = el.style.display !== "none";
+  el.style.display = open ? "none" : "";
+  btn.classList.toggle("closed", open);
 }
 async function renderHomeInsights(outputs){
   const el = document.getElementById("homeInsights"); if(!el) return;
@@ -3790,22 +4509,79 @@ function applyTheme(t){
 function applySavedTheme(){
   try{ const t = JSON.parse(localStorage.getItem(themeKey())||"null"); if(t) applyTheme(t); }catch(e){}
 }
-function openThemeModal(){
+function openThemeModal(anchor){
   const ex = document.getElementById("themePanel");
   if(ex){ ex.remove(); applySavedTheme(); return; }
   const cur = (()=>{ try{ return JSON.parse(localStorage.getItem(themeKey())||"null"); }catch(e){ return null; } })() || THEME_PRESETS["Classic Paragon"];
   const activePreset = Object.entries(THEME_PRESETS).find(([,t])=>["navy","gold","bg","cream"].every(k=>String(t[k]).toLowerCase()===String(cur[k]||"").toLowerCase()));
-  const btnEl = document.getElementById("themeBtn");
-  const r = btnEl.getBoundingClientRect();
+  const btnEl = (anchor && anchor.getBoundingClientRect) ? anchor : document.getElementById("themeBtn");
+  const r = btnEl ? btnEl.getBoundingClientRect() : { bottom: 70, right: window.innerWidth - 24, left: window.innerWidth - 300 };
   const p = document.createElement("div");
   p.id = "themePanel";
-  p.style.cssText = `position:fixed;top:${r.bottom+8}px;right:${Math.max(12, window.innerWidth-r.right)}px;z-index:997;width:min(370px, calc(100vw - 24px));max-height:78vh;overflow:auto;background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 44px rgba(30,58,95,.18);padding:16px`;
+  const PW = Math.min(430, window.innerWidth - 24);
+  const MINH = 380;
+  const fromSide = !!(btnEl && btnEl.closest && btnEl.closest(".sidebar"));
+  const spaceBelow = window.innerHeight - r.bottom - 20;
+  const spaceAbove = r.top - 20;
+  let top, maxH, left;
+  if(spaceBelow >= MINH){                       // roomy: hang below the trigger
+    top = r.bottom + 8; maxH = window.innerHeight - top - 16;
+  } else if(spaceAbove >= MINH){                // trigger near the bottom: open upward
+    maxH = Math.min(spaceAbove, window.innerHeight - 32);
+    top = Math.max(16, r.top - 8 - maxH);
+  } else {                                      // short viewport: centre it
+    maxH = window.innerHeight - 32; top = 16;
+  }
+  left = fromSide ? (r.right + 10) : (r.right - PW);
+  if(left + PW > window.innerWidth - 12) left = fromSide ? (r.left - PW - 10) : (window.innerWidth - PW - 12);
+  left = Math.max(12, Math.min(left, window.innerWidth - PW - 12));
+  p.style.cssText = `position:fixed;top:${Math.round(top)}px;left:${Math.round(left)}px;z-index:997;width:${PW}px;`
+    + `max-height:${Math.round(maxH)}px;min-height:${Math.round(Math.min(MINH, maxH))}px;overflow-y:auto;overflow-x:hidden;`
+    + `background:var(--white);border:1px solid var(--line);`
+    + `border-radius:16px;box-shadow:0 18px 52px rgba(30,58,95,.22);padding:20px`;
   p.innerHTML = `
     <div style="display:flex;align-items:center;gap:9px;margin-bottom:2px">
       <img src="https://www.aiparagonconsulting.com/logo.png" style="width:22px;height:22px;object-fit:contain" onerror="this.remove()">
-      <b style="font-family:Georgia,serif;font-size:1.02rem;color:var(--ink)">Customize your theme</b>
+      <b style="font-family:'Inter',sans-serif;font-size:1.08rem;color:var(--ink)">Settings</b>
+      <button onclick="document.getElementById('themePanel')?.remove();applySavedTheme()" title="Close" style="all:unset;cursor:pointer;margin-left:auto;color:var(--muted);font-size:.95rem">✕</button>
     </div>
-    <div style="font-size:.75rem;color:var(--muted);margin-bottom:12px">Saved just for you (${esc(whoAmI())}) on this browser. Changes preview live.</div>
+    <div style="font-size:.75rem;color:var(--muted);margin-bottom:12px">Your account and colors. Theme changes preview live.</div>
+    <div class="insp-label">Account</div>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">
+      <span id="setAvatar" style="width:52px;height:52px;border-radius:99px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0"></span>
+      <div style="flex:1;min-width:0">
+        <input type="file" id="setAvatarFile" accept="image/*" style="font-size:.76rem;max-width:100%">
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="btn ghost" style="padding:5px 10px;font-size:.74rem" onclick="acctUploadAvatar(this)">Upload photo</button>
+          ${myAvatar()?`<button class="btn ghost" style="padding:5px 10px;font-size:.74rem" onclick="acctRemoveAvatar(this)">Remove</button>`:""}
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;gap:8px;margin-bottom:10px">
+      <label style="font-size:.74rem;color:var(--muted);font-weight:600">Display name
+        <input id="setName" type="text" value="${esc(whoAmI())}" style="font:inherit;font-size:.84rem;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--white);width:100%;margin-top:3px"></label>
+      <label style="font-size:.74rem;color:var(--muted);font-weight:600">Email
+        <input id="setEmail" type="email" value="${esc(myEmail())}" style="font:inherit;font-size:.84rem;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--white);width:100%;margin-top:3px"></label>
+      <div style="font-size:.72rem;color:var(--muted)">Username: <b>${esc(myUsername()||"—")}</b> — used to sign in, not editable here</div>
+      <button class="btn navy" style="justify-content:center;text-align:center" onclick="acctSaveProfile(this)">Save profile</button>
+    </div>
+    <details style="margin-bottom:14px">
+      <summary style="cursor:pointer;font-size:.78rem;color:var(--navy);font-weight:650">Change password</summary>
+      <div style="display:grid;gap:8px;margin-top:8px">
+        <input id="setPwOld" type="password" placeholder="Current password" autocomplete="current-password" style="font:inherit;font-size:.84rem;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--white)">
+        <input id="setPwNew" type="password" placeholder="New password (min 8 characters)" autocomplete="new-password" style="font:inherit;font-size:.84rem;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--white)">
+        <input id="setPwNew2" type="password" placeholder="Confirm new password" autocomplete="new-password" style="font:inherit;font-size:.84rem;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--white)">
+        <button class="btn navy" style="justify-content:center;text-align:center" onclick="acctChangePassword(this)">Update password</button>
+      </div>
+    </details>
+    <div class="insp-label">Setup</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn ghost" style="flex:1;justify-content:center;text-align:center;font-size:.78rem" onclick="document.getElementById('themePanel')?.remove();tourMenu()">Guided tour</button>
+      <button class="btn ghost" style="flex:1;justify-content:center;text-align:center;font-size:.78rem" onclick="document.getElementById('themePanel')?.remove();startOnboarding()">Re-run setup</button>
+    </div>
+    <div style="display:flex;margin-bottom:14px">
+      <button class="btn ghost" style="flex:1;justify-content:center;text-align:center;font-size:.78rem;color:var(--bad)" onclick="document.getElementById('themePanel')?.remove();confirmLogout()">⏻ Sign out</button>
+    </div>
     <div class="insp-label">Presets</div>
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">
       ${Object.entries(THEME_PRESETS).map(([name,t])=>`<button class="th-preset ${activePreset&&activePreset[0]===name?"active":""}" data-preset="${esc(name)}" onclick='pickThemePreset(${JSON.stringify(name)})'>
@@ -3825,7 +4601,8 @@ function openThemeModal(){
       <button class="btn ghost" onclick="resetTheme()">Reset</button>
     </div>`;
   document.body.appendChild(p);
-  const close = ev=>{ if(!p.contains(ev.target) && ev.target!==btnEl){ p.remove(); applySavedTheme(); document.removeEventListener("click", close, true); } };
+  paintAvatarEl(document.getElementById("setAvatar"), whoAmI());
+  const close = ev=>{ if(!p.contains(ev.target) && ev.target!==btnEl && !(ev.target.closest && ev.target.closest("#sideUser"))){ p.remove(); applySavedTheme(); document.removeEventListener("click", close, true); } };
   setTimeout(()=>document.addEventListener("click", close, true), 0);
 }
 function markPresetActive(name){
@@ -3853,7 +4630,568 @@ function resetTheme(){
   const t = THEME_PRESETS["Classic Paragon"];
   [["navy",t.navy],["gold",t.gold],["bg",t.bg],["cream",t.cream]].forEach(([k,v])=>{ const el=document.getElementById("th_"+k); if(el) el.value=v; });
   markPresetActive("Classic Paragon");
-  showAlert("Back to Classic Paragon.", "Reset");
+  showAlert("Back to the default theme.", "Reset");
+}
+
+/* ================= ACCOUNT SETTINGS ================= */
+function acctHeaders(extra){
+  return Object.assign({ apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }, extra||{});
+}
+function acctGuard(){
+  if(!myUsername()){
+    showAlert("Sign out and sign in again to refresh your session, then edit your profile.", "Session too old");
+    return false;
+  }
+  return true;
+}
+async function acctPatch(body){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/dashboard_users?username=eq.${encodeURIComponent(myUsername())}`, {
+    method: "PATCH",
+    headers: acctHeaders({ "Content-Type":"application/json", Prefer:"return=representation" }),
+    body: JSON.stringify(body)
+  });
+  const txt = await res.text();
+  if(!res.ok) throw new Error(res.status===404 ? "dashboard_users table not reachable." : (txt.slice(0,180) || ("Update blocked ("+res.status+")")));
+  let rows=[]; try{ rows = JSON.parse(txt); }catch(e){}
+  if(!rows.length) throw new Error("Nothing was updated — Supabase is blocking writes to dashboard_users. Add the update policy from the setup SQL.");
+  return rows[0];
+}
+async function acctSaveProfile(btn){
+  if(!acctGuard()) return;
+  const name = (document.getElementById("setName").value||"").trim();
+  const email = (document.getElementById("setEmail").value||"").trim();
+  if(!name){ showAlert("Display name can't be empty.","Missing name"); return; }
+  if(email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showAlert("That email doesn't look right.","Check email"); return; }
+  btn.disabled = true; btn.textContent = "Saving…";
+  try{
+    await acctPatch({ display_name: name, email: email || null });
+    sessionStorage.setItem("aip_user", name);
+    sessionStorage.setItem("aip_email", email);
+    paintSideUser();
+    btn.textContent = "Saved ✓";
+    setTimeout(()=>{ btn.disabled=false; btn.textContent="Save profile"; }, 1400);
+  }catch(e){
+    btn.disabled = false; btn.textContent = "Save profile";
+    showAlert(e.message||String(e), "Couldn't save profile");
+  }
+}
+async function acctUploadAvatar(btn){
+  if(!acctGuard()) return;
+  const f = document.getElementById("setAvatarFile");
+  const file = f && f.files && f.files[0];
+  if(!file){ showAlert("Choose an image first.","No file"); return; }
+  if(!/^image\//.test(file.type)){ showAlert("Pick an image file.","Wrong type"); return; }
+  if(file.size > 3*1024*1024){ showAlert("Keep profile photos under 3 MB.","Too large"); return; }
+  btn.disabled = true; btn.textContent = "Uploading…";
+  const path = `${myUsername()}/${Date.now()}-${file.name.replace(/[^\w.\-]+/g,"_")}`;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/avatars/${path}`, {
+      method: "POST", headers: acctHeaders({ "x-upsert":"true" }), body: file
+    });
+    if(!res.ok){
+      const t = await res.text();
+      throw new Error(res.status===404 ? "The avatars storage bucket doesn't exist yet — run the setup SQL." : "Upload failed ("+res.status+"). "+t.slice(0,140));
+    }
+    const url = `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}`;
+    await acctPatch({ avatar_url: url });
+    sessionStorage.setItem("aip_avatar", url);
+    paintSideUser();
+    paintAvatarEl(document.getElementById("setAvatar"), whoAmI());
+    btn.disabled = false; btn.textContent = "Upload photo";
+    if(f) f.value = "";
+  }catch(e){
+    btn.disabled = false; btn.textContent = "Upload photo";
+    showAlert(e.message||String(e), "Couldn't upload photo");
+  }
+}
+async function acctRemoveAvatar(btn){
+  if(!acctGuard()) return;
+  btn.disabled = true;
+  try{
+    await acctPatch({ avatar_url: null });
+    sessionStorage.setItem("aip_avatar","");
+    paintSideUser();
+    paintAvatarEl(document.getElementById("setAvatar"), whoAmI());
+    btn.remove();
+  }catch(e){ btn.disabled=false; showAlert(e.message||String(e), "Couldn't remove photo"); }
+}
+async function acctChangePassword(btn){
+  if(!acctGuard()) return;
+  const oldPw = document.getElementById("setPwOld").value;
+  const a = document.getElementById("setPwNew").value;
+  const b = document.getElementById("setPwNew2").value;
+  if(!oldPw || !a || !b){ showAlert("Fill in all three password fields.","Missing fields"); return; }
+  if(a.length < 8){ showAlert("Use at least 8 characters.","Too short"); return; }
+  if(a !== b){ showAlert("The new passwords don't match.","Check confirmation"); return; }
+  if(a === oldPw){ showAlert("The new password matches your current one.","No change"); return; }
+  btn.disabled = true; btn.textContent = "Updating…";
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/dashboard_users?username=eq.${encodeURIComponent(myUsername())}&select=salt,password_hash`,
+      { headers: acctHeaders() });
+    const rows = await res.json();
+    const me = rows && rows[0];
+    if(!me) throw new Error("Couldn't load your account record.");
+    if((await sha256Hex((me.salt||"") + oldPw)) !== me.password_hash) throw new Error("Your current password is incorrect.");
+    const salt = [...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,"0")).join("");
+    await acctPatch({ salt, password_hash: await sha256Hex(salt + a) });
+    ["setPwOld","setPwNew","setPwNew2"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
+    btn.disabled = false; btn.textContent = "Update password";
+    showAlert("Password updated. Use it the next time you sign in.", "Done");
+  }catch(e){
+    btn.disabled = false; btn.textContent = "Update password";
+    showAlert(e.message||String(e), "Couldn't update password");
+  }
+}
+
+/* ================= ONBOARDING (first login) ================= */
+const OB_SIZES = ["Just me","2-10","11-50","51-200","200+"];
+const OB_GOALS = ["Reduction in Manual, Repetitive Tasks","Effective Marketing and Advertising Generation","Increased Operational Efficiency","Qualified Client Acquisition and Lead Generation","Reporting and Data Management","Client Service"];
+let obState = { i:0, data:{}, guides:[] };
+
+function obKey(){ return "aip_onboarded_" + (sessionStorage.getItem("aip_username")||"team").toLowerCase(); }
+async function maybeOnboard(){
+  if(localStorage.getItem(obKey())==="1") return false;
+  /* per-user first login: if the company profile already exists, prefill it instead of skipping */
+  let prof = null;
+  try{ const r = await sb("company_profile?select=*&order=id.asc&limit=1"); prof = r[0]||null; }catch(e){ /* table may not exist yet */ }
+  obState = { i:0, data: Object.assign({}, prof||{}), guides:[] };
+  if(!obState.data.contact_name) obState.data.contact_name = whoAmI();
+  obRender();
+  return true;
+}
+function startOnboarding(){ obState = { i:0, data:{}, guides:[] };
+  (async()=>{ try{ const r = await sb("company_profile?select=*&order=id.asc&limit=1"); obState.data = r[0]||{}; }catch(e){}
+    if(!obState.data.contact_name) obState.data.contact_name = whoAmI();
+    obRender(); })();
+}
+const OB_STEPS = [
+  { key:"you", title:"Welcome to AI Paragon", sub:"A few details so every agent writes with your context instead of guessing. Two minutes, and you can change all of it later.",
+    body: d => `
+      <label>Your name</label><input type="text" id="ob_contact_name" value="${esc(d.contact_name||"")}" placeholder="Kaeser Valencerina">
+      <label>Business name</label><input type="text" id="ob_business_name" value="${esc(d.business_name||"")}" placeholder="AI Paragon Consulting Group">
+      <label>Website</label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="ob_website" value="${esc(d.website||"")}" placeholder="aiparagonconsulting.com" style="flex:1;min-width:200px">
+        <button class="btn ghost" id="obFillBtn" onclick="obAutofill(this)" style="white-space:nowrap">✦ Analyze site</button>
+      </div>
+      <div id="obFillMsg" style="font-size:.8rem;color:var(--muted);margin-top:10px">Optional: analyze your website and we'll pre-fill the next steps for you.</div>` },
+  { key:"biz", title:"About the business", sub:"This is the context the agents lean on when they research leads, write briefs, and draft creative.",
+    body: d => `
+      ${obSummaryCard()}
+      <div style="display:flex;justify-content:flex-end;margin-bottom:4px">
+        <button class="btn ghost" id="obFillBtn" onclick="obAutofill(this)">✦ Re-analyze site</button>
+      </div>
+      <div id="obFillMsg" style="font-size:.8rem;color:var(--muted);margin-bottom:4px"></div>
+      <label>Industry</label><input type="text" id="ob_industry" value="${esc(d.industry||"")}" placeholder="AI strategy consulting for financial services">
+      <label>Company size</label>
+      <div class="ob-chips" id="ob_size_chips">${OB_SIZES.map(s=>`<button type="button" class="ob-chip ${d.company_size===s?"on":""}" onclick="obPick('company_size','${s}',this)">${s}</button>`).join("")}</div>
+      <label>What the business does</label><textarea id="ob_description" placeholder="Two or three sentences in your own words.">${esc(d.description||"")}</textarea>
+      <label>Services / offers <span style="text-transform:none;letter-spacing:0;font-weight:500;color:#a8a294">one per line</span></label>
+      <textarea id="ob_services" rows="4" placeholder="- Strategic assessments&#10;- Pilot sprints&#10;- Implementation retainers">${esc(d.services||"")}</textarea>
+      <label>Who you sell to <span style="text-transform:none;letter-spacing:0;font-weight:500;color:#a8a294">one per line</span></label>
+      <textarea id="ob_target_market" rows="3" placeholder="- SEC-registered RIAs, $100M-$2B AUM&#10;- US-based wealth management firms">${esc(d.target_market||"")}</textarea>` },
+  { key:"goal", title:"What matters most right now", sub:"This shapes what the agents lead with and how the dashboard prioritizes your review queue.",
+    body: d => { const other = obState.goalOther || (!!d.primary_goal && !OB_GOALS.includes(d.primary_goal)); return `
+      <label>Primary goal</label>
+      <div class="ob-chips" id="ob_goal_chips">${OB_GOALS.map(s=>`<button type="button" class="ob-chip ${d.primary_goal===s?"on":""}" onclick="obPick('primary_goal','${s}',this)">${s}</button>`).join("")}<button type="button" class="ob-chip ${other?"on":""}" onclick="obGoalOther(this)">Other…</button></div>
+      ${other?`<div id="obGoalOtherWrap"><input type="text" id="ob_primary_goal" value="${esc(!OB_GOALS.includes(d.primary_goal||"")?(d.primary_goal||""):"")}" placeholder="Tell us in your own words"></div>`:""}
+      <label>Brand voice &amp; tone notes</label>
+      <textarea id="ob_brand_voice" placeholder="Executive peer, warm but direct. No hype, no jargon. Never promise specific returns.">${esc(d.brand_voice||"")}</textarea>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:8px">Anything an agent should always do or never do goes here.</div>
+      <div style="font-size:.8rem;color:var(--gold);margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><b>✦ The system learns as you use it.</b> <span style="color:var(--muted)">Feedback and comments you leave on outputs are fed back to the agents, so briefs and creative keep getting sharper with every run.</span></div>` } },
+  { key:"guides", title:"Show us your preferred output", sub:"Upload a document that represents how you want deliverables to look, and every agent on that engine will follow its structure and tone. Optional, but it's the single biggest quality lever.",
+    body: d => `
+      ${obGuideBox("e1","Engine 1 · Client Delivery","A lead research brief, discovery framework, or growth plan in the format you like. Applies to all five Engine 1 agents.")}
+      ${obGuideBox("e3","Engine 3 · Marketing Intelligence","An ad brief, competitor report, or funnel doc that shows your preferred structure.")}
+      ${obGuideBox("all","Company-wide","Brand guidelines, a tone-of-voice doc, or anything every agent should respect.")}
+      <div style="font-size:.78rem;color:var(--muted);margin-top:6px">PDF and plain-text formats work best — we extract the text so agents can read it. Word files should be exported to PDF first.</div>` }
+];
+function obSummaryCard(){
+  const s = obState.summary || [];
+  const comps = obState.suggested || [];
+  if(!s.length && !comps.length) return "";
+  return `<div style="background:var(--white);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:13px;padding:15px 17px;margin-bottom:18px">
+    <div style="font-size:.7rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--gold);margin-bottom:8px">✦ What we found on your site</div>
+    ${s.length?`<ul style="margin:0 0 0 17px;padding:0;font-size:.86rem;color:var(--ink);line-height:1.75">
+      ${s.map(x=>`<li>${esc(x)}</li>`).join("")}
+    </ul>`:""}
+    ${comps.length?`<div style="font-size:.8rem;color:var(--muted);margin-top:10px;padding-top:9px;border-top:1px solid var(--line)">
+      Also spotted <b style="color:var(--ink)">${comps.length} possible competitors</b> — ${esc(comps.slice(0,3).map(c=>c.name).join(", "))}${comps.length>3?` and ${comps.length-3} more`:""}. You'll approve or deny them on the Profile page.</div>`:""}
+    <div style="font-size:.78rem;color:var(--muted);margin-top:9px">Everything below is editable — correct anything that reads wrong.</div>
+  </div>`;
+}
+function obGuideBox(engine, label, help){
+  const f = obState.guides.find(g=>g.engine===engine);
+  return `<div class="ob-drop">
+    <b>${label}</b><p>${help}</p>
+    ${f ? `<div class="ob-file">📄 <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span>
+            <button class="btn ghost" style="padding:4px 10px;font-size:.72rem" onclick="obDropGuide('${engine}')">Remove</button></div>`
+        : `<input type="file" accept=".pdf,.txt,.md,.csv,.html,.json" onchange="obPickGuide('${engine}', this)" style="font-size:.8rem">`}
+  </div>`;
+}
+function obPickGuide(engine, input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  if(file.size > 15*1024*1024){ showAlert("Keep guide documents under 15 MB.","Too large"); input.value=""; return; }
+  obState.guides = obState.guides.filter(g=>g.engine!==engine).concat([{engine, file, name:file.name}]);
+  obRender();
+}
+function obDropGuide(engine){ obState.guides = obState.guides.filter(g=>g.engine!==engine); obRender(); }
+function obPick(field, val, btn){
+  if(field==="primary_goal"){ obState.goalOther = false; const w = document.getElementById("obGoalOtherWrap"); if(w) w.remove(); }
+  obState.data[field] = val;
+  const wrap = btn.parentElement;
+  wrap.querySelectorAll(".ob-chip").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");
+}
+function obGoalOther(btn){
+  obSaveVisible();
+  obState.goalOther = true;
+  if(OB_GOALS.includes(obState.data.primary_goal||"")) obState.data.primary_goal = "";
+  obRender();
+  const inp = document.getElementById("ob_primary_goal"); if(inp) inp.focus();
+}
+function obCollect(){
+  OB_STEPS.forEach(s=>{
+    const html = s.body(obState.data);
+    (html.match(/id="ob_([a-z_]+)"/g)||[]).forEach(m=>{
+      const key = m.replace('id="ob_','').replace('"','');
+      const el = document.getElementById("ob_"+key);
+      if(el && el.value !== undefined) obState.data[key] = el.value.trim();
+    });
+  });
+}
+let obProgTimer = null;
+function obProgressStart(){
+  const msg = document.getElementById("obFillMsg"); if(!msg) return;
+  const C = 2*Math.PI*10.5;
+  msg.style.color = "var(--muted)";
+  msg.innerHTML = `<span style="display:inline-flex;align-items:center;gap:9px">
+    <svg width="26" height="26" viewBox="0 0 26 26" style="flex-shrink:0">
+      <circle cx="13" cy="13" r="10.5" fill="none" stroke="var(--line)" stroke-width="3"></circle>
+      <circle id="obProgArc" cx="13" cy="13" r="10.5" fill="none" stroke="var(--gold)" stroke-width="3" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C}" transform="rotate(-90 13 13)" style="transition:stroke-dashoffset .3s ease"></circle>
+    </svg>
+    <span><b id="obProgPct">0%</b> — analyzing your site…</span></span>`;
+  let p = 0;
+  if(obProgTimer) clearInterval(obProgTimer);
+  obProgTimer = setInterval(()=>{
+    p = Math.min(92, p + Math.max(1, Math.round((92-p)/10)));
+    const arc = document.getElementById("obProgArc"), pct = document.getElementById("obProgPct");
+    if(!arc && !pct){ clearInterval(obProgTimer); obProgTimer = null; return; }
+    if(arc) arc.setAttribute("stroke-dashoffset", String(C*(1-p/100)));
+    if(pct) pct.textContent = p + "%";
+  }, 350);
+}
+function obProgressDone(){ if(obProgTimer){ clearInterval(obProgTimer); obProgTimer = null; } }
+async function obAutofill(btn){
+  obSaveVisible();
+  const site = (obState.data.website||"").trim();
+  const msg = document.getElementById("obFillMsg");
+  const say = (t, err) => { if(msg){ msg.textContent = t; msg.style.color = err ? "var(--bad)" : "var(--muted)"; } };
+  if(!site){ say("Enter your website first, then press Analyze.", true); return; }
+  btn.disabled = true; btn.textContent = "Analyzing…";
+  obProgressStart();
+  try{
+    const hook = pRead("webhook");
+    if(!hook) throw new Error("No enrichment webhook configured.");
+    const res = await fetch(hook, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ website: site, businessName: obState.data.business_name||"", context:"", existing: [] })
+    });
+    const raw = await res.text();
+    if(!res.ok) throw new Error("The analyzer returned " + res.status + ". Is the Profile Enrichment workflow active in n8n?");
+    let out = {};
+    try{ out = JSON.parse(raw); }
+    catch(e){ throw new Error(raw.trim() ? "Unexpected reply from the analyzer." : "The analyzer returned an empty response — check its latest execution in n8n."); }
+    const p = out.profile || {};
+    let filled = 0;
+    ["business_name","industry","description","services","target_market"].forEach(k=>{
+      if(p[k] && String(p[k]).trim()){
+        if(k === "business_name" && (obState.data.business_name||"").trim()) return; // never overwrite what they typed
+        obState.data[k] = String(p[k]).trim(); filled++;
+      }
+    });
+    obState.suggested = Array.isArray(out.competitors) ? out.competitors : [];
+    obState.summary = Array.isArray(out.summary) ? out.summary : [];
+    obProgressDone();
+    obRender();
+    const m2 = document.getElementById("obFillMsg");
+    if(m2){
+      m2.style.color = "var(--good)";
+      m2.textContent = filled
+        ? `✓ Analysis complete and ready for your review and input — pre-filled ${filled} field${filled===1?"":"s"}. Everything stays editable.`
+        : "✓ Analysis complete and ready for your review and input — we couldn't pre-fill much from that site, so add anything missing in your own words.";
+    }
+  }catch(e){
+    obProgressDone();
+    btn.disabled = false; btn.textContent = "✦ Analyze site";
+    say("The analysis didn't finish this time — you can try again, or continue and fill things in yourself. (" + (e.message || String(e)) + ")", true);
+  }
+}
+function obRender(){
+  let el = document.getElementById("obOverlay");
+  if(!el){ el = document.createElement("div"); el.id = "obOverlay"; el.className = "ob"; document.body.appendChild(el); }
+  const s = OB_STEPS[obState.i];
+  const pct = Math.round(((obState.i)/OB_STEPS.length)*100);
+  const last = obState.i === OB_STEPS.length-1;
+  el.innerHTML = `
+    <div class="ob-bar"><i style="width:${pct}%"></i></div>
+    <div class="ob-wrap">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+        <img src="https://www.aiparagonconsulting.com/logo.png" style="width:30px;height:30px;object-fit:contain" onerror="this.remove()">
+        <b style="font-size:.95rem;color:var(--ink)">AI <span style="color:var(--gold)">Paragon</span></b>
+      </div>
+      <div class="ob-step">Step ${obState.i+1} of ${OB_STEPS.length}</div>
+      <h2>${s.title}</h2>
+      <div class="ob-sub">${s.sub}</div>
+      <div id="obBody">${s.body(obState.data)}</div>
+      <div class="ob-nav">
+        ${obState.i>0?`<button class="btn ghost" onclick="obBack()">Back</button>`:""}
+        <button class="btn navy" id="obNextBtn" onclick="${last?"obFinish(this)":"obNext()"}">${last?"Finish setup":"Continue"}</button>
+        <button class="ob-skip" onclick="obSkip()">${last?"Skip uploads":"Skip for now"}</button>
+      </div>
+    </div>`;
+  window.scrollTo(0,0);
+}
+function obSaveVisible(){
+  const body = document.getElementById("obBody"); if(!body) return;
+  body.querySelectorAll("input[id^=ob_], textarea[id^=ob_], select[id^=ob_]").forEach(el=>{
+    obState.data[el.id.replace("ob_","")] = (el.value||"").trim();
+  });
+}
+function obNext(){
+  obSaveVisible();
+  if(obState.i===0 && !(obState.data.business_name||"").trim()){
+    showAlert("A business name helps every agent write in your context.","Almost");
+    return;
+  }
+  obState.i++; obRender();
+}
+function obBack(){ obSaveVisible(); obState.i--; obRender(); }
+async function obSkip(){
+  obSaveVisible();
+  if(obState.i === OB_STEPS.length-1){ await obFinish(document.getElementById("obNextBtn"), true); return; }
+  localStorage.setItem(obKey(),"1");
+  await obPersist().catch(()=>{});
+  obClose();
+}
+async function obPersist(){
+  const body = {};
+  P_FIELDS.forEach(([k])=>{ if(obState.data[k] !== undefined) body[k] = obState.data[k] || null; });
+  body.onboarded_at = new Date().toISOString();
+  body.updated_by = whoAmI();
+  body.updated_at = new Date().toISOString();
+  const rows = await sbPatch("company_profile?id=eq.1", body);
+  if(!rows.length) await sbPost("company_profile", Object.assign({id:1}, body));
+  delete cache["company_profile?select=*&order=id.asc&limit=1"];
+}
+async function obUploadGuides(setLabel){
+  for(const g of obState.guides){
+    try{
+      if(setLabel) setLabel(`Uploading ${g.name}…`);
+      const path = `${g.engine}/${Date.now()}-${g.file.name.replace(/[^\w.\-]+/g,"_")}`;
+      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/guide-files/${path}`, {
+        method:"POST",
+        headers:{ apikey: SUPABASE_ANON_KEY, Authorization:`Bearer ${SUPABASE_ANON_KEY}`, "x-upsert":"true" },
+        body: g.file
+      });
+      if(!res.ok) throw new Error("storage " + res.status);
+      const url = `${SUPABASE_URL}/storage/v1/object/public/guide-files/${path}`;
+      const created = await sbPost("guide_files", {
+        engine: g.engine, file_name: g.file.name, file_url: url, file_path: path, uploaded_by: whoAmI()
+      });
+      const row = Array.isArray(created) ? created[0] : created;
+      if(row && row.id){
+        if(setLabel) setLabel(`Indexing ${g.name}…`);
+        await e1IngestFile(row.id, url, g.file.name, "guide_files").catch(()=>{});
+      }
+    }catch(e){ /* one bad upload shouldn't block finishing setup */ }
+  }
+}
+async function obFinish(btn, skipUploads){
+  obSaveVisible();
+  if(btn){ btn.disabled = true; btn.textContent = "Saving…"; }
+  const label = t => { if(btn) btn.textContent = t; };
+  try{ await obPersist(); }
+  catch(e){ showAlert("Saved locally, but Supabase rejected the write: " + (e.message||e), "Couldn't save profile"); }
+  if(Array.isArray(obState.suggested) && obState.suggested.length){
+    label("Saving competitors…");
+    for(const c of obState.suggested){
+      if(!c || !c.name) continue;
+      try{ await sbPost("competitors", { name:c.name, website:c.website||null, notes:c.reason||"", status:"suggested", source:"ai", added_by:whoAmI() }); }catch(e){}
+    }
+  }
+  if(!skipUploads) await obUploadGuides(label);
+  localStorage.setItem(obKey(),"1");
+  obClose();
+  setTimeout(()=>startTour("home"), 400);
+}
+function obClose(){
+  const el = document.getElementById("obOverlay"); if(el) el.remove();
+  render();
+}
+
+/* ================= GUIDED TOUR ================= */
+const TOURS = {
+  home: [
+    { sel:".greet", title:"Your starting point", text:"The greeting card shows today's date and live counts from the knowledge base — agents running, runs recorded, leads in the pipeline, and anything waiting on your review." },
+    { sel:"#homeStats .chip:last-child", title:"Jump straight to what needs you", text:"When items are pending, this gold chip is clickable and drops you right into the review queue." },
+    { sel:"#homeEngines", title:"The engines", text:"Engine 1 runs client delivery, Engine 3 runs marketing intelligence. Open either one from here or from the sidebar." },
+    { sel:"#homeActions", title:"Pipeline and reviews", text:"Two groups: what's awaiting approval, and the most recent agent outputs. Every row is clickable and takes you to the source." },
+    { sel:"#askBubble", title:"Ask anything", text:"This bot reads your leads, briefs, uploaded documents, HubSpot contacts and competitors. Ask it for a lead status, or what pain points the last growth plan mentioned." }
+  ],
+  e1: [
+    { engine:"e1", view:"e1pipeline", sel:'.engines button[data-eng="e1"]', title:"Engine 1 · Client Delivery", text:"Five agents chained together: lead research, interview script, anonymized assessment, discovery framework, and growth plan." },
+    { engine:"e1", view:"e1pipeline", sel:"#main .card", title:"The pipeline board", text:"Each lead moves left to right through the five stages. Green means the agent finished and produced a document." },
+    { engine:"e1", view:"e1leads", sel:"#main", title:"The lead table", text:"Every lead with status, AI readiness, fit rating, and a full view link. Sort and filter here when the board gets busy." }
+  ],
+  e1lead: [
+    { sel:"#main .card", title:"Stage by stage", text:"Expand any completed stage to read the brief inline, leave a comment, or open the source PDF and Google Doc." },
+    { sel:"#main", title:"Files and HubSpot", text:"Scroll down for the Files section — agent documents appear automatically, and anything you upload gets text-indexed so the Ask bot can read it. The HubSpot card below shows the synced CRM record." }
+  ],
+  e3: [
+    { engine:"e3", view:"intel", sel:'.engines button[data-eng="e3"]', title:"Engine 3 · Marketing Intelligence", text:"Three agents sharing one knowledge base: competitor intel daily, paid-ad strategy weekly, and funnel production." },
+    { engine:"e3", view:"intel", sel:".views", title:"Switch between agents", text:"Overview summarizes everything. Intel Tracker, Ad Strategist, Low-Ticket Agent and Ad Testing each open that agent's output." },
+    { engine:"e3", view:"intel", sel:"#main", title:"Review and approve", text:"Drafts wait here for your approval. Approve or deny each one, and add comments the next run will take into account." }
+  ],
+  workspace: [
+    { view:"tasks", sel:'.nav button[data-ws-btn="tasks"]', title:"Tasks", text:"Your Asana workspace, embedded. Filter and quick-add without leaving the dashboard." },
+    { view:"notion", sel:'.nav button[data-ws-btn="notion"]', title:"Notes", text:"Notion pages through a proxy workflow, so client notes sit beside the agent output." },
+    { view:"hubspot", sel:'.nav button[data-ws-btn="hubspot"]', title:"HubSpot", text:"Contacts synced from your CRM every six hours. Matching leads get an Open lead link straight to their pipeline page." },
+    { view:"profile", sel:'.nav button[data-ws-btn="profile"]', title:"Company profile", text:"Everything you entered during setup lives here, plus your competitor watchlist and the output-format guides the agents follow." },
+    { sel:"#sideUser", title:"Your account", text:"Click your name to change your display name, email, photo or password, and to switch the dashboard theme." }
+  ]
+};
+let tourState = { key:null, i:0, steps:[] };
+
+function tourSeenKey(){ return "aip_tour_" + (sessionStorage.getItem("aip_username")||"team").toLowerCase(); }
+function startTour(key){
+  const steps = TOURS[key]; if(!steps || !steps.length) return;
+  tourState = { key, i:0, steps };
+  tourShow();
+}
+function tourEnd(){
+  ["tourHole","tourPop"].forEach(id=>{ const el=document.getElementById(id); if(el) el.remove(); });
+  document.removeEventListener("keydown", tourKeys, true);
+  window.removeEventListener("resize", tourReposition);
+  window.removeEventListener("scroll", tourReposition, true);
+  const seen = tourSeen(); seen[tourState.key] = 1;
+  localStorage.setItem(tourSeenKey(), JSON.stringify(seen));
+  tourState = { key:null, i:0, steps:[] };
+}
+function tourSeen(){ try{ return JSON.parse(localStorage.getItem(tourSeenKey())||"{}"); }catch(e){ return {}; } }
+function tourKeys(e){
+  if(e.key==="Escape"){ e.preventDefault(); tourEnd(); }
+  else if(e.key==="ArrowRight"){ e.preventDefault(); tourNext(); }
+  else if(e.key==="ArrowLeft"){ e.preventDefault(); tourPrev(); }
+}
+function tourNext(){ if(tourState.i < tourState.steps.length-1){ tourState.i++; tourShow(); } else tourEnd(); }
+function tourPrev(){ if(tourState.i > 0){ tourState.i--; tourShow(); } }
+async function tourShow(){
+  const s = tourState.steps[tourState.i];
+  if(!s) return tourEnd();
+  // navigate first if the step lives on another screen
+  if(s.engine && state.engine !== s.engine){ state.engine = s.engine; if(s.view) state.view = s.view; render(); await tourWait(260); }
+  else if(s.view && state.view !== s.view){ setView(s.view); await tourWait(260); }
+  let hole = document.getElementById("tourHole");
+  let pop  = document.getElementById("tourPop");
+  if(!hole){ hole = document.createElement("div"); hole.id="tourHole"; hole.className="tour-hole"; document.body.appendChild(hole); }
+  if(!pop){ pop = document.createElement("div"); pop.id="tourPop"; pop.className="tour-pop"; document.body.appendChild(pop); }
+  const target = s.sel ? document.querySelector(s.sel) : null;
+  if(target && target.scrollIntoView){
+    target.scrollIntoView({ block:"center", behavior:"smooth" });
+    await tourWait(220);
+  }
+  document.removeEventListener("keydown", tourKeys, true);
+  document.addEventListener("keydown", tourKeys, true);
+  window.removeEventListener("resize", tourReposition);
+  window.addEventListener("resize", tourReposition);
+  pop.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="tt">${esc(({home:"Home",e1:"Engine 1",e1lead:"Lead detail",e3:"Engine 3",workspace:"Workspace"})[tourState.key]||"Tour")}</span>
+      <button class="tour-x" style="margin-left:auto" onclick="tourEnd()">Skip ✕</button>
+    </div>
+    <h4>${esc(s.title)}</h4>
+    <p>${s.text}</p>
+    <div class="tour-nav">
+      <span class="tour-dots">${tourState.i+1} of ${tourState.steps.length}</span>
+      ${tourState.i>0?`<button class="btn ghost" onclick="tourPrev()">Back</button>`:""}
+      <button class="btn navy" onclick="tourNext()">${tourState.i===tourState.steps.length-1?"Done":"Next"}</button>
+    </div>`;
+  tourReposition();
+}
+function tourWait(ms){ return new Promise(r=>setTimeout(r, ms)); }
+function tourReposition(){
+  const hole = document.getElementById("tourHole");
+  const pop  = document.getElementById("tourPop");
+  if(!hole || !pop) return;
+  const s = tourState.steps[tourState.i]; if(!s) return;
+  const el = s.sel ? document.querySelector(s.sel) : null;
+  const pad = 8;
+  if(el){
+    const r = el.getBoundingClientRect();
+    const h = Math.min(r.height + pad*2, window.innerHeight - 20);
+    hole.style.display = "block";
+    hole.style.top    = Math.max(6, r.top - pad) + "px";
+    hole.style.left   = Math.max(6, r.left - pad) + "px";
+    hole.style.width  = Math.min(r.width + pad*2, window.innerWidth - 12) + "px";
+    hole.style.height = h + "px";
+    const pw = pop.offsetWidth || 340, ph = pop.offsetHeight || 190;
+    let top = r.bottom + 14, left = r.left;
+    if(top + ph > window.innerHeight - 10) top = Math.max(10, r.top - ph - 14);
+    if(top + ph > window.innerHeight - 10) top = Math.max(10, (window.innerHeight - ph)/2);
+    left = Math.max(10, Math.min(left, window.innerWidth - pw - 10));
+    pop.style.top = top + "px"; pop.style.left = left + "px";
+  } else {
+    // no target on screen — center the card and dim everything
+    hole.style.display = "block";
+    hole.style.top = "50%"; hole.style.left = "50%";
+    hole.style.width = "0px"; hole.style.height = "0px";
+    const pw = pop.offsetWidth || 340, ph = pop.offsetHeight || 190;
+    pop.style.top = Math.max(10, (window.innerHeight - ph)/2) + "px";
+    pop.style.left = Math.max(10, (window.innerWidth - pw)/2) + "px";
+  }
+}
+function tourAutoStart(){
+  if(localStorage.getItem(obKey())!=="1") return;      // still onboarding
+  if(document.getElementById("obOverlay")) return;
+  const seen = tourSeen();
+  const key = state.engine==="home" ? "home"
+            : state.view==="e1lead" ? "e1lead"
+            : state.engine==="e1" ? "e1"
+            : state.engine==="e3" ? "e3"
+            : ["tasks","notion","hubspot","profile"].includes(state.view) ? "workspace" : null;
+  if(!key || seen[key]) return;
+  if(tourState.key) return;
+  setTimeout(()=>startTour(key), 650);
+}
+function tourMenu(){
+  const existing = document.getElementById("tourMenuWrap"); if(existing) existing.remove();
+  const items = [["home","Home"],["e1","Engine 1 · Client Delivery"],["e1lead","Lead detail page"],["e3","Engine 3 · Marketing Intelligence"],["workspace","Workspace & account"]];
+  const wrap = document.createElement("div");
+  wrap.id = "tourMenuWrap";
+  wrap.style.cssText = "position:fixed;inset:0;z-index:998;background:rgba(30,40,60,.45);display:flex;align-items:center;justify-content:center;padding:20px";
+  const box = document.createElement("div");
+  box.style.cssText = "background:var(--white);border-radius:15px;max-width:420px;width:100%;padding:22px 24px;box-shadow:0 18px 60px rgba(0,0,0,.25)";
+  box.innerHTML = `<div style="font-size:1.1rem;font-weight:750;color:var(--ink);margin-bottom:4px">Guided tour</div>
+    <div style="font-size:.85rem;color:var(--muted);margin-bottom:14px">Pick a section to walk through. Arrow keys navigate, Esc exits.</div>`;
+  items.forEach(([k,l])=>{
+    const b = document.createElement("button");
+    b.className = "btn ghost";
+    b.style.cssText = "display:block;width:100%;text-align:left;margin-bottom:7px;padding:11px 14px";
+    b.textContent = l;
+    b.onclick = () => { wrap.remove(); startTour(k); };
+    box.appendChild(b);
+  });
+  const foot = document.createElement("div");
+  foot.style.cssText = "display:flex;justify-content:flex-end;margin-top:10px";
+  const close = document.createElement("button");
+  close.className = "btn ghost"; close.textContent = "Close";
+  close.onclick = () => wrap.remove();
+  foot.appendChild(close); box.appendChild(foot);
+  wrap.appendChild(box);
+  document.body.appendChild(wrap);
+  wrap.onclick = e => { if(e.target===wrap) wrap.remove(); };
 }
 
 /* ================= PASSWORD GATE ================= */
@@ -3869,7 +5207,7 @@ async function tryUnlock(){
   errEl.textContent = "";
   let rows;
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/dashboard_users?username=eq.${encodeURIComponent(u)}&active=is.true&select=username,display_name,salt,password_hash`,
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/dashboard_users?username=eq.${encodeURIComponent(u)}&active=is.true&select=*`,
       { headers:{ apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } });
     if(!res.ok) throw new Error(await res.text());
     rows = await res.json();
@@ -3881,16 +5219,26 @@ async function tryUnlock(){
   if(user && (await sha256Hex((user.salt||"") + v)) === user.password_hash){
     sessionStorage.setItem("aip_unlocked","1");
     sessionStorage.setItem("aip_user", user.display_name || (u.charAt(0).toUpperCase()+u.slice(1)));
+    sessionStorage.setItem("aip_username", u);
+    sessionStorage.setItem("aip_email", user.email || "");
+    sessionStorage.setItem("aip_avatar", user.avatar_url || "");
     document.getElementById("lockScreen").remove();
     render();
+    bootAfterLogin();
   } else {
     errEl.textContent = "Incorrect username or password.";
     document.getElementById("pwInput").select();
   }
 }
+async function bootAfterLogin(){
+  let started = false;
+  try{ started = await maybeOnboard(); }catch(e){}
+  if(!started) tourAutoStart();
+}
 if(sessionStorage.getItem("aip_unlocked")==="1" && sessionStorage.getItem("aip_user")){
   document.getElementById("lockScreen").remove();
   render();
+  bootAfterLogin();
 } else {
   sessionStorage.removeItem("aip_unlocked");
   setTimeout(()=>document.getElementById("userInput").focus(), 50);
