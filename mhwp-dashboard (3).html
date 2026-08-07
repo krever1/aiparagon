@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meridian Harbor Wealth Partners — Advisor Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1B1F3B;
+  --ink-2:#1E2337;
+  --slate:#3E4463;
+  --mist:#8A8FA8;
+  --line:#E9EAF4;
+  --paper:#F1EFFB;
+  --card:#FFFFFF;
+  --teal:#6C5DD3;
+  --teal-deep:#5A4BC4;
+  --teal-soft:#EDE9FC;
+  --brass:#B7791F;
+  --brass-soft:#FBF1DC;
+  --flag:#DC4C3F;
+  --flag-soft:#FCE9E7;
+  --ok:#1FA060;
+  --ok-soft:#E4F5EC;
+  --radius:16px;
+  --shadow:0 2px 6px rgba(27,31,59,.04),0 10px 30px rgba(27,31,59,.05);
+  --font-body:'Inter',system-ui,sans-serif;
+  --font-display:'Inter',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:15px}
+body{font-family:var(--font-body);background:var(--paper);color:var(--slate);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:inherit}
+h1,h2,h3{color:var(--ink);font-weight:700}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+::selection{background:rgba(108,93,211,.22)}
+*{scrollbar-width:thin;scrollbar-color:#C9CBE2 transparent}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#C9CBE2;border-radius:99px;border:2px solid var(--paper)}
+::-webkit-scrollbar-track{background:transparent}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ---------- app shell ---------- */
+.app{display:none;min-height:100vh}
+.app.on{display:grid;grid-template-columns:248px 1fr}
+.sidebar{background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{padding:20px 18px 16px;display:flex;align-items:center;gap:11px}
+.brand .logo-tile{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#7C6CF0,#5A4BC4);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(108,93,211,.35);flex:0 0 42px}
+.brand .logo-tile svg{color:#fff}
+.brand .wordmark{font-size:.98rem;font-weight:800;color:var(--ink);line-height:1.2;letter-spacing:-.01em}
+.brand .tag{font-size:.66rem;color:var(--mist);margin-top:2px;font-weight:500}
+.nav{padding:8px 12px;flex:1;overflow-y:auto}
+.nav-label{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:#B4B8CC;padding:12px 12px 6px;font-weight:700}
+.nav button{position:relative;display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:10px 12px;border-radius:12px;font-size:.86rem;font-weight:500;color:var(--mist);margin-bottom:3px;transition:background .15s,color .15s}
+.nav button:hover{background:#F5F4FC;color:var(--ink)}
+.nav button.active{background:var(--teal-soft);color:var(--teal-deep);font-weight:600}
+.nav button.active .nv-ic{color:var(--teal)}
+.nv-ic{width:17px;height:17px;flex:0 0 17px;color:#B4B8CC}
+.side-foot{padding:14px 18px;border-top:1px solid var(--line);font-size:.74rem;color:var(--mist)}
+.side-foot b{color:var(--ink);font-weight:700;display:block;font-size:.8rem}
+.reset-link{margin-top:8px;font-size:.72rem;color:var(--mist);text-decoration:underline;padding:0;display:block}
+.reset-link:hover{color:var(--teal-deep)}
+
+.main{display:flex;flex-direction:column;min-width:0}
+.topbar{display:flex;align-items:center;gap:12px;padding:13px 26px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:40}
+.crumb{font-size:.76rem;color:var(--mist);min-width:130px}
+.crumb b{color:var(--ink);font-weight:800;display:block;font-size:1.05rem;letter-spacing:-.01em}
+.search-pill{flex:1;max-width:420px;margin:0 auto;display:flex;align-items:center;gap:9px;background:var(--paper);border:1px solid transparent;border-radius:99px;padding:9px 16px;font-size:.8rem;color:var(--mist);transition:border-color .15s,background .15s}
+.search-pill:hover{border-color:var(--teal);background:#fff}
+.search-pill svg{flex:0 0 14px;color:var(--mist)}
+.topbar .sp{flex:1}
+.preset-switch{display:flex;background:var(--paper);border-radius:99px;padding:3px;gap:2px}
+.preset-switch button{padding:6px 13px;border-radius:99px;font-size:.76rem;font-weight:600;color:var(--mist);transition:background .15s,color .15s}
+.preset-switch button.on{background:var(--ink-2);color:#fff}
+.audit-btn{display:flex;align-items:center;gap:7px;padding:8px 13px;border:1px solid var(--line);border-radius:11px;font-size:.78rem;font-weight:600;color:var(--ink);background:var(--card);transition:border-color .15s,box-shadow .15s}
+.audit-btn:hover{border-color:var(--teal);box-shadow:0 4px 12px rgba(108,93,211,.12)}
+.audit-dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.user-chip{display:flex;align-items:center;gap:9px}
+.user-chip .ava{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7C6CF0,#5A4BC4);color:#fff;font-weight:700;font-size:.82rem;display:flex;align-items:center;justify-content:center}
+.user-chip b{display:block;font-size:.8rem;color:var(--ink);font-weight:700;line-height:1.2}
+.user-chip span{font-size:.68rem;color:var(--mist)}
+.content{padding:26px;max-width:1180px;width:100%;margin:0 auto}
+
+/* ---------- shared bits ---------- */
+.view{display:none}
+.view.on{display:block}
+.view.on>*{animation:fadeUp .45s cubic-bezier(.22,.8,.36,1) both}
+.view.on>*:nth-child(2){animation-delay:.05s}
+.view.on>*:nth-child(3){animation-delay:.1s}
+.view.on>*:nth-child(4){animation-delay:.15s}
+.view.on>*:nth-child(5){animation-delay:.2s}
+.view.on>*:nth-child(6){animation-delay:.25s}
+.view.on>*:nth-child(n+7){animation-delay:.3s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.page-head{margin-bottom:20px}
+.page-head h1{font-size:1.55rem;font-weight:800;letter-spacing:-.02em}
+.page-head p{color:var(--mist);font-size:.88rem;margin-top:5px;max-width:64ch}
+.eyebrow{font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-deep);font-weight:700;margin-bottom:6px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-pad{padding:18px}
+.card h3{font-size:.95rem;margin-bottom:4px;font-weight:700}
+.card .sub{font-size:.8rem;color:var(--mist)}
+.stat-card{padding:0;display:flex;flex-direction:column;text-align:left;width:100%;overflow:hidden}
+.stat-card .l{order:1;background:var(--teal-soft);padding:11px 16px;font-size:.78rem;font-weight:600;color:var(--ink)}
+.stat-card .k{order:2;font-size:1.75rem;color:var(--ink);font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;padding:12px 16px 0;letter-spacing:-.02em}
+.stat-card .k small{font-size:.9rem;color:var(--mist);font-weight:600}
+.stat-card .d{order:3;font-size:.72rem;padding:3px 16px 12px;font-weight:600;margin-top:auto}
+.stat-card{transition:border-color .15s,transform .18s,box-shadow .18s}
+button.stat-card{cursor:pointer}
+button.stat-card:hover{border-color:var(--teal);transform:translateY(-2px);box-shadow:0 4px 8px rgba(27,31,59,.05),0 14px 30px rgba(108,93,211,.14)}
+.d.up{color:var(--ok)}.d.warn{color:var(--flag)}.d.na{color:var(--mist);font-weight:500}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.pill.teal{background:var(--teal-soft);color:var(--teal-deep)}
+.pill.brass{background:var(--brass-soft);color:var(--brass)}
+.pill.flag{background:var(--flag-soft);color:var(--flag)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.grey{background:#EFF0F6;color:var(--mist)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 17px;border-radius:11px;font-size:.83rem;font-weight:600;transition:filter .12s,transform .1s,box-shadow .15s}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(180deg,#7C6CF0,#6C5DD3);color:#fff;box-shadow:0 4px 12px rgba(108,93,211,.35)}
+.btn.primary:hover{filter:brightness(1.06);box-shadow:0 6px 18px rgba(108,93,211,.45)}
+.btn.ink{background:var(--ink-2);color:#fff;box-shadow:0 4px 12px rgba(30,35,55,.3)}
+.btn.ghost{border:1px solid var(--line);color:var(--ink);background:var(--card)}
+.btn.ghost:hover{border-color:var(--teal);color:var(--teal-deep)}
+.btn.sm{padding:6px 12px;font-size:.75rem;border-radius:9px}
+.btn[disabled]{opacity:.5;cursor:default}
+.tbl{width:100%;border-collapse:collapse;font-size:.84rem}
+.tbl th{text-align:left;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mist);font-weight:700;padding:11px 16px;border-bottom:1px solid var(--line)}
+.tbl td{padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr.rowbtn{cursor:pointer}
+.tbl tr.rowbtn:hover td{background:#F7F6FD}
+.num{font-variant-numeric:tabular-nums}
+.list-row{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.list-row:last-child{border-bottom:none}
+.list-row .t{font-size:.85rem;color:var(--ink);font-weight:600}
+.list-row .s{font-size:.78rem;color:var(--mist);margin-top:2px}
+.section-title{display:flex;align-items:baseline;justify-content:space-between;margin:26px 0 12px}
+.section-title h2{font-size:1.02rem;font-weight:700;display:flex;align-items:center;gap:9px}
+.section-title h2::before{content:"";width:14px;height:3px;border-radius:3px;background:linear-gradient(90deg,var(--teal) 60%,rgba(108,93,211,.25) 60%);flex:0 0 14px}
+.section-title .hint{font-size:.74rem;color:var(--mist)}
+.mono{font-family:var(--font-mono);font-size:.74rem}
+.tabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:5px;width:max-content;max-width:100%}
+.tabs button{padding:8px 15px;font-size:.8rem;font-weight:600;color:var(--mist);border-radius:9px;transition:color .15s,background .15s}
+.tabs button:hover{color:var(--ink)}
+.tabs button.on{color:#fff;background:var(--ink-2)}
+.callout{border-left:3px solid var(--teal);background:#F5F3FE;border-radius:0 12px 12px 0;padding:12px 16px;font-size:.82rem;color:var(--slate)}
+.callout b{color:var(--ink)}
+.empty{padding:34px;text-align:center;color:var(--mist);font-size:.84rem}
+.empty::before{content:"◎";display:block;font-size:1.5rem;color:#C9CBE2;margin-bottom:8px}
+
+/* ---------- login ---------- */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#E9E6F8;position:relative;overflow:hidden;padding:24px}
+.login::before{content:"";position:absolute;width:900px;height:900px;border-radius:50%;border:1.5px solid rgba(108,93,211,.16);left:50%;top:50%;transform:translate(-50%,-50%)}
+.login::after{content:"";position:absolute;width:1250px;height:1250px;border-radius:50%;border:1.5px solid rgba(108,93,211,.1);left:50%;top:50%;transform:translate(-50%,-50%)}
+.fl{position:absolute;z-index:1}
+.fl.sq{width:14px;height:14px;background:#fff;border-radius:3px}
+.fl.dm{width:14px;height:14px;background:var(--teal);border-radius:3px;transform:rotate(45deg);opacity:.85}
+.fl.dt{width:9px;height:9px;background:#fff;border-radius:50%}
+.login-card{position:relative;z-index:2;width:min(920px,100%);background:var(--card);border-radius:20px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;box-shadow:0 40px 100px rgba(27,31,59,.35);animation:fadeUp .5s cubic-bezier(.22,.8,.36,1) both}
+.login-brand{background:#151A38;color:#B9BDD6;padding:36px 32px;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;overflow:hidden;background-image:linear-gradient(135deg,rgba(255,255,255,.03) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.03) 50%,rgba(255,255,255,.03) 75%,transparent 75%);background-size:44px 44px}
+.login-brand>*{position:relative;z-index:2}
+.logo-row{display:flex;align-items:center;gap:10px;margin-bottom:26px}
+.logo-row .logo-tile{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#7C6CF0,#5A4BC4);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(108,93,211,.5)}
+.logo-row .logo-tile svg{color:#fff}
+.logo-row b{color:#fff;font-weight:800;font-size:1.08rem;letter-spacing:-.01em}
+.preview-wrap{position:relative;margin:6px 0 24px}
+.preview{width:280px;background:#fff;border-radius:12px;padding:9px;display:grid;grid-template-columns:52px 1fr;gap:8px;box-shadow:0 30px 60px rgba(0,0,0,.5);transform:rotate(-2deg)}
+.pv-side{background:linear-gradient(180deg,#7C6CF0,#5A4BC4);border-radius:8px;padding:8px 0;display:flex;flex-direction:column;align-items:center;gap:7px}
+.pv-side i{width:20px;height:20px;border-radius:6px;background:rgba(255,255,255,.25);display:block}
+.pv-side i:first-child{background:#fff}
+.pv-main{display:flex;flex-direction:column;gap:6px}
+.pv-bar{height:10px;border-radius:5px;background:#EDEBF9;width:70%}
+.pv-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pv-stat{height:30px;border-radius:7px;background:#F1EFFB;position:relative}
+.pv-stat::after{content:"";position:absolute;left:7px;top:8px;width:55%;height:6px;border-radius:3px;background:#C9C2F2}
+.pv-row{height:11px;border-radius:5px;background:#F4F3FB}
+.pv-row.w2{width:85%}
+.pv-tri{position:absolute;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:15px solid #7C6CF0;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
+.pv-tri.a{right:-22px;top:24px;transform:rotate(18deg)}
+.pv-tri.b{left:-20px;bottom:8px;transform:rotate(-14deg);border-bottom-color:#B9AFFF}
+.login-brand h2{color:#fff;font-size:1.32rem;font-weight:800;letter-spacing:-.01em}
+.login-brand .blurb{font-size:.8rem;line-height:1.6;margin-top:9px;color:#9AA0BF;max-width:38ch}
+.login-brand .facts-row{margin-top:16px;font-size:.72rem;color:#7C83A6;font-weight:600}
+.login-brand .facts-row b{color:#fff;font-weight:700}
+.dots{display:flex;gap:7px;margin-top:auto;padding-top:22px;justify-content:center}
+.dots span{width:22px;height:4px;border-radius:99px;background:rgba(255,255,255,.18)}
+.dots span:first-child{background:var(--teal)}
+.login-right{padding:42px 36px;display:flex;flex-direction:column;justify-content:center}
+.login-right h2{font-size:1.3rem;font-weight:800;margin-bottom:4px;letter-spacing:-.01em}
+.login-right .sub{font-size:.82rem;color:var(--mist);margin-bottom:20px}
+.preset-pick{display:grid;gap:12px}
+.preset-card{text-align:left;border:1.5px solid var(--line);border-radius:14px;padding:16px;background:var(--card);transition:border-color .15s,background .15s,transform .18s,box-shadow .18s}
+.preset-card:hover{border-color:var(--teal);background:#FAF9FF;transform:translateY(-2px);box-shadow:0 14px 30px rgba(108,93,211,.16)}
+.preset-card .who2{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.preset-card .who2 b{font-size:.94rem;color:var(--ink);font-weight:700}
+.preset-card p{font-size:.77rem;color:var(--mist);margin-top:6px;line-height:1.55}
+.demo-note{margin-top:18px;font-size:.71rem;color:var(--mist);line-height:1.5}
+
+/* ---------- home hero ---------- */
+.hero{background:linear-gradient(120deg,#6C5DD3,#5A4BC4 55%,#4B3EB0);border-radius:18px;color:#DCD8F7;padding:24px 26px;display:flex;gap:24px;align-items:center;justify-content:space-between;position:relative;overflow:hidden;margin-bottom:18px;box-shadow:0 16px 40px rgba(90,75,196,.3)}
+.hero::after{content:"";position:absolute;right:-70px;top:-70px;width:260px;height:260px;border:1px dashed rgba(255,255,255,.35);border-radius:50%;animation:spin 90s linear infinite}
+.hero::before{content:"";position:absolute;right:-30px;top:-110px;width:260px;height:260px;border:1px solid rgba(255,255,255,.12);border-radius:50%}
+.hero h1{color:#fff;font-size:1.34rem;font-weight:800;letter-spacing:-.015em}
+.hero p{font-size:.84rem;margin-top:6px;color:#CCC6F2;max-width:56ch}
+.hero .cta-wrap{display:flex;gap:10px;position:relative;z-index:2;flex-wrap:wrap}
+.hero .btn.primary{background:#fff;color:var(--teal-deep);box-shadow:0 6px 16px rgba(0,0,0,.18)}
+.hero .eyebrow{color:#C7BFFF}
+
+/* ---------- plan engine ---------- */
+.assump{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
+.assump:last-child{border-bottom:none}
+.assump label{font-size:.8rem;color:var(--slate);font-weight:500}
+.assump .src{font-size:.66rem;color:var(--mist);display:block;margin-top:1px;font-weight:400}
+.assump input,.assump select{width:110px;padding:6px 9px;border:1px solid var(--line);border-radius:8px;font-size:.8rem;text-align:right;color:var(--ink);background:#FAFAFE}
+.gen-panel{border:1.5px dashed #D8D5EF;border-radius:14px;padding:26px;text-align:center;background:#FAF9FF}
+.gen-steps{display:grid;gap:8px;max-width:420px;margin:0 auto;text-align:left}
+.gen-step{display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--mist)}
+.gen-step .tick{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);flex:0 0 16px;display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#fff}
+.gen-step.done{color:var(--ink)}
+.gen-step.done .tick{background:var(--ok);border-color:var(--ok)}
+.gen-step.doing .tick{border-color:var(--teal);animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 4px rgba(108,93,211,.18)}}
+.plan-doc{border:1px solid var(--line);border-radius:14px;background:#fff;padding:26px 30px;box-shadow:var(--shadow)}
+.plan-doc h2{font-weight:800;font-size:1.2rem;margin-bottom:2px;letter-spacing:-.01em}
+.plan-doc .meta{font-size:.73rem;color:var(--mist);margin-bottom:16px}
+.plan-doc h4{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--teal-deep);margin:18px 0 8px;font-weight:700}
+.plan-doc p{font-size:.86rem;line-height:1.65;color:var(--slate)}
+.plan-doc p[contenteditable]:hover{background:#F7F6FD;border-radius:6px;box-shadow:0 0 0 4px #F7F6FD}
+.scenario-chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+.scenario-chips button{padding:7px 13px;border:1px solid var(--line);border-radius:99px;font-size:.75rem;font-weight:600;color:var(--slate);background:var(--card);transition:background .15s,color .15s}
+.scenario-chips button:hover{border-color:var(--teal)}
+.scenario-chips button.on{background:var(--ink-2);border-color:var(--ink-2);color:#fff}
+.runout{display:flex;align-items:flex-end;gap:3px;height:110px;margin:12px 0 4px}
+.runout .bar{flex:1;background:linear-gradient(180deg,#8B7DF3,#6C5DD3);border-radius:3px 3px 0 0;min-height:3px;transition:height .4s ease}
+.runout .bar.low{background:linear-gradient(180deg,#F0B35C,#DD9A34)}
+.runout .bar.zero{background:var(--flag)}
+.runout-x{display:flex;justify-content:space-between;font-size:.66rem;color:var(--mist)}
+.fanout{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.fan-card{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--card)}
+.fan-card .t{font-size:.8rem;font-weight:700;color:var(--ink)}
+.fan-card .s{font-size:.72rem;color:var(--mist);margin-top:3px}
+.genrec{background:#F7F6FD;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.genrec div{display:flex;justify-content:space-between;gap:12px;padding:3px 0}
+
+/* ---------- content studio ---------- */
+.hook-tag{display:inline-block;font-style:italic;font-size:.9rem;color:var(--ink)}
+.asset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.asset{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--card);position:relative;animation:fadeUp .3s ease both;transition:transform .18s,box-shadow .18s,border-color .15s;box-shadow:var(--shadow)}
+.asset:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(108,93,211,.14);border-color:var(--teal)}
+.asset .kind{font-size:.63rem;letter-spacing:.12em;text-transform:uppercase;color:var(--teal-deep);font-weight:700}
+.asset .hook{font-size:.92rem;font-weight:700;color:var(--ink);margin:7px 0 5px;line-height:1.35;letter-spacing:-.005em}
+.asset .body{font-size:.75rem;color:var(--mist);line-height:1.5}
+.asset .foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.voice-trait{display:flex;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px dashed var(--line);font-size:.8rem}
+.voice-trait:last-child{border-bottom:none}
+.voice-trait b{color:var(--ink);flex:0 0 118px;font-size:.73rem;font-weight:700}
+
+/* ---------- governance ---------- */
+.consent-flow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.consent-step{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--card);box-shadow:var(--shadow)}
+.consent-step .n{font-family:var(--font-mono);font-size:.68rem;color:var(--teal-deep);font-weight:600}
+.consent-step .t{font-size:.85rem;font-weight:700;color:var(--ink);margin:4px 0}
+.consent-step p{font-size:.75rem;color:var(--mist);line-height:1.5}
+.juris{display:flex;gap:10px;flex-wrap:wrap}
+.juris .j{border:1px solid var(--line);border-radius:11px;padding:10px 14px;background:var(--card);font-size:.76rem;color:var(--mist)}
+.juris .j b{display:block;color:var(--ink);font-size:.84rem;font-weight:700}
+.policy-q{border-bottom:1px solid var(--line)}
+.policy-q:last-child{border-bottom:none}
+.policy-q button{width:100%;display:flex;justify-content:space-between;gap:12px;align-items:center;text-align:left;padding:14px 16px;font-size:.85rem;font-weight:600;color:var(--ink)}
+.policy-q .a{display:none;padding:0 16px 14px;font-size:.82rem;color:var(--slate);line-height:1.6}
+.policy-q.open .a{display:block}
+.policy-q .chev{transition:transform .15s;color:var(--mist);flex:0 0 auto}
+.policy-q.open .chev{transform:rotate(180deg)}
+
+/* ---------- client 360 ---------- */
+.gen-map{padding:18px}
+.gen-tier{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.gen-tier .lab{flex:0 0 92px;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mist);font-weight:700}
+.person{border:1px solid var(--line);border-radius:11px;padding:8px 12px;font-size:.76rem;background:var(--card);color:var(--mist)}
+.person b{color:var(--ink);display:block;font-size:.81rem;font-weight:700}
+.person.client{border-color:var(--teal);background:var(--teal-soft)}
+.person.heir{border-style:dashed}
+.brief-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:.83rem;align-items:flex-start}
+.brief-item:last-child{border-bottom:none}
+.brief-item .ic{color:var(--teal);flex:0 0 auto;margin-top:2px}
+
+/* ---------- pipeline ---------- */
+.score{display:inline-flex;align-items:center;gap:7px}
+.score .track{width:64px;height:6px;border-radius:99px;background:#EDEBF9;overflow:hidden}
+.score .fill{height:100%;border-radius:99px;background:var(--teal)}
+.score.hot .fill{background:#F0A13A}
+.dropoff{display:flex;align-items:flex-end;gap:2px;height:70px}
+.dropoff .b{flex:1;background:linear-gradient(180deg,#8B7DF3,#6C5DD3);border-radius:2px 2px 0 0}
+.dropoff .b.pt{background:var(--flag)}
+.ref-node{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.ref-node:last-child{border-bottom:none}
+.ref-node .cnt{font-size:1.25rem;font-weight:800;color:var(--teal-deep);flex:0 0 40px;text-align:center;font-variant-numeric:tabular-nums}
+
+/* ---------- modal & drawer ---------- */
+.overlay{position:fixed;inset:0;background:rgba(21,26,56,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+.overlay.on{display:flex}
+.modal{background:var(--card);border-radius:18px;width:min(520px,100%);max-height:88vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,.35);animation:fadeUp .2s ease}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line)}
+.modal-head h3{font-size:1rem;font-weight:700}
+.modal-body{padding:20px 22px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.73rem;font-weight:700;color:var(--ink);margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:11px;font-size:.84rem;color:var(--ink);background:#FAFAFE;transition:border-color .15s}
+.field input:focus,.field select:focus{border-color:var(--teal);outline:none}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(430px,92vw);background:var(--card);box-shadow:-16px 0 50px rgba(27,31,59,.22);transform:translateX(105%);transition:transform .25s ease;z-index:110;display:flex;flex-direction:column}
+.drawer.on{transform:none}
+.drawer-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.drawer-body{flex:1;overflow-y:auto;padding:14px 22px}
+.audit-entry{padding:11px 0 11px 12px;border-bottom:1px solid var(--line);border-left:2px solid transparent}
+.audit-entry:first-child{border-left-color:var(--teal);background:linear-gradient(90deg,rgba(108,93,211,.06),transparent 70%)}
+.audit-entry .when{font-family:var(--font-mono);font-size:.68rem;color:var(--mist)}
+.audit-entry .what{font-size:.82rem;color:var(--ink);margin-top:3px;font-weight:500}
+.audit-entry .who{font-size:.74rem;color:var(--mist);margin-top:2px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink-2);color:#fff;padding:11px 20px 11px 16px;border-radius:99px;font-size:.82rem;font-weight:600;z-index:200;transition:transform .25s ease;box-shadow:0 12px 34px rgba(21,26,56,.4);display:flex;align-items:center;gap:9px}
+.toast::before{content:"";width:7px;height:7px;border-radius:50%;background:#8B7DF3;flex:0 0 7px}
+.toast.on{transform:translateX(-50%)}
+
+/* ---------- ask the record ---------- */
+.fab{position:fixed;right:22px;bottom:22px;z-index:95;display:none;align-items:center;gap:9px;background:linear-gradient(135deg,#7C6CF0,#5A4BC4);color:#fff;border-radius:99px;padding:13px 19px;font-size:.85rem;font-weight:600;box-shadow:0 12px 30px rgba(108,93,211,.45);transition:transform .15s}
+.fab:hover{transform:translateY(-2px)}
+.fab.on{display:flex}
+.fab svg{color:#fff}
+.chat{position:fixed;right:22px;bottom:22px;width:min(400px,calc(100vw - 32px));height:min(580px,calc(100vh - 60px));background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 30px 80px rgba(27,31,59,.35);z-index:120;display:none;flex-direction:column;overflow:hidden}
+.chat.on{display:flex;animation:fadeUp .2s ease}
+.chat-head{background:linear-gradient(120deg,#6C5DD3,#5A4BC4);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.chat-head b{font-size:.95rem;font-weight:700}
+.chat-head .s{font-size:.69rem;color:#D5D0F5;margin-top:3px;line-height:1.45}
+.chat-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#FAFAFE}
+.msg{max-width:90%;padding:10px 13px;border-radius:14px;font-size:.82rem;line-height:1.55}
+.msg.user{align-self:flex-end;background:var(--teal);color:#fff;border-bottom-right-radius:4px}
+.msg.bot{align-self:flex-start;background:#fff;border:1px solid var(--line);color:var(--slate);border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(27,31,59,.05)}
+.msg.bot.refusal{border-left:3px solid var(--flag)}
+.msg .src{display:block;margin-top:7px;padding-top:7px;border-top:1px dashed var(--line);font-family:var(--font-mono);font-size:.64rem;color:var(--mist)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;max-width:90%}
+.chips button{border:1px solid var(--line);border-radius:99px;padding:6px 12px;font-size:.72rem;font-weight:600;color:var(--teal-deep);background:#fff;text-align:left;transition:border-color .15s,background .15s}
+.chips button:hover{border-color:var(--teal);background:var(--teal-soft)}
+.chat-foot{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);background:#fff}
+.chat-foot input{flex:1;padding:10px 14px;border:1.5px solid var(--line);border-radius:99px;font-size:.82rem;color:var(--ink);background:#FAFAFE}
+.chat-foot input:focus{border-color:var(--teal);outline:none}
+.typing{align-self:flex-start;color:var(--mist);font-size:.76rem;padding:2px 13px 0}
+
+/* ---------- calendar week view ---------- */
+.mini-toggle{display:flex;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:3px;gap:2px}
+.mini-toggle button{padding:5px 11px;border-radius:6px;font-size:.72rem;font-weight:600;color:var(--mist);transition:background .15s,color .15s}
+.mini-toggle button.on{background:var(--ink-2);color:#fff}
+.calweek{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.calday{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;min-height:170px;box-shadow:var(--shadow)}
+.calday.today{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-soft)}
+.calday .cd-h{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:9px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.calday .cd-h b{font-size:.82rem;color:var(--ink);font-weight:700}
+.calday .cd-h span{font-size:.66rem;color:var(--mist);font-weight:600}
+.calcard{border:1px solid var(--line);border-left:3px solid var(--mist);border-radius:9px;padding:9px 10px;margin-bottom:8px;background:#FAFAFE}
+.calcard:last-child{margin-bottom:0}
+.calcard.st-ok{border-left-color:var(--ok)}
+.calcard.st-flag{border-left-color:var(--flag)}
+.calcard.st-brass{border-left-color:var(--brass)}
+.calcard.st-grey{border-left-color:var(--mist)}
+.calcard[role="button"]{cursor:pointer;transition:transform .15s,box-shadow .15s}
+.calcard[role="button"]:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(27,31,59,.12);border-color:var(--teal)}
+.cc-t{font-size:.75rem;font-weight:600;color:var(--ink);line-height:1.35}
+.cc-a{font-size:.67rem;color:var(--mist);margin-top:3px}
+.cc-go{font-size:.66rem;color:var(--teal-deep);font-weight:700;margin-top:6px}
+
+/* ---------- smart suggestions ---------- */
+.smart-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.smart-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.smart-row:last-child{border-bottom:none;padding-bottom:0}
+.smart-row .n{width:26px;height:26px;border-radius:8px;background:var(--teal-soft);color:var(--teal-deep);font-weight:800;font-size:.74rem;display:flex;align-items:center;justify-content:center;flex:0 0 26px}
+.smart-row .t{font-size:.84rem;color:var(--ink);font-weight:600}
+.smart-row .s{font-size:.74rem;color:var(--mist);margin-top:1px}
+
+/* ---------- command palette ---------- */
+.kbd{margin-left:auto;font-size:.62rem;font-weight:700;color:var(--mist);border:1px solid var(--line);border-radius:6px;padding:2px 6px;background:#fff}
+.cmdk{position:fixed;inset:0;background:rgba(21,26,56,.45);display:none;align-items:flex-start;justify-content:center;z-index:130;padding:12vh 20px 20px}
+.cmdk.on{display:flex}
+.cmdk-panel{width:min(560px,100%);background:var(--card);border-radius:18px;box-shadow:0 40px 100px rgba(0,0,0,.4);overflow:hidden;animation:fadeUp .18s ease}
+.cmdk-input{display:flex;align-items:center;gap:11px;padding:15px 18px;border-bottom:1px solid var(--line)}
+.cmdk-input svg{color:var(--mist);flex:0 0 16px}
+.cmdk-input input{flex:1;border:none;outline:none;font-size:.95rem;color:var(--ink);background:transparent}
+.cmdk-list{max-height:340px;overflow-y:auto;padding:8px}
+.cmdk-item{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:10px 12px;border-radius:10px;font-size:.85rem;color:var(--slate)}
+.cmdk-item .tag2{margin-left:auto;font-size:.64rem;font-weight:700;color:var(--mist);text-transform:uppercase;letter-spacing:.08em}
+.cmdk-item.sel{background:var(--teal-soft);color:var(--teal-deep);font-weight:600}
+.cmdk-item.sel .tag2{color:var(--teal-deep)}
+.cmdk-empty{padding:26px;text-align:center;color:var(--mist);font-size:.83rem}
+.cmdk-foot{padding:9px 16px;border-top:1px solid var(--line);font-size:.68rem;color:var(--mist);display:flex;gap:14px}
+
+/* ---------- demo script ---------- */
+.script{position:fixed;left:22px;bottom:22px;width:min(370px,calc(100vw - 32px));background:var(--ink-2);color:#B9BDD6;border-radius:16px;padding:16px 18px;z-index:96;display:none;box-shadow:0 20px 55px rgba(21,26,56,.5)}
+.script.on{display:block;animation:fadeUp .2s ease}
+.script .st{font-family:var(--font-mono);font-size:.66rem;color:#A99CFF;letter-spacing:.08em}
+.script h4{color:#fff;font-size:.92rem;margin:5px 0 6px;font-weight:700}
+.script p{font-size:.79rem;line-height:1.55;color:#9AA0BF}
+.script .row{display:flex;justify-content:space-between;align-items:center;margin-top:13px;gap:8px}
+.script .row .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.25)}
+.script .close-x{position:absolute;top:10px;right:12px;color:#7C83A6}
+
+@media (max-width:960px){
+  .app.on{grid-template-columns:1fr}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:90;transform:translateX(-105%);transition:transform .22s ease;width:248px;box-shadow:20px 0 60px rgba(27,31,59,.15)}
+  .sidebar.open{transform:none}
+  .menu-btn{display:flex!important}
+  .search-pill{display:none}
+  .g2,.g3,.g4,.consent-flow{grid-template-columns:1fr}
+  .calweek{grid-template-columns:1fr 1fr}
+  .login-card{grid-template-columns:1fr}
+  .login-brand{display:none}
+  .hero{flex-direction:column;align-items:flex-start}
+  .content{padding:18px}
+  .user-chip div:last-child{display:none}
+}
+.menu-btn{display:none;align-items:center;padding:8px;border:1px solid var(--line);border-radius:10px}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN / PRESET PICKER ============ -->
+<div class="login" id="loginScreen">
+  <span class="fl sq" style="top:12%;left:14%"></span>
+  <span class="fl dm" style="top:22%;right:11%"></span>
+  <span class="fl dt" style="bottom:18%;left:9%"></span>
+  <span class="fl dm" style="bottom:12%;right:20%;width:10px;height:10px"></span>
+  <span class="fl sq" style="top:64%;right:7%;width:10px;height:10px"></span>
+  <span class="fl dt" style="top:8%;right:38%"></span>
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="logo-row">
+        <span class="logo-tile"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg></span>
+        <b>Meridian Harbor</b>
+      </div>
+      <div class="preview-wrap">
+        <div class="preview" aria-hidden="true">
+          <div class="pv-side"><i></i><i></i><i></i><i></i></div>
+          <div class="pv-main">
+            <div class="pv-bar"></div>
+            <div class="pv-stats"><div class="pv-stat"></div><div class="pv-stat"></div></div>
+            <div class="pv-row"></div><div class="pv-row w2"></div><div class="pv-row"></div>
+          </div>
+        </div>
+        <span class="pv-tri a"></span><span class="pv-tri b"></span>
+      </div>
+      <h2>One platform. Three gaps closed.</h2>
+      <div class="blurb">Plan production, content repetition, and recording governance — solved in one place. Everything else connects to what you already run.</div>
+      <div class="facts-row"><b>$185M</b> AUM &nbsp;·&nbsp; <b>~240</b> households &nbsp;·&nbsp; <b>3</b> states &nbsp;·&nbsp; <b>3</b> advisors</div>
+      <div class="dots"><span></span><span></span><span></span></div>
+    </div>
+    <div class="login-right">
+      <h2>Choose your workspace</h2>
+      <div class="sub">Same platform, different default configuration. Pick the posture that matches how you run your practice.</div>
+      <div class="preset-pick">
+        <button class="preset-card" onclick="enterApp('operator')">
+          <div class="who2"><b>The Operator</b><span class="pill teal">Process &amp; hours back</span></div>
+          <p>Home screen leads with throughput and exceptions. Plan Engine first in the rail. For the advisor who has automated everything except plan production, and wants the flags, not the pitch.</p>
+        </button>
+        <button class="preset-card" onclick="enterApp('voice')">
+          <div class="who2"><b>The Voice</b><span class="pill brass">Safe &amp; sounds like you</span></div>
+          <p>Home screen leads with the content calendar and the compliance status of everything pending. Governance first in the rail, because saying yes safely comes before publishing more.</p>
+        </button>
+      </div>
+      <div class="demo-note">Demo environment. Meridian Harbor Wealth Partners is a fictional composite firm. All households, figures, and recordings are illustrative.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="logo-tile"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg></span>
+      <div><div class="wordmark">Meridian Harbor</div><div class="tag">Advisor platform</div></div>
+    </div>
+    <nav class="nav" id="navRail" aria-label="Main"></nav>
+    <div class="side-foot" id="sideFoot"></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div class="crumb" id="crumb"><span>Workspace</span><b>Home</b></div>
+      <button class="search-pill" onclick="openCmdk()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        Search or jump to anything… <span class="kbd">Ctrl K</span>
+      </button>
+      <div class="preset-switch" role="group" aria-label="Preset">
+        <button id="psOp" onclick="setPreset('operator')">Operator</button>
+        <button id="psVo" onclick="setPreset('voice')">Voice</button>
+      </div>
+      <button class="audit-btn" onclick="startScript()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>Demo script</button>
+      <button class="audit-btn" onclick="toggleAudit(true)"><span class="audit-dot"></span>Audit <span id="auditCount" class="num">6</span></button>
+      <div class="user-chip"><div class="ava" id="avaInit">M</div><div><b id="avaName">Marc A.</b><span id="avaRole">The Operator</span></div></div>
+    </div>
+    <div class="content" id="viewHost"></div>
+  </div>
+</div>
+
+<!-- scoped share modal -->
+<div class="overlay" id="shareOverlay">
+  <div class="modal" role="dialog" aria-label="Release recording">
+    <div class="modal-head"><h3>Release recording to a third party</h3><button onclick="closeShare()" aria-label="Close">✕</button></div>
+    <div class="modal-body">
+      <div class="callout" style="margin-bottom:16px"><b>Consent on file.</b> All-party consent captured June 12, 2026 (California meeting). Client authority to share confirmed verbally and logged.</div>
+      <div class="field"><label>Recording</label><select id="shRec"><option>Annual review — Walt &amp; Eloise Brennan · Jun 12, 2026 · 48 min</option><option>Discovery call — Dana Whitfield · Jul 21, 2026 · 39 min</option></select></div>
+      <div class="field"><label>Release to</label><select id="shTo"><option>Maya Brennan — adult child (verified)</option><option>Eloise Brennan — spouse (verified)</option><option>Rosa Delgado — caregiver (verification pending)</option></select></div>
+      <div class="field"><label>Scope</label><select id="shScope"><option>View only, no download</option><option>View and download</option></select></div>
+      <div class="field"><label>Access expires</label><select id="shExp"><option>30 days</option><option>60 days</option><option>90 days</option><option>Until revoked</option></select></div>
+      <div class="field"><label>Basis for release</label><input id="shBasis" value="Client request — family member unable to attend"></div>
+      <button class="btn primary" style="width:100%;justify-content:center" onclick="confirmShare()">Release with audit record</button>
+    </div>
+  </div>
+</div>
+
+<!-- audit drawer -->
+<div class="drawer" id="auditDrawer" aria-label="Audit trail">
+  <div class="drawer-head"><h3 style="font-size:1rem">Audit trail</h3><button onclick="toggleAudit(false)" aria-label="Close">✕</button></div>
+  <div style="padding:12px 22px 0;font-size:.76rem;color:var(--mist)">Every AI-touched artifact: who generated it, from what sources, what model version, who edited, who approved. Non-rewritable.</div>
+  <div class="drawer-body" id="auditBody"></div>
+</div>
+
+<!-- command palette -->
+<div class="cmdk" id="cmdk" onclick="if(event.target===this)closeCmdk()">
+  <div class="cmdk-panel" role="dialog" aria-label="Command palette">
+    <div class="cmdk-input">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="cmdkInput" placeholder="Jump to a page, household, or action…" oninput="cmdFilter()" autocomplete="off">
+    </div>
+    <div class="cmdk-list" id="cmdkList"></div>
+    <div class="cmdk-foot"><span>↑↓ navigate</span><span>↵ run</span><span>esc close</span></div>
+  </div>
+</div>
+
+<!-- demo script panel -->
+<div class="script" id="scriptPanel">
+  <button class="close-x" onclick="document.getElementById('scriptPanel').classList.remove('on')" aria-label="Close">✕</button>
+  <div class="st" id="scStep"></div>
+  <h4 id="scTitle"></h4>
+  <p id="scText"></p>
+  <div class="row">
+    <button class="btn ghost sm" id="scPrev" onclick="demoGo(-1)">← Prev</button>
+    <span class="mono" id="scCount" style="color:#7E93A6"></span>
+    <button class="btn primary sm" id="scNext" onclick="demoGo(1)">Next →</button>
+  </div>
+</div>
+
+<!-- ask the record -->
+<button class="fab" id="askFab" onclick="toggleChat(true)">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m16 8-2.5 6.5L7 17l2.5-6.5z"/></svg>
+  Ask the record
+</button>
+<div class="chat" id="chatPanel" role="dialog" aria-label="Ask the record">
+  <div class="chat-head">
+    <div><b>Ask the record</b><div class="s">Answers come only from the connected household record, with the source shown. Account numbers and identifiers never enter generative context. Every query is logged.</div></div>
+    <button onclick="toggleChat(false)" aria-label="Close" style="color:#fff">✕</button>
+  </div>
+  <div class="chat-body" id="chatBody"></div>
+  <div class="chat-foot">
+    <input id="chatInput" placeholder="Ask about a household, a grant, a deadline…" onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="btn primary sm" onclick="sendChat()">Ask</button>
+  </div>
+</div>
+
+<!-- content review modal -->
+<div class="overlay" id="reviewOverlay">
+  <div class="modal" role="dialog" aria-label="Review draft">
+    <div class="modal-head"><h3 id="rvTitle">Review draft</h3><button onclick="closeReview()" aria-label="Close">✕</button></div>
+    <div class="modal-body">
+      <div class="callout" id="rvNote" style="margin-bottom:14px"></div>
+      <div class="field"><label>Draft excerpt</label><div id="rvExcerpt" style="border:1px solid var(--line);border-radius:8px;padding:12px;font-size:.82rem;line-height:1.6;color:var(--slate);background:#FDFCFA;font-family:var(--font-display)"></div></div>
+      <div class="field"><label>Source</label><div class="mono" style="color:var(--mist)">Ep. 47 · voice print v3 · every assertion traced to corpus</div></div>
+      <div id="rvActions" style="display:grid;gap:8px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+/* ================= state ================= */
+let preset = 'operator';
+let currentView = 'home';
+let planStage = 'list';       // list | work | draft
+let activeHousehold = null;
+let activeScenario = 'base';
+let fannedOut = false;
+let leadsRanked = false;
+let delgadoVerified = false;
+let mayaReleased = false;
+let contentSearch = '';
+let briefHH = 'brennan';
+let meetingCaptured = false;
+let demoStep = 0;
+let stackOpen = false;
+let planGenerated = false;
+let cmdIdx = 0;
+let calView = 'list';
+function setCalView(v){ calView=v; go('home'); }
+let TABS = {gov:'overview', c360:'brief', pipe:'queue', content:'studio', plan:'doc'};
+function setTab(k,id){ TABS[k]=id; go(currentView); }
+function tabBar(key, defs){ return `<div class="tabs">${defs.map(([id,label])=>`<button class="${TABS[key]===id?'on':''}" onclick="setTab('${key}','${id}')">${label}</button>`).join('')}</div>`; }
+function toggleStack(){ stackOpen=!stackOpen; go('home'); }
+
+let EXCEPTIONS = [
+  {id:'tran', pill:'flag', label:'Data conflict', t:'Tran-Nguyen Family — two birthdates on file for Linh Tran', s:'CRM says 1961, intake says 1963. Blocks plan generation until resolved. Caught by the data-quality monitor before it touched a plan.', kind:'conflict', open:false, done:false, doneTxt:''},
+  {id:'okafor', pill:'flag', label:'Data conflict', t:'Okafor Family — 529 balance stale (94 days)', s:'Last custodian sync predates the July contribution. Refresh before the education-funding section runs.', kind:'stale', done:false, doneTxt:''},
+  {id:'brennanplan', pill:'brass', label:'Approval', t:'Brennan plan draft v1 — awaiting named approver', s:'Generated 09:41 from 4 sources. Nothing reaches a client without explicit sign-off.', kind:'plan', done:false, doneTxt:''},
+  {id:'delgado', pill:'brass', label:'Approval', t:'Recording release — Rosa Delgado (caregiver) verification pending', s:'Identity check incomplete. Scoped grant is drafted, not live.', kind:'verify', done:false, doneTxt:''}
+];
+
+let CAL = [
+  {day:'Wed', asset:'LinkedIn — "Forever Young is a blessing, not a plan."', aud:'General', st:'ok', stTxt:'Approved · scheduled 10:00'},
+  {day:'Thu', asset:'Newsletter — What "Forever Young" gets right about retirement', aud:'Full list', st:'ok', stTxt:'Approved · disclosure v3.2'},
+  {day:'Thu', id:'email1', asset:'Client email — claiming question, ten minutes this month', aud:'Blended-family (31)', st:'brass', stTxt:'In review', reviewable:true, bd:false,
+   note:'Personal register, no pitch. Pre-flight clear; it is only waiting on your read.',
+   excerpt:'"A quick one this month, because it is worth ten minutes: if you and your spouse are more than a few years apart in age, the order you claim Social Security in changes what the survivor keeps. Not a pitch, just a question worth sitting with. Reply if you want to talk it through."'},
+  {day:'Fri', id:'vid1', asset:'60-sec video — "Two birthdays, one decision"', aud:'YouTube', st:'flag', stTxt:'Flagged · benefit-amount example', reviewable:true, bd:false,
+   note:'Pre-flight flagged a specific benefit-amount example. Approve as written, or approve with the example generalized — the flag exists so this is your call, made once, on the record.',
+   excerpt:'Script opens on the answer per the 0:31 drop-off fix: "Two birthdays, one decision. When there is an age gap, the younger spouse\'s survivor benefit depends on when the older spouse claims…" [flagged line: cites a $2,300/mo example figure]'},
+  {day:'Mon', id:'adv1', asset:'Advisor email — claiming conversations + CE note', aud:'Advisors', st:'flag', stTxt:'Flagged · route to BD review', reviewable:true, bd:true,
+   note:'References CE credit eligibility, so this one requires broker-dealer review before it can publish. Disclosure v3.2 attaches automatically on routing.',
+   excerpt:'"What I tell fellow advisors about claiming conversations: ask the couple to describe retirement separately before you show a single number… [flagged line: references CE credit eligibility for the linked session outline]"'}
+];
+
+const ic = {
+  home:'<svg class="nv-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg>',
+  plan:'<svg class="nv-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>',
+  content:'<svg class="nv-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  gov:'<svg class="nv-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>',
+  c360:'<svg class="nv-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  pipe:'<svg class="nv-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'
+};
+
+const NAV = {
+  operator:[['home','Home',ic.home],['plan','Plan Engine',ic.plan],['pipe','Pipeline',ic.pipe],['c360','Client 360',ic.c360],['gov','Governance',ic.gov],['content','Content Studio',ic.content]],
+  voice:[['home','Home',ic.home],['gov','Consent & Governance',ic.gov],['content','Content Studio',ic.content],['c360','Client 360',ic.c360],['plan','Plan Engine',ic.plan],['pipe','Pipeline',ic.pipe]]
+};
+const VIEWTITLES = {home:'Home',plan:'Plan Engine',content:'Content Studio',gov:'Consent & Governance',c360:'Client 360',pipe:'Pipeline Intelligence'};
+
+const HOUSEHOLDS = [
+  {id:'brennan', name:'Walt & Eloise Brennan', tag:'Retirement income · RMD', office:'Orange County, CA', ctx:'Intake · 2 discovery calls · 2025 tax summary · holdings', status:'Context assembled', ready:true},
+  {id:'calloway', name:'The Calloway Household', tag:'Blended family · second marriage', office:'Las Vegas, NV', ctx:'Intake · 1 discovery call · CRM notes', status:'Context assembled', ready:true},
+  {id:'whitfield', name:'Dana Whitfield', tag:'Post-divorce · flat-fee plan', office:'Gaithersburg, MD', ctx:'Intake in progress (portal link sent Jul 30)', status:'Awaiting intake', ready:false},
+  {id:'okafor', name:'The Okafor Family', tag:'Sandwich generation · caregiving', office:'Orange County, CA', ctx:'Intake · tax summary · prior plan v1 (2023)', status:'Context assembled', ready:true},
+  {id:'tran', name:'Tran-Nguyen Family', tag:'Multigenerational · served in Vietnamese', office:'Orange County, CA', ctx:'2 stale fields flagged by data-quality monitor', status:'Data conflict', ready:false}
+];
+
+const ASSUMPTIONS = [
+  ['Equity return (taxable)','6.8','%','Firm default v4 · editable'],
+  ['Equity return (qualified)','7.1','%','Firm default v4 · editable'],
+  ['Fixed income return','4.1','%','Firm default v4 · editable'],
+  ['Inflation','2.6','%','Firm default v4 · editable'],
+  ['Tax treatment','Standard deduction','','From 2025 return summary'],
+  ['Social Security claim','67','age','Scenario-branched below'],
+  ['Longevity','94','age','Firm default · joint'],
+  ['Spending (annual)','$118,000','','From intake · client-supplied'],
+  ['Mortgage payoff','Keep to term','','Scenario-branched below']
+];
+
+const SCENARIOS = {
+  base:{label:'Base · claim at 67', bars:[92,90,88,86,84,81,78,75,71,67,63,58,53,48,43,37,31,25,19,14], note:'Assets sustain planned spending through age 94 with a projected terminal balance of $410K. Success across 87% of return sequences.'},
+  early:{label:'Claim at 62', bars:[92,89,86,82,78,74,69,64,58,52,46,40,33,27,20,13,7,3,1,0], note:'Claiming at 62 draws portfolio assets harder in the first decade. Plan sustains to age 91; the final three years depend on return sequence. Not recommended as filed.'},
+  late:{label:'Claim at 70', bars:[92,89,87,84,82,80,78,76,74,72,70,67,64,61,58,54,50,46,42,38], note:'Delaying to 70 raises the guaranteed floor enough that portfolio withdrawals fall 22% after age 70. Strongest longevity protection of the three variants.'},
+  mortgage:{label:'Pay off mortgage now', bars:[80,79,78,77,76,74,72,70,68,65,62,58,54,50,45,40,35,29,23,17], note:'A lump payoff removes $2,140/mo of fixed spending but concentrates the first-decade drawdown. Net effect roughly neutral; the real gain is peace of mind, which is a legitimate input.'}
+};
+
+const ASSETS = [
+  {kind:'LinkedIn post', hook:'"May you stay forever young" is a blessing, not a plan.', body:'Plays the sentiment against the need to plan. Blended-family framing, question close.', flag:false},
+  {kind:'LinkedIn post', hook:'The 11-year age gap nobody budgets for.', body:'Claiming strategy when one spouse is 64 and the other is 53. Sourced to Ep. 47 segment 2.', flag:false},
+  {kind:'LinkedIn post', hook:'Your second marriage has a first question.', body:'Survivor benefits and the remarriage rules, in plain language.', flag:false},
+  {kind:'Newsletter feature', hook:'What "Forever Young" gets right about retirement.', body:'900-word lead story, adapted from the episode open. Disclosure block attached.', flag:false},
+  {kind:'Client email · blended-family segment', hook:'A claiming question worth ten minutes this month.', body:'Targeted to 31 households tagged blended-family. Personal register, no pitch.', flag:false},
+  {kind:'60-second video script', hook:'Two birthdays, one decision.', body:'Structured around the 0:31 drop-off fix: single idea, answer first, story second.', flag:false},
+  {kind:'Presentation upgrade', hook:'Slides 12-18 rebuilt with speaker notes.', body:'For the September advisor workshop. Frameworks kept, examples refreshed.', flag:false},
+  {kind:'Workshop handout', hook:'The blended-family claiming checklist.', body:'One page, printable, firm-branded. CE-eligible session outline attached.', flag:false},
+  {kind:'Blog article', hook:'Social Security is a couples decision. Even the second time.', body:'1,400 words, sourced entirely to the episode transcript and the 2024 column.', flag:false},
+  {kind:'Media pitch angle', hook:'Why blended families claim Social Security wrong.', body:'Pitch memo for personal-finance press, three data points, availability windows.', flag:false},
+  {kind:'Short-video script 2', hook:'The survivor benefit most second marriages miss.', body:'FLAGGED: contains a specific benefit-amount example. Needs principal review before any cut.', flag:true},
+  {kind:'Client email · advisor audience', hook:'What I tell fellow advisors about claiming conversations.', body:'FLAGGED: references CE credit eligibility. Route to broker-dealer review with disclosure v3.2.', flag:true}
+];
+
+ASSETS.forEach(a=>{ a.status = a.flag ? 'flag' : 'clear'; });
+ASSETS[10].calId='vid1'; ASSETS[11].calId='adv1';
+
+const ARCHIVE = [
+  {id:'ep47', pill:'brass', ref:'Ep. 47', t:'Social Security claiming for blended families with an age gap', s:'2021 · 34 min · transcript indexed · topic: retirement income', fanable:true},
+  {id:'ep62', pill:'grey', ref:'Ep. 62', t:'Caregiving without going broke: the sandwich generation', s:'2021 · 41 min · transcript indexed · topic: caregiving'},
+  {id:'col118', pill:'grey', ref:'Col. 118', t:'The divorce checklist nobody hands you', s:'2023 column · topic: divorce & restart'},
+  {id:'ep12', pill:'grey', ref:'Ep. 12', t:'What a market drop actually means for your plan', s:'2020 · 29 min · transcript indexed · topic: volatility & behavior'},
+  {id:'ch4', pill:'grey', ref:'eBook ch. 4', t:'Clarity, confidence, control: the three-question framework', s:'2019 · book chapter · topic: planning philosophy'},
+  {id:'col96', pill:'grey', ref:'Col. 96', t:"The sandwich generation's hidden budget line", s:'2022 column · topic: caregiving & cash flow'}
+];
+
+const BICONS = [
+  '<svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+  '<svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  '<svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
+  '<svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>'
+];
+
+const BRIEFS = {
+  brennan:{t:'Walt & Eloise Brennan', s:'Thursday 10:00 · annual review · prepared automatically', items:[
+    ['What changed:','Walt turned 73 in July — first RMD year. Draft plan v1 models the sequencing; it\'s the meeting\'s spine.'],
+    ['Open item:','Maya\'s recording access request is pending. Resolve it live; it takes one minute and it matters to them.'],
+    ['They always ask:','"Are we okay if the market drops 30%?" and the travel budget. The stress scenario is pre-run this time.'],
+    ['Relationship note:','42nd anniversary Sep 2. Maya has no advisor relationship of her own yet — next-generation flag is on.']]},
+  okafor:{t:'The Okafor Family', s:'Tuesday 14:00 · caregiving & education check-in · prepared automatically', items:[
+    ['What changed:','The twins start college Aug 24 — 529 drawdown begins. Balance is current as of the latest custodian sync.'],
+    ['Open item:','Caregiving plan summary is shared with D. Okafor Jr. under POA; access expires Aug 22 — extend or let it lapse, decide live.'],
+    ['They always ask:','"Are we doing enough for Mom\'s care costs?" The respite-care budget line is pre-modeled this time.'],
+    ['Relationship note:','The firm\'s top referral source: 4 households. Two unserved adult children in the family network.']]},
+  whitfield:{t:'Dana Whitfield', s:'Friday 11:00 · post-settlement planning · prepared automatically', items:[
+    ['What changed:','Settlement funded Jul 30. Intake is still open — the portal link went out the same day; plan generation waits on it.'],
+    ['Open item:','59½ arrives Sep 12 — penalty-free access opens, which matters for the settlement sequencing conversation.'],
+    ['They always ask:','"Is keeping the house the right call?" Have the rent-vs-keep comparison on hand, not from memory.'],
+    ['Relationship note:','Came via the divorce support group talk — long cycle, zero spend, exactly the channel the pipeline now credits.']]}
+};
+
+const LEADS = [
+  {name:'R. Castellanos', inN:'2.5 yrs in nurture', score:91, topics:'Retirement income · RMD', why:'Opened 9 of last 10 · finished both withdrawal-strategy videos · replied once in March'},
+  {name:'J. & P. Malhotra', inN:'14 mo in nurture', score:84, topics:'Business sale · tax', why:'Video completion 100% on exit-planning series · clicked the book download twice'},
+  {name:'S. Ogilvie', inN:'9 mo in nurture', score:77, topics:'Divorce · restart', why:'Engages only divorce-topic sends · watch time rising 3 sends straight'},
+  {name:'T. Freeman', inN:'22 mo in nurture', score:63, topics:'College · 529', why:'Seasonal pattern: engages Aug-Sep both years. Next window is now.'},
+  {name:'M. Ibarra', inN:'6 mo in nurture', score:41, topics:'General', why:'Opens are steady, clicks are zero. Keep dripping.'},
+  {name:'D. Kowalski', inN:'31 mo in nurture', score:12, topics:'None detected', why:'No opens in 7 months. Candidate for list hygiene.'}
+];
+
+const CHANNELS = [
+  ['Client & family referrals','$0 direct','9 households','$0','The engine. Now instrumented.'],
+  ['Specialty directories','$2,040/yr','3 households','$680','Credential-keyed search works.'],
+  ['Articles & speaking','Time only','2 households','—','Long cycle, real signal.'],
+  ['YouTube + book download','$7,800/yr','0 households','Honest zero','Running as branding, by choice. Now a decision, not an assumption.'],
+  ['Podcast (retired)','$4,200 total','0 households','Honest zero','Archive feeds Content Studio instead.'],
+  ['Paid lead vendors (retired)','$18,500 total','1 household','$18,500','Confirmed not worth the money.']
+];
+
+let AUDIT = [
+  {when:'Aug 05 · 09:41', what:'Plan draft v1 generated — Brennan household', who:'Generated from 4 sources · model MHWP-plan-2.3 · pending approver'},
+  {when:'Aug 05 · 09:12', what:'Consent captured — Calloway discovery call (NV, one-party)', who:'Script v2 read · timestamped · attached to session'},
+  {when:'Aug 04 · 16:33', what:'Newsletter draft approved for publication', who:'Approved: principal · disclosure block v3.2 attached'},
+  {when:'Aug 04 · 11:07', what:'ADV Part 2 v2026.2 versioned and filed', who:'CA · NV · MD copies retained'},
+  {when:'Aug 03 · 14:52', what:'Recording access revoked — expired 30-day grant', who:'Automatic disposition per schedule'},
+  {when:'Aug 03 · 09:00', what:'Weekly rebalance signal ingested from custodian', who:'Read-only connector · no action generated'}
+];
+
+/* ================= shell ================= */
+function enterApp(p){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').classList.add('on');
+  document.getElementById('askFab').classList.add('on');
+  setPreset(p);
+}
+function setPreset(p){
+  preset=p;
+  document.getElementById('psOp').classList.toggle('on',p==='operator');
+  document.getElementById('psVo').classList.toggle('on',p==='voice');
+  document.getElementById('sideFoot').innerHTML = (p==='operator'
+    ? '<b>Marc A.</b>Founder · CEO · CCO · CIO<br>Preset: The Operator'
+    : '<b>Rita C.</b>Founder · CEO · Educator<br>Preset: The Voice')
+    + '<button class="reset-link" onclick="location.reload()">↺ Reset demo data</button>';
+  renderNav();
+  go(currentView);
+}
+function renderNav(){
+  document.getElementById('navRail').innerHTML =
+    '<div class="nav-label">Workspace</div>' +
+    NAV[preset].map(([id,label,icon])=>`<button data-v="${id}" onclick="go('${id}')">${icon}<span>${label}</span></button>`).join('');
+}
+function go(v){
+  currentView=v;
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));
+  document.getElementById('crumb').innerHTML=`<span>${preset==='operator'?'Operator workspace':'Voice workspace'}</span><b>${VIEWTITLES[v]}</b>`;
+  document.getElementById('sidebar').classList.remove('open');
+  const host=document.getElementById('viewHost');
+  host.innerHTML = RENDER[v]();
+  host.querySelectorAll('.view')[0].classList.add('on');
+  window.scrollTo(0,0);
+}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('on');
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2600);
+}
+function addAudit(what,who){
+  const d=new Date();
+  AUDIT.unshift({when:'Aug 05 · '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'), what, who});
+  document.getElementById('auditCount').textContent=AUDIT.length;
+  renderAudit();
+}
+function renderAudit(){
+  document.getElementById('auditBody').innerHTML = AUDIT.map(a=>`<div class="audit-entry"><div class="when">${a.when}</div><div class="what">${a.what}</div><div class="who">${a.who}</div></div>`).join('');
+}
+function toggleAudit(on){ renderAudit(); document.getElementById('auditDrawer').classList.toggle('on',on); }
+
+/* ================= views ================= */
+const RENDER = {
+
+home(){
+  if(preset==='operator') return `
+  <div class="view">
+    <div class="hero">
+      <div>
+        <div class="eyebrow">This week</div>
+        <h1>Plan production is the last manual workflow. It's on the board.</h1>
+        <p>Everything upstream is connected read-only: CRM briefs, custodian rebalancing, tax summaries, nurture engine. This platform closes three gaps. It replaces nothing that already works.</p>
+      </div>
+      <div class="cta-wrap"><button class="btn primary" onclick="go('plan')">Open Plan Engine</button><button class="btn ghost" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.3)" onclick="toggleAudit(true)">Audit trail</button></div>
+    </div>
+    <div class="grid g4">
+      <button class="card stat-card" onclick="go('plan')"><div class="k">3</div><div class="l">Plans in production</div><div class="d up">1 draft ready for review</div></button>
+      <button class="card stat-card" onclick="go('plan')"><div class="k">11.5 <small>hrs</small></div><div class="l">Principal hours returned this week</div><div class="d up">vs. manual baseline</div></button>
+      <button class="card stat-card" onclick="document.getElementById('exQueue').scrollIntoView({behavior:'smooth'})"><div class="k">${EXCEPTIONS.filter(e=>!e.done).length}</div><div class="l">Exceptions flagged</div><div class="d ${EXCEPTIONS.some(e=>!e.done)?'warn':'up'}">${EXCEPTIONS.some(e=>!e.done)?EXCEPTIONS.filter(e=>!e.done&&e.pill==='flag').length+' data conflicts · '+EXCEPTIONS.filter(e=>!e.done&&e.pill==='brass').length+' approvals waiting':'Queue clear'}</div></button>
+      <button class="card stat-card" onclick="go('pipe')"><div class="k">6</div><div class="l">Warm leads surfaced</div><div class="d up">from 342 in nurture</div></button>
+    </div>
+    <div style="height:16px"></div>
+    ${renderSuggestions()}
+    <div class="section-title" id="exQueue"><h2>Exception queue</h2><span class="hint">Only what needs the principal. Everything else keeps moving.</span></div>
+    <div class="card">${renderExceptions()}</div>
+    <div class="section-title"><h2>Connected stack</h2><span class="hint">Read-only where it should be. No rip-and-replace.</span></div>
+    ${stackOpen?`<div class="card"><table class="tbl">
+      <tr><th>Function</th><th>System</th><th>Status</th></tr>
+      <tr><td>Portfolio signals</td><td>Third-party quant signal service (weekly)</td><td><span class="pill ok">Connected</span></td></tr>
+      <tr><td>Trading &amp; rebalancing</td><td>Custodian rebalancing tool</td><td><span class="pill ok">Connected</span></td></tr>
+      <tr><td>CRM + meeting prep</td><td>CRM with built-in AI briefs</td><td><span class="pill ok">Connected · feeds Plan Engine</span></td></tr>
+      <tr><td>Prospect nurture</td><td>Multi-year email/video sequences</td><td><span class="pill ok">Connected · now instrumented</span></td></tr>
+      <tr><td>Tax review</td><td>Tax-scan summaries</td><td><span class="pill ok">Connected</span></td></tr>
+      <tr><td>Compliance platform</td><td>Consultant portal</td><td><span class="pill grey">Alongside · calendar synced</span></td></tr>
+    </table><div style="padding:10px 14px;border-top:1px solid var(--line)"><button class="btn ghost sm" onclick="toggleStack()">Hide details</button></div></div>`
+    :`<div class="card"><div class="list-row" style="align-items:center"><span class="pill ok">6 systems connected</span><div class="s" style="margin:0;flex:1">Signals, rebalancing, CRM briefs, nurture, tax-scan, compliance calendar — all still doing their jobs.</div><button class="btn ghost sm" onclick="toggleStack()">View details</button></div></div>`}
+  </div>`;
+  return `
+  <div class="view">
+    <div class="hero">
+      <div>
+        <div class="eyebrow">Good morning</div>
+        <h1>Everything pending has a compliance status. Nothing publishes without your name on it.</h1>
+        <p>Your archive is live again: a hundred episodes, the columns, the eBook. This week's calendar is drawn from it, in your voice, with review flags where they belong.</p>
+      </div>
+      <div class="cta-wrap"><button class="btn primary" onclick="go('content')">Open Content Studio</button><button class="btn ghost" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.3)" onclick="go('gov')">Consent &amp; governance</button></div>
+    </div>
+    <div class="grid g4">
+      <button class="card stat-card" onclick="go('content')"><div class="k">9</div><div class="l">Assets scheduled this week</div><div class="d up">All sourced to your archive</div></button>
+      <button class="card stat-card" onclick="document.getElementById('calCard').scrollIntoView({behavior:'smooth'})"><div class="k">${CAL.filter(c=>c.st==='flag').length}</div><div class="l">Drafts flagged for your review</div><div class="d ${CAL.some(c=>c.st==='flag')?'warn':'up'}">${CAL.some(c=>c.st==='flag')?'Pre-flight caught them first':'All clear this week'}</div></button>
+      <button class="card stat-card" onclick="TABS.gov='overview';go('gov')"><div class="k">${mayaReleased?'0':'1'}</div><div class="l">Recording request${mayaReleased?'s':''} awaiting decision</div><div class="d ${mayaReleased?'up':'na'}">${mayaReleased?'Maya\'s release is on the register':'Adult child · Brennan household'}</div></button>
+      <button class="card stat-card" onclick="go('gov')"><div class="k">100%</div><div class="l">Published items with named approver</div><div class="d up">Complete trail, every artifact</div></button>
+    </div>
+    <div style="height:16px"></div>
+    ${renderSuggestions()}
+    <div class="section-title" id="calCard"><h2>This week's calendar</h2>
+      <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <span class="hint">Drawn from Ep. 47 · flagged items open for review</span>
+        <span class="mini-toggle"><button class="${calView==='list'?'on':''}" onclick="setCalView('list')">List</button><button class="${calView==='week'?'on':''}" onclick="setCalView('week')">Week</button></span>
+      </span></div>
+    ${calView==='list'?`
+    <div class="card"><table class="tbl">
+      <tr><th>Day</th><th>Asset</th><th>Audience</th><th>Status</th><th></th></tr>
+      ${CAL.map(c=>`<tr><td>${c.day}</td><td>${c.asset}</td><td>${c.aud}</td><td><span class="pill ${c.st}">${c.stTxt}</span></td><td>${c.reviewable&&(c.st==='flag'||c.st==='brass')?`<button class="btn ${c.st==='flag'?'primary':'ghost'} sm" onclick="openReview('${c.id}')">Review</button>`:''}</td></tr>`).join('')}
+    </table></div>
+    `:`
+    <div class="calweek">
+      ${[['Wed','Aug 5',true],['Thu','Aug 6',false],['Fri','Aug 7',false],['Mon','Aug 10',false]].map(([d,dt,today])=>`
+      <div class="calday ${today?'today':''}">
+        <div class="cd-h"><b>${d}</b><span>${dt}${today?' · Today':''}</span></div>
+        ${CAL.filter(c=>c.day===d).map(c=>{
+          const clickable=c.reviewable&&(c.st==='flag'||c.st==='brass');
+          return `<div class="calcard st-${c.st}" ${clickable?`role="button" tabindex="0" onclick="openReview('${c.id}')" onkeydown="if(event.key==='Enter')openReview('${c.id}')"`:''}>
+            <div class="cc-t">${c.asset}</div>
+            <div class="cc-a">${c.aud}</div>
+            <span class="pill ${c.st}" style="margin-top:7px">${c.stTxt.split(' · ')[0]}</span>
+            ${clickable?'<div class="cc-go">Review →</div>':''}
+          </div>`;
+        }).join('')||'<div style="font-size:.72rem;color:var(--mist);text-align:center;padding:18px 0">Nothing scheduled</div>'}
+      </div>`).join('')}
+    </div>
+    `}
+    <div class="section-title"><h2>Safe to say yes</h2><span class="hint">The requests you want to accommodate, made defensible</span></div>
+    <div class="card">
+      <div class="list-row"><span class="pill teal">Request</span><div style="flex:1"><div class="t">Maya Brennan asks to view her parents' annual review recording</div><div class="s">Consent on file, all-party (CA). Scoped release is one click, with expiry and a complete record. This is the kind thing, done safely.</div></div><button class="btn primary sm" onclick="TABS.gov='overview';go('gov')">Review &amp; release</button></div>
+      <div class="list-row"><span class="pill grey">Policy</span><div style="flex:1"><div class="t">"Can I record if one spouse joins from Maryland?"</div><div class="s">Plain-language answer ready in the policy layer. All-party consent applies; the script handles it in one sentence.</div></div><button class="btn ghost sm" onclick="TABS.gov='policy';go('gov')">Read policy</button></div>
+    </div>
+  </div>`;
+},
+
+/* ---------- PLAN ENGINE ---------- */
+plan(){
+  if(planStage==='list') return `
+  <div class="view">
+    <div class="page-head"><div class="eyebrow">Capability 1</div><h1>Plan Engine</h1>
+    <p>The firm's own templates are the output contract. Household context assembles itself from intake, transcripts, tax summaries, and the CRM. The principal's time goes to judgment, not gathering.</p></div>
+    <div class="grid g3" style="margin-bottom:20px">
+      <div class="card stat-card"><div class="k">95 <small>min</small></div><div class="l">Median principal time per plan</div><div class="d up">was 10-15 hours manual</div></div>
+      <div class="card stat-card"><div class="k">7</div><div class="l">Plans delivered since launch</div><div class="d up">flat-fee planning now sellable standalone</div></div>
+      <div class="card stat-card"><div class="k">0</div><div class="l">Figures produced by the language model</div><div class="d na">all numbers from the calculation layer</div></div>
+    </div>
+    <div class="section-title"><h2>Households</h2><span class="hint">Template on file: MHWP Comprehensive Plan v4 · ingested &amp; versioned</span></div>
+    <div class="card"><table class="tbl">
+      <tr><th>Household</th><th>Focus</th><th>Assembled context</th><th>Status</th><th></th></tr>
+      ${HOUSEHOLDS.map(h=>`<tr>
+        <td><b style="color:var(--ink)">${h.name}</b><div style="font-size:.72rem;color:var(--mist)">${h.office}</div></td>
+        <td style="font-size:.8rem">${h.tag}</td><td style="font-size:.78rem;color:var(--mist)">${h.ctx}</td>
+        <td>${h.ready?'<span class="pill ok">'+h.status+'</span>':'<span class="pill '+(h.status==='Data conflict'?'flag':'grey')+'">'+h.status+'</span>'}</td>
+        <td>${h.ready?`<button class="btn primary sm" onclick="openPlan('${h.id}')">Open workspace</button>`:'<button class="btn ghost sm" disabled>Blocked</button>'}</td></tr>`).join('')}
+    </table></div>
+    <div class="callout" style="margin-top:16px"><b>The quality bar:</b> the one-page generic AI plans on the market were evaluated and rejected. This engine compresses the mechanical hours and leaves the judgment layer alone. Every assumption is on the face of the plan.</div>
+  </div>`;
+
+  const h = HOUSEHOLDS.find(x=>x.id===activeHousehold);
+  if(planStage==='work') return `
+  <div class="view">
+    <div class="page-head"><button class="btn ghost sm" onclick="planStage='list';go('plan')" style="margin-bottom:12px">← All households</button>
+    <div class="eyebrow">Plan workspace</div><h1>${h.name}</h1><p>${h.tag} · ${h.office}</p></div>
+    <div class="grid" style="grid-template-columns:1.1fr .9fr">
+      <div class="card card-pad">
+        <h3>Assumption workbench</h3><div class="sub" style="margin-bottom:10px">All explicit, all editable, all shown on the face of the plan. No hidden model.</div>
+        ${ASSUMPTIONS.map(a=>`<div class="assump"><div><label>${a[0]}</label><span class="src">${a[3]}</span></div><input value="${a[1]}${a[2]?' '+a[2]:''}"></div>`).join('')}
+      </div>
+      <div style="display:grid;gap:16px;align-content:start">
+        <div class="card card-pad">
+          <h3>Assembled household context</h3><div class="sub" style="margin-bottom:8px">Sources feeding this draft. Nothing keyed by hand.</div>
+          <div class="list-row" style="padding:9px 0"><span class="pill teal">Intake</span><div class="s" style="margin:0">Portal intake completed Jul 28 · 41 fields</div></div>
+          <div class="list-row" style="padding:9px 0"><span class="pill teal">Calls</span><div class="s" style="margin:0">2 discovery transcripts, consented &amp; structured</div></div>
+          <div class="list-row" style="padding:9px 0"><span class="pill teal">Tax</span><div class="s" style="margin:0">2025 return summary via tax-scan</div></div>
+          <div class="list-row" style="padding:9px 0"><span class="pill teal">Holdings</span><div class="s" style="margin:0">Custodian positions as of Aug 4</div></div>
+        </div>
+        <div class="card card-pad">
+          <h3>Generate draft</h3><div class="sub" style="margin-bottom:12px">Complete first draft with narrative, scenarios, and the run-out-of-money analysis. Minutes, not days.</div>
+          <div class="gen-panel" id="genPanel">
+            <div class="gen-steps" id="genSteps" style="display:none">
+              <div class="gen-step" data-s="0"><span class="tick">✓</span>Assembling household context</div>
+              <div class="gen-step" data-s="1"><span class="tick">✓</span>Running calculation layer — income, drawdown, tax</div>
+              <div class="gen-step" data-s="2"><span class="tick">✓</span>Branching scenarios (62 / 67 / 70, mortgage payoff)</div>
+              <div class="gen-step" data-s="3"><span class="tick">✓</span>Composing narrative around verified outputs</div>
+              <div class="gen-step" data-s="4"><span class="tick">✓</span>Writing generation record</div>
+            </div>
+            <button class="btn ink" id="genBtn" onclick="runGeneration()">Generate first draft</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  const sc = SCENARIOS[activeScenario];
+  return `
+  <div class="view">
+    <div class="page-head"><button class="btn ghost sm" onclick="planStage='work';go('plan')" style="margin-bottom:12px">← Back to workbench</button>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">
+      <div><div class="eyebrow">Draft v1 · generated in 3m 40s</div><h1>${h.name} — Comprehensive Plan</h1><p>MHWP template v4 · every figure from the calculation layer · awaiting named approver</p></div>
+      <div style="display:flex;gap:8px"><button class="btn ghost" onclick="toast('Comment noted. The engine learns firm phrasing from every edit.')">Add comment</button><button class="btn primary" onclick="approvePlan()">Approve &amp; sign</button></div>
+    </div></div>
+    <div class="grid" style="grid-template-columns:1.35fr .65fr">
+      <div>
+        ${tabBar('plan',[['doc','Plan document'],['deliver','Deliverables (5)']])}
+        ${TABS.plan==='doc'?`
+        <div class="plan-doc">
+          <h2>Retirement Income &amp; Decumulation Plan</h2>
+          <div class="meta">Prepared for Walt &amp; Eloise Brennan · Draft v1 · Aug 5, 2026 · Assumptions shown in full on p.2 · <span style="color:var(--teal)">narrative paragraphs are editable in place</span></div>
+          <h4>Where you stand</h4>
+          <p contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="narrEdit(this)">You arrive at this decision from strength: the mortgage is nine years from term, spending is known rather than guessed, and your combined benefit records give you real choices about timing. The question in front of you is not whether the plan works. It is which version of it you want to live in.</p>
+          <h4>The claiming decision</h4>
+          <p contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="narrEdit(this)">Walt's claiming age moves more money than any other single choice in this plan. We modeled 62, 67, and 70 side by side. The differences compound quietly for a decade and then stop being quiet. Our recommendation and its reasoning follow, but the variants are yours to compare below, on the same axes, with nothing hidden.</p>
+          <h4>Will the money last</h4>
+          <div class="scenario-chips">${Object.entries(SCENARIOS).map(([k,s])=>`<button class="${k===activeScenario?'on':''}" onclick="setScenario('${k}')">${s.label}</button>`).join('')}<button class="${activeScenario==='compare'?'on':''}" onclick="setScenario('compare')">Compare all</button></div>
+          ${activeScenario==='compare'
+            ? `<div class="grid g2" style="margin:12px 0 4px">${Object.entries(SCENARIOS).map(([k,s])=>`<div style="border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--card)"><div style="font-size:.72rem;font-weight:600;color:var(--ink);margin-bottom:6px">${s.label}</div><div class="runout" style="height:60px;margin:0">${s.bars.map(v=>`<div class="bar ${v===0?'zero':v<20?'low':''}" style="height:${Math.max(v,4)}%"></div>`).join('')}</div><div class="runout-x" style="margin-top:4px"><span>75</span><span>94</span></div></div>`).join('')}</div>
+               <p style="margin-top:10px">Same axes, no hidden model. Delaying to 70 buys the strongest longevity floor; claiming at 62 spends the buffer in the first decade; the mortgage payoff trades liquidity for peace of mind, which is a legitimate input.</p>`
+            : `<div class="runout">${sc.bars.map(v=>`<div class="bar ${v===0?'zero':v<20?'low':''}" style="height:${Math.max(v,3)}%"></div>`).join('')}</div>
+               <div class="runout-x"><span>Age 75</span><span>Age 84</span><span>Age 94</span></div>
+               <p style="margin-top:10px">${sc.note}</p>`}
+          <h4>What we are asking you to decide</h4>
+          <p contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="narrEdit(this)">Three things, and only three: the claiming age, whether the mortgage runs to term, and the travel budget for the first five years. Everything else in this document is our work, shown so you can check it.</p>
+        </div>
+        `:''}
+        ${TABS.plan==='deliver'?`
+        <div class="section-title" style="margin-top:0"><h2>Deliverable fan-out</h2><span class="hint">One approved plan becomes every version the household needs</span></div>
+        <div class="fanout">
+          <div class="fan-card"><div class="t">Full client document</div><div class="s">28 pages · firm template</div></div>
+          <div class="fan-card"><div class="t">Annual review summary</div><div class="s">2 pages for the meeting</div></div>
+          <div class="fan-card"><div class="t">Spousal-conversation version</div><div class="s">Plain language, no jargon</div></div>
+          <div class="fan-card"><div class="t">Action-item checklist</div><div class="s">7 items, owners assigned</div></div>
+          <div class="fan-card"><div class="t">CRM follow-through tasks</div><div class="s">Pushed on approval</div></div>
+        </div>
+        <div class="callout" style="margin-top:14px">Approving the plan queues all five automatically. Nothing here needs a second production pass.</div>
+        `:''}
+      </div>
+      <div style="display:grid;gap:16px;align-content:start">
+        <div class="card card-pad">
+          <h3>Principal time on this plan</h3>
+          <div class="k" style="font-family:var(--font-display);font-size:2.2rem;color:var(--ink)">95 min</div>
+          <div class="sub">Review + 3 narrative edits + 1 scenario added + 1 assumption tightened. Sleep on it, 20 minutes tomorrow, deliver.</div>
+        </div>
+        <div class="card card-pad">
+          <h3>Generation record</h3><div class="sub" style="margin-bottom:10px">Retained with the plan. Every plan, every time.</div>
+          <div class="genrec mono">
+            <div><span>Sources</span><span>intake · 2 transcripts · tax · holdings</span></div>
+            <div><span>Template</span><span>MHWP Comprehensive v4</span></div>
+            <div><span>Model</span><span>MHWP-plan-2.3</span></div>
+            <div><span>Figures by LLM</span><span>0 (calc layer only)</span></div>
+            <div><span>Approver</span><span id="approverField">— pending</span></div>
+          </div>
+        </div>
+        <div class="callout">Honest framing for the client: this is a <b>process</b> that assembles and drafts. The advisor's judgment is the final and decisive layer.</div>
+      </div>
+    </div>
+  </div>`;
+},
+
+/* ---------- CONTENT STUDIO ---------- */
+content(){
+  return `
+  <div class="view">
+    <div class="page-head"><div class="eyebrow">Capability 2</div><h1>Content Studio</h1>
+    <p>A hundred dormant episodes, national columns, and an eBook become the source of everything published, in your voice, hook first.</p></div>
+    ${tabBar('content',[['studio','Archive & fan-out'],['voice','Voice print']])}
+    ${TABS.content==='studio'?`
+    <div class="grid g3" style="margin-bottom:20px">
+      <button class="card stat-card" onclick="var i=document.getElementById('arcSearch'); if(i) i.focus()"><div class="k">312</div><div class="l">Assets in the corpus</div><div class="d na">episodes · columns · chapters — search below</div></button>
+      <div class="card stat-card"><div class="k">61%</div><div class="l">Archive actively recirculating</div><div class="d up">was near zero</div></div>
+      <div class="card stat-card"><div class="k">10</div><div class="l">Assets published this week</div><div class="d up">no added headcount</div></div>
+    </div>
+    <div class="card card-pad" style="margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h3>Dormant archive — pick a source</h3><button class="btn ghost sm" onclick="setTab('content','voice')">How the voice print works →</button></div>
+      <div class="sub" style="margin-bottom:10px">Off the air since the pandemic. Searchable and reusable since day one.</div>
+      <input id="arcSearch" placeholder="Search 312 assets — topic, format, year…" value="${contentSearch}" oninput="arcFilter(this.value)" style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:.82rem;color:var(--ink);margin-bottom:10px">
+      <div id="arcList">${renderArchive()}</div>
+    </div>
+    <div id="fanResult">${fannedOut?renderFan():'<div class="card"><div class="empty">Select a dormant source and fan it out. One asset becomes twelve, in your voice, hooks included.</div></div>'}</div>
+    `:`
+    <div class="grid" style="grid-template-columns:minmax(0,640px)">
+      <div class="card card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h3>Voice print</h3><button class="btn ghost sm" onclick="setTab('content','studio')">← Back to the archive</button></div>
+        <div class="sub" style="margin-bottom:10px">Built from your actual writing and speaking. Hard-constrained: no forward-looking claims, no performance citation, no invented statistics.</div>
+        <div class="voice-trait"><b>Register</b><span>Serious but deliberately accessible. Explains, never talks down.</span></div>
+        <div class="voice-trait"><b>Signature moves</b><span>Opens with a question or a cultural reference; closes with one action, not five.</span></div>
+        <div class="voice-trait"><b>Frameworks</b><span>Clarity, confidence, control · ages and stages, not account sizes</span></div>
+        <div class="voice-trait"><b>Will not opine on</b><span>Individual securities, market timing, other advisors' conduct</span></div>
+        <div class="voice-trait"><b>Hook policy</b><span>Angle first, topic second. It has to be allowed to be a little fun.</span></div>
+      </div>
+      <div class="callout">Every factual assertion in a derived asset must trace to a document in the corpus. That constraint is structural, not a setting.</div>
+    </div>
+    `}
+  </div>`;
+},
+
+/* ---------- GOVERNANCE ---------- */
+gov(){
+  return `
+  <div class="view">
+    <div class="page-head"><div class="eyebrow">Capability 3 · the rail everything runs on</div><h1>Consent, Recording &amp; Governance</h1>
+    <p>Clients ask you to record so a spouse can rewatch or an adult child can review. "Don't" was never a workable answer. This is the wrapper that makes saying yes safe.</p></div>
+    ${tabBar('gov',[['overview','Overview'],['consent','Consent & jurisdictions'],['access','Access register'],['review','Review & exams'],['policy','Policy layer']])}
+    ${TABS.gov==='overview'?`
+    <div class="grid g4" style="margin-bottom:20px">
+      <button class="card stat-card" onclick="setTab('gov','review')"><div class="k">100%</div><div class="l">AI-touched artifacts with named approver</div><div class="d up">view the queue →</div></button>
+      <button class="card stat-card" onclick="setTab('gov','access')"><div class="k">14</div><div class="l">Active scoped grants</div><div class="d na">view the register →</div></button>
+      <button class="card stat-card" onclick="setTab('gov','consent')"><div class="k">3</div><div class="l">Registered jurisdictions</div><div class="d na">CA · NV · MD — how consent works →</div></button>
+      <button class="card stat-card" onclick="setTab('gov','review')"><div class="k">Hours</div><div class="l">Examination document production</div><div class="d up">was days — exam readiness →</div></button>
+    </div>
+    <div class="section-title"><h2>Pending request</h2><span class="hint">The specific thing clients actually ask for</span></div>
+    <div class="card">
+      ${mayaReleased
+        ? `<div class="list-row" style="align-items:center;opacity:.75"><span class="pill ok">Released</span><div style="flex:1"><div class="t">Maya Brennan — Annual review recording · Jun 12, 2026</div><div class="s">Released with scope, expiring Sep 04, basis logged. On the register.</div></div><button class="btn ghost sm" onclick="setTab('gov','access')">View register</button></div>`
+        : `<div class="list-row" style="align-items:center"><span class="pill teal">Recording</span><div style="flex:1"><div class="t">Maya Brennan (adult child, verified) requests: Annual review · Jun 12, 2026</div><div class="s">Could not attend; wants to review what was discussed with her parents. All-party consent on file. Client authority to share logged.</div></div><button class="btn primary sm" onclick="openShare()">Release with scope</button></div>`}
+    </div>
+    <div class="callout" style="margin-top:16px"><b>Design precedent:</b> healthcare and education solved versions of this years ago. Telemedicine consent is the pattern; this is that pattern, applied to advice.</div>
+    `:''}
+    ${TABS.gov==='consent'?`
+    <div class="section-title" style="margin-top:0"><h2>Consent at the point of the meeting</h2><span class="hint">Client-appropriate script, not an abrupt announcement</span></div>
+    <div class="consent-flow">
+      <div class="consent-step"><span class="n">CAPTURE</span><div class="t">Consent recorded &amp; timestamped</div><p>In-person or virtual. The script is read, the response is captured, and the record attaches to the session itself.</p></div>
+      <div class="consent-step"><span class="n">JURISDICTION</span><div class="t">One-party vs. all-party, handled by location</div><p>Determined by where the participants are, not by what the advisor remembers under pressure.</p></div>
+      <div class="consent-step"><span class="n">SCOPE</span><div class="t">Release with limits and expiry</div><p>A spouse, adult child, or caregiver gets defined access with an end date and a stated basis. Auditable by design.</p></div>
+    </div>
+    <div class="juris" style="margin-top:12px">
+      <div class="j"><b>California</b>All-party consent · script v2</div>
+      <div class="j"><b>Nevada</b>One-party consent · script v2 still read as policy</div>
+      <div class="j"><b>Maryland</b>All-party consent · script v2</div>
+      <div class="j" style="border-style:dashed"><b>Mixed-state meeting</b>Strictest rule wins, automatically</div>
+    </div>
+    <div style="margin-top:16px"><button class="btn ghost sm" onclick="setTab('gov','policy')">What to actually say to a client — the policy layer →</button></div>
+    `:''}
+    ${TABS.gov==='access'?`
+    <div class="section-title" style="margin-top:0"><h2>Third-party access register</h2><span class="hint">Who, what, when, by whose authority, on what basis</span></div>
+    <div class="card"><table class="tbl" id="accessTbl">
+      <tr><th>Granted to</th><th>Artifact</th><th>Scope</th><th>Expires</th><th>Basis</th><th>Status</th></tr>
+      ${mayaReleased?`<tr><td>Maya Brennan (adult child)</td><td>Annual review recording · Jun 12</td><td>View only</td><td class="num">Sep 04</td><td>Client request — family member unable to attend</td><td><span class="pill ok">Active</span></td></tr>`:''}
+      <tr><td>Eloise Brennan (spouse)</td><td>Plan review recording · May 2026</td><td>View only</td><td class="num">Sep 03</td><td>Client request — rewatch</td><td><span class="pill ok">Active</span></td></tr>
+      <tr><td>D. Okafor Jr. (adult child)</td><td>Caregiving plan summary</td><td>View + download</td><td class="num">Aug 22</td><td>POA on file</td><td><span class="pill ok">Active</span></td></tr>
+      <tr><td>Rosa Delgado (caregiver)</td><td>Appointment recording · Jul 2026</td><td>${delgadoVerified?'View only':'Drafted'}</td><td class="num">${delgadoVerified?'Sep 04':'—'}</td><td>Client request</td><td>${delgadoVerified?'<span class="pill ok">Active</span>':'<span class="pill brass">ID verification pending</span>'}</td></tr>
+      <tr><td>M. Tran (adult child)</td><td>Review recording · Mar 2026</td><td>View only</td><td class="num">Expired Aug 03</td><td>Client request</td><td><span class="pill grey">Auto-revoked</span></td></tr>
+    </table></div>
+    <div style="margin-top:14px"><button class="btn ghost sm" onclick="setTab('gov','overview')">← Pending request is on the Overview</button></div>
+    `:''}
+    ${TABS.gov==='review'?`
+    <div class="grid g2">
+      <div>
+        <div class="section-title" style="margin-top:0"><h2>Universal review queue</h2></div>
+        <div class="card">
+          <div class="list-row"><span class="pill brass">Plan</span><div style="flex:1"><div class="t">Brennan plan draft v1</div><div class="s">Generated from 4 sources · model MHWP-plan-2.3</div></div><button class="btn ghost sm" onclick="go('plan')">Open</button></div>
+          <div class="list-row"><span class="pill flag">Video</span><div style="flex:1"><div class="t">"Two birthdays, one decision" — 60s script</div><div class="s">Pre-flight: specific benefit-amount example flagged</div></div><button class="btn ghost sm" onclick="go('content')">Open</button></div>
+          <div class="list-row"><span class="pill flag">Email</span><div style="flex:1"><div class="t">Advisor-audience email + CE note</div><div class="s">Routes to broker-dealer review · disclosure v3.2 attached</div></div><button class="btn ghost sm" onclick="go('content')">Open</button></div>
+        </div>
+      </div>
+      <div>
+        <div class="section-title" style="margin-top:0"><h2>Examination readiness</h2></div>
+        <div class="card">
+          <div class="list-row"><span class="pill ok">Current</span><div style="flex:1"><div class="t">ADV Part 2 · v2026.2</div><div class="s">Versioned · filed CA, NV, MD</div></div></div>
+          <div class="list-row"><span class="pill ok">Current</span><div style="flex:1"><div class="t">Form CRS · v2026.1</div><div class="s">Delivery attestations tracked per household</div></div></div>
+          <div class="list-row"><span class="pill ok">Logged</span><div style="flex:1"><div class="t">Advertising review log</div><div class="s">41 items YTD · zero published unapproved</div></div></div>
+          <div class="list-row"><span class="pill brass">Due Sep 15</span><div style="flex:1"><div class="t">NV annual renewal attestation</div><div class="s">On the unified compliance calendar</div></div></div>
+        </div>
+      </div>
+    </div>
+    `:''}
+    ${TABS.gov==='policy'?`
+    <div class="section-title" style="margin-top:0"><h2>Plain-language policy layer</h2><span class="hint">What the firm's position is, in words you can say out loud to a client</span></div>
+    <div class="card" id="policyList">
+      <div class="policy-q"><button onclick="this.parentElement.classList.toggle('open')">"Can you record this so my wife can watch it later?"<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button><div class="a">Yes. "Happy to. I'll read a short consent note at the start so everyone on the call has agreed, and I'll send your wife a private viewing link that works for 30 days. It's just for your family, and we keep a record of who it went to." Consent captured, scope set to view-only, expiry default 30 days.</div></div>
+      <div class="policy-q"><button onclick="this.parentElement.classList.toggle('open')">"My daughter couldn't make it. Can she see what we discussed?"<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button><div class="a">Yes, with your say-so on record. "Of course. Since it's your meeting, I'll note that you asked me to share it, verify it's really her on the other end, and she'll get access to this recording only, not your documents." Release logged with basis, identity verified, scoped to the single artifact.</div></div>
+      <div class="policy-q"><button onclick="this.parentElement.classList.toggle('open')">"Is the AI writing my plan?"<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button><div class="a">"No. It's a process that gathers your information and drafts the document the way our office would, and every number comes from the same calculations we've always used. I read every word, I change what needs changing, and nothing reaches you without my name on it." True, plain, and repeatable by any advisor at the firm.</div></div>
+      <div class="policy-q"><button onclick="this.parentElement.classList.toggle('open')">"One of us is joining from Maryland. Does that change anything?"<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button><div class="a">"Only that everyone on the call needs to agree to the recording, which we ask for anyway. Same one sentence at the start, nothing else changes for you." The system applies the strictest participating jurisdiction automatically.</div></div>
+    </div>
+    `:''}
+  </div>`;
+},
+
+/* ---------- CLIENT 360 ---------- */
+c360(){
+  return `
+  <div class="view">
+    <div class="page-head"><div class="eyebrow">Capability 4 · data foundation</div><h1>Unified Client 360</h1>
+    <p>One household record stitched from CRM, planning, portfolio, tax, documents, email, and calendar. The wiring is the value: household context flows into plan production instead of stopping at meeting prep.</p></div>
+    ${tabBar('c360',[['brief','Brief & triggers'],['capture','Meeting capture'],['family','Family map'],['quality','Data quality']])}
+    ${TABS.c360==='brief'?`
+    <div class="grid g4" style="margin-bottom:20px">
+      <button class="card stat-card" onclick="setTab('c360','family')"><div class="k">238</div><div class="l">Households stitched</div><div class="d up">across 3 offices — family view →</div></button>
+      <div class="card stat-card"><div class="k">9 <small>min</small></div><div class="l">Median meeting prep</div><div class="d up">was 45-60 min unassisted</div></div>
+      <button class="card stat-card" onclick="setTab('c360','quality')"><div class="k">${EXCEPTIONS.filter(e=>(e.kind==='conflict'||e.kind==='stale')&&!e.done).length}</div><div class="l">Data conflicts open</div><div class="d ${EXCEPTIONS.some(e=>(e.kind==='conflict'||e.kind==='stale')&&!e.done)?'warn':'up'}">data-quality monitor →</div></button>
+      <div class="card stat-card"><div class="k">12</div><div class="l">Life-event triggers this month</div><div class="d na">59½ · 65 · 73 · anniversaries</div></div>
+    </div>
+    <div class="grid" style="grid-template-columns:1.05fr .95fr">
+      <div class="card card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+          <div><h3>Pre-meeting brief — ${BRIEFS[briefHH].t}</h3><div class="sub" style="margin-bottom:10px">${BRIEFS[briefHH].s}</div></div>
+          <select onchange="briefHH=this.value;go('c360')" style="padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:.78rem;color:var(--ink);background:var(--card)">
+            ${Object.entries(BRIEFS).map(([k,b])=>`<option value="${k}" ${k===briefHH?'selected':''}>${b.t}</option>`).join('')}
+          </select>
+        </div>
+        ${BRIEFS[briefHH].items.map((it,i)=>`<div class="brief-item">${BICONS[i%4]}<div><b style="color:var(--ink)">${it[0]}</b> ${it[1]}</div></div>`).join('')}
+        <div style="margin-top:12px"><button class="btn ghost sm" onclick="setTab('c360','capture')">After the meeting: capture it →</button></div>
+      </div>
+      <div class="card card-pad">
+        <h3>Life-event triggers — next 60 days</h3><div class="sub" style="margin-bottom:8px">Surfaced, not remembered.</div>
+        <div class="list-row" style="padding:9px 0"><span class="pill brass">RMD · 73</span><div class="s" style="margin:0"><b style="color:var(--ink)">Walt Brennan</b> — first distribution deadline Apr 2027; plan now, not in March</div></div>
+        <div class="list-row" style="padding:9px 0"><span class="pill teal">59½</span><div class="s" style="margin:0"><b style="color:var(--ink)">Dana Whitfield</b> — penalty-free access opens Sep 12; relevant to settlement sequencing</div></div>
+        <div class="list-row" style="padding:9px 0"><span class="pill teal">65</span><div class="s" style="margin:0"><b style="color:var(--ink)">Linh Tran</b> — Medicare window opens Oct 1; in-language outreach drafted</div></div>
+        <div class="list-row" style="padding:9px 0"><span class="pill grey">College</span><div class="s" style="margin:0"><b style="color:var(--ink)">Okafor twins</b> — freshman year starts Aug 24; 529 drawdown begins</div></div>
+        <div class="list-row" style="padding:9px 0"><span class="pill grey">Anniv.</span><div class="s" style="margin:0"><b style="color:var(--ink)">Brennans</b> — 42 years, Sep 2 · outreach drafted in firm voice</div></div>
+      </div>
+    </div>
+    `:''}
+    ${TABS.c360==='capture'?`
+    <div class="section-title" style="margin-top:0"><h2>Meeting capture</h2><span class="hint">Transcription structured into CRM activity, tasks, and a drafted follow-up — feeding the Plan Engine's context</span></div>
+    <div class="card card-pad">
+      ${meetingCaptured ? `
+      <div class="grid g3">
+        <div><div class="eyebrow">CRM activity</div><div style="font-size:.83rem;color:var(--slate);line-height:1.55"><b style="color:var(--ink)">Annual review — Brennan household · 48 min.</b> Claiming age discussed (leaning 70), travel budget set for years 1–5, stress scenario reviewed and accepted, Maya's access request resolved live.</div></div>
+        <div><div class="eyebrow">Tasks created</div>
+          <div class="brief-item" style="padding:6px 0">${BICONS[2]}<div style="font-size:.8rem">Model claim-at-70 as primary — <b style="color:var(--ink)">owner: principal · due Aug 12</b></div></div>
+          <div class="brief-item" style="padding:6px 0">${BICONS[0]}<div style="font-size:.8rem">RMD sequencing memo to CPA — <b style="color:var(--ink)">owner: EA · due Aug 19</b></div></div>
+          <div class="brief-item" style="padding:6px 0">${BICONS[3]}<div style="font-size:.8rem">Intro call offer to Maya (next-gen) — <b style="color:var(--ink)">owner: advisor 2 · due Sep 1</b></div></div>
+        </div>
+        <div><div class="eyebrow">Drafted follow-up</div><div style="border:1px solid var(--line);border-radius:8px;padding:10px;font-size:.78rem;line-height:1.55;background:#FDFCFA;font-family:var(--font-display)">"Walt, Eloise — good session Thursday. Two things we agreed to: I'll re-run the plan with claiming at 70 as the primary path, and Maya now has the recording link, good for 30 days…"<div class="mono" style="margin-top:6px;color:var(--mist)">status: in review queue · not sent</div></div></div>
+      </div>
+      <div class="callout" style="margin-top:12px"><b>Context pushed to the Plan Engine.</b> The next Brennan draft starts from what was actually said in this meeting, not from memory.</div>`
+      : `<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+          <div style="font-size:.85rem;color:var(--mist);max-width:60ch">Consented recordings don't stop at storage. One click turns the Brennan annual review into a CRM activity, owned tasks, and a drafted follow-up — and the structured context feeds the next plan draft.</div>
+          <button class="btn ink" onclick="captureMeeting()">Simulate capture — Brennan annual review (48 min)</button>
+        </div>`}
+    </div>
+    `:''}
+    ${TABS.c360==='family'?`
+    <div class="section-title" style="margin-top:0"><h2>Multigenerational view — Brennan family</h2><span class="hint">One family, several relationships, plus the heirs who will inherit them</span></div>
+    <div class="card gen-map">
+      <div class="gen-tier"><span class="lab">Gen 1</span><div class="person client"><b>Walt &amp; Eloise Brennan</b>Managed households · plan in draft</div></div>
+      <div class="gen-tier"><span class="lab">Gen 2</span><div class="person client"><b>Maya Brennan</b>Adult child · ${mayaReleased?'recording access live (expires Sep 04)':'access request pending'} · no advisor of record</div><div class="person"><b>Thomas Brennan</b>Adult child · holiday-card contact only</div></div>
+      <div class="gen-tier"><span class="lab">Gen 3</span><div class="person heir"><b>2 grandchildren</b>529s funded by Gen 1 · relationships to build</div></div>
+      <div class="callout" style="margin-top:8px">Served regardless of current assets, because the relationship is the asset. These are the relationships that determine the firm in ten years.</div>
+    </div>
+    `:''}
+    ${TABS.c360==='quality'?`
+    <div class="section-title" style="margin-top:0"><h2>Data-quality monitor</h2><span class="hint">Stale and conflicting fields caught before they contaminate a plan</span></div>
+    <div class="card">
+      ${EXCEPTIONS.filter(e=>e.kind==='conflict'||e.kind==='stale').map(e=>e.done
+        ? `<div class="list-row" style="opacity:.65"><span class="pill ok">Resolved</span><div style="flex:1"><div class="t" style="text-decoration:line-through;font-weight:500">${e.t}</div><div class="s">${e.doneTxt}</div></div></div>`
+        : `<div class="list-row"><span class="pill ${e.kind==='conflict'?'flag':'brass'}">${e.kind==='conflict'?'Conflict':'Stale'}</span><div style="flex:1"><div class="t">${e.t}</div><div class="s">${e.s}</div></div><button class="btn ghost sm" onclick="go('home');setTimeout(()=>document.getElementById('exQueue')&&document.getElementById('exQueue').scrollIntoView({behavior:'smooth'}),80)">Resolve on Home</button></div>`).join('')||'<div class="empty">Nothing flagged. The monitor is quiet.</div>'}
+    </div>
+    `:''}
+  </div>`;
+},
+
+/* ---------- PIPELINE ---------- */
+pipe(){
+  const leads = leadsRanked ? [...LEADS].sort((a,b)=>b.score-a.score) : [...LEADS].sort((a,b)=>a.name.localeCompare(b.name));
+  return `
+  <div class="view">
+    <div class="page-head"><div class="eyebrow">Capability 5</div><h1>Pipeline Intelligence &amp; Referral Attribution</h1>
+    <p>The problem was never lead generation. The referral and long-nurture engine, the thing that actually works, was completely uninstrumented.</p></div>
+    ${tabBar('pipe',[['queue','Nurture queue'],['diag','Diagnostics & referrals'],['channels','Channel accounting']])}
+    ${TABS.pipe==='queue'?`
+    <div class="grid g4" style="margin-bottom:20px">
+      <div class="card stat-card"><div class="k">342</div><div class="l">Leads in multi-year nurture</div><div class="d na">365-day + 549-day sequences</div></div>
+      <div class="card stat-card"><div class="k">6</div><div class="l">Warming now</div><div class="d up">ranked, not hand-read one at a time</div></div>
+      <button class="card stat-card" onclick="setTab('pipe','diag')"><div class="k">17</div><div class="l">Next-generation contacts tracked</div><div class="d up">diagnostics &amp; referrals →</div></button>
+      <button class="card stat-card" onclick="setTab('pipe','channels')"><div class="k">9</div><div class="l">Households from referrals YTD</div><div class="d up">true channel accounting →</div></button>
+    </div>
+    <div class="section-title" style="margin-top:0"><h2>Nurture queue — ${leadsRanked?'ranked by engagement':'as stored (alphabetical)'}</h2>
+      <button class="btn ${leadsRanked?'ghost':'primary'} sm" onclick="rankLeads()">${leadsRanked?'Show unranked':'Re-rank by engagement'}</button></div>
+    <div class="card"><table class="tbl">
+      <tr><th>Prospect</th><th>Engagement</th><th>Topic affinity</th><th>Why surfaced</th><th></th></tr>
+      ${leads.map(l=>`<tr><td><b style="color:var(--ink)">${l.name}</b><div style="font-size:.72rem;color:var(--mist)">${l.inN}</div></td>
+      <td><span class="score ${l.score>=80?'hot':''}"><span class="track"><span class="fill" style="width:${l.score}%"></span></span><span class="num" style="font-weight:600;color:var(--ink)">${l.score}</span></span></td>
+      <td style="font-size:.78rem">${l.topics}</td><td style="font-size:.78rem;color:var(--mist)">${l.why}</td>
+      <td>${l.score>=60?`<button class="btn ghost sm" onclick="toast('Personal touch drafted on ${l.topics.split(' ·')[0]} — nurture cycle paused pending your reply.')">Draft touch</button>`:''}</td></tr>`).join('')}
+    </table></div>
+    ${leadsRanked?'<div class="callout" style="margin-top:12px"><b>Posture preserved:</b> the 2.5-year prospect surfaces at the right moment, without pressure. Responding stops the automated cycle and routes to a personal reply, exactly as the sequence already works.</div>':''}
+    `:''}
+    ${TABS.pipe==='diag'?`
+    <div class="grid g2">
+      <div>
+        <div class="section-title" style="margin-top:0"><h2>Video watch-time diagnostics</h2><span class="hint">60-second format</span></div>
+        <div class="card card-pad">
+          <div class="dropoff">
+            ${[100,97,92,84,76,66,54,49,31,27,24,22,20,19,18,17,16,15,15,14].map((v,i)=>`<div class="b ${i===8?'pt':''}" style="height:${v}%"></div>`).join('')}
+          </div>
+          <div class="runout-x" style="margin-top:6px"><span>0:00</span><span>0:31 — drop-off point</span><span>1:00</span></div>
+          <p style="font-size:.8rem;color:var(--mist);margin-top:10px">Most viewers stop at 0:31, right where the setup ends and the answer begins. The fix is structural and knowable: answer first, story second. Already applied to this week's script.</p>
+        </div>
+      </div>
+      <div>
+        <div class="section-title" style="margin-top:0"><h2>Referral graph — top sources</h2><span class="hint">Who actually builds this firm</span></div>
+        <div class="card card-pad">
+          <div class="ref-node"><span class="cnt">4</span><div><div class="t" style="font-size:.84rem;font-weight:600;color:var(--ink)">The Okafor Family</div><div class="s" style="font-size:.76rem;color:var(--mist)">4 referred households · 2 unserved adult children in the family network</div></div></div>
+          <div class="ref-node"><span class="cnt">3</span><div><div class="t" style="font-size:.84rem;font-weight:600;color:var(--ink)">Estate attorney — R. Vance</div><div class="s" style="font-size:.76rem;color:var(--mist)">3 households · reciprocal relationship, never formally cultivated until now</div></div></div>
+          <div class="ref-node"><span class="cnt">2</span><div><div class="t" style="font-size:.84rem;font-weight:600;color:var(--ink)">Community college teaching</div><div class="s" style="font-size:.76rem;color:var(--mist)">2 households traced to the personal-finance course over 3 years</div></div></div>
+          <div class="ref-node"><span class="cnt">2</span><div><div class="t" style="font-size:.84rem;font-weight:600;color:var(--ink)">Divorce support group talks</div><div class="s" style="font-size:.76rem;color:var(--mist)">2 households · long cycle, high fit, zero spend</div></div></div>
+        </div>
+      </div>
+    </div>
+    `:''}
+    ${TABS.pipe==='channels'?`
+    <div class="section-title" style="margin-top:0"><h2>True channel accounting</h2><span class="hint">Cost per acquired household, including the honest zeros</span></div>
+    <div class="card"><table class="tbl">
+      <tr><th>Channel</th><th>Spend</th><th>Households</th><th>Cost / household</th><th>Verdict</th></tr>
+      ${CHANNELS.map(c=>`<tr><td><b style="color:var(--ink)">${c[0]}</b></td><td class="num">${c[1]}</td><td class="num">${c[2]}</td><td class="num">${c[3]}</td><td style="font-size:.78rem;color:var(--mist)">${c[4]}</td></tr>`).join('')}
+    </table></div>
+    `:''}
+  </div>`;
+}
+};
+
+/* ================= interactions ================= */
+function renderExceptions(){
+  return EXCEPTIONS.map(e=>{
+    if(e.done) return `<div class="list-row" style="opacity:.65"><span class="pill ok">Resolved</span><div style="flex:1"><div class="t" style="text-decoration:line-through;font-weight:500">${e.t}</div><div class="s">${e.doneTxt}</div></div></div>`;
+    let action='';
+    if(e.kind==='conflict'){
+      action = e.open
+        ? `<div style="display:grid;gap:6px"><button class="btn primary sm" onclick="fixConflict('${e.id}','intake')">Use intake (1963)</button><button class="btn ghost sm" onclick="fixConflict('${e.id}','confirm')">Ask client to confirm</button></div>`
+        : `<button class="btn ghost sm" onclick="toggleEx('${e.id}')">Resolve</button>`;
+    }
+    if(e.kind==='stale') action=`<button class="btn ghost sm" onclick="refreshStale('${e.id}')">Refresh now</button>`;
+    if(e.kind==='plan') action=`<button class="btn primary sm" onclick="openDraftFromHome()">Review draft</button>`;
+    if(e.kind==='verify') action=`<div style="display:grid;gap:6px"><button class="btn ghost sm" onclick="verifyDelgado()">Mark ID verified</button><button class="btn ghost sm" onclick="TABS.gov='access';go('gov')">Open register</button></div>`;
+    return `<div class="list-row"><span class="pill ${e.pill}">${e.label}</span><div style="flex:1"><div class="t">${e.t}</div><div class="s">${e.s}</div></div>${action}</div>`;
+  }).join('') + (EXCEPTIONS.every(e=>e.done)?'<div class="empty">Queue clear. Nothing needs the principal right now.</div>':'');
+}
+function toggleEx(id){ EXCEPTIONS.find(e=>e.id===id).open=true; go('home'); }
+function fixConflict(id, how){
+  const e=EXCEPTIONS.find(x=>x.id===id); e.done=true;
+  if(how==='intake'){
+    e.doneTxt='Intake value (1963) accepted as source of truth. CRM updated. Plan generation unblocked.';
+    const h=HOUSEHOLDS.find(x=>x.id==='tran'); h.ready=true; h.status='Context assembled'; h.ctx='Intake · CRM · conflict resolved Aug 5';
+    addAudit('Data conflict resolved — Linh Tran birthdate','Intake (1963) accepted over CRM (1961) · CRM write-back · Tran-Nguyen plan generation unblocked');
+    toast('Resolved. Tran-Nguyen household is unblocked in the Plan Engine.');
+  } else {
+    e.doneTxt='Confirmation request sent to the household portal, in Vietnamese. Household stays blocked until it returns.';
+    addAudit('Data conflict escalated — Linh Tran birthdate','Confirmation requested via portal (in-language) · household remains blocked pending reply');
+    toast('Confirmation request sent to the household portal.');
+  }
+  go('home');
+}
+function refreshStale(id){
+  const e=EXCEPTIONS.find(x=>x.id===id); e.done=true;
+  e.doneTxt='Custodian re-sync completed. July contribution now reflected. Education-funding section cleared to run.';
+  addAudit('Stale field refreshed — Okafor 529 balance','Custodian re-sync · July contribution captured · plan section unblocked');
+  toast('Refreshed. 529 balance is current.');
+  go('home');
+}
+function openDraftFromHome(){ activeHousehold='brennan'; planStage='draft'; activeScenario='base'; go('plan'); }
+function captureMeeting(){
+  meetingCaptured=true;
+  TABS.c360='capture';
+  addAudit('Meeting captured — Brennan annual review (48 min)','Consent on file · transcript structured: CRM activity, 3 tasks, drafted follow-up · context pushed to Plan Engine');
+  toast('Captured. CRM activity, three tasks, and a drafted follow-up — context pushed to the Plan Engine.');
+  go('c360');
+}
+function verifyDelgado(){
+  const e=EXCEPTIONS.find(x=>x.id==='delgado'); e.done=true; delgadoVerified=true;
+  e.doneTxt='Identity verified. Drafted grant is now live: view only, expires Sep 04, basis logged.';
+  addAudit('Third-party ID verified — Rosa Delgado (caregiver)','Drafted scoped grant activated · view only · expires Sep 04 · basis: client request');
+  toast('Verified. The scoped grant is live and on the record.');
+  go('home');
+}
+function openReview(id){
+  const c=CAL.find(x=>x.id===id); if(!c) return;
+  document.getElementById('rvTitle').textContent=c.asset;
+  document.getElementById('rvNote').innerHTML='<b>Why it is in front of you:</b> '+c.note;
+  document.getElementById('rvExcerpt').textContent=c.excerpt;
+  document.getElementById('rvActions').innerHTML = c.bd
+    ? `<button class="btn primary" style="justify-content:center" onclick="routeBD('${id}')">Route to broker-dealer review</button><button class="btn ghost" style="justify-content:center" onclick="closeReview()">Not yet</button>`
+    : `<button class="btn primary" style="justify-content:center" onclick="approveCal('${id}',false)">Approve as written</button>`+
+      (c.st==='flag'?`<button class="btn ghost" style="justify-content:center" onclick="approveCal('${id}',true)">Approve with example generalized</button>`:'')+
+      `<button class="btn ghost" style="justify-content:center" onclick="closeReview()">Not yet</button>`;
+  document.getElementById('reviewOverlay').classList.add('on');
+}
+function closeReview(){ document.getElementById('reviewOverlay').classList.remove('on'); }
+function approveCal(id, generalized){
+  const c=CAL.find(x=>x.id===id);
+  c.st='ok'; c.stTxt='Approved · '+(preset==='voice'?'Rita C.':'Marc A.')+(generalized?' · example generalized':'');
+  c.reviewable=false;
+  const a=ASSETS.find(x=>x.calId===id); if(a) a.status='approved';
+  addAudit('Content approved — '+c.asset, 'Named approver on record'+(generalized?' · flagged example generalized before approval':'')+' · scheduled as planned');
+  toast(generalized?'Approved with the example generalized. On the record.':'Approved. Named approver on the record.');
+  closeReview(); go('home');
+}
+function routeBD(id){
+  const c=CAL.find(x=>x.id===id);
+  c.st='grey'; c.stTxt='At broker-dealer review · disclosure v3.2 attached'; c.reviewable=false;
+  const a=ASSETS.find(x=>x.calId===id); if(a) a.status='bd';
+  addAudit('Routed to broker-dealer review — '+c.asset,'Disclosure v3.2 attached automatically · publish blocked until BD clearance');
+  toast('Routed to BD review with the disclosure attached.');
+  closeReview(); go('home');
+}
+function openPlan(id){ activeHousehold=id; planStage='work'; go('plan'); }
+function runGeneration(){
+  const btn=document.getElementById('genBtn');
+  btn.disabled=true; btn.textContent='Generating…';
+  document.getElementById('genSteps').style.display='grid';
+  const steps=[...document.querySelectorAll('.gen-step')];
+  let i=0;
+  const tick=()=>{
+    if(i>0) steps[i-1].classList.replace('doing','done');
+    if(i<steps.length){ steps[i].classList.add('doing'); i++; setTimeout(tick,650); }
+    else{
+      planGenerated=true;
+      addAudit('Plan draft v1 generated — '+HOUSEHOLDS.find(h=>h.id===activeHousehold).name,'4 sources · model MHWP-plan-2.3 · figures from calc layer only · pending approver');
+      planStage='draft'; activeScenario='base'; go('plan');
+      toast('Draft generated. 10-15 hours becomes 90 minutes, and it still looks like your plan.');
+    }
+  };
+  tick();
+}
+function setScenario(k){ activeScenario=k; go('plan'); }
+function narrEdit(el){
+  if(el.dataset.o!==undefined && el.dataset.o!==el.innerText){
+    addAudit('Narrative edit captured — Brennan plan draft v1','Edit stored with the draft · phrasing feeds firm-voice tuning · figures untouched (calc layer only)');
+    toast('Edit captured. The engine learns your phrasing from it.');
+  }
+}
+function approvePlan(){
+  document.getElementById('approverField').textContent = preset==='operator' ? 'Marc A. · Aug 05' : 'Rita C. · Aug 05';
+  const e=EXCEPTIONS.find(x=>x.id==='brennanplan');
+  if(e && !e.done){ e.done=true; e.doneTxt='Approved and signed. Deliverable fan-out queued; CRM tasks pushed.'; }
+  addAudit('Plan draft v1 approved &amp; signed — Brennan household','Named approver on record · deliverable fan-out queued · CRM tasks pushed');
+  toast('Approved. Fan-out queued: client doc, review summary, spousal version, checklist, CRM tasks.');
+}
+function renderArchive(){
+  const q=contentSearch.toLowerCase();
+  const rows=ARCHIVE.filter(a=>!q||(a.ref+' '+a.t+' '+a.s).toLowerCase().includes(q));
+  if(rows.length===0) return '<div class="empty">No match in the corpus for that. Try a topic: caregiving, divorce, volatility…</div>';
+  return rows.map(a=>`<div class="list-row" style="align-items:center"><span class="pill ${a.pill}">${a.ref}</span><div style="flex:1"><div class="t">${a.t}</div><div class="s">${a.s}</div></div>${a.fanable
+    ? `<button class="btn primary sm" id="fanBtn" onclick="fanOut()">${fannedOut?'Fanned out ✓':'Fan out'}</button>`
+    : `<button class="btn ghost sm" onclick="toast('One source at a time in the demo. Ep. 47 is loaded.')">Fan out</button>`}</div>`).join('');
+}
+function arcFilter(v){ contentSearch=v; document.getElementById('arcList').innerHTML=renderArchive(); }
+function assetPill(a){
+  if(a.status==='approved') return '<span class="pill ok">Approved</span>';
+  if(a.status==='bd') return '<span class="pill grey">At BD review</span>';
+  if(a.status==='flag') return '<span class="pill flag">Needs your review</span>';
+  return '<span class="pill ok">Pre-flight clear</span>';
+}
+function renderFan(){
+  return `<div class="section-title" style="margin-top:0"><h2>One dormant asset → twelve live touchpoints</h2><span class="hint">~40 minutes of principal time · click any asset to review it</span></div>
+  <div class="asset-grid">${ASSETS.map((a,i)=>`
+    <div class="asset" role="button" tabindex="0" onclick="openAssetReview(${i})" onkeydown="if(event.key==='Enter')openAssetReview(${i})" style="cursor:pointer;animation-delay:${i*60}ms${a.status==='flag'?';border-color:var(--flag)':''}">
+      <div class="kind">${a.kind}</div>
+      <div class="hook">${a.hook}</div>
+      <div class="body">${a.body}</div>
+      <div class="foot">${assetPill(a)}<span class="mono" style="color:var(--mist)">src: Ep. 47</span></div>
+    </div>`).join('')}</div>
+  <div class="callout" style="margin-top:14px"><b>Nothing publishes itself.</b> Every asset routes through the universal review queue with a named approver. The two flags were caught before they reached you, which is the point.</div>`;
+}
+function openAssetReview(i){
+  const a=ASSETS[i];
+  document.getElementById('rvTitle').textContent=a.kind;
+  document.getElementById('rvNote').innerHTML = a.status==='flag'
+    ? '<b>Why it is in front of you:</b> '+a.body
+    : a.status==='clear' ? '<b>Pre-flight clear.</b> In your voice, every assertion traced to Ep. 47. It only needs your read and your name.'
+    : a.status==='approved' ? '<b>Approved.</b> Named approver on the record; scheduled as planned.'
+    : '<b>At broker-dealer review.</b> Publish is blocked until clearance comes back; disclosure v3.2 is attached.';
+  document.getElementById('rvExcerpt').textContent='"'+a.hook+'" — '+(a.calId?'full draft attached in the review queue.':'draft continues in this register for the stated audience, closing on one action, not five.');
+  document.getElementById('rvActions').innerHTML =
+    (a.status==='flag' && a.calId==='adv1') ? `<button class="btn primary" style="justify-content:center" onclick="routeAssetBD(${i})">Route to broker-dealer review</button><button class="btn ghost" style="justify-content:center" onclick="closeReview()">Not yet</button>`
+  : (a.status==='flag') ? `<button class="btn primary" style="justify-content:center" onclick="approveAsset(${i},true)">Approve with example generalized</button><button class="btn ghost" style="justify-content:center" onclick="approveAsset(${i},false)">Approve as written</button><button class="btn ghost" style="justify-content:center" onclick="closeReview()">Not yet</button>`
+  : (a.status==='clear') ? `<button class="btn primary" style="justify-content:center" onclick="approveAsset(${i},false)">Approve as written</button><button class="btn ghost" style="justify-content:center" onclick="closeReview()">Not yet</button>`
+  : `<button class="btn ghost" style="justify-content:center" onclick="closeReview()">Close</button>`;
+  document.getElementById('reviewOverlay').classList.add('on');
+}
+function approveAsset(i, gen){
+  const a=ASSETS[i]; a.status='approved';
+  if(a.calId){ const c=CAL.find(x=>x.id===a.calId); if(c){ c.st='ok'; c.stTxt='Approved · '+(preset==='voice'?'Rita C.':'Marc A.')+(gen?' · example generalized':''); c.reviewable=false; } }
+  addAudit('Content approved — '+a.kind, 'Named approver on record'+(gen?' · flagged example generalized before approval':'')+' · source: Ep. 47');
+  toast(gen?'Approved with the example generalized. On the record.':'Approved. Named approver on the record.');
+  closeReview(); go(currentView);
+}
+function routeAssetBD(i){
+  const a=ASSETS[i]; a.status='bd';
+  if(a.calId){ const c=CAL.find(x=>x.id===a.calId); if(c){ c.st='grey'; c.stTxt='At broker-dealer review · disclosure v3.2 attached'; c.reviewable=false; } }
+  addAudit('Routed to broker-dealer review — '+a.kind,'Disclosure v3.2 attached automatically · publish blocked until BD clearance');
+  toast('Routed to BD review with the disclosure attached.');
+  closeReview(); go(currentView);
+}
+function fanOut(){
+  TABS.content='studio';
+  if(fannedOut){ if(currentView!=='content') go('content'); return; }
+  fannedOut=true;
+  addAudit('Content fan-out — Ep. 47 → 12 derived assets','Voice print v3 · all assertions traced to corpus · 2 flagged to principal review');
+  toast('Twelve assets drafted in your voice. Two flagged for your review.');
+  go('content');
+}
+function rankLeads(){ leadsRanked=!leadsRanked; if(leadsRanked) addAudit('Nurture queue re-ranked by engagement','342 leads scored on opens, topic affinity, video completion'); go('pipe'); }
+function openShare(){ document.getElementById('shareOverlay').classList.add('on'); }
+function closeShare(){ document.getElementById('shareOverlay').classList.remove('on'); }
+function confirmShare(){
+  closeShare();
+  mayaReleased = true;
+  addAudit('Recording released — Maya Brennan (adult child, verified)','Scope: '+document.getElementById('shScope').value+' · expires '+document.getElementById('shExp').value+' · basis logged · revocable');
+  toast('Released. Scoped, expiring, and on the record. Saying yes, safely.');
+  if(currentView==='gov'){ TABS.gov='access'; go('gov'); }
+}
+
+/* ================= ask the record ================= */
+const CHAT_CHIPS = [
+  'Explain this screen',
+  'What changed for the Brennans?',
+  'Which households are blocked from plan generation?',
+  "When does Rosa Delgado's access expire?",
+  "What is Walt Brennan's account number?",
+  'What is due on the compliance calendar?',
+  'Who are the warmest leads right now?'
+];
+let chatStarted=false;
+
+function toggleChat(on){
+  document.getElementById('chatPanel').classList.toggle('on',on);
+  document.getElementById('askFab').classList.toggle('on',!on && document.getElementById('app').classList.contains('on'));
+  if(on){
+    if(!chatStarted){
+      chatStarted=true;
+      botSay("I answer from the unified household record: CRM, planning, portfolio, tax, documents, governance, and the nurture engine. Nothing outside it, nothing invented. Try one of these:", null, false, true);
+    }
+    document.getElementById('chatInput').focus();
+  }
+}
+function addChip(){
+  const b=document.getElementById('chatBody');
+  const d=document.createElement('div'); d.className='chips';
+  d.innerHTML=CHAT_CHIPS.map(q=>`<button onclick="askChip(this)">${q}</button>`).join('');
+  b.appendChild(d); b.scrollTop=b.scrollHeight;
+}
+function askChip(el){ document.getElementById('chatInput').value=el.textContent; sendChat(); }
+function botSay(text, src, refusal, withChips){
+  const b=document.getElementById('chatBody');
+  const d=document.createElement('div'); d.className='msg bot'+(refusal?' refusal':'');
+  d.innerHTML=text+(src?`<span class="src">source: ${src}</span>`:'');
+  b.appendChild(d);
+  if(withChips) addChip();
+  b.scrollTop=b.scrollHeight;
+}
+function userSay(text){
+  const b=document.getElementById('chatBody');
+  const d=document.createElement('div'); d.className='msg user'; d.textContent=text;
+  b.appendChild(d); b.scrollTop=b.scrollHeight;
+}
+function sendChat(){
+  const inp=document.getElementById('chatInput');
+  const q=inp.value.trim(); if(!q) return;
+  inp.value=''; userSay(q);
+  const b=document.getElementById('chatBody');
+  const t=document.createElement('div'); t.className='typing'; t.textContent='Checking the record…';
+  b.appendChild(t); b.scrollTop=b.scrollHeight;
+  setTimeout(()=>{ t.remove(); answerQuery(q.toLowerCase()); }, 700);
+}
+function answerQuery(q){
+  const has=(...ws)=>ws.some(w=>q.includes(w));
+
+  if(has('account number','ssn','social security number','password','identifier')){
+    botSay("I can't answer that. Account numbers and identifiers never enter generative context — that's a hard rule, not a setting. You'll find account details in the custodian portal, where they belong. This request has been logged.", 'PII handling rule · Capability 3', true);
+    addAudit('Assistant query declined — identifier requested','Blocked by PII rule: identifiers never enter generative context · request logged');
+    return;
+  }
+  if(has('explain','what am i looking','what is this screen','what is this page','tour')){
+    botSay(explainText(),'workspace guide');
+    return;
+  }
+  if(has('release','share')&&has('maya','recording')&&!has('policy','allowed')){
+    if(mayaReleased){
+      botSay("Already done — Maya's access is live: view only, expiring Sep 04, on the register with the client's authority logged.",'third-party access register');
+    } else {
+      botSay('Opening the release flow now. Scope, expiry, and basis are prefilled — the decision stays yours, and it lands on the register the moment you confirm.','consent log · access register');
+      setTimeout(()=>{ toggleChat(false); TABS.gov='overview'; go('gov'); openShare(); }, 800);
+    }
+    return;
+  }
+  if(has('generate','create','build','run')&&has('plan','draft')&&!has('policy')){
+    if(planGenerated){
+      botSay('The Brennan draft already exists — taking you to it. It is awaiting a named approver.','Plan Engine');
+      setTimeout(()=>{ toggleChat(false); openDraftFromHome(); }, 700);
+    } else {
+      botSay('On it — opening the Brennan workspace and starting generation. Every figure comes from the calculation layer; approval stays with you.','Plan Engine · MHWP-plan-2.3');
+      setTimeout(()=>{ toggleChat(false); openPlan('brennan'); setTimeout(()=>{ if(document.getElementById('genBtn')) runGeneration(); },250); }, 800);
+    }
+    return;
+  }
+  if(has('fan out','fan-out','fanout','twelve assets')){
+    botSay(fannedOut?'Ep. 47 is already fanned out — showing you the twelve assets.':'Fanning Ep. 47 out now: twelve assets in the firm\'s voice, with pre-flight flags where review is needed.','Content Studio · Ep. 47');
+    setTimeout(()=>{ toggleChat(false); fanOut(); }, 700);
+    return;
+  }
+  if(has('rank','re-rank','rerank')&&has('lead','queue','nurture','pipeline')){
+    botSay(leadsRanked?'The queue is already ranked — showing it.':'Re-ranking the 342 nurtured leads by engagement now.','nurture engagement scoring');
+    setTimeout(()=>{ toggleChat(false); if(!leadsRanked) rankLeads(); else {TABS.pipe='queue'; go('pipe');} }, 700);
+    return;
+  }
+  if(has('capture')&&has('meeting','review','recording')){
+    botSay(meetingCaptured?'The Brennan review is already captured — showing the structured output.':'Capturing the Brennan annual review: CRM activity, owned tasks, a drafted follow-up, and context pushed to the Plan Engine.','meeting capture · Client 360');
+    setTimeout(()=>{ toggleChat(false); TABS.c360='capture'; if(!meetingCaptured) captureMeeting(); else go('c360'); }, 700);
+    return;
+  }
+  if(has('resolve','fix')&&has('tran','conflict','birthdate')){
+    const tran=EXCEPTIONS.find(e=>e.id==='tran');
+    if(tran&&tran.done){ botSay('Already resolved — the intake value was accepted and the household is unblocked.','data-quality monitor'); return; }
+    botSay('Opening it on Home — two fixes are offered: accept the intake value, or ask the client to confirm. Data decisions stay yours.','data-quality monitor');
+    setTimeout(()=>{ toggleChat(false); toggleEx('tran'); }, 700);
+    return;
+  }
+  if(has('brennan')&&has('chang','what','update','new','status')||q==='what changed for the brennans?'){
+    const plan=EXCEPTIONS.find(e=>e.id==='brennanplan');
+    botSay(`Three things. Walt turned 73 in July, so this is his first RMD year — the deadline for the first distribution is April 2027. Plan draft v1 was generated Aug 5 and is ${plan&&plan.done?'approved, with the deliverable fan-out queued':'still awaiting a named approver'}. And Maya's request to view the Jun 12 annual review recording is ${mayaReleased?'resolved — released with scope, expiring Sep 04':'still pending a release decision'}.`,
+      'CRM · Plan Engine generation record · third-party access register');
+    addAudit('Assistant query answered — Brennan household status','Sources: CRM, plan generation record, access register');
+    return;
+  }
+  if(has('blocked','can\'t generate','cannot generate','unblocked','conflict')){
+    const blocked=HOUSEHOLDS.filter(h=>!h.ready);
+    if(blocked.length===0){
+      botSay('None right now. Every household with assembled context is clear to generate.','data-quality monitor · Plan Engine');
+    } else {
+      botSay('Blocked from plan generation: '+blocked.map(h=>`<b>${h.name}</b> (${h.status==='Data conflict'?'birthdate conflict — CRM says 1961, intake says 1963':'intake not yet returned; portal link sent Jul 30'})`).join(' and ')+'. '+(blocked.some(h=>h.id==='tran')?'The Tran conflict can be resolved from the exception queue on Home.':''),
+        'data-quality monitor · Plan Engine');
+    }
+    addAudit('Assistant query answered — blocked households','Source: data-quality monitor');
+    return;
+  }
+  if(has('delgado','rosa','caregiver')){
+    botSay(delgadoVerified
+      ? 'Rosa Delgado\'s grant is active: view only on the July appointment recording, expiring Sep 04, basis "client request," revocable at any time.'
+      : 'Her grant is drafted but not live. Identity verification is still pending — nothing is accessible to her until it completes. You can mark it verified from the exception queue on Home or the governance register.',
+      'third-party access register · Capability 3');
+    addAudit('Assistant query answered — Delgado grant status','Source: third-party access register');
+    return;
+  }
+  if(has('compliance','calendar','due','deadline','renewal','adv','exam')){
+    botSay('One item inside 60 days: the <b>Nevada annual renewal attestation, due Sep 15</b>. ADV Part 2 (v2026.2) and Form CRS (v2026.1) are current and filed in all three states. Advertising review log is at 41 items YTD with zero published unapproved.','unified compliance calendar · CA, NV, MD');
+    addAudit('Assistant query answered — compliance calendar','Source: unified compliance calendar');
+    return;
+  }
+  if(has('warm','lead','nurture','prospect','pipeline')){
+    const top=[...LEADS].sort((a,b)=>b.score-a.score).slice(0,3);
+    botSay('Warmest right now: '+top.map(l=>`<b>${l.name}</b> (${l.score} — ${l.topics.toLowerCase()})`).join(', ')+'. '+top[0].name+' has been in nurture '+top[0].inN.replace(' in nurture','')+' and is the one to touch personally this week.','nurture engagement scoring · 342 leads');
+    addAudit('Assistant query answered — warmest leads','Source: nurture engagement scoring');
+    return;
+  }
+  if(has('maya')){
+    botSay(mayaReleased
+      ? 'Maya Brennan\'s access is live: the Jun 12 annual review recording, view only, expiring Sep 04, with the client\'s authority to share on the record.'
+      : 'Maya has requested access to her parents\' Jun 12 annual review recording. All-party consent is on file and her identity is verified — the release is one click in Governance, with scope and expiry.',
+      'third-party access register · consent log');
+    addAudit('Assistant query answered — Maya Brennan request','Sources: access register, consent log');
+    return;
+  }
+  if(has('recording','consent','record a meeting','allowed to record')){
+    botSay('Short version: yes, with the one-sentence consent script at the start. California and Maryland need all-party consent, Nevada is one-party but the firm reads the script anyway as policy, and in a mixed-state meeting the strictest rule applies automatically. The full plain-language answers are in the policy layer under Governance.','plain-language policy layer · jurisdiction logic');
+    addAudit('Assistant query answered — recording policy','Source: plain-language policy layer');
+    return;
+  }
+  if(has('rmd','73','distribution')){
+    botSay('<b>Walt Brennan</b> turned 73 in July — first RMD deadline is April 2027, and draft plan v1 models the withdrawal sequencing. No other household hits 73 this quarter; the next life-event triggers are Dana Whitfield at 59½ (Sep 12) and Linh Tran\'s Medicare window (Oct 1).','life-event triggers · Client 360');
+    addAudit('Assistant query answered — RMD triggers','Source: life-event triggers');
+    return;
+  }
+  botSay("I can't find that in the connected record, and I won't guess — answers here only come from source systems. Try asking about a household, a grant, a deadline, or the pipeline:", null, false, true);
+  addAudit('Assistant query — no record match','No answer generated · nothing invented outside source systems');
+}
+
+/* ================= smart layer ================= */
+function suggestionItems(){
+  const items=[];
+  if(preset==='operator'){
+    const tran=EXCEPTIONS.find(e=>e.id==='tran'), plan=EXCEPTIONS.find(e=>e.id==='brennanplan'),
+          delg=EXCEPTIONS.find(e=>e.id==='delgado'), oka=EXCEPTIONS.find(e=>e.id==='okafor');
+    if(tran&&!tran.done) items.push({t:'Resolve the Tran birthdate conflict', s:'It is blocking plan generation for the household', act:"toggleEx('tran')"});
+    if(plan&&!plan.done) items.push({t:planGenerated?'Review & sign the Brennan plan draft':'Generate the Brennan plan draft', s:planGenerated?'Draft v1 is waiting on a named approver':'Context is assembled — about 4 minutes end to end', act:planGenerated?'openDraftFromHome()':"openPlan('brennan')"});
+    if(oka&&!oka.done) items.push({t:'Refresh the stale Okafor 529 balance', s:'94 days since custodian sync — one click', act:"refreshStale('okafor')"});
+    if(delg&&!delg.done) items.push({t:"Verify Rosa Delgado's ID", s:'The drafted scoped grant goes live once verified', act:'verifyDelgado()'});
+    if(items.length===0) items.push({t:'Open the next household — the Calloways', s:'Queue is clear; context is assembled and ready', act:"openPlan('calloway')"});
+  } else {
+    const vid=CAL.find(c=>c.id==='vid1'), adv=CAL.find(c=>c.id==='adv1'), em=CAL.find(c=>c.id==='email1');
+    if(!mayaReleased) items.push({t:"Release Maya Brennan's recording with scope", s:'Consent is on file — the kind thing, done safely', act:'openShare()'});
+    if(vid&&vid.st==='flag') items.push({t:'Review the flagged 60-second video', s:'Pre-flight caught a benefit-amount example', act:"openReview('vid1')"});
+    if(adv&&adv.st==='flag') items.push({t:'Route the advisor email to BD review', s:'CE reference — disclosure attaches automatically', act:"openReview('adv1')"});
+    if(em&&em.st==='brass') items.push({t:'Approve the blended-family client email', s:'Pre-flight clear; it only needs your read', act:"openReview('email1')"});
+    if(items.length===0) items.push({t:'Fan out another archive source', s:'Ep. 62 on caregiving is indexed and dormant', act:"setTab('content','studio')"});
+  }
+  return items.slice(0,3);
+}
+function renderSuggestions(){
+  const items=suggestionItems();
+  return `<div class="card" style="padding:14px 18px">
+    <div class="smart-head"><span class="pill teal">✦ Suggested next</span><span style="font-size:.72rem;color:var(--mist)">Ranked from live workspace state — updates as you clear items</span></div>
+    ${items.map((it,i)=>`<div class="smart-row"><span class="n">${i+1}</span><div style="flex:1"><div class="t">${it.t}</div><div class="s">${it.s}</div></div><button class="btn primary sm" onclick="${it.act}">Do it</button></div>`).join('')}
+  </div>`;
+}
+
+function buildCommands(){
+  return [
+    {l:'Home', k:'home dashboard start', tag:'Page', run:()=>go('home')},
+    {l:'Plan Engine', k:'plan capability 1 households', tag:'Page', run:()=>{planStage='list';go('plan')}},
+    {l:'Content Studio — archive & fan-out', k:'content capability 2 archive episodes', tag:'Page', run:()=>{TABS.content='studio';go('content')}},
+    {l:'Content Studio — voice print', k:'voice style register', tag:'Page', run:()=>{TABS.content='voice';go('content')}},
+    {l:'Governance — overview', k:'governance consent capability 3 compliance', tag:'Page', run:()=>{TABS.gov='overview';go('gov')}},
+    {l:'Governance — access register', k:'grants register third party access', tag:'Page', run:()=>{TABS.gov='access';go('gov')}},
+    {l:'Governance — policy layer', k:'policy plain language what to say', tag:'Page', run:()=>{TABS.gov='policy';go('gov')}},
+    {l:'Governance — review & exams', k:'review queue exam adv readiness', tag:'Page', run:()=>{TABS.gov='review';go('gov')}},
+    {l:'Client 360 — brief & triggers', k:'client 360 capability 4 brief life events', tag:'Page', run:()=>{TABS.c360='brief';go('c360')}},
+    {l:'Client 360 — meeting capture', k:'capture transcript crm tasks', tag:'Page', run:()=>{TABS.c360='capture';go('c360')}},
+    {l:'Client 360 — family map', k:'family multigenerational next gen', tag:'Page', run:()=>{TABS.c360='family';go('c360')}},
+    {l:'Client 360 — data quality', k:'data quality conflicts stale', tag:'Page', run:()=>{TABS.c360='quality';go('c360')}},
+    {l:'Pipeline — nurture queue', k:'pipeline capability 5 leads nurture', tag:'Page', run:()=>{TABS.pipe='queue';go('pipe')}},
+    {l:'Pipeline — diagnostics & referrals', k:'referral graph watch time', tag:'Page', run:()=>{TABS.pipe='diag';go('pipe')}},
+    {l:'Pipeline — channel accounting', k:'channels honest zeros spend', tag:'Page', run:()=>{TABS.pipe='channels';go('pipe')}},
+    {l:'Brennan household — plan workspace', k:'brennan walt eloise workbench', tag:'Household', run:()=>openPlan('brennan')},
+    {l:'Calloway household — plan workspace', k:'calloway blended', tag:'Household', run:()=>openPlan('calloway')},
+    {l:'Okafor household — plan workspace', k:'okafor sandwich caregiving', tag:'Household', run:()=>openPlan('okafor')},
+    {l:planGenerated?'Open the Brennan draft':'Generate the Brennan plan draft', k:'generate draft plan brennan', tag:'Action', run:()=>{ if(planGenerated){openDraftFromHome();} else {openPlan('brennan'); setTimeout(()=>{const b=document.getElementById('genBtn'); if(b) runGeneration();},250);} }},
+    {l:mayaReleased?'View Maya Brennan grant on the register':'Release Maya Brennan recording…', k:'release recording maya share', tag:'Action', run:()=>{ TABS.gov = mayaReleased?'access':'overview'; go('gov'); if(!mayaReleased) openShare(); }},
+    {l:fannedOut?'View the Ep. 47 fan-out':'Fan out Ep. 47 into twelve assets', k:'fan out episode content twelve', tag:'Action', run:fanOut},
+    {l:leadsRanked?'View the ranked nurture queue':'Re-rank the nurture queue', k:'rank leads engagement', tag:'Action', run:()=>{ if(!leadsRanked) rankLeads(); else {TABS.pipe='queue'; go('pipe');} }},
+    {l:meetingCaptured?'View the captured Brennan meeting':'Simulate meeting capture — Brennan review', k:'capture meeting simulate', tag:'Action', run:()=>{ TABS.c360='capture'; if(!meetingCaptured) captureMeeting(); else go('c360'); }},
+    {l:'Explain this screen', k:'explain help what is this page tour', tag:'Assist', run:explainScreen},
+    {l:'Ask the record', k:'chat assistant question ask', tag:'Assist', run:()=>toggleChat(true)},
+    {l:'Open the audit trail', k:'audit log record trail', tag:'Assist', run:()=>toggleAudit(true)},
+    {l:'Start the demo script', k:'demo script walkthrough beats', tag:'Assist', run:startScript},
+    {l:'Switch preset — '+(preset==='operator'?'The Voice':'The Operator'), k:'switch preset operator voice persona', tag:'Action', run:()=>setPreset(preset==='operator'?'voice':'operator')},
+    {l:'Reset demo data', k:'reset reload start over', tag:'Action', run:()=>location.reload()}
+  ];
+}
+let cmdMatches=[];
+function openCmdk(){
+  document.getElementById('cmdk').classList.add('on');
+  const i=document.getElementById('cmdkInput'); i.value=''; cmdIdx=0; cmdFilter(); i.focus();
+}
+function closeCmdk(){ document.getElementById('cmdk').classList.remove('on'); }
+function cmdFilter(){
+  const q=document.getElementById('cmdkInput').value.trim().toLowerCase();
+  const all=buildCommands();
+  cmdMatches = q ? all.filter(c=>(c.l+' '+c.k).toLowerCase().includes(q)) : all.slice(0,9);
+  if(cmdIdx>=cmdMatches.length) cmdIdx=0;
+  document.getElementById('cmdkList').innerHTML = cmdMatches.length
+    ? cmdMatches.map((c,i)=>`<button class="cmdk-item ${i===cmdIdx?'sel':''}" onmouseenter="cmdIdx=${i};cmdPaint()" onclick="cmdRun(${i})">${c.l}<span class="tag2">${c.tag}</span></button>`).join('')
+    : '<div class="cmdk-empty">Nothing matches. Try a page, a household, or an action.</div>';
+}
+function cmdPaint(){
+  [...document.querySelectorAll('.cmdk-item')].forEach((el,i)=>el.classList.toggle('sel',i===cmdIdx));
+}
+function cmdRun(i){
+  const c=cmdMatches[i]; if(!c) return;
+  closeCmdk(); c.run();
+}
+
+function explainText(){
+  if(currentView==='home') return preset==='operator'
+    ? 'This is the Operator home: the week at a glance, then the exception queue — the only items that need the principal. Everything routine keeps moving without you. The suggestions card ranks what to clear first, and the connected stack shows this platform replaced nothing that already works.'
+    : 'This is the Voice home: everything pending has a visible compliance status. The calendar is this week\'s publishing, drawn from your own archive, with flags where review is needed. "Safe to say yes" holds the client requests governance makes safe to grant.';
+  if(currentView==='plan') return planStage==='draft'
+    ? 'This is a generated plan draft. Every figure comes from the calculation layer, never the language model; assumptions are on the face of the plan; narrative paragraphs are editable and the engine learns your phrasing. Scenario chips compare claiming ages on the same axes. Nothing reaches a client without the named approver.'
+    : 'The Plan Engine — capability 1. Each household shows its assembled context (intake, transcripts, tax, holdings). Open a workspace, adjust assumptions, and generate a complete first draft. The headline: ten to fifteen hours of principal time becomes about ninety minutes, and it still looks like the firm\'s plan.';
+  if(currentView==='content') return 'Content Studio — capability 2. The dormant archive (episodes, columns, the eBook) is searchable and feeds everything published. Fan a source out and twelve assets appear in the firm\'s voice, hook first, with compliance pre-flight flags. Every assertion traces to the corpus; nothing publishes without a named approver.';
+  if(currentView==='gov') return 'Consent & Governance — capability 3, the headline. Consent is captured at the meeting with jurisdiction handled automatically; recordings release to family with scope, expiry, and a stated basis; the review queue and exam-readiness views keep the whole practice inspection-ready in hours, not days.';
+  if(currentView==='c360') return 'Client 360 — capability 4, the data foundation. One stitched household record drives the pre-meeting brief, life-event triggers, the multigenerational family map, and the data-quality monitor that blocks bad fields before they touch a plan. Meeting capture turns consented recordings into CRM activity, tasks, and a drafted follow-up.';
+  if(currentView==='pipe') return 'Pipeline Intelligence — capability 5. The 342-lead nurture engine is finally instrumented: engagement re-ranking surfaces who is warming, the referral graph shows who actually builds the firm, and channel accounting includes the honest zeros so spend is a decision, not an assumption.';
+  return 'This is the Meridian Harbor demo workspace.';
+}
+function explainScreen(){
+  toggleChat(true);
+  botSay(explainText(),'workspace guide');
+}
+
+/* ================= demo script ================= */
+const DEMO_STEPS = [
+  {v:'gov', st:'BEAT 1 · OPEN', t:'Open on governance', p:'The headline capability, not a footnote. Walk the consent flow, then release Maya\'s recording with scope and expiry. The line: "saying yes, safely."', pre:()=>{TABS.gov='overview';}},
+  {v:'plan', st:'BEAT 2 · THE HOURS', t:'Plan Engine', p:'Open the Brennans, generate the draft live, land on the number: 10-15 hours becomes about 90 minutes — and it still looks like the firm\'s plan. Edit a narrative paragraph to show the engine learning.', pre:()=>{planStage='list'; TABS.plan='doc';}},
+  {v:'content', st:'BEAT 3 · THE VOICE', t:'Content Studio', p:'Search the archive, then fan Ep. 47 into twelve assets in the firm\'s voice. Point at the two flags: the system caught them before the principal had to.', pre:()=>{TABS.content='studio';}},
+  {v:'c360', st:'BEAT 4 · THE FOUNDATION', t:'Client 360', p:'Pre-meeting brief (switch households), then the Meeting capture tab, then the Family map with next-generation flags. This is the data everything else stands on.', pre:()=>{TABS.c360='brief';}},
+  {v:'pipe', st:'BEAT 5 · THE PIPELINE', t:'Pipeline Intelligence', p:'Re-rank the 342 nurtured leads by engagement, then the Channel accounting tab with the honest zeros. Spend evaluated against relationships, not vendors.', pre:()=>{TABS.pipe='queue';}},
+  {v:null, st:'BEAT 6 · CLOSE', t:'Close on the audit trail', p:'Open the drawer. Every action from this session is on the record: who, what, from which sources, approved by whom. That is the whole posture in one screen.', act:()=>toggleAudit(true)}
+];
+function startScript(){ demoStep=0; applyStep(); document.getElementById('scriptPanel').classList.add('on'); }
+function demoGo(d){
+  if(demoStep+d>=DEMO_STEPS.length){ document.getElementById('scriptPanel').classList.remove('on'); return; }
+  demoStep=Math.max(0, demoStep+d);
+  applyStep();
+}
+function applyStep(){
+  const s=DEMO_STEPS[demoStep];
+  if(s.pre) s.pre();
+  if(s.v) go(s.v);
+  if(s.act) s.act();
+  document.getElementById('scStep').textContent=s.st;
+  document.getElementById('scTitle').textContent=s.t;
+  document.getElementById('scText').textContent=s.p;
+  document.getElementById('scCount').textContent=(demoStep+1)+' / '+DEMO_STEPS.length;
+  document.getElementById('scPrev').style.visibility=demoStep===0?'hidden':'visible';
+  document.getElementById('scNext').textContent=demoStep===DEMO_STEPS.length-1?'Finish':'Next →';
+}
+
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){ e.preventDefault(); if(document.getElementById('app').classList.contains('on')) openCmdk(); return; }
+  const ck=document.getElementById('cmdk');
+  if(ck&&ck.classList.contains('on')){
+    if(e.key==='ArrowDown'){ e.preventDefault(); cmdIdx=Math.min(cmdIdx+1,cmdMatches.length-1); cmdPaint(); return; }
+    if(e.key==='ArrowUp'){ e.preventDefault(); cmdIdx=Math.max(cmdIdx-1,0); cmdPaint(); return; }
+    if(e.key==='Enter'){ e.preventDefault(); cmdRun(cmdIdx); return; }
+  }
+  if(e.key==='Escape'){ closeCmdk(); closeShare(); closeReview(); toggleChat(false); toggleAudit(false); }
+});
+renderAudit();
+</script>
+</body>
+</html>
