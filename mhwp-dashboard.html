@@ -47,7 +47,8 @@ h1,h2,h3{color:var(--ink);font-weight:700}
 
 /* ---------- app shell ---------- */
 .app{display:none;min-height:100vh}
-.app.on{display:grid;grid-template-columns:248px 1fr}
+.app.on{display:grid;grid-template-columns:248px 1fr;transition:grid-template-columns .2s ease}
+.app.on.sb-mini{grid-template-columns:76px 1fr}
 .sidebar{background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
 .brand{padding:20px 18px 16px;display:flex;align-items:center;gap:11px}
 .brand .logo-tile{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#7C6CF0,#5A4BC4);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(108,93,211,.35);flex:0 0 42px}
@@ -65,6 +66,31 @@ h1,h2,h3{color:var(--ink);font-weight:700}
 .side-foot b{color:var(--ink);font-weight:700;display:block;font-size:.8rem}
 .reset-link{margin-top:8px;font-size:.72rem;color:var(--mist);text-decoration:underline;padding:0;display:block}
 .reset-link:hover{color:var(--teal-deep)}
+.sb-close{display:none;position:absolute;top:16px;right:16px;width:40px;height:40px;border-radius:12px;align-items:center;justify-content:center;font-size:1.1rem;color:var(--mist);background:var(--paper);z-index:6}
+.sb-close:active{background:var(--teal-soft);color:var(--teal-deep)}
+.sb-scrim{position:fixed;inset:0;background:rgba(21,26,56,.38);z-index:85;display:none;animation:fadeIn .15s ease}
+.sb-scrim.on{display:block}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.sb-toggle{position:absolute;top:26px;right:-13px;width:26px;height:26px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--mist);box-shadow:0 3px 10px rgba(27,31,59,.12);z-index:5;transition:color .15s,border-color .15s}
+.sb-toggle:hover{color:var(--teal-deep);border-color:var(--teal)}
+.sb-toggle svg{transition:transform .2s ease}
+.sb-mini .sb-toggle svg{transform:rotate(180deg)}
+.sb-mini .sidebar{overflow:visible}
+.sb-mini .brand{padding:20px 0 16px;justify-content:center}
+.sb-mini .brand>div{display:none}
+.sb-mini .nav{padding:8px 10px;overflow:visible}
+.sb-mini .nav-label{display:none}
+.sb-mini .nav button{justify-content:center;padding:11px 0;gap:0}
+.sb-mini .nav button span{display:none}
+.sb-mini .nav button .nv-ic{width:19px;height:19px;flex-basis:19px}
+.sb-mini .nav button::after{content:attr(data-tip);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:var(--ink-2);color:#fff;font-size:.72rem;font-weight:600;padding:5px 10px;border-radius:8px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s;z-index:60}
+.sb-mini .nav button:hover::after{opacity:1}
+.sb-mini .side-foot{font-size:0}
+.sb-mini .side-foot>*{display:none}
+.sb-mini .side-foot{padding:10px 0;display:flex;justify-content:center;overflow:hidden}
+.sb-mini .side-foot .reset-mini{display:flex;width:34px;height:34px;border-radius:10px;align-items:center;justify-content:center;color:var(--mist)}
+.sb-mini .side-foot .reset-mini:hover{background:#F5F4FC;color:var(--teal-deep)}
+.reset-mini{display:none}
 
 .main{display:flex;flex-direction:column;min-width:0}
 .topbar{display:flex;align-items:center;gap:12px;padding:13px 26px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:40}
@@ -222,6 +248,10 @@ button.stat-card:hover{border-color:var(--teal);transform:translateY(-2px);box-s
 .assump:last-child{border-bottom:none}
 .assump label{font-size:.8rem;color:var(--slate);font-weight:500}
 .assump .src{font-size:.66rem;color:var(--mist);display:block;margin-top:1px;font-weight:400}
+.assump-val{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.assump-val input{width:215px;max-width:46vw;text-align:right;font-size:.84rem;font-weight:600;color:var(--ink);padding:9px 13px;border:1px solid var(--line);border-radius:9px;background:#FBFAFF}
+.assump-val input:focus{border-color:var(--teal);outline:none;background:#fff;box-shadow:0 0 0 3px rgba(108,93,211,.12)}
+.assump-val .unit{font-size:.7rem;font-weight:600;color:var(--mist);letter-spacing:.04em;min-width:28px;text-align:left}
 .assump input,.assump select{width:110px;padding:6px 9px;border:1px solid var(--line);border-radius:8px;font-size:.8rem;text-align:right;color:var(--ink);background:#FAFAFE}
 .gen-panel{border:1.5px dashed #D8D5EF;border-radius:14px;padding:26px;text-align:center;background:#FAF9FF}
 .gen-steps{display:grid;gap:8px;max-width:420px;margin:0 auto;text-align:left}
@@ -412,10 +442,27 @@ button.stat-card:hover{border-color:var(--teal);transform:translateY(-2px);box-s
 .script .close-x{position:absolute;top:10px;right:12px;color:#7C83A6}
 
 @media (max-width:960px){
-  .app.on{grid-template-columns:1fr}
-  .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:90;transform:translateX(-105%);transition:transform .22s ease;width:248px;box-shadow:20px 0 60px rgba(27,31,59,.15)}
+  .app.on, .app.on.sb-mini{grid-template-columns:1fr}
+  .sidebar{position:fixed;inset:0;z-index:90;transform:translateX(-105%);transition:transform .22s ease;width:100vw;height:100dvh;box-shadow:none;border-right:none}
   .sidebar.open{transform:none}
+  .sb-close{display:flex}
+  .nav button{padding:14px 14px;font-size:.98rem;border-radius:14px}
+  .nav button .nv-ic{width:20px;height:20px;flex-basis:20px}
+  .brand{padding:22px 20px 14px}
+  .side-foot{padding-bottom:max(18px, env(safe-area-inset-bottom))}
   .menu-btn{display:flex!important}
+  .sb-toggle{display:none}
+  .sb-mini .brand{padding:20px 18px 16px;justify-content:flex-start}
+  .sb-mini .brand>div{display:block}
+  .sb-mini .nav{padding:8px 12px;overflow-y:auto}
+  .sb-mini .nav-label{display:block}
+  .sb-mini .nav button{justify-content:flex-start;padding:10px 12px;gap:11px}
+  .sb-mini .nav button span{display:inline}
+  .sb-mini .nav button .nv-ic{width:17px;height:17px;flex-basis:17px}
+  .sb-mini .nav button::after{display:none}
+  .sb-mini .side-foot{font-size:.74rem;padding:14px 18px;display:block}
+  .sb-mini .side-foot>*{display:revert}
+  .sb-mini .side-foot .reset-mini{display:none}
   .search-pill{display:none}
   .g2,.g3,.g4,.consent-flow{grid-template-columns:1fr}
   .calweek{grid-template-columns:1fr 1fr}
@@ -426,6 +473,18 @@ button.stat-card:hover{border-color:var(--teal);transform:translateY(-2px);box-s
   .user-chip div:last-child{display:none}
 }
 .menu-btn{display:none;align-items:center;padding:8px;border:1px solid var(--line);border-radius:10px}
+ [contenteditable="true"]{border-radius:4px;transition:background .12s}
+[contenteditable="true"]:hover{background:rgba(91,95,222,.06);box-shadow:0 0 0 1px rgba(91,95,222,.25);cursor:text}
+[contenteditable="true"]:focus{background:#fff;box-shadow:0 0 0 2px var(--teal);outline:none}
+.edit-tag{font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mist);border:1px dashed var(--line);border-radius:20px;padding:2px 8px;white-space:nowrap}
+@media print{
+  body.printing-plan{background:#fff}
+  body.printing-plan *{visibility:hidden}
+  body.printing-plan .plan-doc, body.printing-plan .plan-doc *{visibility:visible}
+  body.printing-plan .plan-doc{position:absolute;left:0;top:0;width:100%;border:none;box-shadow:none;padding:0}
+  body.printing-plan .plan-doc [contenteditable]{border:none;outline:none}
+  body.printing-plan .scenario-chips, body.printing-plan .plan-doc button{display:none}
+}
 </style>
 </head>
 <body>
@@ -480,7 +539,12 @@ button.stat-card:hover{border-color:var(--teal);transform:translateY(-2px);box-s
 
 <!-- ============ APP SHELL ============ -->
 <div class="app" id="app">
+  <div class="sb-scrim" id="sbScrim" onclick="closeMobileNav()"></div>
   <aside class="sidebar" id="sidebar">
+    <button class="sb-close" onclick="closeMobileNav()" aria-label="Close menu">✕</button>
+    <button class="sb-toggle" onclick="toggleSidebar()" aria-label="Collapse sidebar" title="Collapse / expand">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
     <div class="brand">
       <span class="logo-tile"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg></span>
       <div><div class="wordmark">Meridian Harbor</div><div class="tag">Advisor platform</div></div>
@@ -491,7 +555,7 @@ button.stat-card:hover{border-color:var(--teal);transform:translateY(-2px);box-s
 
   <div class="main">
     <div class="topbar">
-      <button class="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu">
+      <button class="menu-btn" onclick="toggleMobileNav()" aria-label="Menu">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
       </button>
       <div class="crumb" id="crumb"><span>Workspace</span><b>Home</b></div>
@@ -512,6 +576,28 @@ button.stat-card:hover{border-color:var(--teal);transform:translateY(-2px);box-s
 </div>
 
 <!-- scoped share modal -->
+<div class="overlay" id="hhOverlay">
+  <div class="modal" role="dialog" aria-label="New household">
+    <div class="modal-head"><h3>New household</h3><button onclick="closeAddHH()" aria-label="Close">✕</button></div>
+    <div class="modal-body">
+      <div class="callout" style="margin-bottom:16px"><b>Goes straight on the record.</b> Context assembles from whatever exists — generate a first draft immediately and refine as intake lands.</div>
+      <div class="field"><label>Household name</label><input id="hhName" placeholder="e.g. The Nguyen Family"></div>
+      <div class="field"><label>Focus</label><input id="hhTag" placeholder="e.g. Business sale · tax"></div>
+      <div class="field"><label>Office</label><input id="hhOffice" value="Orange County, CA"></div>
+      <div class="field"><label>Context so far</label><input id="hhCtx" placeholder="e.g. Intake sent · 1 discovery call scheduled"></div>
+      <div class="field"><label>Paste anything you already have <span class="edit-tag" style="margin-left:6px">optional · AI parses it</span></label><textarea id="hhPaste" rows="4" placeholder="Call notes, intake answers, an email thread, a statement excerpt — Claude will break it into context items you review before they go on the record." style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:9px;font-size:.8rem;color:var(--ink);font-family:inherit;resize:vertical"></textarea></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="file" id="hhFile" accept=".txt,.md,.csv,.log" style="display:none" onchange="stageHHFile(this)">
+        <button class="btn ghost sm" onclick="document.getElementById('hhFile').click()">📄 Or upload a document</button>
+        <span id="hhFileName" class="hint" style="font-size:.68rem">No file chosen · .txt / .md / .csv</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:18px">
+        <button class="btn primary" style="flex:1;justify-content:center" onclick="createHousehold()">Create &amp; open workspace</button>
+        <button class="btn ghost" onclick="closeAddHH()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="overlay" id="shareOverlay">
   <div class="modal" role="dialog" aria-label="Release recording">
     <div class="modal-head"><h3>Release recording to a third party</h3><button onclick="closeShare()" aria-label="Close">✕</button></div>
@@ -530,7 +616,11 @@ button.stat-card:hover{border-color:var(--teal);transform:translateY(-2px);box-s
 <!-- audit drawer -->
 <div class="drawer" id="auditDrawer" aria-label="Audit trail">
   <div class="drawer-head"><h3 style="font-size:1rem">Audit trail</h3><button onclick="toggleAudit(false)" aria-label="Close">✕</button></div>
-  <div style="padding:12px 22px 0;font-size:.76rem;color:var(--mist)">Every AI-touched artifact: who generated it, from what sources, what model version, who edited, who approved. Non-rewritable.</div>
+  <div style="padding:12px 22px 0;font-size:.76rem;color:var(--mist)">Every AI-touched artifact: who generated it, from what sources, what model version, who edited, who approved. Non-rewritable — annotations append, entries never change.</div>
+  <div style="padding:12px 22px 4px;display:flex;gap:8px">
+    <input id="annotInput" placeholder="Add an annotation to the record…" onkeydown="if(event.key==='Enter')addAnnotation()" style="flex:1;padding:8px 12px;border:1px solid var(--line);border-radius:9px;font-size:.78rem;color:var(--ink)">
+    <button class="btn ink sm" onclick="addAnnotation()">Append</button>
+  </div>
   <div class="drawer-body" id="auditBody"></div>
 </div>
 
@@ -582,7 +672,7 @@ button.stat-card:hover{border-color:var(--teal);transform:translateY(-2px);box-s
     <div class="modal-head"><h3 id="rvTitle">Review draft</h3><button onclick="closeReview()" aria-label="Close">✕</button></div>
     <div class="modal-body">
       <div class="callout" id="rvNote" style="margin-bottom:14px"></div>
-      <div class="field"><label>Draft excerpt</label><div id="rvExcerpt" style="border:1px solid var(--line);border-radius:8px;padding:12px;font-size:.82rem;line-height:1.6;color:var(--slate);background:#FDFCFA;font-family:var(--font-display)"></div></div>
+      <div class="field"><label>Draft excerpt <span class="edit-tag" style="margin-left:6px">✎ editable</span></label><div id="rvExcerpt" contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="reviewEdit(this)" style="border:1px solid var(--line);border-radius:8px;padding:12px;font-size:.82rem;line-height:1.6;color:var(--slate);background:#FDFCFA;font-family:var(--font-display)"></div></div>
       <div class="field"><label>Source</label><div class="mono" style="color:var(--mist)">Ep. 47 · voice print v3 · every assertion traced to corpus</div></div>
       <div id="rvActions" style="display:grid;gap:8px"></div>
     </div>
@@ -591,6 +681,32 @@ button.stat-card:hover{border-color:var(--teal);transform:translateY(-2px);box-s
 
 <div class="toast" id="toast"></div>
 <script>
+/* ================= backend (fill in, then set enabled: true, and redeploy) ================= */
+const BACKEND = {
+  enabled: true,
+  auditWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-audit',
+  releaseWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-release',
+  planWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-plan-event',
+  captureWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-capture',
+  contentWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-content-event',
+  askWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-ask',
+  fanoutWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-fanout',
+  narrativeWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-plan-narrative',
+  bootWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-boot',
+  resetWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-reset',
+  exceptionWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-exception',
+  briefWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-brief',
+  pipeInsightWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-pipeline-insight',
+  householdWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-household',
+  deliverableWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-deliverable',
+  contextWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-context',
+  docparseWebhook: 'https://n8n.aiparagonconsulting.com/webhook/mhwp-docparse'
+};
+function backendPost(url, payload){
+  if(!BACKEND.enabled || !url) return;
+  try{ fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).catch(function(){}); }catch(e){}
+}
+
 /* ================= state ================= */
 let preset = 'operator';
 let currentView = 'home';
@@ -607,13 +723,76 @@ let meetingCaptured = false;
 let demoStep = 0;
 let stackOpen = false;
 let planGenerated = false;
+let NARR = {};
+const CANNED_NARR = {
+  plan_title: 'Retirement Income &amp; Decumulation Plan',
+  where_you_stand: "You arrive at this decision from strength: the mortgage is nine years from term, spending is known rather than guessed, and your combined benefit records give you real choices about timing. The question in front of you is not whether the plan works. It is which version of it you want to live in.",
+  decision_heading: 'The claiming decision',
+  decision_body: "Walt's claiming age moves more money than any other single choice in this plan. We modeled 62, 67, and 70 side by side. The differences compound quietly for a decade and then stop being quiet. Our recommendation and its reasoning follow, but the variants are yours to compare below, on the same axes, with nothing hidden.",
+  deciding_body: "Three things, and only three: the claiming age, whether the mortgage runs to term, and the travel budget for the first five years. Everything else in this document is our work, shown so you can check it."
+};
+const GENERIC_NARR = {
+  plan_title: 'Comprehensive Financial Plan',
+  where_you_stand: "This draft was assembled from the household record: intake, consented transcripts, the tax summary, and current holdings. The figures below come from the calculation layer, shown with their assumptions so nothing is hidden. Read it as a starting position, not a verdict.",
+  decision_heading: 'The key decision',
+  decision_body: "One choice moves more than the rest in this plan. We modeled the realistic variants side by side, on the same axes, with nothing hidden. The comparison below is yours to sit with; our recommendation and its reasoning follow in the review.",
+  deciding_body: "A small number of decisions belong to you; everything else in this document is our work, shown so you can check it. We will walk the choices together in the review meeting."
+};
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function narrField(f){
+  const n = NARR[activeHousehold];
+  if(n && n[f]) return escHtml(n[f]);
+  return activeHousehold==='brennan' ? CANNED_NARR[f] : GENERIC_NARR[f];
+}
+function fetchNarrative(hh){
+  if(!BACKEND.enabled || !BACKEND.narrativeWebhook) return Promise.resolve(false);
+  const ctl = new AbortController();
+  const kill = setTimeout(function(){ ctl.abort(); }, 45000);
+  return fetch(BACKEND.narrativeWebhook, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({household_id: hh}), signal: ctl.signal})
+    .then(function(r){ return r.json(); })
+    .then(function(d){ clearTimeout(kill); if(d && d.ok && d.sections){ NARR[hh]=d.sections; return true; } return false; })
+    .catch(function(){ clearTimeout(kill); return false; });
+}
 let cmdIdx = 0;
 let calView = 'list';
-function setCalView(v){ calView=v; go('home'); }
+let pipeInsight = null;
+let planRuns = 1;
+let pendingCtx = null;
+let stagedHHFile = null;
+let delBusy = false;
+let docBusy = false;
+let CTXITEMS = {
+  brennan: [{k:'Intake',t:'Portal intake completed Jul 28 · 41 fields'},{k:'Calls',t:'2 discovery transcripts, consented & structured'},{k:'Tax',t:'2025 return summary via tax-scan'},{k:'Holdings',t:'Custodian positions as of Aug 4'}],
+  okafor: [{k:'Intake',t:'Portal intake completed · caregiving addendum attached'},{k:'Tax',t:'2025 return summary via tax-scan'},{k:'CRM',t:"Prior plan v1 (2023) on file · twins' 529 linked"}],
+  calloway: [{k:'Intake',t:'Portal intake completed'},{k:'Calls',t:'1 discovery transcript (NV consent script v2)'}],
+  whitfield: [{k:'Intake',t:'Intake in progress · portal link sent Jul 30'}],
+  tran: [{k:'CRM',t:'CRM record synced · 2 fields flagged stale by monitor'}]
+};
+let pipeBusy = false;
+let CONSENTS = [];
+let customAssets = null;
+let customSrc = '';
+let fanBusy = false;
+function setCalView(v){ calView=v; refresh(); }
 let TABS = {gov:'overview', c360:'brief', pipe:'queue', content:'studio', plan:'doc'};
 function setTab(k,id){ TABS[k]=id; go(currentView); }
 function tabBar(key, defs){ return `<div class="tabs">${defs.map(([id,label])=>`<button class="${TABS[key]===id?'on':''}" onclick="setTab('${key}','${id}')">${label}</button>`).join('')}</div>`; }
-function toggleStack(){ stackOpen=!stackOpen; go('home'); }
+function toggleMobileNav(){
+  const sb=document.getElementById('sidebar');
+  const open=!sb.classList.contains('open');
+  sb.classList.toggle('open',open);
+  document.getElementById('sbScrim').classList.toggle('on',open);
+}
+function closeMobileNav(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sbScrim').classList.remove('on');
+}
+function toggleSidebar(){
+  const mini=document.getElementById('app').classList.toggle('sb-mini');
+  try{ localStorage.setItem('mhwp-sb', mini?'mini':'full'); }catch(e){}
+}
+try{ if(localStorage.getItem('mhwp-sb')==='mini') document.getElementById('app').classList.add('sb-mini'); }catch(e){}
+function toggleStack(){ stackOpen=!stackOpen; refresh(); }
 
 let EXCEPTIONS = [
   {id:'tran', pill:'flag', label:'Data conflict', t:'Tran-Nguyen Family — two birthdates on file for Linh Tran', s:'CRM says 1961, intake says 1963. Blocks plan generation until resolved. Caught by the data-quality monitor before it touched a plan.', kind:'conflict', open:false, done:false, doneTxt:''},
@@ -657,6 +836,21 @@ const HOUSEHOLDS = [
   {id:'whitfield', name:'Dana Whitfield', tag:'Post-divorce · flat-fee plan', office:'Gaithersburg, MD', ctx:'Intake in progress (portal link sent Jul 30)', status:'Awaiting intake', ready:false},
   {id:'okafor', name:'The Okafor Family', tag:'Sandwich generation · caregiving', office:'Orange County, CA', ctx:'Intake · tax summary · prior plan v1 (2023)', status:'Context assembled', ready:true},
   {id:'tran', name:'Tran-Nguyen Family', tag:'Multigenerational · served in Vietnamese', office:'Orange County, CA', ctx:'2 stale fields flagged by data-quality monitor', status:'Data conflict', ready:false}
+];
+
+let POLICIES = [
+  {q:'"Can you record this so my wife can watch it later?"', a:'Yes. "Happy to. I\'ll read a short consent note at the start so everyone on the call has agreed, and I\'ll send your wife a private viewing link that works for 30 days. It\'s just for your family, and we keep a record of who it went to." Consent captured, scope set to view-only, expiry default 30 days.'},
+  {q:'"My daughter couldn\'t make it. Can she see what we discussed?"', a:'Yes, with your say-so on record. "Of course. Since it\'s your meeting, I\'ll note that you asked me to share it, verify it\'s really her on the other end, and she\'ll get access to this recording only, not your documents." Release logged with basis, identity verified, scoped to the single artifact.'},
+  {q:'"Is the AI writing my plan?"', a:'"No. It\'s a process that gathers your information and drafts the document the way our office would, and every number comes from the same calculations we\'ve always used. I read every word, I change what needs changing, and nothing reaches you without my name on it." True, plain, and repeatable by any advisor at the firm.'},
+  {q:'"One of us is joining from Maryland. Does that change anything?"', a:'"Only that everyone on the call needs to agree to the recording, which we ask for anyway. Same one sentence at the start, nothing else changes for you." The system applies the strictest participating jurisdiction automatically.'}
+];
+
+let VOICEPRINT = [
+  ['Register','Serious but deliberately accessible. Explains, never talks down.'],
+  ['Signature moves','Opens with a question or a cultural reference; closes with one action, not five.'],
+  ['Frameworks','Clarity, confidence, control · ages and stages, not account sizes'],
+  ['Will not opine on',"Individual securities, market timing, other advisors' conduct"],
+  ['Hook policy','Angle first, topic second. It has to be allowed to be a little fun.']
 ];
 
 const ASSUMPTIONS = [
@@ -769,42 +963,56 @@ function setPreset(p){
   document.getElementById('psOp').classList.toggle('on',p==='operator');
   document.getElementById('psVo').classList.toggle('on',p==='voice');
   document.getElementById('sideFoot').innerHTML = (p==='operator'
-    ? '<b>Marc A.</b>Founder · CEO · CCO · CIO<br>Preset: The Operator'
-    : '<b>Rita C.</b>Founder · CEO · Educator<br>Preset: The Voice')
-    + '<button class="reset-link" onclick="location.reload()">↺ Reset demo data</button>';
+    ? '<div class="foot-id"><b>Marc A.</b>Founder · CEO · CCO · CIO<br>Preset: The Operator</div>'
+    : '<div class="foot-id"><b>Rita C.</b>Founder · CEO · Educator<br>Preset: The Voice</div>')
+    + '<button class="reset-link" onclick="resetDemo()">↺ Reset demo data</button>'
+    + '<button class="reset-mini" onclick="resetDemo()" title="Reset demo data" aria-label="Reset demo data"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>';
   renderNav();
   go(currentView);
 }
 function renderNav(){
   document.getElementById('navRail').innerHTML =
     '<div class="nav-label">Workspace</div>' +
-    NAV[preset].map(([id,label,icon])=>`<button data-v="${id}" onclick="go('${id}')">${icon}<span>${label}</span></button>`).join('');
+    NAV[preset].map(([id,label,icon])=>`<button data-v="${id}" data-tip="${label}" onclick="go('${id}')">${icon}<span>${label}</span></button>`).join('')
+    + `<button data-v="audit" data-tip="Audit trail" onclick="toggleAudit(true)"><svg class="nv-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg><span>Audit trail</span></button>`;
 }
 function go(v){
   currentView=v;
   document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));
   document.getElementById('crumb').innerHTML=`<span>${preset==='operator'?'Operator workspace':'Voice workspace'}</span><b>${VIEWTITLES[v]}</b>`;
-  document.getElementById('sidebar').classList.remove('open');
+  closeMobileNav();
   const host=document.getElementById('viewHost');
   host.innerHTML = RENDER[v]();
   host.querySelectorAll('.view')[0].classList.add('on');
   window.scrollTo(0,0);
 }
+function refresh(){ const y=window.scrollY; go(currentView); window.scrollTo(0,y); }
 function toast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('on');
   clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2600);
 }
-function addAudit(what,who){
+function addAudit(what,who,skipBackend){
   const d=new Date();
   AUDIT.unshift({when:'Aug 05 · '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'), what, who});
+  if(!skipBackend) backendPost(BACKEND.auditWebhook, {what: what, detail: who});
   document.getElementById('auditCount').textContent=AUDIT.length;
   renderAudit();
 }
 function renderAudit(){
   document.getElementById('auditBody').innerHTML = AUDIT.map(a=>`<div class="audit-entry"><div class="when">${a.when}</div><div class="what">${a.what}</div><div class="who">${a.who}</div></div>`).join('');
 }
-function toggleAudit(on){ renderAudit(); document.getElementById('auditDrawer').classList.toggle('on',on); }
+/* opening the audit drawer from the mobile nav should dismiss the nav */
+const _origToggleAudit_marker = true;
+function addAnnotation(){
+  const inp=document.getElementById('annotInput');
+  const t=(inp?inp.value:'').trim();
+  if(!t) return;
+  inp.value='';
+  addAudit('Annotation — '+t, 'Appended by '+(preset==='voice'?'Rita C.':'Marc A.')+' · entries are never rewritten, only added to');
+  toast('Appended to the record.');
+}
+function toggleAudit(on){ renderAudit(); if(on) closeMobileNav(); document.getElementById('auditDrawer').classList.toggle('on',on); }
 
 /* ================= views ================= */
 const RENDER = {
@@ -821,10 +1029,10 @@ home(){
       <div class="cta-wrap"><button class="btn primary" onclick="go('plan')">Open Plan Engine</button><button class="btn ghost" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.3)" onclick="toggleAudit(true)">Audit trail</button></div>
     </div>
     <div class="grid g4">
-      <button class="card stat-card" onclick="go('plan')"><div class="k">3</div><div class="l">Plans in production</div><div class="d up">1 draft ready for review</div></button>
-      <button class="card stat-card" onclick="go('plan')"><div class="k">11.5 <small>hrs</small></div><div class="l">Principal hours returned this week</div><div class="d up">vs. manual baseline</div></button>
+      <button class="card stat-card" onclick="go('plan')"><div class="k">${planRuns}</div><div class="l">Plan runs on the record</div><div class="d up">${EXCEPTIONS.find(e=>e.id==='brennanplan'&&!e.done)?'1 draft awaiting sign-off':'All drafts reviewed & signed'}</div></button>
+      <button class="card stat-card" onclick="go('plan')"><div class="k">~${(planRuns*11.4).toFixed(1)} <small>hrs</small></div><div class="l">Principal hours returned</div><div class="d up">vs. the 10-15 hr manual baseline</div></button>
       <button class="card stat-card" onclick="document.getElementById('exQueue').scrollIntoView({behavior:'smooth'})"><div class="k">${EXCEPTIONS.filter(e=>!e.done).length}</div><div class="l">Exceptions flagged</div><div class="d ${EXCEPTIONS.some(e=>!e.done)?'warn':'up'}">${EXCEPTIONS.some(e=>!e.done)?EXCEPTIONS.filter(e=>!e.done&&e.pill==='flag').length+' data conflicts · '+EXCEPTIONS.filter(e=>!e.done&&e.pill==='brass').length+' approvals waiting':'Queue clear'}</div></button>
-      <button class="card stat-card" onclick="go('pipe')"><div class="k">6</div><div class="l">Warm leads surfaced</div><div class="d up">from 342 in nurture</div></button>
+      <button class="card stat-card" onclick="go('pipe')"><div class="k">${LEADS.filter(l=>l.score>=60).length}</div><div class="l">Warm leads surfaced</div><div class="d up">from 342 in nurture · engagement-ranked</div></button>
     </div>
     <div style="height:16px"></div>
     ${renderSuggestions()}
@@ -853,7 +1061,7 @@ home(){
       <div class="cta-wrap"><button class="btn primary" onclick="go('content')">Open Content Studio</button><button class="btn ghost" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.3)" onclick="go('gov')">Consent &amp; governance</button></div>
     </div>
     <div class="grid g4">
-      <button class="card stat-card" onclick="go('content')"><div class="k">9</div><div class="l">Assets scheduled this week</div><div class="d up">All sourced to your archive</div></button>
+      <button class="card stat-card" onclick="go('content')"><div class="k">${CAL.length}</div><div class="l">On the calendar this week</div><div class="d up">All sourced to your archive · live from the record</div></button>
       <button class="card stat-card" onclick="document.getElementById('calCard').scrollIntoView({behavior:'smooth'})"><div class="k">${CAL.filter(c=>c.st==='flag').length}</div><div class="l">Drafts flagged for your review</div><div class="d ${CAL.some(c=>c.st==='flag')?'warn':'up'}">${CAL.some(c=>c.st==='flag')?'Pre-flight caught them first':'All clear this week'}</div></button>
       <button class="card stat-card" onclick="TABS.gov='overview';go('gov')"><div class="k">${mayaReleased?'0':'1'}</div><div class="l">Recording request${mayaReleased?'s':''} awaiting decision</div><div class="d ${mayaReleased?'up':'na'}">${mayaReleased?'Maya\'s release is on the register':'Adult child · Brennan household'}</div></button>
       <button class="card stat-card" onclick="go('gov')"><div class="k">100%</div><div class="l">Published items with named approver</div><div class="d up">Complete trail, every artifact</div></button>
@@ -901,17 +1109,18 @@ plan(){
   <div class="view">
     <div class="page-head"><div class="eyebrow">Capability 1</div><h1>Plan Engine</h1>
     <p>The firm's own templates are the output contract. Household context assembles itself from intake, transcripts, tax summaries, and the CRM. The principal's time goes to judgment, not gathering.</p></div>
-    <div class="grid g3" style="margin-bottom:20px">
+    <div class="grid g4" style="margin-bottom:20px">
       <div class="card stat-card"><div class="k">95 <small>min</small></div><div class="l">Median principal time per plan</div><div class="d up">was 10-15 hours manual</div></div>
-      <div class="card stat-card"><div class="k">7</div><div class="l">Plans delivered since launch</div><div class="d up">flat-fee planning now sellable standalone</div></div>
+      <div class="card stat-card"><div class="k">${planRuns}</div><div class="l">Plan runs on the record</div><div class="d up">live count · every run logged</div></div>
+      <div class="card stat-card"><div class="k">~${Math.round(planRuns*11.4)} <small>hrs</small></div><div class="l">Principal hours returned</div><div class="d up">vs the firm-reported 10-15 hr baseline</div></div>
       <div class="card stat-card"><div class="k">0</div><div class="l">Figures produced by the language model</div><div class="d na">all numbers from the calculation layer</div></div>
     </div>
-    <div class="section-title"><h2>Households</h2><span class="hint">Template on file: MHWP Comprehensive Plan v4 · ingested &amp; versioned</span></div>
+    <div class="section-title"><h2>Households</h2><span style="display:flex;gap:10px;align-items:center"><span class="hint">Template on file: MHWP Comprehensive Plan v4 · ingested &amp; versioned</span><button class="btn primary sm" onclick="openAddHH()">+ New household</button></span></div>
     <div class="card"><table class="tbl">
-      <tr><th>Household</th><th>Focus</th><th>Assembled context</th><th>Status</th><th></th></tr>
+      <tr><th>Household</th><th>Focus</th><th>Assembled context <span class="edit-tag">✎</span></th><th>Status</th><th></th></tr>
       ${HOUSEHOLDS.map(h=>`<tr>
         <td><b style="color:var(--ink)">${h.name}</b><div style="font-size:.72rem;color:var(--mist)">${h.office}</div></td>
-        <td style="font-size:.8rem">${h.tag}</td><td style="font-size:.78rem;color:var(--mist)">${h.ctx}</td>
+        <td style="font-size:.8rem">${h.tag}</td><td style="font-size:.78rem;color:var(--mist)"><span contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="ctxEdit(this,'${h.id}')">${h.ctx}</span></td>
         <td>${h.ready?'<span class="pill ok">'+h.status+'</span>':'<span class="pill '+(h.status==='Data conflict'?'flag':'grey')+'">'+h.status+'</span>'}</td>
         <td>${h.ready?`<button class="btn primary sm" onclick="openPlan('${h.id}')">Open workspace</button>`:'<button class="btn ghost sm" disabled>Blocked</button>'}</td></tr>`).join('')}
     </table></div>
@@ -925,16 +1134,36 @@ plan(){
     <div class="eyebrow">Plan workspace</div><h1>${h.name}</h1><p>${h.tag} · ${h.office}</p></div>
     <div class="grid" style="grid-template-columns:1.1fr .9fr">
       <div class="card card-pad">
-        <h3>Assumption workbench</h3><div class="sub" style="margin-bottom:10px">All explicit, all editable, all shown on the face of the plan. No hidden model.</div>
-        ${ASSUMPTIONS.map(a=>`<div class="assump"><div><label>${a[0]}</label><span class="src">${a[3]}</span></div><input value="${a[1]}${a[2]?' '+a[2]:''}"></div>`).join('')}
+        <h3>Assumption workbench <span class="edit-tag">✎ type to adjust</span></h3><div class="sub" style="margin-bottom:10px">All explicit, all editable, all shown on the face of the plan. No hidden model. Edited values feed the calc layer on the next generation — the narrative never invents figures.</div>
+        ${ASSUMPTIONS.map((a,i)=>`<div class="assump"><div><label>${a[0]}</label><span class="src">${a[3]}</span></div><div class="assump-val"><input value="${a[1]}" title="${a[0]}: ${a[1]}${a[2]?' '+a[2]:''}" onfocus="this.dataset.o=this.value" onchange="assumpEdit(this,${i})"><span class="unit">${a[2]||''}</span></div></div>`).join('')}
       </div>
       <div style="display:grid;gap:16px;align-content:start">
         <div class="card card-pad">
-          <h3>Assembled household context</h3><div class="sub" style="margin-bottom:8px">Sources feeding this draft. Nothing keyed by hand.</div>
-          <div class="list-row" style="padding:9px 0"><span class="pill teal">Intake</span><div class="s" style="margin:0">Portal intake completed Jul 28 · 41 fields</div></div>
-          <div class="list-row" style="padding:9px 0"><span class="pill teal">Calls</span><div class="s" style="margin:0">2 discovery transcripts, consented &amp; structured</div></div>
-          <div class="list-row" style="padding:9px 0"><span class="pill teal">Tax</span><div class="s" style="margin:0">2025 return summary via tax-scan</div></div>
-          <div class="list-row" style="padding:9px 0"><span class="pill teal">Holdings</span><div class="s" style="margin:0">Custodian positions as of Aug 4</div></div>
+          <h3>Assembled household context <span class="edit-tag">${(CTXITEMS[activeHousehold]||[]).length} sources · feeds generation</span></h3>
+          <div class="sub" style="margin-bottom:8px">In production these stream in from connectors — portal intake, the call-recording pipeline, tax-scan, custodian feeds, the CRM. Anything added here goes on the record and grounds the next generated draft.</div>
+          ${(CTXITEMS[activeHousehold]&&CTXITEMS[activeHousehold].length?CTXITEMS[activeHousehold]:[{k:'Note',t:h.ctx}]).map((c,ci)=>`<div class="list-row" style="padding:9px 0"><span class="pill teal">${escHtml(c.k)}</span><div class="s" style="margin:0;flex:1"><span contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="ctxItemEdit(this,${ci})">${escHtml(c.t)}</span></div></div>`).join('')}
+          ${pendingCtx&&pendingCtx.hh===activeHousehold?`
+          <div style="margin-top:12px;border:1px dashed var(--teal);border-radius:10px;padding:12px;background:rgba(108,93,211,.04)">
+            <div style="font-size:.74rem;font-weight:700;margin-bottom:2px">Parsed from ${escHtml(pendingCtx.file)} — review before it goes on the record</div>
+            <div class="sub" style="font-size:.7rem;margin-bottom:8px">Claude extracted these. Click any line to edit it, ✕ to drop it, then commit.</div>
+            ${pendingCtx.items.map((p,pi)=>`<div class="list-row" style="padding:7px 0"><span class="pill teal">${escHtml(p.kind)}</span><div class="s" style="margin:0;flex:1"><span contenteditable="true" spellcheck="false" onblur="pendingCtx.items[${pi}].content=this.innerText">${escHtml(p.content)}</span></div><button class="btn ghost sm" style="padding:2px 8px" onclick="pendingCtx.items.splice(${pi},1);refresh()" aria-label="Drop">✕</button></div>`).join('')}
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn primary sm" onclick="commitParsedCtx()">Add ${pendingCtx.items.length} to the record</button>
+              <button class="btn ghost sm" onclick="pendingCtx=null;refresh()">Discard</button>
+            </div>
+          </div>`:''}
+          <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
+            <select id="ctxKind" style="padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:.76rem;color:var(--ink);background:var(--card)">
+              <option>Note</option><option>Intake</option><option>Calls</option><option>Tax</option><option>Holdings</option><option>CRM</option>
+            </select>
+            <input id="ctxText" placeholder="Paste a transcript excerpt, tax line, CRM note…" onkeydown="if(event.key==='Enter')addContextItem()" style="flex:1;min-width:150px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:.76rem;color:var(--ink)">
+            <button class="btn ink sm" onclick="addContextItem()">Add</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+            <input type="file" id="ctxFile" accept=".txt,.md,.csv,.log" style="display:none" onchange="handleCtxFile(this)">
+            <button class="btn ghost sm" onclick="document.getElementById('ctxFile').click()" ${docBusy?'disabled':''}>${docBusy?'Parsing document…':'📄 Upload a document — AI parses it'}</button>
+            <span class="hint" style="font-size:.66rem">.txt / .md / .csv here · PDFs &amp; docx come through the document pipeline in production</span>
+          </div>
         </div>
         <div class="card card-pad">
           <h3>Generate draft</h3><div class="sub" style="margin-bottom:12px">Complete first draft with narrative, scenarios, and the run-out-of-money analysis. Minutes, not days.</div>
@@ -959,39 +1188,36 @@ plan(){
     <div class="page-head"><button class="btn ghost sm" onclick="planStage='work';go('plan')" style="margin-bottom:12px">← Back to workbench</button>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">
       <div><div class="eyebrow">Draft v1 · generated in 3m 40s</div><h1>${h.name} — Comprehensive Plan</h1><p>MHWP template v4 · every figure from the calculation layer · awaiting named approver</p></div>
-      <div style="display:flex;gap:8px"><button class="btn ghost" onclick="toast('Comment noted. The engine learns firm phrasing from every edit.')">Add comment</button><button class="btn primary" onclick="approvePlan()">Approve &amp; sign</button></div>
+      <div style="display:flex;gap:8px"><button class="btn ghost" onclick="exportPlanPdf()">Export PDF</button><button class="btn ghost" onclick="toast('Comment noted. The engine learns firm phrasing from every edit.')">Add comment</button><button class="btn primary" onclick="approvePlan()">Approve &amp; sign</button></div>
     </div></div>
     <div class="grid" style="grid-template-columns:1.35fr .65fr">
       <div>
         ${tabBar('plan',[['doc','Plan document'],['deliver','Deliverables (5)']])}
         ${TABS.plan==='doc'?`
         <div class="plan-doc">
-          <h2>Retirement Income &amp; Decumulation Plan</h2>
-          <div class="meta">Prepared for Walt &amp; Eloise Brennan · Draft v1 · Aug 5, 2026 · Assumptions shown in full on p.2 · <span style="color:var(--teal)">narrative paragraphs are editable in place</span></div>
+          <h2>${narrField('plan_title')}</h2>
+          <div class="meta">Prepared for ${h.name} · Draft v1 · ${NARR[activeHousehold]?'narrative composed live from the household record':'Aug 5, 2026'} · <a href="#" onclick="event.preventDefault();planStage='work';go('plan')" style="color:var(--teal-deep);font-weight:600">${(CTXITEMS[activeHousehold]||[]).length||1} context sources →</a> · <span style="color:var(--teal)">narrative paragraphs are editable in place</span></div>
           <h4>Where you stand</h4>
-          <p contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="narrEdit(this)">You arrive at this decision from strength: the mortgage is nine years from term, spending is known rather than guessed, and your combined benefit records give you real choices about timing. The question in front of you is not whether the plan works. It is which version of it you want to live in.</p>
-          <h4>The claiming decision</h4>
-          <p contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="narrEdit(this)">Walt's claiming age moves more money than any other single choice in this plan. We modeled 62, 67, and 70 side by side. The differences compound quietly for a decade and then stop being quiet. Our recommendation and its reasoning follow, but the variants are yours to compare below, on the same axes, with nothing hidden.</p>
+          <p contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="narrEdit(this)">${narrField('where_you_stand')}</p>
+          <h4>${narrField('decision_heading')}</h4>
+          <p contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="narrEdit(this)">${narrField('decision_body')}</p>
           <h4>Will the money last</h4>
-          <div class="scenario-chips">${Object.entries(SCENARIOS).map(([k,s])=>`<button class="${k===activeScenario?'on':''}" onclick="setScenario('${k}')">${s.label}</button>`).join('')}<button class="${activeScenario==='compare'?'on':''}" onclick="setScenario('compare')">Compare all</button></div>
+          <div class="scenario-chips">${Object.entries(SCENARIOS).map(([k,s],si)=>`<button class="${k===activeScenario?'on':''}" onclick="setScenario('${k}')">${activeHousehold==='brennan'?s.label:['Base case','Variant A','Variant B','Variant C'][si]}</button>`).join('')}<button class="${activeScenario==='compare'?'on':''}" onclick="setScenario('compare')">Compare all</button></div>
           ${activeScenario==='compare'
-            ? `<div class="grid g2" style="margin:12px 0 4px">${Object.entries(SCENARIOS).map(([k,s])=>`<div style="border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--card)"><div style="font-size:.72rem;font-weight:600;color:var(--ink);margin-bottom:6px">${s.label}</div><div class="runout" style="height:60px;margin:0">${s.bars.map(v=>`<div class="bar ${v===0?'zero':v<20?'low':''}" style="height:${Math.max(v,4)}%"></div>`).join('')}</div><div class="runout-x" style="margin-top:4px"><span>75</span><span>94</span></div></div>`).join('')}</div>
+            ? `<div class="grid g2" style="margin:12px 0 4px">${Object.entries(SCENARIOS).map(([k,s])=>`<div style="border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--card)"><div style="font-size:.72rem;font-weight:600;color:var(--ink);margin-bottom:6px">${activeHousehold==='brennan'?s.label:['Base case','Variant A','Variant B','Variant C'][Object.keys(SCENARIOS).indexOf(k)]}</div><div class="runout" style="height:60px;margin:0">${s.bars.map(v=>`<div class="bar ${v===0?'zero':v<20?'low':''}" style="height:${Math.max(v,4)}%"></div>`).join('')}</div><div class="runout-x" style="margin-top:4px"><span>75</span><span>94</span></div></div>`).join('')}</div>
                <p style="margin-top:10px">Same axes, no hidden model. Delaying to 70 buys the strongest longevity floor; claiming at 62 spends the buffer in the first decade; the mortgage payoff trades liquidity for peace of mind, which is a legitimate input.</p>`
             : `<div class="runout">${sc.bars.map(v=>`<div class="bar ${v===0?'zero':v<20?'low':''}" style="height:${Math.max(v,3)}%"></div>`).join('')}</div>
                <div class="runout-x"><span>Age 75</span><span>Age 84</span><span>Age 94</span></div>
-               <p style="margin-top:10px">${sc.note}</p>`}
+               <p style="margin-top:10px">${activeHousehold==='brennan'?sc.note:'Calculation-layer output for this variant, on the same axes as the others. Nothing here is generated language — the advisor walks the trade-offs in the review.'}</p>`}
           <h4>What we are asking you to decide</h4>
-          <p contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="narrEdit(this)">Three things, and only three: the claiming age, whether the mortgage runs to term, and the travel budget for the first five years. Everything else in this document is our work, shown so you can check it.</p>
+          <p contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="narrEdit(this)">${narrField('deciding_body')}</p>
         </div>
         `:''}
         ${TABS.plan==='deliver'?`
         <div class="section-title" style="margin-top:0"><h2>Deliverable fan-out</h2><span class="hint">One approved plan becomes every version the household needs</span></div>
+        <div class="sub" style="margin-bottom:12px">Click any deliverable — Claude writes it live from this household's record and the narrative above, for your review and download. ${delBusy?'<b style="color:var(--teal-deep)">Writing…</b>':''}</div>
         <div class="fanout">
-          <div class="fan-card"><div class="t">Full client document</div><div class="s">28 pages · firm template</div></div>
-          <div class="fan-card"><div class="t">Annual review summary</div><div class="s">2 pages for the meeting</div></div>
-          <div class="fan-card"><div class="t">Spousal-conversation version</div><div class="s">Plain language, no jargon</div></div>
-          <div class="fan-card"><div class="t">Action-item checklist</div><div class="s">7 items, owners assigned</div></div>
-          <div class="fan-card"><div class="t">CRM follow-through tasks</div><div class="s">Pushed on approval</div></div>
+          ${[['Full client document','Exec summary · firm template'],['Annual review summary','2 sections for the meeting'],['Spousal-conversation version','Plain language, no jargon'],['Action-item checklist','Items with owners assigned'],['CRM follow-through tasks','Tasks with owners + due frames']].map(dk=>`<div class="fan-card" role="button" tabindex="0" style="cursor:pointer" onclick="genDeliverable('${dk[0]}')" onkeydown="if(event.key==='Enter')genDeliverable('${dk[0]}')"><div class="t">${dk[0]} ✦</div><div class="s">${dk[1]}</div></div>`).join('')}
         </div>
         <div class="callout" style="margin-top:14px">Approving the plan queues all five automatically. Nothing here needs a second production pass.</div>
         `:''}
@@ -1007,7 +1233,7 @@ plan(){
           <div class="genrec mono">
             <div><span>Sources</span><span>intake · 2 transcripts · tax · holdings</span></div>
             <div><span>Template</span><span>MHWP Comprehensive v4</span></div>
-            <div><span>Model</span><span>MHWP-plan-2.3</span></div>
+            <div><span>Model</span><span>MHWP-plan-2.3${NARR[activeHousehold]?' + Claude (narrative)':''}</span></div>
             <div><span>Figures by LLM</span><span>0 (calc layer only)</span></div>
             <div><span>Approver</span><span id="approverField">— pending</span></div>
           </div>
@@ -1037,17 +1263,26 @@ content(){
       <input id="arcSearch" placeholder="Search 312 assets — topic, format, year…" value="${contentSearch}" oninput="arcFilter(this.value)" style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:.82rem;color:var(--ink);margin-bottom:10px">
       <div id="arcList">${renderArchive()}</div>
     </div>
-    <div id="fanResult">${fannedOut?renderFan():'<div class="card"><div class="empty">Select a dormant source and fan it out. One asset becomes twelve, in your voice, hooks included.</div></div>'}</div>
+    <div class="card card-pad" style="margin-bottom:20px">
+      <h3>Custom source — fan out anything, live</h3>
+      <div class="sub" style="margin-bottom:8px">Anything the principal has ever produced works here: a <b>podcast episode</b>, a <b>column headline</b>, a <b>book chapter</b>, a <b>talk or webinar title</b> — or just a <b>topic</b> in plain words. Twelve assets come back in the firm's voice, compliance pre-flight included, in about 25 seconds.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn ghost sm" onclick="fillCustom('Ep. 62 — Caregiving without going broke: the sandwich generation')">Try: Ep. 62 (podcast)</button>
+        <button class="btn ghost sm" onclick="fillCustom('Col. 118 — The divorce checklist nobody hands you')">Try: Col. 118 (column)</button>
+        <button class="btn ghost sm" onclick="fillCustom('Topic: what a market drop actually means for your plan')">Try: a plain topic</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input id="customTitle" placeholder='Type or pick a source — e.g. "Ep. 62 — Caregiving without going broke"' value="${customSrc.replace(/"/g,'&quot;')}" style="flex:1;min-width:220px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:.82rem;color:var(--ink)" onkeydown="if(event.key==='Enter')customFanOut()">
+        <button class="btn ink" id="customBtn" onclick="customFanOut()" ${fanBusy?'disabled':''}>${fanBusy?'Generating…':'Fan out with AI'}</button>
+      </div>
+    </div>
+    <div id="fanResult">${customAssets?renderCustomFan():fannedOut?renderFan():'<div class="card"><div class="empty">Select a dormant source and fan it out — or type a custom one above. One asset becomes twelve, in your voice, hooks included.</div></div>'}</div>
     `:`
     <div class="grid" style="grid-template-columns:minmax(0,640px)">
       <div class="card card-pad">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h3>Voice print</h3><button class="btn ghost sm" onclick="setTab('content','studio')">← Back to the archive</button></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h3>Voice print <span class="edit-tag">✎ click a trait to tune it</span></h3><button class="btn ghost sm" onclick="setTab('content','studio')">← Back to the archive</button></div>
         <div class="sub" style="margin-bottom:10px">Built from your actual writing and speaking. Hard-constrained: no forward-looking claims, no performance citation, no invented statistics.</div>
-        <div class="voice-trait"><b>Register</b><span>Serious but deliberately accessible. Explains, never talks down.</span></div>
-        <div class="voice-trait"><b>Signature moves</b><span>Opens with a question or a cultural reference; closes with one action, not five.</span></div>
-        <div class="voice-trait"><b>Frameworks</b><span>Clarity, confidence, control · ages and stages, not account sizes</span></div>
-        <div class="voice-trait"><b>Will not opine on</b><span>Individual securities, market timing, other advisors' conduct</span></div>
-        <div class="voice-trait"><b>Hook policy</b><span>Angle first, topic second. It has to be allowed to be a little fun.</span></div>
+        ${VOICEPRINT.map((v,i)=>`<div class="voice-trait"><b>${v[0]}</b><span contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="voiceEdit(this,${i})">${escHtml(v[1])}</span></div>`).join('')}
       </div>
       <div class="callout">Every factual assertion in a derived asset must trace to a document in the corpus. That constraint is structural, not a setting.</div>
     </div>
@@ -1090,6 +1325,20 @@ gov(){
       <div class="j"><b>Maryland</b>All-party consent · script v2</div>
       <div class="j" style="border-style:dashed"><b>Mixed-state meeting</b>Strictest rule wins, automatically</div>
     </div>
+    <div class="card card-pad" style="margin-top:14px">
+      <h3>Capture consent — this meeting</h3>
+      <div class="sub" style="margin-bottom:10px">Pick the session; the jurisdiction rule and script version attach automatically. The capture lands on the audit record.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select id="consentHH" style="padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:.8rem;color:var(--ink);background:var(--card)">
+          <option value="brennan|CA, all-party">Brennan — annual review (CA)</option>
+          <option value="calloway|NV, one-party (script still read)">Calloway — discovery call 2 (NV)</option>
+          <option value="whitfield|MD, all-party">Whitfield — settlement planning (MD)</option>
+          <option value="okafor|CA, all-party">Okafor — caregiving check-in (CA)</option>
+        </select>
+        <button class="btn ink sm" onclick="captureConsent()">Capture consent</button>
+      </div>
+      ${CONSENTS.length?`<div style="margin-top:12px">${CONSENTS.map(c=>`<div class="list-row" style="align-items:center"><span class="pill ok">Captured</span><div style="flex:1"><div class="t">${c.t}</div><div class="s">${c.s}</div></div></div>`).join('')}</div>`:''}
+    </div>
     <div style="margin-top:16px"><button class="btn ghost sm" onclick="setTab('gov','policy')">What to actually say to a client — the policy layer →</button></div>
     `:''}
     ${TABS.gov==='access'?`
@@ -1128,10 +1377,16 @@ gov(){
     ${TABS.gov==='policy'?`
     <div class="section-title" style="margin-top:0"><h2>Plain-language policy layer</h2><span class="hint">What the firm's position is, in words you can say out loud to a client</span></div>
     <div class="card" id="policyList">
-      <div class="policy-q"><button onclick="this.parentElement.classList.toggle('open')">"Can you record this so my wife can watch it later?"<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button><div class="a">Yes. "Happy to. I'll read a short consent note at the start so everyone on the call has agreed, and I'll send your wife a private viewing link that works for 30 days. It's just for your family, and we keep a record of who it went to." Consent captured, scope set to view-only, expiry default 30 days.</div></div>
-      <div class="policy-q"><button onclick="this.parentElement.classList.toggle('open')">"My daughter couldn't make it. Can she see what we discussed?"<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button><div class="a">Yes, with your say-so on record. "Of course. Since it's your meeting, I'll note that you asked me to share it, verify it's really her on the other end, and she'll get access to this recording only, not your documents." Release logged with basis, identity verified, scoped to the single artifact.</div></div>
-      <div class="policy-q"><button onclick="this.parentElement.classList.toggle('open')">"Is the AI writing my plan?"<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button><div class="a">"No. It's a process that gathers your information and drafts the document the way our office would, and every number comes from the same calculations we've always used. I read every word, I change what needs changing, and nothing reaches you without my name on it." True, plain, and repeatable by any advisor at the firm.</div></div>
-      <div class="policy-q"><button onclick="this.parentElement.classList.toggle('open')">"One of us is joining from Maryland. Does that change anything?"<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button><div class="a">"Only that everyone on the call needs to agree to the recording, which we ask for anyway. Same one sentence at the start, nothing else changes for you." The system applies the strictest participating jurisdiction automatically.</div></div>
+      ${POLICIES.map((p,i)=>`<div class="policy-q"><button onclick="this.parentElement.classList.toggle('open')">${escHtml(p.q)}<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button><div class="a"><span contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="policyEdit(this,${i})">${escHtml(p.a)}</span></div></div>`).join('')}
+    </div>
+    <div class="card card-pad" style="margin-top:14px">
+      <h3>Add a policy answer <span class="edit-tag">appends to the layer · versioned</span></h3>
+      <div class="sub" style="margin-bottom:10px">The question a client actually asks, and the answer any advisor at the firm can say out loud. Answers stay editable after adding — click any answer above to refine it.</div>
+      <div style="display:grid;gap:8px">
+        <input id="polQ" placeholder='The client question — e.g. "Who else can see my documents?"' style="padding:9px 12px;border:1px solid var(--line);border-radius:9px;font-size:.8rem;color:var(--ink)">
+        <textarea id="polA" placeholder="The plain-language answer, in the firm's voice…" rows="3" style="padding:9px 12px;border:1px solid var(--line);border-radius:9px;font-size:.8rem;color:var(--ink);font-family:inherit;resize:vertical"></textarea>
+        <div><button class="btn ink sm" onclick="addPolicy()">Add to the policy layer</button></div>
+      </div>
     </div>
     `:''}
   </div>`;
@@ -1154,13 +1409,13 @@ c360(){
     <div class="grid" style="grid-template-columns:1.05fr .95fr">
       <div class="card card-pad">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
-          <div><h3>Pre-meeting brief — ${BRIEFS[briefHH].t}</h3><div class="sub" style="margin-bottom:10px">${BRIEFS[briefHH].s}</div></div>
+          <div><h3>Pre-meeting brief — ${BRIEFS[briefHH].t} <span class="edit-tag">✎ click any line to edit</span></h3><div class="sub" style="margin-bottom:10px">${LIVEBRIEF[briefHH]?LIVEBRIEF[briefHH].s:BRIEFS[briefHH].s}</div></div>
           <select onchange="briefHH=this.value;go('c360')" style="padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:.78rem;color:var(--ink);background:var(--card)">
             ${Object.entries(BRIEFS).map(([k,b])=>`<option value="${k}" ${k===briefHH?'selected':''}>${b.t}</option>`).join('')}
           </select>
         </div>
-        ${BRIEFS[briefHH].items.map((it,i)=>`<div class="brief-item">${BICONS[i%4]}<div><b style="color:var(--ink)">${it[0]}</b> ${it[1]}</div></div>`).join('')}
-        <div style="margin-top:12px"><button class="btn ghost sm" onclick="setTab('c360','capture')">After the meeting: capture it →</button></div>
+        ${(LIVEBRIEF[briefHH]?LIVEBRIEF[briefHH].items:BRIEFS[briefHH].items).map((it,i)=>`<div class="brief-item">${BICONS[i%4]}<div><b style="color:var(--ink)">${escHtml(it[0])}</b> <span contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="briefEdit(this,${i})">${escHtml(it[1])}</span></div></div>`).join('')}
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn ink sm" onclick="composeBrief()" ${briefBusy?'disabled':''}>${briefBusy?'Composing…':(LIVEBRIEF[briefHH]?'↻ Recompose from the record':'Compose live from the record')}</button><button class="btn ghost sm" onclick="setTab('c360','capture')">After the meeting: capture it →</button></div>
       </div>
       <div class="card card-pad">
         <h3>Life-event triggers — next 60 days</h3><div class="sub" style="margin-bottom:8px">Surfaced, not remembered.</div>
@@ -1183,7 +1438,7 @@ c360(){
           <div class="brief-item" style="padding:6px 0">${BICONS[0]}<div style="font-size:.8rem">RMD sequencing memo to CPA — <b style="color:var(--ink)">owner: EA · due Aug 19</b></div></div>
           <div class="brief-item" style="padding:6px 0">${BICONS[3]}<div style="font-size:.8rem">Intro call offer to Maya (next-gen) — <b style="color:var(--ink)">owner: advisor 2 · due Sep 1</b></div></div>
         </div>
-        <div><div class="eyebrow">Drafted follow-up</div><div style="border:1px solid var(--line);border-radius:8px;padding:10px;font-size:.78rem;line-height:1.55;background:#FDFCFA;font-family:var(--font-display)">"Walt, Eloise — good session Thursday. Two things we agreed to: I'll re-run the plan with claiming at 70 as the primary path, and Maya now has the recording link, good for 30 days…"<div class="mono" style="margin-top:6px;color:var(--mist)">status: in review queue · not sent</div></div></div>
+        <div><div class="eyebrow">Drafted follow-up <span class="edit-tag" style="margin-left:6px">✎ editable</span></div><div style="border:1px solid var(--line);border-radius:8px;padding:10px;font-size:.78rem;line-height:1.55;background:#FDFCFA;font-family:var(--font-display)"><span contenteditable="true" spellcheck="false" onfocus="this.dataset.o=this.innerText" onblur="followupEdit(this)">"Walt, Eloise — good session Thursday. Two things we agreed to: I'll re-run the plan with claiming at 70 as the primary path, and Maya now has the recording link, good for 30 days…"</span><div class="mono" style="margin-top:6px;color:var(--mist)">status: in review queue · not sent</div></div></div>
       </div>
       <div class="callout" style="margin-top:12px"><b>Context pushed to the Plan Engine.</b> The next Brennan draft starts from what was actually said in this meeting, not from memory.</div>`
       : `<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
@@ -1228,18 +1483,19 @@ pipe(){
       <button class="card stat-card" onclick="setTab('pipe','channels')"><div class="k">9</div><div class="l">Households from referrals YTD</div><div class="d up">true channel accounting →</div></button>
     </div>
     <div class="section-title" style="margin-top:0"><h2>Nurture queue — ${leadsRanked?'ranked by engagement':'as stored (alphabetical)'}</h2>
-      <button class="btn ${leadsRanked?'ghost':'primary'} sm" onclick="rankLeads()">${leadsRanked?'Show unranked':'Re-rank by engagement'}</button></div>
+      <span style="display:flex;gap:8px"><button class="btn ghost sm" onclick="explainPipeline()" ${pipeBusy?'disabled':''}>${pipeBusy?'Reading the record…':'✦ Explain this queue — live'}</button><button class="btn ${leadsRanked?'ghost':'primary'} sm" onclick="rankLeads()">${leadsRanked?'Show unranked':'Re-rank by engagement'}</button></span></div>
+    ${pipeInsight?`<div class="card card-pad" style="margin-bottom:14px;border-left:3px solid var(--teal)"><div style="font-weight:700;font-size:.86rem;margin-bottom:6px">${escHtml(pipeInsight.headline)}</div><div class="sub" style="margin-bottom:8px">${escHtml(pipeInsight.read)}</div><div style="font-size:.78rem"><b style="color:var(--teal-deep)">This week:</b> ${escHtml(pipeInsight.one_action)}</div><div class="mono" style="font-size:.66rem;color:var(--mist);margin-top:8px">Composed live by Claude from mhwp_leads + mhwp_channels · nothing invented</div></div>`:''}
     <div class="card"><table class="tbl">
       <tr><th>Prospect</th><th>Engagement</th><th>Topic affinity</th><th>Why surfaced</th><th></th></tr>
-      ${leads.map(l=>`<tr><td><b style="color:var(--ink)">${l.name}</b><div style="font-size:.72rem;color:var(--mist)">${l.inN}</div></td>
+      ${leads.map(l=>`<tr style="cursor:pointer" onclick="openLeadReview('${l.name.replace(/'/g,"\\'")}')" title="Click to review this lead"><td><b style="color:var(--ink)">${l.name}</b><div style="font-size:.72rem;color:var(--mist)">${l.inN}</div></td>
       <td><span class="score ${l.score>=80?'hot':''}"><span class="track"><span class="fill" style="width:${l.score}%"></span></span><span class="num" style="font-weight:600;color:var(--ink)">${l.score}</span></span></td>
       <td style="font-size:.78rem">${l.topics}</td><td style="font-size:.78rem;color:var(--mist)">${l.why}</td>
-      <td>${l.score>=60?`<button class="btn ghost sm" onclick="toast('Personal touch drafted on ${l.topics.split(' ·')[0]} — nurture cycle paused pending your reply.')">Draft touch</button>`:''}</td></tr>`).join('')}
+      <td>${l.score>=60?`<button class="btn ghost sm" onclick="event.stopPropagation();draftTouch('${l.name.replace(/'/g,"\\'")}')">Draft touch</button>`:''}</td></tr>`).join('')}
     </table></div>
     ${leadsRanked?'<div class="callout" style="margin-top:12px"><b>Posture preserved:</b> the 2.5-year prospect surfaces at the right moment, without pressure. Responding stops the automated cycle and routes to a personal reply, exactly as the sequence already works.</div>':''}
     `:''}
     ${TABS.pipe==='diag'?`
-    <div class="grid g2">
+    <div style="display:grid;gap:26px">
       <div>
         <div class="section-title" style="margin-top:0"><h2>Video watch-time diagnostics</h2><span class="hint">60-second format</span></div>
         <div class="card card-pad">
@@ -1288,32 +1544,50 @@ function renderExceptions(){
     return `<div class="list-row"><span class="pill ${e.pill}">${e.label}</span><div style="flex:1"><div class="t">${e.t}</div><div class="s">${e.s}</div></div>${action}</div>`;
   }).join('') + (EXCEPTIONS.every(e=>e.done)?'<div class="empty">Queue clear. Nothing needs the principal right now.</div>':'');
 }
-function toggleEx(id){ EXCEPTIONS.find(e=>e.id===id).open=true; go('home'); }
+function toggleEx(id){
+  EXCEPTIONS.find(e=>e.id===id).open=true;
+  refresh();
+  setTimeout(function(){ const el=document.getElementById('exQueue'); if(el) el.scrollIntoView({behavior:'smooth'}); }, 80);
+}
 function fixConflict(id, how){
   const e=EXCEPTIONS.find(x=>x.id===id); e.done=true;
   if(how==='intake'){
     e.doneTxt='Intake value (1963) accepted as source of truth. CRM updated. Plan generation unblocked.';
     const h=HOUSEHOLDS.find(x=>x.id==='tran'); h.ready=true; h.status='Context assembled'; h.ctx='Intake · CRM · conflict resolved Aug 5';
     addAudit('Data conflict resolved — Linh Tran birthdate','Intake (1963) accepted over CRM (1961) · CRM write-back · Tran-Nguyen plan generation unblocked');
+    backendPost(BACKEND.exceptionWebhook, {id:'tran', done:true, done_text:e.doneTxt, activate_grant:'', unblock_household:'tran'});
     toast('Resolved. Tran-Nguyen household is unblocked in the Plan Engine.');
   } else {
     e.doneTxt='Confirmation request sent to the household portal, in Vietnamese. Household stays blocked until it returns.';
     addAudit('Data conflict escalated — Linh Tran birthdate','Confirmation requested via portal (in-language) · household remains blocked pending reply');
+    backendPost(BACKEND.exceptionWebhook, {id:'tran', done:true, done_text:e.doneTxt, activate_grant:'', unblock_household:''});
     toast('Confirmation request sent to the household portal.');
   }
-  go('home');
+  refresh();
 }
 function refreshStale(id){
   const e=EXCEPTIONS.find(x=>x.id===id); e.done=true;
   e.doneTxt='Custodian re-sync completed. July contribution now reflected. Education-funding section cleared to run.';
   addAudit('Stale field refreshed — Okafor 529 balance','Custodian re-sync · July contribution captured · plan section unblocked');
+  backendPost(BACKEND.exceptionWebhook, {id:'okafor', done:true, done_text:e.doneTxt, activate_grant:'', unblock_household:''});
   toast('Refreshed. 529 balance is current.');
-  go('home');
+  refresh();
 }
 function openDraftFromHome(){ activeHousehold='brennan'; planStage='draft'; activeScenario='base'; go('plan'); }
 function captureMeeting(){
   meetingCaptured=true;
   TABS.c360='capture';
+  backendPost(BACKEND.captureWebhook, {
+    household_id: 'brennan',
+    title: 'Annual review — Brennan household · 48 min',
+    crm_activity: 'Claiming age discussed (leaning 70), travel budget set for years 1-5, stress scenario reviewed and accepted, Maya access request resolved live.',
+    tasks: [
+      {task: 'Model claim-at-70 as primary', owner: 'principal', due: 'Aug 12'},
+      {task: 'RMD sequencing memo to CPA', owner: 'EA', due: 'Aug 19'},
+      {task: 'Intro call offer to Maya (next-gen)', owner: 'advisor 2', due: 'Sep 1'}
+    ],
+    followup: 'Walt, Eloise — good session Thursday. Two things we agreed to: claim-at-70 re-run as primary path, and Maya has the recording link, good for 30 days.'
+  });
   addAudit('Meeting captured — Brennan annual review (48 min)','Consent on file · transcript structured: CRM activity, 3 tasks, drafted follow-up · context pushed to Plan Engine');
   toast('Captured. CRM activity, three tasks, and a drafted follow-up — context pushed to the Plan Engine.');
   go('c360');
@@ -1322,8 +1596,9 @@ function verifyDelgado(){
   const e=EXCEPTIONS.find(x=>x.id==='delgado'); e.done=true; delgadoVerified=true;
   e.doneTxt='Identity verified. Drafted grant is now live: view only, expires Sep 04, basis logged.';
   addAudit('Third-party ID verified — Rosa Delgado (caregiver)','Drafted scoped grant activated · view only · expires Sep 04 · basis: client request');
+  backendPost(BACKEND.exceptionWebhook, {id:'delgado', done:true, done_text:e.doneTxt, activate_grant:'Rosa Delgado', unblock_household:''});
   toast('Verified. The scoped grant is live and on the record.');
-  go('home');
+  refresh();
 }
 function openReview(id){
   const c=CAL.find(x=>x.id===id); if(!c) return;
@@ -1343,17 +1618,19 @@ function approveCal(id, generalized){
   c.st='ok'; c.stTxt='Approved · '+(preset==='voice'?'Rita C.':'Marc A.')+(generalized?' · example generalized':'');
   c.reviewable=false;
   const a=ASSETS.find(x=>x.calId===id); if(a) a.status='approved';
+  backendPost(BACKEND.contentWebhook, {cal_id: id, hook: '', cal_status: 'ok', asset_status: 'approved', status_text: c.stTxt});
   addAudit('Content approved — '+c.asset, 'Named approver on record'+(generalized?' · flagged example generalized before approval':'')+' · scheduled as planned');
   toast(generalized?'Approved with the example generalized. On the record.':'Approved. Named approver on the record.');
-  closeReview(); go('home');
+  closeReview(); refresh();
 }
 function routeBD(id){
   const c=CAL.find(x=>x.id===id);
   c.st='grey'; c.stTxt='At broker-dealer review · disclosure v3.2 attached'; c.reviewable=false;
   const a=ASSETS.find(x=>x.calId===id); if(a) a.status='bd';
+  backendPost(BACKEND.contentWebhook, {cal_id: id, hook: '', cal_status: 'grey', asset_status: 'bd', status_text: c.stTxt});
   addAudit('Routed to broker-dealer review — '+c.asset,'Disclosure v3.2 attached automatically · publish blocked until BD clearance');
   toast('Routed to BD review with the disclosure attached.');
-  closeReview(); go('home');
+  closeReview(); refresh();
 }
 function openPlan(id){ activeHousehold=id; planStage='work'; go('plan'); }
 function runGeneration(){
@@ -1361,20 +1638,97 @@ function runGeneration(){
   btn.disabled=true; btn.textContent='Generating…';
   document.getElementById('genSteps').style.display='grid';
   const steps=[...document.querySelectorAll('.gen-step')];
+  const hh=activeHousehold;
+  let narrDone=false, narrOk=false;
+  fetchNarrative(hh).then(function(ok){ narrOk=ok; narrDone=true; });
   let i=0;
+  const finish=()=>{
+    planGenerated=true;
+    planRuns++;
+    backendPost(BACKEND.planWebhook, {household_id: hh, action: 'generated', principal_minutes: 95});
+    addAudit('Plan draft v1 generated — '+HOUSEHOLDS.find(h=>h.id===hh).name,
+      narrOk ? 'Figures: calc layer only · narrative composed live by Claude from the household record · pending approver'
+             : '4 sources · model MHWP-plan-2.3 · figures from calc layer only · pending approver');
+    planStage='draft'; activeScenario='base'; go('plan');
+    toast(narrOk ? 'Draft generated — narrative written live from this household\'s record.' : 'Draft generated. 10-15 hours becomes 90 minutes, and it still looks like your plan.');
+  };
   const tick=()=>{
     if(i>0) steps[i-1].classList.replace('doing','done');
-    if(i<steps.length){ steps[i].classList.add('doing'); i++; setTimeout(tick,650); }
-    else{
-      planGenerated=true;
-      addAudit('Plan draft v1 generated — '+HOUSEHOLDS.find(h=>h.id===activeHousehold).name,'4 sources · model MHWP-plan-2.3 · figures from calc layer only · pending approver');
-      planStage='draft'; activeScenario='base'; go('plan');
-      toast('Draft generated. 10-15 hours becomes 90 minutes, and it still looks like your plan.');
+    if(i<steps.length){
+      steps[i].classList.add('doing'); i++;
+      if(i===4){
+        const started=Date.now();
+        const poll=setInterval(function(){
+          if(narrDone || Date.now()-started>46000){ clearInterval(poll); setTimeout(tick,500); }
+        },300);
+      } else setTimeout(tick,650);
     }
+    else finish();
   };
   tick();
 }
 function setScenario(k){ activeScenario=k; go('plan'); }
+function ctxEdit(el,id){
+  if(el.dataset.o!==undefined && el.dataset.o!==el.innerText){
+    const h=HOUSEHOLDS.find(x=>x.id===id);
+    if(h) h.ctx=el.innerText;
+    addAudit('Household context edited — '+(h?h.name:id),'Advisor annotation captured · feeds the next context assembly');
+    toast('Context updated on the record.');
+  }
+}
+function assumpEdit(el,i){
+  const a=ASSUMPTIONS[i]; if(!a) return;
+  let nv=el.value.trim();
+  if(a[2] && nv.toLowerCase().endsWith(a[2].toLowerCase())) nv=nv.slice(0,-a[2].length).trim();
+  if(el.dataset.o!==undefined && el.dataset.o!==el.value && nv){
+    a[1]=nv; a[3]='Advisor override · was firm default';
+    addAudit('Assumption adjusted — '+a[0]+' → '+nv+(a[2]?' '+a[2]:''),'Advisor override on the face of the plan · re-runs through the calc layer on next generation · narrative never invents figures');
+    toast('Stored. It re-runs through the calc layer on the next generation.');
+  }
+}
+function voiceEdit(el,i){
+  if(el.dataset.o!==undefined && el.dataset.o!==el.innerText){
+    VOICEPRINT[i][1]=el.innerText;
+    addAudit('Voice print tuned — '+VOICEPRINT[i][0],'Applies to the next fan-out · hard constraints unchanged (no forward-looking claims, no invented statistics)');
+    toast('Voice print updated. Next fan-out uses it.');
+  }
+}
+function policyEdit(el,i){
+  if(el.dataset.o!==undefined && el.dataset.o!==el.innerText){
+    POLICIES[i].a=el.innerText;
+    addAudit('Policy answer refined — '+POLICIES[i].q.slice(0,50),'Plain-language layer updated · versioned · applies to every advisor');
+    toast('Policy updated. The whole firm says it the same way now.');
+  }
+}
+function addPolicy(){
+  const q=(document.getElementById('polQ')||{}).value||'';
+  const a=(document.getElementById('polA')||{}).value||'';
+  if(!q.trim()||!a.trim()){ toast('Give it both the question and the answer.'); return; }
+  POLICIES.push({q:q.trim(), a:a.trim()});
+  addAudit('Policy added — '+q.trim().slice(0,60),'New plain-language policy on the layer · versioned · applies firm-wide');
+  toast('Added. It\'s on the layer for every advisor.');
+  refresh();
+}
+function briefEdit(el,i){
+  if(el.dataset.o!==undefined && el.dataset.o!==el.innerText){
+    const tgt = LIVEBRIEF[briefHH] ? LIVEBRIEF[briefHH].items : BRIEFS[briefHH].items;
+    if(tgt && tgt[i]) tgt[i][1] = el.innerText;
+    addAudit('Pre-meeting brief edited — '+BRIEFS[briefHH].t, 'Advisor override captured on the record · original retained in version history');
+    toast('Edit captured on the brief.');
+  }
+}
+function reviewEdit(el){
+  if(el.dataset.o!==undefined && el.dataset.o!==el.innerText){
+    addAudit('Draft edited in review','Advisor edit captured before the decision · phrasing feeds firm-voice tuning');
+    toast('Edit captured. It rides with the approval decision.');
+  }
+}
+function followupEdit(el){
+  if(el.dataset.o!==undefined && el.dataset.o!==el.innerText){
+    addAudit('Follow-up draft edited — Brennan capture','Advisor rewrite captured · still in review queue, not sent');
+    toast('Follow-up updated. Still queued, not sent.');
+  }
+}
 function narrEdit(el){
   if(el.dataset.o!==undefined && el.dataset.o!==el.innerText){
     addAudit('Narrative edit captured — Brennan plan draft v1','Edit stored with the draft · phrasing feeds firm-voice tuning · figures untouched (calc layer only)');
@@ -1383,8 +1737,9 @@ function narrEdit(el){
 }
 function approvePlan(){
   document.getElementById('approverField').textContent = preset==='operator' ? 'Marc A. · Aug 05' : 'Rita C. · Aug 05';
+  backendPost(BACKEND.planWebhook, {household_id: activeHousehold || 'brennan', action: 'approved', approver: preset==='operator' ? 'Marc A.' : 'Rita C.'});
   const e=EXCEPTIONS.find(x=>x.id==='brennanplan');
-  if(e && !e.done){ e.done=true; e.doneTxt='Approved and signed. Deliverable fan-out queued; CRM tasks pushed.'; }
+  if(e && !e.done){ e.done=true; e.doneTxt='Approved and signed. Deliverable fan-out queued; CRM tasks pushed.'; backendPost(BACKEND.exceptionWebhook, {id:'brennanplan', done:true, done_text:e.doneTxt, activate_grant:'', unblock_household:''}); }
   addAudit('Plan draft v1 approved &amp; signed — Brennan household','Named approver on record · deliverable fan-out queued · CRM tasks pushed');
   toast('Approved. Fan-out queued: client doc, review summary, spousal version, checklist, CRM tasks.');
 }
@@ -1414,6 +1769,73 @@ function renderFan(){
     </div>`).join('')}</div>
   <div class="callout" style="margin-top:14px"><b>Nothing publishes itself.</b> Every asset routes through the universal review queue with a named approver. The two flags were caught before they reached you, which is the point.</div>`;
 }
+function fillCustom(t){
+  const inp=document.getElementById('customTitle');
+  if(inp){ inp.value=t; inp.focus(); }
+}
+function customFanOut(){
+  const inp=document.getElementById('customTitle');
+  const title=(inp?inp.value:'').trim();
+  if(!title){ toast('Give it a source title first.'); return; }
+  if(fanBusy) return;
+  if(!BACKEND.enabled || !BACKEND.fanoutWebhook){ toast('Live fan-out needs the backend enabled.'); return; }
+  fanBusy=true; customSrc=title; go('content');
+  toast('Generating twelve assets in the firm voice — 20-30 seconds…');
+  const ctl=new AbortController();
+  const kill=setTimeout(function(){ ctl.abort(); }, 60000);
+  fetch(BACKEND.fanoutWebhook, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title:title, voice_print: VOICEPRINT}), signal: ctl.signal})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      clearTimeout(kill); fanBusy=false;
+      if(d && d.ok && d.assets && d.assets.length){
+        customAssets = d.assets.map(function(a){ return {kind:a.kind, hook:a.hook, body:a.body, status:a.flag?'flag':'clear', flagReason:a.flag_reason||''}; });
+        addAudit('Live content fan-out — "'+title.slice(0,60)+'" → '+customAssets.length+' derived assets','Generated by Claude via n8n · voice print enforced · '+customAssets.filter(function(a){return a.status==='flag';}).length+' flagged to principal review', true);
+        toast('Done. '+customAssets.length+' assets drafted, '+customAssets.filter(function(a){return a.status==='flag';}).length+' flagged for your review.');
+      } else {
+        toast('Generation came back empty — try again or reword the title.');
+      }
+      go('content');
+    })
+    .catch(function(){
+      clearTimeout(kill); fanBusy=false;
+      toast('Live generation timed out or failed. Try again.');
+      go('content');
+    });
+}
+function renderCustomFan(){
+  const flagged=customAssets.filter(function(a){return a.status==='flag';}).length;
+  return `<div class="section-title" style="margin-top:0"><h2>Live fan-out — ${customSrc}</h2>
+    <span style="display:flex;gap:10px;align-items:center"><span class="hint">Generated by Claude · ${flagged} flagged · click any asset to review</span><button class="btn ghost sm" onclick="customAssets=null;go('content')">← Back to Ep. 47</button></span></div>
+  <div class="asset-grid">${customAssets.map((a,i)=>`
+    <div class="asset" role="button" tabindex="0" onclick="openCustomReview(${i})" onkeydown="if(event.key==='Enter')openCustomReview(${i})" style="cursor:pointer;animation-delay:${i*60}ms${a.status==='flag'?';border-color:var(--flag)':''}">
+      <div class="kind">${a.kind}</div>
+      <div class="hook">${a.hook}</div>
+      <div class="body">${a.body}</div>
+      <div class="foot">${a.status==='approved'?'<span class="pill ok">Approved</span>':a.status==='flag'?'<span class="pill flag">Needs your review</span>':'<span class="pill ok">Pre-flight clear</span>'}<span class="mono" style="color:var(--mist)">live · Claude</span></div>
+    </div>`).join('')}</div>
+  <div class="callout" style="margin-top:14px"><b>Same rules as the archive:</b> nothing publishes itself, every asset routes through review with a named approver — including the ones generated live.</div>`;
+}
+function openCustomReview(i){
+  const a=customAssets[i];
+  document.getElementById('rvTitle').textContent=a.kind;
+  document.getElementById('rvNote').innerHTML = a.status==='flag'
+    ? '<b>Why it is in front of you:</b> '+(a.flagReason||'Pre-flight flagged this asset for principal review.')
+    : a.status==='approved' ? '<b>Approved.</b> Named approver on the record.'
+    : '<b>Pre-flight clear.</b> Generated live in your voice from "'+customSrc+'". It only needs your read and your name.';
+  document.getElementById('rvExcerpt').textContent='"'+a.hook+'" — '+a.body;
+  document.getElementById('rvActions').innerHTML = a.status==='approved'
+    ? `<button class="btn ghost" style="justify-content:center" onclick="closeReview()">Close</button>`
+    : (a.status==='flag'
+      ? `<button class="btn primary" style="justify-content:center" onclick="approveCustom(${i},true)">Approve with issue addressed</button><button class="btn ghost" style="justify-content:center" onclick="approveCustom(${i},false)">Approve as written</button><button class="btn ghost" style="justify-content:center" onclick="closeReview()">Not yet</button>`
+      : `<button class="btn primary" style="justify-content:center" onclick="approveCustom(${i},false)">Approve as written</button><button class="btn ghost" style="justify-content:center" onclick="closeReview()">Not yet</button>`);
+  document.getElementById('reviewOverlay').classList.add('on');
+}
+function approveCustom(i, fixed){
+  const a=customAssets[i]; a.status='approved';
+  addAudit('Live asset approved — '+a.kind+' ("'+customSrc.slice(0,40)+'")','Named approver on record'+(fixed?' · flagged issue addressed before approval':'')+' · generated by Claude, approved by a human');
+  toast('Approved. On the record.');
+  closeReview(); refresh();
+}
 function openAssetReview(i){
   const a=ASSETS[i];
   document.getElementById('rvTitle').textContent=a.kind;
@@ -1433,16 +1855,20 @@ function openAssetReview(i){
 function approveAsset(i, gen){
   const a=ASSETS[i]; a.status='approved';
   if(a.calId){ const c=CAL.find(x=>x.id===a.calId); if(c){ c.st='ok'; c.stTxt='Approved · '+(preset==='voice'?'Rita C.':'Marc A.')+(gen?' · example generalized':''); c.reviewable=false; } }
+  backendPost(BACKEND.contentWebhook, a.calId
+    ? {cal_id: a.calId, hook: '', cal_status: 'ok', asset_status: 'approved', status_text: 'Approved · '+(preset==='voice'?'Rita C.':'Marc A.')}
+    : {cal_id: '', hook: a.hook, cal_status: '', asset_status: 'approved', status_text: ''});
   addAudit('Content approved — '+a.kind, 'Named approver on record'+(gen?' · flagged example generalized before approval':'')+' · source: Ep. 47');
   toast(gen?'Approved with the example generalized. On the record.':'Approved. Named approver on the record.');
-  closeReview(); go(currentView);
+  closeReview(); refresh();
 }
 function routeAssetBD(i){
   const a=ASSETS[i]; a.status='bd';
   if(a.calId){ const c=CAL.find(x=>x.id===a.calId); if(c){ c.st='grey'; c.stTxt='At broker-dealer review · disclosure v3.2 attached'; c.reviewable=false; } }
+  backendPost(BACKEND.contentWebhook, {cal_id: a.calId||'', hook: a.calId?'':a.hook, cal_status: 'grey', asset_status: 'bd', status_text: 'At broker-dealer review · disclosure v3.2 attached'});
   addAudit('Routed to broker-dealer review — '+a.kind,'Disclosure v3.2 attached automatically · publish blocked until BD clearance');
   toast('Routed to BD review with the disclosure attached.');
-  closeReview(); go(currentView);
+  closeReview(); refresh();
 }
 function fanOut(){
   TABS.content='studio';
@@ -1452,13 +1878,227 @@ function fanOut(){
   toast('Twelve assets drafted in your voice. Two flagged for your review.');
   go('content');
 }
-function rankLeads(){ leadsRanked=!leadsRanked; if(leadsRanked) addAudit('Nurture queue re-ranked by engagement','342 leads scored on opens, topic affinity, video completion'); go('pipe'); }
+function openLeadReview(name){
+  const l=LEADS.find(x=>x.name===name); if(!l) return;
+  document.getElementById('rvTitle').textContent=l.name+' — '+l.score+' engagement';
+  document.getElementById('rvNote').innerHTML='<b>Why surfaced:</b> '+l.why+'<br><b>Topic affinity:</b> '+l.topics+' · <b>'+l.inN+'</b>';
+  document.getElementById('rvExcerpt').textContent = l.score>=80
+    ? 'Ready for a personal touch. The nurture sequence pauses the moment you reply personally — no double-sends, and the automated cycle only resumes if you tell it to.'
+    : l.score>=40
+    ? 'Warming, not warm. The sequence keeps working this one — topic-matched sends continue on schedule. Nothing for you to do yet; the queue will surface it when behavior changes.'
+    : 'Cold. Candidate for list hygiene at the next quarterly review. No action recommended.';
+  document.getElementById('rvActions').innerHTML =
+    (l.score>=60?`<button class="btn primary" style="justify-content:center" onclick="draftTouch('${l.name.replace(/'/g,"\\'")}');closeReview()">Draft personal touch</button>`:'')
+    +`<button class="btn ghost" style="justify-content:center" onclick="closeReview()">Close</button>`;
+  document.getElementById('reviewOverlay').classList.add('on');
+}
+function draftTouch(name){
+  const l=LEADS.find(x=>x.name===name); if(!l) return;
+  addAudit('Personal touch drafted — '+l.name,'Topic: '+l.topics+' · nurture cycle paused pending advisor reply');
+  toast('Personal touch drafted on '+l.topics.split(' ·')[0]+' — nurture cycle paused pending your reply.');
+}
+function ctxItemEdit(el,i){
+  if(el.dataset.o!==undefined && el.dataset.o!==el.innerText){
+    const arr=CTXITEMS[activeHousehold];
+    if(arr && arr[i]) arr[i].t=el.innerText;
+    const hh=HOUSEHOLDS.find(x=>x.id===activeHousehold);
+    addAudit('Context item edited — '+(hh?hh.name:activeHousehold),'Advisor correction on the record · original retained in version history');
+    toast('Context updated.');
+  }
+}
+function parseTextToCtx(hh, filename, text){
+  if(!BACKEND.enabled || !BACKEND.docparseWebhook){ toast('Document parsing needs the backend enabled.'); return; }
+  text=String(text||'').slice(0,15000);
+  if(text.trim().length<20){ toast('Not enough text to parse.'); return; }
+  docBusy=true; refresh();
+  toast('Parsing '+filename+' — a few seconds…');
+  const ctl=new AbortController();
+  const kill=setTimeout(function(){ ctl.abort(); }, 30000);
+  fetch(BACKEND.docparseWebhook, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({household_id:hh, filename:filename, text:text}), signal: ctl.signal})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      clearTimeout(kill); docBusy=false;
+      if(d && d.ok && d.items && d.items.length){
+        pendingCtx={hh:hh, file:filename, items:d.items};
+        toast(d.items.length+' context items extracted. Review them in the context panel.');
+      } else {
+        toast('Nothing extractable found.');
+      }
+      refresh();
+    })
+    .catch(function(){ clearTimeout(kill); docBusy=false; toast('Parsing failed or timed out — try again.'); refresh(); });
+}
+function handleCtxFile(inp){
+  const f=inp.files && inp.files[0];
+  inp.value='';
+  if(!f) return;
+  if(!/\.(txt|md|csv|log)$/i.test(f.name)){ toast('Text files in the demo (.txt, .md, .csv). PDFs come through the production document pipeline.'); return; }
+  const reader=new FileReader();
+  reader.onload=function(){ parseTextToCtx(activeHousehold, '"'+f.name+'"', reader.result); };
+  reader.readAsText(f);
+}
+function commitParsedCtx(){
+  if(!pendingCtx || !pendingCtx.items.length){ pendingCtx=null; refresh(); return; }
+  const hh=pendingCtx.hh;
+  if(!CTXITEMS[hh]) CTXITEMS[hh]=[];
+  pendingCtx.items.forEach(function(p){
+    CTXITEMS[hh].push({k:p.kind, t:p.content});
+    backendPost(BACKEND.contextWebhook, {household_id:hh, kind:p.kind, content:p.content});
+  });
+  const hhObj=HOUSEHOLDS.find(x=>x.id===hh);
+  addAudit('Document ingested — '+pendingCtx.file+' → '+(hhObj?hhObj.name:hh), pendingCtx.items.length+' context items extracted by Claude, reviewed by advisor, committed to the record');
+  toast(pendingCtx.items.length+' items on the record. The next generated draft can use them.');
+  pendingCtx=null;
+  refresh();
+}
+function addContextItem(){
+  const kind=(document.getElementById('ctxKind')||{}).value||'Note';
+  const text=((document.getElementById('ctxText')||{}).value||'').trim();
+  if(!text){ toast('Paste or type the context first.'); return; }
+  if(!CTXITEMS[activeHousehold]) CTXITEMS[activeHousehold]=[];
+  CTXITEMS[activeHousehold].push({k:kind, t:text});
+  backendPost(BACKEND.contextWebhook, {household_id: activeHousehold, kind: kind, content: text});
+  const hh=HOUSEHOLDS.find(x=>x.id===activeHousehold);
+  addAudit('Context added — '+(hh?hh.name:activeHousehold), kind+': '+text.slice(0,80)+(text.length>80?'…':'')+' · on the record, grounds the next generation');
+  toast('On the record. The next generated draft can use it.');
+  refresh();
+}
+function stageHHFile(inp){
+  const f=inp.files && inp.files[0];
+  inp.value='';
+  if(!f) return;
+  if(!/\.(txt|md|csv|log)$/i.test(f.name)){ toast('Text files in the demo (.txt, .md, .csv). PDFs come through the production document pipeline.'); return; }
+  const reader=new FileReader();
+  reader.onload=function(){
+    stagedHHFile={name:f.name, text:String(reader.result||'').slice(0,12000)};
+    const lbl=document.getElementById('hhFileName');
+    if(lbl) lbl.textContent=f.name+' · will be parsed on create';
+  };
+  reader.readAsText(f);
+}
+function openAddHH(){ stagedHHFile=null; document.getElementById('hhOverlay').classList.add('on'); setTimeout(function(){ const el=document.getElementById('hhName'); if(el) el.focus(); },60); }
+function closeAddHH(){ document.getElementById('hhOverlay').classList.remove('on'); }
+function createHousehold(){
+  const name=(document.getElementById('hhName')||{}).value||'';
+  if(!name.trim()){ toast('Give the household a name first.'); return; }
+  const tag=(document.getElementById('hhTag')||{}).value||'General planning';
+  const office=(document.getElementById('hhOffice')||{}).value||'Orange County, CA';
+  const ctx=(document.getElementById('hhCtx')||{}).value||'Created in workspace · intake pending';
+  let id=name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24);
+  if(!id) id='hh'+Date.now();
+  while(HOUSEHOLDS.some(h=>h.id===id)) id=id+'2';
+  HOUSEHOLDS.push({id:id, name:name.trim(), tag:tag.trim(), office:office.trim(), ctx:ctx.trim(), status:'Context assembled', ready:true});
+  backendPost(BACKEND.householdWebhook, {id:id, name:name.trim(), tag:tag.trim(), office:office.trim(), ctx:ctx.trim()});
+  addAudit('Household created — '+name.trim(), tag.trim()+' · '+office.trim()+' · on the record, ready for a first draft');
+  toast('Created. Context will keep assembling as intake lands.');
+  const paste=((document.getElementById('hhPaste')||{}).value||'').trim();
+  if(document.getElementById('hhPaste')) document.getElementById('hhPaste').value='';
+  let blob='', src='initial notes';
+  if(stagedHHFile){ blob=stagedHHFile.text; src='"'+stagedHHFile.name+'"'; }
+  if(paste.length>=20){ blob=blob?blob+'\n\nADVISOR PASTED NOTES:\n'+paste:paste; if(stagedHHFile) src='"'+stagedHHFile.name+'" + notes'; }
+  stagedHHFile=null;
+  closeAddHH();
+  openPlan(id);
+  if(blob.trim().length>=20) parseTextToCtx(id, src, blob);
+}
+function explainPipeline(){
+  if(pipeBusy) return;
+  if(!BACKEND.enabled || !BACKEND.pipeInsightWebhook){ toast('Live insight needs the backend enabled.'); return; }
+  pipeBusy=true; refresh();
+  const ctl=new AbortController();
+  const kill=setTimeout(function(){ ctl.abort(); }, 30000);
+  fetch(BACKEND.pipeInsightWebhook, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}', signal: ctl.signal})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      clearTimeout(kill); pipeBusy=false;
+      if(d && d.ok && d.insight){
+        pipeInsight=d.insight;
+        addAudit('Pipeline read composed live','Claude via n8n · leads + channel accounting from the record · honest zeros stated as decisions');
+      } else { toast('Insight came back empty — try again.'); }
+      refresh();
+    })
+    .catch(function(){ clearTimeout(kill); pipeBusy=false; toast('Could not reach the record for the pipeline read.'); refresh(); });
+}
+function captureConsent(){
+  const sel=document.getElementById('consentHH');
+  const parts=(sel?sel.value:'').split('|');
+  const opt=sel?sel.options[sel.selectedIndex].text:'';
+  if(parts.length<2) return;
+  const d=new Date();
+  const stamp='Aug '+String(d.getDate()).padStart(2,'0')+' · '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  CONSENTS.unshift({t:'Consent captured — '+opt, s:'Script v2 read · '+parts[1]+' · timestamped '+stamp+' · attached to session'});
+  addAudit('Consent captured — '+opt, 'Script v2 read · '+parts[1]+' · timestamped · attached to session record');
+  toast('Captured, timestamped, on the record.');
+  refresh();
+}
+function genDeliverable(kind){
+  if(delBusy) return;
+  if(!BACKEND.enabled || !BACKEND.deliverableWebhook){ toast('Live deliverables need the backend enabled.'); return; }
+  delBusy=true; refresh();
+  toast('Writing the '+kind.toLowerCase()+' from this household\'s record — a few seconds…');
+  const hh=activeHousehold;
+  const n=NARR[hh]||CANNED_NARR;
+  const narrText=(n.where_you_stand||'')+' '+(n.decision_body||'')+' '+(n.deciding_body||'');
+  const ctl=new AbortController();
+  const kill=setTimeout(function(){ ctl.abort(); }, 35000);
+  fetch(BACKEND.deliverableWebhook, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({household_id:hh, kind:kind, narrative:narrText}), signal: ctl.signal})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      clearTimeout(kill); delBusy=false; refresh();
+      if(d && d.ok && d.body){
+        addAudit('Deliverable generated — '+kind+' ('+(HOUSEHOLDS.find(x=>x.id===hh)||{}).name+')','Written live by Claude from the household record · advisor review before anything is sent');
+        showDeliverable(kind, d.title||kind, d.body);
+      } else { toast('Generation came back empty — try again.'); }
+    })
+    .catch(function(){ clearTimeout(kill); delBusy=false; toast('Deliverable generation timed out — try again.'); refresh(); });
+}
+function showDeliverable(kind, title, body){
+  document.getElementById('rvTitle').textContent=title;
+  document.getElementById('rvNote').innerHTML='<b>Generated live</b> from this household\'s record and the plan narrative. Edit anything below, then download. Nothing sends itself.';
+  const ex=document.getElementById('rvExcerpt');
+  ex.textContent=body;
+  ex.dataset.o=body;
+  document.getElementById('rvActions').innerHTML=
+    `<button class="btn primary" style="justify-content:center" onclick="downloadDeliverable('${escHtml(kind).replace(/'/g,'')}')">Download .md</button>`
+    +`<button class="btn ghost" style="justify-content:center" onclick="closeReview()">Close</button>`;
+  document.getElementById('reviewOverlay').classList.add('on');
+}
+function downloadDeliverable(kind){
+  const body=document.getElementById('rvExcerpt').innerText;
+  const title=document.getElementById('rvTitle').textContent;
+  const blob=new Blob(['# '+title+'\n\n'+body], {type:'text/markdown'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=(title||kind).toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,60)+'.md';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+  addAudit('Deliverable downloaded — '+title,'Advisor-reviewed version · markdown');
+  toast('Downloaded. As-reviewed version, on the record.');
+}
+function exportPlanPdf(){
+  addAudit('Plan draft exported — PDF','Client-ready document · figures from calc layer · narrative as approved on screen');
+  document.body.classList.add('printing-plan');
+  const done=function(){ document.body.classList.remove('printing-plan'); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  setTimeout(function(){ window.print(); }, 60);
+  setTimeout(done, 4000);
+}
+function rankLeads(){
+  leadsRanked=!leadsRanked;
+  if(leadsRanked) addAudit('Nurture queue re-ranked by engagement','342 leads scored on opens, topic affinity, video completion');
+  if(currentView==='pipe'){ refresh(); } else { go('pipe'); }
+}
 function openShare(){ document.getElementById('shareOverlay').classList.add('on'); }
 function closeShare(){ document.getElementById('shareOverlay').classList.remove('on'); }
 function confirmShare(){
   closeShare();
   mayaReleased = true;
-  addAudit('Recording released — Maya Brennan (adult child, verified)','Scope: '+document.getElementById('shScope').value+' · expires '+document.getElementById('shExp').value+' · basis logged · revocable');
+  backendPost(BACKEND.releaseWebhook, {
+    grantee: 'Maya Brennan', relationship: 'adult child',
+    artifact: 'Annual review recording · Jun 12', scope: document.getElementById('shScope').value,
+    expires_on: 'Sep 04', basis: document.getElementById('shBasis').value
+  });
+  addAudit('Recording released — Maya Brennan (adult child, verified)','Scope: '+document.getElementById('shScope').value+' · expires '+document.getElementById('shExp').value+' · basis logged · revocable', true);
   toast('Released. Scoped, expiring, and on the record. Saying yes, safely.');
   if(currentView==='gov'){ TABS.gov='access'; go('gov'); }
 }
@@ -1623,8 +2263,31 @@ function answerQuery(q){
     addAudit('Assistant query answered — RMD triggers','Source: life-event triggers');
     return;
   }
+  if(BACKEND.enabled && BACKEND.askWebhook){ remoteAsk(q); return; }
   botSay("I can't find that in the connected record, and I won't guess — answers here only come from source systems. Try asking about a household, a grant, a deadline, or the pipeline:", null, false, true);
   addAudit('Assistant query — no record match','No answer generated · nothing invented outside source systems');
+}
+function remoteAsk(q){
+  const b=document.getElementById('chatBody');
+  const t=document.createElement('div'); t.className='typing'; t.textContent='Reading the live record…';
+  b.appendChild(t); b.scrollTop=b.scrollHeight;
+  const ctl=new AbortController();
+  const kill=setTimeout(function(){ ctl.abort(); }, 25000);
+  fetch(BACKEND.askWebhook, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question:q}), signal: ctl.signal})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      clearTimeout(kill); t.remove();
+      if(d && d.answer){
+        botSay(d.answer, d.source || 'live record · Claude via n8n');
+        addAudit('Assistant query answered (live) — Claude via n8n','Answered strictly from mhwp tables in Supabase · source cited', true);
+      } else {
+        botSay("The live record didn't return an answer for that. Try a household, a grant, a deadline, or the pipeline:", null, false, true);
+      }
+    })
+    .catch(function(){
+      clearTimeout(kill); t.remove();
+      botSay("Couldn't reach the live record just now — answers here only come from source systems, so I won't guess. Try one of these:", null, false, true);
+    });
 }
 
 /* ================= smart layer ================= */
@@ -1644,7 +2307,7 @@ function suggestionItems(){
     if(vid&&vid.st==='flag') items.push({t:'Review the flagged 60-second video', s:'Pre-flight caught a benefit-amount example', act:"openReview('vid1')"});
     if(adv&&adv.st==='flag') items.push({t:'Route the advisor email to BD review', s:'CE reference — disclosure attaches automatically', act:"openReview('adv1')"});
     if(em&&em.st==='brass') items.push({t:'Approve the blended-family client email', s:'Pre-flight clear; it only needs your read', act:"openReview('email1')"});
-    if(items.length===0) items.push({t:'Fan out another archive source', s:'Ep. 62 on caregiving is indexed and dormant', act:"setTab('content','studio')"});
+    if(items.length===0) items.push({t:'Fan out another archive source', s:'Ep. 62 on caregiving is indexed and dormant', act:"TABS.content='studio';go('content')"});
   }
   return items.slice(0,3);
 }
@@ -1686,7 +2349,7 @@ function buildCommands(){
     {l:'Open the audit trail', k:'audit log record trail', tag:'Assist', run:()=>toggleAudit(true)},
     {l:'Start the demo script', k:'demo script walkthrough beats', tag:'Assist', run:startScript},
     {l:'Switch preset — '+(preset==='operator'?'The Voice':'The Operator'), k:'switch preset operator voice persona', tag:'Action', run:()=>setPreset(preset==='operator'?'voice':'operator')},
-    {l:'Reset demo data', k:'reset reload start over', tag:'Action', run:()=>location.reload()}
+    {l:'Reset demo data', k:'reset reload start over', tag:'Action', run:()=>resetDemo()}
   ];
 }
 let cmdMatches=[];
@@ -1766,9 +2429,109 @@ document.addEventListener('keydown',e=>{
     if(e.key==='ArrowUp'){ e.preventDefault(); cmdIdx=Math.max(cmdIdx-1,0); cmdPaint(); return; }
     if(e.key==='Enter'){ e.preventDefault(); cmdRun(cmdIdx); return; }
   }
-  if(e.key==='Escape'){ closeCmdk(); closeShare(); closeReview(); toggleChat(false); toggleAudit(false); }
+  if(e.key==='Escape'){ closeCmdk(); closeShare(); closeReview(); toggleChat(false); toggleAudit(false); closeMobileNav(); }
 });
 renderAudit();
+
+/* ================= boot from Supabase ================= */
+let LIVEBRIEF = {};
+let briefBusy = false;
+let bootApplied = false;
+function fmtAuditWhen(iso){
+  try{
+    const d=new Date(iso);
+    const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+    return mo+' '+String(d.getDate()).padStart(2,'0')+' · '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }catch(e){ return 'Aug 05'; }
+}
+function applyBootState(d){
+  if(!d || !d.ok || bootApplied) return;
+  bootApplied = true;
+  (d.households||[]).forEach(function(r){
+    const h=HOUSEHOLDS.find(x=>x.id===r.id);
+    if(h){ h.status=r.status; h.ready=!!r.ready; }
+  });
+  const bplan=(d.plans||[]).find(function(p){ return p.household_id==='brennan'; });
+  if(bplan && bplan.status==='approved'){
+    planGenerated=true;
+    const e=EXCEPTIONS.find(x=>x.id==='brennanplan');
+    if(e){ e.done=true; e.doneTxt='Approved and signed ('+(bplan.approver||'named approver')+'). On the record.'; }
+  }
+  (d.calendar||[]).forEach(function(r){
+    const c=CAL.find(x=>x.id===r.id);
+    if(c){ c.st=r.status; c.stTxt=r.status_text; c.reviewable=!!r.reviewable; }
+  });
+  (d.assets||[]).forEach(function(r){
+    const a=ASSETS.find(x=>x.hook===r.hook);
+    if(a && (r.status==='approved'||r.status==='bd')) a.status=r.status;
+  });
+  (d.grants||[]).forEach(function(g){
+    if(g.grantee==='Maya Brennan' && g.status==='active') mayaReleased=true;
+    if(g.grantee==='Rosa Delgado' && g.status==='active') delgadoVerified=true;
+  });
+  (d.exceptions||[]).forEach(function(r){
+    const e=EXCEPTIONS.find(x=>x.id===r.id);
+    if(e && r.done){ e.done=true; e.doneTxt=r.done_text||'Resolved (persisted from a previous session).'; }
+  });
+  if((d.meetings||[]).some(function(m){ return m.household_id==='brennan'; })) meetingCaptured=true;
+  if((d.plans||[]).length) planRuns=Math.max(planRuns,(d.plans||[]).length);
+  if(d.context && d.context.length){
+    const m={};
+    d.context.forEach(function(c){ if(!m[c.household_id]) m[c.household_id]=[]; m[c.household_id].push({k:c.kind, t:c.content}); });
+    CTXITEMS=m;
+  }
+  if((d.audit||[]).length){
+    AUDIT.length=0;
+    d.audit.forEach(function(a){ AUDIT.push({when: fmtAuditWhen(a.at), what: a.what, who: a.detail||''}); });
+    renderAudit();
+  }
+  if(currentView && currentView!=='login') refresh();
+}
+function bootFromBackend(){
+  if(!BACKEND.enabled || !BACKEND.bootWebhook) return;
+  const ctl=new AbortController();
+  const kill=setTimeout(function(){ ctl.abort(); }, 12000);
+  fetch(BACKEND.bootWebhook, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}', signal: ctl.signal})
+    .then(function(r){ return r.json(); })
+    .then(function(d){ clearTimeout(kill); applyBootState(d); })
+    .catch(function(){ clearTimeout(kill); });
+}
+bootFromBackend();
+
+/* ================= reset via backend ================= */
+function resetDemo(){
+  if(!BACKEND.enabled || !BACKEND.resetWebhook){ location.reload(); return; }
+  toast('Reseeding the record to demo start…');
+  const ctl=new AbortController();
+  const kill=setTimeout(function(){ ctl.abort(); location.reload(); }, 8000);
+  fetch(BACKEND.resetWebhook, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({source:'dashboard'}), signal: ctl.signal})
+    .then(function(){ clearTimeout(kill); setTimeout(function(){ location.reload(); }, 400); })
+    .catch(function(){ clearTimeout(kill); location.reload(); });
+}
+
+/* ================= live AI brief ================= */
+function composeBrief(){
+  if(briefBusy) return;
+  if(!BACKEND.enabled || !BACKEND.briefWebhook){ toast('Live briefs need the backend enabled.'); return; }
+  briefBusy=true; refresh();
+  const hh=briefHH;
+  const ctl=new AbortController();
+  const kill=setTimeout(function(){ ctl.abort(); }, 30000);
+  fetch(BACKEND.briefWebhook, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({household_id: hh}), signal: ctl.signal})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      clearTimeout(kill); briefBusy=false;
+      if(d && d.ok && d.brief && d.brief.items && d.brief.items.length===4){
+        LIVEBRIEF[hh]={ s:(d.brief.meeting_line||BRIEFS[hh].s)+' · composed live from the record', items: d.brief.items };
+        addAudit('Pre-meeting brief composed live — '+BRIEFS[hh].t,'Claude via n8n · household record + captured meetings · nothing invented');
+        toast('Brief composed from the live record.');
+      } else {
+        toast('Live brief came back empty — showing the standing one.');
+      }
+      refresh();
+    })
+    .catch(function(){ clearTimeout(kill); briefBusy=false; toast('Could not reach the record — showing the standing brief.'); refresh(); });
+}
 </script>
 </body>
 </html>
