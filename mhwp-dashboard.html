@@ -59,7 +59,11 @@ h1,h2,h3,.serif{font-family:'Libre Caslon Text',serif}
 .card.flush .ai-head{padding:14px 16px 0}
 .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
 input.field,textarea.field,select.field{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;outline:none;transition:border .15s}
-input.field:focus,textarea.field:focus,selecttextarea.field.auto{resize:none;line-height:1.5;overflow:hidden}
+input.field:focus,textarea.field:focus,selecttextarea.field.auto{resize:vertical;line-height:1.6;overflow:auto;font-size:13px}
+.vf-wrap{min-width:0}
+.vf-wrap .lbl{display:flex;align-items:baseline;gap:7px}
+.vf-count{font-weight:500;color:var(--muted);font-size:10px;font-family:'IBM Plex Mono',monospace}
+textarea.vf{max-height:220px}
 .field:focus{border-color:var(--gold)}
 label.lbl{display:block;font-size:12px;font-weight:700;color:var(--slate);margin-bottom:5px;letter-spacing:.02em}
 .help{font-size:12px;color:var(--muted);line-height:1.45}
@@ -247,6 +251,9 @@ table.tbl{width:100%;border-collapse:collapse}
 .tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:18px}
 .tab{padding:9px 16px;font-weight:700;font-size:13.5px;color:var(--muted);border-bottom:2.5px solid transparent;margin-bottom:-2px}
 .tab.on{color:var(--navy);border-bottom-color:var(--gold-bright)}
+.tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 5px;margin-left:6px;border-radius:999px;background:var(--line-soft);color:var(--slate);font-size:10px;font-weight:800;vertical-align:1px}
+.tab.on .tab-count{background:var(--gold);color:#fff}
+.tab-count.zero{display:none}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
 .brief-sec{padding:15px 18px;border-bottom:1px solid var(--line-soft)}
 .brief-sec:last-child{border-bottom:none}
@@ -505,7 +512,11 @@ table.tbl{width:100%;border-collapse:collapse}
 .cal-light .cal-ev-line{color:var(--ink)}
 .cal-light .cal-ev-line:hover{background:#F4F1E8}
 #lrnRows .aud-doc,#audRows .aud-doc,#lrnRows .aud-what>span.one,#audRows .aud-what>span.one{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;min-width:0}
-.aud-head{display:grid;grid-template-columns:170px 1fr auto;gap:18px;padding:8px 20px 6px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.aud-head{display:grid;grid-template-columns:170px 1fr auto;gap:18px;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);background:#FAF8F2;border-bottom:1px solid var(--line)}
+.aud-card{overflow:hidden}
+.aud-card .aud-row{border-bottom:1px solid var(--line-soft);border-radius:0;box-shadow:none;margin:0;background:none}
+.aud-card .aud-row:last-child{border-bottom:none}
+.aud-card .aud-row:hover{background:#FCFAF4}
 .cp-links .ai-item{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;padding:11px 12px;transition:all .12s}
 .cp-links .ai-item:hover{border-color:var(--gold);box-shadow:var(--shadow);transform:translateX(2px)}
 .cp-links .go{color:var(--gold);font-weight:800;font-size:14px}
@@ -518,7 +529,9 @@ table.tbl{width:100%;border-collapse:collapse}
 .tgroup{display:inline-flex;gap:1px;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:#fff}
 .tbtn{padding:6px 10px;font-size:12.5px;color:var(--slate)}
 .tbtn:hover{background:#F3F0E7;color:var(--ink)}
-.tsel{border:none;padding:6px 8px;font-size:12px;width:96px;background:#fff}
+select.field.tsel{width:auto;min-width:104px;border:none;border-radius:0;padding:6px 26px 6px 10px;font-size:12.5px;line-height:1.4;height:auto;background:#fff;color:var(--ink)}
+.doc-toolbar .tgroup{align-items:center}
+.doc-toolbar .tbtn{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px}
 .doc-page blockquote{border-left:3px solid var(--gold);margin:10px 0;padding:4px 14px;color:var(--slate);font-style:italic}
 .ed-wrap.max .doc{max-width:960px;margin:0 auto;box-shadow:var(--shadow-lift)}
 .ed-wrap.max .doc-page{padding:44px 64px;max-width:none;font-size:14px;min-height:70vh}
@@ -605,10 +618,35 @@ table.tbl{width:100%;border-collapse:collapse}
 .pipe-h .cnt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}
 .pipe-h .pill[contenteditable=true]{outline:1.5px dashed rgba(255,255,255,.7);outline-offset:2px;cursor:text}
 .gen-menu.up{bottom:calc(100% + 6px);top:auto}
-.ad-post{background:#fff;font-family:'Public Sans',sans-serif}
+.ad-post{background:#fff;font-family:'Public Sans',sans-serif;display:flex;flex-direction:column;flex:1}
+.ad-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
+.ad-grid.one{grid-template-columns:minmax(0,560px)}
+.ad-grid>.card{display:flex;flex-direction:column}
+.ad-grid .ad-actions{margin-top:auto;padding:0 13px 12px}
+.ad-grid .ad-cta{margin-top:auto}
+body.camp-max .ad-grid{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+body.camp-max .ad-grid.one,.ad-grid.one{grid-template-columns:minmax(0,520px);justify-content:start}
+@media (max-width:1100px){.ad-grid{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}}
 .ad-img{position:relative;min-height:210px;display:flex;flex-direction:column;justify-content:center;padding:16px}
 .chip.red{background:#F6E4E4;color:#A5383E}
 .mem-toggle{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line-soft)}
+.mini-ahead{display:none;border-left:1px solid rgba(255,255,255,.14);padding-left:14px;min-width:0}
+@media (min-width:1500px){.mini-wrap{grid-template-columns:auto 1fr 260px}.mini-ahead{display:block}}
+.ahead-day{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid rgba(255,255,255,.1);padding:7px 2px;cursor:pointer;color:inherit}
+.ahead-day:hover{background:rgba(255,255,255,.07);border-radius:7px}
+.ad-date{display:flex;flex-direction:column;align-items:center;min-width:28px}
+.ad-date b{font-size:14px;line-height:1}
+.ad-date i{font-style:normal;font-size:9px;opacity:.65;letter-spacing:.06em;text-transform:uppercase}
+.ad-body{flex:1;display:flex;flex-direction:column;gap:3px;font-size:11.5px;min-width:0}
+.ad-ev{display:flex;gap:5px;align-items:center;opacity:.9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ad-none{opacity:.45;font-size:11px}
+.notes-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:13px 15px;box-shadow:var(--shadow)}
+.note-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--line-soft)}
+.note-row:last-of-type{border-bottom:none}
+.sync-bar{display:flex;align-items:center;gap:13px;padding:12px 14px;border:1px solid #F5C6B3;background:#FFF6F2;border-radius:11px;margin-bottom:14px;transition:all .15s}
+.sync-bar.off{border-color:var(--line);background:#F7F5EF}
+.modal-x{background:none;border:none;font-size:15px;color:var(--muted);cursor:pointer;padding:6px 8px;border-radius:8px;line-height:1}
+.modal-x:hover{background:var(--line-soft);color:var(--ink)}
 .tgl{width:40px;height:22px;border-radius:999px;background:#CFC8B8;border:none;position:relative;cursor:pointer;transition:background .15s;flex-shrink:0}
 .tgl::after{content:'';position:absolute;top:2.5px;left:3px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .tgl.on{background:var(--navy)}
@@ -688,6 +726,12 @@ body.camp-max #campRail{display:block;position:sticky;top:0;max-height:calc(100v
 .pm-item .ic{width:18px;text-align:center}
 .sec-grip{position:absolute;left:-26px;top:8px;color:#C9C2B4;font-size:13px;cursor:grab;padding:2px 4px;border-radius:5px;opacity:0;transition:opacity .12s}
 .doc-sec:hover .sec-grip{opacity:1}
+.doc-sec[draggable=true]{cursor:grab}
+.doc-sec[draggable=true]:active{cursor:grabbing}
+.doc-sec[draggable=true]:hover{background:#FCFAF4;border-radius:8px}
+.free-tag{position:absolute;right:6px;top:6px;display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:#8A6A1F;background:#FBF3DD;border:1px solid #EBD9A8;border-radius:999px;padding:3px 8px}
+.free-tag button{background:none;border:none;color:#8A6A1F;cursor:pointer;font-size:10px;padding:0 1px}
+.free-tag button:hover{color:var(--red)}
 .sec-grip:hover{background:#F1EDE2;color:var(--slate)}
 .editing .wtitle{outline:1px dashed var(--gold);outline-offset:3px;border-radius:4px;cursor:text}
 .tiles.editing .tile .eyebrow{outline:1px dashed var(--gold);outline-offset:3px;border-radius:4px;cursor:text}
@@ -1080,7 +1124,7 @@ mark.newbit{background:#F4EBD6;border-radius:3px;padding:0 3px;animation:markfad
         <div style="flex:1">
           <h1 id="cdName" style="font-family:'Libre Caslon Text',serif;font-size:24px;font-weight:500"></h1>
           <p class="help" id="cdMeta"></p>
-          <div id="cdNotes" style="margin-top:9px"></div>
+          <div id="cdNotes" style="margin-top:12px;max-width:720px"></div>
         </div>
         <span class="chip gold" id="cdStage" style="align-self:center"></span>
         <button class="btn btn-ghost btn-sm" onclick="openLifeEvents()">🎂 Life events</button>
@@ -1108,6 +1152,7 @@ mark.newbit{background:#F4EBD6;border-radius:3px;padding:0 3px;animation:markfad
 <div class="tiles" id="tiles-delivs"></div>
       <div style="display:flex;align-items:center;margin-bottom:12px">
         <div class="view-toggle"><button class="on" id="dvt-list" onclick="setDlvView('list')">List</button><button id="dvt-pipe" onclick="setDlvView('pipe')">Pipeline</button></div>
+        <button class="btn btn-ghost btn-sm hidden" id="dlvHubBtn" style="margin-left:8px;border-color:#F5C6B3;color:#B4502F" onclick="openDlvHub()">⟳ Sync to HubSpot</button>
         <button class="btn btn-ghost btn-sm hidden" id="dlvEditBtn" style="margin-left:8px" onclick="DLV_EDIT=!DLV_EDIT;this.textContent=DLV_EDIT?'✓ Done':'✎ Edit stages';renderDlvPipe();if(!DLV_EDIT)toast('Stage names saved — the board, list, and editor all follow them')">✎ Edit stages</button>
         <div class="hidden" id="dlvDlWrap" style="position:relative;display:inline-block;margin-left:6px"><button class="btn btn-ghost btn-sm" onclick="$('dlvDlMenu').classList.toggle('open')">⬇ Download ▾</button>
           <div class="gen-menu" id="dlvDlMenu" style="min-width:180px">
@@ -1170,16 +1215,35 @@ mark.newbit{background:#F4EBD6;border-radius:3px;padding:0 3px;animation:markfad
               <button class="tbtn" onclick="exec('redo')" title="Redo">↻</button>
             </span>
             <button class="btn btn-ghost btn-xs" onclick="openAiEdit()">✳ Ask AI</button>
+            <button class="btn btn-ghost btn-xs" onclick="addFreeSection()">＋ Add a section</button>
             <span class="sp" style="flex:1"></span>
             <span class="help">Click a section, then "Add comment"</span>
             <button class="btn btn-ghost btn-xs" id="maxBtn" onclick="toggleMax()">⛶ Maximize</button>
+          </div>
+          <div class="wz-bar hidden" id="edRichBar" style="border-radius:0;border-left:none;border-right:none;border-top:1px solid var(--line);padding:7px 10px">
+            <select onchange="docCmd('fontName',this.value);this.selectedIndex=0"><option>Font</option><option value="Libre Caslon Text">Serif</option><option value="Public Sans">Sans</option><option value="IBM Plex Mono">Mono</option></select>
+            <select onchange="docCmd('fontSize',this.value);this.selectedIndex=0"><option>Size</option><option value="2">Small</option><option value="3">Normal</option><option value="5">Large</option><option value="6">Heading</option></select>
+            <button title="Bold" onclick="docCmd('bold')"><b>B</b></button>
+            <button title="Italic" onclick="docCmd('italic')"><i>I</i></button>
+            <button title="Underline" onclick="docCmd('underline')"><u>U</u></button>
+            <button title="Bulleted list" onclick="docCmd('insertUnorderedList')">•</button>
+            <button title="Numbered list" onclick="docCmd('insertOrderedList')">1.</button>
+            <button title="Left" onclick="docCmd('justifyLeft')">≡</button>
+            <button title="Center" onclick="docCmd('justifyCenter')">☰</button>
+            <span style="width:1px;background:var(--line);margin:0 4px"></span>
+            <button title="Navy" onclick="docCmd('foreColor','#1B2C4A')" style="color:#1B2C4A">A</button>
+            <button title="Gold" onclick="docCmd('foreColor','#8A6A1F')" style="color:#8A6A1F">A</button>
+            <button title="Red flag" onclick="docCmd('foreColor','#A5383E')" style="color:#A5383E">A</button>
+            <button title="Highlight" onclick="docCmd('hiliteColor','#FBF1CF')">▮</button>
+            <button title="Quote block" onclick="docCmd('formatBlock','blockquote')">❝</button>
+            <button title="Clear formatting" onclick="docCmd('removeFormat')">⌫</button>
           </div>
           <div class="doc-page" id="docPage" contenteditable="true" spellcheck="false" oninput="markDirty()"></div>
         </div>
         <div class="ed-side" id="edSide">
           <div class="tabs" style="margin-bottom:10px">
             <button class="tab on" data-t="sources" onclick="edTab('sources')">Sources</button>
-            <button class="tab" data-t="comments" onclick="edTab('comments')">Comments <span class="bdg" id="edCmtBdg" style="background:var(--gold);color:#fff">0</span></button>
+            <button class="tab" data-t="comments" onclick="edTab('comments')">Comments<span class="tab-count" id="edCmtBdg">0</span></button>
             <button class="tab" data-t="history" onclick="edTab('history')">History</button>
           </div>
           <div id="edSideBody"></div>
@@ -1361,9 +1425,46 @@ mark.newbit{background:#F4EBD6;border-radius:3px;padding:0 3px;animation:markfad
 
       <div class="ai-head" style="margin-bottom:8px"><span class="eyebrow">All memories</span><span class="help">The full list behind the topics above</span></div>
       <div class="kb-cats" id="lrnCats"></div>
-      <div class="aud-head"><span>The rule</span><span>Date · Category</span><span>Where it applies · Editor</span></div>
-      <div class="card flush" id="lrnRows"></div>
+      <div class="card flush aud-card">
+        <div class="aud-head"><span>The rule</span><span>Date · Category</span><span>Where it applies · Editor</span></div>
+        <div id="lrnRows"></div>
+      </div>
     </div>
+
+<div class="scrim" id="mDlvHub">
+  <div class="modal wide">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <div style="width:38px;height:38px;border-radius:9px;background:#FF7A59;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px">H</div>
+      <div style="flex:1"><div class="eyebrow">Deliverables → HubSpot</div><h3>Sync documents to the CRM</h3></div>
+      <button class="modal-x" onclick="closeModal('mDlvHub')" title="Close">✕</button>
+    </div>
+    <div class="sync-bar" id="dhAutoRow">
+      <button class="tgl on" id="dhTgl" onclick="this.classList.toggle('on');const on=this.classList.contains('on');$('dhAutoRow').classList.toggle('off',!on);$('dhTitle').textContent=on?'Push on every save — on':'Push on every save — off';toast(on?'Documents write to the CRM as soon as you save or approve':'Paused — push manually from this screen')"></button>
+      <div style="flex:1"><b style="font-size:13px" id="dhTitle">Push on every save — on</b><span class="help" style="display:block">Each document lands on its client's HubSpot record with the stage it is in.</span></div>
+    </div>
+    <div class="two-col" style="align-items:start">
+      <div>
+        <div class="eyebrow" style="margin-bottom:8px">Field mapping — dashboard → HubSpot</div>
+        <p class="help" style="margin-bottom:10px">Pick which HubSpot property each deliverable field writes to. "Don't sync" leaves the property alone.</p>
+        <div id="dhMap"></div>
+      </div>
+      <div>
+        <div class="eyebrow" style="margin-bottom:8px">Documents ready to push</div>
+        <div id="dhDocs"></div>
+        <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:8px" onclick="runDlvHub()">Sync selected →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="mConfirm">
+  <div class="modal">
+    <div class="eyebrow">Confirm</div>
+    <h3 id="cfTitle">Are you sure?</h3>
+    <p class="help" style="margin:8px 0 4px" id="cfBody"></p>
+    <div class="m-foot"><button class="btn btn-ghost" id="cfNo">No, skip it</button><button class="btn btn-gold" id="cfGo">Yes, do it</button></div>
+  </div>
+</div>
 
 <div class="scrim" id="mAddClient">
   <div class="modal wide">
@@ -1457,8 +1558,10 @@ mark.newbit{background:#F4EBD6;border-radius:3px;padding:0 3px;animation:markfad
         <p class="help">The document, when, who, and what changed — click a row to see the detail.</p></div>
         <select class="field" id="audDate" style="max-width:160px" onchange="AUD_DATE=this.value;renderAudit()"></select>
       </div>
-      <div class="aud-head"><span>Document · Client</span><span>Date · Time · Editor</span><span>What changed</span></div>
-      <div class="card" id="audRows"></div>
+      <div class="card flush aud-card">
+        <div class="aud-head"><span>Document · Client</span><span>Date · Time · Editor</span><span>What changed</span></div>
+        <div id="audRows"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1590,7 +1693,7 @@ mark.newbit{background:#F4EBD6;border-radius:3px;padding:0 3px;animation:markfad
   <div class="modal wide">
     <div class="eyebrow">Idea bank</div>
     <h3>Ideas from things you already said</h3>
-    <p class="help" style="margin-bottom:12px">Pulled from client questions this month, unused podcast moments, and topics your audience engaged with.</p>
+    <p class="help" style="margin-bottom:12px">Draft any idea straight into a campaign or an episode. Refresh for a different set — the ones you already drafted stay listed below.</p>
     <div id="ideaList"></div>
     <div class="m-foot"><button class="btn btn-navy" onclick="closeModal('mIdeas')">Close</button></div>
   </div>
@@ -1712,6 +1815,13 @@ mark.newbit{background:#F4EBD6;border-radius:3px;padding:0 3px;animation:markfad
   <div class="modal">
     <div class="eyebrow">Dashboard AI memory</div>
     <h3>Add a rule</h3>
+    <label class="tpl-card" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;margin-top:10px">
+      <input type="file" accept=".docx,.pdf,.md,.txt" style="display:none" onchange="nrIngest(this.files[0]?this.files[0].name:'')">
+      <span style="font-size:20px">📄</span>
+      <span style="flex:1;text-align:left"><b style="font-size:12.5px">Upload a document instead</b><span class="help" style="display:block">The AI reads it, writes the rule, and files it under the right topic automatically.</span></span>
+      <span class="chip gold" style="font-size:10.5px">Ingest</span>
+    </label>
+    <div id="nrIngested" class="hidden" style="margin:10px 0"></div>
     <label class="lbl" style="margin-top:10px">Applies to template</label>
     <select class="field" id="nrTpl" style="margin-bottom:10px" onchange="nrSecs()"></select>
     <label class="lbl">Section</label>
@@ -1797,12 +1907,16 @@ mark.newbit{background:#F4EBD6;border-radius:3px;padding:0 3px;animation:markfad
 
 <div class="scrim" id="mHub">
   <div class="modal xl">
-    <div class="callout" style="margin-bottom:12px;display:flex" id="hubAutoRow">🔄&nbsp;<div style="flex:1"><b>Automatic daily sync — on.</b> New HubSpot contacts arrive every morning and wait below; nothing is added to the dashboard until you approve it. Documents sync back the other way the moment you save or approve an edit.</div><button class="btn btn-ghost btn-xs" onclick="HUB_AUTO=!HUB_AUTO;this.textContent=HUB_AUTO?'On — daily':'Off';toast(HUB_AUTO?'Daily sync on — new contacts wait for your approval each morning':'Daily sync off — pull manually from this screen')">On — daily</button></div>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
       <div style="width:38px;height:38px;border-radius:9px;background:#FF7A59;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px">H</div>
       <div style="flex:1"><div class="eyebrow">CRM Integration</div><h3>HubSpot</h3></div>
-      <span class="chip green">Connected</span><span class="chip grey">One-way · HubSpot → Paragon</span>
-      <button onclick="closeModal('mHub')" style="font-size:16px;color:var(--muted)">✕</button>
+      <span class="chip green">Connected</span><span class="chip grey">Two-way · contacts in, documents out</span>
+      <button class="modal-x" onclick="closeModal('mHub')" title="Close">✕</button>
+    </div>
+    <div class="sync-bar" id="hubAutoRow">
+      <button class="tgl on" id="hubTgl" onclick="hubToggle()"></button>
+      <div style="flex:1"><b style="font-size:13px" id="hubSyncTitle">Automatic daily sync — on</b><span class="help" style="display:block" id="hubSyncSub">New HubSpot contacts arrive every morning and wait below; nothing is added until you approve it. Documents sync back the moment you save or approve an edit.</span></div>
+      <span class="chip green" id="hubSyncChip">Live</span>
     </div>
     <p class="help" style="margin-bottom:14px">Last synced <b id="hubLast">Aug 11, 2026 · 07:00</b> · sample data from your Sales Pipeline</p>
     <div class="two-col" style="align-items:start">
@@ -2315,11 +2429,25 @@ function calMini(){
     cells+=`<button class="mini-d ${sel?'sel':''} ${isToday(CAL.m,n)?'tdy':''}" onclick="CAL.sel={m:${CAL.m},n:${n}};renderHome();renderCalModal()">${n}${has?'<i></i>':''}</button>`;
   }
   const evs=(EVS[CAL.sel.m]||{})[CAL.sel.n]||[];
+  const ahead=[];
+  let mm=CAL.sel.m,nn=CAL.sel.n;
+  for(let k=0;k<4;k++){
+    nn++;
+    if(nn>CALM[mm].days){nn=1;mm=Math.min(mm+1,CALM.length-1);}
+    ahead.push({m:mm,n:nn,evs:(EVS[mm]||{})[nn]||[]});
+  }
   return `<div class="mini-wrap">
     <div class="mini-cal"><div class="mini-head">${CALM[CAL.m].name}</div><div class="mini-grid">${cells}</div></div>
     <div class="mini-agenda">
       <div class="mini-head">${dowFor(CAL.sel.n,CAL.sel.m)}, ${CALM[CAL.sel.m].name.split(' ')[0]} ${CAL.sel.n}${isToday(CAL.sel.m,CAL.sel.n)?' · Today':''}</div>
       ${evs.length?evs.map(e=>`<button class="cal-ev-line" onclick="${e.go}"><i class="evdot ${e.k}"></i><span>${e.t}</span></button>`).join(''):'<p class="cal-empty" style="padding:6px 4px">Nothing scheduled — a quiet day.</p>'}
+    </div>
+    <div class="mini-ahead">
+      <div class="mini-head">Coming up</div>
+      ${ahead.map(d2=>`<button class="ahead-day" onclick="CAL.sel={m:${d2.m},n:${d2.n}};renderHome();renderCalModal()">
+        <span class="ad-date"><b>${d2.n}</b><i>${dowFor(d2.n,d2.m).slice(0,3)}</i></span>
+        <span class="ad-body">${d2.evs.length?d2.evs.map(e=>`<span class="ad-ev"><i class="evdot ${e.k}"></i>${esc(e.t)}</span>`).join(''):'<span class="ad-none">Clear</span>'}</span>
+      </button>`).join('')}
     </div>
   </div>`;
 }
@@ -2719,7 +2847,7 @@ function renderPipe(){
   const q=($('pipeSearch').value||'').toLowerCase();
   $('c360Pipe').innerHTML=`<div class="pipe">${PIPE_STAGES.map((st,si)=>{
     const cards=CLIENTS.filter(c=>c.status===st.n&&(!q||(c.name+' '+c.line+' '+c.adv).toLowerCase().includes(q)));
-    return `<div class="pipe-col" ondragover="pipeOver(event)" ondragleave="wgDragLeave(event)" ondrop="pipeDrop(event,${si})">
+    return `<div class="pipe-col" ondragover="pipeOver(event)" ondragenter="pipeOver(event)" ondragleave="wgDragLeave(event)" ondrop="pipeDrop(event,${si})">
       <div class="pipe-h"><span class="pill" style="background:${st.c}" ${STAGE_EDIT?`contenteditable="true" spellcheck="false" onclick="event.stopPropagation()" onblur="renameStage(${si},this.textContent.trim())"`:''}>${esc(st.n)}</span><span class="cnt">${cards.length}</span>${STAGE_EDIT?'<span class="help" style="font-size:9.5px">click name to rename</span>':''}</div>
       ${cards.map(c=>`<div class="pipe-card" draggable="true" ondragstart="pipeDragStart(event,'${c.id}')" ondragend="wgDragEnd(event)" onclick="openClientDrawer('${c.id}')">
         <b>${esc(c.name)}</b>
@@ -2751,6 +2879,7 @@ function addStage(){
   PIPE_STAGES.push({n,c:'#5E6C82'});
   renderPipe();toast('Stage added — drag clients into it');
 }
+const DLV_STAGE_ACT={'Internal review':'Send it to R. Okafor for internal review','Client review':'Send the draft to the client for review','Approved':'File it in the client folder and log it to HubSpot'};
 const STAGE_DELIV={'Client Consultation':'Pre-Meeting Brief','Client Onboarding':'Discovery Summary','Client Quarterly Report':'Quarterly Portfolio Review','Client Financial Plan':'Cash Deployment Plan'};
 function openStageReport(){
   $('rptStage').innerHTML=['All stages',...PIPE_STAGES.map(st=>st.n)].map(x=>`<option>${x}</option>`).join('');
@@ -2800,7 +2929,7 @@ function pipeDragStart(e,id){
   e.currentTarget.classList.add('dragging');
   if(e.dataTransfer){e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain','pipe')}catch(_){}}
 }
-function pipeOver(e){if(!DRAG||DRAG.kind!=='pipe')return;e.preventDefault();e.currentTarget.classList.add('drop-hint');}
+function pipeOver(e){if(!DRAG||(DRAG.kind!=='pipe'&&DRAG.kind!=='dlv'))return;e.preventDefault();e.currentTarget.classList.add('drop-hint');}
 function pipeDrop(e,si){
   if(e&&e.preventDefault)e.preventDefault();
   if(!DRAG||DRAG.kind!=='pipe')return;
@@ -2944,18 +3073,32 @@ function renderCdNotes(){
   const c=clientBy(S.client);if(!c)return;
   const notes=c.notes||[];
   $('cdNotes').innerHTML=`
-    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
-      ${notes.map(n=>`<span class="chip ${n.kind==='reminder'?'amber':'grey'}" style="font-weight:600">${n.kind==='reminder'?'⏰ ':'📝 '}${esc(n.text)}${n.due?' · '+esc(n.due):''}</span>`).join('')}
-      <input class="field" id="cdNoteIn" placeholder="Add a note about ${esc(c.name.split(' ')[0])}…" style="padding:6px 10px;font-size:12px;max-width:240px" onkeydown="if(event.key==='Enter')addCdNote()">
-      <button class="btn btn-ghost btn-xs" onclick="addCdNote()">＋ Note</button>
-      <span class="help" style="font-size:10.5px">⟳ Two-way with HubSpot — notes here mirror the CRM record</span>
+    <div class="notes-card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+        <span class="eyebrow" style="flex:1">Notes on ${esc(c.name.split(' ')[0])}</span>
+        <span class="chip grey" style="font-size:10px">${notes.length} note${notes.length===1?'':'s'}</span>
+        <span class="chip" style="font-size:10px;background:#FFF1EC;color:#B4502F">⟳ Two-way with HubSpot</span>
+      </div>
+      ${notes.length?notes.map((n,ni)=>`<div class="note-row">
+        <span style="font-size:13px">${n.kind==='reminder'?'⏰':'📝'}</span>
+        <span class="kb-sum" style="flex:1;margin:0;font-size:12.5px" contenteditable="true" spellcheck="false" onblur="clientBy(S.client).notes[${ni}].text=this.textContent.trim();toast('Note updated — mirrored to the CRM record')">${esc(n.text)}</span>
+        ${n.due?`<span class="chip amber" style="font-size:10px">${esc(n.due)}</span>`:''}
+        <span class="help" style="font-size:10px">${esc(n.by||'Kaeser')} · ${esc(n.at||'Aug 12')}</span>
+        <button class="btn btn-ghost btn-xs" onclick="clientBy(S.client).notes.splice(${ni},1);renderCdNotes();toast('Note removed')">✕</button>
+      </div>`).join(''):'<p class="help" style="padding:4px 2px 8px">No notes yet. Anything you write here shows on the brief and mirrors to HubSpot.</p>'}
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <input class="field" id="cdNoteIn" placeholder="Add a note about ${esc(c.name.split(' ')[0])}…" style="flex:1;padding:8px 11px;font-size:12.5px" onkeydown="if(event.key==='Enter')addCdNote()">
+        <button class="btn btn-ghost btn-sm" onclick="addCdNote('reminder')">⏰ Reminder</button>
+        <button class="btn btn-gold btn-sm" onclick="addCdNote()">＋ Note</button>
+      </div>
     </div>`;
 }
-function addCdNote(){
+function addCdNote(kind){
   const c=clientBy(S.client);
   const t=$('cdNoteIn').value.trim();if(!t){toast('Write the note first',false);return;}
-  c.notes=c.notes||[];c.notes.push({kind:'note',text:t});
-  renderCdNotes();toast('Note saved — internal only, it never reaches a client document');
+  c.notes=c.notes||[];c.notes.push({kind:kind==='reminder'?'reminder':'note',text:t,by:'Kaeser',at:'Aug 13',due:kind==='reminder'?'Due Aug 20':''});
+  $('cdNoteIn').value='';
+  renderCdNotes();toast(kind==='reminder'?'Reminder set — it shows on the brief and syncs to HubSpot':'Note saved — mirrored to the CRM record');
 }
 function addCdEvent(){
   const c=clientBy(S.client);
@@ -3017,12 +3160,12 @@ function renderCdBody(){
         return `<div class="tp"><div style="flex:1"><b>${esc(d)}</b><span>${real?real.ver+' · last modified '+real.upd:'Approved and sent · in the client file'}</span></div>
         ${real?`<span class="chip ${real.status==='Approved'?'green':'amber'}" style="align-self:center">${real.status==='Approved'?'Approved':'Under review'}</span><button class="btn btn-ghost btn-xs" style="align-self:center" onclick="openDeliv('${real.id}')">Open in editor</button><button class="btn btn-ghost btn-xs" style="align-self:center" onclick="shareDeliv('${real.id}')" title="Send in team chat">Share</button>`:`<span class="chip green" style="align-self:center">Approved</span><button class="btn btn-ghost btn-xs" style="align-self:center" onclick="toast('Opens the filed PDF')">Open</button>`}</div>`;
       }).join('')}
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <div class="eyebrow" style="margin:6px 0 8px">Communications run for ${esc(c.name.split(' ')[0])}</div>
       <div class="tbl-wrap" style="margin-bottom:12px"><table class="tbl"><thead><tr><th>Communication</th><th>Template used</th><th>Last run</th><th>Completed</th><th>CRM</th></tr></thead><tbody>
         ${comms.map(x=>`<tr><td><b>${x[0]}</b></td><td style="color:var(--muted)">${x[1]}</td><td class="mono" style="font-size:11px">${x[2]}</td><td class="mono" style="font-size:11px">${x[3]}</td><td>${x[4]?'<span class="chip" style="background:#FFF1EC;color:#B4502F">⟳ Synced</span>':'<span class="help">—</span>'}</td></tr>`).join('')}
       </tbody></table></div>
-      <button class="btn btn-gold btn-sm" onclick="nav('templates')">＋ Build something new for ${esc(c.name.split(' ')[0])}</button>
+      <button class="btn btn-gold btn-sm" style="flex:0 0 auto;align-self:center;white-space:nowrap" onclick="openBuild()">＋ Build something new for ${esc(c.name.split(' ')[0])}</button>
         <div style="position:relative">
           <button class="btn btn-ghost btn-sm" id="linkBtn" onclick="$('linkMenu').classList.toggle('open')">🔗 Link an existing deliverable ▾</button>
           <div class="gen-menu" id="linkMenu">
@@ -3134,7 +3277,7 @@ function mtgTab(){
 let AC={mode:'one',cols:[],rows:[],file:''};
 const AC_FIELDS=['Client name','Service line','Assets','Advisor','Pipeline stage','Next meeting',"Don't import"];
 function openAddClient(){
-  AC={mode:'one',cols:[],rows:[],file:''};
+  AC={mode:'one',cols:[],rows:[],file:'',confirmed:false};
   acMode('one');
   $('acStage').innerHTML=PIPE_STAGES.map(st=>`<option>${st.n}</option>`).join('');
   ['acName','acAum','acNext'].forEach(id=>$(id).value='');
@@ -3184,6 +3327,14 @@ function acCommit(){
     const name=$('acName').value.trim();
     if(!name){toast('Give the client a name first',false);return;}
     const sync=$('acSync').classList.contains('on');
+    if(sync&&!AC.confirmed){
+      $('cfTitle').textContent='Create '+name.split(' ')[0]+' in HubSpot too?';
+      $('cfBody').innerHTML=`This writes a new contact to your live CRM using the field mapping on the sync screen — name, service line, assets, advisor, and pipeline stage all go across. It cannot be undone from the dashboard.`;
+      $('cfGo').onclick=()=>{closeModal('mConfirm');AC.confirmed=true;acCommit();};
+      $('cfNo').onclick=()=>{closeModal('mConfirm');$('acSync').classList.remove('on');toast('HubSpot sync turned off for this one — add it again when you are ready');};
+      openModal('mConfirm');return;
+    }
+    AC.confirmed=false;
     const c2={id:'c'+(CLIENTS.length+1)+'-'+Date.now().toString().slice(-4),name,line:$('acLine').value,aum:$('acAum').value.trim()||'—',adv:$('acAdv').value,status:$('acStage').value,next:$('acNext').value.trim()||'—',last:'—',tier:'Private Client',goals:'Captured at the first consultation.',events:[],deliv:[],hub:sync};
     const st=PIPE_STAGES.find(x=>x.n===c2.status);
     c2.flag=st&&st.n==='Client Quarterly Report'?'green':'amber';
@@ -3196,6 +3347,14 @@ function acCommit(){
     return;
   }
   if(!AC.rows.length){toast('Upload or pick a CSV first',false);return;}
+  if($('acCsvSync').classList.contains('on')&&!AC.confirmed){
+    $('cfTitle').textContent='Create '+AC.rows.length+' contacts in HubSpot?';
+    $('cfBody').innerHTML='Every row you import is written to your live CRM with the mapping above. Existing contacts with the same name are updated, not duplicated.';
+    $('cfGo').onclick=()=>{closeModal('mConfirm');AC.confirmed=true;acCommit();};
+    $('cfNo').onclick=()=>{closeModal('mConfirm');$('acCsvSync').classList.remove('on');toast('Importing to the dashboard only — HubSpot untouched');};
+    openModal('mConfirm');return;
+  }
+  AC.confirmed=false;
   const map={};document.querySelectorAll('.ac-map-sel').forEach(sel=>{map[sel.dataset.col]=sel.value;});
   const idx=f2=>Object.keys(map).find(k=>map[k]===f2);
   const ni=idx('Client name');
@@ -3397,6 +3556,7 @@ function openCampaign(id){
 function toggleCampMax(){
   const on=!document.body.classList.contains('camp-max');
   document.body.classList.toggle('camp-max',on);
+  if(!on)CAMP.focusOne=false;
   $('campMaxBtn').textContent=on?'✓ Done editing':'✎ Edit';
   $('campMaxBtn').className='btn btn-sm '+(on?'btn-ghost':'btn-gold');
   if(on&&RAIL.target===null)RAIL.target=0;
@@ -3429,7 +3589,7 @@ function adPostHtml(a,i,small){
     <div style="padding:0 13px 9px;font-size:12px;line-height:1.55">${(CAMP._exp&&CAMP._exp[a.id])||a.primary.length<=120?(a.html||esc(a.primary))+(a.primary.length>120?` <span style="color:var(--muted);cursor:pointer;font-weight:600" onclick="event.stopPropagation();CAMP._exp['${a.id}']=false;renderCampaign();if($('mAdFocus').classList.contains('open'))afLive()">See less</span>`:''):esc(a.primary.slice(0,120))+`<span style="color:var(--muted);cursor:pointer;font-weight:600" onclick="event.stopPropagation();CAMP._exp=CAMP._exp||{};CAMP._exp['${a.id}']=true;renderCampaign();if($('mAdFocus').classList.contains('open'))afLive()"> …see more</span>`}</div>
     ${a.srcLine?`<div style="padding:0 13px 9px"><span style="display:block;border-left:2px solid var(--gold);padding:5px 9px;background:#FCFAF4;border-radius:6px;font-size:11.5px;color:#7A5B18">${esc(a.srcLine)}</span></div>`:''}
     ${adImgHtml(a,small)}
-    <div style="display:flex;align-items:center;gap:8px;padding:9px 13px;border-top:1px solid var(--line-soft);background:#FAF8F2">
+    <div class="ad-cta" style="display:flex;align-items:center;gap:8px;padding:9px 13px;border-top:1px solid var(--line-soft);background:#FAF8F2;min-height:58px">
       <div style="flex:1"><span class="mono" style="font-size:9.5px;color:var(--muted)">HALCYONWEALTH.COM</span><b style="display:block;font-size:12px">Book your free 20-minute Retirement Readiness Check</b></div>
       <span class="btn btn-ghost btn-sm" style="pointer-events:none">${esc(a.cta)}</span>
     </div>
@@ -3446,7 +3606,11 @@ function renderCampaign(bodyOnly){
   if(!bodyOnly){renderCampCards();renderCampSrcStrip();renderCampRail();}
   const B=$('campBody');
   if(CAMP.step==='ads'){
-    B.innerHTML=`<div class="tpl-grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${CAMP.ads.map((a,i)=>`
+    const editing=document.body.classList.contains('camp-max')&&CAMP.focusOne;
+    const picked=CAMP.picked!==undefined&&CAMP.picked!==null;
+    const shown=picked?[CAMP.ads[CAMP.picked]]:(editing?[CAMP.ads[RAIL.target||0]]:CAMP.ads);
+    B.innerHTML=`${editing&&!picked?`<div class="src-strip" style="margin-bottom:12px"><span style="flex:1"><b style="font-size:12.5px">Editing ${esc(CAMP.ads[RAIL.target||0].label)}</b> <span class="help">— the panel on the right drives this preview.</span></span><button class="btn btn-ghost btn-sm" onclick="CAMP.focusOne=false;renderCampaign()">Show all three</button></div>`:''}${picked?`<div class="src-strip" style="margin-bottom:12px"><span style="flex:1"><b style="font-size:12.5px">${esc(CAMP.ads[CAMP.picked].label)} is the selected creative.</b> <span class="help">The other two are parked — nothing is deleted.</span></span><button class="btn btn-ghost btn-sm" onclick="unpickVariant()">↺ Bring the other variants back</button></div>`:''}
+    <div class="ad-grid ${picked||editing?'one':''}">${shown.map(a=>{const i=CAMP.ads.indexOf(a);return `
       <div class="card flush" style="overflow:hidden">
         ${adPostHtml(a,i,true)}
         ${srcChips(a)}
@@ -3455,12 +3619,16 @@ function renderCampaign(bodyOnly){
           <span class="chip ${a.status==='Approved'?'green':a.status==='Denied'?'red':'grey'}">${a.status.toUpperCase()}</span>
         </div>
         ${a.why?`<p class="help" style="padding:0 13px 8px;font-size:11px;line-height:1.5"><b style="color:var(--slate)">Why this one:</b> ${esc(a.why)}</p>`:''}
-        <div style="display:flex;gap:6px;padding:0 13px 12px">
-          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="enterEdit(${i})">✎ Edit</button>
-          <button class="btn btn-navy btn-sm" style="flex:1" onclick="adApprove(${i})">✓ Approve</button>
-          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openAdDeny(${i})">✕ Deny</button>
+        <div class="ad-actions">
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="enterEdit(${i})">✎ Edit</button>
+            <button class="btn btn-navy btn-sm" style="flex:1" onclick="adApprove(${i})">✓ Approve</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openAdDeny(${i})">✕ Deny</button>
+          </div>
+          ${CAMP.picked===i?`<button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:6px" onclick="unpickVariant()">↺ Bring the other variants back</button>`
+            :`<button class="btn btn-gold btn-sm" style="width:100%;justify-content:center;margin-top:6px" onclick="pickVariant(${i})">★ Use this variant</button>`}
         </div>
-      </div>`).join('')}</div>
+      </div>`;}).join('')}</div>
     <p class="help" style="margin-top:10px">Deny asks for a reason — the reason is fed back into the next generation run so the AI learns your taste. Approving posts the ad to ${CAMP.feed==='li'?'LinkedIn':'Meta'}.</p>`;
     return;
   }
@@ -3542,6 +3710,17 @@ function sfRevert(){
   if(st.orig)st.data=JSON.parse(JSON.stringify(st.orig));
   openStepFocus(SF.step);toast('Back to the AI original');
 }
+function pickVariant(i){
+  CAMP.picked=i;RAIL.target=i;
+  renderCampaign();
+  AUDIT.unshift({who:'Kaeser',doc:'Campaign — '+CAMP.name,when:'Aug 13, 2026 · 10:10',what:CAMP.ads[i].label+' selected as the creative to run',detail:'The other two variants are parked and can be brought back at any time.'});
+  renderAudit();
+  toast(CAMP.ads[i].label+' selected — the other two are parked, not deleted');
+}
+function unpickVariant(){
+  CAMP.picked=null;renderCampaign();
+  toast('All three variants are back');
+}
 function adApprove(i){
   const a=CAMP.ads[i];a.status='Approved';renderCampaign();
   AUDIT.unshift({who:'Kaeser',doc:'Campaign — '+a.label,when:'Aug 13, 2026 · 09:05',what:'Ad approved and posted to '+(CAMP.feed==='li'?'LinkedIn':'Meta'),detail:'Creative: '+a.style+' · CTA "'+a.cta+'"'});
@@ -3572,7 +3751,7 @@ function adDenySave(){
   toast('Feedback saved — the next run generates with this in mind');
 }
 let RAIL={target:0,tab:'text'};
-function railPick(t){RAIL.target=t;renderCampRail();}
+function railPick(t){RAIL.target=t;renderCampaign();}
 function railTab(t){RAIL.tab=t;renderCampRail();}
 function renderCampRail(){
   if(!$('campRailInner'))return;
@@ -3686,7 +3865,7 @@ function rzReprompt(i){
 }
 let AF={i:0};
 function enterEdit(target){
-  if(typeof target==='number'){CAMP.step='ads';RAIL.target=target;RAIL.tab='text';}
+  if(typeof target==='number'){CAMP.step='ads';RAIL.target=target;RAIL.tab='text';CAMP.focusOne=true;}
   if(!document.body.classList.contains('camp-max'))toggleCampMax();
   else renderCampaign();
 }
@@ -3776,13 +3955,14 @@ function setDlvView(v){
   $('dlvPipe').classList.toggle('hidden',v!=='pipe');
   $('dlvHint').textContent=v==='pipe'?'Drag a document between stages · add your own stages on the right':'';
   $('dlvEditBtn').classList.toggle('hidden',v!=='pipe');
+  $('dlvHubBtn').classList.toggle('hidden',v!=='pipe');
   $('dlvDlWrap').classList.toggle('hidden',v!=='pipe');
   if(v==='pipe')renderDlvPipe();
 }
 function renderDlvPipe(){
   $('dlvPipe').innerHTML=`<div class="pipe">${DLV_STAGES.map((st,si)=>{
     const cards=DELIVS.filter(d2=>d2.stage===st.n);
-    return `<div class="pipe-col" ondragover="pipeOver(event)" ondragleave="wgDragLeave(event)" ondrop="dlvDrop(event,${si})">
+    return `<div class="pipe-col" ondragover="pipeOver(event)" ondragenter="pipeOver(event)" ondragleave="wgDragLeave(event)" ondrop="dlvDrop(event,${si})">
       <div class="pipe-h"><span class="pill" style="background:${st.c}" ${DLV_EDIT?`contenteditable="true" spellcheck="false" onclick="event.stopPropagation()" onblur="renameDlvStage(${si},this.textContent.trim())"`:''}>${esc(st.n)}</span><span class="cnt">${cards.length}</span>${DLV_EDIT?'<span class="help" style="font-size:9.5px">click name to rename</span>':''}</div>
       ${cards.map(d2=>`<div class="pipe-card" draggable="true" ondragstart="dlvDragStart(event,'${d2.id}')" ondragend="wgDragEnd(event)" onclick="openDeliv('${d2.id}')">
         <b>${esc(d2.title)}</b><div class="help">${esc(d2.client.split('(')[0].trim())}</div><div class="help">${esc(d2.ver)} · ${esc(d2.upd)}</div>
@@ -3809,6 +3989,28 @@ function renameDlvStage(si,n){
   AUDIT.unshift({who:'Kaeser',doc:'Deliverable pipeline',when:'Aug 13, 2026 · 09:42',what:'Stage renamed: "'+old+'" → "'+n+'"',detail:'Board, list stage chips, and the editor stage menu all use the new name.'});
   renderAudit();
 }
+const DLV_HUB_FIELDS=[['Document title','note_title'],['Client','associated_contact'],['Template used','deal_type'],['Stage','dealstage'],['Version','note_version'],['Last modified','hs_lastmodifieddate'],['Owner','hubspot_owner_id']];
+const DH_MAP={};
+function openDlvHub(){
+  const props=['note_title','associated_contact','deal_type','dealstage','note_version','hs_lastmodifieddate','hubspot_owner_id',"Don't sync"];
+  $('dhMap').innerHTML=DLV_HUB_FIELDS.map(([f,p],i)=>`<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line-soft)">
+    <span style="width:130px;font-size:12.5px;font-weight:700">${f}</span><span style="color:var(--muted)">→</span>
+    <select class="field dh-sel" style="flex:1;padding:5px 7px;font-size:11.5px" data-f="${esc(f)}" onchange="DH_MAP['${esc(f)}']=this.value">${props.map(x=>`<option ${((DH_MAP[f]||p)===x)?'selected':''}>${x}</option>`).join('')}</select>
+  </div>`).join('');
+  $('dhDocs').innerHTML=DELIVS.slice(0,5).map((d2,i)=>`<button class="checkrow ${i<3?'on':''}" style="margin-bottom:6px" onclick="this.classList.toggle('on')">
+    <span class="cb">✓</span><span style="flex:1;text-align:left"><b style="font-size:12.5px">${esc(d2.title)}</b><br><span class="help">${esc(d2.client)} · ${esc(d2.ver)} · ${esc(d2.stage||'Drafting')}</span></span>
+  </button>`).join('');
+  openModal('mDlvHub');
+}
+function runDlvHub(){
+  const n=$('dhDocs').querySelectorAll('.checkrow.on').length;
+  if(!n){toast('Tick at least one document',false);return;}
+  const mapped=DLV_HUB_FIELDS.filter(([f])=>(DH_MAP[f]||'')!=="Don't sync").length;
+  closeModal('mDlvHub');
+  AUDIT.unshift({who:'Kaeser',doc:'Client Deliverables',when:'Aug 13, 2026 · 09:18',what:n+' document'+(n===1?'':'s')+' pushed to HubSpot',detail:mapped+' fields mapped · each document attached to its client record with the current stage'});
+  renderAudit();
+  toast(n+' document'+(n===1?'':'s')+' written to the HubSpot records');
+}
 function downloadDlvReport(fmt){
   fmt=fmt||'csv';
   let csv='Stage,Document,Client,Template,Version,Last modified\n';
@@ -3831,12 +4033,28 @@ function downloadDlvReport(fmt){
 function dlvDragStart(e,id){DRAG={kind:'dlv',id};e.currentTarget.classList.add('dragging');if(e.dataTransfer){e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain','dlv')}catch(_){}}}
 function dlvDrop(e,si){
   if(e&&e.preventDefault)e.preventDefault();
+  if(e&&e.currentTarget&&e.currentTarget.classList)e.currentTarget.classList.remove('drop-hint');
   if(!DRAG||DRAG.kind!=='dlv')return;
   const d2=delivBy(DRAG.id),st=DLV_STAGES[si];
   d2.stage=st.n;if(st.n==='Approved'){d2.status='Approved';d2.ver='Final';}
   DRAG=null;renderDlvPipe();renderDelivs();
-  AUDIT.unshift({who:'Kaeser',doc:d2.title+' — '+d2.client.split(' ')[0],when:'Aug 11, 2026 · 09:15',what:'Moved to "'+st.n+'" on the deliverables pipeline by Kaeser'});
-  renderAudit();toast('Moved to '+st.n);
+  AUDIT.unshift({who:'Kaeser',doc:d2.title+' — '+d2.client.split(' ')[0],when:'Aug 13, 2026 · 09:15',what:'Moved to "'+st.n+'" on the deliverables pipeline by Kaeser'});
+  renderAudit();
+  const act=DLV_STAGE_ACT[st.n];
+  if(act){
+    $('srTitle').textContent=d2.title+' moved to '+st.n;
+    $('srSub').textContent='This stage runs one step automatically: '+act.toLowerCase()+'. Pick what goes with it before it runs.';
+    $('srSrcs').innerHTML=[['The current draft','Version '+d2.ver],['Open comments','Anything unresolved travels with it'],['Update the HubSpot record','Stage + last-modified written to the CRM']].map(x=>`<button class="checkrow on" style="margin-bottom:6px" onclick="this.classList.toggle('on')"><span class="cb">✓</span><span style="flex:1;text-align:left"><b style="font-size:12.5px">${x[0]}</b><br><span class="help">${x[1]}</span></span></button>`).join('');
+    $('srRun').onclick=()=>{
+      const n=$('srSrcs').querySelectorAll('.checkrow.on').length;
+      closeModal('mStageRun');
+      AUDIT.unshift({who:'Kaeser',doc:d2.title+' — '+d2.client.split(' ')[0],when:'Aug 13, 2026 · 09:16',what:act,detail:n+' item'+(n===1?'':'s')+' travelled with it · HubSpot record updated with the new stage'});
+      renderAudit();toast(act);
+    };
+    openModal('mStageRun');
+    return;
+  }
+  toast('Moved to '+st.n);
 }
 
 /* ================= DELIVERABLES + EDITOR ================= */
@@ -3920,7 +4138,7 @@ function doTplRefresh(auto){
 function renderDoc(){
   const id=S.deliv,on=SOURCES[id].filter(s=>s.on).map(s=>s.adds);
   const blocks=(DRAFT_BLOCKS[id]||[]).filter(b=>!b.src||on.includes(b.src));
-  $('docPage').innerHTML=blocks.map((b,bi)=>`<div class="doc-sec" id="${secId(b.sec)}" data-sec="${esc(b.sec)}" onclick="secClick(event,'${esc(b.sec)}')" ondragover="if(DRAG&&DRAG.kind==='sec'){event.preventDefault();this.classList.add('drop-hint')}" ondragleave="this.classList.remove('drop-hint')" ondrop="secDrop(event,'${esc(b.sec)}')">${bi?`<button class="sec-grip" contenteditable="false" draggable="true" ondragstart="secDragStart(event,'${esc(b.sec)}')" ondragend="wgDragEnd(event)" title="Drag to reorder">⋮⋮</button>`:''}${b.fn?b.fn(on):b.html}</div>`).join('');
+  $('docPage').innerHTML=blocks.map((b,bi)=>`<div class="doc-sec" id="${secId(b.sec)}" data-sec="${esc(b.sec)}" ${bi?`draggable="true" ondragstart="secDragStart(event,'${esc(b.sec)}')" ondragend="wgDragEnd(event)"`:''} onclick="secClick(event,'${esc(b.sec)}')" ondragover="if(DRAG&&DRAG.kind==='sec'){event.preventDefault();this.classList.add('drop-hint')}" ondragleave="this.classList.remove('drop-hint')" ondrop="secDrop(event,'${esc(b.sec)}')">${bi?`<span class="sec-grip" contenteditable="false" title="Drag the section anywhere to reorder">⋮⋮</span>`:''}${b.free?`<span class="free-tag" contenteditable="false">Outside the template<button onclick="event.stopPropagation();removeFreeSection('${esc(b.sec)}')" title="Remove this section">✕</button></span>`:''}${b.fn?b.fn(on):b.html}</div>`).join('');
   const slot=$('vizSlot');if(slot)slot.innerHTML=chartHTML();
   decorateDoc();
 }
@@ -4055,10 +4273,30 @@ function doAddSource(name){
 }
 function exec(c,v){if(!v&&c==='formatBlock')return;document.execCommand(c,false,v||null);$('docPage').focus();markDirty();}
 function markDirty(){S.dirty=true;$('saveFlag').textContent='Unsaved edits';$('saveFlag').style.color='var(--amber)';}
+function removeFreeSection(sec){
+  const id=S.deliv;if(!id)return;
+  DRAFT_BLOCKS[id]=DRAFT_BLOCKS[id].filter(b=>b.sec!==sec);
+  renderDoc();markDirty();toast('Section removed');
+}
+function addFreeSection(){
+  const id=S.deliv;if(!id)return;
+  const blocks=DRAFT_BLOCKS[id];if(!blocks)return;
+  const n=blocks.filter(b=>b.free).length+1;
+  const name='New section '+n;
+  blocks.push({sec:name,src:null,free:true,html:`<h3>${name}</h3><p>Write anything here. This section sits outside the template — it stays on this document only, and the template is untouched unless you save it as a rule.</p>`});
+  renderDoc();markDirty();
+  AUDIT.unshift({who:'Kaeser',doc:(delivBy(id)||{}).title||'Document',when:'Aug 13, 2026 · 10:30',what:'Free-form section added outside the template',detail:'"'+name+'" lives on this document only. Save it to the template from the History panel if you want it everywhere.'});
+  renderAudit();
+  setTimeout(()=>{const el=document.getElementById(secId(name));if(el&&el.scrollIntoView)el.scrollIntoView({block:'center'});},0);
+  toast('Section added — free-form, outside the template');
+}
 function toggleMax(){
   const w=$('edWrap');w.classList.toggle('max');
-  $('maxBtn').textContent=w.classList.contains('max')?'Show panel':'Maximize';
+  const on=w.classList.contains('max');
+  $('maxBtn').textContent=on?'Show panel':'⛶ Maximize';
+  $('edRichBar').classList.toggle('hidden',!on);
 }
+function docCmd(c,v){document.execCommand&&document.execCommand(c,false,v||null);$('docPage').focus();markDirty();}
 function openAiEdit(){
   $('aiSuggs').innerHTML=['Make the chart a pie chart','Turn the numbers into a bar chart','Add a cash-flow visualization','Shorten the Sonoma section','Add a line about the RMD start year','Make the tone warmer'].map(s=>`<button class="chip click" onclick="$('aiAsk').value='${s}'">${s}</button>`).join('');
   $('aiAsk').value='';openModal('mAiEdit');
@@ -4344,14 +4582,73 @@ function assetLearn(){
   AUDIT.unshift({who:'Kaeser',doc:'LinkedIn post · Ep '+S.ep.n,when:'Aug 11, 2026 · 08:55',what:'Approved by Kaeser and scheduled'+(kept.length?'; '+kept.length+' rule'+(kept.length>1?'s':'')+' saved to the template':'')});
   renderAudit();toast('Scheduled'+(kept.length?' and the rule is saved':''));
 }
-function openIdeas(){
-  $('ideaList').innerHTML=[
-   ['What "the 60-day rollover window" actually costs when you miss it','Asked by 3 clients in July','client questions'],
-   ['The trust funding checklist nobody finishes','Unused moment · Ep 39 at 22:10','podcast'],
-   ['Why we never compare your portfolio to the S&P','Firm principle, never written up','brand voice'],
-   ['Selling company stock without a tax spike','Top engagement topic in July','performance']
-  ].map(([t,s,tag])=>`<div class="ai-item"><div style="flex:1"><b>${t}</b><span>${s}</span></div><span class="chip grey">${tag}</span><button class="btn btn-ghost btn-xs" onclick="closeModal('mIdeas');toast('Draft started from that idea — it will appear with your episodes')">Draft it</button></div>`).join('');
-  openModal('mIdeas');
+const IDEA_SETS=[
+ [['What "the 60-day rollover window" actually costs when you miss it','Asked by 3 clients in July','client questions'],
+  ['The trust funding checklist nobody finishes','Unused moment · Ep 39 at 22:10','podcast'],
+  ['Why we never compare your portfolio to the S&P','Firm principle, never written up','brand voice'],
+  ['Selling company stock without a tax spike','Top engagement topic in July','performance']],
+ [['The order you draw from accounts is worth more than the return you chase','Ep 41 at 08:14, never written up','podcast'],
+  ['What a bad first decade does to a good plan','Asked twice on review calls this month','client questions'],
+  ['Why we hold 11 months of cash and not 6','Firm principle, never written up','brand voice'],
+  ['The RMD year nobody plans for','Rising search topic in your audience','performance']],
+ [['Second homes and the rung you have to rebuild','From the Chen Sonoma thread','client questions'],
+  ['Equity comp: the vest you should sell on sight','Boone call, Aug 11','podcast'],
+  ['The disclosure line that keeps compliance quiet','Compliance note, Aug 7','brand voice'],
+  ['Business exit: the 90 days before the LOI','Hollis deal, highest engagement','performance']]
+];
+let IDEA_I=0,IDEA_USED=[];
+function openIdeas(){renderIdeas();openModal('mIdeas');}
+function refreshIdeas(){IDEA_I=(IDEA_I+1)%IDEA_SETS.length;renderIdeas();toast('Fresh set — pulled from newer calls, episodes, and questions');}
+function renderIdeas(){
+  const set=IDEA_SETS[IDEA_I];
+  $('ideaList').innerHTML=`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <span class="help" style="flex:1">Set ${IDEA_I+1} of ${IDEA_SETS.length} · drawn from client questions, unused podcast moments, and what your audience engaged with</span>
+      <button class="btn btn-ghost btn-sm" onclick="refreshIdeas()">⟳ Refresh ideas</button>
+    </div>
+    ${set.map(([t,s2,tag],i)=>`<div class="ai-item" style="cursor:default"><div style="flex:1"><b>${esc(t)}</b><span>${esc(s2)}</span></div><span class="chip grey">${tag}</span>
+      <button class="btn btn-ghost btn-xs" onclick="draftIdea(${i},'episode')">🎙️ Draft an episode</button>
+      <button class="btn btn-gold btn-xs" onclick="draftIdea(${i},'campaign')">📣 Draft a campaign</button>
+    </div>`).join('')}
+    ${IDEA_USED.length?`<div style="margin-top:14px"><div class="eyebrow" style="margin-bottom:7px">Ideas you already drafted</div>
+      ${IDEA_USED.map(u=>`<div class="ai-item" style="cursor:default;opacity:.85"><span>${u.kind==='campaign'?'📣':'🎙️'}</span><div style="flex:1"><b>${esc(u.t)}</b><span>Drafted ${esc(u.when)} · ${u.kind==='campaign'?'campaign':'episode'}</span></div><button class="btn btn-ghost btn-xs" onclick="${u.kind==='campaign'?`closeModal('mIdeas');openCampaign('${u.id}')`:`closeModal('mIdeas');nav('studio')`}">Open →</button></div>`).join('')}</div>`:''}`;
+}
+function draftIdea(i,kind){
+  const [t,s2,tag]=IDEA_SETS[IDEA_I][i];
+  const srcLabel=tag==='podcast'?'Podcast moment — '+s2:tag==='client questions'?'Client questions — '+s2:tag==='brand voice'?'Brand Voice profile':'Audience engagement — '+s2;
+  if(kind==='campaign'){
+    const id='camp'+(CAMPS.length+1)+'-'+Date.now().toString().slice(-4);
+    const nc={_exp:{},feed:'meta',step:'ads',id,name:t,outputs:['Meta post','LinkedIn post'],sources:[srcLabel,'Brand Voice profile'],picked:null,ads:[
+      {id:id+'a',label:'Variant A',style:'Photo + checklist pills',img:'photo',status:'Pending',why:'Scroll-stopper for cold audiences — the pills carry the whole offer even if nobody reads the caption.',
+       primary:t+'. Most people find out the hard way. A 20-minute check tells you where you actually stand.',
+       imghead:'What we check in 20 minutes:|1 — Where you stand today|2 — The one change that matters|3 — What to do first|4 — What to ignore',
+       cta:'Book the free 20-minute check',srcs:[srcLabel,'Brand Voice profile']},
+      {id:id+'b',label:'Variant B',style:'Bold typographic poster',img:'poster',status:'Pending',why:'Reads at thumbnail size — best for warm audiences who already know the firm.',
+       primary:'We get asked this constantly: '+t.toLowerCase()+'. Here is the plain-language answer, and what it means for your plan.',
+       imghead:t,cta:'See where you stand',srcs:[srcLabel,'Brand Voice profile']},
+      {id:id+'c',label:'Variant C',style:'Dark editorial concept',img:'dark',status:'Pending',why:'Curiosity-led emotional angle — tested against the two practical variants to see which framing wins.',
+       primary:'The costliest version of this is the one nobody sees coming. '+t+'.',
+       imghead:'The costliest mistakes are the invisible ones.',cta:'Book the readiness check',srcs:[srcLabel,'Quarterly Portfolio Review template']}
+    ],orig:{}};
+    nc.ads.forEach(a=>nc.orig[a.id]={primary:a.primary,imghead:a.imghead,cta:a.cta,img:a.img});
+    Object.assign(nc,mkStepData(t));
+    nc.survey.srcs=['Qualification rules you set at onboarding','Brand Voice profile'];
+    nc.landing.srcs=[srcLabel,'Landing template on file','Brand Voice profile'];
+    nc.booking.srcs=["Rita's calendar (integration)"];
+    CAMPS.unshift(nc);
+    IDEA_USED.unshift({t,kind:'campaign',id,when:'Aug 13'});
+    closeModal('mIdeas');
+    AUDIT.unshift({who:'Kaeser',doc:'Campaign — '+t,when:'Aug 13, 2026 · 10:15',what:'Campaign drafted from an idea in the idea bank',detail:'Built from — '+srcLabel});
+    renderAudit();
+    openCampaign(id);
+    toast('Campaign drafted from that idea — three variants ready for review');
+    return;
+  }
+  IDEA_USED.unshift({t,kind:'episode',id:'ep-'+Date.now().toString().slice(-4),when:'Aug 13'});
+  renderIdeas();
+  AUDIT.unshift({who:'Kaeser',doc:'Content Studio',when:'Aug 13, 2026 · 10:15',what:'Episode outline drafted from an idea in the idea bank',detail:'Built from — '+srcLabel+' · appears with your episodes as a draft'});
+  renderAudit();
+  toast('Episode outline drafted — it appears with your episodes');
 }
 
 /* ================= SYSTEM PAGES ================= */
@@ -4428,7 +4725,7 @@ function openTpl(id,edit){
 }
 function renderVoicePage(){
   $('voiceChips2').innerHTML=S.voice.map((v,i)=>`<span class="vchip">${esc(v)} <button onclick="S.voice.splice(${i},1);renderVoicePage()" title="Remove">✕</button></span>`).join('');
-  $('voiceFields').innerHTML=VOICE_FIELDS.map(([l,v],i)=>`<div><label class="lbl">${l}</label><textarea class="field auto" rows="${v.length>46?2:1}" oninput="this.rows=Math.max(1,Math.ceil(this.value.length/46));VOICE_FIELDS[${i}][1]=this.value" onblur="toast('Voice profile updated — applied to future writing')">${esc(v)}</textarea></div>`).join('');
+  $('voiceFields').innerHTML=VOICE_FIELDS.map(([l,v],i)=>`<div class="vf-wrap"><label class="lbl">${l}<span class="vf-count" id="vfc${i}">${v.length} chars</span></label><textarea class="field auto vf" data-i="${i}" rows="${vfRows(v)}" oninput="vfGrow(this)" onblur="toast('Voice profile updated — applied to future writing')">${esc(v)}</textarea></div>`).join('');
   $('voiceApplied').innerHTML=[
    ['Client Deliverables','Every plan, review, and map is written in this voice'],
    ['Content Studio','Posts and newsletters match Rita\'s published writing'],
@@ -4452,6 +4749,16 @@ function addVoiceDoc(){
 }
 function addVoice2(){const v=$('voiceAdd2').value.trim();if(!v)return;S.voice.push(v);$('voiceAdd2').value='';renderVoicePage();toast('Trait added — applied to every future output');}
 let KBCAT='All';
+function vfRows(v){
+  const lines=String(v||'').split('\n').length;
+  return Math.min(10,Math.max(2,lines+Math.ceil(String(v||'').length/38)));
+}
+function vfGrow(t){
+  const i=+t.dataset.i;
+  VOICE_FIELDS[i][1]=t.value;
+  t.rows=vfRows(t.value);
+  const c=$('vfc'+i);if(c)c.textContent=t.value.length+' chars';
+}
 const KB_SUM={};
 function kbSum(k){return KB_SUM[k.name]||k.sum||'Short summary — click to write what this covers.';}
 function renderKb(){
@@ -4627,11 +4934,43 @@ function renderLearning(){
 function openNewRule(){
   $('nrTpl').innerHTML=['Whole workspace',...TEMPLATES.map(t=>t.name)].map(x=>`<option>${x}</option>`).join('');
   nrSecs();$('nrText').value='';$('nrSample').value='';
+  $('nrIngested').classList.add('hidden');$('nrIngested').innerHTML='';
   openModal('mNewRule');
 }
 function nrSecs(){
   const t=TEMPLATES.find(x=>x.name===$('nrTpl').value);
   $('nrSec').innerHTML=['Whole template',...(t?t.secs:[])].map(x=>`<option>${x}</option>`).join('');
+}
+function nrIngest(fname){
+  if(!fname){toast('Pick a file first',false);return;}
+  $('nrIngested').classList.remove('hidden');
+  $('nrIngested').innerHTML='<p class="help">Reading '+esc(fname)+' and pulling the rules out…</p>';
+  setTimeout(()=>{
+    const found=[
+      {cat:'Tone',tpl:'Whole workspace',rule:'Lead with the number, then what it means for the household',sample:'Your portfolio returned 3.1% this quarter. That covers your 2027 income need with four months to spare.'},
+      {cat:'Template rule',tpl:'Quarterly Portfolio Review',rule:'Action items are capped at three, most urgent first',sample:'1) Confirm the Sonoma budget 2) Sign the trust checklist 3) Book the September review'},
+      {cat:'Procedure',tpl:'Whole workspace',rule:'Never send a plan the same day a market drop is in the news',sample:'Held the Delaney review one day after the 3% drop — sent Thursday instead.'}
+    ];
+    NR_FOUND=found;
+    $('nrIngested').innerHTML=`<div class="card" style="padding:12px 13px;margin:0">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><b style="font-size:12.5px;flex:1">${esc(fname)}</b><span class="chip green" style="font-size:10px">${found.length} rules found</span></div>
+      ${found.map((f2,i)=>`<button class="checkrow on" style="margin-bottom:6px" onclick="this.classList.toggle('on')">
+        <span class="cb">✓</span><span style="flex:1;text-align:left"><b style="font-size:12.5px">${esc(f2.rule)}</b><br><span class="help">Filed under ${esc(f2.cat)} · ${esc(f2.tpl)}</span></span>
+      </button>`).join('')}
+      <button class="btn btn-gold btn-sm" style="width:100%;justify-content:center;margin-top:4px" onclick="nrCommitIngest()">Add these to memory</button>
+    </div>`;
+  },700);
+}
+let NR_FOUND=[];
+function nrCommitIngest(){
+  const on=[...$('nrIngested').querySelectorAll('.checkrow')].map(x=>x.classList.contains('on'));
+  const kept=NR_FOUND.filter((_,i)=>on[i]);
+  if(!kept.length){toast('Everything is unticked — nothing to add',false);return;}
+  kept.forEach(f2=>LEARNINGS.unshift({d:'Aug 13, 2026',what:f2.rule,where:f2.tpl+' · from an upload',by:'Kaeser',cat:f2.cat,sample:f2.sample}));
+  closeModal('mNewRule');renderLearning();renderLearnings();
+  AUDIT.unshift({who:'Kaeser',doc:'Dashboard AI memory',when:'Aug 13, 2026 · 09:55',what:kept.length+' rules ingested from an upload',detail:'Auto-categorised: '+[...new Set(kept.map(k=>k.cat))].join(' · ')});
+  renderAudit();
+  toast(kept.length+' rules added — filed under '+[...new Set(kept.map(k=>k.cat))].join(', '));
 }
 function createRule(){
   const txt=$('nrText').value.trim();
@@ -4670,6 +5009,15 @@ const HUB_FIELDS=['firstname','lastname','email','phone','lifecyclestage','deals
 const INT_FIELDS=['Client name','Service line','Advisor','Assets','Pipeline stage','Next meeting','Last contact',"Don't sync"];
 let HUB_MAP={firstname:'Client name',lastname:'Client name',email:"Don't sync",phone:"Don't sync",lifecyclestage:'Service line',dealstage:'Pipeline stage',hubspot_owner_id:'Advisor',amount:'Assets',closedate:'Next meeting',notes_last_updated:'Last contact'};
 let HUB_AUTO=true;
+function hubToggle(){
+  HUB_AUTO=!HUB_AUTO;
+  $('hubTgl').classList.toggle('on',HUB_AUTO);
+  $('hubAutoRow').classList.toggle('off',!HUB_AUTO);
+  $('hubSyncTitle').textContent=HUB_AUTO?'Automatic daily sync — on':'Automatic daily sync — off';
+  $('hubSyncSub').textContent=HUB_AUTO?'New HubSpot contacts arrive every morning and wait below; nothing is added until you approve it. Documents sync back the moment you save or approve an edit.':'Nothing moves on its own. Pull contacts manually from this screen when you want them.';
+  const ch=$('hubSyncChip');ch.textContent=HUB_AUTO?'Live':'Paused';ch.className='chip '+(HUB_AUTO?'green':'grey');
+  toast(HUB_AUTO?'Daily sync on — new contacts wait for your approval each morning':'Daily sync paused — pull manually from this screen');
+}
 const HUB_CONTACTS=[
  {id:'h1',name:'Paul Camhi',deal:'Guest Spotlight Invite',stage:'Positive Response',amount:'$1.2M',owner:'R. Okafor',date:'05/25/2026',checked:true,isNew:true},
  {id:'h2',name:'Rodney Jones Sr.',deal:'Podcast',stage:'Positive Response',amount:'$860k',owner:'S. Whitfield',date:'05/25/2026',checked:true,isNew:true},
