@@ -591,9 +591,64 @@ select.field.tsel{width:auto;min-width:104px;border:none;border-radius:0;padding
 .show-pill.on{border:2px solid var(--navy);color:var(--ink);box-shadow:var(--shadow)}
 .show-pill.on .spc{color:var(--gold)}
 .mini-wrap2{display:grid;grid-template-columns:300px minmax(0,1fr);gap:24px;align-items:start}
-@media (max-width:980px){.mini-wrap2{grid-template-columns:1fr}}
+/* --- calendar responsiveness --- */
+@media (max-width:1600px){
+  .home-grid{grid-template-columns:1fr 300px}
+  .mini-wrap2{grid-template-columns:250px minmax(0,1fr);gap:16px}
+  .wk-agenda{padding-left:14px}
+  .wk-agrow{grid-template-columns:42px 58px minmax(0,1fr) auto auto;gap:9px;padding:11px 6px}
+  .ag-d b{font-size:18px}
+  .ag-t{font-size:10px}
+  .ag-main b{font-size:13px}
+  .ag-main span{white-space:normal;line-height:1.45}
+  .ag-chip{font-size:8px;padding:3px 7px}
+  .ag-act{min-width:0}
+  .ag-act .btn{padding:5px 10px;font-size:11px}
+}
+@media (max-width:1240px){
+  .mini-wrap2{grid-template-columns:1fr;gap:14px}
+  .mini-wrap2 .mini-cal{max-width:380px}
+  .wk-agenda{border-left:none;padding-left:0;border-top:1px solid rgba(255,255,255,.12);padding-top:10px}
+  .agm-note{margin:8px 0 4px}
+}
+@media (max-width:760px){
+  .page{padding:16px 14px 80px}
+  .topbar{height:auto;padding:8px 12px;flex-wrap:wrap;gap:8px}
+  .tb-btn{padding:6px 10px;font-size:11.5px}
+  .welcome{flex-wrap:wrap}
+  .welcome h2{font-size:23px}
+  .welcome .wdate{margin-left:0;text-align:left;width:100%}
+  .show-row{flex-wrap:wrap}
+  .page-head{flex-direction:column;align-items:stretch}
+  .cd-head{flex-wrap:wrap}
+  .tiles{grid-template-columns:1fr 1fr}
+  .stat-row{grid-template-columns:1fr}
+  .tbl-wrap{overflow-x:auto}
+  .tbl-wrap table{min-width:640px}
+  .modal,.modal.wide,.modal.xl{width:96vw;padding:18px 16px;max-height:92vh}
+  .two-col,.ob-cols{grid-template-columns:1fr}
+  .tabs{overflow-x:auto;flex-wrap:nowrap}
+  .tab{white-space:nowrap;padding:9px 11px}
+  .doc-page{padding:20px 16px}
+  .ed-toolbar{position:static}
+  .chat-panel{width:94vw;right:3vw;bottom:84px}
+  .repo-row{padding:12px 12px}
+  .repo-folders{padding-left:14px}
+  .aud-row,.aud-head{grid-template-columns:1fr;gap:6px}
+  .aud-head span:not(:first-child){display:none}
+  .sb-brand{padding:12px 14px}
+}
+@media (max-width:760px){
+  .wk-agrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 4px}
+  .ag-d{flex:0 0 44px}
+  .ag-t{flex:0 0 auto;order:2}
+  .ag-chip{order:3;margin-left:auto}
+  .ag-act{order:4;text-align:left}
+  .ag-main{flex:1 1 100%;order:5;min-width:0}
+  .ag-main b,.ag-main span{white-space:normal}
+}
 .agm-note{font-size:12px;color:#AEB9CC;line-height:1.6;margin-top:12px;padding:0 4px}
-.wk-agenda{border-left:1px solid rgba(255,255,255,.12);padding-left:20px;min-width:0}
+.wk-agenda{border-left:1px solid rgba(255,255,255,.12);padding-left:20px;min-width:0;overflow:hidden}
 .wk-agrow{display:grid;grid-template-columns:58px 74px minmax(0,1fr) auto auto;gap:14px;align-items:center;padding:13px 8px;border-bottom:1px solid rgba(255,255,255,.1)}
 .wk-agrow:last-child{border-bottom:none}
 .wk-agrow.tdy{background:rgba(185,138,46,.12);border-radius:10px}
@@ -607,7 +662,8 @@ select.field.tsel{width:auto;min-width:104px;border:none;border-radius:0;padding
 .ag-chip.green{background:rgba(76,175,110,.22);color:#7BD89F}
 .ag-chip.gold{background:rgba(201,162,39,.26);color:#E8CB7B}
 .ag-chip.grey{background:rgba(255,255,255,.12);color:#AEB9CC}
-.ag-act{min-width:92px;text-align:right}
+.ag-act{min-width:0;text-align:right}
+.ag-act .btn{white-space:nowrap}
 .ag-ghost{border:1px solid rgba(255,255,255,.35);color:#E6ECF6;background:none}
 .ag-ghost:hover{border-color:var(--gold-bright);color:#fff}
 .ag-dless{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:#8B97AB;padding:14px 8px 4px;border-bottom:1px solid rgba(255,255,255,.1)}
@@ -958,7 +1014,7 @@ mark.newbit{background:#F4EBD6;border-radius:3px;padding:0 3px;animation:markfad
     <div class="login-form">
       <div class="eyebrow">Sign in</div>
       <h2>Welcome back</h2>
-      <p class="help">Use your Paragon demo credentials to continue.</p>
+      <p class="help">Use your Paragon demo credentials to continue — Kaeser or Erica.</p>
       <div class="login-err" id="loginErr">That username or password isn't right. Try again.</div>
       <label class="lbl">Username</label>
       <input class="field" id="loginU" placeholder="Username" style="margin-bottom:14px">
@@ -2316,9 +2372,12 @@ const VOICE_FIELDS=[
 ];
 
 /* ================= LOGIN + ONBOARDING ================= */
+const CREDS={Kaeser:'aiparagon2026',Erica:'aiparagon2026'};
 function doLogin(){
   const u=$('loginU').value.trim(),p=$('loginP').value;
-  if(u==='Kaeser'&&p==='aiparagon2026'){
+  const match=Object.keys(CREDS).find(k=>k.toLowerCase()===u.toLowerCase());
+  if(match&&CREDS[match]===p){
+    S.user=match;
     $('loginErr').style.display='none';
     $('view-login').classList.add('hidden');
     $('view-onboarding').classList.remove('hidden');
@@ -2400,8 +2459,9 @@ function addObExtra(){
 function finishOb(){
   S.firm=$('obFirm').value||'Halcyon Wealth Partners';
   $('sbFirm').textContent=S.firm;
-  const first=($('obFirst').value.trim()||'Kaeser');
+  const first=($('obFirst').value.trim()||S.user||'Kaeser');
   $('sbUser').textContent=first;
+  const g=$('chatBody')&&$('chatBody').querySelector('.msg.bot');if(g)g.textContent='Hi '+first+' — ask me anything on this dashboard: a client, a draft, a template, or a document in the Knowledge Base.';
   $('wAva').textContent=first[0].toUpperCase();
   $('view-onboarding').classList.add('hidden');
   $('view-app').classList.remove('hidden');
