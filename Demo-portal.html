@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Meridian Care Portal — Demo</title>
+<title>np-demo Care Portal — Pilot</title>
 <style>
 :root{
   --bg:#F4F1EA; --cream:#EDE9DF; --navy:#1E3A5F; --navy-deep:#152B47;
@@ -103,6 +103,8 @@ a{color:inherit}
 
 .main{min-width:0;padding:16px 16px 40px}
 .topbar{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+#printArea{display:none}
+@media print{ body>*:not(#printArea){display:none!important} #printArea{display:block!important;font-family:Georgia,serif;color:#111} #printArea h2{font-size:17px;margin:0 0 2px} #printArea .p-sub{font-size:11px;color:#444;margin-bottom:10px} #printArea table{width:100%;border-collapse:collapse;font-size:10.5px} #printArea th,#printArea td{border:1px solid #999;padding:3px 5px;text-align:left} #printArea th{background:#eee} #printArea .siglines{margin-top:26px;display:flex;gap:40px} #printArea .sig{flex:1;border-top:1px solid #111;padding-top:4px;font-size:10.5px} #printArea .p-note{font-size:10px;color:#555;margin-top:8px} }
 .hamb{display:none;width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--white);font-size:16px}
 .search{
   flex:1;display:flex;align-items:center;gap:9px;background:var(--white);border:1px solid var(--line);
@@ -550,8 +552,8 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xm
 <div id="login">
   <div class="login-box">
     <div class="login-mark"><span class="dot"></span><span>Meridian Care Portal</span></div>
-    <h1>Sign in to your workspace</h1>
-    <p class="sub">Everyone sees only what their role allows. Pick a role to explore the demo.</p>
+    <h1>Welcome, Ezra</h1>
+    <p class="sub">Log in to your dashboard. Everyone sees only what their role allows — pick a role below.</p>
     <div class="role-grid">
       <button class="role-card" onclick="signIn('director')">
         <div class="rc-ic" style="background:var(--navy-soft);color:var(--navy)">◈</div>
@@ -569,7 +571,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xm
         <div class="rc-ic" style="background:var(--gold-soft);color:#7A5E12">◇</div>
         <h3>Family member</h3>
         <p>One person only: their medications, appointments, documents and a line to the care team.</p>
-        <div class="rc-who"><b>D. Whitfield</b> · Guardian of James W.</div>
+        <div class="rc-who"><b>Guardian (JW)</b> · Guardian of Client JW</div>
       </button>
     </div>
     <div class="login-foot">
@@ -663,54 +665,74 @@ const fmtDate = d => new Date(d).toLocaleDateString(undefined,{weekday:'short',m
 const fmtLong = d => new Date(d).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
 const T = iso(TODAY);
 
+/* ══════════════ np-demo BACKEND (Supabase + n8n) ══════════════
+   Fill these in and the portal reads/writes the np-demo Supabase
+   project and fires the np-demo n8n webhooks. Leave blank and it
+   runs on local demo data exactly as before. */
+const BACKEND = {
+  url: '',              // e.g. https://np-demo-xxxx.supabase.co
+  anon: '',             // Supabase anon key (np-demo project)
+  incidentWebhook: '',  // e.g. https://n8n.aiparagonconsulting.com/webhook/np-demo-incident
+  calendarWebhook: ''   // e.g. https://n8n.aiparagonconsulting.com/webhook/np-demo-calendar
+};
+const sbOn = () => !!(BACKEND.url && BACKEND.anon);
+const sbH  = () => ({apikey:BACKEND.anon, Authorization:'Bearer '+BACKEND.anon, 'Content-Type':'application/json', Prefer:'return=minimal'});
+async function sbGet(t,q){ if(!sbOn()) return []; try{ const r=await fetch(`${BACKEND.url}/rest/v1/${t}?${q||'select=*'}`,{headers:sbH()}); return r.ok?await r.json():[]; }catch(e){ console.warn('[np-demo] read failed',t,e); return []; } }
+function sbPush(t,row){ if(!sbOn()) return; fetch(`${BACKEND.url}/rest/v1/${t}`,{method:'POST',headers:sbH(),body:JSON.stringify(row)}).catch(e=>console.warn('[np-demo] write failed',t,e)); }
+function sbUpsert(t,row){ if(!sbOn()) return; fetch(`${BACKEND.url}/rest/v1/${t}`,{method:'POST',headers:{...sbH(),Prefer:'return=minimal,resolution=merge-duplicates'},body:JSON.stringify(row)}).catch(e=>console.warn('[np-demo] upsert failed',t,e)); }
+function sbPatch(t,id,patch){ if(!sbOn()) return; fetch(`${BACKEND.url}/rest/v1/${t}?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:sbH(),body:JSON.stringify(patch)}).catch(e=>console.warn('[np-demo] patch failed',t,e)); }
+function n8nPost(payload){ n8nHook(BACKEND.incidentWebhook,payload); }
+function n8nCal(payload){ n8nHook(BACKEND.calendarWebhook,payload); }
+function n8nHook(url,payload){ if(!url) return; fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).catch(e=>console.warn('[np-demo] webhook failed',e)); }
+
 const CLIENTS = [
-  {id:'c1', name:'James Whitfield',  init:'JW', home:'Maple House',   age:34, since:'2021-03-14', guardian:'Dana Whitfield', tag:'gr',
+  {id:'c1', uci:'J-402318', name:'Client JW',  init:'JW', home:'Maple House',   age:34, since:'2021-03-14', guardian:'Guardian on file', tag:'gr',
    dx:'Supported living · Level 3', alerts:['Allergy: penicillin'],
    support:'Uses short phrases plus an AAC tablet. Give processing time before repeating a question.',
    goals:[{g:'Order independently at a counter',p:70},{g:'Ride the Route 12 bus with fading prompts',p:45}]},
-  {id:'c2', name:'Rosa Alvarez',     init:'RA', home:'Maple House',   age:29, since:'2022-08-02', guardian:'Luis Alvarez', tag:'g',
+  {id:'c2', uci:'R-518264', name:'Client RA',     init:'RA', home:'Maple House',   age:29, since:'2022-08-02', guardian:'Guardian on file', tag:'g',
    dx:'Supported living · Level 2', alerts:[],
    support:'Fluent verbal. Prefers a written schedule posted the night before.',
    goals:[{g:'Prepare two dinners per week',p:85},{g:'Manage a weekly grocery budget',p:55}]},
-  {id:'c3', name:'Terrence Bell',    init:'TB', home:'Cedar House',   age:47, since:'2019-11-20', guardian:'None on file', tag:'',
+  {id:'c3', uci:'T-291177', name:'Client TB',    init:'TB', home:'Cedar House',   age:47, since:'2019-11-20', guardian:'None on file', tag:'',
    dx:'Day program · Level 4', alerts:['Fall risk','Allergy: latex'],
    support:'Nonspeaking. Signs YES / NO / STOP. Watch for jaw tension as a distress cue.',
    goals:[{g:'Initiate a choice at breakfast',p:60}]},
-  {id:'c4', name:'Ingrid Novak',     init:'IN', home:'Cedar House',   age:52, since:'2023-01-09', guardian:'Petra Novak', tag:'g',
+  {id:'c4', uci:'I-625940', name:'Client IN',     init:'IN', home:'Cedar House',   age:52, since:'2023-01-09', guardian:'Guardian on file', tag:'g',
    dx:'Supported living · Level 2', alerts:[],
    support:'Loves routine. Tell her about changes the day before, not the morning of.',
    goals:[{g:'Walk the downtown loop twice a week',p:75}]},
-  {id:'c5', name:'Marcus Doyle',     init:'MD', home:'Birch House',   age:38, since:'2020-06-30', guardian:'Aileen Doyle', tag:'gr',
+  {id:'c5', uci:'M-302816', name:'Client MD',     init:'MD', home:'Birch House',   age:38, since:'2020-06-30', guardian:'Guardian on file', tag:'gr',
    dx:'Supported living · Level 3', alerts:['Diet: thickened liquids'],
    support:'Responds well to visual step cards. Break tasks into no more than three steps.',
    goals:[{g:'Self-transfer with standby assist only',p:40},{g:'Use the communication board at meals',p:65}]},
-  {id:'c6', name:'Priya Raman',      init:'PR', home:'Birch House',   age:26, since:'2024-04-11', guardian:'Sunil Raman', tag:''  ,
+  {id:'c6', uci:'P-731452', name:'Client PR',      init:'PR', home:'Birch House',   age:26, since:'2024-04-11', guardian:'Guardian on file', tag:''  ,
    dx:'Day program · Level 2', alerts:[],
    support:'New to the program. Building rapport — pair with familiar staff where possible.',
    goals:[{g:'Complete a full program day',p:30},{g:'Try one vocational station per week',p:20}]}
 ];
 
 const STAFF = [
-  {id:'s1', name:'Maria Reyes',      init:'M.R.',  role:'Direct Support Professional', home:'Maple House', trainings:{med:1,hipaa:1,cpr:1,incident:1}, hired:'2022-02-01'},
-  {id:'s2', name:'Devon Clarke',     init:'D.C.',  role:'Direct Support Professional', home:'Cedar House', trainings:{med:1,hipaa:1,cpr:0,incident:1}, hired:'2023-07-15'},
-  {id:'s3', name:'Amara Osei',       init:'A.O.',  role:'Shift Lead',                  home:'Birch House', trainings:{med:1,hipaa:1,cpr:1,incident:1}, hired:'2021-09-06'},
-  {id:'s4', name:'Tomas Ibarra',     init:'T.I.',  role:'Direct Support Professional', home:'Maple House', trainings:{med:0,hipaa:1,cpr:1,incident:0}, hired:'2026-06-02'},
-  {id:'s5', name:'Nell Harding',     init:'N.H.',  role:'Nurse (RN)',                  home:'All homes',   trainings:{med:1,hipaa:1,cpr:1,incident:1}, hired:'2020-01-20'},
-  {id:'s6', name:'Grace Okonjo',     init:'G.O.',  role:'Direct Support Professional', home:'Cedar House', trainings:{med:1,hipaa:0,cpr:1,incident:1}, hired:'2025-11-18'}
+  {id:'s1', name:'Maria Reyes',      init:'M.R.',  role:'Direct Support Professional', home:'Maple House', trainings:{med:1,hipaa:1,cpr:1,incident:1}, hrs:22, hired:'2022-02-01'},
+  {id:'s2', name:'Devon Clarke',     init:'D.C.',  role:'Direct Support Professional', home:'Cedar House', trainings:{med:1,hipaa:1,cpr:0,incident:1}, hrs:16, hired:'2023-07-15'},
+  {id:'s3', name:'Amara Osei',       init:'A.O.',  role:'Shift Lead',                  home:'Birch House', trainings:{med:1,hipaa:1,cpr:1,incident:1}, hrs:14, hired:'2021-09-06'},
+  {id:'s4', name:'Tomas Ibarra',     init:'T.I.',  role:'Direct Support Professional', home:'Maple House', trainings:{med:0,hipaa:1,cpr:1,incident:0}, hrs:6, hired:'2026-06-02'},
+  {id:'s5', name:'Nell Harding',     init:'N.H.',  role:'Nurse (RN)',                  home:'All homes',   trainings:{med:1,hipaa:1,cpr:1,incident:1}, hrs:20, hired:'2020-01-20'},
+  {id:'s6', name:'Grace Okonjo',     init:'G.O.',  role:'Direct Support Professional', home:'Cedar House', trainings:{med:1,hipaa:0,cpr:1,incident:1}, hrs:11, hired:'2025-11-18'}
 ];
 
 const MEDS = [
-  {id:'m1', cid:'c1', name:'Levetiracetam', dose:'500 mg', form:'tablet', route:'Oral', times:['08:00','20:00'], prescriber:'Dr. A. Feld', start:'2023-02-11', status:'active', purpose:'Seizure control'},
-  {id:'m2', cid:'c1', name:'Sertraline',    dose:'50 mg',  form:'tablet', route:'Oral', times:['08:00'],         prescriber:'Dr. A. Feld', start:'2024-09-01', status:'active', purpose:'Mood'},
-  {id:'m3', cid:'c1', name:'Melatonin',     dose:'3 mg',   form:'tablet', route:'Oral', times:['21:00'],         prescriber:'Dr. A. Feld', start:'2025-05-20', status:'active', purpose:'Sleep'},
-  {id:'m4', cid:'c1', name:'Risperidone',   dose:'1 mg',   form:'tablet', route:'Oral', times:['20:00'],         prescriber:'Dr. R. Sung', start:'2024-01-15', status:'discontinued', end:'2026-03-02', purpose:'Behavioral support'},
-  {id:'m5', cid:'c2', name:'Metformin',     dose:'500 mg', form:'tablet', route:'Oral', times:['08:00','18:00'], prescriber:'Dr. P. Nair', start:'2022-10-04', status:'active', purpose:'Type 2 diabetes'},
-  {id:'m6', cid:'c2', name:'Lisinopril',    dose:'10 mg',  form:'tablet', route:'Oral', times:['08:00'],         prescriber:'Dr. P. Nair', start:'2023-06-19', status:'active', purpose:'Blood pressure'},
-  {id:'m7', cid:'c3', name:'Warfarin',      dose:'4 mg',   form:'tablet', route:'Oral', times:['18:00'],         prescriber:'Dr. L. Chen', start:'2021-04-08', status:'active', purpose:'Anticoagulant', flag:'INR check due'},
-  {id:'m8', cid:'c3', name:'Atorvastatin',  dose:'20 mg',  form:'tablet', route:'Oral', times:['20:00'],         prescriber:'Dr. L. Chen', start:'2022-01-30', status:'active', purpose:'Cholesterol'},
-  {id:'m9', cid:'c4', name:'Levothyroxine', dose:'75 mcg', form:'tablet', route:'Oral', times:['07:00'],         prescriber:'Dr. P. Nair', start:'2023-02-02', status:'active', purpose:'Thyroid'},
-  {id:'m10',cid:'c5', name:'Baclofen',      dose:'10 mg',  form:'tablet', route:'Oral', times:['08:00','14:00','20:00'], prescriber:'Dr. R. Sung', start:'2021-08-11', status:'active', purpose:'Muscle spasticity'},
-  {id:'m11',cid:'c6', name:'Albuterol',     dose:'2 puffs',form:'inhaler',route:'Inhaled', times:['PRN'],        prescriber:'Dr. P. Nair', start:'2024-05-06', status:'active', purpose:'Asthma — as needed'}
+  {id:'m1', cid:'c1', name:'Levetiracetam', dose:'500 mg', form:'tablet', route:'Oral', times:['08:00','20:00'], prescriber:'Dr. A. Feld', start:'2023-02-11', status:'active', purpose:'Seizure control', instr:'Take with food if stomach upset', fx:'Drowsiness, dizziness, irritability'},
+  {id:'m2', cid:'c1', name:'Sertraline',    dose:'50 mg',  form:'tablet', route:'Oral', times:['08:00'],         prescriber:'Dr. A. Feld', start:'2024-09-01', status:'active', purpose:'Mood', instr:'Morning with breakfast', fx:'Nausea, sleep changes — usually settle'},
+  {id:'m3', cid:'c1', name:'Melatonin',     dose:'3 mg',   form:'tablet', route:'Oral', times:['21:00'],         prescriber:'Dr. A. Feld', start:'2025-05-20', status:'active', purpose:'Sleep', instr:'30 min before bedtime', fx:'Morning grogginess if taken late'},
+  {id:'m4', cid:'c1', name:'Risperidone',   dose:'1 mg',   form:'tablet', route:'Oral', times:['20:00'],         prescriber:'Dr. R. Sung', start:'2024-01-15', status:'discontinued', end:'2026-03-02', purpose:'Behavioral support', instr:'With evening meal', fx:'Weight gain, sedation'},
+  {id:'m5', cid:'c2', name:'Metformin',     dose:'500 mg', form:'tablet', route:'Oral', times:['08:00','18:00'], prescriber:'Dr. P. Nair', start:'2022-10-04', status:'active', purpose:'Type 2 diabetes', instr:'With meals to reduce GI upset', fx:'Stomach upset, metallic taste'},
+  {id:'m6', cid:'c2', name:'Lisinopril',    dose:'10 mg',  form:'tablet', route:'Oral', times:['08:00'],         prescriber:'Dr. P. Nair', start:'2023-06-19', status:'active', purpose:'Blood pressure', instr:'Same time daily; monitor BP', fx:'Dry cough, lightheadedness'},
+  {id:'m7', cid:'c3', name:'Warfarin',      dose:'4 mg',   form:'tablet', route:'Oral', times:['18:00'],         prescriber:'Dr. L. Chen', start:'2021-04-08', status:'active', purpose:'Anticoagulant', flag:'INR check due', instr:'Same time daily; consistent vitamin K intake', fx:'Bruising, bleeding — report any'},
+  {id:'m8', cid:'c3', name:'Atorvastatin',  dose:'20 mg',  form:'tablet', route:'Oral', times:['20:00'],         prescriber:'Dr. L. Chen', start:'2022-01-30', status:'active', purpose:'Cholesterol', instr:'Evening; avoid grapefruit', fx:'Muscle aches — report if new'},
+  {id:'m9', cid:'c4', name:'Levothyroxine', dose:'75 mcg', form:'tablet', route:'Oral', times:['07:00'],         prescriber:'Dr. P. Nair', start:'2023-02-02', status:'active', purpose:'Thyroid', instr:'Empty stomach, 30 min before breakfast', fx:'Palpitations if dose too high'},
+  {id:'m10',cid:'c5', name:'Baclofen',      dose:'10 mg',  form:'tablet', route:'Oral', times:['08:00','14:00','20:00'], prescriber:'Dr. R. Sung', start:'2021-08-11', status:'active', purpose:'Muscle spasticity', instr:'Do not stop abruptly', fx:'Drowsiness, weakness'},
+  {id:'m11',cid:'c6', name:'Albuterol',     dose:'2 puffs',form:'inhaler',route:'Inhaled', times:['PRN'],        prescriber:'Dr. P. Nair', start:'2024-05-06', status:'active', purpose:'Asthma — as needed', instr:'Shake well; wait 1 min between puffs', fx:'Tremor, fast heartbeat — short-lived'}
 ];
 
 // med pass log for today + history
@@ -741,7 +763,7 @@ const APPTS = [
   {id:'a4', cid:'c2', title:'Care plan review', type:'Internal', date:iso(addDays(TODAY,1)), time:'11:00', dur:60, provider:'Team', loc:'Maple House', flag:'Annual plan expires in 12 days', notes:[], files:[]},
   {id:'a5', cid:'c4', title:'Endocrinology', type:'Medical', date:iso(addDays(TODAY,2)), time:'09:15', dur:40, provider:'Dr. P. Nair', loc:'Northside Medical', flag:'', notes:[], files:[]},
   {id:'a6', cid:'c6', title:'Day program intake', type:'Internal', date:iso(addDays(TODAY,3)), time:'13:00', dur:90, provider:'A. Osei', loc:'Birch House', flag:'', notes:[], files:[]},
-  {id:'a7', cid:'c1', title:'Guardian check-in call', type:'Family', date:iso(addDays(TODAY,4)), time:'17:30', dur:30, provider:'D. Whitfield', loc:'Phone', flag:'', notes:[], files:[]},
+  {id:'a7', cid:'c1', title:'Guardian check-in call', type:'Family', date:iso(addDays(TODAY,4)), time:'17:30', dur:30, provider:'Guardian (JW)', loc:'Phone', flag:'', notes:[], files:[]},
   {id:'a8', cid:'c3', title:'Podiatry', type:'Medical', date:iso(addDays(TODAY,6)), time:'08:45', dur:30, provider:'Dr. M. Vela', loc:'Riverside Clinic', flag:'', notes:[], files:[]},
   {id:'a9', cid:'c5', title:'Swallow study review', type:'Medical', date:iso(addDays(TODAY,-2)), time:'10:00', dur:45, provider:'Dr. R. Sung', loc:'Northside Medical', flag:'', notes:[{by:'N.H.', at:'2 days ago', txt:'Diet order unchanged. Thickened liquids continue.'}], files:[{n:'swallow-study-summary.pdf', s:'240 KB'}]}
 ];
@@ -773,7 +795,7 @@ const CREDS = {
 const CHECKLIST = [
   {g:'Client records (Title 22, Div. 6)', items:[
     {t:'Preplacement appraisal on file (LIC 603)', s:'ok', d:'6 of 6', c:'§ 80069'},
-    {t:'Needs & Services Plan / IPP current (LIC 625)', s:'warn', d:'1 expiring in 5 days — Rosa A.', c:'§ 80068.2'},
+    {t:'Needs & Services Plan / IPP current (LIC 625)', s:'warn', d:'1 expiring in 5 days — RA A.', c:'§ 80068.2'},
     {t:'Physician report current (LIC 602A)', s:'ok', d:'6 of 6', c:'§ 80069(a)'},
     {t:'Centrally stored medication record complete', s:'warn', d:'1 gap today', c:'§ 80075(k)'}]},
   {g:'Personnel', items:[
@@ -794,6 +816,52 @@ const GUIDES = [
   {t:'Wildfire evacuation plan', r:'Review due Aug 2026', a:'4 of 6 acknowledged', s:'warn'},
   {t:'Power outage — medication cold chain', r:'Reviewed Mar 2026', a:'6 of 6 acknowledged', s:'ok'}
 ];
+
+let FIREDRILLS = [
+  {date:iso(addDays(TODAY,-53)), time:'19:05', home:'Maple House', shift:'Evening', evac:'2 min 40 s', by:'A. Osei', wet:1},
+  {date:iso(addDays(TODAY,-55)), time:'10:20', home:'Cedar House', shift:'Day', evac:'3 min 05 s', by:'D. Clarke', wet:1},
+  {date:iso(addDays(TODAY,-58)), time:'20:15', home:'Birch House', shift:'Evening', evac:'2 min 55 s', by:'A. Osei', wet:1}
+];
+let WATERTEMP = [];
+(()=>{ const homes=['Maple House','Cedar House','Birch House'];
+  for(let d=1;d<=9;d++) homes.forEach((h,ix)=>{
+    if(d<=2 && h==='Birch House') return; // the 2-day gap flagged in the checklist
+    const t=[112,114,116,118,117,115,113][(d+ix)%7];
+    WATERTEMP.push({date:iso(addDays(TODAY,-d)), home:h, temp:t, by:['M.R.','D.C.','A.O.'][ix], wet:d>2?1:0});
+  });
+})();
+
+let TEMPLATES5=[
+ {id:'tp1',name:'Medication record (MAR)',desc:'Monthly paper MAR — meds stay on paper, not in the system',fields:[
+   {l:'Client ID',ty:'text'},{l:'Residence',ty:'text'},{l:'Medication, dose and route',ty:'long text'},
+   {l:'Administration times',ty:'text'},{l:'Prescriber',ty:'text'},{l:'Med staff signature',ty:'signature'},{l:'Administrator',ty:'signature'}]},
+ {id:'tp2',name:'Incident report (SIR)',desc:'Special incident report with notification record',fields:[
+   {l:'Client ID',ty:'text'},{l:'Incident type',ty:'text'},{l:'Date',ty:'date'},{l:'Time',ty:'time'},
+   {l:'Description of incident',ty:'long text'},{l:'Injuries observed',ty:'checkbox'},{l:'Notifications made',ty:'long text'},
+   {l:'Reporting staff',ty:'signature'},{l:'Administrator',ty:'signature'}]},
+ {id:'tp3',name:'Weekly client checklist',desc:'Routine items with per-item sign-off',fields:[
+   {l:'Client ID',ty:'text'},{l:'Week of',ty:'date'},{l:'Checklist items completed',ty:'long text'},
+   {l:'Notes',ty:'long text'},{l:'Completed by',ty:'signature'}]},
+ {id:'tp4',name:'Fire drill log',desc:'Monthly drill record per home',fields:[
+   {l:'Home',ty:'text'},{l:'Date',ty:'date'},{l:'Time',ty:'time'},{l:'Shift',ty:'text'},
+   {l:'Evacuation time',ty:'text'},{l:'Conducted by',ty:'text'},{l:'Administrator',ty:'signature'}]},
+ {id:'tp5',name:'Water temperature log',desc:'Daily hot-water readings per home',fields:[
+   {l:'Home',ty:'text'},{l:'Date',ty:'date'},{l:'Temperature (°F)',ty:'text'},{l:'Within 120°F limit',ty:'checkbox'},
+   {l:'Recorded by',ty:'text'},{l:'Administrator',ty:'signature'}]}
+];
+
+let CLIENT_NOTES = {
+  c1:[{text:'Prefers the blue cup at breakfast — keeps mornings smooth.',by:'Maria Reyes',at:'Aug 4, 9:12 AM'}],
+  c3:[{text:'Jaw tension noticed before day program transitions — allow extra time.',by:'Devon Clarke',at:'Aug 2, 3:40 PM'}]
+};
+function addClientNote(cid){
+  const v=el('cnNew').value.trim(); if(!v) return;
+  (CLIENT_NOTES[cid]=CLIENT_NOTES[cid]||[]).unshift({text:v,by:ME[state.role].name,at:nowStamp()});
+  sbPush('np_demo_client_notes',{cid, note:v, noted_by:ME[state.role].name});
+  logAudit('Added internal note',client(cid).uci);
+  render(); toast('Note added.');
+}
+function nowStamp(){ return new Date().toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
 
 const WEEKLY = {
   c1:[{t:'Check if bathroom items need to be replaced',d:1,by:'M.R.',at:'Mon 9:20 AM'},{t:'Clean room',d:1,by:'M.R.',at:'Mon 9:40 AM'},{t:'Change bed linens',d:0},{t:'Restock personal supplies',d:0},{t:'Check clothing for repairs or replacement',d:0}],
@@ -841,7 +909,7 @@ let TASKS = [
   {id:'t6', title:'File incident follow-up notes', sid:'s6', cid:'c4', due:iso(addDays(TODAY,-1)), stage:'Overdue', pri:'High', subs:[]},
   {id:'t7', title:'Restock first aid supplies', sid:'s2', cid:null, due:iso(addDays(TODAY,3)), stage:'Not started', pri:'Low', subs:[]},
   {id:'t8', title:'Quarterly fire drill log', sid:'s3', cid:null, due:iso(addDays(TODAY,7)), stage:'Not started', pri:'Medium', subs:[]},
-  {id:'t9', title:'Weekly progress notes — Rosa A.', sid:'s1', cid:'c2', due:iso(addDays(TODAY,1)), stage:'Done', pri:'Medium', subs:[]}
+  {id:'t9', title:'Weekly progress notes — RA A.', sid:'s1', cid:'c2', due:iso(addDays(TODAY,1)), stage:'Done', pri:'Medium', subs:[]}
 ];
 
 let INCIDENTS = [
@@ -896,42 +964,40 @@ const ONBOARD = [
 ];
 
 const THREADS = [
-  {id:'th1', who:'Nell Harding, RN', sub:'Terrence — INR draw', role:'Nurse', last:'I can do the draw Thursday morning.', unread:1,
+  {id:'th1', who:'Nell Harding, RN', sub:'TB — INR draw', role:'Nurse', last:'I can do the draw Thursday morning.', unread:1,
    msgs:[{me:0,t:'Dr. Chen wants an INR before the neurology visit. Can we fit a draw in this week?',w:'M. Reyes',at:'Yesterday 4:12 PM'},
          {me:0,t:'I can do the draw Thursday morning.',w:'N. Harding',at:'Yesterday 5:40 PM'}]},
-  {id:'th2', who:'Dana Whitfield', sub:'James — dental appointment', role:'Guardian', last:'Thanks for the update.', unread:0,
-   msgs:[{me:1,t:'James has a cleaning today at 2pm. Maria is taking him and will message after.',w:'You',at:'Today 8:05 AM'},
-         {me:0,t:'Thanks for the update.',w:'D. Whitfield',at:'Today 8:31 AM'}]},
+  {id:'th2', who:'Guardian on file', sub:'JW — dental appointment', role:'Guardian', last:'Thanks for the update.', unread:0,
+   msgs:[{me:1,t:'JW has a cleaning today at 2pm. Maria is taking him and will message after.',w:'You',at:'Today 8:05 AM'},
+         {me:0,t:'Thanks for the update.',w:'Guardian (JW)',at:'Today 8:31 AM'}]},
   {id:'th3', who:'Maple House team', sub:'Monthly med count', role:'Group', last:'Count starts at 2pm, two staff needed.', unread:2,
    msgs:[{me:1,t:'Count starts at 2pm, two staff needed.',w:'You',at:'Today 7:50 AM'}]}
 ];
 
 const AUDIT = [
-  {at:'Today 08:12', who:'M. Reyes', act:'Recorded med pass', obj:'James Whitfield · Levetiracetam 08:00'},
+  {at:'Today 08:12', who:'M. Reyes', act:'Recorded med pass', obj:'Client JW · Levetiracetam 08:00'},
   {at:'Today 07:58', who:'M. Reyes', act:'Signed in', obj:'Maple House workstation'},
-  {at:'Yesterday 19:52', who:'G. Okonjo', act:'Created incident report', obj:'Ingrid Novak · Fall'},
-  {at:'Yesterday 17:40', who:'N. Harding', act:'Edited medication order', obj:'Terrence Bell · Warfarin 4 mg'},
+  {at:'Yesterday 19:52', who:'G. Okonjo', act:'Created incident report', obj:'Client IN · Fall'},
+  {at:'Yesterday 17:40', who:'N. Harding', act:'Edited medication order', obj:'Client TB · Warfarin 4 mg'},
   {at:'Yesterday 14:03', who:'E. Dresslar', act:'Exported compliance packet', obj:'All clients · Q2 2026'},
-  {at:'2 days ago 11:20', who:'D. Clarke', act:'Uploaded document', obj:'Terrence Bell · INR results'},
+  {at:'2 days ago 11:20', who:'D. Clarke', act:'Uploaded document', obj:'Client TB · INR results'},
   {at:'2 days ago 09:14', who:'E. Dresslar', act:'Changed role permissions', obj:'T. Ibarra → Direct Support Professional'}
 ];
 
 /* ══════════════ STATE ══════════════ */
 const NAV = {
   director:[
-    {g:'Today'},   {id:'home',t:'Home',i:'⌂'}, {id:'tasks',t:'Tasks',i:'☑'},
-    {g:'Care'},    {id:'clients',t:'Clients',i:'☺'}, {id:'meds',t:'Medications',i:'⊕'}, {id:'incidents',t:'Incidents',i:'⚠'},
-    {g:'Agency'},  {id:'billing',t:'Attendance & billing',i:'▦'}, {id:'team',t:'Team',i:'⚇'}, {id:'compliance',t:'Compliance',i:'▣'},
-    {g:'Setup'},   {id:'templates',t:'Templates',i:'◫'}, {id:'integrations',t:'Integrations',i:'⇄'}
+    {g:'Today'},   {id:'home',t:'Home',i:'⌂'}, {id:'tasks',t:'Tasks',i:'☑'}, {id:'calendar',t:'Calendar',i:'▤'},
+    {g:'Care'},    {id:'clients',t:'Clients',i:'☺'}, {id:'incidents',t:'Incidents',i:'⚠'}, {id:'safety',t:'Safety log',i:'▣'},
+    {g:'Setup'},   {id:'templates',t:'Documents',i:'◫'}
   ],
   staff:[
-    {g:'Today'},   {id:'home',t:'My shift',i:'⌂'}, {id:'tasks',t:'My tasks',i:'☑'},
-    {g:'Care'},    {id:'clients',t:'Clients',i:'☺'}, {id:'meds',t:'Med pass',i:'⊕'}, {id:'incidents',t:'Incidents',i:'⚠'},
-    {g:'Support'}, {id:'training',t:'Training & FAQ',i:'◉'}
+    {g:'Today'},   {id:'home',t:'My shift',i:'⌂'}, {id:'tasks',t:'My tasks',i:'☑'}, {id:'calendar',t:'Calendar',i:'▤'},
+    {g:'Care'},    {id:'clients',t:'Clients',i:'☺'}, {id:'incidents',t:'Incidents',i:'⚠'}, {id:'safety',t:'Safety log',i:'▣'}
   ],
   family:[
-    {g:'James Whitfield'},
-    {id:'home',t:'Overview',i:'⌂'}, {id:'meds',t:'Medications',i:'⊕'}, {id:'calendar',t:'Appointments',i:'▤'},
+    {g:'Client JW'},
+    {id:'home',t:'Overview',i:'⌂'}, {id:'calendar',t:'Appointments',i:'▤'},
     {id:'docs',t:'Documents',i:'▤'}, {id:'messages',t:'Messages',i:'✉'}
   ]
 };
@@ -939,10 +1005,10 @@ const NAV = {
 const ME = {
   director:{name:'Erica Dresslar', init:'ED', role:'Executive Director', label:'Director view'},
   staff:{name:'Maria Reyes', init:'MR', role:'Direct Support Professional · Maple House', label:'Staff view'},
-  family:{name:'Dana Whitfield', init:'DW', role:'Guardian of James Whitfield', label:'Family view'}
+  family:{name:'Guardian on file', init:'DW', role:'Guardian of Client JW', label:'Family view'}
 };
 
-const state = { role:'director', view:'home', client:null, calMode:'list', calFilter:{type:'',client:''}, thread:'th1', tab:'', tourSeen:{} };
+const state = { openBinder:'', role:'director', view:'home', client:null, calMode:'list', calFilter:{type:'',client:''}, thread:'th1', tab:'', tourSeen:{} };
 
 /* ══════════════ HELPERS ══════════════ */
 const $  = s => document.querySelector(s);
@@ -953,7 +1019,7 @@ const staff  = id => STAFF.find(s=>s.id===id);
 const visibleClients = () => state.role==='family' ? CLIENTS.filter(c=>c.id==='c1') : CLIENTS;
 
 const meInit=()=>ME[state.role].name.split(' ').map(w=>w[0]+'.').join('');
-function logAudit(act,obj){ AUDIT.unshift({at:'Just now',who:meInit(),act,obj}); if(AUDIT.length>40) AUDIT.pop(); }
+function logAudit(act,obj){ AUDIT.unshift({at:'Just now',who:meInit(),act,obj}); if(AUDIT.length>40) AUDIT.pop(); sbPush('np_demo_audit_log',{who:meInit(),act,obj}); }
 function toast(msg){ el('toastTxt').textContent=msg; el('toast').classList.add('on'); clearTimeout(window._tt); window._tt=setTimeout(()=>el('toast').classList.remove('on'),2400); }
 function toMin(hm){ const [h,m]=hm.split(':').map(Number); return h*60+m; }
 function pctOfDay(hm){ const START=6*60, END=22*60; return Math.max(0,Math.min(100,(toMin(hm)-START)/(END-START)*100)); }
@@ -984,6 +1050,8 @@ function signIn(role){
   renderNav(); render();
   window.scrollTo(0,0);
 }
+function printSheet(html){ let p=el('printArea'); if(!p){ p=document.createElement('div'); p.id='printArea'; document.body.appendChild(p);} p.innerHTML=html; setTimeout(()=>window.print(),50); }
+const wetPill = ()=>`<span class="pill warn" title="This record still needs a wet-ink signature on the printed sheet">✍ Wet signature</span>`;
 function signOut(){ if(typeof tourEnd==='function') tourEnd(); const f=el('tlFull'); if(f) f.remove(); el('app').classList.remove('on'); el('login').style.display='flex'; el('askPanel').classList.remove('on'); closeAll(); }
 
 function renderNav(){
@@ -1020,7 +1088,7 @@ function sideProg(){
     const appl=TRAINING.filter(x=>x.req||(x.asg||[]).includes('s1'));
     rows.push({l:'Training complete', a:appl.filter(x=>x.done.includes('s1')).length, b:appl.length, go:'training'});
   }
-  el('sideProg').innerHTML = rows.length?`<div class="sprog"><div class="sp-t">${state.role==='family'?"James today":"Today's progress"}</div>
+  el('sideProg').innerHTML = rows.length?`<div class="sprog"><div class="sp-t">${state.role==='family'?"JW today":"Today's progress"}</div>
     ${rows.map(r=>{
       const pct=r.b?Math.round(r.a/r.b*100):100;
       return `<button class="sprog-row" onclick="go('${r.go}')">
@@ -1044,7 +1112,7 @@ function render(){
   const map = {
     home:viewHome, clients:viewClients, meds:viewMeds, calendar:viewCalendar, tasks:viewTasks, billing:viewBilling,
     incidents:viewIncidents, team:viewTeam, messages:viewMessages, compliance:viewCompliance,
-    templates:viewTemplates, integrations:viewIntegrations, training:viewTraining, docs:viewDocs
+    templates:viewTemplates, integrations:viewIntegrations, training:viewTraining, docs:viewDocs, safety:viewSafety
   };
   v.innerHTML = (map[state.view]||viewHome)();
   if(typeof tlAutoScroll==='function') requestAnimationFrame(()=>tlAutoScroll());
@@ -1089,7 +1157,7 @@ function tlCard(full){
       tip:`${a.title} — ${client(a.cid).name} at ${hm12(a.time)}`,on:`openAppt('${a.id}')`})).join('');
 
   let rows=[
-    {dot:'#3A6EA5',lab:'Med pass',bars:medBars},
+
     {dot:'#C9A84C',lab:'Appointments',bars:apptBars||'<span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:11.5px;color:var(--muted)">Nothing scheduled</span>'}
   ];
   if(state.role!=='family'){
@@ -1110,7 +1178,7 @@ function tlCard(full){
     rows=[{group:'Clients'}];
     fClients.forEach(c=>{
       const bars=[];
-      if(tlState.kind!=='appts') MEDS.filter(m=>m.cid===c.id&&m.status==='active'&&!m.times.includes('PRN')).forEach(m=>m.times.forEach(t=>{
+      if(false) MEDS.filter(m=>m.cid===c.id&&m.status==='active'&&!m.times.includes('PRN')).forEach(m=>m.times.forEach(t=>{
         const l=LOGS.find(x=>x.date===D&&x.time===t&&x.mid===m.id);
         const late=D===T&&!l&&t<nowHM();
         const missedPast=D<T&&(!l||l.status!=='given');
@@ -1160,7 +1228,7 @@ function tlCard(full){
   return `
   <section class="rail-card">
     <div class="rail-head">
-      <h2>${state.role==='family'?"James's day":full?'The floor':'The floor right now'}</h2>
+      <h2>${state.role==='family'?"JW's day":full?'The floor':'The floor right now'}</h2>
       ${full?`
         <button class="btn ghost sm" onclick="tlNav(-1)" title="Previous day">‹</button>
         <span class="pill ${D===T?'gold':'neutral'}" style="min-width:150px;justify-content:center">${relDay(D)} · ${fmtDate(D)}</span>
@@ -1173,7 +1241,6 @@ function tlCard(full){
           </select>`:''}
           <div class="tabs">
             <button class="${!tlState.kind?'active':''}" onclick="tlState.kind='';tlfRefresh()">All</button>
-            <button class="${tlState.kind==='meds'?'active':''}" onclick="tlState.kind='meds';tlfRefresh()">Med passes</button>
             <button class="${tlState.kind==='appts'?'active':''}" onclick="tlState.kind='appts';tlfRefresh()">Appointments</button>
           </div>
         </div>`
@@ -1183,7 +1250,6 @@ function tlCard(full){
     </div>
     ${body}
     <div class="rail-legend">
-      <span><i style="background:#3A6EA5"></i>Recorded med pass</span>
       <span><i style="background:#E8EEF6;box-shadow:inset 0 0 0 1px #CFDDEE"></i>Due later</span>
       <span><i style="background:#C9A84C"></i>Appointment</span>
       ${state.role!=='family'?'<span><i style="background:#2F7A5B"></i>Staff on shift</span>':''}
@@ -1207,21 +1273,6 @@ function tlExpand(){
 function attentionItems(){
   const out=[];
   const cl = visibleClients().map(c=>c.id);
-  // late med passes
-  const lateP=[];
-  Object.entries(MEDS.filter(m=>m.status==='active'&&!m.times.includes('PRN')&&cl.includes(m.cid))
-    .reduce((a,m)=>{m.times.forEach(t=>{a[t]=(a[t]||0)+1});return a;},{}))
-    .forEach(([t,n])=>{
-      const done=LOGS.filter(l=>l.date===T&&l.time===t&&cl.includes(l.cid)).length;
-      if(t<nowHM() && done<n) lateP.push({t,miss:n-done});
-    });
-  if(lateP.length){
-    const tot=lateP.reduce((a,x)=>a+x.miss,0);
-    out.push({k:'bad',ic:'⊕',t:`${tot} dose${tot>1?'s':''} not recorded`,
-      s:`Past due on the ${lateP.map(x=>hm12(x.t)).join(' and ')} pass — record or mark refused`,
-      a:'Open med pass',go:()=>go('meds')});
-  }
-  MEDS.filter(m=>m.flag&&cl.includes(m.cid)).forEach(m=>out.push({k:'warn',ic:'⚑',t:`${client(m.cid).name} — ${m.flag}`,s:`${m.name} ${m.dose} · ordered by ${m.prescriber}`,a:'View medication',go:()=>openClient(m.cid,'meds')}));
   INCIDENTS.filter(i=>i.status!=='Closed'&&cl.includes(i.cid)).forEach(i=>out.push({k:'bad',ic:'⚠',t:`Incident follow-up open — ${client(i.cid).name}`,s:`${i.type} on ${relDay(i.date)} · reported by ${i.by}`,a:'Open report',go:()=>openIncident(i.id)}));
   APPTS.filter(a=>a.flag&&a.date>=T&&cl.includes(a.cid)).forEach(a=>out.push({k:'warn',ic:'▤',t:esc(a.flag),s:`${client(a.cid).name} · ${a.title} · ${relDay(a.date)} ${hm12(a.time)}`,a:'Open appointment',go:()=>openAppt(a.id)}));
   if(state.role!=='family'){
@@ -1257,10 +1308,9 @@ function viewHome(){
   // stats per role
   let stats;
   if(state.role==='director'){
-    const totalDue=MEDS.filter(m=>m.status==='active'&&!m.times.includes('PRN')).reduce((a,m)=>a+m.times.filter(t=>t<=nowHM()).length,0);
-    const given=LOGS.filter(l=>l.date===T&&l.status==='given').length;
+    const od=TASKS.filter(t=>t.stage==='Overdue'||(t.stage!=='Done'&&t.due<T)).length;
     stats=[
-      {lb:'Med passes on time',vl:`${totalDue?Math.round(given/totalDue*100):100}%`,ft:`${given} of ${totalDue} recorded so far`,c:given>=totalDue?'ok':'warn',go:"go('meds')"},
+      {lb:'Open tasks',vl:TASKS.filter(t=>t.stage!=='Done').length,ft:od?od+' overdue':'None overdue',c:od?'warn':'ok',go:"go('tasks')"},
       {lb:'Clients in service',vl:CLIENTS.length,ft:'Across 3 homes',c:'',go:"go('clients')"},
       {lb:'Staff on shift now',vl:SHIFTS.filter(s=>s.start<=nowHM()&&s.end>=nowHM()).length,ft:`${SHIFTS.length} scheduled today`,c:'',go:"go('team')"},
       {lb:'Open incidents',vl:INCIDENTS.filter(i=>i.status!=='Closed').length,ft:'Follow-up required',c:INCIDENTS.filter(i=>i.status!=='Closed').length?'bad':'ok',go:"go('incidents')"}
@@ -1272,17 +1322,17 @@ function viewHome(){
     const mates=SHIFTS.filter(x=>x.sid!=='s1'&&(x.home===my.home||x.home==='All homes')).map(x=>staff(x.sid).init).join(', ');
     stats=[
       {lb:'Your shift',vl:`${strip(my.start)}<small> – ${strip(my.end)}</small>`,ft:`${esc(my.home)}${mates?' · with '+mates:''}`,c:'',go:'tlExpand()'},
-      {lb:'Clients today',vl:2,ft:'James W., Rosa A.',c:'',go:"go('clients')"},
+      {lb:'Clients today',vl:2,ft:'JW W., RA A.',c:'',go:"go('clients')"},
       {lb:'Open tasks',vl:mine.length,ft:`${mine.filter(t=>t.due<=T).length} due today`,c:mine.filter(t=>t.due<=T).length?'warn':'ok',go:"go('tasks')"},
-      {lb:'Next med pass',vl:nextPassLabel(),ft:esc(my.home),c:'',go:"go('meds')"}
+      {lb:'Appointments today',vl:APPTS.filter(a=>a.date===T&&!a.cancelled).length,ft:'Tap to open the calendar',c:'',go:"go('calendar')"}
     ];
   } else {
     const nxA=APPTS.filter(a=>a.cid==='c1'&&a.date>=T).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time))[0];
     const withJ=SHIFTS.find(x=>x.home==='Maple House'&&x.start<=nowHM()&&x.end>=nowHM())||SHIFTS.find(x=>x.home==='Maple House');
     stats=[
-      {lb:'Medications',vl:MEDS.filter(m=>m.cid==='c1'&&m.status==='active').length,ft:'All doses recorded today',c:'ok',go:"go('meds')"},
+      {lb:'Shared documents',vl:DOCS.filter(d=>d.cid==='c1').length,ft:'Reports and consents',c:'',go:"go('docs')"},
       {lb:'Next appointment',vl:nxA?`${hm12(nxA.time).replace(/ (AM|PM)/,'')}<small> ${hm12(nxA.time).slice(-2)}</small>`:'—',ft:nxA?esc(nxA.title):'Nothing scheduled',c:'',go:nxA?`openAppt('${nxA.id}')`:"go('calendar')"},
-      {lb:'On shift with James',vl:withJ?staff(withJ.sid).init:'—',ft:withJ?`Maple House · until ${hm12(withJ.end)}`:'See timeline',c:'',go:'tlExpand()'},
+      {lb:'On shift with JW',vl:withJ?staff(withJ.sid).init:'—',ft:withJ?`Maple House · until ${hm12(withJ.end)}`:'See timeline',c:'',go:'tlExpand()'},
       {lb:'Unread messages',vl:0,ft:'Care team replies within a day',c:'',go:"go('messages')"}
     ];
   }
@@ -1317,7 +1367,7 @@ function viewHome(){
               <div class="at"><b>${a.t}</b><span>${a.s}</span></div>
               <div class="aa">${a.a} →</div>
             </div>`).join('')
-          : `<div class="empty"><b>Nothing outstanding</b>Med passes, appointments and reports are all current.</div>`}
+          : `<div class="empty"><b>Nothing outstanding</b>Appointments, tasks and reports are all current.</div>`}
         </div>
       </section>
 
@@ -1385,8 +1435,8 @@ function actionStrip(){
   });
   const openT=myTasks().filter(t=>t.stage!=='Done'&&t.due<=T).length;
   return `<div class="act-strip">
-    <button onclick="go('meds')"><span class="as-ic" style="background:${unrec?'var(--bad-soft)':'var(--good-soft)'};color:${unrec?'#8C312B':'#22614A'}">⊕</span>
-      <span><b>Record med pass</b><small>${unrec?unrec+' dose'+(unrec>1?'s':'')+' waiting':'All caught up'}</small></span>${unrec?`<span class="as-n">${unrec}</span>`:''}</button>
+    <button onclick="go('safety')"><span class="as-ic" style="background:var(--good-soft);color:#22614A">▣</span>
+      <span><b>Safety log</b><small>Fire drills and water temps</small></span></button>
     <button onclick="go('tasks')"><span class="as-ic" style="background:var(--navy-soft);color:var(--navy)">☑</span>
       <span><b>My tasks</b><small>${openT?openT+' due today':'Nothing due today'}</small></span>${openT?`<span class="as-n">${openT}</span>`:''}</button>
     <button onclick="openIncidentForm()"><span class="as-ic" style="background:var(--gold-soft);color:#7A5E12">⚠</span>
@@ -1414,7 +1464,7 @@ function trainCard(sid){
   </section>`;
 }
 function homeSub(n){
-  if(state.role==='family') return 'Everything logged for James in the last 24 hours, updated as staff record it.';
+  if(state.role==='family') return 'Everything logged for JW in the last 24 hours, updated as staff record it.';
   if(!n) return 'Nothing needs you right now. The floor is running clean.';
   return `${n} thing${n>1?'s':''} need${n>1?'':'s'} a look before you get into the rest of the day.`;
 }
@@ -1457,7 +1507,7 @@ function openClient(id,tab){ state.client=id; state.tab=tab||'overview'; render(
 
 function viewClient(id){
   const c=client(id);
-  const tabs=['overview','meds','appointments','documents','notes'];
+  const tabs=['overview','appointments','documents','notes'];
   const labels={overview:'Overview',meds:'Medications',appointments:'Appointments',documents:'Documents',notes:'Progress notes'};
   return `
   <div class="crumb"><button onclick="go('clients')">Clients</button> <span>/</span> <span>${esc(c.name)}</span></div>
@@ -1465,7 +1515,7 @@ function viewClient(id){
     <span class="av-sm ${c.tag}" style="width:46px;height:46px;border-radius:13px;font-size:15px">${c.init}</span>
     <div>
       <h1>${esc(c.name)}</h1>
-      <div class="sub">${esc(c.home)} · ${esc(c.dx)} · guardian ${esc(c.guardian)}</div>
+      <div class="sub">${esc(c.uci)} · ${esc(c.home)} · ${esc(c.dx)} · guardian ${esc(c.guardian)}</div>
     </div>
     <div class="right">
       <button class="btn ghost" onclick="openIncidentForm('${c.id}')">Report incident</button>
@@ -1474,8 +1524,7 @@ function viewClient(id){
   </div>
   ${c.alerts.length?`<div class="sec-note" style="background:var(--bad-soft);border-color:#F0CBC7;color:#8C312B;margin-bottom:14px"><span>⚠</span><div><b>Standing alerts</b>${c.alerts.join(' · ')}</div></div>`:''}
   <div class="tabs" style="margin-bottom:14px">${tabs.map(t=>`<button class="${state.tab===t?'active':''}" onclick="state.tab='${t}';render()">${labels[t]}</button>`).join('')}</div>
-  ${ state.tab==='meds' ? clientMeds(c)
-   : state.tab==='appointments' ? clientAppts(c)
+  ${ state.tab==='appointments' ? clientAppts(c)
    : state.tab==='documents' ? clientDocs(c)
    : state.tab==='notes' ? clientNotes(c)
    : clientOverview(c) }`;
@@ -1484,8 +1533,9 @@ function viewClient(id){
 function wkMonday(){ return fmtDate(addDays(TODAY,-((TODAY.getDay()+6)%7))); }
 function wkToggle(cid,i){
   const w=WEEKLY[cid][i]; w.d=w.d?0:1;
-  if(w.d){ w.by=meInit(); w.at='just now'; } else { w.by=''; w.at=''; }
-  logAudit('Updated weekly checklist',`${client(cid).name} · ${w.t}`);
+  if(w.d){ w.by=ME[state.role].name; w.at=nowStamp(); } else { w.by=''; w.at=''; }
+  sbPush('np_demo_checklist_logs',{cid, item:w.t, done:w.d, signed_by:w.d?w.by:null, signed_at:w.d?new Date().toISOString():null});
+  logAudit('Updated weekly checklist',`${client(cid).uci} · ${w.t}`);
   render();
 }
 function wkAdd(cid){
@@ -1498,7 +1548,7 @@ function weeklyCard(c){
   const list=WEEKLY[c.id]||[];
   const done=list.filter(x=>x.d).length;
   return `<section class="card">
-    <div class="card-h"><h2>Weekly checklist</h2><div class="sub">Week of ${wkMonday()} · resets Monday</div>
+    <div class="card-h"><h2>Weekly checklist</h2><div class="sub">${esc(c.uci)} · week of ${wkMonday()} · each sign-off records name, date and time</div>
       <div class="right"><span class="pill ${done===list.length&&list.length?'ok':'neutral'}">${done}/${list.length} done</span></div></div>
     <div class="card-b flush">
       ${list.map((w,i)=>`<div class="checkrow" style="cursor:pointer" onclick="wkToggle('${c.id}',${i})">
@@ -1519,14 +1569,13 @@ function clientOverview(c){
     <div>
       ${weeklyCard(c)}
       <section class="card">
-        <div class="card-h"><h2>Today's med pass</h2><div class="right"><button class="btn ghost sm" onclick="state.tab='meds';render()">Full list</button></div></div>
+        <div class="card-h"><h2>Internal notes</h2><div class="sub">Staff-only · ${esc(c.uci)}</div></div>
         <div class="card-b flush">
-          <table class="tb"><tbody>${todayLogs.length?todayLogs.map(l=>{
-            const m=MEDS.find(x=>x.id===l.mid);
-            return `<tr><td style="width:86px"><b>${hm12(l.time)}</b></td>
-              <td><div>${esc(m.name)} ${esc(m.dose)}</div><div class="tiny muted">${esc(m.route)} · ${esc(m.purpose)}</div></td>
-              <td style="text-align:right"><span class="pill ${l.status==='given'?'ok':l.status==='refused'?'warn':'bad'}">${l.status}</span><div class="tiny muted" style="margin-top:3px">${l.by} · ${l.sig}</div></td></tr>`;
-          }).join(''):`<tr><td class="empty">No doses recorded yet today.</td></tr>`}</tbody></table>
+          ${(CLIENT_NOTES[c.id]||[]).map(n=>`<div class="docrow"><div class="di">✎</div>
+            <div class="dt"><b>${esc(n.text)}</b><span>${esc(n.by)} · ${esc(n.at)}</span></div></div>`).join('')||'<div class="empty">No internal notes yet.</div>'}
+          ${state.role!=='family'?`<div style="display:flex;gap:8px;padding:12px 18px">
+            <input class="inp" id="cnNew" placeholder="Add an internal note…" style="height:34px" onkeydown="if(event.key==='Enter')addClientNote('${c.id}')">
+            <button class="btn ghost sm" onclick="addClientNote('${c.id}')">Add</button></div>`:''}
         </div>
       </section>
       <section class="card">
@@ -1554,7 +1603,7 @@ function clientOverview(c){
       <section class="card">
         <div class="card-h"><h2>Profile</h2></div>
         <div class="card-b">
-          ${[['Home',c.home],['Service level',c.dx],['Age',c.age],['In service since',fmtDate(c.since)],['Guardian / contact',c.guardian],['Active medications',meds.length]]
+          ${[['Home',c.home],['Service level',c.dx],['Age',c.age],['In service since',fmtDate(c.since)],['Guardian / contact',c.guardian],['Client ID',c.uci]]
             .map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)"><span class="muted tiny">${k}</span><b style="font-size:13.2px;text-align:right">${esc(v)}</b></div>`).join('')}
         </div>
       </section>
@@ -1629,7 +1678,7 @@ function docRow(d){
 
 function clientAppts(c){
   const list=APPTS.filter(a=>a.cid===c.id).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
-  return `<section class="card"><div class="card-h"><h2>Appointments</h2><div class="right"><button class="btn navy sm" onclick="toast('New appointment form opens here.')">＋ Add appointment</button></div></div>
+  return `<section class="card"><div class="card-h"><h2>Appointments</h2><div class="right"><button class="btn navy sm" onclick="openApptForm('${c.id}')">＋ Add appointment</button></div></div>
   <div class="card-b flush"><table class="tb"><thead><tr><th>Date</th><th>Appointment</th><th>Provider</th><th>Location</th><th>Status</th></tr></thead>
   <tbody>${list.map(a=>`<tr class="click" onclick="openAppt('${a.id}')"><td><b>${relDay(a.date)}</b><div class="tiny muted">${hm12(a.time)}</div></td>
   <td>${esc(a.title)}<div class="tiny muted">${esc(a.type)}</div></td><td>${esc(a.provider)}</td><td class="muted">${esc(a.loc)}</td>
@@ -1662,8 +1711,8 @@ function viewMeds(){
   const times=[...new Set(MEDS.filter(m=>m.status==='active'&&!m.times.includes('PRN')&&cl.some(c=>c.id===m.cid)).flatMap(m=>m.times))].sort();
   return `
   <div class="page-h">
-    <div><h1>${state.role==='family'?'Medications':'Med pass'}</h1><div class="sub">${state.role==='family'?"James Whitfield · current orders and today's record":fmtLong(T)+' · all homes'}</div></div>
-    <div class="right"><button class="btn ghost" onclick="toast('Med pass sheet exported.')">Export MAR</button></div>
+    <div><h1>${state.role==='family'?'Medications':'Med pass'}</h1><div class="sub">${state.role==='family'?"Client JW · current orders and today's record":fmtLong(T)+' · all homes'}</div></div>
+    <div class="right">${state.role!=='family'?wetPill()+' <button class="btn ghost" onclick="openMAR()">MAR sheet</button>':''}</div>
   </div>
   ${times.map(t=>{
     const due=MEDS.filter(m=>m.status==='active'&&m.times.includes(t)&&cl.some(c=>c.id===m.cid));
@@ -1694,6 +1743,38 @@ function viewMeds(){
   </section>`;
 }
 
+function openMAR(cid){
+  cid=cid||visibleClients()[0].id;
+  openModal('Medication Administration Record',`
+    <div class="row2">
+      <div class="field"><label>Client</label><select class="inp" id="marClient" onchange="el('marPrev').innerHTML=marHtml(this.value)">${visibleClients().map(c=>`<option value="${c.id}" ${c.id===cid?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Month</label><select class="inp"><option>${TODAY.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</option></select></div>
+    </div>
+    <div class="sec-note" style="margin-bottom:12px"><span>✍</span><div><b>Wet signature record</b>The portal fills the grid from the e-sign log. Print it, have staff initial in ink, and file the signed sheet in the med binder — the paper copy stays the record of signature.</div></div>
+    <div id="marPrev" style="overflow:auto;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff">${marHtml(cid)}</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Close</button><button class="btn navy" onclick="logAudit('Printed MAR sheet',client(el('marClient').value).name);printSheet(marHtml(el('marClient').value,1))">Print for signatures</button>`);
+}
+function marHtml(cid,forPrint){
+  const c=client(cid), dim=new Date(TODAY.getFullYear(),TODAY.getMonth()+1,0).getDate(), today=TODAY.getDate();
+  const meds=MEDS.filter(m=>m.cid===cid&&m.status==='active'&&!m.times.includes('PRN'));
+  const rows=meds.flatMap(m=>m.times.map(t=>{
+    const cells=Array.from({length:dim},(_,i)=>{
+      const day=String(i+1).padStart(2,'0'), date=`${TODAY.getFullYear()}-${String(TODAY.getMonth()+1).padStart(2,'0')}-${day}`;
+      if(i+1>today) return '<td></td>';
+      const l=LOGS.find(x=>x.mid===m.id&&x.date===date&&x.time===t);
+      return `<td style="text-align:center">${l?(l.status==='given'?l.by:l.status==='refused'?'R':'X'):'·'}</td>`;
+    }).join('');
+    return `<tr><td style="white-space:nowrap"><b>${esc(m.name)}</b> ${esc(m.dose)}<br><span style="font-size:9.5px">${esc(m.route)} · ${hm12(t)} · ${esc(m.purpose)}</span></td>${cells}</tr>`;
+  })).join('');
+  const head=`<tr><th style="min-width:150px">Medication</th>${Array.from({length:dim},(_,i)=>`<th>${i+1}</th>`).join('')}</tr>`;
+  const legend=`<div class="p-note">Initials = given (e-signed in portal) · R = refused · X = not given · Ink initials confirm the electronic record. UCI may replace the name for shared copies.</div>`;
+  const sig=`<div class="siglines"><div class="sig">Med staff signature / date</div><div class="sig">Shift lead review / date</div><div class="sig">Administrator / date</div></div>`;
+  const body=`<h2>Medication Administration Record — ${TODAY.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</h2>
+  <div class="p-sub">${esc(c.name)} · ${esc(c.uci)} · ${esc(c.home)} · Allergies: ${c.alerts.filter(a=>a.startsWith('Allergy')).map(a=>a.replace('Allergy: ','')).join(', ')||'none on file'}</div>
+  <table>${head}${rows||'<tr><td>No scheduled medications.</td></tr>'}</table>${legend}${forPrint?sig:''}`;
+  return forPrint?body:`<div style="font-size:11px">${body.replace(/class="p-sub"/,'class="tiny muted"').replace(/class="p-note"/,'class="tiny muted" style="margin-top:8px"')}</div>`;
+}
+
 /* ══════════════ CALENDAR ══════════════ */
 function viewCalendar(){
   const cl=visibleClients().map(c=>c.id);
@@ -1710,7 +1791,7 @@ function viewCalendar(){
       <div class="tabs"><button class="${state.calMode==='today'?'active':''}" onclick="state.calMode='today';render()">Today</button>
       <button class="${state.calMode==='list'?'active':''}" onclick="state.calMode='list';render()">List</button>
       <button class="${state.calMode==='month'?'active':''}" onclick="state.calMode='month';render()">Month</button></div>
-      ${state.role!=='family'?'<button class="btn navy" onclick="toast(\'New appointment form opens here.\')">＋ Add appointment</button>':''}
+      ${state.role!=='family'?'<button class="btn navy" onclick="openApptForm()">＋ Add appointment</button>':''}
     </div>
   </div>
 
@@ -1744,7 +1825,7 @@ function listView(list){
       <tr class="click" onclick="openAppt('${a.id}')">
         <td style="width:96px"><b>${hm12(a.time)}</b><div class="tiny muted">${a.dur} min</div></td>
         <td><div class="tb-name"><span class="av-sm ${client(a.cid).tag}">${client(a.cid).init}</span>
-          <div><div>${esc(a.title)}</div><div class="tiny muted">${esc(client(a.cid).name)} · ${esc(a.provider)} · ${esc(a.loc)}</div></div></div></td>
+          <div><div>${esc(a.title)}</div><div class="tiny muted"><b>${esc(client(a.cid).uci)}</b> · ${esc(a.provider)} · ${esc(a.loc)}</div></div></div></td>
         <td style="text-align:right">${a.cancelled?'<span class="pill neutral">✕ Cancelled</span>':a.flag?'<span class="pill warn">⚑ Review</span>':`<span class="pill neutral">${esc(a.type)}</span>`}
           ${a.files.length?`<span class="pill info">${a.files.length} file</span>`:''}</td>
       </tr>`).join('')}</tbody></table>`).join('');
@@ -1977,11 +2058,12 @@ function viewTeam(){
   <section class="card">
     <div class="card-h"><h2>Staff roster</h2><div class="sub">Click anyone to see their record</div></div>
     <div class="card-b flush"><table class="tb">
-      <thead><tr><th>Staff</th><th>Role</th><th>Home</th><th>Certifications</th><th>Open tasks</th></tr></thead>
+      <thead><tr><th>Staff</th><th>Role</th><th>Home</th><th>Certifications</th><th>Training hours</th><th>Open tasks</th></tr></thead>
       <tbody>${STAFF.map(s=>`<tr class="click" onclick="openStaff('${s.id}')">
         <td><div class="tb-name"><span class="av-sm">${s.init.replace(/\./g,'')}</span><div><div>${esc(s.name)}</div><div class="tiny muted">Since ${new Date(s.hired).getFullYear()}</div></div></div></td>
         <td class="muted">${esc(s.role)}</td><td>${esc(s.home)}</td>
         <td>${credCell(s.id)}</td>
+        <td><span class="pill ${s.hrs>=20?'ok':s.hrs>=12?'warn':'bad'}">${s.hrs} / 20 h</span></td>
         <td>${TASKS.filter(t=>t.sid===s.id&&t.stage!=='Done').length}</td>
       </tr>`).join('')}</tbody></table></div>
   </section>
@@ -2219,6 +2301,32 @@ function viewCompliance(){
         <button class="btn ghost sm" onclick="toast('Opening ${esc(i.t)}')">Open</button>
       </div>`).join('')}</section>`).join('')}
 
+  <div class="sec-note" style="margin-bottom:14px"><span>✍</span><div><b>Wet signatures stay wet</b>Quarterly reports, MAR sheets, fire drill logs, water temperature logs and certain incident documents still need ink. The portal fills and prints each form with signature lines, then the signed sheet is scanned back to the record — digital tracking, paper signature.</div></div>
+
+  <div class="grid2">
+    <section class="card">
+      <div class="card-h"><h2>Fire drill log</h2>${wetPill()}
+        <div class="right"><button class="btn navy sm" onclick="openDrillForm()">＋ Log a drill</button></div></div>
+      <div class="card-b flush">
+        ${FIREDRILLS.every(d=>new Date(d.date).getMonth()!==TODAY.getMonth())?`<div class="sec-note" style="background:var(--bad-soft);border-color:#F0CBC7;color:#8C312B;margin:12px 14px"><span>⚠</span><div><b>No drill logged this month</b>Title 22 § 80023 requires a monthly drill per home.</div></div>`:''}
+        <table class="tb"><thead><tr><th>Date</th><th>Home</th><th>Shift</th><th>Evacuation</th><th>By</th><th></th></tr></thead>
+        <tbody>${FIREDRILLS.map(d=>`<tr><td>${fmtDate(d.date)}<div class="tiny muted">${hm12(d.time)}</div></td><td>${esc(d.home)}</td><td>${esc(d.shift)}</td><td>${esc(d.evac)}</td><td>${esc(d.by)}</td>
+        <td style="text-align:right">${d.wet?'<span class="pill ok">Signed sheet filed</span>':'<span class="pill warn">Awaiting ink</span>'}</td></tr>`).join('')}</tbody></table>
+        <div style="padding:12px 16px"><button class="btn ghost sm" onclick="logAudit('Printed fire drill log','All homes');printSheet(drillSheet())">Print for wet signatures</button></div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-h"><h2>Water temperature log</h2>${wetPill()}
+        <div class="right"><button class="btn navy sm" onclick="openTempForm()">＋ Add reading</button></div></div>
+      <div class="card-b flush">
+        <table class="tb"><thead><tr><th>Date</th><th>Home</th><th>Temp</th><th>By</th><th></th></tr></thead>
+        <tbody>${WATERTEMP.slice(0,8).map(w=>`<tr><td>${relDay(w.date)}</td><td>${esc(w.home)}</td><td><b>${w.temp}°F</b></td><td>${w.by}</td>
+        <td style="text-align:right"><span class="pill ${w.temp<=120?'ok':'bad'}">${w.temp<=120?'In range':'Over 120°F'}</span></td></tr>`).join('')}</tbody></table>
+        <div style="padding:12px 16px;display:flex;gap:8px;align-items:center"><button class="btn ghost sm" onclick="logAudit('Printed water temp log','All homes');printSheet(tempSheet())">Print for wet signatures</button><span class="tiny muted">Limit 120°F at fixtures · § 80088</span></div>
+      </div>
+    </section>
+  </div>
+
   <div class="sec-note" style="margin-bottom:14px"><span>ℹ</span><div><b>A working tool, not legal advice</b>Every item carries its citation so the administrator can verify it against the current regulation text before relying on it.</div></div>
 
   <section class="card">
@@ -2226,7 +2334,7 @@ function viewCompliance(){
     <div class="card-b flush"><table class="tb">
       <thead><tr><th>Client</th><th>Documents</th><th>Med history</th><th>Incidents</th><th>Last export</th><th></th></tr></thead>
       <tbody>${CLIENTS.map(c=>`<tr>
-        <td><div class="tb-name"><span class="av-sm ${c.tag}">${c.init}</span>${esc(c.name)}</div></td>
+        <td><div class="tb-name"><span class="av-sm ${c.tag}">${c.init}</span><div><div>${esc(c.name)}</div><div class="tiny muted">${esc(c.uci)}</div></div></div></td>
         <td>${DOCS.filter(d=>d.cid===c.id).length} files</td>
         <td>${LOGS.filter(l=>l.cid===c.id).length} entries</td>
         <td>${INCIDENTS.filter(i=>i.cid===c.id).length}</td>
@@ -2239,8 +2347,8 @@ function viewCompliance(){
     <section class="card">
       <div class="card-h"><h2>Standard reports</h2></div>
       <div class="card-b flush">
-        ${[['Quarterly compliance packet','All clients · care plans, MAR, incidents'],
-           ['Medication administration record','Date range · per client or all homes'],
+        ${[['Quarterly compliance packet','All clients · care plans, MAR, incidents · ✍ wet signature on the printed packet'],
+           ['Medication administration record','Date range · per client or all homes · ✍ wet signature on the printed sheet'],
            ['Incident summary','Type, severity and follow-up status'],
            ['Staff training register','Certification status and expiry dates'],
            ['Audit trail export','Every edit, view and export by user']]
@@ -2263,6 +2371,118 @@ function runBinder(){
     el('binderStatus').innerHTML='<span class="pill ok">Ready</span> 47 pages · 3 gaps flagged as placeholder pages · generated just now by you';
     toast('Inspection binder generated.'); },1500);
 }
+function viewSafety(){
+  const dated=[]; Object.entries(CREDS).forEach(([sid,cs])=>cs.filter(x=>x.s==='bad'||x.s==='warn').forEach(x=>dated.push({sid,...x})));
+  return `
+  <div class="page-h">
+    <div><h1>Safety log</h1><div class="sub">Fire drills, water temperatures and certification expirations — enter in seconds, print for ink signatures</div></div>
+  </div>
+  <div class="sec-note" style="margin-bottom:14px"><span>✍</span><div><b>Wet signatures stay wet</b>These logs print with signature lines. The signed paper stays the official record; the portal keeps the working copy and the reminders.</div></div>
+
+  <div class="grid2">
+    <section class="card">
+      <div class="card-h"><h2>Fire drill log</h2>${wetPill()}
+        <div class="right"><button class="btn navy sm" onclick="openDrillForm()">＋ Log a drill</button></div></div>
+      <div class="card-b flush">
+        ${FIREDRILLS.every(d=>new Date(d.date).getMonth()!==TODAY.getMonth())?`<div class="sec-note" style="background:var(--bad-soft);border-color:#F0CBC7;color:#8C312B;margin:12px 14px"><span>⚠</span><div><b>No drill logged this month</b>A monthly drill is required per home.</div></div>`:''}
+        <table class="tb"><thead><tr><th>Date</th><th>Home</th><th>Shift</th><th>Evacuation</th><th>By</th><th></th></tr></thead>
+        <tbody>${FIREDRILLS.map((d,i)=>`<tr><td>${fmtDate(d.date)}<div class="tiny muted">${hm12(d.time)}</div></td><td>${esc(d.home)}</td><td>${esc(d.shift)}</td><td>${esc(d.evac)}</td><td>${esc(d.by)}</td>
+        <td style="text-align:right"><button class="btn ghost sm" onclick="editDrill(${i})">Edit</button></td></tr>`).join('')}</tbody></table>
+        <div style="padding:12px 16px"><button class="btn ghost sm" onclick="logAudit('Printed fire drill log','All homes');printSheet(drillSheet())">Print for wet signatures</button></div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-h"><h2>Water temperature log</h2>${wetPill()}
+        <div class="right"><button class="btn navy sm" onclick="openTempForm()">＋ Add reading</button></div></div>
+      <div class="card-b flush">
+        <table class="tb"><thead><tr><th>Date</th><th>Home</th><th>Temp</th><th>By</th><th></th></tr></thead>
+        <tbody>${WATERTEMP.slice(0,8).map((w,i)=>`<tr><td>${relDay(w.date)}</td><td>${esc(w.home)}</td><td><b>${w.temp}°F</b></td><td>${w.by}</td>
+        <td style="text-align:right"><span class="pill ${w.temp<=120?'ok':'bad'}">${w.temp<=120?'In range':'Over 120°F'}</span> <button class="btn ghost sm" onclick="editTemp(${i})">Edit</button></td></tr>`).join('')}</tbody></table>
+        <div style="padding:12px 16px;display:flex;gap:8px;align-items:center"><button class="btn ghost sm" onclick="logAudit('Printed water temp log','All homes');printSheet(tempSheet())">Print for wet signatures</button><span class="tiny muted">Limit 120°F at fixtures</span></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="card-h"><h2>Certification expirations</h2><div class="sub">Anything expired or expiring within 30 days also goes out in the Monday reminder email</div></div>
+    <div class="card-b flush">
+      ${dated.length?`<table class="tb"><thead><tr><th>Staff</th><th>Credential</th><th>Status</th></tr></thead>
+      <tbody>${dated.map(x=>`<tr><td>${esc(staff(x.sid).name)}</td><td>${esc(x.c)}</td>
+      <td><span class="pill ${x.s}">${esc(x.d)}</span></td></tr>`).join('')}</tbody></table>`:'<div class="empty"><b>All certifications current</b>Nothing expired or expiring soon.</div>'}
+    </div>
+  </section>`;
+}
+function editDrill(i){
+  const d=FIREDRILLS[i];
+  openModal('Edit fire drill',`
+    <div class="row2">
+      <div class="field"><label>Home</label><select class="inp" id="fdHome">${['Maple House','Cedar House','Birch House'].map(h=>`<option ${d.home===h?'selected':''}>${h}</option>`).join('')}</select></div>
+      <div class="field"><label>Shift</label><select class="inp" id="fdShift">${['Day','Evening','Overnight'].map(x=>`<option ${d.shift===x?'selected':''}>${x}</option>`).join('')}</select></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Date</label><input class="inp" type="date" id="fdDate" value="${d.date}"></div>
+      <div class="field"><label>Time</label><input class="inp" type="time" id="fdTime" value="${d.time}"></div>
+    </div>
+    <div class="field"><label>Evacuation time</label><input class="inp" id="fdEvac" value="${esc(d.evac)}"></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveDrillEdit(${i})">Save changes</button>`);
+}
+function saveDrillEdit(i){
+  const d=FIREDRILLS[i];
+  Object.assign(d,{home:el('fdHome').value,shift:el('fdShift').value,date:el('fdDate').value,time:el('fdTime').value,evac:el('fdEvac').value||'—'});
+  logAudit('Edited fire drill entry',d.home+' · '+fmtDate(d.date)); closeAll(); render(); toast('Drill entry updated.');
+}
+function editTemp(i){
+  const w=WATERTEMP[i];
+  openModal('Edit water temperature reading',`
+    <div class="row2">
+      <div class="field"><label>Home</label><select class="inp" id="wtHome">${['Maple House','Cedar House','Birch House'].map(h=>`<option ${w.home===h?'selected':''}>${h}</option>`).join('')}</select></div>
+      <div class="field"><label>Temperature (°F)</label><input class="inp" type="number" id="wtTemp" value="${w.temp}"></div>
+    </div>
+    <div class="field"><label>Date</label><input class="inp" type="date" id="wtDate" value="${w.date}"></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveTempEdit(${i})">Save changes</button>`);
+}
+function saveTempEdit(i){
+  const w=WATERTEMP[i];
+  Object.assign(w,{home:el('wtHome').value,temp:+el('wtTemp').value,date:el('wtDate').value});
+  logAudit('Edited water temp entry',w.home+' · '+w.temp+'°F'); closeAll(); render(); toast('Reading updated.');
+}
+function openDrillForm(){ openModal('Log a fire drill',`
+  <div class="row2">
+    <div class="field"><label>Home</label><select class="inp" id="fdHome"><option>Maple House</option><option>Cedar House</option><option>Birch House</option></select></div>
+    <div class="field"><label>Shift</label><select class="inp" id="fdShift"><option>Day</option><option>Evening</option><option>Overnight</option></select></div>
+  </div>
+  <div class="row2">
+    <div class="field"><label>Date</label><input class="inp" type="date" id="fdDate" value="${T}"></div>
+    <div class="field"><label>Time</label><input class="inp" type="time" id="fdTime" value="${nowHM()}"></div>
+  </div>
+  <div class="field"><label>Evacuation time</label><input class="inp" id="fdEvac" placeholder="e.g. 2 min 45 s"></div>
+  <div class="tiny muted">After saving, print the log and collect ink signatures — the portal tracks that the signed sheet was filed.</div>`,
+  `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveDrill()">Save drill</button>`); }
+function saveDrill(){ const d={date:el('fdDate').value,time:el('fdTime').value,home:el('fdHome').value,shift:el('fdShift').value,evac:el('fdEvac').value||'—',by:meInit(),wet:0};
+  FIREDRILLS.unshift(d);
+  sbPush('np_demo_fire_drills',{drill_date:d.date,drill_time:d.time,home:d.home,shift:d.shift,evac:d.evac,conducted_by:d.by,wet:0});
+  const it=CHECKLIST[2].items.find(i=>i.t.includes('fire drill')); if(it){it.s='ok';it.d='Logged '+fmtDate(el('fdDate').value);}
+  logAudit('Logged fire drill',el('fdHome').value); closeAll(); render(); toast('Drill logged — print it for ink signatures.'); }
+function openTempForm(){ openModal('Add water temperature reading',`
+  <div class="row2">
+    <div class="field"><label>Home</label><select class="inp" id="wtHome"><option>Maple House</option><option>Cedar House</option><option>Birch House</option></select></div>
+    <div class="field"><label>Temperature (°F)</label><input class="inp" type="number" id="wtTemp" value="116"></div>
+  </div>
+  <div class="field"><label>Date</label><input class="inp" type="date" id="wtDate" value="${T}"></div>`,
+  `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveTemp()">Save reading</button>`); }
+function saveTemp(){ const w={date:el('wtDate').value,home:el('wtHome').value,temp:+el('wtTemp').value,by:meInit(),wet:0};
+  WATERTEMP.unshift(w);
+  sbPush('np_demo_water_temps',{reading_date:w.date,home:w.home,temp:w.temp,recorded_by:w.by,wet:0});
+  const it=CHECKLIST[2].items.find(i=>i.t.includes('Water temperature')); if(it){it.s='ok';it.d='Current';}
+  logAudit('Logged water temperature',el('wtHome').value+' · '+el('wtTemp').value+'°F'); closeAll(); render(); toast('Reading saved.'); }
+function drillSheet(){ return `<h2>Fire Drill Log</h2><div class="p-sub">Meridian Care · Title 22 § 80023 · printed ${fmtLong(T)}</div>
+  <table><tr><th>Date</th><th>Time</th><th>Home</th><th>Shift</th><th>Evacuation time</th><th>Conducted by</th><th>Ink signature</th></tr>
+  ${FIREDRILLS.map(d=>`<tr><td>${fmtDate(d.date)}</td><td>${hm12(d.time)}</td><td>${d.home}</td><td>${d.shift}</td><td>${d.evac}</td><td>${d.by}</td><td style="min-width:120px"></td></tr>`).join('')}</table>
+  <div class="siglines"><div class="sig">Administrator signature / date</div></div>`; }
+function tempSheet(){ return `<h2>Water Temperature Log</h2><div class="p-sub">Meridian Care · limit 120°F at fixtures · § 80088 · printed ${fmtLong(T)}</div>
+  <table><tr><th>Date</th><th>Home</th><th>Temp °F</th><th>In range</th><th>Recorded by</th><th>Ink signature</th></tr>
+  ${WATERTEMP.map(w=>`<tr><td>${fmtDate(w.date)}</td><td>${w.home}</td><td>${w.temp}</td><td>${w.temp<=120?'Yes':'NO'}</td><td>${w.by}</td><td style="min-width:120px"></td></tr>`).join('')}</table>
+  <div class="siglines"><div class="sig">Administrator signature / date</div></div>`; }
 function exportOne(cid){ openModal('Export client folder',`
   <p class="muted" style="margin-top:0">Everything in <b>${esc(client(cid).name)}</b>'s folder, packaged as one PDF with an index.</p>
   ${['Care plan and service documents','Medication orders and administration record','Appointment history with notes','Incident reports','Progress notes','Uploaded documents']
@@ -2279,47 +2499,120 @@ function exportAll(){ openModal('Export everything',`
 
 /* ══════════════ TEMPLATES / KNOWLEDGE ══════════════ */
 function viewTemplates(){
+  const folders=[
+    ['Agency documents','Licenses, policies, disaster plan, admission agreements','Agency'],
+    ['Medical documents','Physician reports, consents, prescriber letters','Medical'],
+    ['Daily logs','Progress notes, shift notes, weekly checklists','Daily'],
+    ['Safety logs','Fire drills and water temperature print sheets','Safety'],
+    ['Attendance','Daily attendance records','Attendance'],
+    ['Incident reports','SIRs with notification records','Incident']];
   return `
   <div class="page-h">
-    <div><h1>Templates</h1><div class="sub">Upload examples of what good output looks like and the assistant will match them</div></div>
-    <div class="right"><button class="btn navy" onclick="uploadDoc(null,'Template')">＋ Upload template</button></div>
+    <div><h1>Documents & templates</h1><div class="sub">Folderized like your binders · five key templates, editable in one place</div></div>
+    <div class="right"><button class="btn navy" onclick="uploadDoc(null,'Template')">＋ Upload document</button></div>
   </div>
-  <div class="sec-note" style="margin-bottom:14px"><span>◫</span>
-    <div><b>How this works</b>Add three or four examples of a report you already write by hand. The assistant learns the structure and fills the next one from portal data, so staff edit rather than start from scratch.</div></div>
 
   <section class="card">
-    <div class="card-h"><h2>Report templates</h2></div>
+    <div class="card-h"><h2>Key templates</h2><div class="sub">Stock examples — rename fields, move them around, add or remove, then print</div></div>
     <div class="card-b flush">
-      ${[['Monthly progress report','3 examples uploaded','ok'],
-         ['Incident report','2 examples uploaded','ok'],
-         ['Quarterly compliance summary','1 example — add 2 more for best results','warn'],
-         ['Annual care plan review','No examples yet','bad']]
-        .map(([t,s,k])=>`<div class="docrow"><div class="di">◫</div><div class="dt"><b>${t}</b><span>${s}</span></div>
-        <span class="pill ${k}">${k==='ok'?'Ready':k==='warn'?'Needs more':'Not set up'}</span>
-        ${k==='ok'?`<button class="btn gold sm" onclick="createFromTemplate('${t}')">＋ Create</button>`:''}
-        <button class="btn ghost sm" onclick="toast('Opening ${t} template')">Manage</button></div>`).join('')}
+      ${TEMPLATES5.map(t=>`<div class="docrow"><div class="di">◫</div>
+        <div class="dt"><b>${esc(t.name)}</b><span>${t.fields.length} fields · ${esc(t.desc)}</span></div>
+        <button class="btn gold sm" onclick="openTplEditor('${t.id}')">Edit template</button>
+        <button class="btn ghost sm" onclick="logAudit('Printed template',tplById('${t.id}').name);printSheet(tplPrintHtml('${t.id}'))">Print blank</button></div>`).join('')}
     </div>
   </section>
 
   <section class="card">
-    <div class="card-h"><h2>Knowledge base</h2><div class="sub">Policies and manuals the assistant can answer from</div></div>
+    <div class="card-h"><h2>Binders</h2><div class="sub">One folder per physical binder on the shelf — click to open</div></div>
     <div class="card-b flush">
-      ${[['Responsible AI & privacy policy.pdf','Policy · 4 pages'],['Employee handbook 2026.pdf','Policy · 48 pages'],['Medication administration policy.pdf','Policy · 12 pages'],
-         ['State licensing requirements.pdf','Regulation · 90 pages'],['De-escalation protocol.docx','Protocol · 6 pages']]
-        .map(([n,s])=>`<div class="docrow"><div class="di">${n.split('.').pop().toUpperCase().slice(0,3)}</div>
-        <div class="dt"><b>${n}</b><span>${s} · indexed</span></div><span class="pill ok">Searchable</span></div>`).join('')}
-      <div style="padding:14px 18px"><div class="drop" onclick="uploadDoc(null,'Knowledge')"><b>Add to the knowledge base</b><span>Policies, manuals, protocols — staff can then ask questions against them</span></div></div>
-    </div>
-  </section>
-
-  <section class="card">
-    <div class="card-h"><h2>Section outputs</h2><div class="sub">Define what each part of the portal should produce</div></div>
-    <div class="card-b flush">
-      ${['Progress notes','Incident reports','Med pass summaries','Family updates','Shift handover'].map(s=>`
-      <div class="docrow"><div class="di">▤</div><div class="dt"><b>${s}</b><span>Upload an example of the wording and structure you want</span></div>
-      <button class="btn ghost sm" onclick="uploadDoc(null,'${s}')">Upload example</button></div>`).join('')}
+      ${folders.map(([t,su,key])=>{
+        const open=state.openBinder===key;
+        const files=binderFiles(key);
+        return `<div class="docrow" style="cursor:pointer" onclick="state.openBinder=state.openBinder==='${key}'?'':'${key}';render()">
+          <div class="di">${open?'▼':'▸'} 🗀</div><div class="dt"><b>${t}</b><span>${su}</span></div>
+          <span class="tiny muted">${files.length} file${files.length===1?'':'s'}</span>
+          <button class="btn ghost sm" onclick="event.stopPropagation();logAudit('Exported binder','${t}');toast('${t} exported as PDF and logged.')">Export / print</button></div>
+        ${open?`<div style="background:#FAF8F3;border-bottom:1px solid var(--line);padding:4px 0 4px 34px">
+          ${files.map(fl=>`<div class="docrow" style="border-bottom:none;padding:8px 18px"><div class="di">${fl.n.split('.').pop().toUpperCase().slice(0,4)}</div>
+          <div class="dt"><b>${esc(fl.n)}</b><span>${esc(fl.sub)}</span></div>
+          <button class="btn ghost sm" onclick="event.stopPropagation();toast('Opening ${esc(fl.n)}')">Open</button></div>`).join('')||'<div class="empty">Empty folder.</div>'}
+        </div>`:''}`;
+      }).join('')}
     </div>
   </section>`;
+}
+function binderFiles(key){
+  const map={Medical:['Medication','Lab','Consent'],Incident:['Incident','Report'],Daily:['Report','Note'],Agency:['Policy'],Attendance:[],Safety:[]};
+  const fromDocs=DOCS.filter(d=>(map[key]||[]).includes(d.cat)).map(d=>({n:d.n,sub:`${d.cat} · ${client(d.cid)?client(d.cid).uci:'Agency'} · ${fmtDate(d.at)}`}));
+  const stock={
+    Agency:[{n:'Facility license 2026.pdf',sub:'Licensing · renewed Jan 2026'},{n:'Disaster & evacuation plan.pdf',sub:'Policy · reviewed May 2026'},{n:'Admission agreement (blank).docx',sub:'Template'}],
+    Safety:[{n:'Fire drill log — print sheet',sub:'Generated from the Safety log page'},{n:'Water temperature log — print sheet',sub:'Generated from the Safety log page'}],
+    Attendance:[{n:'Attendance sheet — current month.pdf',sub:'Updated today'}],
+    Daily:[{n:'Weekly checklist — all clients.pdf',sub:'Regenerated each Monday'}],
+    Incident:INCIDENTS.map(i=>({n:`SIR — ${i.type} — ${client(i.cid).uci}.pdf`,sub:`${fmtDate(i.date)} · ${i.status}`})),
+    Medical:[]};
+  return [...(stock[key]||[]),...fromDocs];
+}
+function tplById(id){ return TEMPLATES5.find(t=>t.id===id); }
+function openTplEditor(id){
+  const t=tplById(id);
+  openModal('Edit template',`
+    <div class="field"><label>Template name</label><input class="inp" id="tpName" value="${esc(t.name)}"></div>
+    <div class="field"><label>Fields — rename inline, reorder with the arrows</label>
+      <div id="tpFields">${tplFieldRows(t)}</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn ghost sm" onclick="tplAddField('${t.id}')">＋ Add field</button>
+        <button class="btn gold sm" onclick="tplAskAI('${t.id}')">✦ Ask AI to improve</button>
+      </div></div>
+    <div class="tiny muted">Signature fields print as ink-signature lines. Changes apply everywhere this template is used.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button>
+     <button class="btn ghost" onclick="printSheet(tplPrintHtml('${t.id}',1))">Print preview</button>
+     <button class="btn navy" onclick="tplSave('${t.id}')">Save template</button>`);
+}
+function tplFieldRows(t){
+  return t.fields.map((fd,i)=>`
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+      <input class="inp" style="flex:1;height:34px" value="${esc(fd.l)}" onchange="tplById('${t.id}').fields[${i}].l=this.value">
+      <select class="inp" style="width:120px;height:34px" onchange="tplById('${t.id}').fields[${i}].ty=this.value">
+        ${['text','long text','date','time','checkbox','signature'].map(ty=>`<option ${fd.ty===ty?'selected':''}>${ty}</option>`).join('')}</select>
+      <button class="btn ghost sm" ${i===0?'disabled':''} onclick="tplMove('${t.id}',${i},-1)">↑</button>
+      <button class="btn ghost sm" ${i===t.fields.length-1?'disabled':''} onclick="tplMove('${t.id}',${i},1)">↓</button>
+      <button class="btn ghost sm" onclick="tplDel('${t.id}',${i})">✕</button>
+    </div>`).join('');
+}
+function tplRefresh(id){ el('tpFields').innerHTML=tplFieldRows(tplById(id)); }
+function tplMove(id,i,dir){ const fs=tplById(id).fields; const j=i+dir; const tmp=fs[i]; fs[i]=fs[j]; fs[j]=tmp; tplRefresh(id); }
+function tplDel(id,i){ tplById(id).fields.splice(i,1); tplRefresh(id); }
+function tplAddField(id){ tplById(id).fields.push({l:'New field',ty:'text'}); tplRefresh(id); }
+function tplAskAI(id){
+  const t=tplById(id);
+  const sugg={
+    tp1:[{l:'Allergies',ty:'text'},{l:'Month / year',ty:'text'},{l:'Shift lead review',ty:'signature'}],
+    tp2:[{l:'Witnesses present',ty:'text'},{l:'Immediate action taken',ty:'long text'},{l:'Guardian notified — date and time',ty:'text'}],
+    tp3:[{l:'Items needing follow-up',ty:'long text'},{l:'Reviewed by',ty:'signature'}],
+    tp4:[{l:'Alarm sounded properly',ty:'checkbox'},{l:'Issues found during drill',ty:'long text'}],
+    tp5:[{l:'Corrective action if out of range',ty:'long text'},{l:'Rechecked temperature',ty:'text'}]};
+  const add=(sugg[id]||[]).filter(x=>!t.fields.some(fd=>fd.l===x.l));
+  if(!add.length) return toast('AI reviewed the template — no gaps found.');
+  t.fields.push.apply(t.fields,add); tplRefresh(id);
+  toast('AI added '+add.length+' suggested field'+(add.length>1?'s':'')+' — edit or remove freely.');
+}
+function tplSave(id){
+  const t=tplById(id); t.name=el('tpName').value.trim()||t.name;
+  sbUpsert('np_demo_templates',{id:t.id,name:t.name,fields:t.fields});
+  logAudit('Edited template',t.name); closeAll(); render(); toast('Template saved.');
+}
+function tplPrintHtml(id,preview){
+  const t=tplById(id);
+  const rows=t.fields.filter(fd=>fd.ty!=='signature').map(fd=>{
+    if(fd.ty==='checkbox') return `<tr><th style="width:220px">${esc(fd.l)}</th><td>☐ Yes &nbsp;&nbsp; ☐ No</td></tr>`;
+    if(fd.ty==='long text') return `<tr><th style="width:220px">${esc(fd.l)}</th><td style="height:64px"></td></tr>`;
+    return `<tr><th style="width:220px">${esc(fd.l)}</th><td></td></tr>`;
+  }).join('');
+  const sigs=t.fields.filter(fd=>fd.ty==='signature').map(fd=>`<div class="sig">${esc(fd.l)} / date</div>`).join('');
+  return `<h2>${esc(t.name)}</h2><div class="p-sub">Meridian Care · blank form · clients identified by client ID only</div>
+    <table>${rows}</table>${sigs?`<div class="siglines">${sigs}</div>`:''}
+    <div class="p-note">Printed from the portal template library${preview?' (preview)':''}. Fill by hand or type before printing.</div>`;
 }
 
 function createFromTemplate(name){
@@ -2349,6 +2642,7 @@ Recommendations
 function saveFromTemplate(){
   const cid=el('tpClient').value, title=el('tpTitle').value.trim()||'Report';
   DOCS.unshift({cid, n:title+'.docx', cat:'Report', by:meInit(), at:T, s:'14 KB'});
+  sbPush('np_demo_documents',{cid, n:title+'.docx', cat:'Report', uploaded_by:meInit(), doc_date:T, size:'14 KB'});
   logAudit('Created report from template',`${client(cid).name} · ${title}`);
   closeAll(); toast(`Saved to ${client(cid).name}'s Documents.`);
 }
@@ -2390,7 +2684,7 @@ function viewDocs(){
   return `
   <div class="page-h"><div><h1>Documents</h1><div class="sub">Shared with you by the care team</div></div></div>
   <section class="card"><div class="card-b flush">${list.map(d=>docRow(d)).join('')}</div></section>
-  <div class="sec-note"><span>🔒</span><div><b>What you can see</b>Only records for James Whitfield. Documents about other people in the home are never visible to family accounts.</div></div>`;
+  <div class="sec-note"><span>🔒</span><div><b>What you can see</b>Only records for Client JW. Documents about other people in the home are never visible to family accounts.</div></div>`;
 }
 
 /* ══════════════ DRAWERS & MODALS ══════════════ */
@@ -2440,15 +2734,50 @@ function saveAppt(id){
   logAudit('Rescheduled appointment',`${client(a.cid).name} · ${a.title} → ${relDay(d)} ${hm12(t)}`);
   render(); openAppt(id); toast(`Moved to ${relDay(d).toLowerCase()} at ${hm12(t)}. Calendar synced.`);
 }
+function openApptForm(cid){
+  openModal('Add appointment',`
+    <div class="row2">
+      <div class="field"><label>Client</label><select class="inp" id="apClient">${CLIENTS.map(c=>`<option value="${c.id}" ${cid===c.id?'selected':''}>${esc(c.uci)} — ${esc(c.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Type</label><select class="inp" id="apType"><option>Medical</option><option>Dental</option><option>Therapy</option><option>Internal</option><option>Community</option></select></div>
+    </div>
+    <div class="field"><label>Title</label><input class="inp" id="apTitle" placeholder="e.g. Neurology follow-up"></div>
+    <div class="row2">
+      <div class="field"><label>Date</label><input class="inp" type="date" id="apDate" value="${T}"></div>
+      <div class="field"><label>Time</label><input class="inp" type="time" id="apTime" value="10:00"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Duration (min)</label><input class="inp" type="number" id="apDur" value="45"></div>
+      <div class="field"><label>Provider</label><input class="inp" id="apProv" placeholder="e.g. Dr. L. Chen"></div>
+    </div>
+    <div class="field"><label>Location</label><input class="inp" id="apLoc" placeholder="Clinic, house, or address"></div>
+    <div class="field"><label>Preparation note</label><input class="inp" id="apFlag" placeholder="Optional — e.g. bring updated INR results"></div>
+    ${BACKEND.calendarWebhook?`<div class="sec-note"><span>📅</span><div><b>Syncs to Google Calendar</b>The event is created on the agency calendar with the client&#39;s initials and UCI — never the full name.</div></div>`:''}`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveAppt()">Save appointment</button>`);
+}
+function saveAppt(){
+  const title=el('apTitle').value.trim(); if(!title) return toast('Give the appointment a title.');
+  const a={id:'a'+Date.now(), cid:el('apClient').value, title, type:el('apType').value,
+    date:el('apDate').value, time:el('apTime').value, dur:+el('apDur').value||30,
+    provider:el('apProv').value.trim(), loc:el('apLoc').value.trim(), flag:el('apFlag').value.trim(), ride:'', notes:[], files:[]};
+  APPTS.push(a);
+  sbPush('np_demo_appointments',{id:a.id,cid:a.cid,title:a.title,type:a.type,appt_date:a.date,appt_time:a.time,dur:a.dur,provider:a.provider,loc:a.loc,flag:a.flag,ride:a.ride});
+  n8nCal({event:'appointment.created', id:a.id, uci:client(a.cid).uci, init:client(a.cid).init, title:a.title, type:a.type, date:a.date, time:a.time, dur:a.dur, provider:a.provider, loc:a.loc});
+  logAudit('Added appointment',`${client(a.cid).name} · ${a.title}`);
+  closeAll(); render(); toast(BACKEND.calendarWebhook?'Appointment saved and sent to Google Calendar.':'Appointment saved.');
+}
 function cancelAppt(id){
   const a=APPTS.find(x=>x.id===id);
   a.cancelled=1; a.cxBy=`Cancelled by ${meInit()} · just now`;
+  sbPatch('np_demo_appointments',id,{cancelled:1,cx_by:a.cxBy});
+  n8nCal({event:'appointment.cancelled', id:a.id});
   logAudit('Cancelled appointment',`${client(a.cid).name} · ${a.title}`);
   render(); openAppt(id); toast('Appointment cancelled. Guardian and staff can see the change.');
 }
 function restoreAppt(id){
   const a=APPTS.find(x=>x.id===id);
   a.cancelled=0; a.cxBy='';
+  sbPatch('np_demo_appointments',id,{cancelled:0,cx_by:''});
+  n8nCal({event:'appointment.created', id:a.id, uci:client(a.cid).uci, init:client(a.cid).init, title:a.title, type:a.type, date:a.date, time:a.time, dur:a.dur, provider:a.provider, loc:a.loc});
   logAudit('Restored appointment',`${client(a.cid).name} · ${a.title}`);
   render(); openAppt(id); toast('Appointment restored.');
 }
@@ -2473,7 +2802,7 @@ function openMed(id){
     <section class="card"><div class="card-h"><h2>Order</h2></div><div class="card-b">
       ${[['Medication',m.name],['Dose',m.dose],['Form',m.form],['Route',m.route],
          ['Schedule',m.times.map(t=>t==='PRN'?'As needed':hm12(t)).join(', ')],
-         ['Purpose',m.purpose],['Prescriber',m.prescriber],['Start date',fmtDate(m.start)],
+         ['Purpose',m.purpose],['Instructions',m.instr||'—'],['Side effects to watch',m.fx||'—'],['Prescriber',m.prescriber],['Start date',fmtDate(m.start)],
          ['Status',m.status==='active'?'Active':'Discontinued '+fmtDate(m.end)]]
         .map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)"><span class="muted tiny">${k}</span><b style="font-size:13.2px;text-align:right">${esc(v)}</b></div>`).join('')}
     </div></section>
@@ -2529,7 +2858,7 @@ function saveTaskEdit(id){
   logAudit('Edited task',ti);
   renderNav(); render(); openTask(id); toast('Task updated.');
 }
-function setStage(id,s){ const t=TASKS.find(x=>x.id===id); t.stage=s; renderNav(); render(); if(el('drawer').classList.contains('on')) openTask(id); toast(`Task moved to ${s.toLowerCase()}.`); }
+function setStage(id,s){ const t=TASKS.find(x=>x.id===id); t.stage=s; sbPatch('np_demo_tasks',id,{stage:s,updated_at:new Date().toISOString()}); renderNav(); render(); if(el('drawer').classList.contains('on')) openTask(id); toast(`Task moved to ${s.toLowerCase()}.`); }
 function openAssign(){
   openModal('Assign a task',`
     <div class="field"><label>Task</label><input class="inp" id="ntTitle" placeholder="What needs doing?"></div>
@@ -2572,16 +2901,36 @@ function openIncident(id){
         <button class="btn ghost sm" onclick="toast('Follow-up saved.')">Save note</button>
         ${i.status!=='Closed'?`<button class="btn navy sm" onclick="closeIncident('${i.id}')">Close report</button>`:''}
       </div></div></section>`,
-    `<button class="btn ghost" onclick="closeAll()">Close</button><button class="btn ghost" onclick="toast('Report exported as PDF.')">Export report</button>`);
+    `<button class="btn ghost" onclick="closeAll()">Close</button>
+     <button class="btn ghost" onclick="logAudit('Printed SIR (anonymized)',client(INCIDENTS.find(x=>x.id==='${i.id}').cid).uci);printSheet(sirSheet('${i.id}',1))">Print SIR — UCI only</button>
+     <button class="btn navy" onclick="logAudit('Printed SIR',client(INCIDENTS.find(x=>x.id==='${i.id}').cid).name);printSheet(sirSheet('${i.id}',0))">Print SIR</button>`);
+}
+function sirSheet(id,anon){
+  const i=INCIDENTS.find(x=>x.id===id), c=client(i.cid);
+  const who=anon?c.uci:`${c.name} (${c.uci})`;
+  return `<h2>Special Incident Report</h2><div class="p-sub">Meridian Care · filed by ${i.by} · printed ${fmtLong(T)}${anon?' · anonymized copy — client identified by UCI only':''}</div>
+  <table>
+    <tr><th style="width:180px">Client</th><td>${who}</td></tr>
+    <tr><th>Residence</th><td>${c.home}</td></tr>
+    <tr><th>Incident type</th><td>${i.type}</td></tr>
+    <tr><th>Date and time</th><td>${fmtLong(i.date)} at ${hm12(i.time)}</td></tr>
+    <tr><th>Severity</th><td>${i.sev}</td></tr>
+    <tr><th>Description</th><td>${i.summary}</td></tr>
+    <tr><th>Notifications</th><td>${(i.recips||[]).map(r=>`${r.who} — ${r.at?`${r.how}, ${r.at} by ${r.by}`:'pending'}`).join('<br>')}</td></tr>
+    <tr><th>Status</th><td>${i.status}</td></tr>
+  </table>
+  <div class="p-note">Populated from the portal incident record. Attach handwritten pages if needed.</div>
+  <div class="siglines"><div class="sig">Reporting staff signature / date</div><div class="sig">Administrator signature / date</div></div>`;
 }
 function markNotified(id,ix){
   const i=INCIDENTS.find(x=>x.id===id);
   i.recips[ix].at='Just now'; i.recips[ix].by=meInit();
+  sbPatch('np_demo_incidents',id,{recips:i.recips,hours_left:i.recips.every(r=>r.at)?null:i.hoursLeft});
   logAudit('Logged incident notification',`${client(i.cid).name} · ${i.recips[ix].who}`);
   if(i.recips.every(r=>r.at)) i.hoursLeft=null;
   openIncident(id); toast('Notification logged with time and name.');
 }
-function closeIncident(id){ const i=INCIDENTS.find(x=>x.id===id); i.status='Closed'; closeAll(); renderNav(); render(); toast('Incident report closed.'); }
+function closeIncident(id){ const i=INCIDENTS.find(x=>x.id===id); i.status='Closed'; sbPatch('np_demo_incidents',id,{status:'Closed'}); closeAll(); renderNav(); render(); toast('Incident report closed.'); }
 
 function openIncidentForm(cid){
   openModal('Report an incident',`
@@ -2600,14 +2949,18 @@ function openIncidentForm(cid){
       <textarea class="inp" id="icSum" placeholder="Facts and times only. What you saw and did, in order."></textarea></div>
     <div class="field"><label>Who has been told</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap">${['Shift lead','Nurse','Director','Guardian','Emergency services'].map(n=>
-        `<button class="btn ghost sm" onclick="this.classList.toggle('navy');this.classList.toggle('ghost')">${n}</button>`).join('')}</div></div>`,
+        `<button class="btn ghost sm" onclick="this.classList.toggle('navy');this.classList.toggle('ghost')">${n}</button>`).join('')}</div></div>
+    <div class="checkrow" style="border-color:var(--line);cursor:pointer" onclick="const c=el('icAnon');c.classList.toggle('on')"><div class="cb" id="icAnon">✓</div><div class="ct">Use client ID (UCI) instead of the name on printed and shared copies</div></div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn gold" onclick="saveIncident()">File report</button>`);
 }
 function saveIncident(){
   const s=el('icSum').value.trim(); if(!s) return toast('Describe what happened before filing.');
-  INCIDENTS.unshift({id:'i'+Date.now(),cid:el('icClient').value,type:el('icType').value,date:el('icDate').value,
+  const rec={id:'i'+Date.now(),cid:el('icClient').value,type:el('icType').value,date:el('icDate').value,
     time:el('icTime').value,sev:el('icSev').value,status:'Follow-up due',by:meInit(),summary:s,notified:['Shift lead'],
-    recips:[{who:'Regional center',how:'Phone',at:null,by:null},{who:'Guardian',how:'Phone',at:null,by:null},{who:'Licensing (CCLD) — written report',how:'Written',at:null,by:null}],hoursLeft:24});
+    recips:[{who:'Regional center',how:'Phone',at:null,by:null},{who:'Guardian',how:'Phone',at:null,by:null},{who:'Licensing (CCLD) — written report',how:'Written',at:null,by:null}],hoursLeft:24};
+  INCIDENTS.unshift(rec);
+  sbPush('np_demo_incidents',{id:rec.id,cid:rec.cid,type:rec.type,inc_date:rec.date,inc_time:rec.time,sev:rec.sev,status:rec.status,reported_by:rec.by,summary:rec.summary,notified:rec.notified,recips:rec.recips,hours_left:rec.hoursLeft});
+  n8nPost({event:'incident.created', id:rec.id, uci:client(rec.cid).uci, home:client(rec.cid).home, type:rec.type, severity:rec.sev, date:rec.date, time:rec.time, summary:rec.summary, reported_by:rec.by});
   logAudit('Created incident report',`${client(el('icClient').value).name} · ${el('icType').value}`);
   closeAll(); renderNav(); render(); toast('Report filed and timestamped.');
 }
@@ -2695,7 +3048,7 @@ function globalSearchGo(q){
 const ASK_SUG={
   director:['Which med passes are late?','Who is not current on training?','Show me open incidents'],
   staff:['What is left on my shift?','A client refused a medication','When is my next med pass?'],
-  family:['What medications is James taking?','When is the next appointment?','Who is with James today?']
+  family:['What medications is JW taking?','When is the next appointment?','Who is with JW today?']
 };
 function toggleAsk(){ const p=el('askPanel'); p.classList.toggle('on'); el('askFab').style.display=p.classList.contains('on')?'none':'flex'; if(p.classList.contains('on')) el('askInput').focus(); }
 function askSeed(){
@@ -2893,8 +3246,8 @@ const TOURS={
     {sel:'.attn', t:'What needs you', p:'If something is late or flagged it shows here. Tap it and the portal takes you to the exact spot.'},
     {sel:'.ask-fab', t:'Stuck? Ask', p:'"A client refused a medication" — Ask Meridian tells you exactly what to do, from your agency\'s own policy.'}],
   family:[
-    {sel:'.rail-card', t:"James's day", p:'His medications and appointments as they happen. Staff record things live, so this is always current.'},
-    {sel:'#nav', t:'Everything about James', p:'Medications, appointments, documents and messages — only for James. Other residents are never visible to you.'},
+    {sel:'.rail-card', t:"JW's day", p:'His medications and appointments as they happen. Staff record things live, so this is always current.'},
+    {sel:'#nav', t:'Everything about JW', p:'Medications, appointments, documents and messages — only for JW. Other residents are never visible to you.'},
     {sel:'.ask-fab', t:'Questions any time', p:'Ask about medications or the next appointment and get an answer from his actual record. For anything else, Messages reaches the care team.'}]
 };
 let tourI=0;
@@ -2977,14 +3330,50 @@ function pickReason(i){
 function saveDose(){
   const me=ME[state.role];
   const _m=MEDS.find(m=>m.id===doseSel.mid);
-  LOGS.unshift({id:'l'+Date.now(), cid:_m.cid, mid:doseSel.mid,
-    date:T, time:doseSel.t, status:doseSel.status, by:me.name.split(' ').map(w=>w[0]+'.').join(''), sig:'✓ e-signed'});
+  const _log={id:'l'+Date.now(), cid:_m.cid, mid:doseSel.mid,
+    date:T, time:doseSel.t, status:doseSel.status, by:me.name.split(' ').map(w=>w[0]+'.').join(''), sig:'✓ e-signed'};
+  LOGS.unshift(_log);
+  sbPush('np_demo_med_logs',{id:_log.id,cid:_log.cid,mid:_log.mid,log_date:_log.date,log_time:_log.time,status:_log.status,recorded_by:_log.by,sig:_log.sig});
   logAudit('Recorded med pass',`${client(_m.cid).name} · ${_m.name} ${hm12(doseSel.t)} — ${doseSel.status}`);
   closeAll(); render(); renderNav();
   toast(doseSel.status==='given'?'Dose recorded and signed.':`Recorded as ${doseSel.status}${doseSel.reason?' — '+doseSel.reason.toLowerCase():''}. Shift lead can see this now.`);
 }
 
 /* ══════════════ BOOT ══════════════ */
+function credRowFromDb(r){
+  if(!r.expires_on) return {c:r.cred_name, d:r.label||'—', s:r.status||'ok'};
+  const d=new Date(r.expires_on+'T12:00:00'), days=Math.round((d-TODAY)/86400000);
+  if(days<0)   return {c:r.cred_name, d:'Expired '+d.toLocaleDateString(undefined,{month:'short',day:'numeric'}), s:'bad'};
+  if(days<=30) return {c:r.cred_name, d:d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' — '+days+' days', s:'warn'};
+  return {c:r.cred_name, d:d.toLocaleDateString(undefined,{month:'short',year:'numeric'}), s:'ok'};
+}
+async function sbHydrate(){
+  if(!sbOn()) return;
+  const [tasks,inc,fd,wt,logs,docs,creds,appts,tpls,cnotes]=await Promise.all([
+    sbGet('np_demo_tasks'), sbGet('np_demo_incidents','select=*&order=inc_date.desc'),
+    sbGet('np_demo_fire_drills','select=*&order=drill_date.desc'),
+    sbGet('np_demo_water_temps','select=*&order=reading_date.desc&limit=40'),
+    sbGet('np_demo_med_logs','select=*&order=created_at.desc&limit=400'),
+    sbGet('np_demo_documents','select=*&order=created_at.desc'),
+    sbGet('np_demo_credentials','select=*&order=sid'),
+    sbGet('np_demo_appointments','select=*&order=appt_date'),
+    sbGet('np_demo_templates'),
+    sbGet('np_demo_client_notes','select=*&order=created_at.desc')]);
+  if(tasks.length){ TASKS.length=0; tasks.forEach(r=>TASKS.push({id:r.id,title:r.title,sid:r.sid,cid:r.cid,due:r.due,stage:r.stage,pri:r.pri,subs:r.subs||[]})); }
+  if(inc.length){ INCIDENTS.length=0; inc.forEach(r=>INCIDENTS.push({id:r.id,cid:r.cid,type:r.type,date:r.inc_date,time:r.inc_time,sev:r.sev,status:r.status,by:r.reported_by,summary:r.summary,notified:r.notified||[],recips:r.recips||[],hoursLeft:r.hours_left})); }
+  if(fd.length){ FIREDRILLS.length=0; fd.forEach(r=>FIREDRILLS.push({date:r.drill_date,time:r.drill_time,home:r.home,shift:r.shift,evac:r.evac,by:r.conducted_by,wet:r.wet})); }
+  if(wt.length){ WATERTEMP.length=0; wt.forEach(r=>WATERTEMP.push({date:r.reading_date,home:r.home,temp:r.temp,by:r.recorded_by,wet:r.wet})); }
+  logs.forEach(r=>{ if(!LOGS.some(l=>l.mid===r.mid&&l.date===r.log_date&&l.time===r.log_time)) LOGS.unshift({id:r.id,cid:r.cid,mid:r.mid,date:r.log_date,time:r.log_time,status:r.status,by:r.recorded_by,sig:r.sig}); });
+  docs.forEach(r=>{ if(!DOCS.some(d=>d.cid===r.cid&&d.n===r.n)) DOCS.unshift({cid:r.cid,n:r.n,cat:r.cat,by:r.uploaded_by,at:r.doc_date,s:r.size}); });
+  if(creds.length){ Object.keys(CREDS).forEach(k=>delete CREDS[k]); creds.forEach(r=>{ (CREDS[r.sid]=CREDS[r.sid]||[]).push(credRowFromDb(r)); }); }
+  if(tpls.length){ tpls.forEach(r=>{ const t=TEMPLATES5.find(x=>x.id===r.id); if(t){ t.name=r.name; t.fields=r.fields||t.fields; } }); }
+  if(cnotes.length){ CLIENT_NOTES={}; cnotes.forEach(r=>{ (CLIENT_NOTES[r.cid]=CLIENT_NOTES[r.cid]||[]).push({text:r.note,by:r.noted_by,at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}); }); }
+  if(appts.length){ APPTS.length=0; appts.forEach(r=>APPTS.push({id:r.id,cid:r.cid,title:r.title,type:r.type,date:r.appt_date,time:r.appt_time,dur:r.dur,provider:r.provider||'',loc:r.loc||'',flag:r.flag||'',ride:r.ride||'',cancelled:r.cancelled||0,cxBy:r.cx_by||'',gcal:r.gcal_event_id||'',notes:[],files:[]})); }
+  if(el('app').classList.contains('on')){ renderNav(); render(); }
+  console.log('[np-demo] hydrated from Supabase'); toast('Connected to np-demo backend.');
+}
+sbHydrate();
+
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){ const f=el('tlFull'); if(f){ f.remove(); return; } closeAll(); }
   if(e.key==='/' && document.activeElement.tagName!=='INPUT' && document.activeElement.tagName!=='TEXTAREA' && el('app').classList.contains('on')){
