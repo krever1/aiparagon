@@ -632,7 +632,7 @@ body{font-size:15px}
         <span class="muted" style="font-size:13px">⚙</span>
       </div>
       <div class="side-foot">
-        <span>Built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · pilot v5.2</span>
+        <span>Built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · pilot v5.5</span>
         <a href="mailto:help@aiparagonconsulting.com?subject=Meridian%20Care%20Portal%20support">✉ Help & support</a>
       </div>
     </div>
@@ -779,11 +779,16 @@ async function gcalFetch(){
             tm=pad(sd.getHours())+':'+pad(sd.getMinutes()); }
       let dur=30;
       if(!allday && ev.end && ev.end.dateTime) dur=Math.max(15,Math.round((new Date(ev.end.dateTime)-new Date(start.dateTime))/60000));
-      return { id:'g_'+ev.id, gcal:true, title:ev.summary||'(no title)', date:dt, time:tm||'09:00', allday, dur,
-        loc:ev.location||'', link:ev.htmlLink||'', cancelled:0, type:'Google', provider:'', flag:'', ride:'', notes:[], files:[] };
+      return gcalMapClient({ id:'g_'+ev.id, gcal:true, title:ev.summary||'(no title)', date:dt, time:tm||'09:00', allday, dur,
+        loc:ev.location||'', link:ev.htmlLink||'', cancelled:0, type:'Google', provider:'', flag:'', ride:'', notes:[], files:[] });
     });
+    const dups=GCAL.events.filter(g=>g.dup).length;
+    GCAL.events=GCAL.events.filter(g=>!g.dup);
+    const mapped=GCAL.events.filter(g=>g.cid).length;
     toast(GCAL.events.length
-      ? GCAL.events.length+' Google Calendar event'+(GCAL.events.length>1?'s':'')+' loaded — shown in blue.'
+      ? GCAL.events.length+' Google Calendar event'+(GCAL.events.length>1?'s':'')+' loaded'
+        +(mapped?` · ${mapped} matched to clients and anonymized`:'')
+        +(dups?` · ${dups} portal duplicate${dups>1?'s':''} hidden`:'')+'.'
       : 'Google Calendar connected — no events found in the next 45 days.');
   }catch(e){ console.warn('[np-demo] gcal fetch failed',e); toast('Could not load Google Calendar events.'); }
   GCAL.loading=false; render();
@@ -801,7 +806,41 @@ function gcalPush(a){ // portal appointment → user's Google Calendar (UCI only
       start:{dateTime:startIso}, end:{dateTime:endIso} })
   }).then(r=>r.ok?toast('Added to your Google Calendar too.'):null).catch(()=>{});
 }
-function gcalLabel(a){ return a.gcal ? 'Google Calendar' : esc(client(a.cid).uci); }
+function gcalLabel(a){ return a.gcal ? (a.cid?'Google · '+esc(client(a.cid).uci):'Google Calendar') : esc(client(a.cid).uci); }
+
+/* ── v5.3: map Google events to clients + anonymize + dedup ── */
+function gcalMapClient(ev){
+  const escRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  let mapped=null;
+  CLIENTS.forEach(c=>{
+    // UCI in the title or location is the strongest signal (portal-pushed events carry it)
+    if(ev.title.includes(c.uci)||String(ev.loc||'').includes(c.uci)) mapped=mapped||c;
+    // full client name anywhere → map AND redact to initials, in title and location
+    const re=new RegExp(escRe(c.name),'ig');
+    if(re.test(ev.title)){ mapped=mapped||c; ev.title=ev.title.replace(re,c.init); }
+    if(re.test(String(ev.loc||''))) { mapped=mapped||c; ev.loc=String(ev.loc).replace(re,c.init); }
+  });
+  if(mapped){
+    ev.cid=mapped.id;
+    // portal echo: same client, same date & time already in the portal → hide as duplicate
+    if(APPTS.some(a=>a.cid===mapped.id&&a.date===ev.date&&a.time===ev.time&&!a.cancelled)) ev.dup=true;
+  }
+  return ev;
+}
+/* zero-auth path: open Google Calendar prefilled (no OAuth consent needed) */
+function gcalTemplateOpen(a){
+  const c=client(a.cid);
+  const d=a.date.replace(/-/g,''), t=a.time.replace(':','');
+  const end=new Date(new Date(a.date+'T'+a.time+':00').getTime()+(a.dur||30)*60000);
+  const pad=n=>String(n).padStart(2,'0');
+  const e=end.getFullYear()+pad(end.getMonth()+1)+pad(end.getDate())+'T'+pad(end.getHours())+pad(end.getMinutes())+'00';
+  const url='https://calendar.google.com/calendar/render?action=TEMPLATE'
+    +'&text='+encodeURIComponent(a.title+' — '+c.init+' ('+c.uci+')')
+    +'&dates='+d+'T'+t+'00/'+e
+    +'&location='+encodeURIComponent(a.loc||'')
+    +'&details='+encodeURIComponent('Created by Meridian Care Portal · client identified by ID only');
+  window.open(url,'_blank');
+}
 
 const sbOn = () => !!(BACKEND.url && BACKEND.anon);
 const sbH  = () => ({apikey:BACKEND.anon, Authorization:'Bearer '+BACKEND.anon, 'Content-Type':'application/json', Prefer:'return=minimal'});
@@ -1199,6 +1238,10 @@ const ME = {
 };
 
 const state = { openBinder:'', role:'director', view:'home', client:null, calMode:'today', calFilter:{type:'',client:''}, thread:'th1', tab:'', tourSeen:{} };
+const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
+state.hideSample = lsGet('np_hide_sample')==='1';
+function toggleSample(){ state.hideSample=!state.hideSample; lsSet('np_hide_sample',state.hideSample?'1':'0'); render(); toast(state.hideSample?'Sample appointments hidden — the calendar shows your real data only.':'Sample appointments shown.'); }
 
 /* ══════════════ HELPERS ══════════════ */
 const $  = s => document.querySelector(s);
@@ -1340,14 +1383,14 @@ function tlCard(full){
       tip:`${hm12(t)} pass — ${done} of ${n} recorded`,on:"go('meds')"});
   }).join('');
 
-  const apptBars=APPTS.filter(a=>a.date===T&&cl.includes(a.cid)&&!a.cancelled).map(a=>
+  const apptBars=(state.hideSample?[]:APPTS.filter(a=>a.date===T&&cl.includes(a.cid)&&!a.cancelled)).map(a=>
     tlBar({l:tlPx(a.time),w:Math.max(150,a.dur/60*TL.hw),cls:a.flag?'b-flag':'b-appt',
       txt:`${a.flag?'⚑ ':''}${hm12(a.time).replace(' ','').toLowerCase()} · ${esc(client(a.cid).init)} ${esc(a.title)}`,
       tip:`${a.title} — ${client(a.cid).name} at ${hm12(a.time)}`,on:`openAppt('${a.id}')`})).join('')
     + (GCAL.connected?GCAL.events.filter(g=>g.date===T&&!g.allday).map(g=>
       tlBar({l:tlPx(g.time),w:Math.max(150,g.dur/60*TL.hw),cls:'b-gcal',
-        txt:`${hm12(g.time).replace(' ','').toLowerCase()} · G · ${esc(g.title)}`,
-        tip:`${g.title} — your Google Calendar at ${hm12(g.time)}`,on:`openAppt('${g.id}')`})).join(''):'');
+        txt:`${hm12(g.time).replace(' ','').toLowerCase()} · G · ${g.cid?esc(client(g.cid).init)+' ':''}${esc(g.title)}`,
+        tip:`${g.title} — your Google Calendar at ${hm12(g.time)}${g.cid?' · '+client(g.cid).uci:''}`,on:`openAppt('${g.id}')`})).join(''):'');
 
   let rows=[
 
@@ -1380,7 +1423,7 @@ function tlCard(full){
           tip:`${m.name} ${m.dose} at ${hm12(t)} — ${l?l.status:late?'not recorded':D<T?'no record':'due later'}`,
           on:(D===T&&!l&&state.role!=='family')?`openDose('${m.id}','${t}')`:`openMed('${m.id}')`});
       }));
-      if(tlState.kind!=='meds') APPTS.filter(a=>a.cid===c.id&&a.date===D&&!a.cancelled).forEach(a=>bars.push({l:tlPx(a.time),w:Math.max(150,a.dur/60*TL.hw),
+      if(tlState.kind!=='meds'&&!state.hideSample) APPTS.filter(a=>a.cid===c.id&&a.date===D&&!a.cancelled).forEach(a=>bars.push({l:tlPx(a.time),w:Math.max(150,a.dur/60*TL.hw),
         cls:a.flag?'b-flag':'b-appt',txt:`${a.flag?'⚑ ':''}${hm12(a.time).replace(' ','').toLowerCase()} · ${esc(a.title)}`,
         tip:`${a.title} at ${hm12(a.time)} · ${a.loc}`,on:`openAppt('${a.id}')`}));
       rows.push({dot:c.tag==='gr'?'#C9A84C':'#3A6EA5',lab:esc(c.name),sub:esc(c.home),bars:bars.map(tlBar).join(''),
@@ -1389,7 +1432,7 @@ function tlCard(full){
     if(GCAL.connected && tlState.kind!=='meds'){
       rows.push({group:'Your Google Calendar'});
       const gb=GCAL.events.filter(g=>g.date===D&&!g.allday).map(g=>({l:tlPx(g.time),w:Math.max(150,g.dur/60*TL.hw),cls:'b-gcal',
-        txt:`${hm12(g.time).replace(' ','').toLowerCase()} · ${esc(g.title)}`,
+        txt:`${hm12(g.time).replace(' ','').toLowerCase()} · ${g.cid?esc(client(g.cid).init)+' ':''}${esc(g.title)}`,
         tip:`${g.title} · your Google Calendar${g.loc?' · '+g.loc:''}`,on:`openAppt('${g.id}')`}));
       rows.push({dot:'#4285F4',lab:'Google',sub:'connected calendar',
         bars:gb.map(tlBar).join('')||'<span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:11.5px;color:var(--muted)">No Google events this day</span>'});
@@ -1986,7 +2029,7 @@ function marHtml(cid,forPrint){
 /* ══════════════ CALENDAR ══════════════ */
 function viewCalendar(){
   const cl=visibleClients().map(c=>c.id);
-  let list=APPTS.filter(a=>cl.includes(a.cid));
+  let list=state.hideSample?[]:APPTS.filter(a=>cl.includes(a.cid));
   if(state.calFilter.type) list=list.filter(a=>a.type===state.calFilter.type);
   if(state.calFilter.client) list=list.filter(a=>a.cid===state.calFilter.client);
   if(GCAL.connected && !state.calFilter.type && !state.calFilter.client) list=list.concat(GCAL.events);
@@ -2000,6 +2043,7 @@ function viewCalendar(){
       ${gcalReady()?(GCAL.connected
         ?`<button class="btn ghost sm" onclick="gcalDisconnect()">Google ✓ · Disconnect</button>`
         :`<button class="btn gold sm" onclick="gcalConnect()">${GCAL.loading?'Connecting…':'Connect Google Calendar'}</button>`):''}
+      ${state.role==='director'?`<button class="btn ghost sm" onclick="toggleSample()" title="Show or hide the seeded sample appointments">${state.hideSample?'Show sample data':'Hide sample data'}</button>`:''}
       <div class="tabs"><button class="${state.calMode==='today'?'active':''}" onclick="state.calMode='today';render()">Today</button>
       <button class="${state.calMode==='week'?'active':''}" onclick="state.calMode='week';render()">Week</button>
       <button class="${state.calMode==='month'?'active':''}" onclick="state.calMode='month';render()">Month</button></div>
@@ -3221,7 +3265,7 @@ const EXAMPLE_DOCS=[
   fields:[
    {l:'Client ID',ty:'text'},{l:'Current medications',ty:'long text'},
    {l:'Height',ty:'text'},{l:'Weight',ty:'text'},
-   {l:'Seizure entries (one per line — date · time · description · injuries)',ty:'long text'},
+   {l:'Seizure log',ty:'table',cols:['Date','Time','Description of Incident','Injuries']},
    {l:'Recorded by',ty:'signature'}]},
  {id:'ex-prn', slug:'16_prn_authorization_letter.pdf', key:'Medical', sec:'forms', name:'PRN Authorization Letter',
   desc:'Physician confirmation of a client’s ability to self-determine PRN medication need',
@@ -3229,7 +3273,7 @@ const EXAMPLE_DOCS=[
    {l:'Date',ty:'date'},{l:'Physician name',ty:'text'},{l:'Client ID',ty:'text'},
    {l:'Care provider / facility',ty:'text'},
    {l:'PRN determination (can determine & communicate / can communicate symptoms only / cannot — contact physician each dose)',ty:'long text'},
-   {l:'Approved PRN medications (drug · dosage · frequency · reason · symptoms · max in 24h)',ty:'long text'},
+   {l:'Approved PRN medications',ty:'table',cols:['Drug','Dosage','Frequency','Reason for use','Symptoms','Max in 24h']},
    {l:'Facility telephone',ty:'text'},{l:'Facility fax',ty:'text'},
    {l:'Care provider',ty:'signature'},{l:'Physician',ty:'signature'}]},
  {id:'ex-physician', slug:'12_physician_visit.pdf', key:'Medical', sec:'forms', name:'Physician Visit',
@@ -3245,7 +3289,7 @@ const EXAMPLE_DOCS=[
   fields:[
    {l:'Facility',ty:'text'},{l:'Client ID',ty:'text'},{l:'Date of release',ty:'date'},{l:'Expected date of return',ty:'date'},
    {l:'Transfer method (full container / pharmacy split / family supply)',ty:'long text'},
-   {l:'Medications (name · pass time · RX # · strength · # released · # returned)',ty:'long text'},
+   {l:'Medications',ty:'table',cols:['Medication','Pass time','RX #','Strength','# released','# returned']},
    {l:'Staff releasing medications',ty:'signature'},
    {l:'Received by',ty:'text'},{l:'Person returning unused medications',ty:'text'},
    {l:'Staff count on return',ty:'signature'}]},
@@ -3262,13 +3306,13 @@ const EXAMPLE_DOCS=[
    {l:'Facility name',ty:'text'},{l:'Administrator name',ty:'text'},{l:'Other staff contact',ty:'text'},
    {l:'Alta service coordinator (name & phone)',ty:'text'},
    {l:'Procedure explained on',ty:'date'},{l:'Reviewed every (week / month / year)',ty:'text'},
-   {l:'Communication methods used (verbal, w/photos, written, role playing, sign language, communication board, foreign language, other)',ty:'long text'},
+   {l:'Communication methods used',ty:'checklist',items:['Verbal explanation only','Verbal explanation with photos','Written','Role playing','Sign language','Communication board','Foreign language understood by resident','Other']},
    {l:'Consumer or authorized representative',ty:'signature'},{l:'Facility administrator',ty:'signature'}]},
  {id:'ex-consult', slug:'22_consultation_hours_log.pdf', key:'Medical', sec:'forms', name:'Consultation Hours Log',
   desc:'Tracks consultant hours per client for Title 17 compliance',
   fields:[
    {l:'Year',ty:'text'},{l:'Care home',ty:'text'},{l:'Consultant(s)',ty:'text'},
-   {l:'Monthly hours by client (one per line — client ID · Jan…Dec · 6-mo total · year total)',ty:'long text'},
+   {l:'Consultation hours',ty:'table',cols:['Client ID','Month','Hours','Notes']},
    {l:'Total hours',ty:'text'}]},
  /* Agency docs · Personnel / Facility */
  {id:'ex-training', slug:'32_on_site_orientation__on_the_job_training_checklist.pdf', key:'Agency', sec:'forms', name:'Direct Care Staff Training Checklist',
@@ -3276,35 +3320,22 @@ const EXAMPLE_DOCS=[
   fields:[
    {l:'Facility name',ty:'text'},{l:'Service level',ty:'text'},{l:'Employee name',ty:'text'},{l:'Title',ty:'text'},{l:'Date of hire',ty:'date'},
    {l:'On-site orientation — trainer & date for: program design, IPP, client rights, medication assistance, health & emergency, special incident reporting, abuse identification/reporting',ty:'long text'},
-   {l:'On-the-job training (topic · hours · trainer · date)',ty:'long text'},
+   {l:'On-the-job training',ty:'table',cols:['Topic','Hours','Trainer','Date']},
    {l:'Trainer',ty:'signature'}]},
  {id:'ex-personnel-toc', slug:'29_personnel_table_of_contents.pdf', key:'Agency', sec:'forms', name:'Personnel Chart Table of Contents',
   desc:'Reference index for a staff personnel file — check items as filed',
   fields:[
    {l:'Employee name',ty:'text'},
-   {l:'Personnel file contents (check as filed)',ty:'long text'}]},
+   {l:'Personnel file contents (check as filed)',ty:'checklist',items:['Job Application / Personnel Record (LIC 501)','Health Screening Report (LIC 503)','TB Clearance','Fingerprint Clearance / Transfer Request','Current Driver\u2019s License or Photo ID','First Aid & CPR Certification','Direct Care Staff Training Checklist (On-site Orientation)','Continuing Education Verification','DSPT Certification Verification (Year 1 / Year 2)','Crisis Prevention Intervention Certification (per program design)','Administrator Certificate']}]},
  {id:'ex-facility-toc', slug:'35_facility_file_table_of_contents.pdf', key:'Agency', sec:'forms', name:'Facility Chart Table of Contents',
   desc:'Reference index for the facility chart — check items as filed',
   fields:[
    {l:'Facility name',ty:'text'},
-   {l:'Facility chart contents (check as filed)',ty:'long text'}]}
+   {l:'Facility chart contents (check as filed)',ty:'checklist',items:['ACRC Approved Program Design','Weekly Staff Schedule','Weekly Resident Accountability','Emergency and Disaster Plan (LIC 610 / 610D / 610E)','Monthly Fire Drill Record','Looking at Service Quality Provider Handbook','Agency correspondence (ACRC / CCL)','Title 17 reviews \u00b7 Technical Support Logs \u00b7 Corrective Action Plans','Facility Evaluation & Complaint Reports','Fingerprint Clearances','Surety bond','Vehicle registration & proof of insurance','Professional liability','ACRC Vendorization / Rate Letter']}]}
 ];
 const EXAMPLE_BY_SLUG={}; EXAMPLE_DOCS.forEach(d=>EXAMPLE_BY_SLUG[d.slug]=d);
 function docById(id){ return EXAMPLE_DOCS.find(d=>d.id===id) || USER_DOCS[id] || null; }
-/* pre-seed the two table-of-contents docs so they open filled with the standard index */
-EXAMPLE_VALUES['ex-personnel-toc']={'Personnel file contents (check as filed)':
-  ['☐ Job Application / Personnel Record (LIC 501)','☐ Health Screening Report (LIC 503)','☐ TB Clearance',
-   '☐ Fingerprint Clearance / Transfer Request','☐ Current Driver’s License or Photo ID','☐ First Aid & CPR Certification',
-   '☐ Direct Care Staff Training Checklist (On-site Orientation)','☐ Continuing Education Verification',
-   '☐ DSPT Certification Verification (Year 1 / Year 2)','☐ Crisis Prevention Intervention Certification (per program design)',
-   '☐ Administrator Certificate'].join('\n')};
-EXAMPLE_VALUES['ex-facility-toc']={'Facility chart contents (check as filed)':
-  ['☐ ACRC Approved Program Design','☐ Weekly Staff Schedule','☐ Weekly Resident Accountability',
-   '☐ Emergency and Disaster Plan (LIC 610 / 610D / 610E)','☐ Monthly Fire Drill Record',
-   '☐ Looking at Service Quality Provider Handbook','☐ Agency correspondence (ACRC / CCL)',
-   '☐ Title 17 reviews · Technical Support Logs · Corrective Action Plans','☐ Facility Evaluation & Complaint Reports',
-   '☐ Fingerprint Clearances','☐ Surety bond','☐ Vehicle registration & proof of insurance',
-   '☐ Professional liability','☐ ACRC Vendorization / Rate Letter'].join('\n')};
+
 
 /* ── v4.7: user-uploaded library docs + in-dashboard e-sign ── */
 let USER_LIB={};   // key -> {forms:[{dbId,n,sub,url}], res:[...]}
@@ -3344,13 +3375,46 @@ function libRowHtml(fl,key){
 function docFieldInput(fd,i,v){
   const val=v==null?'':v;
   if(fd.ty==='signature') return `<div class="field"><label>${esc(fd.l)} (type name to sign)</label><input class="inp" id="dg${i}" placeholder="Full name" value="${esc(val)}"></div>`;
-  if(fd.ty==='checkbox')  return `<div class="field"><label>${esc(fd.l)}</label><select class="inp" id="dg${i}"><option ${val==='Yes'?'selected':''}>Yes</option><option ${val==='No'?'selected':''}>No</option></select></div>`;
+  if(fd.ty==='checkbox'||fd.ty==='check') return `<div class="field"><label class="checkrow" style="border-color:var(--line);cursor:pointer;margin:0" onclick="var c=el('dg${i}');c.checked=!c.checked">
+    <input type="checkbox" id="dg${i}" ${val==='Yes'?'checked':''} style="width:16px;height:16px" onclick="event.stopPropagation()"><div class="ct"><b>${esc(fd.l)}</b></div></label></div>`;
+  if(fd.ty==='checklist'){
+    const items=Array.isArray(v)?v:(fd.items||[]).map(t=>({t,on:false}));
+    return `<div class="field"><label>${esc(fd.l)}</label><div id="dgw${i}">${items.map(it=>docChecklistItemHtml(it)).join('')}</div>
+      <button class="btn ghost sm" style="margin-top:6px" onclick="docChecklistAdd(${i})">＋ Add item</button></div>`;
+  }
+  if(fd.ty==='table'){
+    const cols=fd.cols||['Column 1','Column 2'];
+    const rows=Array.isArray(v)&&v.length?v:[cols.map(()=> '')];
+    return `<div class="field"><label>${esc(fd.l)}</label>
+      <div style="overflow-x:auto;border:1px solid var(--line);border-radius:10px">
+      <table style="width:100%;border-collapse:collapse;min-width:${cols.length*110}px"><thead><tr>
+        ${cols.map(c=>`<th style="text-align:left;font-size:11px;padding:6px 8px;border-bottom:1px solid var(--line);background:var(--bg)">${esc(c)}</th>`).join('')}<th style="width:30px;border-bottom:1px solid var(--line);background:var(--bg)"></th></tr></thead>
+      <tbody id="dgtb${i}">${rows.map(r=>docTableRowHtml(cols,r)).join('')}</tbody></table></div>
+      <button class="btn ghost sm" style="margin-top:6px" onclick="docTableAdd(${i})">＋ Add row</button></div>`;
+  }
   if(fd.ty==='long text') return `<div class="field"><label>${esc(fd.l)}</label><textarea class="inp" id="dg${i}" rows="3">${esc(val)}</textarea></div>`;
   return `<div class="field"><label>${esc(fd.l)}</label><input class="inp" id="dg${i}" type="${fd.ty==='date'?'date':fd.ty==='time'?'time':'text'}" value="${esc(val)}"></div>`;
 }
+function docTableRowHtml(cols,vals){
+  return `<tr>${cols.map((c,ci)=>`<td style="padding:3px;border-bottom:1px solid var(--line)"><input class="inp" style="height:32px;font-size:12.5px" value="${esc((vals&&vals[ci])||'')}" placeholder="${esc(c)}"></td>`).join('')}
+    <td style="border-bottom:1px solid var(--line);text-align:center"><button class="btn ghost sm" title="Remove row" onclick="this.closest('tr').remove()">✕</button></td></tr>`;
+}
+function docTableAdd(i){
+  const d=docById(window._docEdit); if(!d) return;
+  const cols=d.fields[i].cols||['Column 1','Column 2'];
+  el('dgtb'+i).insertAdjacentHTML('beforeend',docTableRowHtml(cols,null));
+}
+function docChecklistItemHtml(it){
+  return `<div class="cli" style="display:flex;gap:8px;align-items:center;margin-bottom:5px">
+    <input type="checkbox" ${it.on?'checked':''} style="width:16px;height:16px;flex:none">
+    <input class="inp" type="text" style="flex:1;height:32px;font-size:12.5px" value="${esc(it.t||'')}">
+    <button class="btn ghost sm" title="Remove item" onclick="this.closest('.cli').remove()">✕</button></div>`;
+}
+function docChecklistAdd(i){ el('dgw'+i).insertAdjacentHTML('beforeend',docChecklistItemHtml({t:'',on:false})); }
 function openDocEditor(id){
   const d=docById(id); if(!d) return;
   if(DOC_SIGS[d.name]) return toast('This document is signed and locked. Print it or open the original.');
+  window._docEdit=id;
   const saved=EXAMPLE_VALUES[id]||{};
   const isUser=!!USER_DOCS[id];
   const note=isUser
@@ -3364,7 +3428,26 @@ function openDocEditor(id){
      <button class="btn ghost" onclick="printSheet(docFilledFromForm('${id}'))">Print filled</button>
      <button class="btn navy" onclick="docSave('${id}')">Save document</button>`);
 }
-function docReadForm(id){ const d=docById(id); const o={}; d.fields.forEach((fd,i)=>{ const e=el('dg'+i); if(e) o[fd.l]=e.value; }); return o; }
+function docReadForm(id){
+  const d=docById(id); const o={};
+  d.fields.forEach((fd,i)=>{
+    if(fd.ty==='checkbox'||fd.ty==='check'){ const e=el('dg'+i); if(e) o[fd.l]=e.checked?'Yes':'No'; return; }
+    if(fd.ty==='table'){
+      const tb=el('dgtb'+i); if(!tb) return;
+      const rows=[...tb.querySelectorAll('tr')].map(tr=>[...tr.querySelectorAll('input')].map(x=>x.value.trim()));
+      o[fd.l]=rows.filter(r=>r.some(c=>c)); return;
+    }
+    if(fd.ty==='checklist'){
+      const w=el('dgw'+i); if(!w) return;
+      o[fd.l]=[...w.querySelectorAll('.cli')].map(r=>{
+        const cb=r.querySelector('input[type=checkbox]'), tx=r.querySelector('input[type=text]');
+        return {t:(tx?tx.value:'').trim(), on:cb?cb.checked:false};
+      }).filter(it=>it.t); return;
+    }
+    const e=el('dg'+i); if(e) o[fd.l]=e.value;
+  });
+  return o;
+}
 function docPersist(id){
   const d=docById(id);
   const content=Object.assign({}, EXAMPLE_VALUES[id]||{});
@@ -3385,9 +3468,27 @@ function docFilledHtml(id){ return docSheet(id, EXAMPLE_VALUES[id]||{}); }
 function docFilledFromForm(id){ return docSheet(id, docReadForm(id)); }
 function docSheet(id,vals){
   const d=docById(id);
+  const cellB='border:1px solid #999;padding:5px 7px;font-size:11.5px;text-align:left';
   const rows=d.fields.filter(fd=>fd.ty!=='signature').map(fd=>{
-    const v=vals[fd.l]!=null?String(vals[fd.l]):'';
-    const cell=fd.ty==='long text'?`<div style="white-space:pre-wrap;min-height:48px">${esc(v)}</div>`:esc(v);
+    const v=vals[fd.l];
+    if(fd.ty==='table'){
+      const cols=fd.cols||[];
+      const data=Array.isArray(v)?v:[];
+      const blank=Math.max(3, 8-data.length);                       // spare lines for handwriting
+      const body=data.map(r=>`<tr>${cols.map((c,ci)=>`<td style="${cellB}">${esc((r&&r[ci])||'')}</td>`).join('')}</tr>`).join('')
+        + Array.from({length:blank},()=>`<tr>${cols.map(()=>`<td style="${cellB}">&nbsp;</td>`).join('')}</tr>`).join('');
+      return `<tr><th style="width:240px;vertical-align:top">${esc(fd.l)}</th><td style="padding:6px 4px">
+        <table style="width:100%;border-collapse:collapse"><thead><tr>${cols.map(c=>`<th style="${cellB};background:#f2f0ea">${esc(c)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></td></tr>`;
+    }
+    if(fd.ty==='checklist'){
+      const items=Array.isArray(v)?v:(fd.items||[]).map(t=>({t,on:false}));
+      return `<tr><th style="width:240px;vertical-align:top">${esc(fd.l)}</th><td><div style="line-height:1.9">${items.map(it=>`${it.on?'☑':'☐'} ${esc(it.t)}`).join('<br>')}</div></td></tr>`;
+    }
+    if(fd.ty==='checkbox'||fd.ty==='check'){
+      return `<tr><th style="width:240px">${esc(fd.l)}</th><td>${v==='Yes'?'☑ Yes':'☐ No'}</td></tr>`;
+    }
+    const sv=v!=null?String(v):'';
+    const cell=fd.ty==='long text'?`<div style="white-space:pre-wrap;min-height:48px">${esc(sv)}</div>`:esc(sv);
     return `<tr><th style="width:240px">${esc(fd.l)}</th><td>${cell||'&nbsp;'}</td></tr>`;
   }).join('');
   const sg=DOC_SIGS[d.name];
@@ -3416,13 +3517,19 @@ function openDocFieldsEditor(id){
      <button class="btn navy" onclick="udSaveFields('${id}')">Save fields</button>`);
 }
 function udFieldRows(id){ const d=docById(id); return d.fields.map((fd,i)=>`
-  <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+  <div style="margin-bottom:6px">
+  <div style="display:flex;gap:6px;align-items:center">
     <input class="inp" style="flex:1;height:34px" value="${esc(fd.l)}" onchange="docById('${id}').fields[${i}].l=this.value">
-    <select class="inp" style="width:118px;height:34px" onchange="docById('${id}').fields[${i}].ty=this.value">
-      ${['text','long text','date','time','checkbox','signature'].map(ty=>`<option ${fd.ty===ty?'selected':''}>${ty}</option>`).join('')}</select>
+    <select class="inp" style="width:118px;height:34px" onchange="docById('${id}').fields[${i}].ty=this.value;udRefresh('${id}')">
+      ${['text','long text','date','time','check','checklist','table','signature'].map(ty=>`<option value="${ty}" ${(fd.ty===ty||(ty==='check'&&fd.ty==='checkbox'))?'selected':''}>${ty}</option>`).join('')}</select>
     <button class="btn ghost sm" ${i===0?'disabled':''} onclick="udMove('${id}',${i},-1)">↑</button>
     <button class="btn ghost sm" ${i===d.fields.length-1?'disabled':''} onclick="udMove('${id}',${i},1)">↓</button>
     <button class="btn ghost sm" onclick="udDel('${id}',${i})">✕</button>
+  </div>
+  ${fd.ty==='table'?`<input class="inp" style="height:32px;font-size:12px;margin-top:4px" placeholder="Column names, comma-separated — e.g. Date, Time, Description, Injuries"
+    value="${esc((fd.cols||[]).join(', '))}" onchange="docById('${id}').fields[${i}].cols=this.value.split(',').map(t=>t.trim()).filter(Boolean)">`:''}
+  ${fd.ty==='checklist'?`<input class="inp" style="height:32px;font-size:12px;margin-top:4px" placeholder="Checklist items, comma-separated"
+    value="${esc((fd.items||[]).join(', '))}" onchange="docById('${id}').fields[${i}].items=this.value.split(',').map(t=>t.trim()).filter(Boolean)">`:''}
   </div>`).join('')||'<div class="empty">No fields yet — add one below.</div>'; }
 function udRefresh(id){ el('udFields').innerHTML=udFieldRows(id); }
 function udMove(id,i,dir){ const fs=docById(id).fields; const j=i+dir; if(j<0||j>=fs.length) return; const t=fs[i]; fs[i]=fs[j]; fs[j]=t; udRefresh(id); }
@@ -3918,7 +4025,11 @@ function openApptForm(cid){
     </div>
     <div class="field"><label>Location</label><input class="inp" id="apLoc" placeholder="Clinic, house, or address"></div>
     <div class="field"><label>Preparation note</label><input class="inp" id="apFlag" placeholder="Optional — e.g. bring updated INR results"></div>
-    ${BACKEND.calendarWebhook?`<div class="sec-note"><span>📅</span><div><b>Syncs to Google Calendar</b>The event is created on the agency calendar with the client&#39;s initials and UCI — never the full name.</div></div>`:''}`,
+    <label class="checkrow" style="border-color:var(--line);cursor:pointer" onclick="var c=el('apGcal');c.checked=!c.checked">
+      <input type="checkbox" id="apGcal" checked style="width:16px;height:16px" onclick="event.stopPropagation()">
+      <div class="ct"><b>Also send to Google Calendar</b><div class="tiny muted">${GCAL.connected
+        ?'Added straight to your connected Google Calendar — initials and UCI only, never the full name.'
+        :'Opens Google Calendar prefilled — one click to save, no Google approval needed. Initials and UCI only.'}</div></div></label>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveAppt()">Save appointment</button>`);
 }
 function saveAppt(){
@@ -3929,9 +4040,11 @@ function saveAppt(){
   APPTS.push(a);
   sbPush('np_demo_appointments',{id:a.id,cid:a.cid,title:a.title,type:a.type,appt_date:a.date,appt_time:a.time,dur:a.dur,provider:a.provider,loc:a.loc,flag:a.flag,ride:a.ride});
   n8nCal({event:'appointment.created', id:a.id, uci:client(a.cid).uci, init:client(a.cid).init, title:a.title, type:a.type, date:a.date, time:a.time, dur:a.dur, provider:a.provider, loc:a.loc});
-  if(GCAL.connected) gcalPush(a);
+  const toGcal=el('apGcal')&&el('apGcal').checked;
+  if(toGcal){ GCAL.connected?gcalPush(a):gcalTemplateOpen(a); }
   logAudit('Added appointment',`${client(a.cid).name} · ${a.title}`);
-  closeAll(); render(); toast(BACKEND.calendarWebhook?'Appointment saved and sent to Google Calendar.':'Appointment saved.');
+  closeAll(); render();
+  toast(toGcal?(GCAL.connected?'Appointment saved and added to your Google Calendar.':'Appointment saved — finish the Google Calendar event in the tab that opened.'):'Appointment saved.');
 }
 function cancelAppt(id){
   const a=APPTS.find(x=>x.id===id);
@@ -4245,6 +4358,118 @@ function globalSearchGo(q){
 }
 
 /* ══════════════ ASSISTANT ══════════════ */
+/* v5.5: Ask Meridian sends the WHOLE dashboard state (role-scoped, client-ID-only)
+   with every question, so the model can answer about literally anything on screen. */
+let ASK_HIST=[];   // [{q,a}] last exchanges, sent for follow-ups
+function askTr(s,n){ s=String(s??'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(); n=n||140; return s.length>n?s.slice(0,n-1)+'…':s; }
+function askDocLines(d,vals){
+  const out=[];
+  (d.fields||[]).forEach(fd=>{
+    const v=vals?vals[fd.l]:null;
+    if(v==null||v==='') return;
+    if(fd.ty==='table'&&Array.isArray(v)) v.slice(0,8).forEach(r=>out.push(`   ${fd.l}: ${r.filter(Boolean).join(' | ')}`));
+    else if(fd.ty==='checklist'&&Array.isArray(v)) out.push(`   ${fd.l}: ${v.map(it=>(it.on?'[x] ':'[ ] ')+it.t).join(', ')}`);
+    else out.push(`   ${fd.l}: ${askTr(v,120)}`);
+  });
+  return out.slice(0,12);
+}
+function askContext(){
+  const L=[]; const sec=(t,lines)=>{ if(lines&&lines.length){ L.push('## '+t); lines.forEach(x=>L.push(x)); L.push(''); } };
+  const role=state.role, cl=visibleClients(), clIds=cl.map(c=>c.id);
+  const ci=id=>{ const c=client(id); return c?`${c.init} (${c.uci})`:id; };
+  L.push(`Meridian Care Portal — live data snapshot for the assistant. Today is ${fmtLong(T)}. Viewer: ${ME[role].name} (${ME[role].label}). Clients are identified by initials + UCI only.`); L.push('');
+
+  sec('Clients', cl.map(c=>{
+    const parts=[`${c.init} · ${c.uci} · ${c.home} · ${c.dx||''}`];
+    if(c.alerts&&c.alerts.length) parts.push(`alerts: ${c.alerts.join('; ')}`);
+    if(c.support) parts.push(`support: ${askTr(c.support,110)}`);
+    if(c.goals&&c.goals.length) parts.push(`IPP goals: ${c.goals.map(g=>`${g.g} ${g.p}%`).join('; ')}`);
+    return '- '+parts.join(' · ');
+  }));
+
+  if(role!=='family'){
+    sec('Active medications (demo data)', MEDS.filter(m=>m.status==='active'&&clIds.includes(m.cid)).slice(0,40)
+      .map(m=>`- ${ci(m.cid)}: ${m.name} ${m.dose} at ${m.times.map(t=>t==='PRN'?'PRN':hm12(t)).join(', ')}`));
+    const todaysLogs=LOGS.filter(l=>l.date===T&&clIds.includes(l.cid));
+    sec('Today\'s med pass records', todaysLogs.slice(-20).map(l=>`- ${ci(l.cid)} ${hm12(l.time)} ${l.status||'given'}${l.by?' by '+l.by:''}`));
+  }
+
+  const upAppts=APPTS.filter(a=>a.date>=T&&clIds.includes(a.cid)&&!a.cancelled).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).slice(0,25)
+    .map(a=>`- ${a.date} ${hm12(a.time)} · ${ci(a.cid)} · ${a.title} (${a.type}) · ${a.loc||''}${a.provider?' · '+a.provider:''}${a.flag?' · FLAG: '+askTr(a.flag,60):''}`);
+  if(GCAL.connected) GCAL.events.slice(0,20).forEach(g=>upAppts.push(`- ${g.date} ${g.allday?'all day':hm12(g.time)} · ${g.cid?ci(g.cid)+' · ':''}${askTr(g.title,80)} (Google Calendar)`));
+  sec('Appointments (portal + connected Google Calendar)', upAppts);
+
+  if(role!=='family'){
+    sec('Tasks', TASKS.slice(0,30).map(t=>`- [${t.stage}] ${askTr(t.title,90)} · ${t.cat||'General'} · due ${t.due||'—'}${t.sid?' · assigned '+(staff(t.sid)||{}).init:''}${t.pri?' · '+t.pri:''}${t.signoff?' · signed off by '+askTr(t.signoff,40):''}${(t.notes||[]).length?' · notes: '+t.notes.slice(-2).map(n=>askTr(n.t||n,60)).join(' / '):''}`));
+    sec('Incidents', INCIDENTS.filter(i=>clIds.includes(i.cid)).map(i=>`- ${i.type} · ${ci(i.cid)} · ${i.date} · ${i.status}${i.summary?' · '+askTr(i.summary,100):''}`));
+    sec('Staff & certifications', STAFF.map(s=>{
+      const cr=(CREDS[s.id]||[]).map(x=>`${x.c}: ${x.d}${x.s==='bad'?' (EXPIRED/PROBLEM)':x.s==='warn'?' (attention)':''}`).join('; ');
+      return `- ${s.name} (${s.init}) · ${s.role} · ${s.home} · hired ${s.hired} · ${cr}`;
+    }));
+    sec('Shifts today', SHIFTS.map(x=>`- ${(staff(x.sid)||{}).name||x.sid}: ${hm12(x.start)}–${hm12(x.end)} at ${x.home}`));
+    sec('Attendance today', ATTEND.filter(x=>clIds.includes(x.cid)).map(x=>`- ${ci(x.cid)}: ${x.st}${x.units?' · '+x.units+' units':''}${x.gap?' · claim blocked: '+askTr(x.gap,60):''}`));
+    sec('Fire drills (recent)', FIREDRILLS.slice(0,12).map(d=>`- ${d.date} ${hm12(d.time)} · ${d.home} · ${d.shift} · evac ${d.evac} · by ${d.by}`));
+    sec('Water temperature log (recent)', WATERTEMP.slice(0,14).map(w=>`- ${w.date} · ${w.home||''} · ${w.temp}°F${w.ok===false?' OUT OF RANGE':''}${w.by?' · '+w.by:''}`));
+    sec('Weekly checklist', Object.entries(WEEKLY).slice(0,20).map(([k,v])=>`- ${k}: ${Array.isArray(v)?v.filter(x=>x.d||x.done).length+'/'+v.length+' done':askTr(v,60)}`));
+    sec('Digital inspections', [
+      ...INSP_TEMPLATES.map(t=>`- template: ${t.name} · ${t.questions.length} questions · files to ${FOLDER_NAMES[t.folder]||t.folder}`),
+      ...INSP_DONE.slice(0,10).map(s=>`- completed: ${s.title} · score ${s.num}/${s.den} (${s.pct}%) · by ${s.by} · ${s.at}`)]);
+    sec('Training courses', TRAINING.map(t=>{
+      const appl=STAFF.filter(s=>t.req||(t.asg||[]).includes(s.id));
+      return `- ${t.n} · ${t.mins} min · ${t.req?'required for everyone':'assigned: '+((t.asg||[]).map(id=>(staff(id)||{}).init).join(', ')||'no one')} · ${appl.filter(s=>t.done.includes(s.id)).length}/${appl.length} complete`;
+    }));
+    sec('Onboarding steps for new hires', ONBOARD.map((o,i)=>`${i+1}. ${o}`));
+    sec('Audit trail (recent)', AUDIT.slice(0,15).map(a=>`- ${a.at} · ${a.who} · ${a.act}${a.obj?' · '+askTr(a.obj,70):''}`));
+  }
+
+  const docLines=[];
+  DOCS.filter(d=>clIds.includes(d.cid)).slice(0,30).forEach(d=>docLines.push(`- ${ci(d.cid)} · ${d.n} · ${d.cat} · ${d.date||''}${d.by?' · uploaded by '+d.by:''}`));
+  sec('Client file documents', docLines);
+
+  const binder=[];
+  Object.keys(FOLDER_NAMES).forEach(k=>{
+    const Lb=DOC_LIBRARY[k]||{};
+    (Lb.forms||[]).forEach(x=>binder.push(`- ${FOLDER_NAMES[k]} / Forms: ${x[0]}`));
+    (Lb.res||[]).forEach(x=>binder.push(`- ${FOLDER_NAMES[k]} / Resources: ${x[0]}`));
+    ((USER_LIB[k]||{}).forms||[]).forEach(x=>binder.push(`- ${FOLDER_NAMES[k]} / Forms (uploaded): ${x.n}`));
+    ((USER_LIB[k]||{}).res||[]).forEach(x=>binder.push(`- ${FOLDER_NAMES[k]} / Resources (uploaded): ${x.n}`));
+    (COMPLETED[k]||[]).slice(0,10).forEach(x=>binder.push(`- ${FOLDER_NAMES[k]} / Completed: ${x.n}${x.sub?' · '+askTr(x.sub,70):''}`));
+  });
+  if(role!=='family') sec('Binder folders (forms, resources, completed)', binder.slice(0,80));
+
+  if(role!=='family'){
+    const filled=[];
+    EXAMPLE_DOCS.concat(Object.values(USER_DOCS)).forEach(d=>{
+      const vals=EXAMPLE_VALUES[d.id];
+      const sig=DOC_SIGS[d.name];
+      const head=`- ${d.name} (${FOLDER_NAMES[d.key]||d.key})${sig?` · SIGNED by ${sig.by} ${sig.at}`:''}${vals&&vals._meta?` · last edited by ${vals._meta.by} ${vals._meta.at}`:''}`;
+      filled.push(head);
+      if(vals) askDocLines(d,vals).forEach(x=>filled.push(x));
+    });
+    sec('Editable documents & their filled content', filled.slice(0,120));
+    sec('Report templates', (typeof TEMPLATES5!=='undefined'?TEMPLATES5:[]).map(t=>`- ${t.name}${t.dest?' → '+t.dest:''}`));
+    sec('Policy & guideline library', GUIDES.map(g=>`- ${g.t||g.n||''}${g.d?' · '+askTr(g.d,80):''}`));
+    sec('Message threads', THREADS.map(th=>`- ${askTr(th.subject||th.s||'',70)}${th.msgs&&th.msgs.length?' · last: '+askTr((th.msgs[th.msgs.length-1]||{}).t||'',80):''}`));
+  }
+
+  let out=L.join('\n');
+  if(out.length>18000) out=out.slice(0,18000)+'\n…[snapshot truncated]';
+  return out;
+}
+function askSearch(q){
+  const stop=new Set(['the','and','for','with','what','when','who','how','are','was','this','that','have','has','does','about','show','all','any','you','our','their']);
+  const terms=q.toLowerCase().split(/[^a-z0-9\-]+/).filter(w=>w.length>2&&!stop.has(w));
+  if(!terms.length) return null;
+  const lines=[]; let sec='';
+  askContext().split('\n').forEach(l=>{
+    if(l.startsWith('## ')){ sec=l.slice(3); return; }
+    if(l.startsWith('- ')||/^\s+\S/.test(l)||/^\d+\./.test(l)) lines.push({sec,l});
+  });
+  const hits=lines.map(x=>({sec:x.sec,l:x.l,score:terms.reduce((a,t)=>a+((x.l+' '+x.sec).toLowerCase().includes(t)?1:0),0)}))
+    .filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,8);
+  if(!hits.length) return null;
+  return 'Here\'s what I found in the records:<br>'+hits.map(x=>esc('• '+(x.sec?x.sec+': ':'')+x.l.replace(/^-\s*/,'').trim())).join('<br>');
+}
 const ASK_SUG={
   director:['Which staff have certifications expiring soon?','Show me open incidents','Who has overdue tasks?','Summarize this week\'s safety logs','Generate an incident report for a fall','What appointments does J-402318 have this week?','Which weekly checklists are behind?','Draft a note to staff about the new fire drill schedule','What does our policy say about reporting a fall?'],
   staff:['What is left on my shift?','How do I report an incident?','What appointments are today?','Which of my tasks are due this week?','Walk me through the fire drill log','What does the de-escalation protocol say?'],
@@ -4257,7 +4482,9 @@ function askSeed(){
 }
 async function askViaBackend(q){
   try{
-    const r=await fetch(BACKEND.askWebhook,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,role:state.role,user:ME[state.role].name})});
+    const r=await fetch(BACKEND.askWebhook,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({question:q, role:state.role, user:ME[state.role].name,
+        context:askContext(), history:ASK_HIST.slice(-6)})});
     const d=await r.json();
     return d.reply||d.answer||null;
   }catch(e){ console.warn('[np-demo] ask backend failed',e); return null; }
@@ -4272,13 +4499,17 @@ function askSend(preset){
     log.insertAdjacentHTML('beforeend',`<div class="msg bot" id="askWait">Thinking…</div>`);
     log.scrollTop=log.scrollHeight;
     askViaBackend(q).then(reply=>{
-      el('askWait').outerHTML=`<div class="msg bot">${reply?esc(reply):askAnswer(q)}</div>`;
+      const ans=reply?esc(reply).replace(/\n/g,'<br>'):askAnswer(q);
+      el('askWait').outerHTML=`<div class="msg bot">${ans}</div>`;
+      ASK_HIST.push({q, a:askTr(ans,400)}); if(ASK_HIST.length>10) ASK_HIST.shift();
       log.scrollTop=log.scrollHeight;
     });
     return;
   }
   setTimeout(()=>{
-    log.insertAdjacentHTML('beforeend',`<div class="msg bot">${askAnswer(q)}</div>`);
+    const ans=askAnswer(q);
+    log.insertAdjacentHTML('beforeend',`<div class="msg bot">${ans}</div>`);
+    ASK_HIST.push({q, a:askTr(ans,400)}); if(ASK_HIST.length>10) ASK_HIST.shift();
     log.scrollTop=log.scrollHeight;
   },520);
 }
@@ -4329,7 +4560,9 @@ function askAnswer(q){
     const mine=myTasks().filter(t=>t.stage!=='Done');
     return mine.length?`You have ${mine.length} open:<br>${mine.map(t=>`${t.title} — due ${relDay(t.due).toLowerCase()}`).join('<br>')}`:'Nothing open on your list.';
   }
-  return 'I can answer from client records, medications, appointments, tasks and the policy documents in the knowledge base. Try asking about a specific person or a policy.';
+  const found=askSearch(q);
+  if(found) return found;
+  return 'I can answer from client records, medications, appointments, tasks and the documents in the binders. Try asking about a specific person, form, or policy.';
 }
 
 /* ══════════════ SHIFT EDITING (director) ══════════════ */
