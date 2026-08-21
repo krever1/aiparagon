@@ -632,7 +632,7 @@ body{font-size:15px}
         <span class="muted" style="font-size:13px">⚙</span>
       </div>
       <div class="side-foot">
-        <span>Built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · pilot v5.5</span>
+        <span>Built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · pilot v5.6</span>
         <a href="mailto:help@aiparagonconsulting.com?subject=Meridian%20Care%20Portal%20support">✉ Help & support</a>
       </div>
     </div>
@@ -713,7 +713,7 @@ const BACKEND = {
   url: '',              // ← paste the shared Supabase project URL (https://xxxx.supabase.co)
   anon: '',             // ← paste the Supabase anon key
   incidentWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-incident',   // LIVE — writes to np_demo_notifications
-  calendarWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-calendar',   // goes live once Google Calendar cred is added + workflow published
+  calendarWebhook: '',   // v5.6: the portal now pushes to Google directly (gcalPush) — no relay needed   // goes live once Google Calendar cred is added + workflow published
   askWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-ask',             // goes live once Anthropic key is added + workflow published
   googleClientId: '665621800801-pbruv525a3kcrq5oa64p9rvh1mg7pt6c.apps.googleusercontent.com'
 };
@@ -799,12 +799,21 @@ function gcalPush(a){ // portal appointment → user's Google Calendar (UCI only
   const end=new Date(new Date(startIso).getTime()+(a.dur||30)*60000);
   const pad=n=>String(n).padStart(2,'0');
   const endIso=end.getFullYear()+'-'+pad(end.getMonth()+1)+'-'+pad(end.getDate())+'T'+pad(end.getHours())+':'+pad(end.getMinutes())+':00';
+  // Google rejects a naive dateTime with 400 unless a timeZone accompanies it
+  let tz='UTC'; try{ tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'; }catch(e){}
   fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
     method:'POST', headers:{Authorization:'Bearer '+GCAL.token,'Content-Type':'application/json'},
     body:JSON.stringify({ summary:a.title+' — '+client(a.cid).init+' ('+client(a.cid).uci+')',
       location:a.loc||'', description:'Created by Meridian Care Portal · client identified by ID only',
-      start:{dateTime:startIso}, end:{dateTime:endIso} })
-  }).then(r=>r.ok?toast('Added to your Google Calendar too.'):null).catch(()=>{});
+      start:{dateTime:startIso,timeZone:tz}, end:{dateTime:endIso,timeZone:tz} })
+  }).then(async r=>{
+    if(r.ok){ toast('Added to your Google Calendar too.'); return; }
+    let msg='';
+    try{ const d=await r.json(); msg=(d.error&&d.error.message)||''; }catch(e){}
+    console.warn('[np-demo] gcal insert failed',r.status,msg);
+    toast(r.status===403?'Google declined the event — the Calendar API may need enabling.'
+         :'Saved here, but Google Calendar rejected the event'+(msg?': '+msg:'.'));
+  }).catch(e=>{ console.warn('[np-demo] gcal insert failed',e); toast('Saved here — could not reach Google Calendar.'); });
 }
 function gcalLabel(a){ return a.gcal ? (a.cid?'Google · '+esc(client(a.cid).uci):'Google Calendar') : esc(client(a.cid).uci); }
 
@@ -850,7 +859,16 @@ function sbUpsert(t,row){ if(!sbOn()) return; fetch(`${BACKEND.url}/rest/v1/${t}
 function sbPatch(t,id,patch){ if(!sbOn()) return; fetch(`${BACKEND.url}/rest/v1/${t}?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:sbH(),body:JSON.stringify(patch)}).catch(e=>console.warn('[np-demo] patch failed',t,e)); }
 function n8nPost(payload){ n8nHook(BACKEND.incidentWebhook,payload); }
 function n8nCal(payload){ n8nHook(BACKEND.calendarWebhook,payload); }
-function n8nHook(url,payload){ if(!url) return; fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).catch(e=>console.warn('[np-demo] webhook failed',e)); }
+function n8nHook(url,payload){
+  if(!url) return;
+  // one-way notification: no-cors + a simple content type avoids the preflight that
+  // an unpublished or CORS-unaware workflow would fail. We never read the response.
+  try{
+    fetch(url,{method:'POST',mode:'no-cors',keepalive:true,
+      headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify(payload)})
+      .catch(()=>{});
+  }catch(e){}
+}
 
 const CLIENTS = [
   {id:'c1', uci:'J-402318', name:'Client JW',  init:'JW', home:'Maple House',   age:34, since:'2021-03-14', guardian:'Guardian on file', tag:'gr',
@@ -2504,7 +2522,7 @@ function viewMessages(){
   return `
   <div class="page-h">
     <div><h1>Messages</h1><div class="sub">Every message is logged to the client record</div></div>
-    <div class="right"><button class="btn navy" onclick="toast('New message composer opens here.')">＋ New message</button></div>
+    <div class="right"><button class="btn navy" onclick="openNewThread()">＋ New message</button></div>
   </div>
   <section class="card">
     <div style="display:grid;grid-template-columns:280px 1fr" class="msg-split">
@@ -2518,9 +2536,13 @@ function viewMessages(){
       <div>
         <div class="card-h"><h2>${esc(th.sub)}</h2><div class="sub">${esc(th.who)} · ${esc(th.role)}</div></div>
         <div class="chat-log">
-          ${th.msgs.map(m=>`<div class="msg ${m.me?'me':'bot'}">${esc(m.t)}<div style="font-size:11px;opacity:.65;margin-top:4px">${esc(m.w)} · ${esc(m.at)}</div></div>`).join('')}
+          ${th.msgs.map(m=>`<div class="msg ${m.me?'me':'bot'}">${esc(m.t)}
+            ${m.att?`<div style="margin-top:6px"><button class="btn ghost sm" onclick="askOpenDoc('${m.att.id}')">◫ ${esc(m.att.name)}</button></div>`:''}
+            <div style="font-size:11px;opacity:.65;margin-top:4px">${esc(m.w)} · ${esc(m.at)}</div></div>`).join('')}
         </div>
+        ${state.msgAtt?`<div class="tiny" style="padding:6px 14px;color:var(--muted)">Attaching: <b>${esc(state.msgAtt.name)}</b> <button class="btn ghost sm" onclick="state.msgAtt=null;render()">✕</button></div>`:''}
         <div class="ask-in" style="border-top:1px solid var(--line)">
+          <button class="btn ghost sm" style="margin-right:6px" title="Attach a document" onclick="msgAttach()">◫</button>
           <input id="msgIn" placeholder="Write a message…" onkeydown="if(event.key==='Enter')sendMsg()">
           <button onclick="sendMsg()">↑</button>
         </div>
@@ -2529,12 +2551,54 @@ function viewMessages(){
   </section>
   ${state.role!=='family'?faqCard():''}`;
 }
-function t_unread(id){ const t=THREADS.find(x=>x.id===id); if(t) t.unread=0; renderNav(); }
+function t_unread(id){ const t=THREADS.find(x=>x.id===id); if(t&&t.unread){ t.unread=0; sbPatch('np_demo_threads',id,{unread:0}); } renderNav(); }
 function sendMsg(){
-  const v=el('msgIn').value.trim(); if(!v) return;
-  const th=THREADS.find(t=>t.id===state.thread);
-  th.msgs.push({me:1,t:v,w:'You',at:'Just now'}); th.last=v;
-  render(); toast('Message sent and logged.');
+  const v=(el('msgIn').value||'').trim(); if(!v) return;
+  const th=THREADS.find(t=>t.id===state.thread); if(!th) return;
+  const m={me:1,t:v,w:ME[state.role].name,at:nowStamp(),att:state.msgAtt||null};
+  th.msgs.push(m); th.last=v; state.msgAtt=null;
+  sbPush('np_demo_messages',{thread_id:th.id,author:m.w,role:state.role,body:v,is_me:true,attach_doc:m.att?m.att.id:null});
+  sbPatch('np_demo_threads',th.id,{last_msg:v,unread:0});
+  logAudit('Sent message',`${th.who} · ${askTr(v,60)}`);
+  render(); toast('Message sent and logged to the client record.');
+}
+function msgAttach(){
+  const all=EXAMPLE_DOCS.concat(Object.values(USER_DOCS));
+  openModal('Attach a document',`
+    <div class="sec-note" style="margin-top:0"><span>🔒</span><div><b>Shared by reference</b>The recipient sees the document name and can open it in the portal — nothing leaves the system.</div></div>
+    <div class="field"><label>Document</label><select class="inp" id="msgDoc">${all.map(d=>`<option value="${d.id}">${esc(d.name)} — ${esc(FOLDER_NAMES[d.key]||d.key)}</option>`).join('')||'<option value="">No documents yet</option>'}</select></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="msgAttachPick()">Attach</button>`);
+}
+function msgAttachPick(){
+  const id=el('msgDoc').value; const d=docById(id); if(!d) return closeAll();
+  state.msgAtt={id:d.id,name:d.name}; closeAll(); render(); toast('Attached '+d.name+' — send when ready.');
+}
+function openNewThread(){
+  const people=[...STAFF.map(x=>({v:'staff:'+x.id,l:x.name+' · '+x.role})),
+    {v:'guardian:c1',l:'Guardian on file · client family'},
+    {v:'group:maple',l:'Maple House team · group'},{v:'group:cedar',l:'Cedar House team · group'},
+    {v:'group:birch',l:'Birch House team · group'}];
+  openModal('New message',`
+    <div class="field"><label>To</label><select class="inp" id="nmTo">${people.map(p=>`<option value="${esc(p.v)}">${esc(p.l)}</option>`).join('')}</select></div>
+    <div class="field"><label>Subject</label><input class="inp" id="nmSub" placeholder="e.g. J-402318 — dental follow-up"></div>
+    <div class="field"><label>Message</label><textarea class="inp" id="nmBody" rows="4" placeholder="Write your message…"></textarea></div>
+    <div class="sec-note"><span>🔒</span><div><b>Client IDs only</b>Refer to clients by initials or UCI — never full names or dates of birth.</div></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="createThread()">Send message</button>`);
+}
+function createThread(){
+  const to=el('nmTo').value, sub=(el('nmSub').value||'').trim(), body=(el('nmBody').value||'').trim();
+  if(!sub) return toast('Give the message a subject.');
+  if(!body) return toast('Write a message first.');
+  const [kind,ref]=to.split(':');
+  const who=kind==='staff'?(staff(ref)||{}).name:kind==='guardian'?'Guardian on file':(ref.charAt(0).toUpperCase()+ref.slice(1)+' House team');
+  const role=kind==='staff'?'Staff':kind==='guardian'?'Guardian':'Group';
+  const id='th'+Date.now();
+  const th={id,who,sub,role,last:body,unread:0,msgs:[{me:1,t:body,w:ME[state.role].name,at:nowStamp()}]};
+  THREADS.unshift(th); state.thread=id;
+  sbPush('np_demo_threads',{id,who,subject:sub,role,last_msg:body,unread:0});
+  sbPush('np_demo_messages',{thread_id:id,author:ME[state.role].name,role:state.role,body,is_me:true});
+  logAudit('Started message thread',`${who} · ${sub}`);
+  closeAll(); render(); toast('Message sent to '+who+'.');
 }
 function faqCard(){
   return `<section class="card">
@@ -4377,7 +4441,9 @@ function askContext(){
   const L=[]; const sec=(t,lines)=>{ if(lines&&lines.length){ L.push('## '+t); lines.forEach(x=>L.push(x)); L.push(''); } };
   const role=state.role, cl=visibleClients(), clIds=cl.map(c=>c.id);
   const ci=id=>{ const c=client(id); return c?`${c.init} (${c.uci})`:id; };
-  L.push(`Meridian Care Portal — live data snapshot for the assistant. Today is ${fmtLong(T)}. Viewer: ${ME[role].name} (${ME[role].label}). Clients are identified by initials + UCI only.`); L.push('');
+  L.push(`Meridian Care Portal — live data snapshot for the assistant. Today is ${fmtLong(T)}. Viewer: ${ME[role].name} (${ME[role].label}). Clients are identified by initials + UCI only.`);
+  L.push('When a document below carries a token like [open:ex-seizure], repeat that exact token in your answer and the portal turns it into a button that opens the document. Page tokens you may also use: [go:documents] [go:safety] [go:calendar] [go:tasks] [go:clients] [go:staff] [go:incidents] [go:messages].');
+  L.push('');
 
   sec('Clients', cl.map(c=>{
     const parts=[`${c.init} · ${c.uci} · ${c.home} · ${c.dx||''}`];
@@ -4442,7 +4508,7 @@ function askContext(){
     EXAMPLE_DOCS.concat(Object.values(USER_DOCS)).forEach(d=>{
       const vals=EXAMPLE_VALUES[d.id];
       const sig=DOC_SIGS[d.name];
-      const head=`- ${d.name} (${FOLDER_NAMES[d.key]||d.key})${sig?` · SIGNED by ${sig.by} ${sig.at}`:''}${vals&&vals._meta?` · last edited by ${vals._meta.by} ${vals._meta.at}`:''}`;
+      const head=`- ${d.name} (${FOLDER_NAMES[d.key]||d.key}) [open:${d.id}]${sig?` · SIGNED by ${sig.by} ${sig.at}`:''}${vals&&vals._meta?` · last edited by ${vals._meta.by} ${vals._meta.at}`:''}`;
       filled.push(head);
       if(vals) askDocLines(d,vals).forEach(x=>filled.push(x));
     });
@@ -4454,6 +4520,31 @@ function askContext(){
 
   let out=L.join('\n');
   if(out.length>18000) out=out.slice(0,18000)+'\n…[snapshot truncated]';
+  return out;
+}
+/* v5.6: make the assistant's answers actionable — tokens become buttons */
+const ASK_PAGES={documents:'Documents',safety:'Safety log',calendar:'Calendar',tasks:'Tasks',clients:'Clients',staff:'Staff',incidents:'Incidents',messages:'Messages',home:'Home'};
+function askOpenDoc(id){
+  const d=docById(id); if(!d) return toast('That document is no longer in the portal.');
+  const p={Medical:'Medical',Agency:'Agency'}[d.key]||d.key;
+  go('documents'); state.openBinder=d.key; render();
+  setTimeout(()=>openDocEditor(id),120);
+}
+function askLink(html){
+  let out=String(html);
+  // [open:<docId>] → open-document button
+  out=out.replace(/\[open:([A-Za-z0-9_-]+)\]/g,(m,id)=>{
+    const d=docById(id); if(!d) return '';
+    return `<button class="btn gold sm" style="margin:4px 4px 0 0" onclick="askOpenDoc('${id}')">Open ${esc(d.name)}</button>`;
+  });
+  // [go:<page>] → navigation button
+  out=out.replace(/\[go:([a-z]+)\]/g,(m,v)=>ASK_PAGES[v]?`<button class="btn ghost sm" style="margin:4px 4px 0 0" onclick="go('${v}')">Go to ${esc(ASK_PAGES[v])}</button>`:'');
+  // bare document names the model mentioned without a token
+  if(!/askOpenDoc\(/.test(out)){
+    const all=EXAMPLE_DOCS.concat(Object.values(USER_DOCS));
+    const hit=all.find(d=>d.name&&out.toLowerCase().includes(d.name.toLowerCase()));
+    if(hit) out+=`<br><button class="btn gold sm" style="margin-top:6px" onclick="askOpenDoc('${hit.id}')">Open ${esc(hit.name)}</button>`;
+  }
   return out;
 }
 function askSearch(q){
@@ -4499,7 +4590,7 @@ function askSend(preset){
     log.insertAdjacentHTML('beforeend',`<div class="msg bot" id="askWait">Thinking…</div>`);
     log.scrollTop=log.scrollHeight;
     askViaBackend(q).then(reply=>{
-      const ans=reply?esc(reply).replace(/\n/g,'<br>'):askAnswer(q);
+      const ans=askLink(reply?esc(reply).replace(/\n/g,'<br>'):askAnswer(q));
       el('askWait').outerHTML=`<div class="msg bot">${ans}</div>`;
       ASK_HIST.push({q, a:askTr(ans,400)}); if(ASK_HIST.length>10) ASK_HIST.shift();
       log.scrollTop=log.scrollHeight;
@@ -4507,7 +4598,7 @@ function askSend(preset){
     return;
   }
   setTimeout(()=>{
-    const ans=askAnswer(q);
+    const ans=askLink(askAnswer(q));
     log.insertAdjacentHTML('beforeend',`<div class="msg bot">${ans}</div>`);
     ASK_HIST.push({q, a:askTr(ans,400)}); if(ASK_HIST.length>10) ASK_HIST.shift();
     log.scrollTop=log.scrollHeight;
@@ -4809,11 +4900,25 @@ async function sbHydrate(){
     sbGet('np_demo_templates'),
     sbGet('np_demo_client_notes','select=*&order=created_at.desc'),
     sbGet('np_demo_notifications','select=*&order=created_at.desc&limit=20')]);
-  const [lib,sigs,exdocs,insps]=await Promise.all([
+  const [lib,sigs,exdocs,insps,thr,msgs]=await Promise.all([
     sbGet('np_demo_library','select=*&order=created_at'),
     sbGet('np_demo_doc_signatures','select=*&order=created_at'),
     sbGet('np_demo_example_docs','select=*'),
-    sbGet('np_demo_inspections','select=*&order=created_at.desc')]);
+    sbGet('np_demo_inspections','select=*&order=created_at.desc'),
+    sbGet('np_demo_threads','select=*&order=created_at'),
+    sbGet('np_demo_messages','select=*&order=created_at')]);
+  thr.forEach(r=>{
+    if(THREADS.some(t=>t.id===r.id)) return;
+    THREADS.unshift({id:r.id,who:r.who||'',sub:r.subject||'',role:r.role||'Staff',last:r.last_msg||'',unread:r.unread||0,msgs:[]});
+  });
+  msgs.forEach(r=>{
+    const th=THREADS.find(t=>t.id===r.thread_id); if(!th) return;
+    if(th.msgs.some(m=>m._db===r.id)) return;
+    const d=docById(r.attach_doc);
+    th.msgs.push({_db:r.id,me:!!r.is_me,t:r.body||'',w:r.author||'',
+      at:r.created_at?new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'',
+      att:d?{id:d.id,name:d.name}:null});
+  });
   insps.forEach(r=>{
     if(r.kind==='template' && Array.isArray(r.questions)){
       const ex=inspTpl(r.id);
