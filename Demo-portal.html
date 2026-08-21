@@ -74,7 +74,7 @@ a{color:inherit}
 .brand{display:flex;align-items:center;gap:9px;padding:16px 16px 12px}
 .brand .dot{width:24px;height:24px;border-radius:7px;background:var(--navy);position:relative;flex:none}
 .brand .dot:after{content:"";position:absolute;inset:7px;border-radius:3px;background:var(--gold)}
-.brand b{font-size:14.5px;letter-spacing:-.02em}
+.brand b{font-size:17px;letter-spacing:-.02em}
 .brand small{display:block;font-size:10.5px;color:var(--muted);font-weight:500;letter-spacing:.02em}
 .nav{flex:1;overflow:auto;padding:4px 10px 10px}
 .nav-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:#9A9689;font-weight:700;padding:14px 8px 6px}
@@ -191,7 +191,9 @@ a{color:inherit}
 .b-shift{background:#2F7A5B;color:#fff}
 .b-flag{background:#A83F38;color:#fff}
 .b-lite{background:var(--navy-soft);color:#1B3A5E;box-shadow:inset 0 0 0 1px #CFDDEE}
+.b-gcal{background:#E8F0FE;color:#1B4FA0;box-shadow:inset 0 0 0 1px #C6DBFA;min-width:max-content;padding-right:10px}
 .tl-lane .tl-bar{height:19px;font-size:10.6px;padding:0 6px;top:auto;transform:none;border-radius:5px}
+.tl-bar.b-appt,.tl-bar.b-flag,.tl-bar.b-lite{min-width:max-content;padding-right:10px}  /* show the whole appointment name (Erica's Loom) */
 
 .tl-full{position:fixed;inset:0;z-index:110;background:var(--bg);display:flex;flex-direction:column}
 .tlf-h{display:flex;gap:11px;align-items:center;padding:13px 18px;background:var(--white);border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -620,7 +622,7 @@ body{font-size:15px}
     <div class="side-inner">
       <div class="brand">
         <span class="dot"></span>
-        <div><b>Meridian</b><small>Care Portal</small></div>
+        <div><b>Meridian Care Portal</b><small>by AI Paragon Consulting</small></div>
       </div>
       <nav class="nav" id="nav"></nav>
       <div id="sideProg"></div>
@@ -630,7 +632,7 @@ body{font-size:15px}
         <span class="muted" style="font-size:13px">⚙</span>
       </div>
       <div class="side-foot">
-        <span>Built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · pilot v3</span>
+        <span>Built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · pilot v5.2</span>
         <a href="mailto:help@aiparagonconsulting.com?subject=Meridian%20Care%20Portal%20support">✉ Help & support</a>
       </div>
     </div>
@@ -645,6 +647,7 @@ body{font-size:15px}
         <span class="k">/</span>
       </div>
       <div class="tb-spacer"></div>
+      <a class="icon-btn" href="mailto:help@aiparagonconsulting.com?subject=Meridian%20Care%20Portal%20support" title="Help & support" style="text-decoration:none;display:flex;align-items:center;justify-content:center">?</a>
       <button class="icon-btn" onclick="go('calendar')" title="Calendar">▤</button>
       <button class="icon-btn" onclick="go('messages')" title="Messages">✉<span class="msgb" id="msgBadge" style="display:none"></span></button>
       <div class="role-pill"><span class="rp-d"></span><span id="rolePillTxt">Director view</span></div>
@@ -758,15 +761,30 @@ async function gcalFetch(){
     const r=await fetch(url,{headers:{Authorization:'Bearer '+GCAL.token}});
     if(r.status===401){ GCAL.token=null; GCAL.connected=false; GCAL.loading=false; render(); return toast('Google session expired — connect again.'); }
     const d=await r.json();
+    if(!r.ok){
+      const msg=(d.error&&d.error.message)||('Google returned '+r.status);
+      console.warn('[np-demo] gcal fetch error',d);
+      GCAL.loading=false; render();
+      return toast(/not been used|is disabled|accessNotConfigured/i.test(msg)
+        ? 'Google Calendar API is not enabled for this project — enable it in Google Cloud, then reconnect.'
+        : 'Google Calendar error: '+msg);
+    }
+    const pad=n=>String(n).padStart(2,'0');
     GCAL.events=(d.items||[]).filter(ev=>ev.status!=='cancelled').map(ev=>{
       const start=ev.start||{}, allday=!start.dateTime;
-      const dt=allday? start.date : start.dateTime.slice(0,10);
-      const tm=allday? '' : start.dateTime.slice(11,16);
+      let dt, tm;
+      if(allday){ dt=start.date; tm=''; }
+      else{ const sd=new Date(start.dateTime);   // offset-safe: convert to the viewer's local wall clock
+            dt=sd.getFullYear()+'-'+pad(sd.getMonth()+1)+'-'+pad(sd.getDate());
+            tm=pad(sd.getHours())+':'+pad(sd.getMinutes()); }
       let dur=30;
       if(!allday && ev.end && ev.end.dateTime) dur=Math.max(15,Math.round((new Date(ev.end.dateTime)-new Date(start.dateTime))/60000));
       return { id:'g_'+ev.id, gcal:true, title:ev.summary||'(no title)', date:dt, time:tm||'09:00', allday, dur,
         loc:ev.location||'', link:ev.htmlLink||'', cancelled:0, type:'Google', provider:'', flag:'', ride:'', notes:[], files:[] };
     });
+    toast(GCAL.events.length
+      ? GCAL.events.length+' Google Calendar event'+(GCAL.events.length>1?'s':'')+' loaded — shown in blue.'
+      : 'Google Calendar connected — no events found in the next 45 days.');
   }catch(e){ console.warn('[np-demo] gcal fetch failed',e); toast('Could not load Google Calendar events.'); }
   GCAL.loading=false; render();
 }
@@ -973,7 +991,53 @@ let TEMPLATES5=[
    {l:'Description of occurrence (who was involved, what happened, action taken)',ty:'long text'},
    {l:'Report submitted by',ty:'text'},{l:'Title',ty:'text'},{l:'Telephone',ty:'text'},
    {l:'Agency name',ty:'text'},{l:'Report submitted to',ty:'text'},{l:'Date submitted',ty:'date'},
-   {l:'Signature',ty:'signature'}]}
+   {l:'Signature',ty:'signature'}]},
+ {id:'tp7',name:'Weekly staff schedule',desc:'From the CSS weekly schedule — roster, hourly coverage and program prep hours',fields:[
+   {l:'Facility',ty:'text'},{l:'Week of',ty:'date'},
+   {l:'Direct care staff roster (name per assigned number)',ty:'long text'},
+   {l:'Hourly coverage by day (use staff numbers, 1 AM – 12 AM)',ty:'long text'},
+   {l:'Program preparation hours and assigned staff',ty:'long text'},
+   {l:'Total weekly direct care hours',ty:'text'},
+   {l:'Meets Table B staffing hours for census and service level',ty:'checkbox'},
+   {l:'Administrator',ty:'signature'}]},
+ {id:'tp8',name:'Weekly resident accountability',desc:'From the CSS accountability sheet — hourly location codes per resident',fields:[
+   {l:'Client ID',ty:'text'},{l:'Week of',ty:'date'},
+   {l:'Hourly location codes by day (C care home · D day program · H home visit · V vacation · I independent)',ty:'long text'},
+   {l:'Notes / exceptions',ty:'long text'},
+   {l:'Completed by',ty:'signature'}]},
+ {id:'tp9',name:'Functional assessment & behavior intervention plan (FBA/BIP)',desc:'From the ACRC fillable template — identifying fields replaced with client ID',fields:[
+   {l:'Client ID',ty:'text'},{l:'Date',ty:'date'},{l:'Service agency name',ty:'text'},
+   {l:'Behavior consultant',ty:'text'},{l:'Client is conserved',ty:'checkbox'},
+   {l:'Records reviewed and assessment tools used',ty:'long text'},
+   {l:'Operational definition(s) of target behavior(s)',ty:'long text'},
+   {l:'Baseline data (rates and collection dates)',ty:'long text'},
+   {l:'Antecedents and past consequences',ty:'long text'},
+   {l:'Hypothesized function(s)',ty:'long text'},
+   {l:'Functionally equivalent alternative behavior / replacement skills',ty:'long text'},
+   {l:'Preventions, differential reinforcement and consequence interventions',ty:'long text'},
+   {l:'Data collection method',ty:'text'},
+   {l:'Objectives and goals (reduction + skill acquisition, with target dates)',ty:'long text'},
+   {l:'Summary and recommendations',ty:'long text'},
+   {l:'Consultant',ty:'signature'},{l:'Client / conservator consent',ty:'signature'}]},
+ {id:'tp10',name:'Individual emergency intervention plan (IEIP)',desc:'From the ACRC fillable template — for behavior posing imminent risk of serious injury',fields:[
+   {l:'Client ID',ty:'text'},{l:'Date',ty:'date'},{l:'Behavior consultant',ty:'text'},
+   {l:'Crisis intervention certification (training body)',ty:'text'},
+   {l:'Behavior that poses a risk of serious injury',ty:'long text'},
+   {l:'History of prior interventions (why restrictive interventions are warranted)',ty:'long text'},
+   {l:'Restraint risk assessment (medical conditions, restraint history, result)',ty:'long text'},
+   {l:'Client / conservator advance directive on de-escalation and restraint',ty:'long text'},
+   {l:'Emergency intervention procedures (criteria, application, safety monitoring, removal)',ty:'long text'},
+   {l:'Post-restraint procedures (debrief and reporting)',ty:'long text'},
+   {l:'Consultant',ty:'signature'},{l:'Client / conservator consent',ty:'signature'}]},
+ {id:'tp11',name:'Behavior consultation quarterly progress report',desc:'From the ACRC fillable template — quarterly update due to the assigned service coordinator',fields:[
+   {l:'Client ID',ty:'text'},{l:'Report date',ty:'date'},{l:'Behavior consultant',ty:'text'},
+   {l:'Reporting period',ty:'text'},
+   {l:'Target behaviors and baseline rates',ty:'long text'},
+   {l:'Current rates and skill levels vs objectives',ty:'long text'},
+   {l:'Transition plan and criteria (met / not met)',ty:'long text'},
+   {l:'Barriers to progress',ty:'long text'},
+   {l:'Summary and recommendations (incl. consultation hours)',ty:'long text'},
+   {l:'Consultant',ty:'signature'}]}
 ];
 
 let CLIENT_NOTES = {
@@ -1221,7 +1285,7 @@ function sideProg(){
         <span class="bar"><i class="${pct===100?'g':''}" style="width:${pct}%"></i></span>
       </button>`;}).join('')}</div>`:'';
 }
-function go(v){ if(typeof tourEnd==='function') tourEnd(); const _f=el('tlFull'); if(_f) _f.remove(); state.view=v; state.client=null; state.tab=''; el('sidebar').classList.remove('open'); renderNav(); render(); window.scrollTo(0,0); }
+function go(v){ if(typeof tourEnd==='function') tourEnd(); const _f=el('tlFull'); if(_f) _f.remove(); const _i=el('inspFull'); if(_i){ _i.remove(); inspRun=null; } state.view=v; state.client=null; state.tab=''; el('sidebar').classList.remove('open'); renderNav(); render(); window.scrollTo(0,0); }
 
 function myTasks(){
   if(state.role==='staff') return TASKS.filter(t=>t.sid==='s1');
@@ -1279,7 +1343,11 @@ function tlCard(full){
   const apptBars=APPTS.filter(a=>a.date===T&&cl.includes(a.cid)&&!a.cancelled).map(a=>
     tlBar({l:tlPx(a.time),w:Math.max(150,a.dur/60*TL.hw),cls:a.flag?'b-flag':'b-appt',
       txt:`${a.flag?'⚑ ':''}${hm12(a.time).replace(' ','').toLowerCase()} · ${esc(client(a.cid).init)} ${esc(a.title)}`,
-      tip:`${a.title} — ${client(a.cid).name} at ${hm12(a.time)}`,on:`openAppt('${a.id}')`})).join('');
+      tip:`${a.title} — ${client(a.cid).name} at ${hm12(a.time)}`,on:`openAppt('${a.id}')`})).join('')
+    + (GCAL.connected?GCAL.events.filter(g=>g.date===T&&!g.allday).map(g=>
+      tlBar({l:tlPx(g.time),w:Math.max(150,g.dur/60*TL.hw),cls:'b-gcal',
+        txt:`${hm12(g.time).replace(' ','').toLowerCase()} · G · ${esc(g.title)}`,
+        tip:`${g.title} — your Google Calendar at ${hm12(g.time)}`,on:`openAppt('${g.id}')`})).join(''):'');
 
   let rows=[
 
@@ -1318,6 +1386,14 @@ function tlCard(full){
       rows.push({dot:c.tag==='gr'?'#C9A84C':'#3A6EA5',lab:esc(c.name),sub:esc(c.home),bars:bars.map(tlBar).join(''),
         on:`openClient('${c.id}')`});
     });
+    if(GCAL.connected && tlState.kind!=='meds'){
+      rows.push({group:'Your Google Calendar'});
+      const gb=GCAL.events.filter(g=>g.date===D&&!g.allday).map(g=>({l:tlPx(g.time),w:Math.max(150,g.dur/60*TL.hw),cls:'b-gcal',
+        txt:`${hm12(g.time).replace(' ','').toLowerCase()} · ${esc(g.title)}`,
+        tip:`${g.title} · your Google Calendar${g.loc?' · '+g.loc:''}`,on:`openAppt('${g.id}')`}));
+      rows.push({dot:'#4285F4',lab:'Google',sub:'connected calendar',
+        bars:gb.map(tlBar).join('')||'<span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:11.5px;color:var(--muted)">No Google events this day</span>'});
+    }
     if(state.role!=='family'){
       rows.push({group:'Staff on shift'});
       SHIFTS.filter(s=>!tlState.home||s.home===tlState.home||s.home==='All homes').forEach(s=>{
@@ -2576,10 +2652,6 @@ function viewProfile(){
   const m=ME[state.role];
   const quals = state.role==='staff' ? (CREDS.s1||[]) : (MY_QUALS[state.role]||[]);
   const tab = state.profTab||'creds';
-  const trainings = TASKS.filter(t=>t.cat==='Training'&&(state.role!=='staff'||t.sid==='s1'));
-  const onboarding = [
-    {t:'Review employee handbook',d:1},{t:'Privacy & confidentiality acknowledgement',d:1},
-    {t:'Shadow shift — evening routine',d:state.role==='staff'?0:1},{t:'Emergency procedures walkthrough',d:state.role==='staff'?0:1}];
   return `
   <section class="hero" style="display:flex;gap:18px;align-items:center">
     <div class="av" style="width:64px;height:64px;font-size:22px;border-radius:20px">${m.init}</div>
@@ -2590,17 +2662,16 @@ function viewProfile(){
   <div class="grid-side">
     <div>
       <section class="card">
-        <div class="card-h acc-navy"><h2>Qualifications</h2>
-          ${state.role!=='family'?`<div class="right"><button class="btn ghost sm" onclick="addMyCredential()">＋ Add credential</button></div>`:''}</div>
+        <div class="card-h acc-navy"><h2>${state.role==='director'?'Company training & onboarding':'Qualifications'}</h2>
+          ${state.role!=='family'&&tab==='creds'?`<div class="right"><button class="btn ghost sm" onclick="addMyCredential()">＋ Add credential</button></div>`:''}
+          ${state.role==='director'&&tab==='training'?`<div class="right"><button class="btn navy sm" onclick="openTrainingForm()">＋ Add training</button></div>`:''}</div>
         <div class="card-b flush">
           <div class="tabs" style="margin:12px 18px 4px">
             ${[['creds','Credentials'],['training','Training'],['onboard','Onboarding']].map(([k,lb])=>`<button class="${tab===k?'active':''}" onclick="state.profTab='${k}';render()">${lb}</button>`).join('')}
           </div>
           ${tab==='creds'?`<table class="tb"><tbody>${quals.map(x=>`<tr><td><b>${esc(x.c)}</b></td><td style="text-align:right"><span class="pill ${x.s}">${esc(x.d)}</span></td></tr>`).join('')||'<tr><td class="empty">No credentials on file yet.</td></tr>'}</tbody></table>`
-          :tab==='training'?`${trainings.map(t=>`<div class="docrow"><div class="di">◉</div><div class="dt"><b>${esc(t.title)}</b><span>${t.sid?'Assigned to '+staff(t.sid).init+' · ':''}due ${relDay(t.due)} · ${t.stage}</span></div>
-            ${t.stage==='Done'?'<span class="pill ok">Complete</span>':'<button class="btn ghost sm" onclick="openTask(\''+t.id+'\')">Open</button>'}</div>`).join('')||'<div class="empty">No training assigned. ${state.role==="director"?"Assign courses from each person\'s profile on the Staff page.":""}</div>'}`
-          :`${onboarding.map(o=>`<div class="checkrow"><div class="cb ${o.d?'on':''}">✓</div><div class="ct ${o.d?'done':''}">${esc(o.t)}</div></div>`).join('')}
-           ${state.role==='director'?'<div class="tiny muted" style="padding:10px 18px">Directors define onboarding steps here; new staff see and complete them on their own profile.</div>':''}`}
+          :tab==='training'? profTrainingTab()
+          : profOnboardTab()}
         </div>
       </section>
     </div>
@@ -2624,6 +2695,42 @@ function viewProfile(){
     </div>
   </div>`;
 }
+/* v5.0: Profile training & onboarding hub */
+function profTrainingTab(){
+  if(state.role==='director'){
+    return `${TRAINING.map(t=>{
+      const appl=STAFF.filter(s=>t.req||(t.asg||[]).includes(s.id));
+      const done=appl.filter(s=>t.done.includes(s.id)).length;
+      return `<div class="docrow"><div class="di">◉</div>
+        <div class="dt"><b>${esc(t.n)}</b>${t.req?' <span class="pill neutral">Required — everyone</span>':` <span class="pill info">Assigned: ${(t.asg||[]).map(id=>staff(id).init).join(', ')||'no one yet'}</span>`}
+          <span>${t.mins} min · ${done}/${appl.length} complete${t.link?' · link attached':''}${t.files?` · ${t.files} file${t.files>1?'s':''}`:''}</span></div>
+        ${t.link?`<a class="btn ghost sm" href="${t.link}" target="_blank" rel="noopener">Open ↗</a>`:''}
+        ${t.req?'':`<button class="btn ghost sm" onclick="assignTraining('${t.id}')">Assign</button>`}</div>`;
+    }).join('')}
+    <div class="tiny muted" style="padding:10px 18px 14px">Add a course, attach a link or file, and assign it to specific staff. Assigned courses land on each person’s dashboard and show in the Staff section.</div>`;
+  }
+  const mine=TRAINING.filter(t=>t.req||(t.asg||[]).includes('s1'));
+  return `${mine.map(t=>{ const done=t.done.includes('s1');
+    return `<div class="docrow"><div class="di">◉</div><div class="dt"><b>${esc(t.n)}</b><span>${t.mins} min${t.due?` · due ${esc(t.due)}`:''}${t.req?' · required':''}</span></div>
+      ${done?'<span class="pill ok">Complete</span>':(t.link?`<a class="btn ghost sm" href="${t.link}" target="_blank" rel="noopener">Start ↗</a>`:'<span class="pill warn">Pending</span>')}</div>`;
+  }).join('')||'<div class="empty">No training assigned to you yet.</div>'}`;
+}
+function profOnboardTab(){
+  if(state.role==='director'){
+    return `${ONBOARD.map((o,i)=>`<div class="docrow" style="padding:8px 18px"><div class="di">${i+1}</div>
+      <div class="dt"><b>${esc(o)}</b></div>
+      <button class="btn ghost sm" ${i===0?'disabled':''} onclick="obMove(${i},-1)">↑</button>
+      <button class="btn ghost sm" ${i===ONBOARD.length-1?'disabled':''} onclick="obMove(${i},1)">↓</button>
+      <button class="btn ghost sm" onclick="obDel(${i})">✕</button></div>`).join('')}
+    <div style="padding:12px 18px;display:flex;gap:8px"><input class="inp" id="obNew" placeholder="Add an onboarding step…" style="flex:1" onkeydown="if(event.key==='Enter')obAdd()"><button class="btn navy sm" onclick="obAdd()">Add step</button></div>
+    <div class="tiny muted" style="padding:0 18px 14px">These steps apply to every new hire. New staff see them on their own profile and check them off as they go.</div>`;
+  }
+  return `${ONBOARD.map((o,i)=>`<div class="checkrow"><div class="cb ${i<5?'on':''}">✓</div><div class="ct ${i<5?'done':''}">${esc(o)}</div></div>`).join('')}
+    <div class="tiny muted" style="padding:10px 18px">Your onboarding steps, set by your director. Check them off as you complete them.</div>`;
+}
+function obAdd(){ const v=(el('obNew').value||'').trim(); if(!v) return; ONBOARD.push(v); logAudit('Added onboarding step',v); render(); }
+function obDel(i){ const v=ONBOARD[i]; ONBOARD.splice(i,1); logAudit('Removed onboarding step',v); render(); }
+function obMove(i,dir){ const j=i+dir; if(j<0||j>=ONBOARD.length) return; const t=ONBOARD[i]; ONBOARD[i]=ONBOARD[j]; ONBOARD[j]=t; render(); }
 function addMyCredential(){
   openModal('Add credential',`
     <div class="field"><label>Credential name</label><input class="inp" id="myCrName" placeholder="e.g. CPR / First Aid"></div>
@@ -2638,13 +2745,222 @@ function saveMyCredential(){
   else { (MY_QUALS[state.role]=MY_QUALS[state.role]||[]).push(row); }
   logAudit('Added credential',n); closeAll(); render(); toast('Credential added.');
 }
+/* ══════════════ v5.0: DIGITAL INSPECTIONS (log page) ══════════════ */
+const INSP_SCALES={
+  cnc:[['Compliant',1],['Non‑Compliant',0]],
+  gfp:[['Good',1],['Fair',0.5],['Poor',0]],
+  pf:[['Pass',1],['Fail',0]],
+  sar:[['Safe',1],['At Risk',0]],
+  yn:[['Yes',1],['No',0]],
+  text:null
+};
+const INSP_SCALE_LABEL={cnc:'Compliant / Non‑Compliant',gfp:'Good / Fair / Poor',pf:'Pass / Fail',sar:'Safe / At Risk',yn:'Yes / No',text:'Free text / note'};
+let INSP_TEMPLATES=[
+ {id:'insp-hs', name:'H&S Weekly Checks', folder:'Safety', desc:'Weekly health & safety walkthrough',
+  questions:[
+   {id:'q1',label:'Temperature Checks Completed',type:'cnc'},
+   {id:'q2',label:'Cleaning Schedules Completed',type:'gfp'},
+   {id:'q3',label:'Fire Alarm Tested',type:'pf',req:true},
+   {id:'q4',label:'Fire Exits',type:'sar'},
+   {id:'q5',label:'First Aid Kit Stocked',type:'yn'},
+   {id:'q6',label:'Water Temperature Within Limit',type:'cnc'},
+   {id:'q7',label:'Medication Storage Secure',type:'pf',req:true},
+   {id:'q8',label:'General observations',type:'text'}]},
+ {id:'insp-veh', name:'Vehicle & Transport Check', folder:'Safety', desc:'Pre-trip vehicle safety check',
+  questions:[
+   {id:'q1',label:'Tyres & pressure',type:'sar'},
+   {id:'q2',label:'Lights & indicators',type:'pf'},
+   {id:'q3',label:'Seatbelts working',type:'yn',req:true},
+   {id:'q4',label:'First aid kit present',type:'yn'},
+   {id:'q5',label:'Cleanliness',type:'gfp'},
+   {id:'q6',label:'Notes',type:'text'}]}
+];
+let INSP_DONE=[];         // completed runs
+let inspRun=null;         // active runner: {tid,preview,resp:{qid:{v,score,note}}}
+function inspTpl(id){ return INSP_TEMPLATES.find(t=>t.id===id); }
+function inspScore(run){
+  const t=inspTpl(run.tid); let num=0,den=0;
+  t.questions.forEach(q=>{ if(q.type==='text') return; den++; const r=run.resp[q.id]; if(r&&r.v!=null) num+=r.score; });
+  return {num, den, pct: den?Math.round(num/den*100):0};
+}
+function startInspection(tid,preview){
+  const t=inspTpl(tid); if(!t) return;
+  inspRun={tid, preview:!!preview, resp:{}};
+  renderInspRunner();
+}
+function closeInspRunner(){ const f=el('inspFull'); if(f) f.remove(); inspRun=null; }
+function inspSet(qid,val,score){
+  const q=inspTpl(inspRun.tid).questions.find(x=>x.id===qid);
+  const cur=inspRun.resp[qid];
+  if(cur&&cur.v===val){ delete inspRun.resp[qid]; }              // tap again to clear
+  else inspRun.resp[qid]=Object.assign({},cur,{v:val,score:score||0});
+  renderInspRunner();
+}
+function inspNoteToggle(qid){
+  const r=inspRun.resp[qid]=inspRun.resp[qid]||{};
+  r._noteOpen=!r._noteOpen; renderInspRunner();
+  const ta=el('note-'+qid); if(ta) ta.focus();
+}
+function inspNoteSave(qid,v){ (inspRun.resp[qid]=inspRun.resp[qid]||{}).note=v; }
+function inspAction(qid){
+  const q=inspTpl(inspRun.tid).questions.find(x=>x.id===qid);
+  const id='t'+Date.now();
+  const nt={id,title:'Action: '+q.label,sid:null,cid:null,due:iso(addDays(TODAY,7)),stage:'Not started',pri:'High',cat:'Action',notes:[],subs:[]};
+  TASKS.push(nt); sbPush('np_demo_tasks',{id,title:nt.title,sid:null,cid:null,due:nt.due,stage:'Not started',pri:'High',category:'Action'});
+  logAudit('Created action from inspection',q.label); toast('Action created and added to Tasks.');
+}
+function renderInspRunner(){
+  const t=inspTpl(inspRun.tid); const sc=inspScore(inspRun); const pv=inspRun.preview;
+  const cards=t.questions.map(q=>{
+    const r=inspRun.resp[q.id]||{};
+    let control;
+    if(q.type==='text'){
+      control=`<textarea class="inp" rows="2" placeholder="Type an observation…" oninput="inspNoteSave('${q.id}',this.value)">${esc(r.note||'')}</textarea>`;
+    } else {
+      control=`<div style="display:flex;gap:10px;flex-wrap:wrap">${INSP_SCALES[q.type].map(([lb,val])=>{
+        const on=r.v===lb; return `<button class="btn ${on?'navy':'ghost'} sm" style="min-width:130px;justify-content:center" onclick="inspSet('${q.id}','${esc(lb)}',${val})">${esc(lb)}</button>`;
+      }).join('')}</div>`;
+    }
+    const unanswered=q.req && !(r.v!=null);
+    return `<div style="background:#fff;border:1px solid ${unanswered?'#C6403A':'var(--line)'};border-left:${q.req?'4px solid #C6403A':'1px solid var(--line)'};border-radius:14px;padding:16px 18px;margin-bottom:14px">
+      <div style="font-weight:600;margin-bottom:12px">${q.req?'<span style="color:#C6403A">*</span> ':''}${esc(q.label)}
+        ${q.type!=='text'?`<span class="tiny muted" style="font-weight:400"> · ${INSP_SCALE_LABEL[q.type]}</span>`:''}</div>
+      ${control}
+      <div style="display:flex;gap:18px;justify-content:flex-end;margin-top:12px">
+        <span class="tiny" style="color:var(--brand,#5b4bd6);cursor:pointer" onclick="inspNoteToggle('${q.id}')">🗒 Add note</span>
+        <span class="tiny" style="color:var(--brand,#5b4bd6);cursor:pointer" onclick="toast('Media attach is a demo affordance in the pilot.')">🖼 Attach media</span>
+        <span class="tiny" style="color:var(--brand,#5b4bd6);cursor:pointer" onclick="inspAction('${q.id}')">⎘ Create action</span>
+      </div>
+      ${r._noteOpen&&q.type!=='text'?`<textarea class="inp" id="note-${q.id}" rows="2" style="margin-top:10px" placeholder="Add a note…" oninput="inspNoteSave('${q.id}',this.value)">${esc(r.note||'')}</textarea>`:''}
+    </div>`;
+  }).join('');
+  let f=el('inspFull');
+  if(!f){ f=document.createElement('div'); f.id='inspFull'; document.body.appendChild(f); }
+  f.setAttribute('style','position:fixed;inset:0;z-index:120;background:#F6F5F2;overflow:auto');
+  f.innerHTML=`
+    <div style="position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:14px 20px;display:flex;align-items:center;gap:14px;z-index:2">
+      <button class="btn ghost sm" onclick="closeInspRunner()">← Back</button>
+      <div style="flex:1"><div style="font-weight:700">${esc(t.name)}${pv?' · Preview':''}</div>
+        <div class="tiny muted">${esc(FOLDER_NAMES[t.folder]||t.folder)} · ${t.questions.length} questions</div></div>
+      <div style="text-align:right"><div class="tiny muted">Score</div><div style="font-weight:800;font-size:18px">${sc.num} / ${sc.den} <span class="muted" style="font-weight:600">(${sc.pct}%)</span></div></div>
+    </div>
+    <div style="max-width:820px;margin:22px auto;padding:0 18px 120px">
+      <div style="font-weight:700;font-size:18px;margin-bottom:14px">${esc(t.desc||t.name)}</div>
+      ${cards}
+    </div>
+    <div style="position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 20px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn ghost" onclick="printSheet(inspSheet(inspSnapshot()))">Print</button>
+      ${pv?`<button class="btn navy" onclick="closeInspRunner()">Close preview</button>`
+          :`<button class="btn navy" onclick="completeInspection()">✓ Complete &amp; file to logs</button>`}
+    </div>`;
+}
+function inspSnapshot(){ const t=inspTpl(inspRun.tid); const sc=inspScore(inspRun);
+  return {tid:t.id, title:t.name, folder:t.folder, num:sc.num, den:sc.den, pct:sc.pct, by:ME[state.role].name, at:nowStamp(),
+    responses:t.questions.map(q=>({label:q.label,type:q.type,v:(inspRun.resp[q.id]||{}).v||'',note:(inspRun.resp[q.id]||{}).note||''}))}; }
+function completeInspection(){
+  const t=inspTpl(inspRun.tid);
+  const missing=t.questions.filter(q=>q.req && !((inspRun.resp[q.id]||{}).v!=null));
+  if(missing.length) return toast('Answer the required item'+(missing.length>1?'s':'')+' first: '+missing.map(m=>m.label).join(', '));
+  const snap=inspSnapshot();
+  const id='insp-done-'+Date.now();
+  const title=`${t.name} — ${fmtDate(T)}`;
+  INSP_DONE.unshift(Object.assign({id,filed:title+'.pdf'},snap));
+  autoFileLog(t.folder, title, `Inspection · score ${snap.num}/${snap.den} (${snap.pct}%) · by ${meInit()}`, null);
+  sbPush('np_demo_inspections',{id, kind:'completed', template_id:t.id, title, folder:t.folder, score_num:snap.num, score_den:snap.den, responses:snap.responses, created_by:ME[state.role].name});
+  logAudit('Completed inspection',`${t.name} · ${snap.num}/${snap.den}`);
+  closeInspRunner(); go('safety');
+  toast(`Inspection filed to ${FOLDER_NAMES[t.folder]||t.folder} — ${snap.num}/${snap.den} (${snap.pct}%).`);
+}
+function inspSheet(snap){
+  const rows=snap.responses.map(r=>`<tr><th style="width:260px">${esc(r.label)}</th><td>${esc(r.v)||(r.type==='text'?'':'—')}${r.note?`<div class="tiny muted">Note: ${esc(r.note)}</div>`:''}</td></tr>`).join('');
+  return `<h2>${esc(snap.title)}</h2><div class="p-sub">Meridian Care · digital inspection · score ${snap.num}/${snap.den} (${snap.pct}%) · completed by ${esc(snap.by)} · ${esc(snap.at)}</div>
+    <table>${rows}</table><div class="siglines"><div class="sig">Reviewer signature / date</div></div>`;
+}
+function openInspCompleted(id){ const s=INSP_DONE.find(x=>x.id===id); if(s) printSheet(inspSheet(s)); }
+/* template builder (director) */
+function openInspTemplateForm(tid){
+  const t=tid?inspTpl(tid):{id:'insp-'+Date.now(),name:'',folder:'Safety',desc:'',questions:[{id:'q1',label:'',type:'cnc'}]};
+  window._inspDraft=JSON.parse(JSON.stringify(t)); window._inspEditing=!!tid;
+  drawInspTemplateForm();
+}
+function drawInspTemplateForm(){
+  const d=window._inspDraft;
+  openModal((window._inspEditing?'Edit inspection — ':'New inspection — ')+(esc(d.name)||'untitled'),`
+    <div class="field"><label>Inspection name</label><input class="inp" id="itName" value="${esc(d.name)}" placeholder="e.g. Kitchen hygiene check" oninput="window._inspDraft.name=this.value"></div>
+    <div class="row2">
+      <div class="field"><label>Files completed reports to</label><select class="inp" onchange="window._inspDraft.folder=this.value">${Object.keys(FOLDER_NAMES).map(k=>`<option value="${k}" ${d.folder===k?'selected':''}>${FOLDER_NAMES[k]}</option>`).join('')}</select></div>
+      <div class="field"><label>Short description</label><input class="inp" value="${esc(d.desc||'')}" oninput="window._inspDraft.desc=this.value"></div>
+    </div>
+    <div class="field"><label>Questions</label><div id="itQs">${inspQRows()}</div>
+      <button class="btn ghost sm" style="margin-top:8px" onclick="inspQAdd()">＋ Add question</button></div>
+    <div class="tiny muted">Each scored answer counts toward the inspection score. Free-text questions are notes only.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveInspTemplate()">${window._inspEditing?'Save inspection':'Create inspection'}</button>`);
+}
+function inspQRows(){
+  const d=window._inspDraft;
+  return d.questions.map((q,i)=>`<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+    <input class="inp" style="flex:1;height:34px" value="${esc(q.label)}" placeholder="Question ${i+1}" oninput="window._inspDraft.questions[${i}].label=this.value">
+    <select class="inp" style="width:150px;height:34px" onchange="window._inspDraft.questions[${i}].type=this.value">
+      ${Object.keys(INSP_SCALE_LABEL).map(k=>`<option value="${k}" ${q.type===k?'selected':''}>${INSP_SCALE_LABEL[k]}</option>`).join('')}</select>
+    <button class="btn ${q.req?'gold':'ghost'} sm" title="Required" onclick="window._inspDraft.questions[${i}].req=!window._inspDraft.questions[${i}].req;inspQRefresh()">✱</button>
+    <button class="btn ghost sm" ${i===0?'disabled':''} onclick="inspQMove(${i},-1)">↑</button>
+    <button class="btn ghost sm" ${i===d.questions.length-1?'disabled':''} onclick="inspQMove(${i},1)">↓</button>
+    <button class="btn ghost sm" onclick="inspQDel(${i})">✕</button>
+  </div>`).join('');
+}
+function inspQRefresh(){ el('itQs').innerHTML=inspQRows(); }
+function inspQAdd(){ window._inspDraft.questions.push({id:'q'+(Date.now()%100000),label:'',type:'cnc'}); inspQRefresh(); }
+function inspQDel(i){ window._inspDraft.questions.splice(i,1); inspQRefresh(); }
+function inspQMove(i,dir){ const qs=window._inspDraft.questions; const j=i+dir; if(j<0||j>=qs.length) return; const t=qs[i]; qs[i]=qs[j]; qs[j]=t; inspQRefresh(); }
+function saveInspTemplate(){
+  const d=window._inspDraft;
+  d.name=(d.name||'').trim(); if(!d.name) return toast('Give the inspection a name.');
+  d.questions=d.questions.filter(q=>(q.label||'').trim());
+  if(!d.questions.length) return toast('Add at least one question.');
+  const ex=inspTpl(d.id);
+  if(ex){ Object.assign(ex,d); } else INSP_TEMPLATES.push(d);
+  sbUpsert('np_demo_inspections',{id:d.id, kind:'template', template_id:d.id, title:d.name, folder:d.folder, questions:d.questions, created_by:ME[state.role].name});
+  logAudit(window._inspEditing?'Edited inspection template':'Created inspection template',d.name);
+  closeAll(); render(); toast('Inspection template saved.');
+}
+function inspTemplateRemove(tid){
+  if(!confirm('Remove this inspection template?')) return;
+  const i=INSP_TEMPLATES.findIndex(t=>t.id===tid); if(i<0) return;
+  const nm=INSP_TEMPLATES[i].name; INSP_TEMPLATES.splice(i,1);
+  sbDel('np_demo_inspections','id=eq.'+encodeURIComponent(tid));
+  logAudit('Removed inspection template',nm); render(); toast('Inspection template removed.');
+}
+
 function viewSafety(){
   const dated=[]; Object.entries(CREDS).forEach(([sid,cs])=>cs.filter(x=>x.s==='bad'||x.s==='warn').forEach(x=>dated.push({sid,...x})));
   return `
   <div class="page-h">
-    <div><h1>Safety log</h1><div class="sub">Fire drills, water temperatures and certification expirations — enter in seconds, print for ink signatures</div></div>
+    <div><h1>Safety log</h1><div class="sub">Digital inspections, fire drills, water temperatures and certification expirations — complete on any device, file to the logs folder</div></div>
   </div>
-  <div class="sec-note" style="margin-bottom:14px"><span>✍</span><div><b>Wet signatures stay wet</b>These logs print with signature lines. The signed paper stays the official record; the portal keeps the working copy and the reminders.</div></div>
+
+  <section class="card">
+    <div class="card-h"><h2>Digital inspections</h2><div class="sub">Complete a form on screen — it scores itself and files a report into the logs folder, no paper</div>
+      ${state.role==='director'?`<div class="right"><button class="btn navy sm" onclick="openInspTemplateForm()">＋ New inspection</button></div>`:''}</div>
+    <div class="card-b flush">
+      ${INSP_TEMPLATES.map(t=>`<div class="docrow"><div class="di">▣</div>
+        <div class="dt"><b>${esc(t.name)}</b><span>${esc(t.desc||'')} · ${t.questions.length} questions · files to ${esc(FOLDER_NAMES[t.folder]||t.folder)}</span></div>
+        <button class="btn navy sm" onclick="startInspection('${t.id}')">Start inspection</button>
+        <button class="btn ghost sm" onclick="startInspection('${t.id}',1)">Preview</button>
+        ${state.role==='director'?`<button class="btn ghost sm" onclick="openInspTemplateForm('${t.id}')">Edit</button><button class="btn ghost sm" onclick="inspTemplateRemove('${t.id}')">✕</button>`:''}</div>`).join('')}
+    </div>
+  </section>
+
+  ${INSP_DONE.length?`<section class="card">
+    <div class="card-h"><h2>Completed inspections</h2><div class="sub">Filed to the logs folder with a timestamp and score</div></div>
+    <div class="card-b flush">
+      ${INSP_DONE.slice(0,10).map(s=>`<div class="docrow"><div class="di">PDF</div>
+        <div class="dt"><b>${esc(s.title)}</b><span>${esc(FOLDER_NAMES[s.folder]||s.folder)} · by ${esc(s.by)} · ${esc(s.at)}</span></div>
+        <span class="pill ${s.pct>=80?'ok':s.pct>=50?'warn':'bad'}">${s.num}/${s.den} · ${s.pct}%</span>
+        <button class="btn ghost sm" onclick="openInspCompleted('${s.id}')">View / print</button></div>`).join('')}
+    </div>
+  </section>`:''}
+
+  <div class="sec-note" style="margin-bottom:14px"><span>✍</span><div><b>Wet signatures stay wet</b>The drill and temperature logs below print with signature lines. The signed paper stays the official record; the portal keeps the working copy and the reminders.</div></div>
 
   <div class="grid2">
     <section class="card">
@@ -2774,7 +3090,7 @@ function viewTemplates(){
   return `
   <div class="page-h">
     <div><h1>Documents & templates</h1><div class="sub">Folderized like your binders · five key templates, editable in one place</div></div>
-    <div class="right"><button class="btn navy" onclick="uploadDoc(null,'Template')">＋ Upload document</button></div>
+    <div class="right"><button class="btn navy" onclick="libUpload('Agency','forms')">＋ Upload document</button></div>
   </div>
 
   <section class="card">
@@ -2800,18 +3116,14 @@ function viewTemplates(){
           <span class="tiny muted">${nAll} file${nAll===1?'':'s'}</span>
           <button class="btn ghost sm" onclick="event.stopPropagation();logAudit('Exported binder','${t}');toast('${t} exported as PDF and logged.')">Export / print</button></div>
         ${open?`<div style="background:#FAF8F3;border-bottom:1px solid var(--line);padding:4px 0 4px 34px">
-          <div class="tiny muted" style="padding:8px 18px 2px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">Forms</div>
-          ${bf.forms.map(fl=>`<div class="docrow" style="border-bottom:none;padding:8px 18px"><div class="di">◫</div>
-          <div class="dt"><b>${esc(fl.n)}</b><span>${esc(fl.sub||'')}</span></div>
-          <button class="btn ghost sm" onclick="event.stopPropagation();${fl.url?`window.open('${fl.url}','_blank')`:`toast('Opening ${esc(fl.n)}')`}">Open</button></div>`).join('')||'<div class="empty">No blank forms in this folder yet.</div>'}
-          <div class="tiny muted" style="padding:10px 18px 2px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">Resources & guidelines</div>
-          ${bf.resources.map(fl=>`<div class="docrow" style="border-bottom:none;padding:8px 18px"><div class="di">${(fl.n.split('.').pop()||'').toUpperCase().slice(0,4)}</div>
-          <div class="dt"><b>${esc(fl.n)}</b><span>${esc(fl.sub||'')}</span></div>
-          <button class="btn ghost sm" onclick="event.stopPropagation();${fl.url?`window.open('${fl.url}','_blank')`:`toast('Opening ${esc(fl.n)}')`}">Open</button></div>`).join('')||'<div class="empty">No resource documents yet.</div>'}
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 18px 2px"><div class="tiny muted" style="font-weight:800;text-transform:uppercase;letter-spacing:.06em">Forms</div><button class="btn ghost sm" onclick="event.stopPropagation();libUpload('${key}','forms')">＋ Upload</button></div>
+          ${bf.forms.map(fl=>libRowHtml(fl,key)).join('')||'<div class="empty">No blank forms in this folder yet.</div>'}
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px 2px"><div class="tiny muted" style="font-weight:800;text-transform:uppercase;letter-spacing:.06em">Resources & guidelines</div><button class="btn ghost sm" onclick="event.stopPropagation();libUpload('${key}','res')">＋ Upload</button></div>
+          ${bf.resources.map(fl=>libRowHtml(fl,key)).join('')||'<div class="empty">No resource documents yet.</div>'}
           <div class="tiny muted" style="padding:10px 18px 2px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">Completed forms</div>
-          ${(COMPLETED[key]||[]).map(fl=>`<div class="docrow" style="border-bottom:none;padding:8px 18px"><div class="di">PDF</div>
-          <div class="dt"><b>${esc(fl.n)}</b><span>${esc(fl.sub)}</span></div>
-          <button class="btn ghost sm" onclick="event.stopPropagation();toast('Opening ${esc(fl.n)}')">Open</button></div>`).join('')||'<div class="empty">No completed forms filed yet — use Generate on a key template.</div>'}
+          ${(COMPLETED[key]||[]).map(fl=>{const sg=DOC_SIGS[fl.n];return `<div class="docrow" style="border-bottom:none;padding:8px 18px"><div class="di">PDF</div>
+          <div class="dt"><b>${esc(fl.n)}</b><span>${esc(fl.sub)}${sg?` · <span style="color:var(--ok,#2e7d32);font-weight:700">✓ Signed — ${esc(sg.by)} · ${esc(sg.at)}</span>`:''}</span></div>
+          ${sg?'':`<button class="btn gold sm" onclick="event.stopPropagation();signDoc('${key}','${esc(fl.n)}')">✍ Sign</button>`}<button class="btn ghost sm" onclick="event.stopPropagation();toast('Opening ${esc(fl.n)}')">Open</button></div>`}).join('')||'<div class="empty">No completed forms filed yet — use Generate on a key template.</div>'}
         </div>`:''}`;
       }).join('')}
     </div>
@@ -2829,8 +3141,11 @@ function binderFiles(key){
     Compliance:INCIDENTS.map(i=>({n:`SIR — ${i.type} — ${client(i.cid).uci}.pdf`,sub:`${fmtDate(i.date)} · ${i.status}`})),
     Medical:[]};
   const L=DOC_LIBRARY[key]||{};
-  return { forms:(L.forms||[]).map(x=>libRow(x[0],x[1])),
-           resources:[...(L.res||[]).map(x=>libRow(x[0],x[1])), ...(stock[key]||[]), ...fromDocs] };
+  const U=USER_LIB[key]||{forms:[],res:[]};
+  const ud={forms:[],res:[]};
+  for(const id in USER_DOCS){ const d=USER_DOCS[id]; if(d.key===key){ (d.sec==='res'?ud.res:ud.forms).push({n:d.name, docId:id, editable:true, url:d.url||'', desc:'Uploaded · editable in‑app', sub:''}); } }
+  return { forms:[...(L.forms||[]).map(x=>libRow(x[0],x[1])), ...ud.forms, ...U.forms],
+           resources:[...(L.res||[]).map(x=>libRow(x[0],x[1])), ...ud.res, ...U.res, ...(stock[key]||[]), ...fromDocs] };
 }
 let COMPLETED={};
 const DOC_LIBRARY={
@@ -2887,7 +3202,473 @@ const DOC_LIBRARY={
   ['ACRC Personal and Incidental Funds Instruction Manual','acrc_personal_and_incidental_funds_instruction_manual_1.pdf?1742308642']]}
 };
 const DOC_BASE='https://www.altaregional.org/sites/main/files/file-attachments/';
-function libRow(n,u){ return {n, sub:'ACRC / Alta Regional', url:DOC_BASE+u}; }
+function libRow(n,u){
+  const slug=String(u).split('?')[0];
+  const ex=EXAMPLE_BY_SLUG[slug];
+  return {n, sub:'ACRC / Alta Regional', url:DOC_BASE+u, docId:ex?ex.id:undefined, editable:!!ex};
+}
+
+/* ── v4.8: editable example documents living inside the binder subfolders ──
+   The 10 example forms below are the same ACRC documents already linked in the
+   library, upgraded so a user can fill them in, save the content to Supabase,
+   sign them in-app, or print blank/filled for wet ink. Client ID only — no PII. */
+let EXAMPLE_VALUES={};   // docId -> { "Field label": value, ..., _meta:{by,at} }  (seeded + user)
+let USER_DOCS={};        // 'ux-...' -> {id,key,sec,name,fields,url,source} — created from an upload
+const EXAMPLE_DOCS=[
+ /* Medical docs · Resident file forms */
+ {id:'ex-seizure', slug:'10_seizure_record.pdf', key:'Medical', sec:'forms', name:'Seizure Record',
+  desc:'Resident file form — client identified by ID only',
+  fields:[
+   {l:'Client ID',ty:'text'},{l:'Current medications',ty:'long text'},
+   {l:'Height',ty:'text'},{l:'Weight',ty:'text'},
+   {l:'Seizure entries (one per line — date · time · description · injuries)',ty:'long text'},
+   {l:'Recorded by',ty:'signature'}]},
+ {id:'ex-prn', slug:'16_prn_authorization_letter.pdf', key:'Medical', sec:'forms', name:'PRN Authorization Letter',
+  desc:'Physician confirmation of a client’s ability to self-determine PRN medication need',
+  fields:[
+   {l:'Date',ty:'date'},{l:'Physician name',ty:'text'},{l:'Client ID',ty:'text'},
+   {l:'Care provider / facility',ty:'text'},
+   {l:'PRN determination (can determine & communicate / can communicate symptoms only / cannot — contact physician each dose)',ty:'long text'},
+   {l:'Approved PRN medications (drug · dosage · frequency · reason · symptoms · max in 24h)',ty:'long text'},
+   {l:'Facility telephone',ty:'text'},{l:'Facility fax',ty:'text'},
+   {l:'Care provider',ty:'signature'},{l:'Physician',ty:'signature'}]},
+ {id:'ex-physician', slug:'12_physician_visit.pdf', key:'Medical', sec:'forms', name:'Physician Visit',
+  desc:'Resident file form — physician visit summary and orders',
+  fields:[
+   {l:'Client ID',ty:'text'},{l:'Physician',ty:'text'},{l:'Date of visit',ty:'date'},
+   {l:'Purpose of visit',ty:'long text'},{l:'Accompanied by',ty:'text'},
+   {l:'Physician orders / changes',ty:'long text'},{l:'Date of next visit',ty:'date'},
+   {l:'Medication changes completed by',ty:'text'},{l:'Follow-up notes',ty:'long text'},
+   {l:'Facility representative',ty:'signature'}]},
+ {id:'ex-medxfer', slug:'18_medication_transfer.pdf', key:'Medical', sec:'forms', name:'Medication Transfer / Release of Responsibility',
+  desc:'For home visits and outings — medications released and returned',
+  fields:[
+   {l:'Facility',ty:'text'},{l:'Client ID',ty:'text'},{l:'Date of release',ty:'date'},{l:'Expected date of return',ty:'date'},
+   {l:'Transfer method (full container / pharmacy split / family supply)',ty:'long text'},
+   {l:'Medications (name · pass time · RX # · strength · # released · # returned)',ty:'long text'},
+   {l:'Staff releasing medications',ty:'signature'},
+   {l:'Received by',ty:'text'},{l:'Person returning unused medications',ty:'text'},
+   {l:'Staff count on return',ty:'signature'}]},
+ {id:'ex-dental', slug:'11_dental_visit.pdf', key:'Medical', sec:'forms', name:'Dental Visit Documentation',
+  desc:'Resident file form — dental visit summary and follow-up',
+  fields:[
+   {l:'Client ID',ty:'text'},{l:'Provider name',ty:'text'},{l:'Visit date',ty:'date'},
+   {l:'Reason for visit',ty:'long text'},{l:'Current medication',ty:'long text'},
+   {l:'Pertinent medical history',ty:'long text'},{l:'Current treatment',ty:'long text'},
+   {l:'Recommendations / follow-up',ty:'long text'},{l:'Accompanied by',ty:'text'}]},
+ {id:'ex-grievance', slug:'26_grievance_procedure.pdf', key:'Medical', sec:'forms', name:'Grievance Procedure',
+  desc:'Resident-facing grievance procedure and acknowledgement',
+  fields:[
+   {l:'Facility name',ty:'text'},{l:'Administrator name',ty:'text'},{l:'Other staff contact',ty:'text'},
+   {l:'Alta service coordinator (name & phone)',ty:'text'},
+   {l:'Procedure explained on',ty:'date'},{l:'Reviewed every (week / month / year)',ty:'text'},
+   {l:'Communication methods used (verbal, w/photos, written, role playing, sign language, communication board, foreign language, other)',ty:'long text'},
+   {l:'Consumer or authorized representative',ty:'signature'},{l:'Facility administrator',ty:'signature'}]},
+ {id:'ex-consult', slug:'22_consultation_hours_log.pdf', key:'Medical', sec:'forms', name:'Consultation Hours Log',
+  desc:'Tracks consultant hours per client for Title 17 compliance',
+  fields:[
+   {l:'Year',ty:'text'},{l:'Care home',ty:'text'},{l:'Consultant(s)',ty:'text'},
+   {l:'Monthly hours by client (one per line — client ID · Jan…Dec · 6-mo total · year total)',ty:'long text'},
+   {l:'Total hours',ty:'text'}]},
+ /* Agency docs · Personnel / Facility */
+ {id:'ex-training', slug:'32_on_site_orientation__on_the_job_training_checklist.pdf', key:'Agency', sec:'forms', name:'Direct Care Staff Training Checklist',
+  desc:'On-site orientation (first 40 hours) and on-the-job training record',
+  fields:[
+   {l:'Facility name',ty:'text'},{l:'Service level',ty:'text'},{l:'Employee name',ty:'text'},{l:'Title',ty:'text'},{l:'Date of hire',ty:'date'},
+   {l:'On-site orientation — trainer & date for: program design, IPP, client rights, medication assistance, health & emergency, special incident reporting, abuse identification/reporting',ty:'long text'},
+   {l:'On-the-job training (topic · hours · trainer · date)',ty:'long text'},
+   {l:'Trainer',ty:'signature'}]},
+ {id:'ex-personnel-toc', slug:'29_personnel_table_of_contents.pdf', key:'Agency', sec:'forms', name:'Personnel Chart Table of Contents',
+  desc:'Reference index for a staff personnel file — check items as filed',
+  fields:[
+   {l:'Employee name',ty:'text'},
+   {l:'Personnel file contents (check as filed)',ty:'long text'}]},
+ {id:'ex-facility-toc', slug:'35_facility_file_table_of_contents.pdf', key:'Agency', sec:'forms', name:'Facility Chart Table of Contents',
+  desc:'Reference index for the facility chart — check items as filed',
+  fields:[
+   {l:'Facility name',ty:'text'},
+   {l:'Facility chart contents (check as filed)',ty:'long text'}]}
+];
+const EXAMPLE_BY_SLUG={}; EXAMPLE_DOCS.forEach(d=>EXAMPLE_BY_SLUG[d.slug]=d);
+function docById(id){ return EXAMPLE_DOCS.find(d=>d.id===id) || USER_DOCS[id] || null; }
+/* pre-seed the two table-of-contents docs so they open filled with the standard index */
+EXAMPLE_VALUES['ex-personnel-toc']={'Personnel file contents (check as filed)':
+  ['☐ Job Application / Personnel Record (LIC 501)','☐ Health Screening Report (LIC 503)','☐ TB Clearance',
+   '☐ Fingerprint Clearance / Transfer Request','☐ Current Driver’s License or Photo ID','☐ First Aid & CPR Certification',
+   '☐ Direct Care Staff Training Checklist (On-site Orientation)','☐ Continuing Education Verification',
+   '☐ DSPT Certification Verification (Year 1 / Year 2)','☐ Crisis Prevention Intervention Certification (per program design)',
+   '☐ Administrator Certificate'].join('\n')};
+EXAMPLE_VALUES['ex-facility-toc']={'Facility chart contents (check as filed)':
+  ['☐ ACRC Approved Program Design','☐ Weekly Staff Schedule','☐ Weekly Resident Accountability',
+   '☐ Emergency and Disaster Plan (LIC 610 / 610D / 610E)','☐ Monthly Fire Drill Record',
+   '☐ Looking at Service Quality Provider Handbook','☐ Agency correspondence (ACRC / CCL)',
+   '☐ Title 17 reviews · Technical Support Logs · Corrective Action Plans','☐ Facility Evaluation & Complaint Reports',
+   '☐ Fingerprint Clearances','☐ Surety bond','☐ Vehicle registration & proof of insurance',
+   '☐ Professional liability','☐ ACRC Vendorization / Rate Letter'].join('\n')};
+
+/* ── v4.7: user-uploaded library docs + in-dashboard e-sign ── */
+let USER_LIB={};   // key -> {forms:[{dbId,n,sub,url}], res:[...]}
+let DOC_SIGS={};   // completed-form name -> {by, at}
+const FOLDER_NAMES={Agency:'Agency docs',Medical:'Medical docs',Daily:'Daily logs',Water:'Water temp logs',Attendance:'Attendance',Safety:'Health and safety',Compliance:'Compliance'};
+function libManageBtns(fl){
+  if(!fl.dbId || state.role!=='director') return '';
+  return `<button class="btn ghost sm" onclick="event.stopPropagation();libRename(${fl.dbId})">✎</button>`+
+         `<button class="btn ghost sm" onclick="event.stopPropagation();libRemove(${fl.dbId})">✕</button>`;
+}
+function libFind(dbId){ for(const k in USER_LIB){ for(const sec of ['forms','res']){ const i=(USER_LIB[k][sec]||[]).findIndex(x=>x.dbId===dbId); if(i>-1) return {k,sec,i,row:USER_LIB[k][sec][i]}; } } return null; }
+
+/* ── v4.8: one renderer for every library row (plain link or editable example) ── */
+function libRowHtml(fl,key){
+  if(!fl.editable){
+    const ico=fl.url?(fl.n.split('.').pop()||'').toUpperCase().slice(0,4):'◫';
+    return `<div class="docrow" style="border-bottom:none;padding:8px 18px"><div class="di">${ico}</div>
+      <div class="dt"><b>${esc(fl.n)}</b><span>${esc(fl.sub||'')}</span></div>
+      ${libManageBtns(fl)}<button class="btn ghost sm" onclick="event.stopPropagation();${fl.url?`window.open('${fl.url}','_blank')`:`toast('Opening ${esc(fl.n)}')`}">Open</button></div>`;
+  }
+  const sg=DOC_SIGS[fl.n];
+  const isUser=!!USER_DOCS[fl.docId];
+  const meta=(EXAMPLE_VALUES[fl.docId]&&EXAMPLE_VALUES[fl.docId]._meta)?EXAMPLE_VALUES[fl.docId]._meta:null;
+  const tag=` · <span style="color:#a9822f;font-weight:700">${isUser?'Uploaded · editable in‑app':'Editable in‑app'}</span>`;
+  const edited=meta?` · Edited by ${esc(meta.by)} · ${esc(meta.at)}`:'';
+  const signed=sg?` · <span style="color:#2e7d32;font-weight:700">✓ Signed — ${esc(sg.by)} · ${esc(sg.at)}</span>`:'';
+  let btns='';
+  if(!sg){ btns+=`<button class="btn gold sm" onclick="event.stopPropagation();openDocEditor('${fl.docId}')">Edit</button>`;
+           btns+=`<button class="btn ghost sm" onclick="event.stopPropagation();signDoc('${key}','${esc(fl.n)}')">✍ Sign</button>`; }
+  btns+=`<button class="btn ghost sm" onclick="event.stopPropagation();printSheet(docFilledHtml('${fl.docId}'))">Print</button>`;
+  if(fl.url) btns+=`<button class="btn ghost sm" onclick="event.stopPropagation();window.open('${fl.url}','_blank')">Original</button>`;
+  if(isUser && state.role==='director') btns+=`<button class="btn ghost sm" onclick="event.stopPropagation();docRemove('${fl.docId}')">✕</button>`;
+  return `<div class="docrow" style="border-bottom:none;padding:8px 18px"><div class="di">◫</div>
+    <div class="dt"><b>${esc(fl.n)}</b><span>${esc(fl.desc||fl.sub||'')}${tag}${edited}${signed}</span></div>
+    ${btns}</div>`;
+}
+function docFieldInput(fd,i,v){
+  const val=v==null?'':v;
+  if(fd.ty==='signature') return `<div class="field"><label>${esc(fd.l)} (type name to sign)</label><input class="inp" id="dg${i}" placeholder="Full name" value="${esc(val)}"></div>`;
+  if(fd.ty==='checkbox')  return `<div class="field"><label>${esc(fd.l)}</label><select class="inp" id="dg${i}"><option ${val==='Yes'?'selected':''}>Yes</option><option ${val==='No'?'selected':''}>No</option></select></div>`;
+  if(fd.ty==='long text') return `<div class="field"><label>${esc(fd.l)}</label><textarea class="inp" id="dg${i}" rows="3">${esc(val)}</textarea></div>`;
+  return `<div class="field"><label>${esc(fd.l)}</label><input class="inp" id="dg${i}" type="${fd.ty==='date'?'date':fd.ty==='time'?'time':'text'}" value="${esc(val)}"></div>`;
+}
+function openDocEditor(id){
+  const d=docById(id); if(!d) return;
+  if(DOC_SIGS[d.name]) return toast('This document is signed and locked. Print it or open the original.');
+  const saved=EXAMPLE_VALUES[id]||{};
+  const isUser=!!USER_DOCS[id];
+  const note=isUser
+    ? 'Fill in the document, then Save to Supabase. Use “Edit fields” to add, rename or reorder fields. Client ID only — no names or dates of birth.'
+    : 'Fill in the document, then Save to Supabase. Client ID only — no names or dates of birth.';
+  openModal('Edit — '+esc(d.name),
+    `<div class="sec-note" style="margin-top:0"><span>ℹ</span><div><b>${esc(d.desc||'')}</b>${note}</div></div>`+
+    (d.fields.length?d.fields.map((fd,i)=>docFieldInput(fd,i,saved[fd.l])).join(''):'<div class="empty">No fields yet — use “Edit fields” to add some.</div>'),
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button>
+     ${isUser?`<button class="btn gold" onclick="openDocFieldsEditor('${id}')">Edit fields</button>`:''}
+     <button class="btn ghost" onclick="printSheet(docFilledFromForm('${id}'))">Print filled</button>
+     <button class="btn navy" onclick="docSave('${id}')">Save document</button>`);
+}
+function docReadForm(id){ const d=docById(id); const o={}; d.fields.forEach((fd,i)=>{ const e=el('dg'+i); if(e) o[fd.l]=e.value; }); return o; }
+function docPersist(id){
+  const d=docById(id);
+  const content=Object.assign({}, EXAMPLE_VALUES[id]||{});
+  if(USER_DOCS[id]){ content._fields=d.fields; content._file=USER_DOCS[id].url||content._file||null; }
+  content._meta={by:ME[state.role].name, at:nowStamp()};
+  EXAMPLE_VALUES[id]=content;
+  sbUpsert('np_demo_example_docs',{doc_id:id,folder:d.key,sec:d.sec,name:d.name,content,updated_by:ME[state.role].name,updated_at:new Date().toISOString()});
+}
+function docSave(id){
+  const d=docById(id); const vals=docReadForm(id);
+  const keep=EXAMPLE_VALUES[id]||{};
+  EXAMPLE_VALUES[id]=Object.assign({}, keep, vals);   // keep _fields/_file, overwrite values
+  docPersist(id);
+  logAudit('Edited document',d.name);
+  closeAll(); render(); toast('Document saved to the '+(FOLDER_NAMES[d.key]||d.key)+' binder.');
+}
+function docFilledHtml(id){ return docSheet(id, EXAMPLE_VALUES[id]||{}); }
+function docFilledFromForm(id){ return docSheet(id, docReadForm(id)); }
+function docSheet(id,vals){
+  const d=docById(id);
+  const rows=d.fields.filter(fd=>fd.ty!=='signature').map(fd=>{
+    const v=vals[fd.l]!=null?String(vals[fd.l]):'';
+    const cell=fd.ty==='long text'?`<div style="white-space:pre-wrap;min-height:48px">${esc(v)}</div>`:esc(v);
+    return `<tr><th style="width:240px">${esc(fd.l)}</th><td>${cell||'&nbsp;'}</td></tr>`;
+  }).join('');
+  const sg=DOC_SIGS[d.name];
+  const sigs=d.fields.filter(fd=>fd.ty==='signature').map(fd=>{
+    const v=vals[fd.l]!=null?String(vals[fd.l]):'';
+    return `<div class="sig">${esc(v)}<br>${esc(fd.l)}${v?' · '+(sg?sg.at:nowStamp()):' / date'}</div>`;
+  }).join('');
+  const badge=sg?` · signed by ${esc(sg.by)} · ${esc(sg.at)}`:'';
+  return `<h2>${esc(d.name)}</h2><div class="p-sub">Meridian Care · ${esc(FOLDER_NAMES[d.key]||d.key)}${badge} · clients identified by client ID only · printed ${fmtLong(T)}</div>
+    <table>${rows}</table>${sigs?`<div class="siglines">${sigs}</div>`:''}`;
+}
+
+/* ── v4.8b: user-created editable docs (structure editor + delete) ── */
+function openDocFieldsEditor(id){
+  const d=docById(id); if(!d||!USER_DOCS[id]) return;
+  openModal('Edit fields — '+esc(d.name),
+    `<div class="field"><label>Document name</label><input class="inp" id="udName" value="${esc(d.name)}"></div>
+     <div class="field"><label>Fields — rename inline, set the type, reorder with the arrows</label>
+       <div id="udFields">${udFieldRows(id)}</div>
+       <div style="display:flex;gap:8px;margin-top:10px">
+         <button class="btn ghost sm" onclick="udAddField('${id}')">＋ Add field</button>
+         <button class="btn gold sm" onclick="udAskAI('${id}')">✦ Ask AI to improve</button>
+       </div></div>
+     <div class="tiny muted">Signature fields print as ink-signature lines. Renaming a field keeps values already entered under the old label only if the label matches.</div>`,
+    `<button class="btn ghost" onclick="openDocEditor('${id}')">Back to fill in</button>
+     <button class="btn navy" onclick="udSaveFields('${id}')">Save fields</button>`);
+}
+function udFieldRows(id){ const d=docById(id); return d.fields.map((fd,i)=>`
+  <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+    <input class="inp" style="flex:1;height:34px" value="${esc(fd.l)}" onchange="docById('${id}').fields[${i}].l=this.value">
+    <select class="inp" style="width:118px;height:34px" onchange="docById('${id}').fields[${i}].ty=this.value">
+      ${['text','long text','date','time','checkbox','signature'].map(ty=>`<option ${fd.ty===ty?'selected':''}>${ty}</option>`).join('')}</select>
+    <button class="btn ghost sm" ${i===0?'disabled':''} onclick="udMove('${id}',${i},-1)">↑</button>
+    <button class="btn ghost sm" ${i===d.fields.length-1?'disabled':''} onclick="udMove('${id}',${i},1)">↓</button>
+    <button class="btn ghost sm" onclick="udDel('${id}',${i})">✕</button>
+  </div>`).join('')||'<div class="empty">No fields yet — add one below.</div>'; }
+function udRefresh(id){ el('udFields').innerHTML=udFieldRows(id); }
+function udMove(id,i,dir){ const fs=docById(id).fields; const j=i+dir; if(j<0||j>=fs.length) return; const t=fs[i]; fs[i]=fs[j]; fs[j]=t; udRefresh(id); }
+function udDel(id,i){ docById(id).fields.splice(i,1); udRefresh(id); }
+function udAddField(id){ docById(id).fields.push({l:'New field',ty:'text'}); udRefresh(id); }
+function udAskAI(id){
+  const d=docById(id);
+  const add=[{l:'Client ID',ty:'text'},{l:'Date',ty:'date'},{l:'Notes',ty:'long text'},{l:'Completed by',ty:'signature'}]
+    .filter(x=>!d.fields.some(f=>f.l.toLowerCase()===x.l.toLowerCase()));
+  if(!add.length) return toast('AI reviewed the fields — nothing obvious to add.');
+  d.fields.push.apply(d.fields,add); udRefresh(id);
+  toast('AI added '+add.length+' suggested field'+(add.length>1?'s':'')+' — edit or remove freely.');
+}
+function udSaveFields(id){
+  const d=docById(id); const nm=(el('udName').value||'').trim();
+  if(nm){ d.name=nm; USER_DOCS[id].name=nm; }
+  docPersist(id); logAudit('Edited document fields',d.name);
+  closeAll(); render(); toast('Fields saved.');
+}
+function docRemove(id){
+  const d=docById(id); if(!d||!USER_DOCS[id]) return;
+  if(!confirm('Remove "'+d.name+'" from this folder? This cannot be undone.')) return;
+  delete USER_DOCS[id]; delete EXAMPLE_VALUES[id];
+  sbDel('np_demo_example_docs','doc_id=eq.'+encodeURIComponent(id));
+  logAudit('Removed document',d.name); render(); toast('Document removed.');
+}
+
+/* ── v4.8b: turn an uploaded file into an editable in-app document ── */
+let _pdfjs=null;
+function loadPdfjs(){
+  return new Promise(res=>{
+    if(_pdfjs) return res(_pdfjs);
+    if(window.pdfjsLib){ _pdfjs=window.pdfjsLib; return res(_pdfjs); }
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload=()=>{ try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }catch(e){} _pdfjs=window.pdfjsLib||null; res(_pdfjs); };
+    s.onerror=()=>res(null);
+    document.head.appendChild(s);
+  });
+}
+async function pdfText(file){
+  const lib=await loadPdfjs(); if(!lib) return '';
+  try{
+    const buf=await file.arrayBuffer();
+    const pdf=await lib.getDocument({data:buf}).promise;
+    let txt=''; const n=Math.min(pdf.numPages,8);
+    for(let i=1;i<=n;i++){
+      const pg=await pdf.getPage(i); const c=await pg.getTextContent();
+      let last=null, line='';
+      c.items.forEach(it=>{ const y=Math.round(it.transform[5]); if(last!==null && Math.abs(y-last)>3){ txt+=line+'\n'; line=''; } line+=(line?' ':'')+it.str; last=y; });
+      txt+=line+'\n';
+    }
+    return txt;
+  }catch(e){ console.warn('[np-demo] pdf parse failed',e); return ''; }
+}
+function guessType(l){
+  const s=l.toLowerCase();
+  if(/sign|signature/.test(s)) return 'signature';
+  if(/\btime\b/.test(s)) return 'time';
+  if(/\bdate\b|d\.?o\.?b|birth/.test(s)) return 'date';
+  if(/descri|notes?|purpose|history|reason|comment|order|recommend|treatment|summary|\bplan\b|changes|instruction/.test(s)) return 'long text';
+  return 'text';
+}
+function fieldsFromText(text){
+  if(!text) return [];
+  const skip=/^updated?\b|^\s*css\b|^\s*page\b|^\d+$|title\s*22|title\s*17|^please\b|^check\b|^refer\b|^note[:\s]|^see\b|^if\b|^for\b/i;
+  const out=[]; const seen=new Set();
+  const add=lb=>{
+    if(!lb) return;
+    lb=String(lb).replace(/\s{2,}/g,' ').trim();
+    if(!/^[A-Z]/.test(lb)) return;                       // fragments and prose start lowercase
+    if(lb.length<2||lb.length>80) return;
+    if(lb.split(' ').length>12) return;                  // long prose, not a label
+    if(skip.test(lb)) return;
+    const key=lb.toLowerCase(); if(seen.has(key)) return; seen.add(key);
+    out.push({l:lb, ty:guessType(lb)});
+  };
+  const labelish=s=>/^[A-Z][A-Za-z0-9 \/&'().]{1,40}$/.test(s)&&s.split(' ').length<=4&&!/\.$/.test(s);
+  text.split(/\r?\n/).forEach(raw0=>{
+    const raw=raw0.replace(/\s+/g,' ').trim(); if(!raw||skip.test(raw)) return;
+    const par=raw.match(/^_*\s*\(([^)]{2,60})\)$/);       // caption under a blank: "____ (Name of Facility)"
+    if(par){ add(par[1]); return; }
+    const parts=raw.split(':');
+    if(parts.length>=3){                                 // several "Label:" packed on one line, e.g. "Employee Name: Title:"
+      parts.slice(0,-1).forEach(seg=>{ const m=seg.trim().match(/([A-Z][A-Za-z0-9 ,\/&'().]*)$/); if(m&&m[1].split(' ').length<=5) add(m[1]); });
+      const lastSeg=parts[parts.length-1].trim();
+      if(labelish(lastSeg)) add(lastSeg);                // trailing bare label with no colon
+      return;
+    }
+    const c=raw.match(/^([A-Z][^:]{1,79}):(.*)$/);       // "Label:" — must start uppercase
+    if(c){
+      const after=c[2].trim();
+      const blank=after.replace(/[_.\-\s]/g,'').length<=1;
+      if(blank) add(c[1]);                               // "Label:" or "Label: ____"
+      else if(labelish(after)){ add(c[1]); add(after); } // "Facility Name: Service Level"
+      return;
+    }
+    const u=raw.match(/^([A-Z][A-Za-z0-9 ,\/&'()]{1,79}?)\s*[_\.]{3,}/); if(u) add(u[1]);  // "Label _____"
+  });
+  return out.slice(0,30);
+}
+let _jszip=null;
+function loadJSZip(){
+  return new Promise(res=>{
+    if(_jszip) return res(_jszip);
+    if(window.JSZip){ _jszip=window.JSZip; return res(_jszip); }
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload=()=>{ _jszip=window.JSZip||null; res(_jszip); };
+    s.onerror=()=>res(null);
+    document.head.appendChild(s);
+  });
+}
+async function docxText(file){
+  const Z=await loadJSZip(); if(!Z) return '';
+  try{
+    const zip=await Z.loadAsync(await file.arrayBuffer());
+    const doc=zip.file('word/document.xml'); if(!doc) return '';
+    let xml=await doc.async('string');
+    xml=xml.replace(/<w:tab[^>]*\/?>/g,' ')      // tab → space
+           .replace(/<\/w:tc>/g,'\t')            // table cell → tab (so "Label\t____" is detectable)
+           .replace(/<\/w:tr>/g,'\n')            // table row → newline
+           .replace(/<\/w:p>/g,'\n');            // paragraph → newline
+    return xml.replace(/<[^>]+>/g,'')            // strip remaining tags; text runs join naturally
+              .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+              .replace(/&quot;/g,'"').replace(/&#\d+;/g,' ');
+  }catch(e){ console.warn('[np-demo] docx parse failed',e); return ''; }
+}
+async function docLegacyText(file){
+  // Word 97-2003 (.doc): pull printable text runs straight from the binary —
+  // no library needed. Field-mark placeholders (FORMTEXT etc.) are stripped.
+  try{
+    const buf=new Uint8Array(await file.arrayBuffer());
+    let out=[], run='';
+    const push=()=>{ if(run.length>=4) out.push(run); run=''; };
+    for(let i=0;i<buf.length;i++){
+      const b=buf[i];
+      if(b===0x0d||b===0x07){ run+='\n'; }                 // CR / table cell mark → newline
+      else if(b>=0x20&&b<=0x7e) run+=String.fromCharCode(b);
+      else push();
+    }
+    push();
+    let s=out.join('\n').replace(/ ?FORM(CHECKBOX|TEXT|DROPDOWN) ?/g,' ');
+    const cut=s.search(/xmlns|<\?xml|themeManager|clrMap/);   // binary tail holds theme XML — not document text
+    if(cut>0) s=s.slice(0,cut);
+    return s;
+  }catch(e){ console.warn('[np-demo] .doc parse failed',e); return ''; }
+}
+async function detectFields(file){
+  const name=(file&&file.name||'').toLowerCase();
+  let text='';
+  if(name.endsWith('.pdf')) text=await pdfText(file);
+  else if(name.endsWith('.docx')) text=await docxText(file);
+  else if(name.endsWith('.doc')) text=await docLegacyText(file);
+  else if(name.endsWith('.txt')||name.endsWith('.csv')) { try{ text=await file.text(); }catch(e){} }
+  return fieldsFromText(text);
+}
+function starterFields(){ return [{l:'Client ID',ty:'text'},{l:'Date',ty:'date'},{l:'Details',ty:'long text'},{l:'Completed by',ty:'signature'}]; }
+async function libCreateEditable(f,title,key,sec){
+  closeAll(); toast(f?'Reading the document…':'Creating document…');
+  let url=null;
+  if(f) url=await sbUpload(`${key}/${Date.now()}_${f.name.replace(/[^A-Za-z0-9._-]/g,'_')}`,f);
+  let fields=[]; let auto=false;
+  if(f){ try{ fields=await detectFields(f); }catch(e){ console.warn(e); } }
+  if(fields.length>=3) auto=true; else fields=starterFields();   // <3 labels → probably not a form
+  const id='ux-'+Date.now();
+  USER_DOCS[id]={id, key, sec, name:title, fields, url, source:'upload'};
+  EXAMPLE_VALUES[id]={_fields:fields, _file:url, _meta:{by:ME[state.role].name, at:nowStamp()}};
+  docPersist(id);
+  logAudit('Created editable document', title+' → '+(FOLDER_NAMES[key]||key));
+  state.openBinder=key; render();
+  toast(auto?('Read '+fields.length+' field'+(fields.length>1?'s':'')+' — review and fill in.')
+            :'Added starter fields you can edit — open “Edit fields” to shape it.');
+  openDocEditor(id);
+}
+function libUpload(key,sec){
+  openModal('Upload to '+(FOLDER_NAMES[key]||key),`
+    <div class="field"><label>File</label><input class="inp" type="file" id="libFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg"></div>
+    <div class="field"><label>Title</label><input class="inp" id="libTitle" placeholder="e.g. Monthly fire drill record (blank)"></div>
+    <div class="row2">
+      <div class="field"><label>Folder</label><select class="inp" id="libKey">${Object.keys(FOLDER_NAMES).map(k=>`<option value="${k}" ${k===key?'selected':''}>${FOLDER_NAMES[k]}</option>`).join('')}</select></div>
+      <div class="field"><label>Subfolder</label><select class="inp" id="libSec"><option value="forms" ${sec==='forms'?'selected':''}>Forms</option><option value="res" ${sec==='res'?'selected':''}>Resources &amp; guidelines</option></select></div>
+    </div>
+    <div class="sec-note"><span>🔒</span><div><b>No client data in filenames</b>Use client IDs only (e.g. J-402318) — never names or dates of birth in the file or its title.</div></div>
+    <label class="checkrow" style="border-color:var(--line);cursor:pointer" onclick="var c=el('libEditable');c.checked=!c.checked;el('libEditRow').style.display=c.checked?'block':'none'">
+      <input type="checkbox" id="libEditable" style="width:16px;height:16px"><div class="ct"><b>Make this editable in‑app</b><div class="tiny muted">Read the form’s fields so staff can fill it in and sign it here — not just open a static file.</div></div></label>
+    <div id="libEditRow" style="display:none" class="tiny muted">Works best on PDF and Word (.doc / .docx) forms. Other file types start with a few fields you can adjust. The original file stays attached under “Original”.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="libSaveUpload()">Upload</button>`);
+}
+async function libSaveUpload(){
+  const f=el('libFile').files[0];
+  const title=(el('libTitle').value.trim())||(f?f.name.replace(/\.[^.]+$/,''):'');
+  if(!title) return toast('Add a title or choose a file first.');
+  const key=el('libKey').value, sec=el('libSec').value;
+  if(el('libEditable') && el('libEditable').checked) return libCreateEditable(f,title,key,sec);
+  closeAll(); toast('Uploading…');
+  let url=null, size=f?Math.max(1,Math.round(f.size/1024))+' KB':'';
+  if(f) url=await sbUpload(`${key}/${Date.now()}_${f.name.replace(/[^A-Za-z0-9._-]/g,'_')}`,f);
+  const sub=`Uploaded by ${ME[state.role].name} · ${fmtDate(T)}${size?' · '+size:''}`;
+  const row={dbId:'tmp'+Date.now(), n:title, sub, url};
+  ((USER_LIB[key]=USER_LIB[key]||{forms:[],res:[]})[sec]=USER_LIB[key][sec]||[]).push(row);
+  if(sbOn()){
+    try{
+      const r=await fetch(`${BACKEND.url}/rest/v1/np_demo_library`,{method:'POST',headers:{...sbH(),Prefer:'return=representation'},body:JSON.stringify({folder:key,sec,title,url,sub,uploaded_by:ME[state.role].name})});
+      if(r.ok){ const j=await r.json(); if(j[0]) row.dbId=j[0].id; }
+    }catch(e){ console.warn('[np-demo] library write failed',e); }
+  }
+  logAudit('Uploaded document',title+' → '+(FOLDER_NAMES[key]||key));
+  state.openBinder=key; render(); toast('Document uploaded and filed.');
+}
+function libRename(dbId){
+  const hit=libFind(dbId); if(!hit) return;
+  const nn=prompt('New title',hit.row.n); if(!nn||!nn.trim()) return;
+  hit.row.n=nn.trim();
+  if(typeof dbId==='number') sbPatch('np_demo_library',dbId,{title:hit.row.n});
+  logAudit('Renamed document',hit.row.n); render(); toast('Document renamed.');
+}
+function libRemove(dbId){
+  const hit=libFind(dbId); if(!hit) return;
+  if(!confirm('Remove "'+hit.row.n+'" from this folder?')) return;
+  USER_LIB[hit.k][hit.sec].splice(hit.i,1);
+  if(typeof dbId==='number') sbDel('np_demo_library','id=eq.'+dbId);
+  logAudit('Removed document',hit.row.n); render(); toast('Document removed.');
+}
+function signDoc(key,name){
+  openModal('Sign — '+esc(name),`
+    <div class="field"><label>Type your full name to sign</label><input class="inp" id="sgName" placeholder="Full name" value=""></div>
+    <div class="tiny muted">Your typed name, role and the date and time are recorded with the document and in the audit log. Once signed, the form is locked. Documents needing wet ink can still be printed for signature.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="signDocSave('${key}','${name.replace(/'/g,"\\'")}')">Sign document</button>`);
+}
+function signDocSave(key,name){
+  const by=el('sgName').value.trim(); if(!by) return toast('Type your full name to sign.');
+  DOC_SIGS[name]={by, at:nowStamp()};
+  sbPush('np_demo_doc_signatures',{doc_name:name,folder:key,signed_by:by,signed_role:state.role});
+  logAudit('Signed document',name);
+  closeAll(); render(); toast('Signed by '+by+'.');
+}
+async function sbUpload(path,file){
+  if(!sbOn()) return null;
+  try{
+    const r=await fetch(`${BACKEND.url}/storage/v1/object/np-demo-docs/${path}`,{method:'POST',headers:{apikey:BACKEND.anon,Authorization:'Bearer '+BACKEND.anon,'Content-Type':file.type||'application/octet-stream','x-upsert':'true'},body:file});
+    if(!r.ok){ console.warn('[np-demo] storage upload failed',r.status); return null; }
+    return `${BACKEND.url}/storage/v1/object/public/np-demo-docs/${path}`;
+  }catch(e){ console.warn('[np-demo] storage upload failed',e); return null; }
+}
+function sbDel(t,q){ if(!sbOn()) return; fetch(`${BACKEND.url}/rest/v1/${t}?${q}`,{method:'DELETE',headers:sbH()}).catch(e=>console.warn('[np-demo] delete failed',t,e)); }
 
 function tplGenerate(id){
   const t=tplById(id);
@@ -2972,7 +3753,12 @@ function tplAskAI(id){
     tp3:[{l:'Items needing follow-up',ty:'long text'},{l:'Reviewed by',ty:'signature'}],
     tp4:[{l:'Alarm sounded properly',ty:'checkbox'},{l:'Issues found during drill',ty:'long text'}],
     tp5:[{l:'Corrective action if out of range',ty:'long text'},{l:'Rechecked temperature',ty:'text'}],
-    tp6:[{l:'Witnesses present',ty:'text'},{l:'Follow-up actions planned',ty:'long text'}]};
+    tp6:[{l:'Witnesses present',ty:'text'},{l:'Follow-up actions planned',ty:'long text'}],
+    tp7:[{l:'Awake overnight staff assigned',ty:'checkbox'},{l:'Coverage gaps and backup plan',ty:'long text'}],
+    tp8:[{l:'Resident away overnight — where and with whom',ty:'text'},{l:'Reviewed by administrator',ty:'signature'}],
+    tp9:[{l:'Medications with possible behavioral impact',ty:'long text'},{l:'Schedule of reinforcement',ty:'text'}],
+    tp10:[{l:'Date of most recent restraint',ty:'date'},{l:'SIR submitted within 24 hours of use',ty:'checkbox'}],
+    tp11:[{l:'Graphical analysis attached',ty:'checkbox'},{l:'Consultation hours delivered this period',ty:'text'}]};
   const add=(sugg[id]||[]).filter(x=>!t.fields.some(fd=>fd.l===x.l));
   if(!add.length) return toast('AI reviewed the template — no gaps found.');
   t.fields.push.apply(t.fields,add); tplRefresh(id);
@@ -3790,6 +4576,40 @@ async function sbHydrate(){
     sbGet('np_demo_templates'),
     sbGet('np_demo_client_notes','select=*&order=created_at.desc'),
     sbGet('np_demo_notifications','select=*&order=created_at.desc&limit=20')]);
+  const [lib,sigs,exdocs,insps]=await Promise.all([
+    sbGet('np_demo_library','select=*&order=created_at'),
+    sbGet('np_demo_doc_signatures','select=*&order=created_at'),
+    sbGet('np_demo_example_docs','select=*'),
+    sbGet('np_demo_inspections','select=*&order=created_at.desc')]);
+  insps.forEach(r=>{
+    if(r.kind==='template' && Array.isArray(r.questions)){
+      const ex=inspTpl(r.id);
+      if(ex){ ex.name=r.title; ex.folder=r.folder; ex.questions=r.questions; }
+      else INSP_TEMPLATES.push({id:r.id,name:r.title,folder:r.folder,desc:'',questions:r.questions});
+    } else if(r.kind==='completed'){
+      if(!INSP_DONE.some(x=>x.id===r.id)){
+        const den=r.score_den||0, num=r.score_num||0;
+        INSP_DONE.push({id:r.id,tid:r.template_id,title:r.title,folder:r.folder,num,den,pct:den?Math.round(num/den*100):0,
+          by:r.created_by||'',at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),
+          responses:r.responses||[]});
+      }
+    }
+  });
+  exdocs.forEach(r=>{
+    const c=r.content||{};
+    const at=r.updated_at?new Date(r.updated_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+    if(String(r.doc_id).startsWith('ux-') || Array.isArray(c._fields)){        // user-created editable doc
+      if(!c._meta) c._meta={by:r.updated_by||'',at};
+      USER_DOCS[r.doc_id]={id:r.doc_id, key:r.folder, sec:r.sec, name:r.name, fields:c._fields||[], url:c._file||null, source:'upload'};
+      EXAMPLE_VALUES[r.doc_id]=c;
+    } else if(docById(r.doc_id)){                                             // filled content for a seeded example
+      if(!c._meta) c._meta={by:r.updated_by||'',at};
+      EXAMPLE_VALUES[r.doc_id]=c;
+    }
+  });
+  lib.forEach(r=>{ ((USER_LIB[r.folder]=USER_LIB[r.folder]||{forms:[],res:[]})[r.sec]=USER_LIB[r.folder][r.sec]||[]).push({dbId:r.id,n:r.title,sub:r.sub||('Uploaded by '+(r.uploaded_by||'')),url:r.url}); });
+  sigs.forEach(r=>{ DOC_SIGS[r.doc_name]={by:r.signed_by, at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}; });
+  docs.forEach(r=>{ if(r.cat&&r.cat.startsWith('Completed — ')){ const k=r.cat.slice(12); if(!(COMPLETED[k]||[]).some(x=>x.n===r.n)) (COMPLETED[k]=COMPLETED[k]||[]).push({n:r.n, sub:'Completed form · '+(r.uploaded_by||'')+' · '+fmtDate(r.doc_date)}); } });
   if(tasks.length){ TASKS.length=0; tasks.forEach(r=>TASKS.push({id:r.id,title:r.title,sid:r.sid,cid:r.cid,due:r.due,stage:r.stage,pri:r.pri,cat:r.category||'',notes:r.notes||[],signoff:r.signoff||null,subs:r.subs||[]})); }
   if(inc.length){ INCIDENTS.length=0; inc.forEach(r=>INCIDENTS.push({id:r.id,cid:r.cid,type:r.type,date:r.inc_date,time:r.inc_time,sev:r.sev,status:r.status,by:r.reported_by,summary:r.summary,notified:r.notified||[],recips:r.recips||[],hoursLeft:r.hours_left})); }
   if(fd.length){ FIREDRILLS.length=0; fd.forEach(r=>FIREDRILLS.push({date:r.drill_date,time:r.drill_time,home:r.home,shift:r.shift,evac:r.evac,by:r.conducted_by,wet:r.wet})); }
