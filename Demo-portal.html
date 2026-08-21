@@ -632,7 +632,7 @@ body{font-size:15px}
         <span class="muted" style="font-size:13px">⚙</span>
       </div>
       <div class="side-foot">
-        <span>Built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · pilot v5.6</span>
+        <span>Built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · pilot v5.7</span>
         <a href="mailto:help@aiparagonconsulting.com?subject=Meridian%20Care%20Portal%20support">✉ Help & support</a>
       </div>
     </div>
@@ -713,7 +713,8 @@ const BACKEND = {
   url: '',              // ← paste the shared Supabase project URL (https://xxxx.supabase.co)
   anon: '',             // ← paste the Supabase anon key
   incidentWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-incident',   // LIVE — writes to np_demo_notifications
-  calendarWebhook: '',   // v5.6: the portal now pushes to Google directly (gcalPush) — no relay needed   // goes live once Google Calendar cred is added + workflow published
+  calendarWebhook: '',   // v5.6: the portal now pushes to Google directly (gcalPush) — no relay needed
+  notifyWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-reminders',   // email/SMS reminders (needs Gmail/Twilio cred)   // goes live once Google Calendar cred is added + workflow published
   askWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-ask',             // goes live once Anthropic key is added + workflow published
   googleClientId: '665621800801-pbruv525a3kcrq5oa64p9rvh1mg7pt6c.apps.googleusercontent.com'
 };
@@ -736,7 +737,7 @@ function gcalConnect(){
       scope:'https://www.googleapis.com/auth/calendar.events',
       callback:(resp)=>{
         if(resp.error) return toast('Google sign-in was cancelled.');
-        GCAL.token=resp.access_token; GCAL.connected=true;
+        GCAL.token=resp.access_token; GCAL.connected=true; gcalAutoRefresh();
         logAudit('Connected Google Calendar','This browser only — events are never stored');
         toast('Google Calendar connected. Loading your events…');
         gcalFetch();
@@ -750,7 +751,7 @@ function gcalDisconnect(){
   GCAL.token=null; GCAL.connected=false; GCAL.events=[];
   logAudit('Disconnected Google Calendar',''); render(); toast('Google Calendar disconnected.');
 }
-async function gcalFetch(){
+async function gcalFetch(quiet){
   if(!GCAL.token) return;
   GCAL.loading=true; render();
   try{
@@ -785,7 +786,8 @@ async function gcalFetch(){
     const dups=GCAL.events.filter(g=>g.dup).length;
     GCAL.events=GCAL.events.filter(g=>!g.dup);
     const mapped=GCAL.events.filter(g=>g.cid).length;
-    toast(GCAL.events.length
+    window._gcalLast=Date.now();
+    if(!quiet) toast(GCAL.events.length
       ? GCAL.events.length+' Google Calendar event'+(GCAL.events.length>1?'s':'')+' loaded'
         +(mapped?` · ${mapped} matched to clients and anonymized`:'')
         +(dups?` · ${dups} portal duplicate${dups>1?'s':''} hidden`:'')+'.'
@@ -807,13 +809,39 @@ function gcalPush(a){ // portal appointment → user's Google Calendar (UCI only
       location:a.loc||'', description:'Created by Meridian Care Portal · client identified by ID only',
       start:{dateTime:startIso,timeZone:tz}, end:{dateTime:endIso,timeZone:tz} })
   }).then(async r=>{
-    if(r.ok){ toast('Added to your Google Calendar too.'); return; }
+    if(r.ok){
+      // show it on the Google lane straight away — no reconnect needed
+      try{
+        const ev=await r.json();
+        if(ev&&ev.id){
+          GCAL.events=GCAL.events.filter(g=>g.id!=='g_'+ev.id);
+          GCAL.events.push(gcalMapClient({id:'g_'+ev.id,gcal:true,title:ev.summary||a.title,date:a.date,time:a.time,
+            allday:false,dur:a.dur||30,loc:a.loc||'',link:ev.htmlLink||'',cancelled:0,type:'Google',
+            provider:'',flag:'',ride:'',notes:[],files:[]}));
+          GCAL.events=GCAL.events.filter(g=>!g.dup);
+          render();
+        }
+      }catch(e){}
+      toast('Added to your Google Calendar too.'); return;
+    }
     let msg='';
     try{ const d=await r.json(); msg=(d.error&&d.error.message)||''; }catch(e){}
     console.warn('[np-demo] gcal insert failed',r.status,msg);
     toast(r.status===403?'Google declined the event — the Calendar API may need enabling.'
          :'Saved here, but Google Calendar rejected the event'+(msg?': '+msg:'.'));
   }).catch(e=>{ console.warn('[np-demo] gcal insert failed',e); toast('Saved here — could not reach Google Calendar.'); });
+}
+/* v5.7: keep the Google lane fresh without making the user reconnect */
+let _gcalTimer=null;
+function gcalAutoRefresh(){
+  if(_gcalTimer) return;
+  _gcalTimer=setInterval(()=>{ if(GCAL.connected&&!GCAL.loading&&!document.hidden) gcalFetch(true); },5*60*1000);
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden&&GCAL.connected&&!GCAL.loading){
+      const last=window._gcalLast||0;
+      if(Date.now()-last>60*1000) gcalFetch(true);
+    }
+  });
 }
 function gcalLabel(a){ return a.gcal ? (a.cid?'Google · '+esc(client(a.cid).uci):'Google Calendar') : esc(client(a.cid).uci); }
 
@@ -1211,14 +1239,12 @@ const ONBOARD = [
 ];
 
 const THREADS = [
-  {id:'th1', who:'Nell Harding, RN', sub:'TB — INR draw', role:'Nurse', last:'I can do the draw Thursday morning.', unread:1,
-   msgs:[{me:0,t:'Dr. Chen wants an INR before the neurology visit. Can we fit a draw in this week?',w:'M. Reyes',at:'Yesterday 4:12 PM'},
-         {me:0,t:'I can do the draw Thursday morning.',w:'N. Harding',at:'Yesterday 5:40 PM'}]},
-  {id:'th2', who:'Guardian on file', sub:'JW — dental appointment', role:'Guardian', last:'Thanks for the update.', unread:0,
-   msgs:[{me:1,t:'JW has a cleaning today at 2pm. Maria is taking him and will message after.',w:'You',at:'Today 8:05 AM'},
-         {me:0,t:'Thanks for the update.',w:'Guardian (JW)',at:'Today 8:31 AM'}]},
-  {id:'th3', who:'Maple House team', sub:'Monthly supply count', role:'Group', last:'Count starts at 2pm, two staff needed.', unread:2,
-   msgs:[{me:1,t:'Count starts at 2pm, two staff needed.',w:'You',at:'Today 7:50 AM'}]}
+  {id:'th1', who:'Maria Reyes', sub:'J-402318 — transport for dental visit', role:'Staff', last:'Confirmed, I can take him at 1:30.', unread:1,
+   msgs:[{me:1,t:'J-402318 has a dental cleaning Friday at 2pm. Can you cover transport?',w:'Ezra',at:'Yesterday 3:20 PM'},
+         {me:0,t:'Confirmed, I can take him at 1:30.',w:'Maria Reyes',at:'Yesterday 4:05 PM'}]},
+  {id:'th2', who:'Guardian on file (J-402318)', sub:'J-402318 — visit summary', role:'Guardian', last:'Thank you for letting me know.', unread:0,
+   msgs:[{me:1,t:'Wanted to let you know the dental visit is booked for Friday afternoon. I will send a summary after.',w:'Ezra',at:'Today 8:05 AM'},
+         {me:0,t:'Thank you for letting me know.',w:'Guardian (J-402318)',at:'Today 8:31 AM'}]}
 ];
 
 const AUDIT = [
@@ -1291,7 +1317,7 @@ function openModal(title,body,foot){
 }
 
 /* ══════════════ AUTH + NAV ══════════════ */
-function signIn(role){
+function signIn(role){ loadNotifPrefs();
   state.role=role; state.view='home'; state.client=null;
   el('login').style.display='none'; el('app').classList.add('on');
   const m=ME[role];
@@ -1318,7 +1344,8 @@ function renderNav(){
   sideProg();
   const un=THREADS.reduce((a,t)=>a+t.unread,0);
   const mb=el('msgBadge'); if(mb){ mb.style.display=un?'grid':'none'; mb.textContent=un; }
-  const nd=el('notifDot'); if(nd){ nd.style.display=(un||INCIDENTS.some(i=>i.status!=='Closed')||TASKS.some(t=>t.stage==='Overdue'))?'block':'none'; }
+  const nd=el('notifDot'); if(nd){ const rem=(typeof upcomingReminders==='function')?upcomingReminders().length:0;
+    nd.style.display=(un||rem||INCIDENTS.some(i=>i.status!=='Closed')||TASKS.some(t=>t.stage==='Overdue'))?'block':'none'; }
 }
 function sideProg(){
   const cl=visibleClients().map(c=>c.id);
@@ -2059,7 +2086,8 @@ function viewCalendar(){
     <div><h1>${state.role==='family'?'Appointments':'Calendar'}</h1><div class="sub">${list.length} appointments${GCAL.connected?` · ${GCAL.events.length} from your Google Calendar`:''}</div></div>
     <div class="right">
       ${gcalReady()?(GCAL.connected
-        ?`<button class="btn ghost sm" onclick="gcalDisconnect()">Google ✓ · Disconnect</button>`
+        ?`<button class="btn ghost sm" onclick="gcalFetch()" title="Pull the latest events from Google">${GCAL.loading?'Refreshing…':'⟳ Refresh Google'}</button>
+           <button class="btn ghost sm" onclick="gcalDisconnect()">Google ✓ · Disconnect</button>`
         :`<button class="btn gold sm" onclick="gcalConnect()">${GCAL.loading?'Connecting…':'Connect Google Calendar'}</button>`):''}
       ${state.role==='director'?`<button class="btn ghost sm" onclick="toggleSample()" title="Show or hide the seeded sample appointments">${state.hideSample?'Show sample data':'Hide sample data'}</button>`:''}
       <div class="tabs"><button class="${state.calMode==='today'?'active':''}" onclick="state.calMode='today';render()">Today</button>
@@ -4359,8 +4387,64 @@ function uploadDoc(cid,cat){
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="closeAll();toast('Document uploaded and logged.')">Upload</button>`);
 }
 
+/* v5.7: 24-hour reminders for upcoming appointments */
+const NOTIF_PREFS={ lead:24, inapp:true, email:false, sms:false, emailTo:'', smsTo:'' };
+function loadNotifPrefs(){
+  try{ const raw=lsGet('np_notif_prefs'); if(raw) Object.assign(NOTIF_PREFS,JSON.parse(raw)); }catch(e){}
+}
+function saveNotifPrefs(){
+  ['inapp','email','sms'].forEach(k=>{ const e=el('np_'+k); if(e) NOTIF_PREFS[k]=e.checked; });
+  const l=el('np_lead'); if(l) NOTIF_PREFS.lead=parseInt(l.value,10)||24;
+  const em=el('np_emailTo'); if(em) NOTIF_PREFS.emailTo=em.value.trim();
+  const sm=el('np_smsTo'); if(sm) NOTIF_PREFS.smsTo=sm.value.trim();
+  lsSet('np_notif_prefs',JSON.stringify(NOTIF_PREFS));
+  // hand the schedule to the automation backend so email/SMS can go out server-side
+  n8nHook(BACKEND.notifyWebhook,{event:'reminder.prefs',prefs:NOTIF_PREFS,user:ME[state.role].name,upcoming:upcomingReminders()});
+  logAudit('Updated reminder settings',`${NOTIF_PREFS.lead}h · ${['in-app'].concat(NOTIF_PREFS.email?['email']:[],NOTIF_PREFS.sms?['text']:[]).join(', ')}`);
+  closeAll(); render(); toast('Reminder settings saved.');
+}
+function upcomingReminders(){
+  const lead=(NOTIF_PREFS.lead||24)*60*60*1000;
+  const now=new Date(); const out=[];
+  const cl=visibleClients().map(c=>c.id);
+  const add=(when,label,sub,id)=>{
+    const diff=when-now;
+    if(diff>0&&diff<=lead) out.push({t:label,s:sub,when,id,
+      at:'in '+(diff<3600000?Math.max(1,Math.round(diff/60000))+' min':Math.round(diff/3600000)+' h')});
+  };
+  APPTS.filter(a=>!a.cancelled&&cl.includes(a.cid)).forEach(a=>
+    add(new Date(a.date+'T'+a.time+':00'), `${a.title} — ${client(a.cid).init} (${client(a.cid).uci})`,
+      `${fmtDate(a.date)} at ${hm12(a.time)}${a.loc?' · '+a.loc:''}${a.flag?' · flag: '+a.flag:''}`, a.id));
+  if(GCAL.connected) GCAL.events.filter(g=>!g.allday).forEach(g=>
+    add(new Date(g.date+'T'+g.time+':00'), g.title, `${fmtDate(g.date)} at ${hm12(g.time)} · Google Calendar`, g.id));
+  return out.sort((a,b)=>a.when-b.when);
+}
+function openReminderPrefs(){
+  const row=(k,lb,sub)=>`<label class="checkrow" style="border-color:var(--line);cursor:pointer" onclick="var c=el('np_${k}');c.checked=!c.checked;render_np()">
+    <input type="checkbox" id="np_${k}" ${NOTIF_PREFS[k]?'checked':''} style="width:16px;height:16px" onclick="event.stopPropagation()">
+    <div class="ct"><b>${lb}</b><div class="tiny muted">${sub}</div></div></label>`;
+  openModal('Appointment reminders',`
+    <div class="field"><label>Remind me this far ahead</label>
+      <select class="inp" id="np_lead">${[2,12,24,48].map(h=>`<option value="${h}" ${NOTIF_PREFS.lead===h?'selected':''}>${h} hours before</option>`).join('')}</select></div>
+    ${row('inapp','In the portal','Shows in the notifications bell — always on during the pilot.')}
+    ${row('email','Email me','Sent by the automation backend to the address below.')}
+    <div class="field"><label>Email address</label><input class="inp" id="np_emailTo" value="${esc(NOTIF_PREFS.emailTo||'')}" placeholder="ezra@meridiancare.org"></div>
+    ${row('sms','Text me','Sent by SMS. Needs a texting provider connected before it delivers.')}
+    <div class="field"><label>Mobile number</label><input class="inp" id="np_smsTo" value="${esc(NOTIF_PREFS.smsTo||'')}" placeholder="+1 555 0142"></div>
+    <div class="sec-note"><span>🔒</span><div><b>Client IDs only</b>Reminders name the appointment and the client ID — never a full name — so they are safe to send off-portal.</div></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveNotifPrefs()">Save reminders</button>`);
+}
+function render_np(){}
 function openAlerts(){
   const attn=attentionItems(); window._attn=attn;
+  const rem=upcomingReminders();
+  const remHtml=`<section class="card"><div class="card-h acc-gold"><h2>Upcoming appointments</h2>
+      <div class="sub">Next ${NOTIF_PREFS.lead||24} hours${NOTIF_PREFS.email?' · emailing '+esc(NOTIF_PREFS.emailTo||'you'):''}${NOTIF_PREFS.sms?' · texting '+esc(NOTIF_PREFS.smsTo||'you'):''}</div>
+      <div class="right"><button class="btn ghost sm" onclick="closeAll();openReminderPrefs()">⚙ Reminders</button></div></div>
+    <div class="card-b flush">${rem.length?rem.map(r=>`<div class="attn" onclick="closeAll();go('calendar')">
+      <div class="ai info">◷</div><div class="at"><b>${esc(r.t)}</b><span>${esc(r.s)}</span></div>
+      <div class="aa">${esc(r.at)}</div></div>`).join('')
+      :`<div class="empty">Nothing in the next ${NOTIF_PREFS.lead||24} hours.</div>`}</div></section>`;
   const un=THREADS.filter(t=>t.unread);
   const msgHtml=un.length?`<section class="card"><div class="card-h"><h2>Messages & questions</h2><div class="right"><span class="pill bad">${un.reduce((a,t)=>a+t.unread,0)} unread</span></div></div>
     <div class="card-b flush">${un.map(t=>`<div class="attn" onclick="closeAll();state.thread='${t.id}';t_unread('${t.id}');go('messages')">
@@ -4369,8 +4453,8 @@ function openAlerts(){
   const sysHtml=SYS_NOTIFS.length?`<section class="card"><div class="card-h acc-navy"><h2>System notifications</h2><div class="sub">Delivered by the portal's automation backend</div></div>
     <div class="card-b flush">${SYS_NOTIFS.map(n=>`<div class="attn"><div class="ai ${n.k==='bad'?'bad':'info'}">◈</div>
     <div class="at"><b>${esc(n.t)}</b><span>${esc(n.s)} · ${esc(n.at)}</span></div></div>`).join('')}</div></section>`:'';
-  openDrawer('Notifications',`${un.length?un.reduce((a,t)=>a+t.unread,0)+' unread messages · ':''}${attn.length} items need attention`,
-    sysHtml+msgHtml+(attn.length?attn.map((a,i)=>`<div class="card" style="margin-bottom:10px"><div class="attn" style="border:none" onclick="closeAll();_attn[${i}].go()">
+  openDrawer('Notifications',`${rem.length?rem.length+' upcoming · ':''}${un.length?un.reduce((a,t)=>a+t.unread,0)+' unread messages · ':''}${attn.length} items need attention`,
+    remHtml+sysHtml+msgHtml+(attn.length?attn.map((a,i)=>`<div class="card" style="margin-bottom:10px"><div class="attn" style="border:none" onclick="closeAll();_attn[${i}].go()">
       <div class="ai ${a.k}">${a.ic}</div><div class="at"><b>${a.t}</b><span>${a.s}</span></div></div></div>`).join('')
     :(un.length?'':'<div class="empty"><b>All clear</b>Nothing needs your attention right now.</div>')),
     `<button class="btn ghost" onclick="closeAll()">Close</button>`);
@@ -4389,6 +4473,10 @@ function openSettings(){
       <div class="row2"><div class="field"><label>New password</label><input class="inp" type="password"></div>
       <div class="field"><label>Confirm</label><input class="inp" type="password"></div></div>
       <div class="sec-note"><span>🔒</span><div><b>Session timeout</b>You are signed out after 15 minutes of inactivity on shared workstations.</div></div>
+    </div></section>
+    <section class="card"><div class="card-h"><h2>Notifications</h2><div class="sub">Appointment reminders and how they reach you</div></div><div class="card-b">
+      <div class="tiny muted" style="margin-bottom:8px">Currently: ${NOTIF_PREFS.lead||24} hours ahead · ${['in the portal'].concat(NOTIF_PREFS.email?['email']:[],NOTIF_PREFS.sms?['text']:[]).join(', ')}</div>
+      <button class="btn ghost sm" onclick="closeAll();openReminderPrefs()">⚙ Reminder settings</button>
     </div></section>
     <section class="card"><div class="card-h"><h2>Switch role</h2><div class="sub">Demo only</div></div><div class="card-b">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
