@@ -1263,7 +1263,7 @@ body{font-size:15px}
   }
 #welRoot .inp::placeholder{color:#A9B4AF}
 #welRoot .inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 13%,transparent)}
-#welRoot .hint{font-size:12.5px;color:var(--muted);margin:9px 0 0}
+#welRoot .hint{font-size:12.5px;color:var(--muted);margin:9px 0 18px;position:relative;z-index:0}
 #welRoot .fld-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 9px}
 #welRoot .fld-row label{margin:0}
 #welRoot .opt-tag{
@@ -1272,7 +1272,9 @@ body{font-size:15px}
   }
 #welRoot .url-wrap{position:relative;display:flex;align-items:center}
 #welRoot .url-pre{
-    position:absolute;left:16px;font-size:15px;color:var(--muted);pointer-events:none;
+    position:absolute;left:0;top:1px;bottom:1px;display:flex;align-items:center;
+    padding:0 4px 0 16px;border-radius:12px 0 0 12px;background:#fff;z-index:1;
+    font-size:15px;color:var(--muted);pointer-events:none;
     font-family:"IBM Plex Mono",monospace;letter-spacing:.01em;
   }
 #welRoot .url-wrap .inp{padding-left:74px;font-family:"IBM Plex Mono",monospace;font-size:15px;letter-spacing:.01em}
@@ -1611,7 +1613,7 @@ body{font-size:15px}
         <span class="muted" style="font-size:13px">⚙</span>
       </div>
       <div class="side-foot">
-        <span>Built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · pilot v7.0</span>
+        <span>Built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · pilot v7.1</span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="mailto:help@aiparagonconsulting.com?subject=Meridian%20Care%20Portal%20support">✉ Help & support</a>
       </div>
@@ -1677,6 +1679,16 @@ body{font-size:15px}
 </div>
 
 <script>
+/* ══ DEPLOY CONFIG — the ONLY block you edit when deploying ══
+   Paste the Supabase URL and anon key between the quotes below.
+   If a paste goes wrong, only this block fails and the portal
+   still boots (local mode) instead of dying silently. */
+window.NP_CONFIG = {
+  url: '',              // ← Supabase project URL, e.g. 'https://xxxx.supabase.co'
+  anon: ''              // ← Supabase anon key
+};
+</script>
+<script>
 /* ══════════════ DEMO DATA ══════════════ */
 const TODAY = new Date();
 const iso = d => d.toISOString().slice(0,10);
@@ -1689,15 +1701,17 @@ const T = iso(TODAY);
    Fill these in and the portal reads/writes the np-demo Supabase
    project and fires the np-demo n8n webhooks. Leave blank and it
    runs on local demo data exactly as before. */
-const BACKEND = {
-  url: '',              // ← paste the shared Supabase project URL (https://xxxx.supabase.co)
-  anon: '',             // ← paste the Supabase anon key
-  incidentWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-incident',   // LIVE — writes to np_demo_notifications
-  calendarWebhook: '',   // v5.6: the portal now pushes to Google directly (gcalPush) — no relay needed
-  notifyWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-reminders',   // email/SMS reminders (needs Gmail/Twilio cred)   // goes live once Google Calendar cred is added + workflow published
-  askWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-ask',             // goes live once Anthropic key is added + workflow published
+/* v7.1: config lives in its own <script> block just above — a paste typo there
+   can no longer take the whole app down. Missing/broken config falls back to
+   these defaults and the portal runs in local mode. */
+const BACKEND = Object.assign({
+  url: '', anon: '',
+  incidentWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-incident',
+  calendarWebhook: '',
+  notifyWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-reminders',
+  askWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-ask',
   googleClientId: '665621800801-pbruv525a3kcrq5oa64p9rvh1mg7pt6c.apps.googleusercontent.com'
-};
+}, (typeof window!=='undefined' && window.NP_CONFIG) || {});
 let SYS_NOTIFS=[];
 
 /* ══════════════ GOOGLE CALENDAR (client-side OAuth, nothing stored) ══════════════ */
@@ -7281,6 +7295,12 @@ document.addEventListener('keydown',e=>{
   function sync(){ btn.disabled = input.value.trim().length < 2; }
 
   input.addEventListener('input', sync);
+  /* v7.1: pasted URLs are cleaned immediately, not just on blur — no more
+     "https://" doubling up under the field prefix */
+  url.addEventListener('input', function(){
+    if(/^https?:\/\/|^www\./i.test(url.value)) url.value = cleanDomain(url.value);
+  });
+  url.addEventListener('paste', function(){ setTimeout(function(){ url.value = cleanDomain(url.value); url.dispatchEvent(new Event('blur')); }, 0); });
   url.addEventListener('blur', function(){
     var d = cleanDomain(url.value);
     url.value = d;
