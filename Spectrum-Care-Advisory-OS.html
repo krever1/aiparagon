@@ -1618,7 +1618,7 @@ body{font-size:15px}
         <span class="muted" style="font-size:13px">⚙</span>
       </div>
       <div class="side-foot">
-        <span>Built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · pilot v7.6</span>
+        <span>Built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · pilot v7.7</span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="mailto:support@aiparagonconsulting.com?subject=Spectrum%20Care%20Advisory%20OS%20support">✉ Help & support</a>
       </div>
@@ -2613,6 +2613,16 @@ function tlfRefresh(){ const f=el('tlFull'); if(f){ f.querySelector('.tlf-b').in
 
 const TL={s:360,e:1320,hw:68,lab:156};
 const tlPx=hm=>Math.max(0,Math.min(TL.e-TL.s,toMin(hm)-TL.s))/60*TL.hw;
+const tlTextW=t=>String(t==null?'':t).replace(/<[^>]*>/g,'').length*6.2+20;   // lane-mode glyph width + padding
+function packBars(bars,gutter){                        // assigns .top so nothing overlaps on screen
+  const ends=[]; const g=gutter==null?6:gutter;
+  bars.slice().sort((a,b)=>a.l-b.l).forEach(b=>{
+    const w=Math.max(b.w||0,tlTextW(b.txt));
+    let r=0; while(ends[r]!=null && ends[r]>b.l-g) r++;
+    ends[r]=b.l+w; b.top=r*21;
+  });
+  return ends.length||1;
+}
 const tlBar=(b)=>`<button class="tl-bar ${b.cls}" style="left:${b.l}px;width:${b.w}px${b.top!=null?';top:'+b.top+'px':''}" title="${esc(b.tip||b.txt)}" ${b.attrs||''} onclick="${b.on}">${b.txt}</button>`;
 
 function tlCard(full){
@@ -2639,18 +2649,18 @@ function tlCard(full){
   // one lane pass across BOTH kinds — overlapping bars stack first-on-top, next below
   const _all=[..._todays.map(a=>({k:'p',o:a})),..._gtoday.map(g=>({k:'g',o:g}))]
     .sort((x,y)=>String(x.o.time).localeCompare(String(y.o.time)));
-  const _row={};
-  _all.forEach(e=>{ const st=toMin(e.o.time), en=st+(e.o.dur||30); let r=0;
-    while((_row['r'+r]||0)>st) r++; _row['r'+r]=en; e.o._lane=r; });
-  const _lanes=Object.keys(_row).length||1;
-  const apptBars=_all.map(e=>{ const o=e.o;
-    if(e.k==='p') return tlBar({l:tlPx(o.time),w:Math.max(150,o.dur/60*TL.hw),cls:o.flag?'b-flag':'b-appt',top:o._lane*21,
-      txt:`${o.flag?'⚑ ':''}${hm12(o.time).replace(' ','').toLowerCase()} · ${esc(client(o.cid).init)} ${esc(o.title)}`,
-      tip:`${o.title} — ${client(o.cid).name} at ${hm12(o.time)}${o._lane?' · overlaps another appointment':''}`,on:`openAppt('${o.id}')`});
-    return tlBar({l:tlPx(o.time),w:Math.max(150,o.dur/60*TL.hw),cls:'b-gcal',top:o._lane*21,
-      txt:`${hm12(o.time).replace(' ','').toLowerCase()} · G · ${o.cid?esc(client(o.cid).init)+' ':''}${esc(o.title)}`,
-      tip:`${o.title} — your Google Calendar at ${hm12(o.time)}${o.cid?' · '+client(o.cid).uci:''}`,on:`openAppt('${o.id}')`});
-  }).join('');
+  const _bars=_all.map(e=>{ const o=e.o;
+    return e.k==='p'
+      ? {l:tlPx(o.time),w:Math.max(150,o.dur/60*TL.hw),cls:o.flag?'b-flag':'b-appt',_o:o,
+         txt:`${o.flag?'⚑ ':''}${hm12(o.time).replace(' ','').toLowerCase()} · ${esc(client(o.cid).init)} ${esc(o.title)}`,
+         tip:`${o.title} — ${client(o.cid).name} at ${hm12(o.time)}`,on:`openAppt('${o.id}')`}
+      : {l:tlPx(o.time),w:Math.max(150,o.dur/60*TL.hw),cls:'b-gcal',_o:o,
+         txt:`${hm12(o.time).replace(' ','').toLowerCase()} · G · ${o.cid?esc(client(o.cid).init)+' ':''}${esc(o.title)}`,
+         tip:`${o.title} — your Google Calendar at ${hm12(o.time)}${o.cid?' · '+client(o.cid).uci:''}`,on:`openAppt('${o.id}')`};
+  });
+  const _lanes=packBars(_bars);
+  _bars.forEach(b=>{ b._o._lane=b.top/21; if(b.top) b.tip+=' · stacked below an overlapping item'; });
+  const apptBars=_bars.map(tlBar).join('');
 
   let rows=[
 
@@ -2688,15 +2698,17 @@ function tlCard(full){
       if(tlState.kind!=='meds') APPTS.filter(a=>(!state.hideSample||!isSampleAppt(a))&&a.cid===c.id&&a.date===D&&!a.cancelled).forEach(a=>bars.push({l:tlPx(a.time),w:Math.max(150,a.dur/60*TL.hw),
         cls:a.flag?'b-flag':'b-appt',txt:`${a.flag?'⚑ ':''}${hm12(a.time).replace(' ','').toLowerCase()} · ${esc(a.title)}`,
         tip:`${a.title} at ${hm12(a.time)} · ${a.loc}`,on:`openAppt('${a.id}')`}));
+      const cLanes=packBars(bars);
       rows.push({dot:c.tag==='gr'?'#C9A84C':'#3A6EA5',lab:esc(c.name),sub:esc(c.home),bars:bars.map(tlBar).join(''),
-        on:`openClient('${c.id}')`});
+        lane:cLanes>1,h:cLanes>1?(cLanes*21+8):null, on:`openClient('${c.id}')`});
     });
     if(GCAL.connected && tlState.kind!=='meds'){
       rows.push({group:'Your Google Calendar'});
       const gb=GCAL.events.filter(g=>g.date===D&&!g.allday).map(g=>({l:tlPx(g.time),w:Math.max(150,g.dur/60*TL.hw),cls:'b-gcal',
         txt:`${hm12(g.time).replace(' ','').toLowerCase()} · ${g.cid?esc(client(g.cid).init)+' ':''}${esc(g.title)}`,
         tip:`${g.title} · your Google Calendar${g.loc?' · '+g.loc:''}`,on:`openAppt('${g.id}')`}));
-      rows.push({dot:'#4285F4',lab:'Google',sub:'connected calendar',
+      const gLanes=packBars(gb);
+      rows.push({dot:'#4285F4',lab:'Google',sub:'connected calendar',lane:gLanes>1,h:gLanes>1?(gLanes*21+8):null,
         bars:gb.map(tlBar).join('')||'<span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:11.5px;color:var(--muted)">No Google events this day</span>'});
     }
     if(state.role!=='family'){
