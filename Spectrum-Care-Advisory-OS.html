@@ -6,7 +6,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,300;6..72,400&display=swap" rel="stylesheet">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Spectrum Care Advisory OS — Pilot</title>
+<title>Spectrum Care Advisory OS — Beta</title>
 <style>
 :root{
   /* v6.0 — palette adopted from the onboarding: soft paper, deep green, quiet lines */
@@ -1618,7 +1618,7 @@ body{font-size:15px}
         <span class="muted" style="font-size:13px">⚙</span>
       </div>
       <div class="side-foot">
-        <span>Built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · pilot v7.8</span>
+        <span>Built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · v8.0 beta</span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="mailto:support@aiparagonconsulting.com?subject=Spectrum%20Care%20Advisory%20OS%20support">✉ Help & support</a>
       </div>
@@ -3016,7 +3016,7 @@ function viewClients(){
   <section class="card">
     <div class="card-b flush">
       <table class="tb">
-        <thead><tr><th>Client</th><th>Home</th><th>Service</th><th>Active meds</th><th>Next appointment</th><th>Alerts</th></tr></thead>
+        <thead><tr><th>Client</th><th>Home</th><th>Service</th><th>Active meds</th><th>Next appointment</th><th>Alerts</th>${state.role==='director'?'<th></th>':''}</tr></thead>
         <tbody>${cl.map(c=>{
           const meds=MEDS.filter(m=>m.cid===c.id&&m.status==='active').length;
           const nx=APPTS.filter(a=>a.cid===c.id&&a.date>=T).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time))[0];
@@ -3027,6 +3027,7 @@ function viewClients(){
             <td>${meds}</td>
             <td>${nx?`${relDay(nx.date)} ${hm12(nx.time)}`:'<span class="muted">—</span>'}</td>
             <td>${c.alerts.length?c.alerts.map(a=>`<span class="pill bad">${esc(a)}</span>`).join(' '):'<span class="muted">—</span>'}</td>
+            ${state.role==='director'?`<td style="text-align:right"><button class="btn ghost sm" onclick="event.stopPropagation();delClient('${c.id}')" title="Delete">✕</button></td>`:''}
           </tr>`;
         }).join('')}</tbody>
       </table>
@@ -3051,6 +3052,7 @@ function viewClient(id){
     <div class="right">
       <button class="btn ghost" onclick="openIncidentForm('${c.id}')">Report incident</button>
       <button class="btn navy" onclick="exportOne('${c.id}')">Export record</button>
+      ${state.role==='director'?`<button class="btn danger" onclick="delClient('${c.id}')">Delete client</button>`:''}
     </div>
   </div>
   ${c.alerts.length?`<div class="sec-note" style="background:var(--bad-soft);border-color:#F0CBC7;color:#8C312B;margin-bottom:14px"><span>⚠</span><div><b>Standing alerts</b>${c.alerts.join(' · ')}</div></div>`:''}
@@ -3211,7 +3213,8 @@ function clientMeds(c){
 function docRow(d){
   return `<div class="docrow"><div class="di">${d.n.split('.').pop().toUpperCase().slice(0,4)}</div>
   <div class="dt"><b>${esc(d.n)}</b><span>${esc(d.cat)} · uploaded by ${esc(d.by)} · ${fmtDate(d.at)} · ${d.s}</span></div>
-  <button class="btn ghost sm" onclick="event.stopPropagation();toast('Opening ${esc(d.n)}')">Open</button></div>`;
+  <button class="btn ghost sm" onclick="event.stopPropagation();toast('Opening ${esc(d.n)}')">Open</button>
+  ${state.role==='director'?`<button class="btn ghost sm" onclick="event.stopPropagation();delDoc('${d.cid||''}',${JSON.stringify(d.n)})" title="Delete">✕</button>`:''}</div>`;
 }
 
 function clientAppts(c){
@@ -3465,11 +3468,23 @@ function viewTasks(){
     <td style="text-align:right"><span class="pill ok">Done</span></td></tr>`).join('')||'<tr><td class="empty">Nothing completed yet.</td></tr>'}</tbody></table></div>
   </section>`;
 }
-function filterStaffTasks(sid){ openDrawer(`${esc(staff(sid).name)}`,`${esc(staff(sid).role)} · ${esc(staff(sid).home)}`,
-  `<table class="tb" style="background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden">
-   <tbody>${TASKS.filter(t=>t.sid===sid).map(t=>`<tr><td><b>${esc(t.title)}</b><div class="tiny muted">Due ${relDay(t.due)}</div></td>
-   <td style="text-align:right"><span class="pill ${t.stage==='Done'?'ok':t.stage==='Overdue'?'bad':'info'}">${t.stage}</span></td></tr>`).join('')}</tbody></table>`,
-  `<button class="btn ghost" onclick="closeAll()">Close</button>`); }
+function filterStaffTasks(sid){
+  const mine=TASKS.filter(t=>t.sid===sid);
+  const open=mine.filter(t=>t.stage!=='Done'), done=mine.filter(t=>t.stage==='Done');
+  const row=t=>`<div class="docrow" style="cursor:pointer" onclick="closeAll();openTask('${t.id}')">
+    <div class="di">${t.stage==='Done'?'✓':'☑'}</div>
+    <div class="dt"><b>${esc(t.title)}</b><span>Due ${relDay(t.due)} · ${t.cat||'Agency'}${t.signoff?' · signed off by '+esc(t.signoff.by):''}</span></div>
+    <span class="pill ${t.stage==='Done'?'ok':t.stage==='Overdue'?'bad':'info'}">${t.stage}</span>
+    ${state.role==='director'&&t.stage!=='Done'?`<button class="btn ghost sm" onclick="event.stopPropagation();removeTask('${t.id}',false)" title="Remove">✕</button>`:''}</div>`;
+  openDrawer(esc(staff(sid).name),`${esc(staff(sid).role)} · ${esc(staff(sid).home)}`,`
+    <section class="card"><div class="card-h"><h2>Open tasks</h2><div class="sub">Click any task to open it</div>
+      ${state.role==='director'?`<div class="right"><button class="btn navy sm" onclick="window._qtFrom='tasks';quickTaskFor('${sid}')">＋ Task</button></div>`:''}</div>
+      <div class="card-b flush">${open.map(row).join('')||'<div class="empty">Nothing open right now.</div>'}</div></section>
+    ${done.length?`<section class="card"><div class="card-h"><h2>Completed (${done.length})</h2></div>
+      <div class="card-b flush">${done.map(row).join('')}</div></section>`:''}`,
+    `<button class="btn ghost" onclick="closeAll()">Close</button>
+     ${state.role==='director'?`<button class="btn navy" onclick="closeAll();openStaff('${sid}')">Open full record →</button>`:''}`);
+}
 
 /* ══════════════ ATTENDANCE & BILLING ══════════════ */
 function viewBilling(){
@@ -3571,13 +3586,14 @@ function viewIncidents(){
       <section class="card">
         <div class="card-h"><h2>Reports</h2></div>
         <div class="card-b flush"><table class="tb">
-          <thead><tr><th>Type</th><th>Client</th><th>When</th><th>Severity</th><th>Status</th><th>Reported by</th></tr></thead>
+          <thead><tr><th>Type</th><th>Client</th><th>When</th><th>Severity</th><th>Status</th><th>Reported by</th>${state.role==='director'?'<th></th>':''}</tr></thead>
           <tbody>${list.map(i=>`<tr class="click" onclick="openIncident('${i.id}')">
             <td><b>${esc(i.type)}</b></td><td>${esc(client(i.cid).name)}</td>
             <td>${relDay(i.date)} ${hm12(i.time)}</td>
             <td><span class="pill ${i.sev==='Moderate'?'warn':'neutral'}">${i.sev}</span></td>
             <td><span class="pill ${i.status==='Closed'?'ok':'bad'}">${i.status}</span>${i.hoursLeft?`<div class="tiny" style="color:var(--bad);font-weight:700;margin-top:3px">⏱ ${i.hoursLeft}h to report</div>`:''}</td>
-            <td>${i.by}</td></tr>`).join('')}</tbody></table></div>
+            <td>${i.by}</td>
+            ${state.role==='director'?`<td style="text-align:right"><button class="btn ghost sm" onclick="event.stopPropagation();delIncident('${i.id}')" title="Delete">✕</button></td>`:''}</tr>`).join('')}</tbody></table></div>
       </section>
     </div>
     <div>
@@ -3647,6 +3663,7 @@ function viewTeam(){
           <span>${t.mins} min${t.due?` · due ${esc(t.due)}`:''} · ${appl.filter(s=>t.done.includes(s.id)).length}/${appl.length} complete${t.link?' · link attached':''}${t.files?` · ${t.files} file${t.files>1?'s':''}`:''}</span></div>
         ${t.link?`<a class="btn ghost sm" href="${t.link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open link ↗</a>`:''}
         <button class="btn ghost sm" onclick="event.stopPropagation();openCourse('${t.id}')">Who's assigned</button>
+        ${state.role==='director'?`<button class="btn ghost sm" onclick="event.stopPropagation();delCourse('${t.id}')" title="Delete">✕</button>`:''}
         ${t.req?'':`<button class="btn ghost sm" onclick="event.stopPropagation();assignTraining('${t.id}')">Assign</button>`}</div>`;
       }).join('')}
     </div>
@@ -3659,7 +3676,8 @@ function viewTeam(){
       <div class="docrow" style="cursor:pointer" onclick="openGuide(${gi})"><div class="di">▤</div>
       <div class="dt"><b>${esc(g.t)}</b><span>${esc(g.r)} · ${n} of ${tot} acknowledged</span></div>
       <span class="pill ${ok?'ok':'warn'}">${ok?'Current':'Chase'}</span>
-      <button class="btn ghost sm" onclick="event.stopPropagation();guideRemindAll(${gi})">Remind</button></div>`;}).join('')}</div>
+      <button class="btn ghost sm" onclick="event.stopPropagation();guideRemindAll(${gi})">Remind</button>
+      ${state.role==='director'?`<button class="btn ghost sm" onclick="event.stopPropagation();delGuide(${gi})" title="Delete">✕</button>`:''}</div>`;}).join('')}</div>
   </section>
 
   <section class="card">
@@ -3861,6 +3879,67 @@ function saveAssignTraining(tid){
   logAudit('Assigned training',`${t.n} → ${t.asg.map(id=>staff(id).init).join(', ')||'no one'}`);
   closeAll(); renderNav(); render(); toast('Assignment saved and staff notified.');
 }
+function certForm(sid){
+  openModal('Add certification — '+esc(staff(sid).name),`
+    <div class="field"><label>Certification</label><input class="inp" id="cfName" placeholder="e.g. CPR / First Aid"></div>
+    <div class="row2">
+      <div class="field"><label>Expires <span class="tiny muted">leave blank if it does not expire</span></label><input class="inp" type="date" id="cfExp"></div>
+      <div class="field"><label>Reference <span class="tiny muted">optional</span></label><input class="inp" id="cfRef" placeholder="Certificate number or issuer"></div>
+    </div>
+    <div class="tiny muted">Anything expiring within 90 days is flagged Due soon, and past its date it shows Expired.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveCert('${sid}')">Add certification</button>`);
+}
+function saveCert(sid){
+  const n=(el('cfName').value||'').trim(); if(!n) return toast('Name the certification.');
+  const exp=el('cfExp').value, ref=(el('cfRef').value||'').trim();
+  const st=!exp?'ok':(exp<T?'bad':(new Date(exp)-new Date(T))/864e5<90?'warn':'ok');
+  (CREDS[sid]=CREDS[sid]||[]).push({c:n,d:exp?'Expires '+fmtDate(exp):(ref||'On file'),s:st});
+  sbPush('np_demo_credentials',{sid,cred_name:n,expires_on:exp||null,label:exp?null:(ref||'On file'),status:exp?null:st});
+  logAudit('Added certification',`${staff(sid).init} · ${n}`);
+  if(st!=='ok') pingStaff(sid,'Certification needs attention',n);
+  closeAll(); openStaff(sid); render();
+  toast(st==='bad'?'Added — it is already past its date.':st==='warn'?'Added — flagged due soon.':'Certification added.');
+}
+function removeCred(sid,i){
+  const c=(CREDS[sid]||[])[i]; if(!c) return;
+  CREDS[sid].splice(i,1);
+  logAudit('Removed certification',`${staff(sid).init} · ${c.c}`);
+  openStaff(sid); render(); toast('Certification removed.');
+}
+function courseFormFor(sid){
+  const avail=TRAINING.filter(t=>!t.req&&!(t.asg||[]).includes(sid));
+  openModal('Add training — '+esc(staff(sid).name),`
+    ${avail.length?`<div class="field"><label>Assign an existing course</label>
+      <select class="inp" id="cxPick"><option value="">— pick from the library —</option>
+      ${avail.map(t=>`<option value="${t.id}">${esc(t.n)} · ${t.mins} min</option>`).join('')}</select>
+      <div class="tiny muted" style="margin-top:6px">Or create a new one below.</div></div>`:''}
+    <div class="field"><label>New course name</label><input class="inp" id="cxName" placeholder="e.g. Safe lifting refresher"></div>
+    <div class="row2">
+      <div class="field"><label>Length (minutes)</label><input class="inp" type="number" id="cxMins" value="30"></div>
+      <div class="field"><label>Link <span class="tiny muted">optional</span></label><input class="inp" id="cxLink" placeholder="https://…"></div>
+    </div>
+    <div class="tiny muted">New courses join the training library so you can assign them to anyone else later.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveCourseFor('${sid}')">Add and assign</button>`);
+}
+function saveCourseFor(sid){
+  const pick=el('cxPick')?el('cxPick').value:'';
+  const name=(el('cxName').value||'').trim();
+  if(!pick&&!name) return toast('Pick a course or name a new one.');
+  let course;
+  if(pick){ course=TRAINING.find(t=>t.id===pick); }
+  else {
+    course={id:'tr'+Date.now(), n:name, req:false, mins:+el('cxMins').value||30, done:[], asg:[], link:(el('cxLink').value||'').trim()};
+    TRAINING.push(course);
+    logAudit('Added training course',name);
+  }
+  course.asg=course.asg||[];
+  if(!course.asg.includes(sid)) course.asg.push(sid);
+  trainSave();
+  pingStaff(sid,'Training assigned',course.n);
+  logAudit('Assigned training',`${staff(sid).init} · ${course.n}`);
+  closeAll(); openStaff(sid); render();
+  toast(`${course.n} assigned to ${staff(sid).init}.`);
+}
 function staffCourseToggle(sid,tid){
   const t=TRAINING.find(x=>x.id===tid); t.asg=t.asg||[];
   const i=t.asg.indexOf(sid);
@@ -3875,11 +3954,129 @@ function staffCourseDone(sid,tid){
   else { t.done.push(sid); logAudit('Recorded training completion',`${staff(sid).init} · ${t.n}`); }
   trainSave(); openStaff(sid); render();
 }
+function delStaff(sid){
+  const st=staff(sid); if(!st) return;
+  askDelete('Delete '+st.name+'?','Their shifts, certifications and assigned tasks go with them. The change log keeps a record that it happened.',()=>{
+    const i=STAFF.findIndex(x=>x.id===sid); if(i>-1) STAFF.splice(i,1);
+    for(let j=SHIFTS.length-1;j>=0;j--) if(SHIFTS[j].sid===sid) SHIFTS.splice(j,1);
+    for(let j=TASKS.length-1;j>=0;j--) if(TASKS[j].sid===sid) TASKS.splice(j,1);
+    delete CREDS[sid];
+    sbDel('np_demo_staff','id=eq.'+encodeURIComponent(sid));
+    sbDel('np_demo_credentials','sid=eq.'+encodeURIComponent(sid));
+    sbDel('np_demo_shifts','staff_id=eq.'+encodeURIComponent(sid));
+    delMark('staff',sid);
+    logAudit('Deleted staff member',st.name);
+    closeAll(); state.view='team'; render(); toast(st.name+' deleted.');
+  },'Delete staff member');
+}
+function delClient(cid){
+  const c=client(cid); if(!c) return;
+  askDelete('Delete '+c.uci+'?','Their appointments, notes and weekly checklist are removed from the portal.',()=>{
+    const i=CLIENTS.findIndex(x=>x.id===cid); if(i>-1) CLIENTS.splice(i,1);
+    for(let j=APPTS.length-1;j>=0;j--) if(APPTS[j].cid===cid) APPTS.splice(j,1);
+    for(let j=DOCS.length-1;j>=0;j--) if(DOCS[j].cid===cid) DOCS.splice(j,1);
+    delete WEEKLY[cid]; delete CLIENT_NOTES[cid];
+    sbDel('np_demo_clients','id=eq.'+encodeURIComponent(cid));
+    sbDel('np_demo_appointments','cid=eq.'+encodeURIComponent(cid));
+    sbDel('np_demo_client_notes','cid=eq.'+encodeURIComponent(cid));
+    delMark('client',cid);
+    logAudit('Deleted client record',c.uci);
+    state.client=null; closeAll(); state.view='clients'; render(); toast(c.uci+' deleted.');
+  },'Delete client');
+}
+function delDoc(cid,name){
+  const i=DOCS.findIndex(d=>d.cid===cid&&d.n===name); if(i<0) return;
+  askDelete('Delete '+name+'?','The file is removed from this record.',()=>{
+    const d=DOCS.splice(i,1)[0];
+    sbDel('np_demo_documents','n=eq.'+encodeURIComponent(name));
+    delMark('doc',docKey(d));
+    logAudit('Deleted document',`${name}${cid?' · '+client(cid).uci:''}`);
+    render(); toast('Document deleted.');
+  },'Delete document');
+}
+function delTemplate(tid){
+  const t=TEMPLATES5.find(x=>x.id===tid); if(!t) return;
+  askDelete('Delete '+t.name+'?','The blank template is removed. Documents already filed from it stay in their binders.',()=>{
+    const i=TEMPLATES5.findIndex(x=>x.id===tid); if(i>-1) TEMPLATES5.splice(i,1);
+    delete TPL_ASSIGN[tid];
+    sbDel('np_demo_templates','id=eq.'+encodeURIComponent(tid));
+    delMark('template',tid);
+    logAudit('Deleted template',t.name);
+    render(); toast('Template deleted.');
+  },'Delete template');
+}
+function delDrill(i){
+  const d=FIREDRILLS[i]; if(!d) return;
+  askDelete('Delete this drill record?',`${d.home} · ${fmtDate(d.date)}. Licensing expects a complete log, so only remove entries made in error.`,()=>{
+    FIREDRILLS.splice(i,1);
+    sbDel('np_demo_fire_drills','drill_date=eq.'+encodeURIComponent(d.date)+'&home=eq.'+encodeURIComponent(d.home));
+    delMark('drill',drillKey(d));
+    logAudit('Deleted fire drill entry',`${d.home} · ${fmtDate(d.date)}`);
+    render(); toast('Drill entry deleted.');
+  },'Delete entry');
+}
+function delTemp(i){
+  const w=WATERTEMP[i]; if(!w) return;
+  askDelete('Delete this reading?',`${w.home} · ${w.temp}°F. Only remove readings entered in error.`,()=>{
+    WATERTEMP.splice(i,1);
+    sbDel('np_demo_water_temps','reading_date=eq.'+encodeURIComponent(w.date)+'&home=eq.'+encodeURIComponent(w.home));
+    delMark('temp',tempKey(w));
+    logAudit('Deleted water temperature reading',`${w.home} · ${fmtDate(w.date)}`);
+    render(); toast('Reading deleted.');
+  },'Delete reading');
+}
+function delIncident(id){
+  const inc=INCIDENTS.find(x=>x.id===id); if(!inc) return;
+  askDelete('Delete this incident?','The report and its follow-up are removed from the portal.',()=>{
+    const i=INCIDENTS.findIndex(x=>x.id===id); if(i>-1) INCIDENTS.splice(i,1);
+    sbDel('np_demo_incidents','id=eq.'+encodeURIComponent(id));
+    delMark('incident',id);
+    logAudit('Deleted incident report',String(id));
+    closeAll(); render(); toast('Incident deleted.');
+  },'Delete incident');
+}
+function delThread(id){
+  const th=THREADS.find(t=>t.id===id); if(!th) return;
+  askDelete('Delete this conversation?','Every message in the thread is removed for both sides.',()=>{
+    const i=THREADS.findIndex(t=>t.id===id); if(i>-1) THREADS.splice(i,1);
+    sbDel('np_demo_messages','thread_id=eq.'+encodeURIComponent(id));
+    sbDel('np_demo_threads','id=eq.'+encodeURIComponent(id));
+    delMark('thread',id);
+    logAudit('Deleted message thread',th.subject||th.who||'');
+    state.thread=THREADS[0]?THREADS[0].id:null; render(); toast('Conversation deleted.');
+  },'Delete conversation');
+}
+function delCourse(tid){
+  const t=TRAINING.find(x=>x.id===tid); if(!t) return;
+  askDelete('Delete '+t.n+'?','The course is removed from the library and from everyone it was assigned to.',()=>{
+    const i=TRAINING.findIndex(x=>x.id===tid); if(i>-1) TRAINING.splice(i,1);
+    trainSave(); delMark('course',tid);
+    logAudit('Deleted training course',t.n);
+    closeAll(); render(); toast('Course deleted.');
+  },'Delete course');
+}
+function delGuide(gi){
+  const g=GUIDES[gi]; if(!g) return;
+  askDelete('Delete '+g.t+'?','Acknowledgments recorded against it are removed too.',()=>{
+    GUIDES.splice(gi,1); guidesSave(); delMark('guide',g.t);
+    logAudit('Deleted readiness guide',g.t);
+    closeAll(); render(); toast('Guide deleted.');
+  },'Delete guide');
+}
+function clearChangeLog(){
+  askDelete('Clear the change log?','Every entry is removed from the portal and the database. Export it first if you need the history.',()=>{
+    AUDIT.length=0;
+    sbDel('np_demo_audit_log','id=gt.0');
+    DEL.auditClearedAt=new Date().toISOString(); delSave();
+    render(); toast('Change log cleared.');
+  },'Clear log');
+}
 function removeTask(id,reopenStaff){
   const i=TASKS.findIndex(x=>x.id===id); if(i<0) return;
   const t=TASKS[i]; TASKS.splice(i,1);
-  sbDel('np_demo_tasks',id);
-  logAudit('Removed task',`${t.title} · ${staff(t.sid)?staff(t.sid).init:''}`);
+  sbDel('np_demo_tasks','id=eq.'+encodeURIComponent(id));
+  delMark('task',id);
+  logAudit('Deleted task',`${t.title} · ${staff(t.sid)?staff(t.sid).init:''}`);
   if(reopenStaff&&staff(t.sid)) openStaff(t.sid); else closeAll();
   render(); toast('Task removed.');
 }
@@ -3892,6 +4089,7 @@ function quickTaskFor(sid){
     </div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveQuickTask('${sid}')">Assign task</button>`);
 }
+function quickTaskBack(sid){ (window._qtFrom==='tasks'?filterStaffTasks:openStaff)(sid); }
 function saveQuickTask(sid){
   const title=(el('qtTitle').value||'').trim(); if(!title) return toast('Name the task.');
   const id='t'+Date.now();
@@ -3899,19 +4097,23 @@ function saveQuickTask(sid){
   sbPush('np_demo_tasks',{id,title,sid,cid:null,due:el('qtDue').value||T,stage:'Not started',pri:el('qtPri').value,category:'Agency'});
   pingStaff(sid,'New task assigned',title);
   logAudit('Assigned task',`${staff(sid).init} · ${title}`);
-  closeAll(); openStaff(sid); render(); toast('Task assigned and '+staff(sid).init+' notified.');
+  closeAll(); quickTaskBack(sid); render(); toast('Task assigned and '+staff(sid).init+' notified.');
 }
 function openStaff(sid){
   const s=staff(sid);
   openDrawer(esc(s.name),`${esc(s.role)} · ${esc(s.home)}`,`
-    <section class="card"><div class="card-h"><h2>Certifications & renewals</h2><div class="sub">Attach the certificate so the record lives here</div></div><div class="card-b flush">
+    <section class="card"><div class="card-h"><h2>Certifications &amp; renewals</h2><div class="sub">Attach the certificate so the record lives here</div>
+      ${state.role==='director'?`<div class="right"><button class="btn navy sm" onclick="certForm('${sid}')">＋ Cert</button></div>`:''}</div><div class="card-b flush">
       ${(CREDS[sid]||[]).map((c,i)=>`<div class="docrow"><div class="di">${c.s==='ok'?'✓':'!'}</div>
       <div class="dt"><b>${esc(c.c)}</b><span>${esc(c.d)}${c.doc?` · <b>${esc(c.doc.n)}</b> uploaded ${esc(c.doc.at)} by ${esc(c.doc.by)}`:''}</span></div>
       <span class="pill ${c.s}">${c.s==='ok'?'Current':c.s==='warn'?'Due soon':'Expired'}</span>
       ${state.role==='director'?(c.doc?`<button class="btn ghost sm" onclick="toast('Opening ${esc(c.doc.n)}')">Open</button>`
-        :`<button class="btn ghost sm" onclick="attachCred('${sid}',${i})">Attach record</button>`):''}</div>`).join('')}
+        :`<button class="btn ghost sm" onclick="attachCred('${sid}',${i})">Attach record</button>`):''}
+      ${state.role==='director'?`<button class="btn ghost sm" onclick="removeCred('${sid}',${i})" title="Remove">✕</button>`:''}</div>`).join('')
+      ||'<div class="empty">No certifications recorded yet.</div>'}
     </div></section>
-    <section class="card"><div class="card-h"><h2>Training courses</h2><div class="sub">${state.role==='director'?'Assign, unassign or record completion':''}</div></div><div class="card-b flush">
+    <section class="card"><div class="card-h"><h2>Training courses</h2><div class="sub">${state.role==='director'?'Assign, unassign or record completion':''}</div>
+      ${state.role==='director'?`<div class="right"><button class="btn navy sm" onclick="courseFormFor('${sid}')">＋ Course</button></div>`:''}</div><div class="card-b flush">
       ${TRAINING.map(t=>{const done=t.done.includes(sid),asg=(t.asg||[]).includes(sid);return `<div class="checkrow"><div class="cb ${done?'on':''}">✓</div>
       <div class="ct">${esc(t.n)}${t.req?' <span class="pill neutral">Required</span>':asg?' <span class="pill info">Assigned</span>':''}</div>
       <span class="tiny muted">${done?'Current':`${t.mins} min`}</span>
@@ -3921,12 +4123,14 @@ function openStaff(sid){
       </div>`;}).join('')}
     </div></section>
     <section class="card"><div class="card-h"><h2>Assigned tasks</h2>
-      ${state.role==='director'?`<div class="right"><button class="btn navy sm" onclick="quickTaskFor('${sid}')">＋ Task</button></div>`:''}</div><div class="card-b flush">
+      ${state.role==='director'?`<div class="right"><button class="btn navy sm" onclick="window._qtFrom='staff';quickTaskFor('${sid}')">＋ Task</button></div>`:''}</div><div class="card-b flush">
       ${TASKS.filter(t=>t.sid===sid).map(t=>`<div class="docrow" style="cursor:pointer" onclick="closeAll();openTask('${t.id}')"><div class="di">${t.stage==='Done'?'✓':'☑'}</div>
       <div class="dt"><b>${esc(t.title)}</b><span>Due ${relDay(t.due)} · ${t.stage}</span></div>
       ${state.role==='director'&&t.stage!=='Done'?`<button class="btn ghost sm" onclick="event.stopPropagation();removeTask('${t.id}',true)">✕</button>`:''}</div>`).join('')||'<div class="empty">No tasks assigned.</div>'}
     </div></section>`,
-    `<button class="btn ghost" onclick="closeAll()">Close</button><button class="btn navy" onclick="closeAll();toast('Training reminder sent.')">Send reminder</button>`);
+    `<button class="btn ghost" onclick="closeAll()">Close</button>
+     ${state.role==='director'?`<button class="btn danger" onclick="delStaff('${sid}')">Delete staff</button>`:''}
+     <button class="btn navy" onclick="closeAll();toast('Training reminder sent.')">Send reminder</button>`);
 }
 
 /* ══════════════ MESSAGES ══════════════ */
@@ -3944,6 +4148,7 @@ function viewMessages(){
           <span class="av-sm ${t.role==='Guardian'?'g':t.role==='Group'?'gr':''}">${t.who.split(' ').map(w=>w[0]).slice(0,2).join('')}</span>
           <div class="tt"><b>${esc(t.who)}</b><span>${esc(t.sub)}</span><span class="tiny">${esc(t.last)}</span></div>
           ${t.unread?`<span class="badge" style="background:var(--bad);color:#fff;border-radius:20px;font-size:10.5px;font-weight:700;padding:1px 6px;height:17px">${t.unread}</span>`:''}
+          ${state.role==='director'?`<span class="btn ghost sm" style="padding:0 7px" onclick="event.stopPropagation();delThread('${t.id}')" title="Delete conversation">✕</span>`:''}
         </button>`).join('')}
       </div>
       <div>
@@ -4137,6 +4342,7 @@ function viewForms(){
         <button class="btn navy sm" onclick="tplOpenDoc('${t.id}')">Open &amp; fill</button>
         <button class="btn gold sm" onclick="openTplEditor('${t.id}')">Edit template</button>
         ${state.role==='director'?`<button class="btn ghost sm" onclick="tplAssign('${t.id}')">Assign</button>`:''}
+        ${state.role==='director'?`<button class="btn ghost sm" onclick="delTemplate('${t.id}')" title="Delete">✕</button>`:''}
         <button class="btn ghost sm" onclick="logAudit('Printed template',tplById('${t.id}').name);docAct('printed',tplById('${t.id}').name,'Templates');printSheet(tplPrintHtml('${t.id}'))">Print blank</button></div>`;
       }).join('')}
     </div>
@@ -4184,7 +4390,8 @@ function viewStaffFiles(){
             ${bad?`· <span class="pill bad">${bad} expired</span>`:''}${warn?`· <span class="pill warn">${warn} needs attention</span>`:''}</span></div>
           <button class="btn ghost sm" onclick="openStaffPage('${st.id}')">Open</button>
           <button class="btn ghost sm" onclick="printSheet(staffPacket('${st.id}'));docAct('printed','Staff file — '+'${esc(st.init)}','Staff folder')">Print file</button>
-          <button class="btn ghost sm" onclick="openStaffForm('${st.id}')">✎</button></div>`;
+          <button class="btn ghost sm" onclick="openStaffForm('${st.id}')">✎</button>
+          <button class="btn ghost sm" onclick="delStaff('${st.id}')" title="Delete file and record">✕</button></div>`;
       }).join('')||'<div class="empty">No staff yet.</div>'}
     </div>
   </section>`;
@@ -4211,7 +4418,8 @@ function viewChangeLog(){
   return `
   <div class="page-h">
     <div><h1>Change log</h1><div class="sub">Every change made in the portal, newest first — recorded by role, never by name</div></div>
-    <div class="right"><button class="btn ghost sm" onclick="printSheet(chgSheet())">Export / print</button></div>
+    <div class="right"><button class="btn ghost sm" onclick="printSheet(chgSheet())">Export / print</button>
+      <button class="btn ghost sm" onclick="clearChangeLog()">Clear log</button></div>
   </div>
 
   <div class="sec-note" style="margin-bottom:14px"><span>🔒</span><div><b>No names in the log</b>Entries record the role that made the change and the client ID a record belongs to. Staff and client names are never written here, so the log can be exported or shown in a review without exposing anyone.</div></div>
@@ -4708,7 +4916,7 @@ function viewSafety(){
         ${FIREDRILLS.every(d=>new Date(d.date).getMonth()!==TODAY.getMonth())?`<div class="sec-note" style="background:var(--bad-soft);border-color:#F0CBC7;color:#8C312B;margin:12px 14px"><span>⚠</span><div><b>No drill logged this month</b>A monthly drill is required per home.</div></div>`:''}
         <table class="tb"><thead><tr><th>Date</th><th>Home</th><th>Shift</th><th>Evacuation</th><th>By</th><th></th></tr></thead>
         <tbody>${FIREDRILLS.map((d,i)=>`<tr><td>${fmtDate(d.date)}<div class="tiny muted">${hm12(d.time)}</div></td><td>${esc(d.home)}</td><td>${esc(d.shift)}</td><td>${esc(d.evac)}</td><td>${esc(d.by)}</td>
-        <td style="text-align:right"><button class="btn ghost sm" onclick="editDrill(${i})">Edit</button></td></tr>`).join('')}</tbody></table>
+        <td style="text-align:right"><button class="btn ghost sm" onclick="editDrill(${i})">Edit</button>${state.role==='director'?`<button class="btn ghost sm" onclick="delDrill(${i})" title="Delete">✕</button>`:''}</td></tr>`).join('')}</tbody></table>
         <div style="padding:12px 16px"><button class="btn ghost sm" onclick="logAudit('Printed fire drill log','All homes');printSheet(drillSheet())">Print for wet signatures</button></div>
       </div>
     </section>
@@ -4718,7 +4926,7 @@ function viewSafety(){
       <div class="card-b flush">
         <table class="tb"><thead><tr><th>Date</th><th>Home</th><th>Temp</th><th>By</th><th></th></tr></thead>
         <tbody>${WATERTEMP.slice(0,8).map((w,i)=>`<tr><td>${relDay(w.date)}</td><td>${esc(w.home)}</td><td><b>${w.temp}°F</b></td><td>${w.by}</td>
-        <td style="text-align:right"><span class="pill ${w.temp<=120?'ok':'bad'}">${w.temp<=120?'In range':'Over 120°F'}</span> <button class="btn ghost sm" onclick="editTemp(${i})">Edit</button></td></tr>`).join('')}</tbody></table>
+        <td style="text-align:right"><span class="pill ${w.temp<=120?'ok':'bad'}">${w.temp<=120?'In range':'Over 120°F'}</span> <button class="btn ghost sm" onclick="editTemp(${i})">Edit</button>${state.role==='director'?`<button class="btn ghost sm" onclick="delTemp(${i})" title="Delete">✕</button>`:''}</td></tr>`).join('')}</tbody></table>
         <div style="padding:12px 16px;display:flex;gap:8px;align-items:center"><button class="btn ghost sm" onclick="logAudit('Printed water temp log','All homes');printSheet(tempSheet())">Print for wet signatures</button><span class="tiny muted">Limit 120°F at fixtures</span></div>
       </div>
     </section>
@@ -4843,6 +5051,7 @@ function viewTemplates(){
         <button class="btn navy sm" onclick="tplOpenDoc('${t.id}')">Open &amp; fill</button>
         <button class="btn gold sm" onclick="openTplEditor('${t.id}')">Edit template</button>
         ${state.role==='director'?`<button class="btn ghost sm" onclick="tplAssign('${t.id}')">Assign</button>`:''}
+        ${state.role==='director'?`<button class="btn ghost sm" onclick="delTemplate('${t.id}')" title="Delete">✕</button>`:''}
         <button class="btn ghost sm" onclick="logAudit('Printed template',tplById('${t.id}').name);docAct('printed',tplById('${t.id}').name,'Templates');printSheet(tplPrintHtml('${t.id}'))">Print blank</button></div>`;
       }).join('')}
     </div>
@@ -5520,6 +5729,86 @@ async function sbUpload(path,file){
     if(!r.ok){ console.warn('[np-demo] storage upload failed',r.status); return null; }
     return `${BACKEND.url}/storage/v1/object/public/np-demo-docs/${path}`;
   }catch(e){ console.warn('[np-demo] storage upload failed',e); return null; }
+}
+let DEL={};                                   // kind -> [keys]
+function delCount(){ return Object.keys(DEL).filter(k=>k!=='auditClearedAt').reduce((a,k)=>a+(DEL[k]||[]).length,0); }
+/* 'demo' puts the seeded demonstration data back; 'empty' hands over a blank workspace */
+function resetWorkspace(mode){
+  const empty=mode==='empty';
+  askDelete(empty?'Clear the entire workspace?':'Restore the demonstration data?',
+    empty?'Every client, staff member, task, document, appointment, message and log entry is deleted, in the portal and in the database. You are left with an empty workspace ready for real data.'
+         :'Deletions and edits are discarded and the original demonstration records come back. Anything you created is removed.',()=>{
+    const tables=['np_demo_tasks','np_demo_incidents','np_demo_documents','np_demo_credentials','np_demo_appointments',
+      'np_demo_templates','np_demo_client_notes','np_demo_notifications','np_demo_messages','np_demo_threads',
+      'np_demo_clients','np_demo_staff','np_demo_shifts','np_demo_audit_log','np_demo_doc_activity',
+      'np_demo_checklist_logs','np_demo_fire_drills','np_demo_water_temps','np_demo_inspections','np_demo_library',
+      'np_demo_doc_signatures','np_demo_example_docs','np_demo_med_logs','np_demo_agreements','np_demo_ask_log'];
+    tables.forEach(t=>sbDel(t,'id=gt.0'));
+    sbDel('np_demo_program','key=neq.__none__');
+    DEL={};
+    if(empty){                                   // tombstone every seeded record so nothing comes back
+      DEL.staff=STAFF.map(x=>x.id); DEL.client=CLIENTS.map(x=>x.id);
+      DEL.task=TASKS.map(x=>x.id); DEL.appt=APPTS.map(x=>x.id);
+      DEL.incident=INCIDENTS.map(x=>x.id); DEL.doc=DOCS.map(docKey);
+      DEL.template=TEMPLATES5.map(x=>x.id); DEL.course=TRAINING.map(x=>x.id);
+      DEL.guide=GUIDES.map(x=>x.t); DEL.thread=THREADS.map(x=>x.id);
+      DEL.drill=FIREDRILLS.map(drillKey); DEL.temp=WATERTEMP.map(tempKey);
+      DEL.auditClearedAt=new Date().toISOString();
+    }
+    try{ ['np_deleted','np_training','np_hide_sample'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
+    lsSet('np_deleted',JSON.stringify(DEL));
+    if(!empty) delSave(); else delSave();
+    toast(empty?'Workspace cleared. Reloading…':'Demonstration data restored. Reloading…');
+    setTimeout(()=>location.reload(),700);
+  }, empty?'Clear everything':'Restore demo data');
+}
+function delLoad(){ try{ DEL=JSON.parse(lsGet('np_deleted')||'{}')||{}; }catch(e){ DEL={}; } }
+function delSave(){
+  lsSet('np_deleted',JSON.stringify(DEL));
+  sbUpsert('np_demo_program',{key:'deleted',value:DEL,updated_by:(typeof auditActor==='function'?auditActor():'director')});
+}
+function delMark(kind,key){
+  DEL[kind]=DEL[kind]||[];
+  if(!DEL[kind].includes(String(key))) DEL[kind].push(String(key));
+  delSave();
+}
+function isDeleted(kind,key){ return (DEL[kind]||[]).indexOf(String(key))>-1; }
+function docKey(d){ return (d.cid||'-')+'|'+d.n; }
+function drillKey(d){ return d.date+'|'+d.home+'|'+(d.time||''); }
+function tempKey(w){ return w.date+'|'+w.home+'|'+w.temp; }
+/* re-applies every recorded deletion to the in-memory data */
+function applyDeletions(){
+  const cut=(arr,kind,keyFn)=>{ for(let i=arr.length-1;i>=0;i--) if(isDeleted(kind,keyFn(arr[i]))) arr.splice(i,1); };
+  cut(STAFF,'staff',x=>x.id);
+  cut(CLIENTS,'client',x=>x.id);
+  cut(TASKS,'task',x=>x.id);
+  cut(APPTS,'appt',x=>x.id);
+  cut(INCIDENTS,'incident',x=>x.id);
+  cut(DOCS,'doc',docKey);
+  cut(TEMPLATES5,'template',x=>x.id);
+  cut(TRAINING,'course',x=>x.id);
+  cut(GUIDES,'guide',x=>x.t);
+  cut(THREADS,'thread',x=>x.id);
+  cut(FIREDRILLS,'drill',drillKey);
+  cut(WATERTEMP,'temp',tempKey);
+  cut(INSP_DONE,'inspection',x=>x.id||(x.tid+'|'+x.at));
+  cut(INSP_TEMPLATES,'insptpl',x=>x.id);
+  Object.keys(COMPLETED).forEach(k=>cut(COMPLETED[k],'binder',d=>k+'|'+d.n));
+  // dependants of a deleted parent go with it
+  for(let i=SHIFTS.length-1;i>=0;i--) if(isDeleted('staff',SHIFTS[i].sid)) SHIFTS.splice(i,1);
+  for(let i=APPTS.length-1;i>=0;i--) if(isDeleted('client',APPTS[i].cid)) APPTS.splice(i,1);
+  for(let i=TASKS.length-1;i>=0;i--) if(isDeleted('staff',TASKS[i].sid)) TASKS.splice(i,1);
+  (DEL.staff||[]).forEach(id=>{ delete CREDS[id]; });
+  (DEL.client||[]).forEach(id=>{ delete WEEKLY[id]; delete CLIENT_NOTES[id]; });
+  if(DEL.auditClearedAt) AUDIT.length=0;
+}
+/* one confirmation dialog for every destructive action */
+function askDelete(title,body,fn,label){
+  window._delFn=fn;
+  openModal(title,`
+    <div class="sec-note" style="background:var(--bad-soft);border-color:#F0CBC7;color:#8C312B"><span>⚠</span><div><b>This cannot be undone</b>${body}</div></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button>
+     <button class="btn danger" onclick="const f=window._delFn;closeAll();if(f)f()">${label||'Delete'}</button>`);
 }
 function sbDel(t,q){ if(!sbOn()) return; fetch(`${BACKEND.url}/rest/v1/${t}?${q}`,{method:'DELETE',headers:sbH()}).catch(e=>console.warn('[np-demo] delete failed',t,e)); }
 
@@ -6203,6 +6492,14 @@ function openSettings(){
       <button class="btn ghost sm" onclick="closeAll();openCredentials()">🔑 ${authReady()?'Sign-in credentials':'Set up sign-in'}</button>
       <button class="btn ghost sm" onclick="restartOnboarding()">↻ Run setup again</button>
     </div></section>
+    ${state.role==='director'?`
+    <section class="card"><div class="card-h"><h2>Workspace data</h2><div class="sub">Deletions are permanent and apply to everyone using this workspace</div></div><div class="card-b">
+      <div class="tiny muted" style="margin-bottom:10px">${delCount()} record${delCount()===1?'':'s'} deleted so far. Resetting restores the demonstration data and clears every deletion.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost sm" onclick="closeAll();resetWorkspace('demo')">↻ Restore demo data</button>
+        <button class="btn danger sm" onclick="closeAll();resetWorkspace('empty')">⌫ Clear everything</button>
+      </div>
+    </div></section>`:''}
     <section class="card"><div class="card-h"><h2>Switch role</h2><div class="sub">Demo only</div></div><div class="card-b">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${['director','staff','family'].map(r=>`<button class="btn ${state.role===r?'navy':'ghost'} sm" onclick="closeAll();signIn('${r}')">${ME[r].label}</button>`).join('')}
@@ -6214,11 +6511,13 @@ function openSettings(){
 
 function completedRemove(key,idx){
   const row=(COMPLETED[key]||[])[idx]; if(!row) return;
-  if(!confirm('Remove "'+row.n+'" from this binder? The audit trail keeps a record that it existed.')) return;
-  COMPLETED[key].splice(idx,1);
-  sbDel('np_demo_documents','n=eq.'+encodeURIComponent(row.n));
-  logAudit('Removed completed document',`${row.n} · ${FOLDER_NAMES[key]||key}`);
-  render(); toast('Document removed from the binder.');
+  askDelete('Delete '+row.n+'?','It is removed from this binder. The change log keeps a record that it existed.',()=>{
+    COMPLETED[key].splice(idx,1);
+    sbDel('np_demo_documents','n=eq.'+encodeURIComponent(row.n));
+    delMark('binder',key+'|'+row.n);
+    logAudit('Deleted completed document',`${row.n} · ${FOLDER_NAMES[key]||key}`);
+    render(); toast('Document deleted.');
+  },'Delete document');
 }
 
 /* ── v5.8: templates open as real fillable documents, and can be assigned ── */
@@ -6529,15 +6828,7 @@ function saveStaff(sid){
   }
   closeAll(); render();
 }
-function removeStaff(sid){
-  const st=staff(sid); if(!st) return;
-  if(!confirm('Remove '+st.name+' from the team? Their shifts will be removed too.')) return;
-  const i=STAFF.findIndex(x=>x.id===sid); if(i>-1) STAFF.splice(i,1);
-  for(let j=SHIFTS.length-1;j>=0;j--) if(SHIFTS[j].sid===sid) SHIFTS.splice(j,1);
-  sbDel('np_demo_staff','id=eq.'+encodeURIComponent(sid));
-  logAudit('Removed staff member',st.name);
-  closeAll(); state.view='team'; render(); toast(st.name+' removed.');
-}
+function removeStaff(sid){ delStaff(sid); }
 function openShiftForm(idx){
   const sh=(idx!=null&&idx>-1)?SHIFTS[idx]:null;
   openModal(sh?'Edit shift':'Add a shift',`
@@ -7093,7 +7384,8 @@ function credRowFromDb(r){
   return {c:r.cred_name, d:d.toLocaleDateString(undefined,{month:'short',year:'numeric'}), s:'ok'};
 }
 async function sbHydrate(){
-  if(!sbOn()) return;
+  delLoad();
+  if(!sbOn()){ applyDeletions(); return; }
   const [tasks,inc,fd,wt,logs,docs,creds,appts,tpls,cnotes,notifs]=await Promise.all([
     sbGet('np_demo_tasks'), sbGet('np_demo_incidents','select=*&order=inc_date.desc'),
     sbGet('np_demo_fire_drills','select=*&order=drill_date.desc'),
@@ -7137,7 +7429,7 @@ async function sbHydrate(){
     if(!staff(r.staff_id)) return;
     SHIFTS.push({sid:r.staff_id,start:r.start_time,end:r.end_time,home:r.home||''});
   });
-  if(dbAudit.length){
+  if(dbAudit.length && !DEL.auditClearedAt){
     AUDIT.length=0;
     dbAudit.forEach(r=>AUDIT.push({at:r.created_at?new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'',who:r.who||'',act:r.act||'',obj:r.obj||'',role:r.role||''}));
   }
@@ -7162,6 +7454,13 @@ async function sbHydrate(){
       if(r.key==='faq'&&r.value&&Array.isArray(r.value.items)&&r.value.items.length){ FAQ.length=0; r.value.items.forEach(x=>FAQ.push(x)); }
       if(r.key==='compliance'&&r.value&&Array.isArray(r.value.groups)&&r.value.groups.length){ CHECKLIST.length=0; r.value.groups.forEach(x=>CHECKLIST.push(x)); }
       if(r.key==='guides'&&r.value&&Array.isArray(r.value.items)&&r.value.items.length){ GUIDES.length=0; r.value.items.forEach(x=>GUIDES.push(x)); }
+      if(r.key==='deleted'&&r.value&&typeof r.value==='object'){                 // deletions recorded by anyone, on any device
+        Object.keys(r.value).forEach(k=>{
+          if(k==='auditClearedAt'){ if(!DEL.auditClearedAt||r.value[k]>DEL.auditClearedAt) DEL.auditClearedAt=r.value[k]; return; }
+          DEL[k]=Array.from(new Set([...(DEL[k]||[]),...(r.value[k]||[])]));
+        });
+        lsSet('np_deleted',JSON.stringify(DEL));
+      }
       if(r.key==='training'&&r.value){
         (r.value.courses||[]).forEach(c=>{ const ex=TRAINING.find(x=>x.id===c.id); if(ex) Object.assign(ex,c); else TRAINING.push(c); });
         if(r.value.assign) TPL_ASSIGN=Object.assign(TPL_ASSIGN||{},r.value.assign);
