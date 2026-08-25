@@ -2477,13 +2477,19 @@ function applySetup(){
 }
 /* called by the onboarding script when the last step is confirmed */
 window.onboardingDone=function(setup){
-  const carried={name:ONB.name||'',domain:ONB.domain||''};
+  const carried={name:ONB.name||'',domain:ONB.domain||'',email:ONB.email||''};
   ONB=Object.assign({},carried,setup||{});
   if(!ONB.name) ONB.name=carried.name;
+  if(!ONB.email) ONB.email=carried.email;
+  if(!ONB.domain) ONB.domain=carried.domain;
   hideWelcome();
   lsSet('np_onboarding',JSON.stringify(ONB));
   const r=(ONB.role&&ME[ONB.role])?ONB.role:'director';
   applySetup();
+  setTimeout(()=>{                                                   // company info reaches the backend, not just this browser
+    sbUpsert('np_demo_program',{key:'org',value:{name:ONB.org||'',site:ONB.domain||''},updated_by:ONB.name||'setup'});
+    if(ONB.email) sbUpsert('np_demo_program',{key:'email',value:{v:ONB.email},updated_by:ONB.name||'setup'});
+  },400);
   hideOnboarding();
   signIn(r);                       // straight into the chosen view — no role picker
   logAudit('Completed setup',(ONB.org||'Spectrum')+' · '+ME[r].label);
@@ -5031,6 +5037,18 @@ function saveEmail(){
   sbUpsert('np_demo_program',{key:'email',value:{v:ONB.email},updated_by:auditActor()});
   closeAll(); render(); toast(ONB.email?'Email saved.':'Email removed.');
 }
+function editSite(){
+  openModal("Your organization's website",`
+    <div class="field"><label>Website</label><input class="inp" id="meSite" value="${esc(ONB.domain||'')}" placeholder="yourorganization.org"></div>
+    <div class="tiny muted">Shown on your profile as part of the company info. Leave blank to remove.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveSite()">Save</button>`);
+}
+function saveSite(){
+  ONB.domain=(el('meSite').value||'').trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'');
+  lsSet('np_onboarding',JSON.stringify(ONB));
+  sbUpsert('np_demo_program',{key:'org',value:{name:ONB.org||'',site:ONB.domain},updated_by:auditActor()});
+  closeAll(); render(); toast(ONB.domain?'Website saved.':'Website removed.');
+}
 function editOrgName(){
   openModal('Workspace name',`
     <div class="field"><label>Organization / workspace name</label><input class="inp" id="orgNm" value="${esc(ONB.org||'')}" placeholder="e.g. Meridian Care"></div>
@@ -5040,7 +5058,7 @@ function editOrgName(){
 function saveOrgName(){
   const v=(el('orgNm').value||'').trim(); if(!v) return toast('Give the workspace a name.');
   ONB.org=v; lsSet('np_onboarding',JSON.stringify(ONB));
-  sbUpsert('np_demo_program',{key:'org',value:{name:v},updated_by:auditActor()});
+  sbUpsert('np_demo_program',{key:'org',value:{name:v,site:ONB.domain||''},updated_by:auditActor()});
   applySetup(); renderNav(); logAudit('Renamed workspace',v);
   closeAll(); render(); toast('The dashboard is now '+v+'.');
 }
@@ -5077,9 +5095,10 @@ function viewProfile(){
         <div class="card-h"><h2>About</h2></div>
         <div class="card-b flush"><table class="tb"><tbody>
           ${[['Email',state.role==='director'?(ONB.email?esc(ONB.email)+' <button class="btn ghost sm" onclick="editEmail()">✎</button>':'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editEmail()">＋ Add email</button>'):state.role==='staff'?'mreyes@meridiancare.org':'guardian on file'],
+             ...(state.role==='director'?[['Website',ONB.domain?`<a href="https://${esc(ONB.domain)}" target="_blank" style="color:var(--navy);font-weight:700">${esc(ONB.domain)}</a> <button class="btn ghost sm" onclick="editSite()">✎</button>`:'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editSite()">＋ Add website</button>']]:[]),
              ['Phone','On file'],['Timezone','Los Angeles (GMT-8)'],
              ['Permission',state.role==='director'?'Administrator — full control of the organization':state.role==='staff'?'Care staff — assigned clients only':'Family — one client only']]
-            .map(([k,v])=>`<tr><td class="muted" style="width:110px">${k}</td><td>${esc(v)}</td></tr>`).join('')}
+            .map(([k,v])=>`<tr><td class="muted" style="width:110px">${k}</td><td>${v}</td></tr>`).join('')}
         </tbody></table></div>
       </section>
       <section class="card">
@@ -8203,7 +8222,7 @@ async function sbHydrate(){
       if(r.key==='goals'&&r.value&&r.value.map){ Object.entries(r.value.map).forEach(([cid,gs])=>{ const c=client(cid); if(c) c.goals=gs; }); }
       if(r.key==='prognotes'&&r.value&&r.value.map){ Object.entries(r.value.map).forEach(([cid,ns])=>{ PROG_NOTES[cid]=ns; }); }
       if(r.key==='email'&&r.value&&typeof r.value.v==='string'){ ONB.email=r.value.v; lsSet('np_onboarding',JSON.stringify(ONB)); }
-      if(r.key==='org'&&r.value&&r.value.name){ ONB.org=r.value.name; lsSet('np_onboarding',JSON.stringify(ONB)); applySetup(); }
+      if(r.key==='org'&&r.value&&r.value.name){ ONB.org=r.value.name; if(typeof r.value.site==='string'&&r.value.site) ONB.domain=r.value.site; lsSet('np_onboarding',JSON.stringify(ONB)); applySetup(); }
       if(r.key==='deleted'&&r.value&&typeof r.value==='object'){                 // deletions recorded by anyone, on any device
         Object.keys(r.value).forEach(k=>{
           if(k==='auditClearedAt'){ if(!DEL.auditClearedAt||r.value[k]>DEL.auditClearedAt) DEL.auditClearedAt=r.value[k]; return; }
