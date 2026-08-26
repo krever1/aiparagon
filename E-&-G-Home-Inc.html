@@ -415,11 +415,13 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xm
 .ask-fab:hover{transform:translateY(-2px);background:var(--navy-deep)}
 .ask-fab .sp{width:8px;height:8px;border-radius:50%;background:var(--gold)}
 .ask-panel{
-  position:fixed;right:22px;bottom:22px;z-index:101;width:min(400px,calc(100% - 32px));height:min(560px,calc(100% - 44px));
+  position:fixed;right:22px;bottom:22px;z-index:101;width:min(460px,calc(100% - 32px));height:min(600px,calc(100% - 44px));
+  transition:width .18s,height .18s;
   background:var(--white);border:1px solid var(--line);border-radius:18px;box-shadow:0 22px 60px rgba(21,43,71,.22);
   display:none;flex-direction:column;overflow:hidden;
 }
 .ask-panel.on{display:flex}
+.ask-panel.big{width:min(760px,calc(100% - 32px));height:min(86vh,calc(100% - 44px))}
 .ask-h{display:flex;align-items:center;gap:9px;padding:13px 15px;border-bottom:1px solid var(--line)}
 .ask-h b{font-size:13.8px}
 .ask-h .x{margin-left:auto;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);display:grid;place-items:center;font-size:13px}
@@ -1586,7 +1588,7 @@ body{font-size:15px}
       <div id="liErr" class="tiny" style="display:none;color:var(--bad);margin:-4px 0 10px"></div>
       <button class="btn navy" style="width:100%;justify-content:center" onclick="doLogin()">Sign in</button>
       <div class="tiny muted" style="margin-top:10px;text-align:center">
-        <a href="#" onclick="event.preventDefault();showRolePicker()">Browse the demo instead</a></div>
+        </div>
     </div>
 
     <div class="role-grid" id="roleGrid">
@@ -1613,7 +1615,7 @@ body{font-size:15px}
     </div>
     <div class="login-foot">
       <span class="demo-tag">Beta</span>
-      <span>Views include sample data only — no real client information is stored in this portal.</span>
+      <span>Views include include sample data only.</span>
     </div>
   </div>
 </div>
@@ -1634,15 +1636,19 @@ body{font-size:15px}
         <span class="muted" style="font-size:13px">⚙</span>
       </div>
       <div class="side-foot">
-        <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview — sample data only. No real client information is stored in this portal.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · v8.3 beta</span>
+        <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · v9.2 beta</span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
-        <a href="mailto:support@aiparagonconsulting.com?subject=Spectrum%20Care%20Advisory%20OS%20support">✉ Help & support</a>
+        <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
     </div>
   </aside>
 
   <main class="main">
+    <div id="demoBanner" style="display:none;background:#8A5A1E;color:#fff;padding:9px 16px;font-size:13px;font-weight:600;text-align:center;letter-spacing:.01em">
+      ◈ Demonstration view — everything here is sample test data. Nothing you change is saved.
+      <a href="#" onclick="event.preventDefault();window.close()" style="color:#fff;text-decoration:underline;margin-left:10px;font-weight:500">Close this tab</a>
+    </div>
     <div class="topbar">
       <button class="hamb" onclick="toggleNav()">☰</button>
       <div class="search">
@@ -1692,12 +1698,14 @@ body{font-size:15px}
   <div class="ask-h">
     <span class="sp" style="width:8px;height:8px;border-radius:50%;background:var(--gold)"></span>
     <b>Ask Spectrum</b><span class="ai-pill">✦ AI</span>
+    <button class="x" onclick="el('askPanel').classList.toggle('big')" title="Expand / shrink" style="margin-left:auto">⤢</button>
     <button class="x" onclick="toggleAsk()">✕</button>
   </div>
   <div class="ask-log" id="askLog"></div>
   <div class="ask-sug" id="askSug"></div>
   <div class="ask-in">
     <input id="askInput" placeholder="Ask about a client, policy or shift…" onkeydown="if(event.key==='Enter')askSend()">
+    <button id="askMic" onclick="askMic()" title="Speak your question" style="display:none">🎤</button>
     <button onclick="askSend()">↑</button>
   </div>
 </div>
@@ -1949,7 +1957,8 @@ function gcalTemplateOpen(a){
   window.open(url,'_blank');
 }
 
-const sbOn = () => !!(BACKEND.url && BACKEND.anon);
+const DEMO_VIEW = (()=>{ try{ return new URLSearchParams(location.search).get('demo')==='1'; }catch(e){ return false; } })();
+const sbOn = () => !!(BACKEND.url && BACKEND.anon && !DEMO_VIEW);      // demo view is a sandbox: nothing it does is saved
 const sbH  = () => ({apikey:BACKEND.anon, Authorization:'Bearer '+BACKEND.anon, 'Content-Type':'application/json', Prefer:'return=minimal'});
 async function sbGet(t,q){ if(!sbOn()) return []; try{ const r=await fetch(`${BACKEND.url}/rest/v1/${t}?${q||'select=*'}`,{headers:sbH()}); return r.ok?await r.json():[]; }catch(e){ console.warn('[np-demo] read failed',t,e); return []; } }
 function sbPush(t,row){ if(!sbOn()) return; fetch(`${BACKEND.url}/rest/v1/${t}`,{method:'POST',headers:sbH(),body:JSON.stringify(row)}).catch(e=>console.warn('[np-demo] write failed',t,e)); }
@@ -2109,7 +2118,7 @@ let TEMP_LIMIT = 120;
 function setTempLimit(){
   openModal('Water temperature limit',`
     <div class="field"><label>Maximum safe temperature (°F)</label><input class="inp" type="number" id="tlVal" value="${TEMP_LIMIT}"></div>
-    <div class="tiny muted">Readings above this flag as out of range on the Safety log and in Today's progress. Licensing default is 120°F at fixtures.</div>`,
+    <div class="tiny muted">Readings above this flag as out of range on the Safety log and in This week's progress. Licensing default is 120°F at fixtures.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveTempLimit()">Save limit</button>`);
 }
 function saveTempLimit(){
@@ -2370,9 +2379,8 @@ const AUDIT = [
 const NAV = {
   director:[
     {g:'Today'},   {id:'home',t:'Home',i:'⌂'}, {id:'tasks',t:'Tasks',i:'☑'}, {id:'calendar',t:'Calendar',i:'▤'},
-    {g:'Care'},    {id:'clients',t:'Clients',i:'☺'}, {id:'team',t:'Staff',i:'⚇'}, {id:'incidents',t:'Incidents',i:'⚠'}, {id:'safety',t:'Safety log',i:'▣'},
-    {g:'Records'}, {id:'templates',t:'Documents',i:'◫'}, {id:'forms',t:'Templates',i:'❏'},
-                   {id:'stafffiles',t:'Staff folder',i:'🗂'}, {id:'compliance',t:'Reports',i:'▦'},
+    {g:'Care'},    {id:'clients',t:'Clients',i:'☺'}, {id:'team',t:'Staff',i:'⚇'}, {id:'trainhub',t:'Training & onboarding',i:'🎓'}, {id:'incidents',t:'Incidents',i:'⚠'}, {id:'safety',t:'Safety log',i:'▣'},
+    {g:'Records'}, {id:'templates',t:'Documents',i:'◫'}, {id:'forms',t:'Templates',i:'❏'}, {id:'compliance',t:'Reports',i:'▦'},
     {g:'Setup'},   {id:'directory',t:'Directory',i:'☎'}, {id:'changelog',t:'Change log',i:'≡'}
   ],
   staff:[
@@ -2411,9 +2419,122 @@ const visibleClients = () => {
   return base.filter(c=>!hid('client',c.id));
 };
 const visibleStaff = () => STAFF.filter(st=>!hid('staff',st.id));
+let NAME_MODE=lsGet('np_name_mode')||'full';                                   // 'full' | 'initials'
+function stName(st){ if(!st) return ''; return NAME_MODE==='initials'?st.init:st.name; }
+function listManage(title,getList,onRename,onDelete,note){
+  const items=getList();
+  openModal(title,`
+    ${items.map((x,i)=>`<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)">
+      <span style="flex:1;font-size:13.4px">${esc(x)}</span>
+      <button class="btn ghost sm" onclick="window._lmR(${i})">✎ Rename</button>
+      <button class="btn ghost sm" onclick="window._lmD(${i})">✕</button></div>`).join('')||'<div class="empty">Nothing here yet.</div>'}
+    ${note?`<div class="tiny muted" style="margin-top:8px">${note}</div>`:''}`,
+    `<button class="btn navy" onclick="closeAll()">Done</button>`);
+  window._lmR=i=>{ const v=prompt('New name:',items[i]); if(v&&v.trim()&&v.trim()!==items[i]){ onRename(items[i],v.trim()); listManage(title,getList,onRename,onDelete,note); } };
+  window._lmD=i=>{ onDelete(items[i]); listManage(title,getList,onRename,onDelete,note); };
+}
+function manageHouses(){
+  listManage('Houses',()=>HOMES.slice(),
+    (o,n)=>{ HOMES[HOMES.indexOf(o)]=n;
+      SHIFTS.forEach(x=>{ if(x.home===o) x.home=n; });
+      STAFF.forEach(x=>{ if(x.home===o) x.home=n; });
+      CLIENTS.forEach(x=>{ if(x.home===o) x.home=n; });
+      homesSave(); logAudit('Renamed house',o+' → '+n); render(); },
+    o=>{ HOMES=HOMES.filter(x=>x!==o); homesSave(); logAudit('Removed house',o); render(); },
+    'Renaming updates every shift, staff member and client already using the house. Removing only takes it off the pick list.');
+}
+function manageClientsConfig(){
+  openModal('Client configuration',`
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn ghost" onclick="closeAll();manageHouses()">Manage houses</button>
+      <button class="btn ghost" onclick="closeAll();manageClientTypes()">Manage program types</button>
+    </div>`,`<button class="btn navy" onclick="closeAll()">Done</button>`);
+}
+function manageClientTypes(){
+  listManage('Program types',()=>CLIENT_TYPES.slice(),
+    (o,n)=>{ CLIENT_TYPES[CLIENT_TYPES.indexOf(o)]=n; CLIENTS.forEach(c=>{ if(c.dx===o) c.dx=n; });
+      ctypesSave(); logAudit('Renamed program type',o+' → '+n); render(); },
+    o=>{ CLIENT_TYPES=CLIENT_TYPES.filter(x=>x!==o); ctypesSave(); logAudit('Removed program type',o); render(); },
+    'Renaming updates existing clients.');
+}
+function manageTasksConfig(){
+  openModal('Task configuration',`
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn ghost" onclick="closeAll();manageTaskCats()">Edit categories</button>
+      <button class="btn ghost" onclick="closeAll();managePriorities()">Edit priorities</button>
+    </div>`,`<button class="btn navy" onclick="closeAll()">Done</button>`);
+}
+let TASK_PRIS=['High','Medium','Low'];
+function managePriorities(){
+  listManage('Task priorities',()=>TASK_PRIS.slice(),
+    (o,n)=>{ TASK_PRIS[TASK_PRIS.indexOf(o)]=n; TASKS.forEach(t=>{ if(t.pri===o) t.pri=n; });
+      sbUpsert('np_demo_program',{key:'taskpris',value:{list:TASK_PRIS},updated_by:auditActor()});
+      logAudit('Renamed task priority',o+' → '+n); render(); },
+    o=>{ TASK_PRIS=TASK_PRIS.filter(x=>x!==o);
+      sbUpsert('np_demo_program',{key:'taskpris',value:{list:TASK_PRIS},updated_by:auditActor()});
+      logAudit('Removed task priority',o); render(); },'Renaming updates existing tasks.');
+}
+function manageTaskCats(){
+  listManage('Task categories',()=>TASK_CATS.slice(),
+    (o,n)=>{ TASK_CATS[TASK_CATS.indexOf(o)]=n;
+      TASKS.forEach(t=>{ if(t.cat===o) t.cat=n; });
+      sbUpsert('np_demo_program',{key:'taskcats',value:{list:TASK_CATS},updated_by:auditActor()});
+      logAudit('Renamed task category',o+' → '+n); render(); },
+    o=>{ TASK_CATS=TASK_CATS.filter(x=>x!==o);
+      sbUpsert('np_demo_program',{key:'taskcats',value:{list:TASK_CATS},updated_by:auditActor()});
+      logAudit('Removed task category',o); render(); },
+    'Renaming updates existing tasks. Removing keeps old tasks labeled but takes the category off the pick lists.');
+}
+function openDemoView(){
+  const u=location.origin+location.pathname+'?demo=1';
+  window.open(u,'_blank','noopener');
+  logAudit('Opened the demonstration view');
+  toast('Demo dashboard opened in a new tab.');
+}
+function setNameMode(v){ NAME_MODE=v; lsSet('np_name_mode',v); sbUpsert('np_demo_program',{key:'namemode',value:{v},updated_by:auditActor()}); render(); renderNav(); toast(v==='initials'?'Staff now shown by initials.':'Staff now shown by full name.'); }
 const visShifts = () => SHIFTS.filter(s=>staff(s.sid)&&!hid('shift',shiftKey(s))&&!hid('staff',s.sid));
+const visIncidents = () => INCIDENTS.filter(i=>client(i.cid)&&visibleClients().some(c=>c.id===i.cid));
+const visAppts = () => APPTS.filter(a=>!hid('appt',a.id)&&client(a.cid)&&visibleClients().some(c=>c.id===a.cid));
+const visThreads = () => THREADS.filter(t=>!t.cid||(client(t.cid)&&visibleClients().some(c=>c.id===t.cid))).filter(t=>!state.hideSample||t._user);
 
 const meInit=()=>ME[state.role].name.split(' ').map(w=>w[0]+'.').join('');
+
+/* ── reusable table sorting + filtering ─────────────────────────────
+   tblHead(view,key,label) renders a clickable header; tblApply(view,rows,cols)
+   sorts and text-filters any row list the same way on every page.        */
+function tblSort(view,key){
+  state.tbl=state.tbl||{};
+  const cur=state.tbl[view]||{};
+  state.tbl[view]= (cur.k===key) ? {k:key,dir:cur.dir==='asc'?'desc':'asc'} : {k:key,dir:'asc'};
+  render();
+}
+function tblHead(view,key,label){
+  const cur=(state.tbl||{})[view]||{};
+  const on=cur.k===key;
+  return `<th class="click" style="cursor:pointer;user-select:none" onclick="tblSort('${view}','${key}')">${label}<span style="opacity:${on?1:.25};margin-left:4px">${on?(cur.dir==='asc'?'▲':'▼'):'↕'}</span></th>`;
+}
+function tblFilter(view,placeholder){
+  const v=((state.tbl||{})[view]||{}).q||'';
+  return `<input class="inp" style="max-width:240px" placeholder="${esc(placeholder||'Filter…')}" value="${esc(v)}"
+    oninput="state.tbl=state.tbl||{};state.tbl['${view}']=Object.assign({},state.tbl['${view}'],{q:this.value});clearTimeout(window._tf);window._tf=setTimeout(()=>{const a=document.activeElement&&document.activeElement.value;render();},260)">`;
+}
+function tblApply(view,rows,cols){
+  const cfg=(state.tbl||{})[view]||{};
+  let out=rows.slice();
+  if(cfg.q){
+    const q=String(cfg.q).toLowerCase();
+    out=out.filter(r=>Object.keys(cols).some(k=>String(cols[k](r)==null?'':cols[k](r)).toLowerCase().includes(q)));
+  }
+  if(cfg.k&&cols[cfg.k]){
+    const f=cols[cfg.k], dir=cfg.dir==='desc'?-1:1;
+    out.sort((a,b)=>{
+      const x=f(a), y=f(b);
+      if(typeof x==='number'&&typeof y==='number') return (x-y)*dir;
+      return String(x==null?'':x).localeCompare(String(y==null?'':y),undefined,{numeric:true})*dir;
+    });
+  }
+  return out;
+}
 /* v6.5: the change log records WHAT changed and WHICH ROLE did it — never a person's
    name. Client names become their client ID, staff names become initials, at the point
    of writing, so nothing identifying is ever stored. */
@@ -2427,10 +2548,33 @@ function auditScrub(t){
   return s;
 }
 function auditActor(){ return (ME[state.role]&&ME[state.role].name)||state.role; }
-function logAudit(act,obj){
-  const entry={at:nowStamp(),who:auditActor(),act:auditScrub(act),obj:auditScrub(obj),role:state.role,ts:Date.now()};
+let CHG_CATS={'Note':'📝','Policy':'📋','Maintenance':'🔧','Meeting':'🗓','Other':'▤'};
+function chgCatsSave(){ sbUpsert('np_demo_program',{key:'chgcats',value:{map:CHG_CATS},updated_by:auditActor()}); }
+function chgEntryForm(){
+  openModal('Add a log entry',`
+    <div class="field"><label>Category <a href="#" class="tiny" style="float:right" onclick="event.preventDefault();chgCatAdd()">＋ New</a></label>
+      <select class="inp" id="ceCat">${Object.keys(CHG_CATS).map(k=>`<option>${CHG_CATS[k]} ${esc(k)}</option>`).join('')}</select></div>
+    <div class="field"><label>What happened</label><input class="inp" id="ceAct" placeholder="e.g. Replaced kitchen smoke detector"></div>
+    <div class="field"><label>Detail (optional)</label><input class="inp" id="ceObj" placeholder="Anything worth remembering later"></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="chgEntrySave()">Add to the log</button>`);
+}
+function chgCatAdd(){
+  const n=prompt('Category name:'); if(!n||!n.trim()) return;
+  const e=prompt('Emoji for it (e.g. 🚐):')||'▤';
+  CHG_CATS[n.trim()]=e.trim()||'▤'; chgCatsSave();
+  const sel=el('ceCat'); if(sel){ sel.insertAdjacentHTML('beforeend',`<option>${esc(CHG_CATS[n.trim()])} ${esc(n.trim())}</option>`); sel.value=`${CHG_CATS[n.trim()]} ${n.trim()}`; }
+}
+function chgEntrySave(){
+  const raw=(el('ceCat').value||'').trim();
+  const cat=raw.replace(/^\S+\s/,'');
+  const act=(el('ceAct').value||'').trim(); if(!act) return toast('Describe what happened.');
+  logAudit(act,(el('ceObj').value||'').trim(),cat);
+  closeAll(); render(); toast('Entry logged.');
+}
+function logAudit(act,obj,cat){
+  const entry={at:nowStamp(),who:auditActor(),act:auditScrub(act),obj:auditScrub(obj),role:state.role,ts:Date.now(),cat:cat||''};
   AUDIT.unshift(entry); if(AUDIT.length>200) AUDIT.pop();
-  sbPush('np_demo_audit_log',{who:entry.who,act:entry.act,obj:entry.obj,role:state.role});
+  sbPush('np_demo_audit_log',{who:entry.who,act:entry.act,obj:entry.obj,role:state.role,category:entry.cat||null});
 }
 function toast(msg){ el('toastTxt').textContent=msg; el('toast').classList.add('on'); clearTimeout(window._tt); window._tt=setTimeout(()=>el('toast').classList.remove('on'),2400); }
 function toMin(hm){ const [h,m]=hm.split(':').map(Number); return h*60+m; }
@@ -2496,6 +2640,7 @@ window.onboardingDone=function(setup){
   setTimeout(()=>{                                                   // company info reaches the backend, not just this browser
     sbUpsert('np_demo_program',{key:'org',value:{name:ONB.org||'',site:ONB.domain||''},updated_by:ONB.name||'setup'});
     if(ONB.email) sbUpsert('np_demo_program',{key:'email',value:{v:ONB.email},updated_by:ONB.name||'setup'});
+    profileSave();
   },400);
   hideOnboarding();
   signIn(r);                       // straight into the chosen view — no role picker
@@ -2554,6 +2699,7 @@ function captureSamples(){
     client:CLIENTS.map(x=>x.id), staff:STAFF.map(x=>x.id), task:TASKS.map(x=>x.id),
     appt:APPTS.map(x=>x.id), incident:INCIDENTS.map(x=>x.id), thread:THREADS.map(x=>x.id),
     doc:DOCS.map(docKey), shift:SHIFTS.map(shiftKey), drill:FIREDRILLS.map(drillKey), temp:WATERTEMP.map(tempKey),
+    _:(AUDIT.forEach(a=>a._seed=1),MY_QUALS.director.forEach(q=>q._seed=1),THREADS.forEach(t=>t._user=0),SYS_NOTIFS.forEach(nn=>nn._seed=1),TASKS.forEach(t=>t._seed=1),APPTS.forEach(a=>a._seed=1),INCIDENTS.forEach(i=>i._seed=1),(typeof ATTEND!=='undefined'&&ATTEND.forEach(a=>a._seed=1)),Object.keys(CREDS).forEach(k=>(CREDS[k]||[]).forEach(cx=>cx._seed=1)),0),
     course:TRAINING.map(t=>t.id), guide:GUIDES.map(g=>g.t), dir:DIRECTORY.map(d=>String(d.id||d.n)),
     insp:INSP_TEMPLATES.map(t=>String(t.id||t.name)),
     protocol:Object.keys(PROTOCOLS), obitem:ONBOARD.slice(),
@@ -2565,6 +2711,11 @@ function captureSamples(){
 function unhide(kind,key){ const a=SAMPLE[kind]; if(a){ const i=a.indexOf(String(key)); if(i>-1) a.splice(i,1); } }
 function hid(kind,key){ return state.hideSample && (SAMPLE[kind]||[]).includes(String(key)); }
 function bootPortal(){
+  if(DEMO_VIEW){
+    state.hideSample=false; DEL={};                                    // demo view always shows the full sample workspace
+    const db=el('demoBanner'); if(db) db.style.display='';
+    document.title='Demo preview — Spectrum Care Advisory OS';
+  }
   if(!OB_MASTER.length) OB_MASTER=ONBOARD.map(t=>({t,link:''}));
   SAMPLE.temp=WATERTEMP.map(tempKey); SAMPLE.drill=FIREDRILLS.map(drillKey); SAMPLE.shift=SHIFTS.map(shiftKey);
   setInterval(()=>{ if(iso(new Date())!==T) location.reload(); },60000);   // roll to the new day live
@@ -2586,7 +2737,7 @@ function bootPortal(){
   if(!showWelcome() && !showOnboarding()) el('login').style.display='flex';                    // first run
 }
 
-function signIn(role){ loadNotifPrefs(); loadPilot(); loadDocAct(); loadProgram(); AUTH.signedIn=true; setTimeout(pilotGate,700);
+function signIn(role){ loadNotifPrefs(); loadPilot(); loadDocAct(); loadProgram(); AUTH.signedIn=true; setTimeout(pilotGate,700); idleReset();
   state.role=role; state.view='home'; state.client=null;
   el('login').style.display='none'; el('app').classList.add('on');
   const m=ME[role];
@@ -2608,6 +2759,16 @@ function switchView(){
   el('login').style.display='flex';
   showRolePicker();                                                  // always the picker — that's the point of switching
 }
+let IDLE_MIN=+(lsGet('np_idle_min')||0);                              // 0 = off
+let _idleT=null,_idleWarnT=null;
+function idleReset(){
+  clearTimeout(_idleT); clearTimeout(_idleWarnT);
+  if(!IDLE_MIN||!AUTH.signedIn) return;
+  _idleWarnT=setTimeout(()=>toast('Signing out in 1 minute — move the mouse to stay in.'),Math.max(1,(IDLE_MIN-1))*60000);
+  _idleT=setTimeout(()=>{ toast('Signed out after inactivity.'); signOut(); },IDLE_MIN*60000);
+}
+function setIdle(v){ IDLE_MIN=+v||0; lsSet('np_idle_min',String(IDLE_MIN)); sbUpsert('np_demo_program',{key:'idle',value:{min:IDLE_MIN},updated_by:auditActor()}); idleReset(); toast(IDLE_MIN?('Auto sign-out after '+IDLE_MIN+' minutes idle.'):'Auto sign-out is off.'); }
+['click','keydown','mousemove','scroll','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{ if(AUTH.signedIn) idleReset(); },{passive:true}));
 function signOut(){
   if(typeof tourEnd==='function') tourEnd();
   const f=el('tlFull'); if(f) f.remove();
@@ -2639,15 +2800,33 @@ function renderNav(){
     if(n.g) return `<div class="nav-label">${esc(n.g)}</div>`;
     let badge='';
     if(n.id==='tasks'){ const c=myTasks().filter(t=>t.stage!=='Done' && t.due<=T).length; if(c) badge=`<span class="badge">${c}</span>`; }
-    if(n.id==='incidents'){ const c=INCIDENTS.filter(i=>i.status!=='Closed').length; if(c) badge=`<span class="badge">${c}</span>`; }
+    if(n.id==='incidents'){ const c=visIncidents().filter(i=>i.status!=='Closed').length; if(c) badge=`<span class="badge">${c}</span>`; }
     if(n.id==='messages'){ const c=THREADS.reduce((a,t)=>a+t.unread,0); if(c) badge=`<span class="badge">${c}</span>`; }
     return `<button class="nav-item ${state.view===n.id?'active':''}" onclick="go('${n.id}')"><span class="ni">${n.i}</span>${esc(n.t)}${badge}</button>`;
   }).join('');
   sideProg();
-  const un=THREADS.reduce((a,t)=>a+t.unread,0);
+  const un=visThreads().reduce((a,t)=>a+t.unread,0);
   const mb=el('msgBadge'); if(mb){ mb.style.display=un?'grid':'none'; mb.textContent=un; }
   const nd=el('notifDot'); if(nd){ const rem=(typeof upcomingReminders==='function')?upcomingReminders().length:0;
     nd.style.display=(un||rem||INCIDENTS.some(i=>i.status!=='Closed')||TASKS.some(t=>t.stage==='Overdue'))?'block':'none'; }
+}
+let WEEKLY_CFG={metrics:['checklist','tasks','temps'],targets:{temps:7}};
+function weeklyToggle(id,on){
+  WEEKLY_CFG.metrics=WEEKLY_CFG.metrics||[];
+  if(on&&!WEEKLY_CFG.metrics.includes(id)) WEEKLY_CFG.metrics.push(id);
+  if(!on) WEEKLY_CFG.metrics=WEEKLY_CFG.metrics.filter(x=>x!==id);
+  weeklyCfgSave(); sideProg(); logAudit('Changed weekly metrics',id);
+}
+function weeklyCfgSave(){ sbUpsert('np_demo_program',{key:'weeklycfg',value:WEEKLY_CFG,updated_by:auditActor()}); }
+function weeklyMetricDefs(){
+  const defs=[
+    {id:'checklist',l:'Weekly checklist'},
+    {id:'tasks',l:'Weekly tasks completed'},
+    {id:'temps',l:'Weekly water temps logged'},
+    {id:'drills',l:'Weekly fire drills'}
+  ];
+  INSP_TEMPLATES.filter(t=>!hid('insp',String(t.id||t.name))&&(t.perWeek||0)>0).forEach(t=>defs.push({id:'tpl:'+t.id,l:t.name,tpl:t}));
+  return defs;
 }
 function sideProg(){
   const cl=visibleClients().map(c=>c.id);
@@ -2657,20 +2836,31 @@ function sideProg(){
   const rows=[];
   const vcl=visibleClients().map(c=>c.id);
   const wkAll=vcl.flatMap(cid=>WEEKLY[cid]||[]);
-  rows.push({l:'Weekly checklist', a:wkAll.filter(w=>w.d).length, b:wkAll.length, go:'weekly'});
+  if(state.role!=='director'||(WEEKLY_CFG.metrics||[]).includes('checklist'))
+    rows.push({l:'Weekly checklist', a:wkAll.filter(w=>w.d).length, b:wkAll.length, go:'weekly'});
   if(state.role==='director'){
-    const vt=myTasks();
-    rows.push({l:'Weekly tasks completed', a:vt.filter(t=>t.stage==='Done').length, b:vt.length, go:'tasks'});
-    const wkTemps=[...new Set(WATERTEMP.filter(w=>inWeek(w.date)&&!hid('temp',tempKey(w))).map(w=>w.date))].length;
-    rows.push({l:'Weekly water temps logged', a:wkTemps, b:7, go:'safety'});
+    const on=WEEKLY_CFG.metrics||[];
+    if(on.includes('tasks')){ const vt=myTasks(); rows.push({l:'Weekly tasks completed', a:vt.filter(t=>t.stage==='Done').length, b:vt.length, go:'tasks'}); }
+    if(on.includes('temps')){
+      const wkTemps=[...new Set(WATERTEMP.filter(w=>inWeek(w.date)&&!hid('temp',tempKey(w))).map(w=>w.date))].length;
+      rows.push({l:'Weekly water temps logged', a:wkTemps, b:(WEEKLY_CFG.targets&&WEEKLY_CFG.targets.temps)||7, go:'safety'});
+    }
+    if(on.includes('drills')){
+      const wkDr=FIREDRILLS.filter(d=>!hid('drill',drillKey(d))&&inWeek(d.date)).length;
+      rows.push({l:'Weekly fire drills', a:wkDr, b:(WEEKLY_CFG.targets&&WEEKLY_CFG.targets.drills)||1, go:'safety'});
+    }
+    weeklyMetricDefs().filter(d=>d.tpl&&on.includes(d.id)).forEach(d=>{
+      const runs=INSP_DONE.filter(x=>x.tid===d.tpl.id&&x.date&&inWeek(x.date)).length;
+      rows.push({l:d.l, a:runs, b:d.tpl.perWeek, go:'safety'});
+    });
   }
   if(state.role==='staff'){
     const mine=TASKS.filter(t=>t.sid==='s1'&&t.due<=T);
     rows.push({l:'Tasks due today', a:mine.filter(t=>t.stage==='Done').length, b:mine.length, go:'tasks'});
-    const appl=TRAINING.filter(x=>x.req||(x.asg||[]).includes('s1'));
+    const appl=TRAINING.filter(x=>!hid('course',x.id)&&(x.req||(x.asg||[]).includes(meSid())));
     rows.push({l:'Training complete', a:appl.filter(x=>x.done.includes('s1')).length, b:appl.length, go:'training'});
   }
-  el('sideProg').innerHTML = rows.length?`<div class="sprog"><div class="sp-t">${state.role==='family'?"J-402318 today":"Today's progress"}</div>
+  el('sideProg').innerHTML = rows.length?`<div class="sprog"><div class="sp-t">${state.role==='family'?"J-402318 today":"This week's progress"}</div>
     ${rows.map(r=>{
       const pct=r.b?Math.round(r.a/r.b*100):100;
       return `<button class="sprog-row" onclick="go('${r.go}')">
@@ -2678,7 +2868,7 @@ function sideProg(){
         <span class="bar"><i class="${pct===100?'g':''}" style="width:${pct}%"></i></span>
       </button>`;}).join('')}</div>`:'';
 }
-function go(v){ if(typeof tourEnd==='function') tourEnd(); const _f=el('tlFull'); if(_f) _f.remove(); const _i=el('inspFull'); if(_i){ _i.remove(); inspRun=null; } state.view=v; state.client=null; state.tab=''; el('sidebar').classList.remove('open'); renderNav(); render(); window.scrollTo(0,0); }
+function go(v){ if(typeof tourEnd==='function') tourEnd(); const _f=el('tlFull'); if(_f) _f.remove(); const _i=el('inspFull'); if(_i){ _i.remove(); inspRun=null; } const _b=el('formFull'); if(_b) _b.remove(); state.view=v; state.client=null; state.tab=''; el('sidebar').classList.remove('open'); renderNav(); render(); window.scrollTo(0,0); }
 
 function myTasks(){ return myTasks_all().filter(t=>!hid('task',t.id)); }
 function myTasks_all(){
@@ -2694,7 +2884,7 @@ function render(){
 
   const map = {
     home:()=>viewHome()+staffGuidesCard(), clients:viewClients, meds:viewMeds, calendar:viewCalendar, tasks:viewTasks, billing:viewBilling,
-    incidents:viewIncidents, team:viewTeam, messages:viewMessages, compliance:viewCompliance, changelog:viewChangeLog,
+    incidents:viewIncidents, team:viewTeam, messages:viewMessages, compliance:viewCompliance,trainhub:viewTrainHub, changelog:viewChangeLog,
     forms:viewForms, stafffiles:viewStaffFiles, directory:viewDirectory, weekly:viewWeekly, staffpage:viewStaffPage,
     templates:viewTemplates, integrations:viewIntegrations, training:viewTraining, docs:viewDocs, safety:viewSafety, profile:viewProfile
   };
@@ -2761,7 +2951,7 @@ function tlCard(full){
     return e.k==='p'
       ? {l:tlPx(o.time),w:Math.max(150,o.dur/60*TL.hw),cls:o.flag?'b-flag':'b-appt',_o:o,
          attrs:o.flag?'':`data-cat style="background:${catOf(o.type).color};border-color:${catOf(o.type).color}"`,
-         txt:`${o.flag?'⚑ ':''}${catOf(o.type).emoji} ${hm12(o.time).replace(' ','').toLowerCase()} · ${esc(client(o.cid).init)} ${esc(o.title)}`,
+         txt:`${o.flag?'⚑ ':''}${catOf(o.type).emoji} ${hm12(o.time).replace(' ','').toLowerCase()} · ${esc(o.title)}`,
          tip:`${o.title} — ${client(o.cid).name} at ${hm12(o.time)}`,on:`openAppt('${o.id}')`}
       : {l:tlPx(o.time),w:Math.max(150,o.dur/60*TL.hw),cls:'b-gcal',_o:o,
          txt:`${hm12(o.time).replace(' ','').toLowerCase()} · G · ${o.cid?esc(client(o.cid).init)+' ':''}${esc(o.title)}`,
@@ -2829,7 +3019,7 @@ function tlCard(full){
           txt:`${hm12(s.start)} – ${hm12(s.end)} · ${esc(s.home)}`,
           tip:canEdit?`${staff(s.sid).name} — drag to move, click to edit`:staff(s.sid).name,
           attrs:canEdit?`data-shift="${s.sid}"`:'',on:canEdit?'':"go('team')"}),
-        on:`openStaff('${s.sid}')`});});
+        on:`openStaffPage('${s.sid}')`});});
     }
   }
 
@@ -2900,20 +3090,20 @@ function tlExpand(){
 function attentionItems(){
   const out=[];
   const cl = visibleClients().map(c=>c.id);
-  INCIDENTS.filter(i=>i.status!=='Closed'&&cl.includes(i.cid)&&client(i.cid)).forEach(i=>out.push({k:'bad',ic:'⚠',t:`Incident follow-up open — ${(client(i.cid)||{}).name||''}`,s:`${i.type} on ${relDay(i.date)} · reported by ${i.by}`,a:'Open report',go:()=>openIncident(i.id)}));
-  APPTS.filter(a=>a.flag&&a.date>=T&&cl.includes(a.cid)&&client(a.cid)).forEach(a=>out.push({k:'warn',ic:'▤',t:esc(a.flag),s:`${(client(a.cid)||{}).name||''} · ${a.title} · ${relDay(a.date)} ${hm12(a.time)}`,a:'Open appointment',go:()=>openAppt(a.id)}));
+  INCIDENTS.filter(i=>i.status!=='Closed'&&cl.includes(i.cid)&&client(i.cid)&&(!state.hideSample||!i._seed)).forEach(i=>out.push({k:'bad',ic:'⚠',t:`Incident follow-up open — ${(client(i.cid)||{}).name||''}`,s:`${i.type} on ${relDay(i.date)} · reported by ${i.by}`,a:'Open report',go:()=>openIncident(i.id)}));
+  APPTS.filter(a=>a.flag&&a.date>=T&&cl.includes(a.cid)&&client(a.cid)&&(!state.hideSample||!a._seed)).forEach(a=>out.push({k:'warn',ic:'▤',t:esc(a.flag),s:`${(client(a.cid)||{}).name||''} · ${a.title} · ${relDay(a.date)} ${hm12(a.time)}`,a:'Open appointment',go:()=>openAppt(a.id)}));
   if(state.role!=='family'){
-    TASKS.filter(t=>t.stage==='Overdue'&&staff(t.sid)).forEach(t=>out.push({k:'bad',ic:'☑',t:`Overdue task — ${t.title}`,s:`Assigned to ${(staff(t.sid)||{}).init||''} · due ${relDay(t.due)}`,a:'Open task',go:()=>openTask(t.id)}));
-    APPTS.filter(a=>a.date===T&&a.ride===''&&client(a.cid)).forEach(a=>out.push({k:'warn',ic:'🚐',t:`No ride arranged — ${a.title}`,s:`${(client(a.cid)||{}).name||''} · today at ${hm12(a.time)} · ${a.loc}`,a:'Open appointment',go:()=>openAppt(a.id)}));
+    TASKS.filter(t=>t.stage==='Overdue'&&staff(t.sid)&&(!state.hideSample||!t._seed)).forEach(t=>out.push({k:'bad',ic:'☑',t:`Overdue task — ${t.title}`,s:`Assigned to ${(staff(t.sid)||{}).init||''} · due ${relDay(t.due)}`,a:'Open task',go:()=>openTask(t.id)}));
+    APPTS.filter(a=>a.date===T&&a.ride===''&&client(a.cid)&&(!state.hideSample||!a._seed)).forEach(a=>out.push({k:'warn',ic:'🚐',t:`No ride arranged — ${a.title}`,s:`${(client(a.cid)||{}).name||''} · today at ${hm12(a.time)} · ${a.loc}`,a:'Open appointment',go:()=>openAppt(a.id)}));
     if(state.role==='staff'){
-      trainPending('s1').t.forEach(t=>out.push({k:'info',ic:'◉',t:`Training due — ${t.n}`,s:`${t.mins} minutes${t.due?' · due '+t.due:''}`,a:'Start course',go:()=>go('training')}));
+      trainPending(meSid()).t.forEach(t=>out.push({k:'info',ic:'◉',t:`Training due — ${t.n}`,s:`${t.mins} minutes${t.due?' · due '+t.due:''}`,a:'Start course',go:()=>go('training')}));
     }
     if(state.role==='director'){
-      const g=ATTEND.filter(x=>x.gap&&client(x.cid));
+      const g=ATTEND.filter(x=>x.gap&&client(x.cid)&&(!state.hideSample||!x._seed));
       if(g.length) out.push({k:'warn',ic:'▦',t:`${g.length} service unit claim${g.length>1?'s':''} blocked`,s:g.map(x=>`${(client(x.cid)||{}).name||''} — ${x.gap}`).join(' · '),a:'Open billing',go:()=>go('billing')});
       Object.entries(CREDS).forEach(([sid,cs])=>{ if(!staff(sid)||hid('staff',sid)) return; cs.filter(c=>c.s==='bad').forEach(c=>out.push({k:'bad',ic:'◉',t:`${(staff(sid)||{}).init||''} — ${c.c} ${c.d.toLowerCase()}`,s:'Cannot count toward required staffing until renewed',a:'Open team',go:()=>go('team')})); });
     }
-    const gaps=TRAINING.filter(t=>t.req&&!hid('course',t.id)).map(tr=>({n:tr.n,m:STAFF.filter(s=>!tr.done.includes(s.id))})).filter(g=>g.m.length);
+    const gaps=TRAINING.filter(t=>t.req&&!hid('course',t.id)).map(tr=>({n:tr.n,m:visibleStaff().filter(s=>!tr.done.includes(s.id))})).filter(g=>g.m.length);
     if(gaps.length && state.role==='director'){
       const people=[...new Set(gaps.flatMap(g=>g.m.map(m=>m.init)))];
       out.push({k:'info',ic:'◉',t:`${people.length} staff behind on required training`,
@@ -2952,18 +3142,22 @@ function viewHome(){
       {lb:'Open tasks',vl:myTasks().filter(t=>t.stage!=='Done').length,ft:od?od+' overdue':'None overdue',c:od?'warn':'ok',go:"go('tasks')"},
       {lb:'Clients in service',vl:visibleClients().length,ft:'Across 3 homes',c:'',go:"go('clients')"},
       {lb:'Staff on shift now',vl:visShifts().filter(s=>s.start<=nowHM()&&s.end>=nowHM()).length,ft:`${visShifts().length} scheduled today`,c:'',go:"go('team')"},
-      {lb:'Open incidents',vl:INCIDENTS.filter(i=>i.status!=='Closed').length,ft:'Follow-up required',c:INCIDENTS.filter(i=>i.status!=='Closed').length?'bad':'ok',go:"go('incidents')"}
+      {lb:'Open incidents',vl:visIncidents().filter(i=>i.status!=='Closed').length,ft:visIncidents().filter(i=>i.status!=='Closed').length?'Follow-up required':'None open',c:visIncidents().filter(i=>i.status!=='Closed').length?'bad':'ok',go:"go('incidents')"}
     ];
   } else if(state.role==='staff'){
+    const sid=meSid();
     const mine=myTasks().filter(t=>t.stage!=='Done');
-    const my=SHIFTS.find(x=>x.sid==='s1');
+    const my=visShifts().find(x=>x.sid===sid);
     const strip=t=>hm12(t).replace(/ (AM|PM)/,'');
-    const mates=visShifts().filter(x=>x.sid!=='s1'&&(x.home===my.home||x.home==='All homes')).map(x=>staff(x.sid).init).join(', ');
+    const mates=my?visShifts().filter(x=>x.sid!==sid&&(x.home===my.home||x.home==='All homes')).map(x=>(staff(x.sid)||{}).init||'').filter(Boolean).join(', '):'';
+    const myCl=visibleClients().filter(c=>!my||c.home===my.home||my.home==='All homes');
+    const myAp=visAppts().filter(a=>a.date===T&&!a.cancelled);
     stats=[
-      {lb:'Your shift',vl:`${strip(my.start)}<small> – ${strip(my.end)}</small>`,ft:`${esc(my.home)}${mates?' · with '+mates:''}`,c:'',go:'tlExpand()'},
-      {lb:'Clients today',vl:2,ft:'J-402318 W., R-518264 A.',c:'',go:"go('clients')"},
+      my?{lb:'Your shift',vl:`${strip(my.start)}<small> – ${strip(my.end)}</small>`,ft:`${esc(my.home)}${mates?' · with '+mates:''}`,c:'',go:'tlExpand()'}
+        :{lb:'Your shift',vl:'—',ft:'No shift scheduled today',c:'',go:"go('calendar')"},
+      {lb:'Clients today',vl:myCl.length,ft:myCl.length?myCl.slice(0,2).map(c=>c.uci).join(', '):'None assigned',c:'',go:"go('clients')"},
       {lb:'Open tasks',vl:mine.length,ft:`${mine.filter(t=>t.due<=T).length} due today`,c:mine.filter(t=>t.due<=T).length?'warn':'ok',go:"go('tasks')"},
-      {lb:'Appointments today',vl:APPTS.filter(a=>a.date===T&&!a.cancelled).length,ft:'Tap to open the calendar',c:'',go:"go('calendar')"}
+      {lb:'Appointments today',vl:myAp.length,ft:myAp.length?'Tap to open the calendar':'Nothing scheduled',c:'',go:"go('calendar')"}
     ];
   } else {
     const nxA=APPTS.filter(a=>a.cid==='c1'&&a.date>=T).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time))[0];
@@ -3123,14 +3317,15 @@ function viewClients(){
   const cl=visibleClients();
   return `
   <div class="page-h">
-    <div><h1>Clients</h1><div class="sub">${cl.length} people in service across 3 homes</div></div>
-    <div class="right">${state.role==='director'?`<button class="btn navy" onclick="openClientForm()">＋ Add client</button>`:''}</div>
+    <div><h1>Clients</h1><div class="sub">${cl.length} people in service · click any column to sort</div>
+      <div style="margin-top:8px">${tblFilter('clients','Filter clients…')}</div></div>
+    <div class="right">${state.role==='director'?`<button class="btn ghost sm" onclick="manageClientsConfig()" style="margin-right:6px">⚙ Configure</button>`:''} ${state.role==='director'?`<button class="btn navy" onclick="openClientForm()">＋ Add client</button>`:''}</div>
   </div>
   <section class="card">
     <div class="card-b flush">
       <table class="tb">
-        <thead><tr><th>Client</th><th>Home</th><th>Service</th><th>Active meds</th><th>Next appointment</th><th>Alerts</th>${state.role==='director'?'<th></th>':''}</tr></thead>
-        <tbody>${cl.map(c=>{
+        <thead><tr>${tblHead('clients','uci','Client')}${tblHead('clients','home','Home')}${tblHead('clients','dx','Service')}${tblHead('clients','meds','Active meds')}<th>Next appointment</th><th>Alerts</th>${state.role==='director'?'<th></th>':''}</tr></thead>
+        <tbody>${tblApply('clients',cl,{uci:x=>x.uci,home:x=>x.home,dx:x=>x.dx,meds:x=>MEDS.filter(m=>m.cid===x.id&&m.status==='active').length}).map(c=>{
           const meds=MEDS.filter(m=>m.cid===c.id&&m.status==='active').length;
           const nx=APPTS.filter(a=>a.cid===c.id&&a.date>=T).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time))[0];
           return `<tr class="click" onclick="openClient('${c.id}')">
@@ -3181,6 +3376,7 @@ function wkToggle(cid,i){
   const w=WEEKLY[cid][i]; w.d=w.d?0:1;
   if(w.d){ w.by=ME[state.role].name; w.at=nowStamp(); } else { w.by=''; w.at=''; }
   sbPush('np_demo_checklist_logs',{cid, item:w.t, done:w.d, signed_by:w.d?w.by:null, signed_at:w.d?new Date().toISOString():null});
+  chkSave();                                                            // the tick itself now survives a reload
   logAudit(w.d?'Completed weekly checklist item':'Unchecked weekly checklist item',`${client(cid).uci} · ${w.t}`);
   if(w.d && WEEKLY[cid].every(x=>x.d)) autoFileLog('Daily', `Weekly checklist — ${client(cid).uci} — ${T} ${nowStamp().split(', ')[1]||''}`.trim(), `All ${WEEKLY[cid].length} items signed · completed by ${w.by}`, 'Checklist complete — log filed to Daily logs with date and time.');
   render();
@@ -3191,9 +3387,31 @@ function autoFileLog(folderKey, name, sub, msg){
   logAudit('Auto-filed log', name);
   if(msg) toast(msg);
 }
+function chkSave(){ sbUpsert('np_demo_program',{key:'weekly',value:{map:WEEKLY},updated_by:auditActor()}); }
+function wkEdit(cid,i){
+  const it=(WEEKLY[cid]||[])[i]; if(!it) return;
+  openModal('Rename checklist item',`
+    <div class="field"><label>Item</label><input class="inp" id="wkE" value="${esc(it.t)}"></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button>
+     <button class="btn navy" onclick="wkEditSave('${cid}',${i})">Save</button>`);
+}
+function wkEditSave(cid,i){
+  const v=(el('wkE').value||'').trim(); if(!v) return toast('Give the item a name.');
+  const old=WEEKLY[cid][i].t; WEEKLY[cid][i].t=v; chkSave&&chkSave();
+  logAudit('Renamed weekly checklist item',`${(client(cid)||{}).uci||cid} · ${old} → ${v}`);
+  closeAll(); render(); toast('Item renamed.');
+}
+function wkDel(cid,i){
+  const it=(WEEKLY[cid]||[])[i]; if(!it) return;
+  askDelete('Remove this checklist item?',esc(it.t),()=>{
+    WEEKLY[cid].splice(i,1); chkSave&&chkSave();
+    logAudit('Removed weekly checklist item',`${(client(cid)||{}).uci||cid} · ${it.t}`);
+    render(); toast('Item removed.');
+  },'Remove item');
+}
 function wkAdd(cid){
   const v=el('wkNew').value.trim(); if(!v) return;
-  WEEKLY[cid]=WEEKLY[cid]||[]; WEEKLY[cid].push({t:v,d:0});
+  WEEKLY[cid]=WEEKLY[cid]||[]; WEEKLY[cid].push({t:v,d:0}); chkSave();
   logAudit('Added weekly checklist item',`${client(cid).name} · ${v}`);
   render(); toast('Added to the weekly checklist.');
 }
@@ -3204,10 +3422,12 @@ function weeklyCard(c){
     <div class="card-h"><h2>Weekly checklist</h2><div class="sub">${esc(c.uci)} · week of ${wkMonday()} · each sign-off records name, date and time</div>
       <div class="right"><span class="pill ${done===list.length&&list.length?'ok':'neutral'}">${done}/${list.length} done</span></div></div>
     <div class="card-b flush">
-      ${list.map((w,i)=>`<div class="checkrow" style="cursor:pointer" onclick="wkToggle('${c.id}',${i})">
-        <div class="cb ${w.d?'on':''}">✓</div>
-        <div class="ct ${w.d?'done':''}">${esc(w.t)}</div>
-        <span class="tiny muted">${w.d?`${esc(w.by)} · ${esc(w.at)}`:''}</span></div>`).join('')||'<div class="empty">No weekly items yet.</div>'}
+      ${list.map((w,i)=>`<div class="checkrow">
+        <div class="cb ${w.d?'on':''}" style="cursor:pointer" onclick="wkToggle('${c.id}',${i})">✓</div>
+        <div class="ct ${w.d?'done':''}" style="cursor:pointer" onclick="wkToggle('${c.id}',${i})">${esc(w.t)}</div>
+        <span class="tiny muted">${w.d?`${esc(w.by)} · ${esc(w.at)}`:''}</span>
+        ${state.role!=='family'?`<button class="btn ghost sm" style="padding:0 5px" title="Rename" onclick="event.stopPropagation();wkEdit('${c.id}',${i})">✎</button>
+        <button class="btn ghost sm" style="padding:0 5px" title="Remove" onclick="event.stopPropagation();wkDel('${c.id}',${i})">✕</button>`:''}</div>`).join('')||'<div class="empty">No weekly items yet.</div>'}
       ${state.role!=='family'?`<div style="display:flex;gap:8px;padding:12px 18px">
         <input class="inp" id="wkNew" placeholder="Add a weekly item…" style="height:34px" onkeydown="if(event.key==='Enter')wkAdd('${c.id}')">
         <button class="btn ghost sm" onclick="wkAdd('${c.id}')">Add</button>
@@ -3369,9 +3589,18 @@ function clientDocs(c){
   <div style="padding:14px 18px"><div class="drop" onclick="uploadDoc('${c.id}','General')"><b>Upload documents</b><span>Drop files here or click to browse</span></div></div></div></section>`;
 }
 
-let NOTIF_RULES={ note:'director', doc:'director', appt:'all', temp:'off' };   // incident + SIR alerts are always on
-const NOTIF_EVENTS=[['note','New progress notes'],['doc','Document uploads'],['appt','New appointments'],['temp','Water temperature readings']];
-function rulesSave(){ sbUpsert('np_demo_program',{key:'notifrules',value:{rules:NOTIF_RULES},updated_by:auditActor()}); }
+let TASK_CATS=['Client','Agency','Documentation','Training'];
+function tcatAdd(){
+  const v=prompt('New task category name:'); if(!v||!v.trim()) return;
+  if(!TASK_CATS.includes(v.trim())){ TASK_CATS.push(v.trim()); sbUpsert('np_demo_program',{key:'taskcats',value:{list:TASK_CATS},updated_by:auditActor()}); logAudit('Added task category',v.trim()); }
+  const sel=el('tkCat'); if(sel){ sel.insertAdjacentHTML('beforeend',`<option>${esc(v.trim())}</option>`); sel.value=v.trim(); }
+}
+let NOTIF_RULES={ note:'director', doc:'director', appt:'all', temp:'off', training:'all', guide:'all', guideack:'director', onboard:'all', onboarddone:'director', tasksign:'director' };   // incident + SIR alerts are always on
+const NOTIF_EVENTS=[['note','New progress notes'],['doc','Document uploads'],['appt','New appointments'],['temp','Water temperature readings'],
+  ['training','Training assigned'],['guide','Readiness guide assigned'],['guideack','Guide acknowledged'],
+  ['onboard','Onboarding checklist shared'],['onboarddone','Onboarding item completed'],['tasksign','Task signed off']];
+let NOTIF_CADENCE={};                                                          // ev -> 'off' | 'daily' | 'weekly'
+function rulesSave(){ sbUpsert('np_demo_program',{key:'notifrules',value:{rules:NOTIF_RULES,cadence:NOTIF_CADENCE},updated_by:auditActor()}); }
 function notifyRule(ev,title,body){
   const to=NOTIF_RULES[ev]||'off'; if(to==='off') return;
   const for_staff=(to==='all'||to==='director')?null:to;             // null = broadcast; a sid targets one person
@@ -3531,7 +3760,7 @@ function viewCalendar(){
           <option value="">All types</option>${types.map(t=>`<option value="${esc(t)}" ${state.calFilter.type===t?'selected':''}>${catOf(t).emoji} ${t}</option>`).join('')}
         </select>
         ${state.role!=='family'?`<select class="inp" onchange="state.calFilter.client=this.value;render()">
-          <option value="">All clients</option>${CLIENTS.map(c=>`<option value="${c.id}" ${state.calFilter.client===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
+          <option value="">All clients</option>${visibleClients().map(c=>`<option value="${c.id}" ${state.calFilter.client===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
         </select>`:''}
         ${(state.calFilter.type||state.calFilter.client)?`<button class="btn ghost sm" onclick="state.calFilter={type:'',client:''};render()">Clear filters</button>`:''}
       </div>
@@ -3590,7 +3819,7 @@ function monthGrid(list){
 
 /* ══════════════ TASKS ══════════════ */
 function taskFiltered(list){
-  let out=list.filter(t=>(!state.taskCat||t.cat===state.taskCat)&&(!state.taskWho||t.sid===state.taskWho));
+  let out=list.filter(t=>(!state.taskCat||t.cat===state.taskCat)&&(!state.taskWho||t.sid===state.taskWho)&&(!state.taskStage||t.stage===state.taskStage));
   const S=state.taskSort||'due', pr={High:0,Medium:1,Low:2};
   const prog=t=>t.subs.length?t.subs.filter(x=>x.d).length/t.subs.length:1;
   if(S==='due') out.sort((a,b)=>String(a.due).localeCompare(String(b.due)));
@@ -3607,7 +3836,9 @@ function viewTasks(){
   return `
   <div class="page-h">
     <div><h1>${state.role==='staff'?'My tasks':'Tasks'}</h1><div class="sub">${open.length} open · ${open.filter(t=>t.due<=T).length} due today or earlier</div></div>
-    <div class="right"><button class="btn navy" onclick="openAssign()">＋ ${state.role==='director'?'Assign task':'Add task'}</button></div>
+    <div class="right">
+      ${state.role==='director'?`<button class="btn ghost sm" onclick="manageTasksConfig()" style="margin-right:6px">⚙ Configure</button>`:''}
+      <button class="btn navy" onclick="openAssign()">＋ ${state.role==='director'?'Assign task':'Add task'}</button></div>
   </div>
 
   ${state.role==='director'?`
@@ -3630,13 +3861,17 @@ function viewTasks(){
   </section>`:''}
 
   <div class="tabs" style="margin-bottom:12px">
-    ${['','Client','Agency','Documentation','Training'].map(cta=>`<button class="${(state.taskCat||'')===cta?'active':''}" onclick="state.taskCat='${cta}';render()">${cta||'All categories'}</button>`).join('')}
+    ${['',...TASK_CATS].map(cta=>`<button class="${(state.taskCat||'')===cta?'active':''}" onclick="state.taskCat='${cta}';render()">${cta||'All categories'}</button>`).join('')}
   </div>
   <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
     ${state.role==='director'?`<select class="inp" style="max-width:190px" onchange="state.taskWho=this.value;render()">
       <option value="">Everyone</option>
       ${visibleStaff().map(st=>`<option value="${st.id}" ${state.taskWho===st.id?'selected':''}>${esc(st.name)}</option>`).join('')}
     </select>`:''}
+    <select class="inp" style="max-width:170px" onchange="state.taskStage=this.value;render()">
+      <option value="" ${!state.taskStage?'selected':''}>Any stage</option>
+      ${['To do','In progress','Overdue'].map(st=>`<option ${state.taskStage===st?'selected':''}>${st}</option>`).join('')}
+    </select>
     <select class="inp" style="max-width:190px" onchange="state.taskSort=this.value;render()">
       <option value="due" ${(state.taskSort||'due')==='due'?'selected':''}>Due date (soonest)</option>
       <option value="pri" ${state.taskSort==='pri'?'selected':''}>Priority</option>
@@ -3662,7 +3897,7 @@ function viewTasks(){
   </section>
 
   <section class="card">
-    <div class="card-h"><h2>Completed</h2></div>
+    <div class="card-h"><h2>Completed <span class="pill ok">${done.length}</span></h2></div>
     <div class="card-b flush"><table class="tb"><tbody>${done.map(t=>`<tr class="click" onclick="openTask('${t.id}')"><td><span class="muted" style="text-decoration:line-through">${esc(t.title)}</span>
     ${t.signoff?`<div class="tiny muted">Signed off by ${esc(t.signoff.by)} · ${esc(t.signoff.at)}</div>`:''}</td>
     ${state.role==='director'?`<td>${staff(t.sid)?staff(t.sid).init:'—'}</td>`:''}
@@ -3678,13 +3913,13 @@ function filterStaffTasks(sid){
     <span class="pill ${t.stage==='Done'?'ok':t.stage==='Overdue'?'bad':'info'}">${t.stage}</span>
     ${state.role==='director'&&t.stage!=='Done'?`<button class="btn ghost sm" onclick="event.stopPropagation();removeTask('${t.id}',false)" title="Remove">✕</button>`:''}</div>`;
   openDrawer(esc(staff(sid).name),`${esc(staff(sid).role)} · ${esc(staff(sid).home)}`,`
-    <section class="card"><div class="card-h"><h2>Open tasks</h2><div class="sub">Click any task to open it</div>
+    <section class="card"><div class="card-h"><h2>Open tasks <span class="pill info">${TASKS.filter(t=>t.sid===sid&&t.stage!=='Done').length}</span></h2><div class="sub">Click any task to open it</div>
       ${state.role==='director'?`<div class="right"><button class="btn navy sm" onclick="window._qtFrom='tasks';quickTaskFor('${sid}')">＋ Task</button></div>`:''}</div>
       <div class="card-b flush">${open.map(row).join('')||'<div class="empty">Nothing open right now.</div>'}</div></section>
     ${done.length?`<section class="card"><div class="card-h"><h2>Completed (${done.length})</h2></div>
       <div class="card-b flush">${done.map(row).join('')}</div></section>`:''}`,
     `<button class="btn ghost" onclick="closeAll()">Close</button>
-     ${state.role==='director'?`<button class="btn navy" onclick="closeAll();openStaff('${sid}')">Open full record →</button>`:''}`);
+     ${state.role==='director'?`<button class="btn navy" onclick="closeAll();openStaffPage('${sid}')">Open full record →</button>`:''}`);
 }
 
 /* ══════════════ ATTENDANCE & BILLING ══════════════ */
@@ -3739,9 +3974,9 @@ function viewBilling(){
     <div class="card-h"><h2>Client funds</h2><div class="sub">Rent and cash received, personal expenditures, receipts on file</div>
       <div class="right">
         <select class="inp" style="height:32px;width:auto;font-size:12.6px" onchange="state.ledger=this.value;render()">
-          ${CLIENTS.map(c=>`<option value="${c.id}" ${ (state.ledger||'c1')===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
+          ${visibleClients().map(c=>`<option value="${c.id}" ${ (state.ledger||'c1')===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
         </select>
-        <button class="btn ghost sm" onclick="toast('Entry form opens here.')">＋ Add entry</button>
+        <button class="btn ghost sm" onclick="chgEntryForm()">＋ Add entry</button>
       </div></div>
     <div class="card-b flush">
       ${(()=>{const cid=state.ledger||'c1';const rows=LEDGER.filter(l=>l.cid===cid);const bal=rows.reduce((a,l)=>a+l.amt,0);
@@ -3785,10 +4020,10 @@ function viewIncidents(){
   <div class="grid-side">
     <div>
       <section class="card">
-        <div class="card-h"><h2>Reports</h2></div>
+        <div class="card-h"><h2>Reports</h2><div class="right">${tblFilter('inc','Filter incidents…')}</div></div>
         <div class="card-b flush"><table class="tb">
-          <thead><tr><th>Type</th><th>Client</th><th>When</th><th>Severity</th><th>Status</th><th>Reported by</th>${state.role==='director'?'<th></th>':''}</tr></thead>
-          <tbody>${list.map(i=>`<tr class="click" onclick="openIncident('${i.id}')">
+          <thead><tr>${tblHead('inc','type','Type')}${tblHead('inc','cli','Client')}${tblHead('inc','date','When')}${tblHead('inc','sev','Severity')}${tblHead('inc','status','Status')}${tblHead('inc','by','Reported by')}${state.role==='director'?'<th></th>':''}</tr></thead>
+          <tbody>${tblApply('inc',list,{type:x=>x.type,cli:x=>(client(x.cid)||{}).uci,date:x=>x.date,sev:x=>x.sev,status:x=>x.status,by:x=>x.by}).map(i=>`<tr class="click" onclick="openIncident('${i.id}')">
             <td><b>${esc(i.type)}</b></td><td>${esc(client(i.cid).name)}</td>
             <td>${relDay(i.date)} ${hm12(i.time)}</td>
             <td><span class="pill ${i.sev==='Moderate'?'warn':'neutral'}">${i.sev}</span></td>
@@ -3799,9 +4034,11 @@ function viewIncidents(){
     </div>
     <div>
       <section class="card">
-        <div class="card-h"><h2>Incident protocols</h2><div class="sub">What to do first and who to call — by incident type${state.role==='director'?', editable':''}</div></div>
+        <div class="card-h"><h2>Incident protocols</h2><div class="sub">What to do first and who to call — by incident type${state.role==='director'?', editable':''}</div>
+          ${state.role==='director'?`<div class="right"><button class="btn ghost sm" onclick="newProtocol()">＋ New protocol</button></div>`:''}</div>
         <div class="card-b flush">
           ${Object.keys(PROTOCOLS).filter(k=>!hid('protocol',k)).map(k=>`<div class="docrow click" onclick="openProtocol('${esc(k)}')"><div class="di">◔</div>
+            ${state.role==='director'?`<button class="btn ghost sm" style="float:right;padding:0 6px" title="Delete protocol" onclick="event.stopPropagation();delProtocol('${esc(k)}')">✕</button>`:''}
             <div class="dt"><b>${esc(k)}</b><span>${PROTOCOLS[k].first.length} steps · ${PROTOCOLS[k].call.length} contacts · report within ${PROTOCOLS[k].hours}h</span></div>
             <span class="tiny muted">Open ›</span></div>`).join('')}
         </div>
@@ -3812,44 +4049,17 @@ function viewIncidents(){
 }
 
 /* ══════════════ TEAM ══════════════ */
-function viewTeam(){
+function viewTrainHub(){
   return `
   <div class="page-h">
-    <div><h1>Team</h1><div class="sub">${visibleStaff().length} staff · training status and onboarding</div></div>
-    <div class="right"><button class="btn ghost" onclick="openShiftForm()">＋ Add shift</button>
-      <button class="btn navy" onclick="openStaffForm()">＋ Add staff</button></div>
+    <div><h1>Training &amp; onboarding</h1><div class="sub">Courses, readiness guides and the onboarding checklist — assign any of them to staff</div></div>
   </div>
-
-  <div class="grid3" style="margin-bottom:14px">
-    ${TRAINING.filter(t=>t.req&&!hid('course',t.id)).slice(0,3).map(t=>{
-      const pct=Math.round(t.done.length/STAFF.length*100);
-      return `<div class="stat"><div class="lb">${esc(t.n)}</div>
-      <div class="vl">${t.done.length}<small>/${STAFF.length}</small></div>
-      <div class="bar" style="margin-top:9px"><i class="${pct===100?'g':'w'}" style="width:${pct}%"></i></div>
-      <div class="ft ${pct===100?'ok':'warn'}">${pct===100?'Everyone current':`${STAFF.length-t.done.length} outstanding`}</div></div>`;
-    }).join('')}
-  </div>
-
-  <section class="card">
-    <div class="card-h"><h2>Staff roster</h2><div class="sub">Click anyone to see their record</div></div>
-    <div class="card-b flush"><table class="tb">
-      <thead><tr><th>Staff</th><th>Role</th><th>Home</th><th>Certifications</th><th>Training hours</th><th>Open tasks</th><th></th></tr></thead>
-      <tbody>${visibleStaff().map(s=>`<tr class="click" onclick="openStaff('${s.id}')">
-        <td><div class="tb-name"><span class="av-sm">${s.init.replace(/\./g,'')}</span><div><div>${esc(s.name)}</div><div class="tiny muted">Since ${new Date(s.hired).getFullYear()}</div></div></div></td>
-        <td class="muted">${esc(s.role)}</td><td>${esc(s.home)}</td>
-        <td>${credCell(s.id)}</td>
-        <td><span class="pill ${s.hrs>=20?'ok':s.hrs>=12?'warn':'bad'}">${s.hrs} / 20 h</span></td>
-        <td style="text-align:right"><button class="btn ghost sm" onclick="event.stopPropagation();openStaffPage('${s.id}')">Open profile →</button></td>
-        <td>${TASKS.filter(t=>t.sid===s.id&&t.stage!=='Done').length}</td>
-      </tr>`).join('')}</tbody></table></div>
-  </section>
-
   <section class="card">
     <div class="card-h"><h2>Training library</h2><div class="sub">Courses with links, videos and documents — assign to specific staff</div>
       <div class="right"><button class="btn navy sm" onclick="openTrainingForm()">＋ Add training</button></div></div>
     <div class="card-b flush">
       ${TRAINING.filter(t=>!hid('course',t.id)).map(t=>{
-        const appl=STAFF.filter(s=>t.req||(t.asg||[]).includes(s.id));
+        const appl=visibleStaff().filter(s=>t.req||(t.asg||[]).includes(s.id));
         return `<div class="docrow"><div class="di">◉</div>
         <div class="dt"><b>${esc(t.n)}</b>${t.req?' <span class="pill neutral">Required — everyone</span>':` <span class="pill info">Assigned: ${(t.asg||[]).filter(id=>staff(id)).map(id=>staff(id).init).join(', ')||'no one yet'}</span>`}
           <span>${t.mins} min${t.due?` · due ${esc(t.due)}`:''} · ${appl.filter(s=>t.done.includes(s.id)).length}/${appl.length} complete${t.link?' · link attached':''}${t.files?` · ${t.files} file${t.files>1?'s':''}`:''}</span></div>
@@ -3888,6 +4098,52 @@ function viewTeam(){
     </div>
   </section>`;
 }
+function viewTeam(){
+  return `
+  <div class="page-h">
+    <div><h1>Team</h1><div class="sub">${visibleStaff().length} staff · training status and onboarding</div></div>
+    <div class="right"><button class="btn ghost" onclick="openShiftForm()">＋ Add shift</button>
+      <button class="btn navy" onclick="openStaffForm()">＋ Add staff</button></div>
+  </div>
+
+  <div class="grid3" style="margin-bottom:14px">
+    ${(()=>{const vs=visibleStaff();
+      const out=vs.reduce((a,st)=>a+trainingsOutstanding(st.id),0);
+      const certsAll=vs.flatMap(st=>CREDS[st.id]||[]);
+      const certsOk=certsAll.filter(c=>c.s==='ok').length;
+      const expiring=certsAll.filter(c=>c.s==='warn').length, expired=certsAll.filter(c=>c.s==='bad').length;
+      return `
+      <button class="stat" onclick="go('trainhub')"><div class="lb">Trainings outstanding</div>
+        <div class="vl">${out}</div>
+        <div class="ft ${out?'warn':'ok'}">${out?'across '+vs.filter(st=>trainingsOutstanding(st.id)).length+' staff':'Everyone current'}</div></button>
+      <button class="stat" onclick="go('team')"><div class="lb">Certifications current</div>
+        <div class="vl">${certsOk}<small>/${certsAll.length||0}</small></div>
+        <div class="ft ${expired?'warn':'ok'}">${expired?expired+' expired':expiring?expiring+' expiring soon':'All in date'}</div></button>
+      <button class="stat" onclick="go('tasks')"><div class="lb">Open staff tasks</div>
+        <div class="vl">${TASKS.filter(t=>t.stage!=='Done'&&staff(t.sid)&&!hid('staff',t.sid)).length}</div>
+        <div class="ft">across the team</div></button>`;})()}
+  </div>
+
+  <section class="card">
+    <div class="card-h"><h2>Staff roster</h2><div class="sub">Click anyone to open their full file · click any column to sort</div>
+      <div class="right">${tblFilter('staff','Filter staff…')}</div></div>
+    <div class="card-b flush"><table class="tb">
+      <thead><tr>${tblHead('staff','name','Staff')}${tblHead('staff','role','Role')}${tblHead('staff','home','Home')}<th>Certifications</th>${tblHead('staff','out','Trainings outstanding')}${tblHead('staff','open','Open tasks')}<th></th></tr></thead>
+      <tbody>${tblApply('staff',visibleStaff(),{name:x=>x.name,role:x=>x.role,home:x=>x.home,out:x=>trainingsOutstanding(x.id),open:x=>TASKS.filter(t=>t.sid===x.id&&t.stage!=='Done').length}).map(s=>{
+        const out=trainingsOutstanding(s.id), open=TASKS.filter(t=>t.sid===s.id&&t.stage!=='Done').length;
+        return `<tr class="click" onclick="openStaffPage('${s.id}')">
+        <td><div class="tb-name">${s.photo?`<img src="${s.photo}" class="av-sm" style="object-fit:cover;padding:0">`:`<span class="av-sm" style="${s.color?`background:${s.color};color:#fff`:''}">${s.init.replace(/\./g,'')}</span>`}<div><div>${esc(stName(s))}</div><div class="tiny muted">Since ${new Date(s.hired).getFullYear()}</div></div></div></td>
+        <td class="muted">${esc(s.role)}</td><td>${esc(s.home)}</td>
+        <td>${credCell(s.id)}</td>
+        <td><span class="pill ${out?'warn':'ok'}" title="Required or assigned courses not yet completed">${out?out+' to do':'All done'}</span></td>
+        <td><span class="pill ${open?'info':'neutral'}">${open}</span></td>
+        <td style="text-align:right"><button class="btn ghost sm" onclick="event.stopPropagation();openStaffPage('${s.id}')">Open profile →</button></td>
+      </tr>`}).join('')}</tbody></table></div>
+  </section>
+
+  ${state.role==='director'?sfBody():''}
+  `;
+}
 function obSave(){ sbUpsert('np_demo_program',{key:'onboard',value:{master:OB_MASTER,assign:OB_ASSIGN},updated_by:auditActor()}); }
 function obEdit(i){
   const o=i==null?{t:'',link:''}:OB_MASTER[i];
@@ -3911,14 +4167,15 @@ function obDel(i){
 }
 function obShareForm(){
   openModal('Share the onboarding checklist',`
-    <div class="field"><label>New hire</label><select class="inp" id="obWho">${STAFF.map(st=>`<option value="${st.id}">${esc(st.name)} · ${esc(st.role)}</option>`).join('')}</select></div>
+    <div class="field"><label>New hire</label><select class="inp" id="obWho">${visibleStaff().map(st=>`<option value="${st.id}">${esc(st.name)} · ${esc(st.role)}</option>`).join('')}</select></div>
     <div class="tiny muted">A copy of the ${OB_MASTER.length}-item checklist lands in their staff file. They check items off from their own view, and you see progress here.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="obShare()">Share checklist</button>`);
 }
 function obShare(){
-  const sid=el('obWho').value; const st=staff(sid);
-  OB_ASSIGN[sid]=OB_MASTER.map(o=>({t:o.t,link:o.link||'',d:0}));
+  const sid=el('obWho').value; const st=staff(sid); if(!st) return toast('No staff member selected.');
+  OB_ASSIGN[sid]=OB_MASTER.filter(o=>!hid('obitem',o.t)).map(o=>({t:o.t,link:o.link||'',d:0}));
   obSave();
+  notifyRule('onboard','Onboarding checklist shared',`${st.name} · ${OB_ASSIGN[sid].length} items`);
   sbPush('np_demo_notifications',{title:'Onboarding checklist shared',body:`${OB_ASSIGN[sid].length} items to complete`,kind:'onboard',for_staff:sid});
   logAudit('Shared onboarding checklist',st.name);
   closeAll(); render(); toast('Checklist shared with '+st.name.split(' ')[0]+'.');
@@ -3941,9 +4198,9 @@ function guidesSave(){ sbUpsert('np_demo_program',{key:'guides',value:{items:GUI
 function meSid(){ const m=STAFF.find(x=>x.name===ME.staff.name); return m?m.id:'s1'; }
 function openGuide(gi){
   const g=GUIDES[gi]; if(!g) return;
-  const acked=STAFF.filter(st=>(g.ack||[]).includes(st.id)), pending=STAFF.filter(st=>!(g.ack||[]).includes(st.id));
+  const acked=visibleStaff().filter(st=>(g.ack||[]).includes(st.id)), pending=visibleStaff().filter(st=>!(g.ack||[]).includes(st.id));
   openDrawer(esc(g.t),esc(g.r),`
-    <section class="card"><div class="card-h"><h2>Acknowledged (${acked.length} of ${STAFF.length})</h2></div><div class="card-b flush">
+    <section class="card"><div class="card-h"><h2>Acknowledged (${acked.length} of ${visibleStaff().length})</h2></div><div class="card-b flush">
       ${acked.map(st=>`<div class="docrow"><div class="di">✓</div><div class="dt"><b>${esc(st.name)}</b><span>${esc(st.role)}</span></div></div>`).join('')||'<div class="empty">No acknowledgments yet.</div>'}
     </div></section>
     <section class="card"><div class="card-h"><h2>Pending (${pending.length})</h2></div><div class="card-b flush">
@@ -3957,7 +4214,7 @@ function openGuide(gi){
 }
 function guideAck(gi,sid){
   const g=GUIDES[gi]; if(!g) return; g.ack=g.ack||[];
-  if(!g.ack.includes(sid)){ g.ack.push(sid); guidesSave(); logAudit('Recorded guide acknowledgment',`${staff(sid).init} · ${g.t}`); }
+  if(!g.ack.includes(sid)){ g.ack.push(sid); guidesSave(); notifyRule('guideack','Guide acknowledged',`${(staff(sid)||{}).name||sid} · ${g.t}`); logAudit('Recorded guide acknowledgment',`${staff(sid).init} · ${g.t}`); }
   openGuide(gi); render();
 }
 function guideAckMe(gi){
@@ -3967,7 +4224,7 @@ function guideAckMe(gi){
 }
 function guideRemindAll(gi){
   const g=GUIDES[gi];
-  const pending=STAFF.filter(st=>!(g.ack||[]).includes(st.id));
+  const pending=visibleStaff().filter(st=>!(g.ack||[]).includes(st.id));
   pending.forEach(st=>pingStaff(st.id,'Please acknowledge',g.t));
   logAudit('Sent acknowledgment reminders',`${g.t} · ${pending.length} staff`);
   toast(pending.length?`Reminders sent to ${pending.length} staff.`:'Everyone has already acknowledged.');
@@ -3995,8 +4252,8 @@ function guideSaveNew(gi){
   closeAll(); render(); toast('Guide added — staff see it as pending.');
 }
 function trainPending(sid){
-  const t=TRAINING.filter(x=>!x.done.includes(sid)&&(x.req||(x.asg||[]).includes(sid)));
-  const c=(CREDS[sid]||[]).filter(x=>x.s!=='ok');
+  const t=TRAINING.filter(x=>!hid('course',x.id)&&!x.done.includes(sid)&&(x.req||(x.asg||[]).includes(sid)));
+  const c=(CREDS[sid]||[]).filter(x=>x.s!=='ok'&&(!state.hideSample||!x._seed));
   return {t,c,n:t.length+c.length};
 }
 function attachCred(sid,i){
@@ -4009,12 +4266,20 @@ function staffEditBtn(sid){ return state.role==='director'?`<button class="btn g
 function viewStaffPage(){
   const sid=state.staffPage; const st=staff(sid);
   if(!st) return `<div class="empty">Staff member not found.</div>`;
-  return `<div class="page-h"><div><h1>${esc(st.name)}</h1><div class="sub">${esc(st.role)} · ${esc(st.home)} · hired ${fmtDate(st.hired)} · full staff file</div></div>
-    <div class="right">${state.role==='director'?`<button class="btn ghost" onclick="accessForm('${sid}')">Client access</button>`:''}
-    <button class="btn navy" onclick="reminderForm('${sid}')">Send reminder</button></div></div>
+  return `<div class="page-h"><div>
+      <button class="btn ghost sm" style="margin-bottom:6px" onclick="go('team')">← Back to staff</button>
+      <h1>${esc(stName(st))}</h1><div class="sub">${esc(st.role)} · ${esc(st.home)} · hired ${fmtDate(st.hired)} · full staff file</div></div>
+    <div class="right">
+      ${state.role==='director'?`<button class="btn ghost" onclick="openStaffForm('${sid}')">✎ Edit details</button>`:''}
+      ${state.role==='director'?`<button class="btn ghost" onclick="accessForm('${sid}')">Client access</button>`:''}
+      <button class="btn navy" onclick="reminderForm('${sid}')">Send reminder</button></div></div>
   ${staffPageBody(sid)}`;
 }
 function openStaffPage(sid){
+  if(!staff(sid)) return;
+  closeAll(); state.staffPage=sid; go('staffpage');                     // full page — room to edit
+}
+function openStaffDrawer(sid){
   const st=staff(sid);
   openDrawer(esc(st.name), `${esc(st.role)} · ${esc(st.home)} · hired ${fmtDate(st.hired)}`, staffPageBody(sid),
     `<button class="btn ghost" onclick="closeAll()">Close</button>
@@ -4023,29 +4288,34 @@ function openStaffPage(sid){
 }
 function staffPageBody(sid){
   const st=staff(sid);
+  const canColor=(state.role==='director'||(state.role==='staff'&&sid==='s1'));
   const sdocs=DOCS.filter(d=>d.cid===sid);
   const certs=CREDS[sid]||[];
   const tasks=TASKS.filter(t=>t.sid===sid&&t.stage!=='Done');
   const shifts=visShifts().filter(x=>x.sid===sid);
   return `
-    ${obCard(sid)}
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 12px">
+      ${canColor?`<button class="btn ghost sm" onclick="staffColorForm('${sid}')">🎨 Avatar</button>`:''}
+      ${[['sfCerts','Certifications'],['sfTrain','Training'],['sfOb','Onboarding'],['sfShifts','Shifts'],['sfTasks','Tasks']].map(([a,l])=>`<button class="btn ghost sm" onclick="const t=el('${a}');if(t)t.scrollIntoView({behavior:'smooth',block:'start'})">${l} ↓</button>`).join('')}
+    </div>
+    <div id="sfOb"></div>${obCard(sid)}
     ${sdocs.length?`<section class="card"><div class="card-h"><h2>Documents on file</h2></div><div class="card-b flush">
       ${sdocs.map(d=>docRow(d)).join('')}</div></section>`:''}
-    <section class="card"><div class="card-h acc-gold"><h2>Certifications</h2>
+    <section class="card" id="sfCerts"><div class="card-h acc-gold"><h2>Certifications</h2>
       <div class="right"><button class="btn ghost sm" onclick="addCredential('${sid}')">＋ Add credential</button></div></div>
       <div class="card-b flush"><table class="tb"><tbody>
       ${certs.map(x=>`<tr><td><b>${esc(x.c)}</b></td><td style="text-align:right"><span class="pill ${x.s}">${esc(x.d)}</span></td></tr>`).join('')||'<tr><td class="empty">No credentials on file.</td></tr>'}
       </tbody></table>
       <div class="tiny muted" style="padding:10px 18px">Anything expiring within 90 days goes out in the Monday reminder email.</div></div></section>
-    <section class="card"><div class="card-h acc-navy"><h2>Open tasks</h2><div class="right"><span class="pill ${tasks.some(t=>t.stage==='Overdue')?'bad':'neutral'}">${tasks.length}</span></div></div>
+    <section class="card" id="sfTasks"><div class="card-h acc-navy"><h2>Open tasks</h2><div class="right"><span class="pill ${tasks.some(t=>t.stage==='Overdue')?'bad':'neutral'}">${tasks.length}</span></div></div>
       <div class="card-b flush">${tasks.map(t=>`<div class="docrow" style="cursor:pointer" onclick="closeAll();openTask('${t.id}')">
         <div class="di">☑</div><div class="dt"><b>${esc(t.title)}</b><span>${esc(t.cat||'')} · due ${relDay(t.due)} · ${t.stage}</span></div>
         ${t.stage==='Overdue'?'<span class="pill bad">Overdue</span>':''}</div>`).join('')||'<div class="empty">Nothing open.</div>'}</div></section>
-    <section class="card"><div class="card-h acc-green"><h2>Upcoming shifts</h2></div>
+    <section class="card" id="sfShifts"><div class="card-h acc-green"><h2>Upcoming shifts</h2></div>
       <div class="card-b flush"><table class="tb"><tbody>
       ${shifts.map(x=>`<tr><td><b>Today</b></td><td>${hm12(x.start)} – ${hm12(x.end)}</td><td class="muted">${esc(x.home)}</td></tr>`).join('')||'<tr><td class="empty">No shifts scheduled today.</td></tr>'}
       </tbody></table></div></section>
-    <section class="card"><div class="card-h"><h2>Training & onboarding</h2><div class="sub">Assign a course or onboarding step — it lands on ${esc(st.name.split(' ')[0])}'s task list, due in 2 weeks</div></div>
+    <section class="card" id="sfTrain"><div class="card-h"><h2>Training & onboarding</h2><div class="sub">Assign a course or onboarding step — it lands on ${esc(st.name.split(' ')[0])}'s task list, due in 2 weeks</div></div>
       <div class="card-b">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${['New-hire orientation','Incident reporting refresher','Privacy & confidentiality','Fire safety walkthrough'].map(cn=>`
@@ -4070,7 +4340,49 @@ function assignCourse(sid,cn){
   const nt={id:'t'+Date.now(),title:cn,sid,cid:null,due:iso(addDays(TODAY,14)),stage:'Not started',pri:'Medium',cat:'Training',notes:[],subs:[]};
   TASKS.push(nt);
   sbPush('np_demo_tasks',{id:nt.id,title:cn,sid,cid:null,due:nt.due,stage:'Not started',pri:'Medium',category:'Training'});
+  notifyRule('training','Training assigned',`${staff(sid).name} · ${cn}`);
   logAudit('Assigned training',`${staff(sid).name} · ${cn}`); toast(cn+' assigned as a training task, due in 2 weeks.');
+}
+function staffPhotoPick(sid){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=()=>{
+    const f=inp.files&&inp.files[0]; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        try{
+          const c=document.createElement('canvas'); c.width=c.height=64;
+          const x=c.getContext('2d'); if(!x) throw 0;
+          const m=Math.min(img.width,img.height);
+          x.drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,64,64);
+          const data=c.toDataURL('image/jpeg',.82);
+          staff(sid).photo=data; sbPatch('np_demo_staff',sid,{photo:data});
+          closeAll(); render(); toast('Photo saved.');
+        }catch(e){ toast('Could not read that image.'); }
+      };
+      img.src=rd.result;
+    };
+    rd.readAsDataURL(f);
+  };
+  inp.click();
+}
+function staffColorForm(sid){
+  const st=staff(sid); if(!st) return;
+  openModal('Avatar — '+esc(st.name),`
+    <div class="field"><label>Pick a color for ${esc(st.init)}</label><input class="inp" type="color" id="stColor" value="${st.color||'#2F5B4C'}" style="height:44px;padding:4px"></div>
+    <div class="field"><label>Or use a photo</label>
+      <div style="display:flex;gap:10px;align-items:center">
+        ${st.photo?`<img src="${st.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`:''}
+        <button class="btn ghost sm" onclick="staffPhotoPick('${sid}')">${st.photo?'Change photo':'Upload photo'}</button>
+        ${st.photo?`<button class="btn ghost sm" onclick="delete staff('${sid}').photo;sbPatch('np_demo_staff','${sid}',{photo:null});closeAll();render();toast('Photo removed.')">Remove</button>`:''}
+      </div></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button>
+     <button class="btn ghost" onclick="delete staff('${sid}').color;sbPatch('np_demo_staff','${sid}',{color:null});closeAll();render();toast('Reset to default.')">Reset</button>
+     <button class="btn navy" onclick="staff('${sid}').color=el('stColor').value;sbPatch('np_demo_staff','${sid}',{color:el('stColor').value});closeAll();render();toast('Color saved.')">Save</button>`);
+}
+function trainingsOutstanding(sid){
+  return TRAINING.filter(t=>!hid('course',t.id)&&(t.req||(t.asg||[]).includes(sid))&&!t.done.includes(sid)).length;
 }
 function credCell(sid){
   const cs=CREDS[sid]||[];
@@ -4089,7 +4401,7 @@ function openTrainingForm(){
     <div class="field"><label>Link to course or video (optional)</label><input class="inp" id="trLink" placeholder="https://…"></div>
     <div class="field"><label>Materials</label><div class="drop" onclick="this.innerHTML='<b>training-slides.pdf attached</b><span>1 file ready</span>';window._trFiles=1"><b>Upload video or documents</b><span>Slides, handouts, a recorded walkthrough</span></div></div>
     <div class="field"><label>Assign to</label>
-      <div style="display:flex;gap:8px;flex-wrap:wrap" id="trWho">${STAFF.map(s=>`<button class="btn ghost sm" data-sid="${s.id}" onclick="this.classList.toggle('navy');this.classList.toggle('ghost')">${esc(s.name)}</button>`).join('')}</div></div>`,
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="trWho">${visibleStaff().map(s=>`<button class="btn ghost sm" data-sid="${s.id}" onclick="this.classList.toggle('navy');this.classList.toggle('ghost')">${esc(s.name)}</button>`).join('')}</div></div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveTraining()">Add training</button>`);
   window._trFiles=0;
 }
@@ -4122,7 +4434,7 @@ function saveCourseEdit(tid){
 function openCourse(tid){
   const t=TRAINING.find(x=>x.id===tid); if(!t) return;
   const inCourse=s=>t.req||(t.asg||[]).includes(s.id);
-  const listed=STAFF.filter(inCourse), unlisted=STAFF.filter(s=>!inCourse(s));
+  const listed=visibleStaff().filter(inCourse), unlisted=visibleStaff().filter(s=>!inCourse(s));
   openDrawer(esc(t.n),`${t.mins} min course${t.req?' · required for everyone':''}`,`
     <section class="card"><div class="card-h"><h2>Assigned (${listed.length})</h2></div><div class="card-b flush">
       ${listed.map(st=>`<div class="docrow"><div class="di">${t.done.includes(st.id)?'✓':'…'}</div>
@@ -4157,7 +4469,7 @@ function assignTraining(tid){ window._assignTid=tid;
   const t=TRAINING.find(x=>x.id===tid);
   openModal(`Assign — ${esc(t.n)}`,`
     <div class="field"><label>Who needs this?</label>
-      <div style="display:flex;gap:8px;flex-wrap:wrap" id="asWho">${STAFF.map(s=>`<button class="btn ${(t.asg||[]).includes(s.id)?'navy':'ghost'} sm" data-sid="${s.id}" onclick="this.classList.toggle('navy');this.classList.toggle('ghost')">${esc(s.name)}</button>`).join('')}</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="asWho">${visibleStaff().map(s=>`<button class="btn ${(t.asg||[]).includes(s.id)?'navy':'ghost'} sm" data-sid="${s.id}" onclick="this.classList.toggle('navy');this.classList.toggle('ghost')">${esc(s.name)}</button>`).join('')}</div></div>
     <div class="tiny muted">Assigned staff see it on their dashboard as a pending action.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveAssignTraining('${tid}')">Save assignment</button>`);
 }
@@ -4252,7 +4564,7 @@ function accessForm(sid){
     <label style="display:flex;gap:8px;align-items:center;font-size:13.4px;margin-bottom:8px;cursor:pointer"><input type="radio" name="acMode" value="all" ${!acl?'checked':''} onchange="el('acList').style.display='none'"> All clients</label>
     <label style="display:flex;gap:8px;align-items:center;font-size:13.4px;cursor:pointer"><input type="radio" name="acMode" value="some" ${acl?'checked':''} onchange="el('acList').style.display='block'"> Only these clients:</label>
     <div id="acList" style="display:${acl?'block':'none'};margin:8px 0 0 24px">
-      ${CLIENTS.map(c=>`<label style="display:flex;gap:8px;align-items:center;font-size:13.2px;padding:3px 0;cursor:pointer"><input type="checkbox" class="acC" value="${c.id}" ${!acl||acl.includes(c.id)?'checked':''}> ${esc(c.uci)} · ${esc(c.home)}</label>`).join('')}
+      ${visibleClients().map(c=>`<label style="display:flex;gap:8px;align-items:center;font-size:13.2px;padding:3px 0;cursor:pointer"><input type="checkbox" class="acC" value="${c.id}" ${!acl||acl.includes(c.id)?'checked':''}> ${esc(c.uci)} · ${esc(c.home)}</label>`).join('')}
     </div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="accessSaveForm('${sid}')">Save access</button>`);
 }
@@ -4448,7 +4760,8 @@ function saveQuickTask(sid){
 function openStaff(sid){
   const s=staff(sid);
   openDrawer(esc(s.name),`${esc(s.role)} · ${esc(s.home)}`,`
-    <section class="card"><div class="card-h"><h2>Certifications &amp; renewals</h2><div class="sub">Attach the certificate so the record lives here</div>
+    ${obCard(sid)}
+        <section class="card"><div class="card-h"><h2>Certifications &amp; renewals</h2><div class="sub">Attach the certificate so the record lives here</div>
       ${state.role==='director'?`<div class="right"><button class="btn navy sm" onclick="certForm('${sid}')">＋ Cert</button></div>`:''}</div><div class="card-b flush">
       ${(CREDS[sid]||[]).map((c,i)=>`<div class="docrow"><div class="di">${c.s==='ok'?'✓':'!'}</div>
       <div class="dt"><b>${esc(c.c)}</b><span>${esc(c.d)}${c.doc?` · <b>${esc(c.doc.n)}</b> uploaded ${esc(c.doc.at)} by ${esc(c.doc.by)}`:''}</span></div>
@@ -4551,7 +4864,7 @@ function msgAttachPick(){
 function openNewThread(){
   const people=[
     ...(state.role!=='director'?[{v:'director:1',l:ME.director.name+' · '+ME.director.role}]:[]),
-    ...STAFF.filter(x=>!(state.role==='staff'&&x.name===ME.staff.name)).map(x=>({v:'staff:'+x.id,l:x.name+' · '+x.role})),
+    ...visibleStaff().filter(x=>!(state.role==='staff'&&x.name===ME.staff.name)).map(x=>({v:'staff:'+x.id,l:x.name+' · '+x.role})),
     {v:'guardian:c1',l:'Guardian on file · client family'},
     {v:'group:maple',l:'Maple House team · group'},{v:'group:cedar',l:'Cedar House team · group'},
     {v:'group:birch',l:'Birch House team · group'}];
@@ -4580,6 +4893,7 @@ function createThread(){
   closeAll(); render(); toast('Message sent to '+who+'.');
 }
 function faqCard(){
+  if(state.hideSample&&!FAQ.some(f=>f._user)) return '';
   return `<section class="card">
     <div class="card-h"><h2>Answers from the director</h2><div class="sub">Built from questions staff have already asked</div>
       <div class="right">${state.role==='director'?`<button class="btn navy sm" onclick="faqForm(null)">＋ Add answer</button>`:`<button class="btn ghost sm" onclick="toast('Question sent to the director.')">Ask a new question</button>`}</div></div>
@@ -4631,7 +4945,7 @@ function viewTraining(){
     </div>
   </section>
   <section class="card">
-    <div class="card-h"><h2>Your training</h2><div class="right"><span class="pill ok">${TRAINING.filter(t=>t.done.includes('s1')).length}/${TRAINING.length} complete</span></div></div>
+    <div class="card-h"><h2>Your training</h2><div class="right"><span class="pill ok">${TRAINING.filter(t=>!hid('course',t.id)&&t.done.includes(meSid())).length}/${TRAINING.filter(t=>!hid('course',t.id)).length} complete</span></div></div>
     <div class="card-b flush">${TRAINING.filter(t=>!hid('course',t.id)).map(t=>`<div class="checkrow"><div class="cb ${t.done.includes('s1')?'on':''}">✓</div>
       <div class="ct">${esc(t.n)}${t.req?' <span class="pill neutral">Required</span>':''}<div class="tiny muted">${t.mins} minutes</div></div>
       ${t.link?`<a class="btn ghost sm" href="${t.link}" target="_blank" rel="noopener">Open link ↗</a>`:''}${t.done.includes('s1')?'<span class="pill ok">Current</span>':`${t.due?`<span class="pill warn">Due ${esc(t.due)}</span> `:''}<button class="btn gold sm" onclick="toast('Course opened.')">Start</button>`}</div>`).join('')}</div>
@@ -4639,7 +4953,7 @@ function viewTraining(){
   <section class="card">
     <div class="card-h"><h2>How to use the portal</h2><div class="sub">Short walkthroughs from the director</div></div>
     <div class="card-b flush">
-      ${[['Completing the weekly checklist','2 min'],['Filing an incident report','4 min'],['Adding notes to an appointment','2 min'],['Uploading a document to a client folder','2 min']]
+      ${(state.hideSample?[]:[['Completing the weekly checklist','2 min'],['Filing an incident report','4 min'],['Adding notes to an appointment','2 min'],['Uploading a document to a client folder','2 min']])
         .map(([t,d])=>`<div class="docrow"><div class="di">▶</div><div class="dt"><b>${t}</b><span>Video · ${d}</span></div>
         <button class="btn ghost sm" onclick="toast('Playing: ${t}')">Watch</button></div>`).join('')}
     </div>
@@ -4688,7 +5002,7 @@ function viewForms(){
   </div>
   <div class="sec-note" style="margin-bottom:14px"><span>❏</span><div><b>Templates stay blank</b>Opening one creates a working copy that files into its binder when saved. The template itself is never overwritten, so it stays reusable.</div></div>
   <section class="card">
-    <div class="card-h"><h2>Agency templates</h2><div class="sub">${TEMPLATES5.length} forms</div></div>
+    <div class="card-h"><h2>Agency templates</h2><div class="sub">${TEMPLATES5.filter(t=>!hid('template',t.id)).length} forms</div></div>
     <div class="card-b flush">
       ${TEMPLATES5.filter(t=>!hid('template',t.id)).map(t=>{
         const asg=(TPL_ASSIGN[t.id]||[]);
@@ -4724,18 +5038,39 @@ function staffPacket(sid){
     </table>
     <div class="siglines"><div class="sig">Employee signature / date</div><div class="sig">Administrator signature / date</div></div>`;
 }
+function sfBody(){
+  return `<div style="margin-top:18px"></div><div class="card-h" style="padding:0 2px 8px"><h2>Staff folders</h2><div class="sub">One file per person — certifications, training, tasks and shifts</div></div>
+  <div class="sec-note" style="margin-bottom:14px"><span>🗂</span><div><b>Initials only</b>Staff files print with initials and role so they can be shared or filed without exposing personal details. Personal addresses and ID numbers stay in the paper personnel file.</div></div>
+  <section class="card">
+    <div class="card-h"><h2>Team</h2><div class="sub">${visibleStaff().length} people</div></div>
+    <div class="card-b flush">
+      ${visibleStaff().map(st=>{
+        const creds=CREDS[st.id]||[];
+        const bad=creds.filter(c=>c.s==='bad').length, warn=creds.filter(c=>c.s==='warn').length;
+        const open=TASKS.filter(t=>t.sid===st.id&&t.stage!=='Done').length;
+        return `<div class="docrow"><div class="di">${esc(st.init.replace(/\./g,''))}</div>
+          <div class="dt"><b>${esc(st.init)} · ${esc(st.role)}</b><span>${esc(st.home)} · ${creds.length} credential${creds.length===1?'':'s'} · ${open} open task${open===1?'':'s'}
+            ${bad?`· <span class="pill bad">${bad} expired</span>`:''}${warn?`· <span class="pill warn">${warn} needs attention</span>`:''}</span></div>
+          <button class="btn ghost sm" onclick="openStaffPage('${st.id}')">Open</button>
+          <button class="btn ghost sm" onclick="printSheet(staffPacket('${st.id}'));docAct('printed','Staff file — '+'${esc(st.init)}','Staff folder')">Print file</button>
+          <button class="btn ghost sm" onclick="openStaffForm('${st.id}')">✎</button>
+          <button class="btn ghost sm" onclick="delStaff('${st.id}')" title="Delete file and record">✕</button></div>`;
+      }).join('')||'<div class="empty">No staff yet.</div>'}
+    </div>
+  </section>`;
+}
 function viewStaffFiles(){
   if(state.role!=='director') return `<div class="page-h"><div><h1>Staff folder</h1><div class="sub">Available to the director</div></div></div>
     <section class="card"><div class="card-b"><div class="empty">This view is limited to the director.</div></div></section>`;
   return `
   <div class="page-h">
     <div><h1>Staff folder</h1><div class="sub">One file per person — certifications, training, tasks and shifts, ready to print or hand over</div></div>
-    <div class="right"><button class="btn ghost sm" onclick="printSheet(STAFF.map(s=>staffPacket(s.id)).join('<div style=\'page-break-after:always\'></div>'));docAct('printed','All staff files','Staff folder')">Print all</button>
+    <div class="right"><button class="btn ghost sm" onclick="printSheet(visibleStaff().map(s=>staffPacket(s.id)).join('<div style=\'page-break-after:always\'></div>'));docAct('printed','All staff files','Staff folder')">Print all</button>
       <button class="btn navy sm" onclick="openStaffForm()">＋ Add staff</button></div>
   </div>
   <div class="sec-note" style="margin-bottom:14px"><span>🗂</span><div><b>Initials only</b>Staff files print with initials and role so they can be shared or filed without exposing personal details. Personal addresses and ID numbers stay in the paper personnel file.</div></div>
   <section class="card">
-    <div class="card-h"><h2>Team</h2><div class="sub">${STAFF.length} people</div></div>
+    <div class="card-h"><h2>Team</h2><div class="sub">${visibleStaff().length} people</div></div>
     <div class="card-b flush">
       ${visibleStaff().map(st=>{
         const creds=CREDS[st.id]||[];
@@ -4765,7 +5100,7 @@ function chgFilter(){ return state.chgTab||'all'; }
 function chgRows(){
   const k=chgFilter(); const re=CHG_GROUPS[k];
   let rows=AUDIT.filter(a=>k==='all'||(re instanceof RegExp && re.test((a.act||'')+' '+(a.obj||''))));
-  if(state.hideSample) rows=rows.filter(a=>a.ts);
+  if(state.hideSample) rows=rows.filter(a=>!a._seed);
   const q=(state.chgQ||'').trim().toLowerCase();
   if(q) rows=rows.filter(a=>((a.act||'')+' '+(a.obj||'')+' '+(a.who||'')).toLowerCase().includes(q));
   const R=state.chgRange;
@@ -4897,7 +5232,8 @@ function viewChangeLog(){
   return `
   <div class="page-h">
     <div><h1>Change log</h1><div class="sub">Every change made in the portal — chronologically</div></div>
-    <div class="right"><button class="btn ghost sm" onclick="printSheet(chgSheet())">Export / print</button>
+    <div class="right"><button class="btn navy sm" onclick="chgEntryForm()">＋ Add entry</button>
+      <button class="btn ghost sm" onclick="printSheet(chgSheet())">Export / print</button>
       <button class="btn ghost sm" onclick="clearChangeLog()">Clear log</button></div>
   </div>
 
@@ -4924,8 +5260,8 @@ function viewChangeLog(){
         </select>
       </div>
       ${rows.length?rows.map(a=>`<div class="docrow" style="border-bottom:none">
-        <div class="di">≡</div>
-        <div class="dt"><b>${esc(a.act)}</b><span>${esc(a.obj||'')}${a.obj?' · ':''}by ${esc(a.who)}</span></div>
+        <div class="di">${a.cat?(CHG_CATS[a.cat]||'▤'):'≡'}</div>
+        <div class="dt"><b>${esc(a.act)}</b><span>${a.cat?`<span class="pill neutral" style="margin-right:6px">${esc(a.cat)}</span>`:''}${esc(a.obj||'')}${a.obj?' · ':''}by ${esc(a.who)}</span></div>
         <span class="tiny muted">${esc(a.at)}</span></div>`).join('')
         :'<div class="empty">No changes recorded in this view yet.</div>'}
     </div>
@@ -5015,7 +5351,7 @@ function viewCompliance(){
     <div class="card-b" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
       <div style="flex:1;min-width:240px">
         <div style="font-size:13.4px;color:#4A4F60;line-height:1.6">Every record an analyst asks to see, current as of this morning, in the order they read them. Gaps are included as flagged placeholder pages so nothing is hidden.</div>
-        <div class="tiny muted" style="margin-top:6px" id="binderStatus">Last generated yesterday 7:02 AM · 47 pages · 3 gaps flagged</div>
+        <div class="tiny muted" style="margin-top:6px" id="binderStatus">${state.hideSample?'Not generated yet':'Last generated yesterday 7:02 AM · 47 pages · 3 gaps flagged'}</div>
       </div>
       <button class="btn gold" id="binderBtn" onclick="runBinder()">Generate binder</button>
     </div>
@@ -5023,7 +5359,7 @@ function viewCompliance(){
 
   ${CHECKLIST.map((g,gi)=>({g,gi,items:g.items.map((i2,ii)=>({i2,ii})).filter(x=>!hid('chk',g.g+'|'+x.i2.t))})).filter(x=>x.items.length||state.role==='director').map(({g,gi,items})=>`<section class="card">
     <div class="card-h"><h2>${esc(g.g)}</h2>
-      <div class="right">${state.role==='director'?`<button class="btn ghost sm" onclick="compForm(${gi},null)">＋ Add item</button>`:''}<span class="pill ${g.items.some(i=>i.s==='bad')?'bad':g.items.some(i=>i.s==='warn')?'warn':'ok'}">${g.items.filter(i=>i.s==='ok').length}/${g.items.length} clear</span></div></div>
+      <div class="right">${state.role==='director'?`<button class="btn ghost sm" onclick="compForm(${gi},null)">＋ Add item</button>`:''}<span class="pill ${items.some(x=>x.i2.s==='bad')?'bad':items.some(x=>x.i2.s==='warn')?'warn':'ok'}">${items.filter(x=>x.i2.s==='ok').length}/${items.length} clear</span></div></div>
     <div class="card-b flush">${items.map(({i2:i,ii})=>`
       <div class="docrow">
         <span class="pill ${i.s==='ok'?'ok':i.s==='warn'?'warn':'bad'}" style="min-width:74px;justify-content:center">${i.s==='ok'?'Clear':i.s==='warn'?'Due soon':'Missing'}</span>
@@ -5066,7 +5402,7 @@ function viewCompliance(){
       <div class="card-h"><h2>Change log</h2><div class="sub">The five most recent changes — roles only, no names</div>
         <div class="right"><button class="btn ghost sm" onclick="go('changelog')">Open full log</button></div></div>
       <div class="card-b flush">
-        ${AUDIT.filter(a=>!state.hideSample||a.ts).slice(0,5).map(a=>`<div class="docrow"><div class="di">≡</div>
+        ${AUDIT.filter(a=>!state.hideSample||!a._seed).slice(0,5).map(a=>`<div class="docrow"><div class="di">≡</div>
           <div class="dt"><b>${esc(a.act)}</b><span>${esc(a.obj||'')}${a.obj?' · ':''}by ${esc(a.who)}</span></div>
         <span class="tiny muted">${esc(a.at)}</span></div>`).join('')||'<div class="empty">No changes recorded yet.</div>'}
       </div>
@@ -5091,6 +5427,29 @@ function saveEmail(){
   lsSet('np_onboarding',JSON.stringify(ONB));
   sbUpsert('np_demo_program',{key:'email',value:{v:ONB.email},updated_by:auditActor()});
   closeAll(); render(); toast(ONB.email?'Email saved.':'Email removed.');
+}
+function editMyName(){
+  openModal('Your name',`
+    <div class="field"><label>Full name</label><input class="inp" id="meName" value="${esc(ONB.name||'')}"></div>
+    <div class="field"><label>Role title</label><input class="inp" id="meRoleT" value="${esc(ONB.roleTitle||'')}" placeholder="e.g. Executive Director"></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button>
+     <button class="btn navy" onclick="saveMyName()">Save</button>`);
+}
+function saveMyName(){
+  const n=(el('meName').value||'').trim(); if(!n) return toast('Enter your name.');
+  ONB.name=n; ONB.roleTitle=(el('meRoleT').value||'').trim();
+  lsSet('np_onboarding',JSON.stringify(ONB));
+  profileSave(); applySetup();
+  logAudit('Updated profile name',n);
+  closeAll(); render(); toast('Profile updated.');
+}
+function editTz(){
+  const cur=lsGet('np_tz')||Intl.DateTimeFormat().resolvedOptions().timeZone||'';
+  const zones=['America/Los_Angeles','America/Denver','America/Chicago','America/New_York','America/Anchorage','Pacific/Honolulu','America/Phoenix'];
+  openModal('Your time zone',`
+    <div class="field"><label>Time zone</label><select class="inp" id="meTz">${zones.map(z=>`<option ${cur===z?'selected':''}>${z}</option>`).join('')}</select></div>
+    <div class="tiny muted">Used for how times are labeled on your profile. The clock itself always follows this device.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="lsSet('np_tz',el('meTz').value);sbUpsert('np_demo_program',{key:'tz',value:{v:el('meTz').value},updated_by:auditActor()});closeAll();render();toast('Time zone saved.')">Save</button>`);
 }
 function editSite(){
   openModal("Your organization's website",`
@@ -5119,12 +5478,12 @@ function saveOrgName(){
 }
 function viewProfile(){
   const m=ME[state.role];
-  const quals = state.role==='staff' ? (CREDS.s1||[]) : (MY_QUALS[state.role]||[]);
+  const quals = state.role==='staff' ? (CREDS.s1||[]) : (MY_QUALS[state.role]||[]).filter(x=>!state.hideSample||!x._seed);
   const tab = state.profTab||'creds';
   return `
   <section class="hero" style="display:flex;gap:18px;align-items:center">
     <div class="av" style="width:64px;height:64px;font-size:22px;border-radius:20px">${m.init}</div>
-    <div style="flex:1"><div class="eyebrow">${esc(m.label)}</div><h1 style="margin:2px 0 0">${esc(m.name)}</h1>
+    <div style="flex:1"><div class="eyebrow">${esc(m.label)}</div><h1 style="margin:2px 0 0">${esc(m.name)}${state.role==='director'?` <button class="btn ghost sm" onclick="editMyName()" title="Edit your name and title">✎</button>`:''}</h1>
       ${state.role==='director'?`<div class="tiny muted" style="margin-top:4px">Workspace: <b>${esc(ONB.org||'Spectrum')}</b> <button class="btn ghost sm" onclick="editOrgName()">✎ Edit</button></div>`:''}</div>
     <button class="btn ghost" onclick="openSettings()">⚙ Settings</button>
   </section>
@@ -5149,9 +5508,9 @@ function viewProfile(){
       <section class="card">
         <div class="card-h"><h2>About</h2></div>
         <div class="card-b flush"><table class="tb"><tbody>
-          ${[['Email',state.role==='director'?(ONB.email?esc(ONB.email)+' <button class="btn ghost sm" onclick="editEmail()">✎</button>':'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editEmail()">＋ Add email</button>'):state.role==='staff'?'mreyes@meridiancare.org':'guardian on file'],
+          ${[['Email',state.role==='director'?(ONB.email?esc(ONB.email)+' <button class="btn ghost sm" onclick="editEmail()">✎</button>':'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editEmail()">＋ Add email</button>'):state.role==='staff'?'mreyes@deltadayprogram.org':'guardian on file'],
              ...(state.role==='director'?[['Website',ONB.domain?`<a href="https://${esc(ONB.domain)}" target="_blank" style="color:var(--navy);font-weight:700">${esc(ONB.domain)}</a> <button class="btn ghost sm" onclick="editSite()">✎</button>`:'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editSite()">＋ Add website</button>']]:[]),
-             ['Phone','On file'],['Timezone','Los Angeles (GMT-8)'],
+             ['Phone','On file'],['Timezone',`${esc(lsGet('np_tz')||Intl.DateTimeFormat().resolvedOptions().timeZone||'Local')} <button class="btn ghost sm" onclick="editTz()">✎</button>`],
              ['Permission',state.role==='director'?'Administrator — full control of the organization':state.role==='staff'?'Care staff — assigned clients only':'Family — one client only']]
             .map(([k,v])=>`<tr><td class="muted" style="width:110px">${k}</td><td>${v}</td></tr>`).join('')}
         </tbody></table></div>
@@ -5170,7 +5529,7 @@ function viewProfile(){
 function profTrainingTab(){
   if(state.role==='director'){
     return `${TRAINING.filter(t=>!hid('course',t.id)).map(t=>{
-      const appl=STAFF.filter(s=>t.req||(t.asg||[]).includes(s.id));
+      const appl=visibleStaff().filter(s=>t.req||(t.asg||[]).includes(s.id));
       const done=appl.filter(s=>t.done.includes(s.id)).length;
       return `<div class="docrow"><div class="di">◉</div>
         <div class="dt"><b>${esc(t.n)}</b>${t.req?' <span class="pill neutral">Required — everyone</span>':` <span class="pill info">Assigned: ${(t.asg||[]).filter(id=>staff(id)).map(id=>staff(id).init).join(', ')||'no one yet'}</span>`}
@@ -5285,7 +5644,7 @@ function inspAction(qid){
   const q=inspTpl(inspRun.tid).questions.find(x=>x.id===qid);
   openModal('Create an action',`
     <div class="sec-note" style="margin-top:0"><span>⎘</span><div><b>${esc(q.label)}</b>This becomes a task with a due date. Assign it now or leave it unassigned.</div></div>
-    <div class="field"><label>Assign to</label><select class="inp" id="iaWho"><option value="">Unassigned</option>${STAFF.map(x=>`<option value="${x.id}">${esc(x.name)} — ${esc(x.role)}</option>`).join('')}</select></div>
+    <div class="field"><label>Assign to</label><select class="inp" id="iaWho"><option value="">Unassigned</option>${visibleStaff().map(x=>`<option value="${x.id}">${esc(x.name)} — ${esc(x.role)}</option>`).join('')}</select></div>
     <div class="row2">
       <div class="field"><label>Due</label><input class="inp" type="date" id="iaDue" value="${iso(addDays(TODAY,7))}"></div>
       <div class="field"><label>Priority</label><select class="inp" id="iaPri"><option>High</option><option>Normal</option><option>Low</option></select></div>
@@ -5341,6 +5700,7 @@ function renderInspRunner(){
       <div style="font-weight:700;font-size:18px;margin-bottom:14px">${esc(t.desc||t.name)}</div>
       ${cards}
     </div>
+    ${inspTpl(inspRun.tid).obs?`<div style="padding:0 20px 14px"><div class="field"><label>General observation</label><textarea class="inp" rows="3" placeholder="Anything else worth noting…" oninput="inspRun.obs=this.value">${esc(inspRun.obs||'')}</textarea></div></div>`:''}
     <div style="position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 20px;display:flex;gap:10px;justify-content:flex-end">
       <button class="btn ghost" onclick="printSheet(inspSheet(inspSnapshot()))">Print</button>
       ${pv?`<button class="btn navy" onclick="closeInspRunner()">Close preview</button>`
@@ -5348,7 +5708,7 @@ function renderInspRunner(){
     </div>`;
 }
 function inspSnapshot(){ const t=inspTpl(inspRun.tid); const sc=inspScore(inspRun);
-  return {tid:t.id, title:t.name, folder:t.folder, num:sc.num, den:sc.den, pct:sc.pct, by:ME[state.role].name, at:nowStamp(),
+  return {tid:t.id, title:t.name, folder:t.folder, num:sc.num, den:sc.den, pct:sc.pct, by:ME[state.role].name, at:nowStamp(), date:T, obs:(inspRun&&inspRun.obs)||'',
     responses:t.questions.map(q=>({label:q.label,type:q.type,v:(inspRun.resp[q.id]||{}).v||'',note:(inspRun.resp[q.id]||{}).note||''}))}; }
 function completeInspection(){
   const t=inspTpl(inspRun.tid);
@@ -5365,10 +5725,11 @@ function completeInspection(){
   closeInspRunner(); go('safety');
   toast(`Inspection filed to ${FOLDER_NAMES[t.folder]||t.folder} — ${snap.num}/${snap.den} (${snap.pct}%).`);
 }
+function inspObsBlock(sn){ return sn&&sn.obs?`<p><b>General observation.</b> ${esc(sn.obs)}</p>`:''; }
 function inspSheet(snap){
   const rows=snap.responses.map(r=>`<tr><th style="width:260px">${esc(r.label)}</th><td>${esc(r.v)||(r.type==='text'?'':'—')}${r.note?`<div class="tiny muted">Note: ${esc(r.note)}</div>`:''}</td></tr>`).join('');
   return `<h2>${esc(snap.title)}</h2><div class="p-sub">Spectrum Care · digital inspection · score ${snap.num}/${snap.den} (${snap.pct}%) · completed by ${esc(snap.by)} · ${esc(snap.at)}</div>
-    <table>${rows}</table><div class="siglines"><div class="sig">Reviewer signature / date</div></div>`;
+    <table>${rows}</table>${inspObsBlock(snap)}<div class="siglines"><div class="sig">Reviewer signature / date</div></div>`;
 }
 function openInspCompleted(id){ const s=INSP_DONE.find(x=>x.id===id); if(s) printSheet(inspSheet(s)); }
 /* template builder (director) */
@@ -5379,16 +5740,32 @@ function openInspTemplateForm(tid){
 }
 function drawInspTemplateForm(){
   const d=window._inspDraft;
-  openModal((window._inspEditing?'Edit inspection — ':'New inspection — ')+(esc(d.name)||'untitled'),`
-    <div class="field"><label>Inspection name</label><input class="inp" id="itName" value="${esc(d.name)}" placeholder="e.g. Kitchen hygiene check" oninput="window._inspDraft.name=this.value"></div>
-    <div class="row2">
-      <div class="field"><label>Files completed reports to</label><select class="inp" onchange="window._inspDraft.folder=this.value">${Object.keys(FOLDER_NAMES).map(k=>`<option value="${k}" ${d.folder===k?'selected':''}>${FOLDER_NAMES[k]}</option>`).join('')}</select></div>
-      <div class="field"><label>Short description</label><input class="inp" value="${esc(d.desc||'')}" oninput="window._inspDraft.desc=this.value"></div>
+  let f=el('formFull'); if(f) f.remove();
+  document.body.insertAdjacentHTML('beforeend',`
+  <div id="formFull" style="position:fixed;inset:0;background:rgba(20,32,28,.45);z-index:220;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:4vh 16px">
+    <div style="background:var(--white);border-radius:18px;max-width:940px;width:100%;padding:28px 30px;box-shadow:0 24px 70px rgba(0,0,0,.25)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h2 style="margin:0">${window._inspEditing?'Edit form':'New form'}</h2>
+        <button class="icon-btn" onclick="el('formFull').remove()">✕</button>
+      </div>
+      <div class="field"><label>Form title</label><input class="inp" id="itName" value="${esc(d.name)}" placeholder="e.g. Kitchen hygiene walkthrough" oninput="window._inspDraft.name=this.value" style="font-size:17px;font-weight:700"></div>
+      <div class="row2">
+        <div class="field"><label>Files completed reports to</label><select class="inp" onchange="window._inspDraft.folder=this.value">${Object.keys(FOLDER_NAMES).map(k=>`<option value="${k}" ${d.folder===k?'selected':''}>${esc(FOLDER_NAMES[k])}</option>`).join('')}</select></div>
+        <div class="field"><label>Short description</label><input class="inp" value="${esc(d.desc||'')}" oninput="window._inspDraft.desc=this.value" placeholder="What this form checks"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Times per week (0 = not a weekly log)</label><input class="inp" type="number" min="0" max="99" id="itPerWeek" value="${d.perWeek||0}" oninput="window._inspDraft.perWeek=Math.max(0,parseInt(this.value||'0',10)||0)"></div>
+        <div class="field"><label>General observation</label><label class="checkrow" style="cursor:pointer;margin-top:4px"><input type="checkbox" ${d.obs?'checked':''} onchange="window._inspDraft.obs=this.checked"> <span>Add an open observation box at the end</span></label></div>
+      </div>
+      <div class="field"><label>Questions</label><div id="itQs">${inspQRows()}</div>
+        <button class="btn ghost sm" style="margin-top:8px" onclick="inspQAdd()">＋ Add question</button></div>
+      <div class="tiny muted" style="margin-bottom:14px">Each scored answer counts toward the score. Free-text questions are notes only. Set times-per-week to turn this form into a weekly log with its own tracker on the Safety page and sidebar.</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn ghost" onclick="el('formFull').remove()">Cancel</button>
+        <button class="btn navy" onclick="saveInspTemplate()">${window._inspEditing?'Save changes':'Create form'}</button>
+      </div>
     </div>
-    <div class="field"><label>Questions</label><div id="itQs">${inspQRows()}</div>
-      <button class="btn ghost sm" style="margin-top:8px" onclick="inspQAdd()">＋ Add question</button></div>
-    <div class="tiny muted">Each scored answer counts toward the inspection score. Free-text questions are notes only.</div>`,
-    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveInspTemplate()">${window._inspEditing?'Save inspection':'Create inspection'}</button>`);
+  </div>`);
 }
 function inspQRows(){
   const d=window._inspDraft;
@@ -5413,8 +5790,9 @@ function saveInspTemplate(){
   if(!d.questions.length) return toast('Add at least one question.');
   const ex=inspTpl(d.id);
   if(ex){ Object.assign(ex,d); } else INSP_TEMPLATES.push(d);
-  sbUpsert('np_demo_inspections',{id:d.id, kind:'template', template_id:d.id, title:d.name, folder:d.folder, questions:d.questions, created_by:ME[state.role].name});
+  sbUpsert('np_demo_inspections',{id:d.id, kind:'template', template_id:d.id, title:d.name, folder:d.folder, questions:d.questions, per_week:d.perWeek||0, has_obs:!!d.obs, created_by:ME[state.role].name});
   logAudit(window._inspEditing?'Edited inspection template':'Created inspection template',d.name);
+  const ff=el('formFull'); if(ff) ff.remove();
   closeAll(); render(); toast('Inspection template saved.');
 }
 function inspTemplateRemove(tid){
@@ -5472,6 +5850,18 @@ function viewSafety(){
         ${state.role==='director'?`<button class="btn ghost sm" onclick="fileSafetyReport('drill')">File week to binder</button>`:''}</div>
       </div>
     </section>
+    ${(()=>{const wl=INSP_TEMPLATES.filter(t=>!hid('insp',String(t.id||t.name))&&(t.perWeek||0)>0);
+      return wl.length?`<section class="card">
+      <div class="card-h"><h2>Weekly logs</h2><div class="sub">Built from your own forms — each tracks its runs against the weekly target</div></div>
+      <div class="card-b flush">
+        ${wl.map(t=>{const runs=INSP_DONE.filter(x=>x.tid===t.id&&x.date&&inWeek(x.date));
+          return `<div class="docrow"><div class="di">▣</div>
+            <div class="dt"><b>${esc(t.name)}</b><span>${runs.length} of ${t.perWeek} this week${runs.length?` · last by ${esc(runs[0].by)}`:''}</span></div>
+            <span class="pill ${runs.length>=t.perWeek?'ok':'warn'}">${runs.length} / ${t.perWeek}</span>
+            <button class="btn ghost sm" onclick="startInspection('${t.id}')">Run now</button>
+            ${runs.length?`<button class="btn ghost sm" onclick="openInspCompleted('${esc(runs[0].id)}')">Last report</button>`:''}
+          </div>`;}).join('')}
+      </div></section>`:''})()}
     <section class="card">
       <div class="card-h"><h2>Water temperature log</h2>${wetPill()}
         <div class="right"><button class="btn navy sm" onclick="openTempForm()">＋ Add reading</button></div></div>
@@ -6317,6 +6707,7 @@ function eraseAll(){
     try{ await sbDel('np_demo_program','key=not.in.(org,email,pilot)'); }catch(e){}   // identity + agreement survive
     ['np_deleted','np_notif_prefs','np_training','np_onboard_steps','np_doc_activity'].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
     try{ lsSet('np_hide_sample','1'); }catch(e){}
+    state.hideSample=true; renderNav(); render();   // take effect immediately in this session too
     try{ await sbUpsert('np_demo_program',{key:'hidesample',value:{v:true},updated_by:auditActor()}); }catch(e){}
     setTimeout(()=>location.reload(),1200);                          // session resumes — lands back on a clean dashboard
   },'Erase everything');
@@ -6389,6 +6780,7 @@ function tempKey(w){ return w.date+'|'+w.home+'|'+w.temp; }
 function applyDeletions(){
   const cut=(arr,kind,keyFn)=>{ for(let i=arr.length-1;i>=0;i--) if(isDeleted(kind,keyFn(arr[i]))) arr.splice(i,1); };
   cut(STAFF,'staff',x=>x.id);
+  cut(SHIFTS,'shift',shiftKey);
   cut(CLIENTS,'client',x=>x.id);
   cut(TASKS,'task',x=>x.id);
   cut(APPTS,'appt',x=>x.id);
@@ -6439,8 +6831,8 @@ function tplGenerate(id){
       <option value="Compliance">Compliance binder</option><option value="Safety">Health and safety binder</option>
       <option value="Water">Water temp logs binder</option><option value="Daily">Daily logs binder</option>
       <option value="Medical">Medical docs binder</option><option value="Agency">Agency docs binder</option>
-      ${CLIENTS.map(c=>`<option value="cl:${c.id}">Client file — ${esc(c.uci)}</option>`).join('')}
-      ${STAFF.map(x=>`<option value="st:${x.id}">Staff file — ${esc(x.name)}</option>`).join('')}
+      ${visibleClients().map(c=>`<option value="cl:${c.id}">Client file — ${esc(c.uci)}</option>`).join('')}
+      ${visibleStaff().map(x=>`<option value="st:${x.id}">Staff file — ${esc(x.name)}</option>`).join('')}
     </select></div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>
      <button class="btn ghost" onclick="printSheet(tplFilledHtml('${t.id}'))">Print filled</button>
@@ -6472,8 +6864,17 @@ function tplFile(id){
 }
 function tplById(id){ return TEMPLATES5.find(t=>t.id===id); }
 function openTplEditor(id){
-  const t=tplById(id);
-  openModal('Edit template',`
+  let t=tplById(id);
+  if(!t){
+    t={id:'tpl-'+Date.now(),name:'',binder:'agency',fields:[
+      {id:'f1',label:'Date',type:'date'},{id:'f2',label:'Client',type:'text'},{id:'f3',label:'Staff',type:'text'},{id:'f4',label:'Notes',type:'textarea'}
+    ]};
+    TEMPLATES5.push(t); unhide('template',t.id);
+  }
+  openModal(id?'Edit template':'New template',`
+    ${!id?`<div class="callout" style="margin-bottom:10px;display:flex;gap:10px;align-items:center;justify-content:space-between">
+      <div class="tiny">Already have the form as a file? Bring it in and it becomes a template.</div>
+      <button class="btn ghost sm" onclick="tplUpload()">⇧ Upload a form</button></div>`:''}
     <div class="field"><label>Template name</label><input class="inp" id="tpName" value="${esc(t.name)}"></div>
     <div class="field"><label>Fields — rename inline, reorder with the arrows</label>
       <div id="tpFields">${tplFieldRows(t)}</div>
@@ -6520,6 +6921,21 @@ function tplAskAI(id){
   t.fields.push.apply(t.fields,add); tplRefresh(id);
   toast('AI added '+add.length+' suggested field'+(add.length>1?'s':'')+' — edit or remove freely.');
 }
+function tplUpload(){
+  const inp=document.createElement('input'); inp.type='file';
+  inp.accept='.pdf,.doc,.docx,.txt,.csv,.png,.jpg,.jpeg';
+  inp.onchange=()=>{
+    const f=inp.files&&inp.files[0]; if(!f) return;
+    const nm=String(f.name||'').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim();
+    const t=window._tplDraft||TEMPLATES5[TEMPLATES5.length-1];
+    if(t){ t.name=t.name||nm; t.source={file:f.name,size:f.size,at:nowStamp()}; }
+    const nEl=el('tpName'); if(nEl&&!nEl.value) nEl.value=nm;
+    const note=el('tplSrc'); if(note) note.textContent=`Attached: ${f.name}`;
+    logAudit('Uploaded a template form',f.name);
+    toast(`"${f.name}" attached — name the fields you want filled in, then save.`);
+  };
+  inp.click();
+}
 function tplSave(id){
   const t=tplById(id); t.name=el('tpName').value.trim()||t.name;
   sbUpsert('np_demo_templates',{id:t.id,name:t.name,fields:t.fields});
@@ -6541,7 +6957,7 @@ function tplPrintHtml(id,preview){
 function createFromTemplate(name){
   const month=TODAY.toLocaleDateString(undefined,{month:'long',year:'numeric'});
   openModal(`New ${esc(name.toLowerCase())}`,`
-    <div class="field"><label>Client</label><select class="inp" id="tpClient">${CLIENTS.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div>
+    <div class="field"><label>Client</label><select class="inp" id="tpClient">${visibleClients().map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div>
     <div class="field"><label>Title</label><input class="inp" id="tpTitle" value="${esc(name)} — ${month}"></div>
     <div class="row2">
       <div class="field"><label>Report date</label><input class="inp" type="date" value="${T}"></div>
@@ -6681,7 +7097,7 @@ function openApptForm(cid,presetDate,presetTime){
   window._apPreset={d:presetDate||'',t:presetTime||''};
   openModal('Add appointment',`
     <div class="row2">
-      <div class="field"><label>Client</label><select class="inp" id="apClient">${CLIENTS.map(c=>`<option value="${c.id}" ${cid===c.id?'selected':''}>${esc(c.uci)} — ${esc(c.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Client</label><select class="inp" id="apClient">${visibleClients().map(c=>`<option value="${c.id}" ${cid===c.id?'selected':''}>${esc(c.uci)} — ${esc(c.name)}</option>`).join('')}</select></div>
       <div class="field"><label>Type</label><select class="inp" id="apType">${Object.keys(APPT_CATS).map(k=>`<option>${esc(k)}</option>`).join('')}</select></div>
     </div>
     <div class="field"><label>Title</label><input class="inp" id="apTitle" placeholder="Leave blank to keep it anonymous"></div>
@@ -6801,8 +7217,8 @@ function openTask(id){
         <div class="field"><label>Priority</label><select class="inp" id="tkPri">${['High','Medium','Low'].map(p=>`<option ${t.pri===p?'selected':''}>${p}</option>`).join('')}</select></div>
       </div>
       <div class="row2">
-        <div class="field"><label>Category</label><select class="inp" id="tkCat">${['Client','Agency','Documentation','Training'].map(cta=>`<option ${t.cat===cta?'selected':''}>${cta}</option>`).join('')}</select></div>
-        ${state.role==='director'?`<div class="field"><label>Assigned to</label><select class="inp" id="tkWho">${STAFF.map(st=>`<option value="${st.id}" ${t.sid===st.id?'selected':''}>${esc(st.name)}</option>`).join('')}</select></div>`:''}
+        <div class="field"><label>Category <a href="#" class="tiny" style="float:right" onclick="event.preventDefault();tcatAdd()">＋ New</a></label><select class="inp" id="tkCat">${TASK_CATS.map(cta=>`<option ${t.cat===cta?'selected':''}>${cta}</option>`).join('')}</select></div>
+        ${state.role==='director'?`<div class="field"><label>Assigned to</label><select class="inp" id="tkWho">${visibleStaff().map(st=>`<option value="${st.id}" ${t.sid===st.id?'selected':''}>${esc(st.name)}</option>`).join('')}</select></div>`:''}
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn navy sm" onclick="saveTaskEdit('${t.id}')">Save changes</button>
@@ -6853,6 +7269,7 @@ function signOffTask(id){
   const t=TASKS.find(x=>x.id===id);
   t.signoff={by:ME[state.role].name,at:nowStamp()}; t.stage='Done';
   sbPatch('np_demo_tasks',id,{signoff:t.signoff,stage:'Done'});
+  notifyRule('tasksign','Task signed off',t.title);
   logAudit('Signed off task',t.title); renderNav(); openTask(id); toast('Signed off — name, date and time recorded.');
 }
 function subsSave(t){ sbPatch('np_demo_tasks',t.id,{subs:t.subs}); }
@@ -6915,12 +7332,12 @@ function openAssign(){
   openModal('Assign a task',`
     <div class="field"><label>Task</label><input class="inp" id="ntTitle" placeholder="What needs doing?"></div>
     <div class="row2">
-      ${state.role==='director'?`<div class="field"><label>Assign to</label><select class="inp" id="ntWho">${STAFF.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></div>`
+      ${state.role==='director'?`<div class="field"><label>Assign to</label><select class="inp" id="ntWho">${visibleStaff().map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></div>`
         :`<div class="field"><label>Assigned to</label><input class="inp" value="You" disabled></div>`}
       <div class="field"><label>Due date</label><input class="inp" type="date" id="ntDue" value="${T}"></div>
     </div>
     <div class="row2">
-      <div class="field"><label>Client (optional)</label><select class="inp" id="ntClient"><option value="">Not client-specific</option>${CLIENTS.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Client (optional)</label><select class="inp" id="ntClient"><option value="">Not client-specific</option>${visibleClients().map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div>
       <div class="field"><label>Priority</label><select class="inp" id="ntPri"><option>High</option><option selected>Medium</option><option>Low</option></select></div>
     </div>
     <div class="field"><label>Category</label><select class="inp" id="ntCat"><option>Client</option><option>Agency</option><option>Documentation</option><option>Training</option></select></div>`,
@@ -6952,8 +7369,10 @@ function openIncident(id){
     </div></section>
     <section class="card"><div class="card-h"><h2>Follow-up</h2></div><div class="card-b">
       <textarea class="inp" placeholder="Add a follow-up note…"></textarea>
-      <div style="margin-top:10px;display:flex;gap:8px">
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn ghost sm" onclick="toast('Follow-up saved.')">Save note</button>
+        <button class="btn ghost sm" onclick="printSheet(incidentReportSheet('${i.id}'))">View report</button>
+        ${protoStepsOf(PROTOCOLS[i.type]).length?`<button class="btn ghost sm" onclick="incidentWalkthrough('${i.id}')">Protocol steps ${(i.protoAck||[]).length}/${protoStepsOf(PROTOCOLS[i.type]).length}</button>`:''}
         ${i.status!=='Closed'?`<button class="btn navy sm" onclick="closeIncident('${i.id}')">Close report</button>`:''}
       </div></div></section>`,
     `<button class="btn ghost" onclick="closeAll()">Close</button>
@@ -6992,7 +7411,7 @@ function openIncidentForm(cid){
     <div class="sec-note" style="background:var(--bad-soft);border-color:#F0CBC7;color:#8C312B;margin-bottom:14px">
       <span>⚠</span><div><b>Make the person safe first</b>If anyone needs medical attention, call emergency services and the shift lead before filling this in.</div></div>
     <div class="row2">
-      <div class="field"><label>Client</label><select class="inp" id="icClient">${CLIENTS.map(c=>`<option value="${c.id}" ${cid===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Client</label><select class="inp" id="icClient">${visibleClients().map(c=>`<option value="${c.id}" ${cid===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
       <div class="field"><label>Type</label><select class="inp" id="icType"><option>Fall</option><option>Medication error</option><option>Behavioral</option><option>Injury</option><option>Property damage</option><option>Allegation</option></select></div>
     </div>
     <div class="row2">
@@ -7014,6 +7433,22 @@ let PROTOCOLS={
   'Behavioral':{hours:24,first:['Ensure everyone\'s safety — clear the area if needed','Use the person\'s behavior support plan','Tell the shift lead by phone','Document antecedent, behavior and consequence'],call:['Shift lead on duty — A. Osei · ext. 214','Behavior specialist on contract','Executive director · ext. 101']},
   'Injury':{hours:24,first:['Provide first aid — call 911 for anything beyond minor','Tell the shift lead and the nurse','Photograph and document the scene','Notify the guardian'],call:['Agency nurse — N. Harding · ext. 118','Shift lead on duty — A. Osei · ext. 214','State reporting line — 1-800-555-0142']}
 };
+function delProtocol(k){
+  if(!PROTOCOLS[k]) return;
+  askDelete('Delete the '+k+' protocol?','Incidents already filed keep their recorded steps.',()=>{
+    delete PROTOCOLS[k]; protoSave();
+    logAudit('Deleted incident protocol',k);
+    render(); toast('Protocol deleted.');
+  },'Delete protocol');
+}
+function newProtocol(){
+  const v=prompt('Name the incident type (e.g. Elopement):'); if(!v||!v.trim()) return;
+  const k=v.trim();
+  if(!PROTOCOLS[k]) PROTOCOLS[k]={first:[],call:[],hours:24};
+  unhide('protocol',k);
+  protoSave(); logAudit('Created incident protocol',k);
+  render(); openProtocol(k);
+}
 function protoSave(){ sbUpsert('np_demo_program',{key:'protocols',value:{map:PROTOCOLS},updated_by:auditActor()}); }
 function openProtocol(k){
   const p=PROTOCOLS[k]; if(!p) return;
@@ -7041,6 +7476,39 @@ function saveProtocol(k){
   protoSave(); logAudit('Edited incident protocol',k);
   closeAll(); render(); toast(k+' protocol saved.');
 }
+function protoStepsOf(p){
+  if(!p) return [];
+  if(Array.isArray(p.steps)&&p.steps.length) return p.steps;
+  return Array.isArray(p.first)?p.first:(p.first?[p.first]:[]);
+}
+function incidentWalkthrough(id){
+  const i=INCIDENTS.find(x=>x.id===id); if(!i) return;
+  const p=PROTOCOLS[i.type]; const steps=protoStepsOf(p); if(!steps.length) return;
+  i.protoAck=i.protoAck||[];
+  const calls=Array.isArray(p.call)?p.call:(p.call?[p.call]:[]);
+  openModal('Protocol — '+esc(i.type),`
+    <div class="tiny muted" style="margin-bottom:8px">Work through each step and check it off. Your sign-off is recorded on the incident.</div>
+    ${calls.length?`<div class="tiny" style="margin-bottom:8px"><b>Call:</b> ${calls.map(esc).join(' · ')}</div>`:''}
+    ${steps.map((st,ix)=>`<label class="checkrow" style="cursor:pointer"><input type="checkbox" ${i.protoAck.includes(ix)?'checked':''} onchange="incidentAck('${id}',${ix},this.checked)"> <span>${esc(st)}</span></label>`).join('')}`,
+    `<button class="btn navy" onclick="closeAll();render()">Done</button>`);
+}
+function incidentAck(id,ix,on){
+  const i=INCIDENTS.find(x=>x.id===id); if(!i) return;
+  i.protoAck=i.protoAck||[];
+  if(on&&!i.protoAck.includes(ix)) i.protoAck.push(ix);
+  if(!on) i.protoAck=i.protoAck.filter(x=>x!==ix);
+  sbPatch('np_demo_incidents',id,{proto_ack:i.protoAck});
+  logAudit(on?'Signed off protocol step':'Unchecked protocol step',`Incident ${id} · step ${ix+1}`);
+}
+function incidentReportSheet(id){
+  const i=INCIDENTS.find(x=>x.id===id); if(!i) return '';
+  const p=PROTOCOLS[i.type]||{steps:[]};
+  return `<h2>Incident report — ${esc(i.type)}</h2>
+    <div class="p-sub">${esc(client(i.cid)?client(i.cid).uci:'')} · ${esc(i.date)} ${esc(i.time||'')} · severity ${esc(i.sev)} · filed by ${esc(i.by||meInit())}</div>
+    <p><b>Summary.</b> ${esc(i.summary||i.sum||'')}</p>
+    <p><b>Status.</b> ${esc(i.status)}${(i.hoursLeft!=null||i.hours_left!=null)?` · report due within ${i.hoursLeft!=null?i.hoursLeft:i.hours_left}h`:''}</p>
+    ${protoStepsOf(p).length?`<p><b>Protocol steps.</b></p><ul>${protoStepsOf(p).map((st,ix)=>`<li>${(i.protoAck||[]).includes(ix)?'☑':'☐'} ${esc(st)}</li>`).join('')}</ul>`:''}`;
+}
 function saveIncident(){
   const s=el('icSum').value.trim(); if(!s) return toast('Describe what happened before filing.');
   const rec={id:'i'+Date.now(),cid:el('icClient').value,type:el('icType').value,date:el('icDate').value,
@@ -7054,6 +7522,7 @@ function saveIncident(){
   n8nPost({event:'incident.created', id:rec.id, uci:client(rec.cid).uci, home:client(rec.cid).home, type:rec.type, severity:rec.sev, date:rec.date, time:rec.time, summary:rec.summary, reported_by:rec.by});
   logAudit('Created incident report',`${client(el('icClient').value).name} · ${el('icType').value}`);
   closeAll(); renderNav(); render(); toast('Report filed and timestamped.');
+  setTimeout(()=>incidentWalkthrough(rec.id),400);                 // walk the protocol, step by step, right away
 }
 
 function openNoteForm(cid){
@@ -7128,7 +7597,7 @@ function openReminderPrefs(){
       <select class="inp" id="np_lead">${[2,12,24,48].map(h=>`<option value="${h}" ${NOTIF_PREFS.lead===h?'selected':''}>${h} hours before</option>`).join('')}</select></div>
     ${row('inapp','In the portal','Shows in the notifications bell — always on during the pilot.')}
     ${row('email','Email me','Sent by the automation backend to the address below.')}
-    <div class="field"><label>Email address</label><input class="inp" id="np_emailTo" value="${esc(NOTIF_PREFS.emailTo||'')}" placeholder="ezra@meridiancare.org"></div>
+    <div class="field"><label>Email address</label><input class="inp" id="np_emailTo" value="${esc(NOTIF_PREFS.emailTo||'')}" placeholder="user@deltadayprogram.org"></div>
     ${row('sms','Text me','Sent by SMS. Needs a texting provider connected before it delivers.')}
     <div class="field"><label>Mobile number</label><input class="inp" id="np_smsTo" value="${esc(NOTIF_PREFS.smsTo||'')}" placeholder="+1 555 0142"></div>
     <div class="sec-note"><span>🔒</span><div><b>Nothing identifying leaves the portal</b>Email and text travel over public networks, so alerts never carry client names, IDs, diagnoses or any record detail. The full reminder — appointment, time and client ID — stays inside the portal.</div></div>
@@ -7155,7 +7624,7 @@ function openAlerts(){
       <div class="ai info">✉</div><div class="at"><b>${esc(t.who)} — ${esc(t.sub)}</b><span>${esc(t.last)}</span></div>
       <div class="aa">Open →</div></div>`).join('')}</div></section>`:'';
   const sysHtml=SYS_NOTIFS.length?`<section class="card"><div class="card-h acc-navy"><h2>System notifications</h2><div class="sub">Delivered by the portal's automation backend</div></div>
-    <div class="card-b flush">${SYS_NOTIFS.map(n=>`<div class="attn"><div class="ai ${n.k==='bad'?'bad':'info'}">◈</div>
+    <div class="card-b flush">${SYS_NOTIFS.filter(n=>!state.hideSample||!n._seed).map(n=>`<div class="attn"><div class="ai ${n.k==='bad'?'bad':'info'}">◈</div>
     <div class="at"><b>${esc(n.t)}</b><span>${esc(n.s)} · ${esc(n.at)}</span></div></div>`).join('')}</div></section>`:'';
   openDrawer('Notifications',`${rem.length?rem.length+' upcoming · ':''}${un.length?un.reduce((a,t)=>a+t.unread,0)+' unread messages · ':''}${attn.length} items need attention`,
     remHtml+sysHtml+msgHtml+(attn.length?attn.map((a,i)=>`<div class="card" style="margin-bottom:10px"><div class="attn" style="border:none" onclick="closeAll();_attn[${i}].go()">
@@ -7169,7 +7638,7 @@ function openSettings(){
   openDrawer('Account', esc(m.role), `
     <section class="card"><div class="card-h"><h2>Profile</h2></div><div class="card-b">
       <div class="field"><label>Display name</label><input class="inp" value="${esc(m.name)}"></div>
-      <div class="field"><label>Email</label><input class="inp" value="${m.name.toLowerCase().replace(' ','.')}@meridiancare.org"></div>
+      <div class="field"><label>Email</label><input class="inp" value="${m.name.toLowerCase().replace(' ','.')}@deltadayprogram.org"></div>
       <div class="field"><label>Role</label><input class="inp" value="${esc(m.role)}" disabled></div>
     </div></section>
     <section class="card"><div class="card-h"><h2>Security</h2></div><div class="card-b">
@@ -7203,14 +7672,50 @@ function openSettings(){
       ${NOTIF_EVENTS.map(([ev,label])=>`
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)">
           <span style="font-size:13.2px">${label}</span>
+          <select class="inp" style="max-width:130px" title="Reminder cadence" onchange="NOTIF_CADENCE['${ev}']=this.value;rulesSave()">
+            <option value="off" ${(NOTIF_CADENCE[ev]||'off')==='off'?'selected':''}>No reminders</option>
+            <option value="daily" ${NOTIF_CADENCE[ev]==='daily'?'selected':''}>Daily digest</option>
+            <option value="weekly" ${NOTIF_CADENCE[ev]==='weekly'?'selected':''}>Weekly digest</option>
+          </select>
           <select class="inp" style="max-width:180px" onchange="NOTIF_RULES['${ev}']=this.value;rulesSave()">
             <option value="off" ${NOTIF_RULES[ev]==='off'?'selected':''}>Off</option>
             <option value="director" ${NOTIF_RULES[ev]==='director'?'selected':''}>Director only</option>
             <option value="all" ${NOTIF_RULES[ev]==='all'?'selected':''}>All staff</option>
-            ${STAFF.map(st=>`<option value="${st.id}" ${NOTIF_RULES[ev]===st.id?'selected':''}>${esc(st.name)}</option>`).join('')}
+            ${visibleStaff().map(st=>`<option value="${st.id}" ${NOTIF_RULES[ev]===st.id?'selected':''}>${esc(st.name)}</option>`).join('')}
           </select>
         </div>`).join('')}
     </div></section>`:''}
+    <section class="card"><div class="card-h"><h2>Lists</h2><div class="sub">Houses and task categories — rename or remove</div></div><div class="card-b">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost sm" onclick="closeAll();manageHouses()">Manage houses</button>
+        <button class="btn ghost sm" onclick="closeAll();manageTaskCats()">Manage task categories</button>
+      </div></div></section>
+    <section class="card"><div class="card-h"><h2>Demonstration view</h2><div class="sub">A separate dashboard filled with sample data — for showing people how the portal works</div></div><div class="card-b">
+      <button class="btn ghost sm" onclick="openDemoView()">⤢ Open the demo dashboard with sample data</button>
+      <div class="tiny muted" style="margin-top:8px">Opens in a new tab, clearly marked as test data. Your real workspace is untouched — nothing done in the demo is saved.</div>
+    </div></section>
+    <section class="card"><div class="card-h"><h2>Session</h2><div class="sub">Sign out automatically after a period of inactivity</div></div><div class="card-b">
+      <select class="inp" style="max-width:240px" onchange="setIdle(this.value)">
+        ${[[0,'Never (stay signed in)'],[15,'After 15 minutes idle'],[30,'After 30 minutes idle'],[60,'After 1 hour idle']].map(([v,l])=>`<option value="${v}" ${IDLE_MIN===v?'selected':''}>${l}</option>`).join('')}
+      </select></div></section>
+    <section class="card"><div class="card-h"><h2>Staff display</h2><div class="sub">How staff names appear across the whole dashboard</div></div><div class="card-b">
+      <div style="display:flex;gap:8px">
+        <button class="btn ${NAME_MODE==='full'?'navy':'ghost'} sm" onclick="setNameMode('full')">Full names</button>
+        <button class="btn ${NAME_MODE==='initials'?'navy':'ghost'} sm" onclick="setNameMode('initials')">Initials only</button>
+      </div></div></section>
+    <section class="card"><div class="card-h"><h2>This week's progress</h2><div class="sub">Pick which weekly metrics show in the sidebar</div></div><div class="card-b">
+      ${weeklyMetricDefs().map(d=>`<label class="checkrow" style="cursor:pointer"><input type="checkbox" ${(WEEKLY_CFG.metrics||[]).includes(d.id)?'checked':''} onchange="weeklyToggle('${d.id}',this.checked)"> <span>${esc(d.l)}${d.tpl?` <span class="tiny muted">(${d.tpl.perWeek}/week)</span>`:''}</span></label>`).join('')}
+      <div class="row2" style="margin-top:8px">
+        <div class="field"><label>Water temps per week</label><input class="inp" type="number" min="1" max="99" value="${(WEEKLY_CFG.targets&&WEEKLY_CFG.targets.temps)||7}" onchange="WEEKLY_CFG.targets=WEEKLY_CFG.targets||{};WEEKLY_CFG.targets.temps=Math.max(1,parseInt(this.value||'7',10)||7);weeklyCfgSave();sideProg()"></div>
+        <div class="field"><label>Fire drills per week</label><input class="inp" type="number" min="1" max="99" value="${(WEEKLY_CFG.targets&&WEEKLY_CFG.targets.drills)||1}" onchange="WEEKLY_CFG.targets=WEEKLY_CFG.targets||{};WEEKLY_CFG.targets.drills=Math.max(1,parseInt(this.value||'1',10)||1);weeklyCfgSave();sideProg()"></div>
+      </div>
+      <div class="tiny muted">Forms with a times-per-week quota appear here automatically as their own logs.</div>
+    </div></section>
+    <section class="card"><div class="card-h"><h2>Pilot agreement</h2><div class="sub">${PILOT_AGREED?('Signed by '+esc(PILOT_AGREED.by)+' · '+esc(PILOT_AGREED.at||'')):'Not signed in this view yet'}</div></div><div class="card-b">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost sm" onclick="closeAll();printSheet(pilotSheet())">View / print signed copy</button>
+        <button class="btn ghost sm" onclick="emailAgreement()">Email me a copy</button>
+      </div></div></section>
     <section class="card"><div class="card-h"><h2>Switch view</h2><div class="sub">Currently: ${ME[state.role].label}</div></div><div class="card-b">
       <button class="btn navy" onclick="closeAll();switchView()">Switch view →</button>
       <div class="tiny muted" style="margin-top:8px">Takes you to the Welcome back screen to open the workspace as a different role. Signing out fully is the ⏻ button in the top bar.</div>
@@ -7239,8 +7744,8 @@ function tplGenerate(tid){
     <div class="field"><label>File the generated document to</label>
       <select class="inp" id="tgDest">
         <optgroup label="Binders">${Object.keys(FOLDER_NAMES).map(k=>`<option value="binder:${k}">${esc(FOLDER_NAMES[k])}</option>`).join('')}</optgroup>
-        <optgroup label="Client folders">${CLIENTS.map(c=>`<option value="client:${c.id}">${esc(c.name)} · ${esc(c.uci)}</option>`).join('')}</optgroup>
-        <optgroup label="Staff files">${STAFF.map(st=>`<option value="staff:${st.id}">${esc(st.name)} · ${esc(st.role)}</option>`).join('')}</optgroup>
+        <optgroup label="Client folders">${visibleClients().map(c=>`<option value="client:${c.id}">${esc(c.name)} · ${esc(c.uci)}</option>`).join('')}</optgroup>
+        <optgroup label="Staff files">${visibleStaff().map(st=>`<option value="staff:${st.id}">${esc(st.name)} · ${esc(st.role)}</option>`).join('')}</optgroup>
       </select></div>
     <div class="field"><label>Document title</label><input class="inp" id="tgName" value="${esc(t.name)} — ${T}"></div>
     <div class="tiny muted">A copy generated from the template is filed at the destination. The template itself stays blank and reusable.</div>`,
@@ -7278,7 +7783,7 @@ function tplAssign(tid){
   const t=tplById(tid); const cur=TPL_ASSIGN[tid]||[];
   openModal(`Assign — ${esc(t.name)}`,`
     <div class="field"><label>Which staff should review or complete this?</label>
-      <div style="display:flex;gap:8px;flex-wrap:wrap" id="tpWho">${STAFF.map(x=>`<button class="btn ${cur.includes(x.id)?'navy':'ghost'} sm" data-sid="${x.id}" onclick="this.classList.toggle('navy');this.classList.toggle('ghost')">${esc(x.name)}</button>`).join('')}</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="tpWho">${visibleStaff().map(x=>`<button class="btn ${cur.includes(x.id)?'navy':'ghost'} sm" data-sid="${x.id}" onclick="this.classList.toggle('navy');this.classList.toggle('ghost')">${esc(x.name)}</button>`).join('')}</div></div>
     <div class="tiny muted">Assigned staff get a notification and see the form on their dashboard. The blank template stays in this list for everyone.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveTplAssign('${tid}')">Save assignment</button>`);
 }
@@ -7306,6 +7811,13 @@ function loadAuth(){
   return AUTH;
 }
 function saveAuth(){ lsSet('np_auth',JSON.stringify({email:AUTH.email,session:AUTH.session,mode:AUTH.mode})); }
+function profileSave(){                                              // who signed up: name, role, title, email
+  if(!sbOn()) return;
+  sbUpsert('np_demo_program',{key:'profile',value:{
+    name:ONB.name||'', role:ONB.role||'', roleTitle:ONB.roleTitle||'', email:ONB.email||AUTH.email||'',
+    auth_mode:AUTH.mode||'', registered_at:ONB.registeredAt||new Date().toISOString()
+  },updated_by:ONB.name||AUTH.email||'signup'});
+}
 function authReady(){ return !!AUTH.email && AUTH.mode!=='none'; }
 async function sbAuth(path,body){
   const r=await fetch(BACKEND.url+'/auth/v1/'+path,{method:'POST',
@@ -7363,7 +7875,7 @@ function openCredentials(){
     <div class="sec-note" style="margin-top:0"><span>🔑</span><div><b>${has?'Your login':'Choose how you sign in'}</b>${has
       ? 'These are the details you use when you sign back in.'
       : 'Set an email and password now and you will use them every time you open the portal.'}</div></div>
-    <div class="field"><label>Email</label><input class="inp" id="crEmail" type="email" value="${esc(AUTH.email||ONB.email||'')}" placeholder="ezra@meridiancare.org"></div>
+    <div class="field"><label>Email</label><input class="inp" id="crEmail" type="email" value="${esc(AUTH.email||ONB.email||'')}" placeholder="user@deltadayprogram.org"></div>
     <div class="field"><label>${has?'New password':'Password'}</label><input class="inp" id="crPw" type="password" placeholder="At least 8 characters"></div>
     <div class="field"><label>Confirm password</label><input class="inp" id="crPw2" type="password" placeholder="Type it again"></div>
     <div class="tiny muted">${sbOn()?'Your password is handled by the portal\u2019s authentication service — we never see it.'
@@ -7383,7 +7895,9 @@ async function saveCredentials(){
 function showLoginForm(){
   el('login').classList.add('credmode');
   el('loginTitle').textContent=ONB.name?('Welcome back, '+String(ONB.name).split(' ')[0]+'.'):'Sign in';
-  el('loginSub').innerHTML='Sign in to '+(ONB.org&&ONB.org!=='Spectrum'?'<b>'+esc(ONB.org)+'</b>':'your workspace')+'. Powered by Spectrum Care Advisory OS · Beta.';
+  el('loginSub').innerHTML='Sign in to the '+esc(ONB.org&&ONB.org!=='Spectrum'?ONB.org:'Delta Day Program')+' dashboard portal.';
+  const cb0=el('credBox');
+  if(!el('loginBrand')) cb0.insertAdjacentHTML('beforeend','<div id="loginBrand" class="tiny muted" style="text-align:center;margin-top:16px;border-top:1px solid var(--line);padding-top:12px">Powered by Spectrum Care Advisory OS · Beta</div>');
   el('roleGrid').style.display='none';
   el('credBox').style.display='block';
   const e=el('liEmail'); if(e){ e.value=AUTH.email||''; setTimeout(()=>el('liPw').focus(),60); }
@@ -7396,8 +7910,7 @@ function showRegisterGate(){
   el('loginSub').innerHTML='Your role decides which view opens first. Powered by Spectrum Care Advisory OS · Beta.';
   el('roleGrid').style.display='none';
   const cb=el('credBox'); cb.style.display='block';
-  if(!el('regRole')) cb.insertAdjacentHTML('afterbegin',`<div class="field" id="regRoleWrap"><label>Your role</label><select class="inp" id="regRole">
-    <option value="director">Director / administrator</option><option value="staff">Care staff</option></select></div>`);
+  if(!el('regRole')) cb.insertAdjacentHTML('afterbegin',`<div class="field" id="regRoleWrap"><label>Your role</label><input class="inp" id="regRole" placeholder="e.g. Executive Director"></div>`);
   if(!el('regSwap')) cb.insertAdjacentHTML('beforeend','<div id="regSwap" class="tiny" style="text-align:center;margin-top:12px">Already have an account? <a href="#" onclick="event.preventDefault();showLoginPage()" style="color:var(--navy);font-weight:800">Log in</a></div>');
   const ls=el('loginSwap'); if(ls) ls.remove();
   window._regMode=true;
@@ -7414,12 +7927,16 @@ function showLoginPage(){
 }
 async function finishRegister(){
   const em=(el('liEmail').value||'').trim(), pw=(el('liPw').value||'');
-  const role=(el('regRole')&&el('regRole').value)||'director';
+  const roleTxt=((el('regRole')&&el('regRole').value)||'').trim();
+  const role=/\b(staff|dsp|support professional|aide|caregiver|nurse)\b/i.test(roleTxt)?'staff':'director';
   const r=await authRegister(em,pw);                                // Supabase Auth when the backend is configured
   if(!r.ok) return toast(r.msg);
   try{ lsSet('np_reg_done','1'); lsSet('np_resume','1'); }catch(e){}
-  ONB.email=ONB.email||AUTH.email; ONB.role=role;
+  ONB.email=ONB.email||AUTH.email; ONB.role=role; if(roleTxt) ONB.roleTitle=roleTxt;
+  ONB.registeredAt=ONB.registeredAt||new Date().toISOString();
   lsSet('np_onboarding',JSON.stringify(ONB));
+  profileSave();
+  if(ONB.email) sbUpsert('np_demo_program',{key:'email',value:{v:ONB.email},updated_by:ONB.name||'signup'});
   window._regMode=false;
   const rw=el('regRoleWrap'); if(rw) rw.remove();
   const rs=el('regSwap'); if(rs) rs.remove();
@@ -7515,7 +8032,35 @@ function extNotify(kind,count,opts){
 }
 
 /* ══════════════ v5.8: STAFF, SHIFTS & ASSIGNMENT PINGS ══════════════ */
-const HOMES=['Maple House','Cedar House','Birch House'];
+let HOMES=['Maple House','Cedar House','Birch House'];
+let CLIENT_TYPES=['Supported living · Level 2','Supported living · Level 3','Day program · Level 2','Day program · Level 3'];
+function ctypesSave(){ sbUpsert('np_demo_program',{key:'clienttypes',value:{list:CLIENT_TYPES},updated_by:auditActor()}); }
+function ctypeField(id,cur){
+  return `<input class="inp" id="${id}" list="ctypesDl" value="${esc(cur||'')}" placeholder="Pick a program type or type a new one">
+    <datalist id="ctypesDl">${CLIENT_TYPES.map(t=>`<option value="${esc(t)}">`).join('')}</datalist>`;
+}
+function ctypeVal(id){
+  const v=(el(id).value||'').trim();
+  if(v&&!CLIENT_TYPES.includes(v)){ CLIENT_TYPES.push(v); ctypesSave(); logAudit('Added client program type',v); }
+  return v;
+}
+function editDx(cid){
+  const c=client(cid); if(!c) return;
+  openModal('Program type — '+esc(c.uci),`
+    <div class="field"><label>Program</label>${ctypeField('dxEdit',c.dx)}</div>
+    <div class="tiny muted">Types you add here become options for every client.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="client('${cid}').dx=ctypeVal('dxEdit');sbPatch('np_demo_clients','${cid}',{dx:client('${cid}').dx});closeAll();render();toast('Program updated.')">Save</button>`);
+}
+function homesSave(){ sbUpsert('np_demo_program',{key:'homes',value:{list:HOMES},updated_by:auditActor()}); }
+function homeField(id,cur){
+  return `<input class="inp" id="${id}" list="homesDl" value="${esc(cur||'')}" placeholder="Pick a house or type a new one">
+    <datalist id="homesDl">${HOMES.concat(['All homes']).map(h=>`<option value="${esc(h)}">`).join('')}</datalist>`;
+}
+function homeVal(id){
+  const v=(el(id).value||'').trim()||HOMES[0]||'Main';
+  if(v!=='All homes'&&!HOMES.includes(v)){ HOMES.push(v); homesSave(); logAudit('Added house',v); }
+  return v;
+}
 function msgNotify(th,snippet){
   SYS_NOTIFS.unshift({t:'New message',s:`${th.who} thread · ${askTr(snippet,60)}`,at:nowStamp(),k:'msg'});
   sbPush('np_demo_notifications',{title:'New message',body:`${th.who} thread · ${askTr(snippet,60)}`,kind:'msg',for_staff:null});
@@ -7541,7 +8086,7 @@ function openStaffForm(sid){
     </div>
     <div class="row2">
       <div class="field"><label>Date of hire</label><input class="inp" type="date" id="sfHired" value="${st&&st.hired?st.hired:T}"></div>
-      <div class="field"><label>Work email (for reminders)</label><input class="inp" id="sfEmail" value="${st&&st.email?esc(st.email):''}" placeholder="name@meridiancare.org"></div>
+      <div class="field"><label>Work email (for reminders)</label><input class="inp" id="sfEmail" value="${st&&st.email?esc(st.email):''}" placeholder="name@deltadayprogram.org"></div>
     </div>
     ${st?'':`
     <div class="card-h" style="padding:6px 0 4px"><h2 style="font-size:14px">Starting certifications <span class="tiny muted">optional</span></h2></div>
@@ -7597,12 +8142,28 @@ function openClientForm(){
       <div class="field"><label>Initials (optional)</label><input class="inp" id="clInit" placeholder="e.g. RS" maxlength="3" style="text-transform:uppercase"></div>
       <div class="field"><label>Home</label><select class="inp" id="clHome"><option>Maple House</option><option>Cedar House</option><option>Birch House</option></select></div>
       <div class="field"><label>Age</label><input class="inp" id="clAge" type="number" min="18" max="99" placeholder="e.g. 32"></div>
-      <div class="field"><label>Program</label><input class="inp" id="clDx" placeholder="e.g. Supported living · Level 2"></div>
+      <div class="field"><label>Program</label>${ctypeField('clDx','')}</div>
     </div>
     <div class="field"><label>Standing alerts <span class="tiny muted">comma separated, optional</span></label><input class="inp" id="clAlerts" placeholder="e.g. Allergy: penicillin, Fall risk"></div>
     <div class="field"><label>Support note</label><textarea class="inp" id="clSupport" rows="3" placeholder="How this person communicates and what helps."></textarea></div>
     <div class="sec-note"><span>🔒</span><div><b>No names in the portal</b>A UCI is generated automatically — the client is referred to by initials and UCI everywhere.</div></div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveClient()">Add client</button>`);
+}
+function chkOnCreate(cid){
+  const cur=(WEEKLY[cid]||[]).map(x=>x.t);
+  openModal('Weekly checklist — '+esc(client(cid)?client(cid).uci:''),`
+    <div class="tiny muted" style="margin-bottom:8px">Start from the standard items, untick any that don't apply, and add your own — one per line.</div>
+    ${cur.map((t,i)=>`<label class="checkrow" style="cursor:pointer"><input type="checkbox" checked id="cc${i}"> <span>${esc(t)}</span></label>`).join('')}
+    <div class="field" style="margin-top:8px"><label>Add items</label><textarea class="inp" id="ccNew" rows="3" placeholder="e.g. Water the plants&#10;Check medication box"></textarea></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Skip</button><button class="btn navy" onclick="chkOnCreateSave('${cid}')">Save checklist</button>`);
+}
+function chkOnCreateSave(cid){
+  const cur=(WEEKLY[cid]||[]).map(x=>x.t);
+  const keep=cur.filter((t,i)=>el('cc'+i)&&el('cc'+i).checked);
+  const add=(el('ccNew').value||'').split('\n').map(x=>x.trim()).filter(Boolean);
+  WEEKLY[cid]=[...keep,...add].map(t=>({t,d:0})); chkSave();
+  logAudit('Set up weekly checklist',(client(cid)||{}).uci||cid);
+  closeAll(); render(); toast('Weekly checklist saved — '+WEEKLY[cid].length+' items.');
 }
 function saveClient(){
   const init=(el('clInit').value||'').trim().toUpperCase();
@@ -7612,14 +8173,25 @@ function saveClient(){
   const dispInit=init||('#'+rawUci.slice(-2));
   const rec={id:'c'+Date.now(), uci, name:'Client '+(init||uci), init:dispInit, home:el('clHome').value,
     age:parseInt(el('clAge').value||'0',10)||null, since:T, guardian:'None on file', tag:'',
-    dx:(el('clDx').value||'').trim()||'Supported living',
+    dx:ctypeVal('clDx')||'Supported living',
     alerts:(el('clAlerts').value||'').split(',').map(x=>x.trim()).filter(Boolean),
     support:(el('clSupport').value||'').trim(), goals:[]};
   CLIENTS.push(rec);
   WEEKLY[rec.id]=[{t:'Clean room',d:0},{t:'Check bathroom supplies',d:0}];
   sbPush('np_demo_clients',{id:rec.id,uci:rec.uci,name:rec.name,init:rec.init,home:rec.home,age:rec.age,since:rec.since,guardian:rec.guardian,tag:rec.tag,dx:rec.dx,alerts:rec.alerts,support:rec.support,goals:rec.goals});
   logAudit('Added client',rec.uci+' · '+rec.home);
-  closeAll(); render(); toast(rec.uci+' added — visible in appointments, incidents, notes and checklists.');
+  closeAll(); render(); toast(rec.uci+' added.');
+  setTimeout(()=>{
+    openModal('Client created — add more now?',`
+      <div class="tiny muted" style="margin-bottom:10px">${esc(rec.uci)} is ready. You can set these up now or any time from their page:</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn ghost" onclick="closeAll();state.client='${rec.id}';state.view='clients';render();setTimeout(()=>openNoteForm&&openNoteForm('${rec.id}'),150)">Add a progress note</button>
+        <button class="btn ghost" onclick="closeAll();state.client='${rec.id}';state.view='clients';render();setTimeout(()=>goalForm&&goalForm('${rec.id}'),150)">Add IPP goals</button>
+        <button class="btn ghost" onclick="chkOnCreate('${rec.id}')">Set up the weekly checklist</button>
+        <button class="btn ghost" onclick="closeAll();state.client='${rec.id}';state.view='clients';render()">Open the full profile</button>
+      </div>`,
+      `<button class="btn navy" onclick="closeAll()">Done for now</button>`);
+  },250);
 }
 function saveStaff(sid){
   const name=(el('sfName').value||'').trim();
@@ -7653,19 +8225,19 @@ function removeStaff(sid){ delStaff(sid); }
 function openShiftForm(idx){
   const sh=(idx!=null&&idx>-1)?SHIFTS[idx]:null;
   openModal(sh?'Edit shift':'Add a shift',`
-    <div class="field"><label>Staff member</label><select class="inp" id="shWho">${STAFF.map(x=>`<option value="${x.id}" ${sh&&sh.sid===x.id?'selected':''}>${esc(x.name)} — ${esc(x.role)}</option>`).join('')}</select></div>
+    <div class="field"><label>Staff member</label><select class="inp" id="shWho">${visibleStaff().map(x=>`<option value="${x.id}" ${sh&&sh.sid===x.id?'selected':''}>${esc(stName(x))} — ${esc(x.role)}</option>`).join('')}</select></div>
     <div class="row2">
       <div class="field"><label>Start</label><input class="inp" type="time" id="shStart" value="${sh?sh.start:'07:00'}"></div>
       <div class="field"><label>End</label><input class="inp" type="time" id="shEnd" value="${sh?sh.end:'15:00'}"></div>
     </div>
-    <div class="field"><label>House</label><select class="inp" id="shHome">${HOMES.map(h=>`<option ${sh&&sh.home===h?'selected':''}>${h}</option>`).join('')}</select></div>
+    <div class="field"><label>House</label>${homeField('shHome',sh&&sh.home)}</div>
     <div class="tiny muted">Shifts appear on the calendar board and in “who's working today”. The staff member is notified when you save.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>
      ${sh?`<button class="btn ghost" onclick="removeShift(${idx})">Remove shift</button>`:''}
      <button class="btn navy" onclick="saveShift(${sh?idx:'null'})">${sh?'Save shift':'Add shift'}</button>`);
 }
 function saveShift(idx){
-  const rec={sid:el('shWho').value,start:el('shStart').value,end:el('shEnd').value,home:el('shHome').value};
+  const rec={sid:el('shWho').value,start:el('shStart').value,end:el('shEnd').value,home:homeVal('shHome')};
   if(rec.end<=rec.start) return toast('The end time needs to be after the start time.');
   if(idx!=null&&idx>-1){ Object.assign(SHIFTS[idx],rec); logAudit('Edited shift',`${staff(rec.sid).init} · ${rec.home}`); }
   else { SHIFTS.push(rec); logAudit('Added shift',`${staff(rec.sid).init} · ${rec.home}`); }
@@ -7675,7 +8247,10 @@ function saveShift(idx){
 }
 function removeShift(idx){
   const sh=SHIFTS[idx]; if(!sh) return;
-  SHIFTS.splice(idx,1); logAudit('Removed shift',`${(staff(sh.sid)||{}).init||''} · ${sh.home}`);
+  SHIFTS.splice(idx,1);
+  delMark('shift',shiftKey(sh));                                                  // seeds stay gone after reload
+  sbDel('np_demo_shifts',`staff_id=eq.${encodeURIComponent(sh.sid)}&start_time=eq.${encodeURIComponent(sh.start)}&end_time=eq.${encodeURIComponent(sh.end)}`);
+  logAudit('Removed shift',`${(staff(sh.sid)||{}).init||''} · ${sh.home}`);
   closeAll(); render(); toast('Shift removed.');
 }
 /* appointment categories — color + emoji, editable by the director, dashboard-only (never synced to Google) */
@@ -7695,7 +8270,8 @@ function catForm(name){
     <div class="field"><label>Category name</label><input class="inp" id="acN" value="${isNew?'':esc(name)}" ${isNew?'':'disabled'} placeholder="e.g. Therapy"></div>
     <div class="row2">
       <div class="field"><label>Color</label><input class="inp" type="color" id="acC" value="${c.color}" style="height:42px;padding:4px"></div>
-      <div class="field"><label>Emoji</label><input class="inp" id="acE" value="${c.emoji}" maxlength="4" placeholder="🦷"></div>
+      <div class="field"><label>Emoji</label><input class="inp" id="acE" value="${c.emoji}" maxlength="4" placeholder="🦷">
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${['🦷','🩺','🌿','☎','🚐','🧠','💊','🏥','🏊','🎨','🎵','🍽','📋','🏃','🦮','✂'].map(e=>`<button type="button" style="all:unset;cursor:pointer;font-size:17px;padding:2px" onclick="el('acE').value='${e}'">${e}</button>`).join('')}</div></div>
     </div>
     <div class="tiny muted">Colors and emoji live in this dashboard only — they never change what syncs to Google Calendar.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>
@@ -7805,6 +8381,16 @@ function reportSheet(n,t,at){
   return `<h2>${n}</h2><div class="p-sub">${t} · generated ${at} · ${esc(ONB.org||'Spectrum')} — Spectrum Care Advisory OS</div>
     <p>Compiled from the live workspace records current as of ${at}. Clients are identified by UCI only. The full underlying data is available from the matching pages of the dashboard and the change log.</p>`;
 }
+function emailAgreement(){
+  pilotSync();
+  const P=PILOT_AGREED||{};
+  const su=encodeURIComponent('Signed Pilot Dashboard Agreement — '+(ONB.org||'Spectrum'));
+  const bd=encodeURIComponent(`Signed by: ${P.by||''} (${P.role||''})\nAgency: ${P.agency||ONB.org||''}\nSigned at: ${P.at||''}\nTerm: ${P.term||'30 days'} · expires ${P.expires||''}\n\nOpen your dashboard profile for the full printable agreement text.`);
+  const to=encodeURIComponent(ONB.email||'');
+  if(GCAL&&GCAL.connected) window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${bd}`,'_blank');
+  else location.href=`mailto:${decodeURIComponent(to)}?subject=${su}&body=${bd}`;
+  toast('Compose opened — add any recipients and send.');
+}
 function pilotSheet(){
   pilotSync();
   const P=PILOT_AGREED||{by:'',role:'',at:'',agency:(el('pgAgency')&&el('pgAgency').value)||'',license:(el('pgLicense')&&el('pgLicense').value)||'',title:(el('pgTitle')&&el('pgTitle').value)||''};
@@ -7830,7 +8416,7 @@ function globalSearchGo(q){
   window._sq=setTimeout(()=>{
     const s=q.toLowerCase();
     const cs=visibleClients().filter(c=>c.name.toLowerCase().includes(s));
-    const ss=state.role==='family'?[]:STAFF.filter(x=>x.name.toLowerCase().includes(s));
+    const ss=state.role==='family'?[]:visibleStaff().filter(x=>x.name.toLowerCase().includes(s));
     const as=APPTS.filter(a=>a.title.toLowerCase().includes(s)&&visibleClients().some(c=>c.id===a.cid));
     if(!cs.length&&!ss.length&&!as.length) return;
     openDrawer('Search results',`"${esc(q)}"`,`
@@ -7838,7 +8424,7 @@ function globalSearchGo(q){
         ${cs.map(c=>`<div class="attn" onclick="closeAll();openClient('${c.id}')"><div class="ai info">☺</div>
         <div class="at"><b>${esc(c.name)}</b><span>${esc(c.home)} · ${esc(c.dx)}</span></div></div>`).join('')}</div></section>`:''}
       ${ss.length?`<section class="card"><div class="card-h"><h2>Staff</h2></div><div class="card-b flush">
-        ${ss.map(x=>`<div class="attn" onclick="closeAll();openStaff('${x.id}')"><div class="ai info">⚇</div>
+        ${ss.map(x=>`<div class="attn" onclick="closeAll();openStaffPage('${x.id}')"><div class="ai info">⚇</div>
         <div class="at"><b>${esc(x.name)}</b><span>${esc(x.role)}</span></div></div>`).join('')}</div></section>`:''}
       ${as.length?`<section class="card"><div class="card-h"><h2>Appointments</h2></div><div class="card-b flush">
         ${as.map(a=>`<div class="attn" onclick="closeAll();openAppt('${a.id}')"><div class="ai info">▤</div>
@@ -7894,7 +8480,7 @@ function askContext(){
   if(role!=='family'){
     sec('Tasks', TASKS.slice(0,30).map(t=>`- [${t.stage}] ${askTr(t.title,90)} · ${t.cat||'General'} · due ${t.due||'—'}${t.sid?' · assigned '+(staff(t.sid)||{}).init:''}${t.pri?' · '+t.pri:''}${t.signoff?' · signed off by '+askTr(t.signoff,40):''}${(t.notes||[]).length?' · notes: '+t.notes.slice(-2).map(n=>askTr(n.t||n,60)).join(' / '):''}`));
     sec('Incidents', INCIDENTS.filter(i=>clIds.includes(i.cid)).map(i=>`- ${i.type} · ${ci(i.cid)} · ${i.date} · ${i.status}${i.summary?' · '+askTr(i.summary,100):''}`));
-    sec('Staff & certifications', STAFF.map(s=>{
+    sec('Staff & certifications', visibleStaff().map(s=>{
       const cr=(CREDS[s.id]||[]).map(x=>`${x.c}: ${x.d}${x.s==='bad'?' (EXPIRED/PROBLEM)':x.s==='warn'?' (attention)':''}`).join('; ');
       return `- ${s.name} (${s.init}) · ${s.role} · ${s.home} · hired ${s.hired} · ${cr}`;
     }));
@@ -7994,10 +8580,28 @@ const ASK_SUG={
 };
 function supportCompose(){
   const to='support@aiparagonconsulting.com', su=encodeURIComponent('Spectrum Care Advisory OS support');
-  if(GCAL&&GCAL.connected) window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}`,'_blank');   // their Google account
-  else location.href=`mailto:${to}?subject=${su}`;                                                                  // their default mail app
+  openModal('Help & support',`
+    <div class="tiny muted" style="margin-bottom:10px">Reach us at <b>${to}</b> — pick how you'd like to write:</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn ghost" onclick="window.open('https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}','_blank');closeAll()">Gmail (opens in a new tab)</button>
+      <button class="btn ghost" onclick="location.href='mailto:${to}?subject=${su}';closeAll()">My default mail app</button>
+      <button class="btn ghost" onclick="navigator.clipboard&&navigator.clipboard.writeText('${to}');closeAll();toast('Address copied.')">Copy the address</button>
+    </div>`,
+    `<button class="btn ghost" onclick="closeAll()">Close</button>`);
 }
-function toggleAsk(){ const p=el('askPanel'); p.classList.toggle('on'); el('askFab').style.display=p.classList.contains('on')?'none':'flex'; if(p.classList.contains('on')) el('askInput').focus(); }
+function askMic(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) return;
+  const b=el('askMic');
+  if(window._rec){ try{window._rec.stop();}catch(e){} window._rec=null; b.style.opacity=''; return; }
+  const r=new SR(); window._rec=r; r.lang='en-US'; r.interimResults=true;
+  b.style.opacity='.5';
+  r.onresult=e=>{ el('askInput').value=[...e.results].map(x=>x[0].transcript).join(''); };
+  r.onend=()=>{ window._rec=null; b.style.opacity=''; if((el('askInput').value||'').trim()) askSend(); };
+  r.onerror=()=>{ window._rec=null; b.style.opacity=''; };
+  r.start();
+}
+function askMicInit(){ const b=el('askMic'); if(b&&(window.SpeechRecognition||window.webkitSpeechRecognition)) b.style.display=''; }
+function toggleAsk(){ askMicInit(); const p=el('askPanel'); p.classList.toggle('on'); el('askFab').style.display=p.classList.contains('on')?'none':'flex'; if(p.classList.contains('on')) el('askInput').focus(); }
 function askSeed(){
   el('askLog').innerHTML=`<div class="msg bot">Hi ${esc(ME[state.role].name.split(' ')[0])} ✦ I'm Ask Spectrum. Ask me about a client, a policy, or what is happening on the floor — I only answer from records you are allowed to see. New here? Tap a question below, or <b>Show me around</b> for a quick guide.</div>`;
   askSugFill();
@@ -8194,7 +8798,7 @@ function openShiftEdit(sid){
       ${['Maple House','Cedar House','Birch House','All homes'].map(h=>`<option ${s.home===h?'selected':''}>${h}</option>`).join('')}</select></div>
     <div class="sec-note"><span>ℹ</span><div><b>Applies immediately</b>The staff member sees the new hours on their own dashboard and timeline the moment you save. The change is written to the audit log.</div></div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>
-     <button class="btn navy" onclick="saveShift('${sid}')">Save shift</button>`);
+     <button class="btn navy" onclick="saveShiftTL('${sid}')">Save shift</button>`);
   shSlide();
 }
 function shSlide(which){
@@ -8209,7 +8813,7 @@ function shSlide(which){
   const h=(b-a)/60;
   el('shDur').textContent=(h%1?h.toFixed(1):h)+'-hour shift';
 }
-function saveShift(sid){
+function saveShiftTL(sid){
   const st=mmhh(+el('shStart').value), en=mmhh(+el('shEnd').value);
   if(toMin(en)<=toMin(st)) return toast('The shift has to end after it starts.');
   const s=SHIFTS.find(x=>x.sid===sid);
@@ -8415,15 +9019,33 @@ async function sbHydrate(){
       if(r.key==='reports'&&r.value&&Array.isArray(r.value.items)){ REPORTS=r.value.items; }
       if(r.key==='protocols'&&r.value&&r.value.map){ Object.assign(PROTOCOLS,r.value.map); }
       if(r.key==='onboard'&&r.value){ if(Array.isArray(r.value.master)&&r.value.master.length) OB_MASTER=r.value.master; if(r.value.assign) OB_ASSIGN=r.value.assign; }
-      if(r.key==='hidesample'&&r.value&&typeof r.value.v==='boolean'){ state.hideSample=r.value.v; lsSet('np_hide_sample',r.value.v?'1':'0'); }
+      if(r.key==='homes'&&r.value&&Array.isArray(r.value.list)&&r.value.list.length){ HOMES=r.value.list; }
+      if(r.key==='clienttypes'&&r.value&&Array.isArray(r.value.list)&&r.value.list.length){ CLIENT_TYPES=r.value.list; }
+      if(r.key==='taskcats'&&r.value&&Array.isArray(r.value.list)&&r.value.list.length){ TASK_CATS=r.value.list; }
+      if(r.key==='weeklycfg'&&r.value&&Array.isArray(r.value.metrics)){ WEEKLY_CFG=r.value; }
+      if(r.key==='taskpris'&&r.value&&Array.isArray(r.value.list)&&r.value.list.length){ TASK_PRIS=r.value.list; }
+      if(r.key==='weekly'&&r.value&&r.value.map&&typeof r.value.map==='object'){ Object.keys(r.value.map).forEach(k=>{ WEEKLY[k]=r.value.map[k]; }); }
+      if(r.key==='namemode'&&r.value&&r.value.v){ NAME_MODE=r.value.v; lsSet('np_name_mode',r.value.v); }
+      if(r.key==='chgcats'&&r.value&&r.value.map){ CHG_CATS=r.value.map; }
+      if(r.key==='idle'&&r.value&&r.value.min!=null){ IDLE_MIN=+r.value.min||0; lsSet('np_idle_min',String(IDLE_MIN)); idleReset(); }
+      if(r.key==='tz'&&r.value&&r.value.v){ lsSet('np_tz',r.value.v); }
+      if(r.key==='hidesample'&&!DEMO_VIEW&&r.value&&typeof r.value.v==='boolean'){ state.hideSample=r.value.v; lsSet('np_hide_sample',r.value.v?'1':'0'); }
       if(r.key==='apptcats'&&r.value&&r.value.map){ APPT_CATS=r.value.map; }
       if(r.key==='binders'&&r.value&&Array.isArray(r.value.items)){ CUSTOM_BINDERS=r.value.items; CUSTOM_BINDERS.forEach(b=>FOLDER_NAMES[b.key]=b.name); }
       if(r.key==='chklib'&&r.value&&Array.isArray(r.value.groups)&&r.value.groups.length){ CHECKLIST=r.value.groups; }
-      if(r.key==='notifrules'&&r.value&&r.value.rules){ Object.assign(NOTIF_RULES,r.value.rules); }
+      if(r.key==='notifrules'&&r.value&&r.value.rules){ Object.assign(NOTIF_RULES,r.value.rules); if(r.value.cadence) NOTIF_CADENCE=r.value.cadence; }
       if(r.key==='access'&&r.value&&r.value.map){ ACCESS=r.value.map; }
       if(r.key==='goals'&&r.value&&r.value.map){ Object.entries(r.value.map).forEach(([cid,gs])=>{ const c=client(cid); if(c) c.goals=gs; }); }
       if(r.key==='prognotes'&&r.value&&r.value.map){ Object.entries(r.value.map).forEach(([cid,ns])=>{ PROG_NOTES[cid]=ns; }); }
       if(r.key==='email'&&r.value&&typeof r.value.v==='string'){ ONB.email=r.value.v; lsSet('np_onboarding',JSON.stringify(ONB)); }
+      if(r.key==='profile'&&r.value&&typeof r.value==='object'){
+        if(r.value.name) ONB.name=r.value.name;
+        if(r.value.role&&ME[r.value.role]) ONB.role=r.value.role;
+        if(r.value.roleTitle) ONB.roleTitle=r.value.roleTitle;
+        if(r.value.email) ONB.email=ONB.email||r.value.email;
+        if(r.value.registered_at) ONB.registeredAt=r.value.registered_at;
+        lsSet('np_onboarding',JSON.stringify(ONB)); applySetup();
+      }
       if(r.key==='org'&&r.value&&r.value.name){ ONB.org=r.value.name; if(typeof r.value.site==='string'&&r.value.site) ONB.domain=r.value.site; lsSet('np_onboarding',JSON.stringify(ONB)); applySetup(); }
       if(r.key==='deleted'&&r.value&&typeof r.value==='object'){                 // deletions recorded by anyone, on any device
         Object.keys(r.value).forEach(k=>{
@@ -8458,8 +9080,8 @@ async function sbHydrate(){
   insps.forEach(r=>{
     if(r.kind==='template' && Array.isArray(r.questions)){
       const ex=inspTpl(r.id);
-      if(ex){ ex.name=r.title; ex.folder=r.folder; ex.questions=r.questions; }
-      else INSP_TEMPLATES.push({id:r.id,name:r.title,folder:r.folder,desc:'',questions:r.questions});
+      if(ex){ ex.name=r.title; ex.folder=r.folder; ex.questions=r.questions; if(r.per_week!=null) ex.perWeek=r.per_week; if(r.has_obs!=null) ex.obs=!!r.has_obs; }
+      else INSP_TEMPLATES.push({id:r.id,name:r.title,folder:r.folder,desc:'',questions:r.questions,perWeek:r.per_week||0,obs:!!r.has_obs});
     } else if(r.kind==='completed'){
       if(!INSP_DONE.some(x=>x.id===r.id)){
         const den=r.score_den||0, num=r.score_num||0;
@@ -8499,7 +9121,7 @@ async function sbHydrate(){
   docs.forEach(r=>{ if(!DOCS.some(d=>d.cid===r.cid&&d.n===r.n)) DOCS.unshift({cid:r.cid,n:r.n,cat:r.cat,by:r.uploaded_by,at:r.doc_date,s:r.size}); });
   if(creds.length){ Object.keys(CREDS).forEach(k=>delete CREDS[k]); creds.forEach(r=>{ (CREDS[r.sid]=CREDS[r.sid]||[]).push(credRowFromDb(r)); }); }
   if(tpls.length){ tpls.forEach(r=>{ const t=TEMPLATES5.find(x=>x.id===r.id); if(t){ t.name=r.name; t.fields=r.fields||t.fields; } }); }
-  SYS_NOTIFS=notifs.map(r=>({t:r.title,s:r.body,at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),k:r.kind||'info'}));
+  SYS_NOTIFS=notifs.map(r=>({t:r.title,s:r.body,_seed:0,at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),k:r.kind||'info'}));
   if(cnotes.length){ CLIENT_NOTES={}; cnotes.forEach(r=>{ (CLIENT_NOTES[r.cid]=CLIENT_NOTES[r.cid]||[]).push({text:r.note,by:r.noted_by,at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}); }); }
   if(appts.length){ APPTS.length=0; appts.forEach(r=>APPTS.push({id:r.id,cid:r.cid,title:r.title,type:r.type,date:r.appt_date,time:r.appt_time,dur:r.dur,provider:r.provider||'',loc:r.loc||'',flag:r.flag||'',ride:r.ride||'',cancelled:r.cancelled||0,cxBy:r.cx_by||'',gid:r.gcal_id||null,notes:[],files:[]})); }
   applyDeletions();
