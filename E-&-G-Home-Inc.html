@@ -562,6 +562,17 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xm
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
+/* ── v9.30: per-user layout editor ── */
+.lay-bar{display:flex;align-items:center;gap:6px;background:var(--gold-soft);border-bottom:1px dashed #E8D9A8;padding:6px 10px;font-size:12px;border-radius:var(--r) var(--r) 0 0}
+.lay-bar .lay-h{cursor:grab;font-size:14px;color:#7A5E12;user-select:none}
+.lay-bar .lay-t{flex:1;font-weight:800;color:#7A5E12;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lay-bar button{all:unset;cursor:pointer;font-size:11.5px;font-weight:800;color:#7A5E12;padding:3px 8px;border-radius:7px;border:1px solid #E8D9A8;background:var(--white)}
+.lay-hidden{opacity:.45;outline:2px dashed #C9A84C;outline-offset:2px}
+#layFab{position:fixed;left:18px;bottom:18px;z-index:120;box-shadow:var(--shadow-sm)}
+#layFab2{position:fixed;left:18px;bottom:64px;z-index:120;display:flex;flex-direction:column;gap:6px}
+#layFab2 .btn{box-shadow:var(--shadow-sm)}
+@media (max-width:900px){ .lay-bar button{padding:7px 10px} #layFab{bottom:calc(14px + env(safe-area-inset-bottom))} #layFab2{bottom:calc(60px + env(safe-area-inset-bottom))} }
+
 /* ══ MOBILE — keep last ══ */
 @media (max-width:900px){
   .grid-side,.grid2,.grid3{grid-template-columns:1fr}
@@ -1652,7 +1663,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · v9.24 beta</span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · v9.38 beta</span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -1759,7 +1770,9 @@ const T = iso(TODAY);
 const BACKEND = Object.assign({
   url: '', anon: '',
   incidentWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-incident',
-  calendarWebhook: '',
+  emailWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-email',
+  emailToken: 'npd-em-7k2m9x41',
+  calendarWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-calendar',
   notifyWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-reminders',
   askWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-ask',
   googleClientId: '665621800801-pbruv525a3kcrq5oa64p9rvh1mg7pt6c.apps.googleusercontent.com'
@@ -2356,6 +2369,18 @@ let TEMPLATES5=[
    {l:'Medication, dose and instructions',ty:'long text'},{l:'Administration hour(s)',ty:'text'},
    {l:'Start date',ty:'date'},{l:'Stop date',ty:'date'},{l:'Known side effects',ty:'long text'},
    {l:'Prescriber',ty:'text'},{l:'Med staff signature',ty:'signature'},{l:'Administrator',ty:'signature'}]},
+ {id:'tp6',name:'Water temperature log',desc:'Daily fixture check — files to Daily Logs / Water Temp Logs',dest:'Water',fields:[
+   {l:'Home',ty:'text'},{l:'Date',ty:'date'},{l:'Time',ty:'time'},{l:'Fixture checked',ty:'text'},
+   {l:'Temperature (°F)',ty:'text'},{l:'Within safe range (below 120°F)',ty:'checkbox'},{l:'Staff signature',ty:'signature'}]},
+ {id:'tp7',name:'Fire drill log',desc:'Drill record — files to Daily Logs / Fire Drills & Safety',dest:'Safety',fields:[
+   {l:'Home',ty:'text'},{l:'Date',ty:'date'},{l:'Time started',ty:'time'},{l:'Evacuation time (minutes)',ty:'text'},
+   {l:'Participants',ty:'long text'},{l:'Issues observed',ty:'long text'},{l:'Staff signature',ty:'signature'}]},
+ {id:'tp8',name:'Daily activity log',desc:'Per-client day record — files to the Daily Logs binder',dest:'Daily',fields:[
+   {l:'Client ID',ty:'text'},{l:'Date',ty:'date'},{l:'Activities',ty:'long text'},{l:'Meals',ty:'text'},
+   {l:'Mood and behavior notes',ty:'long text'},{l:'Staff signature',ty:'signature'}]},
+ {id:'tp9',name:'Attendance sheet',desc:'Daily attendance — files to Daily Logs / Attendance',dest:'Attendance',fields:[
+   {l:'Home',ty:'text'},{l:'Date',ty:'date'},{l:'Clients present (IDs)',ty:'long text'},
+   {l:'Absences and reason',ty:'long text'},{l:'Staff signature',ty:'signature'}]},
  {id:'tp2',name:'Special incident report (ACRC 552x)',desc:'From the ACRC form — written SIR due to the SIR desk within 24 hours',fields:[
    {l:'Report submitted by (Service Coordinator / Vendor / Long-Term Health Care Facility)',ty:'text'},
    {l:'Client ID',ty:'text'},{l:'Date of incident',ty:'date'},{l:'Time of incident',ty:'time'},
@@ -2616,13 +2641,13 @@ const AUDIT = [
 const NAV = {
   director:[
     {g:'Today'},   {id:'home',t:'Home',i:'⌂'}, {id:'tasks',t:'Tasks',i:'☑'}, {id:'calendar',t:'Calendar',i:'▤'},
-    {g:'Care'},    {id:'clients',t:'Clients',i:'☺'}, {id:'team',t:'Staff',i:'⚇'}, {id:'trainhub',t:'Training & onboarding',i:'🎓'}, {id:'incidents',t:'Incidents',i:'⚠'}, {id:'safety',t:'Safety log',i:'▣'},
+    {g:'Care'},    {id:'clients',t:'Clients',i:'☺'}, {id:'team',t:'Staff',i:'⚇'}, {id:'trainhub',t:'Training & onboarding',i:'🎓'}, {id:'safety',t:'Safety log',i:'▣'},
     {g:'Records'}, {id:'templates',t:'Documents',i:'◫'}, {id:'forms',t:'Templates',i:'❏'}, {id:'compliance',t:'Reports',i:'▦'},
     {g:'Setup'},   {id:'directory',t:'Directory',i:'☎'}, {id:'changelog',t:'Change log',i:'≡'}
   ],
   staff:[
     {g:'Today'},   {id:'home',t:'My shift',i:'⌂'}, {id:'tasks',t:'My tasks',i:'☑'}, {id:'calendar',t:'Calendar',i:'▤'},
-    {g:'Care'},    {id:'clients',t:'Clients',i:'☺'}, {id:'incidents',t:'Incidents',i:'⚠'}, {id:'safety',t:'Safety log',i:'▣'}
+    {g:'Care'},    {id:'clients',t:'Clients',i:'☺'}, {id:'safety',t:'Safety log',i:'▣'}
   ],
   family:[
     {g:'Client J-402318'},
@@ -2806,7 +2831,7 @@ function openDemoView(){
 function setNameMode(v){ NAME_MODE=v; lsSet('np_name_mode',v); sbUpsert('np_demo_program',{key:'namemode',value:{v},updated_by:auditActor()}); render(); renderNav(); toast(v==='initials'?'Staff now shown by initials.':'Staff now shown by full name.'); }
 const visShifts = () => SHIFTS.filter(s=>staff(s.sid)&&!hid('shift',shiftKey(s))&&!hid('staff',s.sid));
 const visIncidents = () => INCIDENTS.filter(i=>client(i.cid)&&visibleClients().some(c=>c.id===i.cid));
-const visAppts = () => APPTS.filter(a=>!hid('appt',a.id)&&client(a.cid)&&visibleClients().some(c=>c.id===a.cid));
+const visAppts = () => APPTS.filter(a=>!hid('appt',a.id)&&client(a.cid)&&visibleClients().some(c=>c.id===a.cid)&&calMine(a));
 const visThreads = () => THREADS.filter(t=>!t.cid||(client(t.cid)&&visibleClients().some(c=>c.id===t.cid))).filter(t=>!state.hideSample||t._user);
 
 const meInit=()=>ME[state.role].name.split(' ').map(w=>w[0]+'.').join('');
@@ -3111,11 +3136,41 @@ function clearSampleLists(){
   (L.apptcats||[]).forEach(k=>{ delete APPT_CATS[k]; }); catSave&&catSave();
   (L.chgcats||[]).forEach(k=>{ delete CHG_CATS[k]; }); chgCatsSave&&chgCatsSave();
 }
+const JOIN_TOKEN=(()=>{ try{ return new URLSearchParams(location.search).get('join')||''; }catch(e){ return ''; } })();
+async function joinBoot(){
+  try{
+    const rows=await sbGet('np_demo_invites','token=eq.'+encodeURIComponent(JOIN_TOKEN)+'&select=*');
+    const inv=rows&&rows[0];
+    if(!inv){ showLoginPage(); toast('That invite link is not valid — ask your director for a new one.'); return; }
+    if(inv.used_at){ showLoginPage(); const e0=el('liEmail'); if(e0&&inv.email) e0.value=inv.email; toast('That invite was already used — just sign in.'); return; }
+    window._joinInvite=inv;
+    showRegisterGate();
+    const rw=el('regRoleWrap'); if(rw) rw.remove();                  // the invite decides the role
+    el('loginTitle').textContent='Join '+((inv.org&&inv.org!=='Spectrum')?inv.org:'the team');
+    el('loginSub').innerHTML='You\u2019ve been invited as <b>'+esc(inv.name||'staff')+'</b>'+(inv.role_title?' · '+esc(inv.role_title):'')+'. Set a password to get started.';
+    const e=el('liEmail'); if(e) e.value=inv.email||'';
+    setTimeout(()=>{ const pw=el('liPw'); if(pw) pw.focus(); },80);
+  }catch(err){ showLoginPage(); }
+}
 function bootPortal(){
   if(DEMO_VIEW){
-    state.hideSample=false; DEL={};                                    // demo view always shows the full sample workspace
+    /* the demo dashboard is disposable: anything deleted or edited inside it is
+       thrown away, and every visit starts from the original sample data again */
+    try{ const pre='np__'+NP_WS+'__'; Object.keys(localStorage).filter(k=>k.indexOf(pre)===0).forEach(k=>localStorage.removeItem(k)); }catch(e){}
+    state.hideSample=false; DEL={}; NAME_MODE='full'; IDLE_MIN=0; TEMP_LIMIT=120;
     const db=el('demoBanner'); if(db) db.style.display='';
     document.title='Demo preview — Spectrum Care Advisory OS';
+    if(!OB_MASTER.length) OB_MASTER=ONBOARD.map(t=>({t,link:''}));
+    SAMPLE.temp=WATERTEMP.map(tempKey); SAMPLE.drill=FIREDRILLS.map(drillKey); SAMPLE.shift=SHIFTS.map(shiftKey);
+    hideWelcome(); hideOnboarding();
+    signIn('director');                                               // no welcome, no login, no agreement — just the sample workspace
+    return;
+  }
+  if(JOIN_TOKEN&&sbOn()){                                             // invited staff land on their own registration page
+    hideWelcome(); hideOnboarding();
+    el('login').style.display='flex';
+    joinBoot();
+    return;
   }
   if(!OB_MASTER.length) OB_MASTER=ONBOARD.map(t=>({t,link:''}));
   SAMPLE.temp=WATERTEMP.map(tempKey); SAMPLE.drill=FIREDRILLS.map(drillKey); SAMPLE.shift=SHIFTS.map(shiftKey);
@@ -3150,7 +3205,9 @@ function bootPortal(){
 }
 
 function signIn(role){ loadNotifPrefs(); loadPilot(); loadDocAct(); loadProgram(); AUTH.signedIn=true;
+  bindIdentity(role);
   whenHydrated(()=>{
+    bindIdentity(role);
     if(!HYDRATE_OK && !PILOT_AGREED && (ONB.org||ONB.name||AUTH.email)){
       // the workspace could not be loaded — do not make a returning user sign again
       console.warn('[np-demo] backend unreachable — holding the agreement gate rather than re-asking');
@@ -3189,7 +3246,7 @@ function idleReset(){
   _idleWarnT=setTimeout(()=>toast('Signing out in 1 minute — move the mouse to stay in.'),Math.max(1,(IDLE_MIN-1))*60000);
   _idleT=setTimeout(()=>{ toast('Signed out after inactivity.'); signOut(); },IDLE_MIN*60000);
 }
-function setIdle(v){ IDLE_MIN=+v||0; lsSet('np_idle_min',String(IDLE_MIN)); sbUpsert('np_demo_program',{key:'idle',value:{min:IDLE_MIN},updated_by:auditActor()}); idleReset(); toast(IDLE_MIN?('Auto sign-out after '+IDLE_MIN+' minutes idle.'):'Auto sign-out is off.'); }
+function setIdle(v){ IDLE_MIN=+v||0; lsSet('np_idle_min',String(IDLE_MIN)); userSetSave({idle:IDLE_MIN}); idleReset(); toast(IDLE_MIN?('Auto sign-out after '+IDLE_MIN+' minutes idle — just for your account.'):'Auto sign-out is off for your account.'); }
 ['click','keydown','mousemove','scroll','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{ if(AUTH.signedIn) idleReset(); },{passive:true}));
 function signOut(){
   if(typeof tourEnd==='function') tourEnd();
@@ -3322,10 +3379,10 @@ function sideProg(){
     });
   }
   if(state.role==='staff'){
-    const mine=TASKS.filter(t=>t.sid==='s1'&&t.due<=T);
+    const mine=TASKS.filter(t=>t.sid===meSid()&&t.due<=T);
     rows.push({l:'Tasks due today', a:mine.filter(t=>t.stage==='Done').length, b:mine.length, go:'tasks'});
     const appl=TRAINING.filter(x=>!hid('course',x.id)&&(x.req||(x.asg||[]).includes(meSid())));
-    rows.push({l:'Training complete', a:appl.filter(x=>x.done.includes('s1')).length, b:appl.length, go:'training'});
+    rows.push({l:'Training complete', a:appl.filter(x=>x.done.includes(meSid())).length, b:appl.length, go:'training'});
   }
   el('sideProg').innerHTML = rows.length?`<div class="sprog"><div class="sp-t">${state.role==='family'?"J-402318 today":"This week's progress"}</div>
     ${rows.map(r=>{
@@ -3339,7 +3396,7 @@ function go(v){ if(typeof tourEnd==='function') tourEnd(); const _f=el('tlFull')
 
 function myTasks(){ return myTasks_all().filter(t=>!hid('task',t.id)); }
 function myTasks_all(){
-  if(state.role==='staff') return TASKS.filter(t=>t.sid==='s1');
+  if(state.role==='staff') return TASKS.filter(t=>t.sid===meSid());
   if(state.role==='family') return [];
   return TASKS;
 }
@@ -3365,7 +3422,7 @@ function backBar(){
 function render(){
   const v = el('view');
   navRemember();
-  if(state.client){ v.innerHTML = backBar()+viewClient(state.client); return; }
+  if(state.client){ v.innerHTML = backBar()+viewClient(state.client); if(typeof layoutApply==='function') layoutApply(); return; }
 
   const map = {
     home:()=>viewHome()+staffDocsCard()+staffGuidesCard(), clients:viewClients, meds:viewMeds, calendar:viewCalendar, tasks:viewTasks, billing:viewBilling,
@@ -3374,7 +3431,214 @@ function render(){
     templates:viewTemplates, integrations:viewIntegrations, training:viewTraining, docs:viewDocs, safety:viewSafety, profile:viewProfile
   };
   v.innerHTML = (state.view==='home'?'':backBar()) + (map[state.view]||viewHome)();
+  if(typeof layoutApply==='function') layoutApply();
   if(typeof tlAutoScroll==='function') requestAnimationFrame(()=>tlAutoScroll());
+}
+
+/* ══════════════ v9.30: PER-USER LAYOUT (page builder) ══════════════
+   Home, Clients and Staff can be rearranged per person: drag or ↑↓ the
+   cards, move them between columns, hide what you don't use, and add your
+   own sections (notes, custom tables with your own columns, quick links).
+   Everything is stored under the signed-in account in 'usersettings', so
+   the layout is tied to credentials and comes back on every login, on any
+   device. Nobody else's view changes. */
+const LAYOUT_PAGES={home:1,clients:1,team:1};
+function layPage(){
+  if(state.client) return ((state.tab||'overview')==='overview')?'client':null;
+  return LAYOUT_PAGES[state.view]?state.view:null;
+}
+function layCfg(page){ const L=((USER_SET[userKey()]||{}).layouts)||{}; return JSON.parse(JSON.stringify(L[page]||{order:[],hidden:[],col:{}})); }
+function laySections(page){ const S=((USER_SET[userKey()]||{}).sections)||{}; return (S[page]||[]).slice(); }
+function laySaveCfg(page,cfg){ const L=Object.assign({},((USER_SET[userKey()]||{}).layouts)||{}); L[page]=cfg; userSetSave({layouts:L}); }
+function laySaveSections(page,list){ const S=Object.assign({},((USER_SET[userKey()]||{}).sections)||{}); S[page]=list; userSetSave({sections:S}); }
+function laySlug(t){ return String(t||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'section'; }
+function layCols(){
+  const root=el('view'); if(!root) return [];
+  const gs=root.querySelector(':scope > .grid-side');
+  return gs?[...gs.children]:[root];
+}
+function layCards(cols){
+  const out=[]; cols.forEach((c,ci)=>[...c.querySelectorAll(':scope > section.card')].forEach(sec=>{ sec.dataset.col=ci; out.push(sec); }));
+  return out;
+}
+function layoutApply(){
+  const page=layPage();
+  layoutFab(page);
+  if(!page) return;
+  const cols=layCols(); if(!cols.length) return;
+  // 1) my own sections join the page
+  laySections(page).forEach(cs=>{
+    const dv=document.createElement('div'); dv.innerHTML=customSectionHtml(page,cs);
+    (cols[cols.length>1?1:0]||cols[0]).appendChild(dv.firstElementChild);
+  });
+  // 2) every card gets a stable id from its heading
+  const seen={};
+  let cards=layCards(cols);
+  cards.forEach(sec=>{
+    if(sec.dataset.lid) return;
+    const h=sec.querySelector('h2');
+    let lid=laySlug(h?h.textContent:'section');
+    if(seen[lid]!=null){ seen[lid]++; lid=lid+'-'+seen[lid]; } else seen[lid]=0;
+    sec.dataset.lid=lid;
+  });
+  // 3) apply the saved arrangement
+  const cfg=layCfg(page);
+  (cfg.order||[]).forEach(lid=>{
+    const sec=cards.find(x=>x.dataset.lid===lid); if(!sec) return;
+    const ci=Math.min((cfg.col||{})[lid]!=null?(cfg.col||{})[lid]:+sec.dataset.col, cols.length-1);
+    (cols[ci]||cols[0]).appendChild(sec);
+  });
+  cards=layCards(cols);
+  (cfg.hidden||[]).forEach(lid=>{
+    const sec=cards.find(x=>x.dataset.lid===lid); if(!sec) return;
+    if(state.layoutEdit){ sec.classList.add('lay-hidden'); } else sec.style.display='none';
+  });
+  if(state.layoutEdit) layoutChrome(page,cols,cards,cfg);
+}
+function layoutChrome(page,cols,cards,cfg){
+  cards.forEach(sec=>{
+    if(sec.querySelector(':scope > .lay-bar')) return;
+    const lid=sec.dataset.lid, isCs=lid.indexOf('cs-')===0;
+    const hid2=(cfg.hidden||[]).includes(lid);
+    const bar=document.createElement('div');
+    bar.className='lay-bar';
+    bar.innerHTML=`<span class="lay-h" draggable="true" title="Drag anywhere">⠿</span><span class="lay-t">${esc(((sec.querySelector('h2')||{}).textContent||'Section').trim())}</span>
+      <button title="Move up" onclick="layMove('${lid}',-1)">↑</button>
+      <button title="Move down" onclick="layMove('${lid}',1)">↓</button>
+      ${cols.length>1?`<button title="Move to the other column" onclick="laySwap('${lid}')">⇄</button>`:''}
+      <button onclick="layHide('${lid}')">${hid2?'👁 Show':'Hide'}</button>
+      ${isCs?`<button onclick="csEdit('${page}','${lid.slice(3)}')">✎ Edit</button><button onclick="csDel('${page}','${lid.slice(3)}')">✕</button>`:''}`;
+    sec.prepend(bar);
+    const h=bar.querySelector('.lay-h');
+    h.addEventListener('dragstart',()=>{ window._layDrag=lid; });
+    sec.addEventListener('dragover',e=>{ if(window._layDrag&&window._layDrag!==lid) e.preventDefault(); });
+    sec.addEventListener('drop',e=>{
+      e.preventDefault(); e.stopPropagation();
+      const src=cards.find(x=>x.dataset.lid===window._layDrag);
+      if(src&&src!==sec){ sec.parentElement.insertBefore(src,sec); layoutSaveFromDom(page); render(); }
+      window._layDrag=null;
+    });
+  });
+  cols.forEach(c=>{
+    c.addEventListener('dragover',e=>{ if(window._layDrag) e.preventDefault(); });
+    c.addEventListener('drop',e=>{
+      const src=cards.find(x=>x.dataset.lid===window._layDrag);
+      if(src){ c.appendChild(src); layoutSaveFromDom(page); render(); }
+      window._layDrag=null;
+    });
+  });
+}
+function layoutSaveFromDom(page){
+  const cols=layCols();
+  const cfg=layCfg(page); const order=[], col={};
+  cols.forEach((c,ci)=>[...c.querySelectorAll(':scope > section.card')].forEach(sec=>{ order.push(sec.dataset.lid); col[sec.dataset.lid]=ci; }));
+  cfg.order=order; cfg.col=col;
+  laySaveCfg(page,cfg);
+}
+function layMove(lid,dir){
+  const sec=document.querySelector(`#view section.card[data-lid="${lid}"]`); if(!sec) return;
+  let t=dir<0?sec.previousElementSibling:sec.nextElementSibling;
+  while(t&&!(t.matches&&t.matches('section.card'))) t=dir<0?t.previousElementSibling:t.nextElementSibling;
+  if(!t) return;
+  if(dir<0) t.parentElement.insertBefore(sec,t); else t.parentElement.insertBefore(sec,t.nextElementSibling);
+  layoutSaveFromDom(layPage()); render();
+}
+function laySwap(lid){
+  const cols=layCols(); if(cols.length<2) return;
+  const sec=document.querySelector(`#view section.card[data-lid="${lid}"]`); if(!sec) return;
+  const cur=cols.indexOf(sec.parentElement);
+  (cols[1-cur]||cols[0]).appendChild(sec);
+  layoutSaveFromDom(layPage()); render();
+}
+function layHide(lid){
+  const page=layPage(); const cfg=layCfg(page);
+  cfg.hidden=cfg.hidden||[];
+  const i=cfg.hidden.indexOf(lid);
+  if(i>-1) cfg.hidden.splice(i,1); else cfg.hidden.push(lid);
+  laySaveCfg(page,cfg); render();
+}
+function layReset(){
+  laySaveCfg(layPage(),{order:[],hidden:[],col:{}});
+  render(); toast('Layout back to the default. Your added sections are kept — remove them with ✕.');
+}
+function layoutFab(page){
+  let f=el('layFab'), f2=el('layFab2');
+  if(!page||!el('app').classList.contains('on')){ if(f) f.remove(); if(f2) f2.remove(); state.layoutEdit=false; return; }
+  if(!f){ f=document.createElement('button'); f.id='layFab'; document.body.appendChild(f); }
+  f.className='btn '+(state.layoutEdit?'gold':'ghost')+' sm';
+  f.innerHTML=state.layoutEdit?'✓ Done — layout saved':'⠿ Customize layout';
+  f.onclick=()=>{ state.layoutEdit=!state.layoutEdit; render(); if(!state.layoutEdit) toast('Saved to your account — this layout follows your login on every device.'); };
+  if(state.layoutEdit){
+    if(!f2){ f2=document.createElement('div'); f2.id='layFab2'; document.body.appendChild(f2); }
+    f2.innerHTML=`<button class="btn navy sm" onclick="csAddMenu('${page}')">＋ Add section</button>
+      <button class="btn ghost sm" onclick="layReset()">↺ Reset layout</button>`;
+  } else if(f2) f2.remove();
+}
+/* ── my own sections: notes, custom tables, quick links ── */
+function customSectionHtml(page,cs){
+  const lid='cs-'+cs.id; const d=cs.data||{};
+  let body='';
+  if(cs.type==='notes') body=`<div class="card-b"><p style="margin:0;font-size:13.4px;color:#4A4F60;white-space:pre-wrap;line-height:1.6">${esc(d.text||'Nothing written yet — hit ✎ to add your notes.')}</p></div>`;
+  else if(cs.type==='links') body=`<div class="card-b" style="display:flex;gap:8px;flex-wrap:wrap">${(d.items||[]).map(it=>/^https?:/.test(it.u)
+      ?`<a class="btn ghost sm" style="text-decoration:none" href="${esc(it.u)}" target="_blank" rel="noopener">${esc(it.t)} ↗</a>`
+      :`<a class="btn ghost sm" style="text-decoration:none" href="#" onclick="event.preventDefault();go('${esc(it.u)}')">${esc(it.t)}</a>`).join('')||'<div class="empty">No links yet — hit ✎ to add some.</div>'}</div>`;
+  else body=`<div class="card-b flush"><table class="tb"><thead><tr>${(d.cols||[]).map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead>
+    <tbody>${(d.rows||[]).map(r=>`<tr>${(d.cols||[]).map((_,ci)=>`<td>${esc(r[ci]||'')}</td>`).join('')}</tr>`).join('')||`<tr><td colspan="${(d.cols||[]).length||1}"><div class="empty">No rows yet — hit ✎ to fill it in.</div></td></tr>`}</tbody></table></div>`;
+  return `<section class="card" data-lid="${lid}" data-cs="1"><div class="card-h"><h2>${esc(cs.title)}</h2><div class="sub">Your section — only you see it</div>
+    ${!state.layoutEdit?`<div class="right"><button class="btn ghost sm" onclick="csEdit('${page}','${cs.id}')">✎</button></div>`:''}</div>${body}</section>`;
+}
+function csAddMenu(page){
+  openModal('Add a section to your layout',`
+    <div class="tiny muted" style="margin-bottom:10px">Sections you add belong to your account — they show only to you, on every device you sign in from.</div>
+    ${[['notes','✎ Notes','A free-text card for anything you want in front of you'],
+       ['table','▦ Custom table','Your own columns and rows — a phone tree, a roles table, whatever fits'],
+       ['links','⇗ Quick links','Buttons to portal pages or outside sites']].map(([k,t,d])=>`
+    <button class="checkrow" style="width:100%;cursor:pointer;text-align:left;border-color:var(--line)" onclick="csCreate('${page}','${k}')"><div class="cb">＋</div><div class="ct"><b>${t}</b><div class="tiny muted">${d}</div></div></button>`).join('')}`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button>`);
+}
+function csCreate(page,type){
+  const id='c'+Date.now();
+  const base={notes:{text:''},table:{cols:['Name','Details'],rows:[]},links:{items:[]}}[type]||{};
+  laySaveSections(page,laySections(page).concat([{id,type,title:{notes:'My notes',table:'My table',links:'Quick links'}[type]||'My section',data:base}]));
+  logAudit('Added a personal section',state.view);
+  closeAll(); render(); csEdit(page,id);
+}
+function csEdit(page,id){
+  const cs=laySections(page).find(x=>x.id===id); if(!cs) return;
+  const d=cs.data||{};
+  let body='';
+  if(cs.type==='notes') body=`<div class="field"><label>Text</label><textarea class="inp" id="csText" rows="6">${esc(d.text||'')}</textarea></div>`;
+  else if(cs.type==='links') body=`<div class="field"><label>Links — one per line, as <b>Label | destination</b></label>
+    <textarea class="inp" id="csLinks" rows="6" placeholder="Safety log | safety&#10;Regional center | https://www.acrc.org">${esc((d.items||[]).map(i=>i.t+' | '+i.u).join('\n'))}</textarea>
+    <div class="tiny muted">A destination is a web address, or a portal page: home, clients, calendar, tasks, incidents, team, safety, templates, forms, messages, weekly, directory.</div></div>`;
+  else body=`<div class="field"><label>Columns — comma separated</label><input class="inp" id="csCols" value="${esc((d.cols||[]).join(', '))}"></div>
+    <div class="field"><label>Rows — one per line, cells separated by |</label><textarea class="inp" id="csRows" rows="7" placeholder="Dr. Chen | 916-555-0142&#10;Pharmacy | 916-555-0177">${esc((d.rows||[]).map(r=>r.join(' | ')).join('\n'))}</textarea></div>`;
+  openModal('Edit — '+esc(cs.title),`<div class="field"><label>Section title</label><input class="inp" id="csTitle" value="${esc(cs.title)}"></div>${body}`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="csSave('${page}','${id}')">Save</button>`);
+}
+function csSave(page,id){
+  const list=laySections(page); const cs=list.find(x=>x.id===id); if(!cs) return;
+  cs.title=(el('csTitle').value||'').trim()||cs.title;
+  cs.data=cs.data||{};
+  if(cs.type==='notes') cs.data.text=el('csText').value;
+  else if(cs.type==='links') cs.data.items=(el('csLinks').value||'').split('\n').map(l=>l.trim()).filter(Boolean)
+    .map(l=>{ const parts=l.split('|'); return {t:(parts[0]||'').trim()||'Link', u:(parts.slice(1).join('|')||'').trim()||'home'}; });
+  else { cs.data.cols=(el('csCols').value||'').split(',').map(x=>x.trim()).filter(Boolean);
+         cs.data.rows=(el('csRows').value||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>l.split('|').map(x=>x.trim())); }
+  laySaveSections(page,list);
+  closeAll(); render(); toast('Saved to your layout.');
+}
+function csDel(page,id){
+  const cs=laySections(page).find(x=>x.id===id); if(!cs) return;
+  askDelete('Remove this section?',esc(cs.title)+' — only your own layout changes.',()=>{
+    laySaveSections(page,laySections(page).filter(x=>x.id!==id));
+    const cfg=layCfg(page);
+    cfg.order=(cfg.order||[]).filter(l=>l!=='cs-'+id);
+    cfg.hidden=(cfg.hidden||[]).filter(l=>l!=='cs-'+id);
+    delete (cfg.col||{})['cs-'+id];
+    laySaveCfg(page,cfg);
+    render(); toast('Section removed.');
+  },'Remove');
 }
 
 /* ══════════════ HOME ══════════════ */
@@ -3439,7 +3703,7 @@ function tlCard(full){
       tip:`${hm12(t)} pass — ${done} of ${n} recorded`,on:"go('meds')"});
   }).join('');
 
-  const _todays=APPTS.filter(a=>(!state.hideSample||!isSampleAppt(a))&&a.date===T&&cl.includes(a.cid)&&!a.cancelled)
+  const _todays=APPTS.filter(a=>(!state.hideSample||!isSampleAppt(a))&&a.date===T&&cl.includes(a.cid)&&!a.cancelled&&calShow(a))
     .slice().sort((x,y)=>x.time.localeCompare(y.time));
   const _gtoday=GCAL.connected?GCAL.events.filter(g=>g.date===T&&!g.allday):[];
   // one lane pass across BOTH kinds — overlapping bars stack first-on-top, next below
@@ -3492,7 +3756,7 @@ function tlCard(full){
           tip:`${m.name} ${m.dose} at ${hm12(t)} — ${l?l.status:late?'not recorded':D<T?'no record':'due later'}`,
           on:(D===T&&!l&&state.role!=='family')?`openDose('${m.id}','${t}')`:`openMed('${m.id}')`});
       }));
-      if(tlState.kind!=='meds') APPTS.filter(a=>(!state.hideSample||!isSampleAppt(a))&&a.cid===c.id&&a.date===D&&!a.cancelled).forEach(a=>bars.push({l:tlPx(a.time),w:Math.max(74,a.dur/60*TL.hw),
+      if(tlState.kind!=='meds') APPTS.filter(a=>(!state.hideSample||!isSampleAppt(a))&&a.cid===c.id&&a.date===D&&!a.cancelled&&calShow(a)).forEach(a=>bars.push({l:tlPx(a.time),w:Math.max(74,a.dur/60*TL.hw),
         cls:a.flag?'b-flag':'b-appt',txt:`${a.flag?'⚑ ':''}${hm12(a.time).replace(' ','').toLowerCase()} · ${esc(a.title)}`,
         tip:`${a.title} at ${hm12(a.time)} · ${a.loc}`,on:`openAppt('${a.id}')`}));
       const cLanes=packBars(bars);
@@ -3588,11 +3852,11 @@ function tlExpand(){
 function attentionItems(){
   const out=[];
   const cl = visibleClients().map(c=>c.id);
-  INCIDENTS.filter(i=>i.status!=='Closed'&&cl.includes(i.cid)&&client(i.cid)&&(!state.hideSample||!i._seed)).forEach(i=>out.push({k:'bad',ic:'⚠',t:`Incident follow-up open — ${(client(i.cid)||{}).name||''}`,s:`${i.type} on ${relDay(i.date)} · reported by ${i.by}`,a:'Open report',go:()=>openIncident(i.id)}));
-  APPTS.filter(a=>a.flag&&a.date>=T&&cl.includes(a.cid)&&client(a.cid)&&(!state.hideSample||!a._seed)).forEach(a=>out.push({k:'warn',ic:'▤',t:esc(a.flag),s:`${(client(a.cid)||{}).name||''} · ${a.title} · ${relDay(a.date)} ${hm12(a.time)}`,a:'Open appointment',go:()=>openAppt(a.id)}));
+  INCIDENTS.filter(i=>i.status!=='Closed'&&cl.includes(i.cid)&&client(i.cid)&&(!state.hideSample||!i._seed)).forEach(i=>out.push({k:'bad',ic:'⚠',t:`Incident follow-up open — ${(client(i.cid)||{}).uci||''}`,s:`${i.type} on ${relDay(i.date)} · reported by ${i.by}`,a:'Open report',go:()=>openClient(i.cid,'incidents')}));
+  APPTS.filter(a=>calMine(a)&&a.flag&&a.date>=T&&cl.includes(a.cid)&&client(a.cid)&&(!state.hideSample||!a._seed)).forEach(a=>out.push({k:'warn',ic:'▤',t:esc(a.flag),s:`${(client(a.cid)||{}).uci||''} · ${a.title} · ${relDay(a.date)} ${hm12(a.time)}`,a:'Open appointment',go:()=>openAppt(a.id)}));
   if(state.role!=='family'){
     TASKS.filter(t=>t.stage==='Overdue'&&staff(t.sid)&&(!state.hideSample||!t._seed)).forEach(t=>out.push({k:'bad',ic:'☑',t:`Overdue task — ${t.title}`,s:`Assigned to ${(staff(t.sid)||{}).init||''} · due ${relDay(t.due)}`,a:'Open task',go:()=>openTask(t.id)}));
-    APPTS.filter(a=>a.date===T&&a.ride===''&&client(a.cid)&&(!state.hideSample||!a._seed)).forEach(a=>out.push({k:'warn',ic:'🚐',t:`No ride arranged — ${a.title}`,s:`${(client(a.cid)||{}).name||''} · today at ${hm12(a.time)} · ${a.loc}`,a:'Open appointment',go:()=>openAppt(a.id)}));
+    APPTS.filter(a=>a.date===T&&a.ride===''&&client(a.cid)&&calMine(a)&&(!state.hideSample||!a._seed)).forEach(a=>out.push({k:'warn',ic:'🚐',t:`No ride arranged — ${a.title}`,s:`${(client(a.cid)||{}).uci||''} · today at ${hm12(a.time)} · ${a.loc}`,a:'Open appointment',go:()=>openAppt(a.id)}));
     if(state.role==='staff'){
       trainPending(meSid()).t.forEach(t=>out.push({k:'info',ic:'◉',t:`Training due — ${t.n}`,s:`${t.mins} minutes${t.due?' · due '+t.due:''}`,a:'Start course',go:()=>go('training')}));
     }
@@ -3643,8 +3907,8 @@ function viewHome(){
   const m=ME[state.role];
   const cl=visibleClients();
   const attn=attentionItems(); window._attn=attn;
-  const apptsToday=APPTS.filter(a=>a.date===T&&cl.some(c=>c.id===a.cid));
-  const upcoming=APPTS.filter(a=>a.date>T&&cl.some(c=>c.id===a.cid)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).slice(0,5);
+  const apptsToday=APPTS.filter(a=>a.date===T&&cl.some(c=>c.id===a.cid)&&calMine(a));
+  const upcoming=APPTS.filter(a=>a.date>T&&cl.some(c=>c.id===a.cid)&&calMine(a)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).slice(0,5);
 
   // stats per role
   let stats;
@@ -3652,9 +3916,9 @@ function viewHome(){
     const od=TASKS.filter(t=>t.stage==='Overdue'||(t.stage!=='Done'&&t.due<T)).length;
     stats=[
       {lb:'Open tasks',vl:myTasks().filter(t=>t.stage!=='Done').length,ft:od?od+' overdue':'None overdue',c:od?'warn':'ok',go:"go('tasks')"},
-      {lb:'Clients in service',vl:visibleClients().length,ft:'Across 3 homes',c:'',go:"go('clients')"},
+      {lb:'Clients in service',vl:visibleClients().length,ft:(()=>{const n=new Set(visibleClients().map(c=>c.home).filter(Boolean)).size;return n?`Across ${n} home${n===1?'':'s'}`:'No homes yet';})(),c:'',go:"go('clients')"},
       {lb:'Staff on shift now',vl:visShifts().filter(s=>s.start<=nowHM()&&s.end>=nowHM()).length,ft:`${visShifts().length} scheduled today`,c:'',go:"go('team')"},
-      {lb:'Open incidents',vl:visIncidents().filter(i=>i.status!=='Closed').length,ft:visIncidents().filter(i=>i.status!=='Closed').length?'Follow-up required':'None open',c:visIncidents().filter(i=>i.status!=='Closed').length?'bad':'ok',go:"go('incidents')"}
+      {lb:'Open incidents',vl:visIncidents().filter(i=>i.status!=='Closed').length,ft:visIncidents().filter(i=>i.status!=='Closed').length?'Follow-up required':'None open',c:visIncidents().filter(i=>i.status!=='Closed').length?'bad':'ok',go:"openIncidentsList()"}
     ];
   } else if(state.role==='staff'){
     const sid=meSid();
@@ -3760,7 +4024,7 @@ function viewHome(){
       </section>
 
       ${state.role==='staff'? `
-      ${trainCard('s1')}
+      ${trainCard(meSid())}
       <section class="card">
         <div class="card-h"><h2>Your tasks</h2><div class="right"><button class="btn ghost sm" onclick="go('tasks')">See all</button></div></div>
         <div class="card-b flush">
@@ -3859,8 +4123,8 @@ function openClient(id,tab){ state.client=id; state.tab=tab||'overview'; render(
 
 function viewClient(id){
   const c=client(id);
-  const tabs=['overview','appointments','documents','notes'];
-  const labels={overview:'Overview',meds:'Medications',appointments:'Appointments',documents:'Documents',notes:'Progress notes'};
+  const tabs=['overview','appointments','documents','notes','incidents'];
+  const labels={overview:'Overview',meds:'Medications',appointments:'Appointments',documents:'Files',notes:'Progress notes',incidents:'Incidents'};
   return `
   <div class="crumb"><button onclick="go('clients')">Clients</button> <span>/</span> <span>${esc(c.name)}</span></div>
   <div class="page-h">
@@ -3870,6 +4134,7 @@ function viewClient(id){
       <div class="sub">${esc(c.home)} · ${esc(c.dx)}${state.role!=='family'?` <button class="btn ghost sm" onclick="editDx('${c.id}')">✎</button>`:''} · guardian ${esc(c.guardian)}</div>
     </div>
     <div class="right">
+      ${state.role==='director'?`<button class="btn ghost" onclick="manageClientsConfig()" title="Houses and program types">⚙ Configure</button>`:''}
       <button class="btn ghost" onclick="openIncidentForm('${c.id}')">Report incident</button>
       <button class="btn navy" onclick="exportOne('${c.id}')">Export record</button>
       ${state.role==='director'?`<button class="btn danger" onclick="delClient('${c.id}')">Delete client</button>`:''}
@@ -3880,6 +4145,7 @@ function viewClient(id){
   ${ state.tab==='appointments' ? clientAppts(c)
    : state.tab==='documents' ? clientDocs(c)
    : state.tab==='notes' ? clientNotes(c)
+   : state.tab==='incidents' ? clientIncidents(c)
    : clientOverview(c) }`;
 }
 
@@ -3894,6 +4160,8 @@ function wkToggle(cid,i){
   render();
 }
 function autoFileLog(folderKey, name, sub, msg, subBinder){
+  const nb=normBinder(folderKey,subBinder);
+  folderKey=nb.b; subBinder=nb.sb;
   (COMPLETED[folderKey]=COMPLETED[folderKey]||[]).unshift({n:name+'.pdf', sub, sb:subBinder||'', at:T});
   sbPush('np_demo_documents',{cid:null, n:name+'.pdf', cat:'Completed — '+folderKey, uploaded_by:meInit(), doc_date:T, size:'8 KB', sub_binder:subBinder||null});
   logAudit('Auto-filed log', name);
@@ -3946,10 +4214,22 @@ function weeklyCard(c){
       </div>`:''}
     </div></section>`;
 }
+function clientProfileCard(c){
+  return `<section class="card" style="margin-bottom:14px">
+    <div class="card-h acc-navy"><h2>Profile</h2><div class="sub">${esc(c.uci)} · the main record for this person</div>
+      ${state.role!=='family'?`<div class="right"><button class="btn ghost sm" onclick="editClient('${c.id}')">✎ Edit</button></div>`:''}</div>
+    <div class="card-b"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px 18px">
+      ${[['Client ID (UCI)',c.uci],['Home',c.home||'—'],['Program',c.dx||'—'],['Age',c.age||'—'],
+         ['In service since',c.since?fmtDate(c.since):'—'],['Guardian / contact',c.guardian||'—'],
+         ['Standing alerts',(c.alerts||[]).join(', ')||'None recorded']]
+        .map(([k,v])=>`<div><div class="muted tiny" style="font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">${k}</div><b style="font-size:13.4px">${esc(v)}</b></div>`).join('')}
+    </div></div></section>`;
+}
 function clientOverview(c){
   const meds=MEDS.filter(m=>m.cid===c.id&&m.status==='active');
   const todayLogs=LOGS.filter(l=>l.cid===c.id&&l.date===T);
   return `
+  ${clientProfileCard(c)}
   <div class="grid-side">
     <div>
       ${weeklyCard(c)}
@@ -3975,18 +4255,6 @@ function clientOverview(c){
     </div>
     <div>
       <section class="card">
-        <div class="card-h acc-navy"><h2>Incidents</h2><div class="sub">Everything filed for this person</div>
-          ${state.role!=='family'?`<div class="right"><button class="btn ghost sm" onclick="openIncidentForm('${c.id}')">＋ Report</button></div>`:''}</div>
-        <div class="card-b flush">
-          ${(()=>{const list=visIncidents().filter(i=>i.cid===c.id);
-            return list.length?list.map(i=>`<div class="docrow click" onclick="openIncident('${i.id}')">
-              <div class="di">⚠</div>
-              <div class="dt"><b>${esc(i.type)}</b><span>${esc(fmtDate(i.date))}${i.time?' · '+esc(hm12(i.time)):''} · ${esc(i.status)}</span></div>
-              <span class="pill ${i.status==='Closed'?'ok':'warn'}">${esc(i.sev||'')}</span></div>`).join('')
-              :'<div class="empty">No incidents filed for this person.</div>';})()}
-        </div>
-      </section>
-      <section class="card">
         <div class="card-h"><h2>How to support ${esc(c.uci)}</h2>
           ${state.role!=='family'?`<div class="right"><button class="btn ghost sm" onclick="editSupport('${c.id}')">${c.support?'✎ Edit':'＋ Add'}</button></div>`:''}</div>
         <div class="card-b"><p style="margin:0;font-size:13.4px;color:#4A4F60;line-height:1.6">${esc(c.support||'No support profile written yet — add what staff should know.')}</p></div>
@@ -4000,25 +4268,6 @@ function clientOverview(c){
               ${state.role!=='family'?`${gi>0?`<button class="btn ghost sm" style="padding:0 5px" onclick="goalMove('${c.id}',${gi},-1)">↑</button>`:''}${gi<(c.goals.length-1)?`<button class="btn ghost sm" style="padding:0 5px" onclick="goalMove('${c.id}',${gi},1)">↓</button>`:''}<button class="btn ghost sm" style="padding:0 5px" onclick="goalForm('${c.id}',${gi})">✎</button><button class="btn ghost sm" style="padding:0 5px" onclick="goalDel('${c.id}',${gi})">✕</button>`:''}</span></div>
             <div class="bar"><i class="${g.p>=70?'g':g.p>=40?'':'w'}" style="width:${g.p}%"></i></div></div>`).join('')||'<div class="muted tiny">No goals recorded.</div>'}
           <div class="tiny muted" style="margin-top:4px">Progress notes against these goals are what the regional center audits.</div>
-        </div>
-      </section>
-      <section class="card">
-        <div class="card-h"><h2>Profile</h2>
-          ${state.role!=='family'?`<div class="right"><button class="btn ghost sm" onclick="editClient('${c.id}')">✎ Edit</button></div>`:''}</div>
-        <div class="card-b">
-          ${[['Client ID (UCI)',c.uci],['Home',c.home||'—'],['Program',c.dx||'—'],['Age',c.age||'—'],
-             ['In service since',c.since?fmtDate(c.since):'—'],['Guardian / contact',c.guardian||'—'],
-             ['Standing alerts',(c.alerts||[]).join(', ')||'None recorded']]
-            .map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)"><span class="muted tiny">${k}</span><b style="font-size:13.2px;text-align:right">${esc(v)}</b></div>`).join('')}
-        </div>
-      </section>
-      <section class="card">
-        <div class="card-h"><h2>Incidents</h2></div>
-        <div class="card-b flush">
-          ${INCIDENTS.filter(i=>i.cid===c.id).map(i=>`
-          <div class="attn" onclick="openIncident('${i.id}')"><div class="ai ${i.status==='Closed'?'info':'bad'}">⚠</div>
-          <div class="at"><b>${esc(i.type)}</b><span>${relDay(i.date)} · ${esc(i.status)}</span></div></div>`).join('')
-          || `<div class="empty">No incidents on record.</div>`}
         </div>
       </section>
     </div>
@@ -4075,9 +4324,27 @@ function clientMeds(c){
     </div>
   </section>`;
 }
+let DOCTAG={};                                                       // doc name -> {b:binderKey, sb:subBinder}
+function doctagSave(){ sbUpsert('np_demo_program',{key:'doctags',value:{map:DOCTAG},updated_by:auditActor()}); }
+let DOC_CATS=['Medication','Medication reason for use','Care plan','Consent','Lab work','Vaccines','Physician visit','Dental visit','Medical','Other'];
+function docCatsSave(){ sbUpsert('np_demo_program',{key:'doccats',value:{list:DOC_CATS},updated_by:auditActor()}); }
+function manageDocCats(){
+  listManage('Document categories',
+    ()=>DOC_CATS.slice(),
+    (o,n)=>{ const i=DOC_CATS.indexOf(o); if(i<0) return;
+      DOC_CATS[i]=n;
+      DOCS.forEach(d=>{ if(d.cat===o){ d.cat=n; if(d.id) sbPatch('np_demo_documents',d.id,{cat:n}); } });
+      docCatsSave(); logAudit('Renamed document category',o+' → '+n); render(); },
+    (o)=>{ DOC_CATS=DOC_CATS.filter(x=>x!==o); docCatsSave(); logAudit('Removed document category',o); render(); },
+    'Renaming updates every document already in that category. Removing one keeps its documents — it just stops being offered for new uploads.',
+    (n)=>{ if(!DOC_CATS.includes(n)) DOC_CATS.push(n); docCatsSave(); logAudit('Added document category',n); render(); });
+}
+function catToBinder(cat){ return ({Medication:'Medical','Medication reason for use':'Medical',Lab:'Medical','Lab work':'Medical',Vaccines:'Medical','Physician visit':'Medical','Dental visit':'Medical',Consent:'Medical',Medical:'Medical','Care plan':'Medical',Incident:'Agency',Report:'Daily',Note:'Daily',Policy:'Agency'})[cat]||''; }
+function docBinderOf(d){ const t=DOCTAG[d.n]; if(t&&t.b){ const b=normBinder(t.b).b; if(FOLDER_NAMES[b]) return b; } const b=normBinder(catToBinder(d.cat)).b; return b&&FOLDER_NAMES[b]?b:''; }
 function docRow(d){
+  const bl=(()=>{const b=docBinderOf(d); return b?(FOLDER_NAMES[b]||b):'';})();
   return `<div class="docrow"><div class="di">${d.n.split('.').pop().toUpperCase().slice(0,4)}</div>
-  <div class="dt"><b>${esc(d.n)}</b><span>${esc(d.cat)} · uploaded by ${esc(d.by)} · ${fmtDate(d.at)} · ${d.s}</span></div>
+  <div class="dt"><b>${esc(d.n)}</b><span>${esc(d.cat)}${bl?` · <span style="font-weight:700">🗀 ${esc(bl)}</span>`:''} · uploaded by ${esc(d.by)} · ${fmtDate(d.at)} · ${d.s}</span></div>
   <button class="btn ghost sm" onclick="event.stopPropagation();openStoredDoc('${esc(d.id||'')}','${esc(d.n)}')">Open</button>
   ${state.role==='director'?`<button class="btn ghost sm" onclick="event.stopPropagation();editDocMeta('${d.cid||''}',${JSON.stringify(d.n)})" title="Edit">✎</button>
   <button class="btn ghost sm" onclick="event.stopPropagation();delDoc('${d.cid||''}',${JSON.stringify(d.n)})" title="Delete">✕</button>`:''}</div>`;
@@ -4103,7 +4370,7 @@ function saveDocMeta(cid,oldName){
 }
 
 function clientAppts(c){
-  const list=APPTS.filter(a=>a.cid===c.id).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+  const list=APPTS.filter(a=>a.cid===c.id&&calMine(a)).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
   return `<section class="card"><div class="card-h"><h2>Appointments</h2><div class="right"><button class="btn navy sm" onclick="openApptForm('${c.id}')">＋ Add appointment</button></div></div>
   <div class="card-b flush"><table class="tb"><thead><tr><th>Date</th><th>Appointment</th><th>Provider</th><th>Location</th><th>Status</th></tr></thead>
   <tbody>${list.map(a=>`<tr class="click" onclick="openAppt('${a.id}')"><td><b>${relDay(a.date)}</b><div class="tiny muted">${hm12(a.time)}</div></td>
@@ -4113,10 +4380,21 @@ function clientAppts(c){
 
 function clientDocs(c){
   const list=DOCS.filter(d=>d.cid===c.id);
-  return `<section class="card"><div class="card-h"><h2>Documents</h2><div class="sub">${list.length} files in this client's folder</div>
-  <div class="right"><button class="btn ghost sm" onclick="exportOne('${c.id}')">Export folder</button></div></div>
-  <div class="card-b flush">${list.map(d=>docRow(d)).join('')||'<div class="empty">No documents yet.</div>'}
-  <div style="padding:14px 18px"><div class="drop" onclick="uploadDoc('${c.id}','General')"><b>Upload documents</b><span>Drop files here or click to browse</span></div></div></div></section>`;
+  const groups={};
+  list.forEach(d=>{ const b=docBinderOf(d); (groups[b]=groups[b]||[]).push(d); });
+  const keys=binderKeys().filter(k=>groups[k]);
+  const loose=groups['']||[];
+  const gHead=t=>`<div class="tiny muted" style="padding:11px 18px 2px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">🗀 ${t}</div>`;
+  return `<section class="card"><div class="card-h"><h2>Files</h2><div class="sub">${list.length} file${list.length===1?'':'s'} · organized by binder — a file filed to a binder shows in both places</div>
+  <div class="right">
+    <button class="btn ghost sm" onclick="linkDocForm('${c.id}')">🔗 Link a document</button>
+    ${state.role==='director'?`<button class="btn ghost sm" onclick="binderForm()">＋ New binder</button>`:''}
+    <button class="btn ghost sm" onclick="exportOne('${c.id}')">Export folder</button></div></div>
+  <div class="card-b flush">
+  ${keys.map(k=>gHead(esc(FOLDER_NAMES[k]||k))+groups[k].map(d=>docRow(d)).join('')).join('')}
+  ${loose.length?gHead('Client folder')+loose.map(d=>docRow(d)).join(''):''}
+  ${list.length?'':'<div class="empty">No files yet.</div>'}
+  <div style="padding:14px 18px"><div class="drop" onclick="uploadDoc('${c.id}','General')"><b>Upload files</b><span>Pick a binder during upload and the file shows there too</span></div></div></div></section>`;
 }
 
 let TASK_CATS=['Client','Agency','Documentation','Training'];
@@ -4178,6 +4456,20 @@ function noteDel(cid,i){
     logAudit('Deleted progress note',client(cid).uci);
     render(); toast('Note deleted.');
   },'Delete note');
+}
+
+function clientIncidents(c){
+  const list=visIncidents().filter(i=>i.cid===c.id);
+  return `<section class="card">
+    <div class="card-h acc-navy"><h2>Incidents</h2><div class="sub">Everything filed for this person — reports are timestamped and cannot be deleted</div>
+      ${state.role!=='family'?`<div class="right"><button class="btn navy sm" onclick="openIncidentForm('${c.id}')">＋ Report incident</button></div>`:''}</div>
+    <div class="card-b flush">
+      ${list.length?list.map(i=>`<div class="docrow click" onclick="openIncident('${i.id}')">
+        <div class="di">⚠</div>
+        <div class="dt"><b>${esc(i.type)}</b><span>${esc(fmtDate(i.date))}${i.time?' · '+esc(hm12(i.time)):''} · ${esc(i.status)}${(i.protoAck||[]).length?` · protocol ${(i.protoAck||[]).length} step${(i.protoAck||[]).length===1?'':'s'} signed`:''}</span></div>
+        <span class="pill ${i.status==='Closed'?'ok':'warn'}">${esc(i.sev||'')}</span></div>`).join('')
+        :'<div class="empty">No incidents filed for this person.</div>'}
+    </div></section>`;
 }
 
 /* ══════════════ MEDICATIONS (agency view) ══════════════ */
@@ -4257,8 +4549,21 @@ function viewCalendar(){
   if(state.calFilter.type) list=list.filter(a=>a.type===state.calFilter.type);
   if(state.calFilter.client) list=list.filter(a=>a.cid===state.calFilter.client);
   if(GCAL.connected && !state.calFilter.type && !state.calFilter.client) list=list.concat(GCAL.events);
+  list=list.filter(a=>calShow(a));
   list.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
   const types=[...new Set([...Object.keys(APPT_CATS),...APPTS.map(a=>a.type)])];
+  const someOff=calDefs().some(c=>!calVisible(c.key));
+  const calPanel=`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 6px;width:100%">
+    <span class="tiny muted" style="font-weight:800;text-transform:uppercase;letter-spacing:.06em">Calendars</span>
+    ${calDefs().map(c=>`<span style="display:inline-flex;align-items:center;gap:6px;border:1px solid ${calVisible(c.key)?c.color+'66':'var(--line)'};background:${calVisible(c.key)?c.color+'14':'transparent'};border-radius:20px;padding:3px 10px">
+      <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:700;color:${calVisible(c.key)?c.color:'var(--muted)'}">
+        <input type="checkbox" ${calVisible(c.key)?'checked':''} onchange="calToggle('${c.key}')" style="accent-color:${c.color};width:13px;height:13px">
+        <span style="width:8px;height:8px;border-radius:50%;background:${c.color};display:inline-block"></span>${esc(c.name)}</label>
+      <button title="Show only this calendar" style="all:unset;cursor:pointer;font-size:11px;font-weight:700;color:var(--muted)" onclick="calOnly('${c.key}')">only</button>
+    </span>`).join('')}
+    ${someOff?`<button class="btn ghost sm" onclick="calAll()">⊞ Combined view</button>`:''}
+    ${state.role==='director'?`<button class="btn ghost sm" onclick="manageContractors()">⚙ Contractors</button><button class="btn ghost sm" onclick="calAccessForm()">🔒 Access</button>`:''}
+  </div>`;
   const catLegend=`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0 2px">
     ${types.map(t=>`<button style="all:unset;cursor:pointer" onclick="${state.role==='director'?`catForm('${esc(t)}')`:''}" title="${state.role==='director'?'Edit this category':''}">${catChip(t)}</button>`).join('')}
     ${state.role==='director'?`<button class="btn ghost sm" onclick="catForm(null)">＋ Category</button>`:''}
@@ -4285,7 +4590,7 @@ function viewCalendar(){
 
   <section class="card">
     <div class="card-h">
-      <div class="filters" style="flex-wrap:wrap">${catLegend.replace('<div ','<div data-leg ')}
+      <div class="filters" style="flex-wrap:wrap">${calPanel}${catLegend.replace('<div ','<div data-leg ')}
         <select class="inp" onchange="state.calFilter.type=this.value;render()">
           <option value="">All types</option>${types.map(t=>`<option value="${esc(t)}" ${state.calFilter.type===t?'selected':''}>${catOf(t).emoji} ${t}</option>`).join('')}
         </select>
@@ -4310,7 +4615,7 @@ function listView(list){
     <table class="tb"><tbody>${list.filter(a=>a.date===d).map(a=>`
       <tr class="click" onclick="openAppt('${a.id}')">
         <td style="width:96px"><b>${hm12(a.time)}</b><div class="tiny muted">${a.dur} min</div></td>
-        <td style="width:132px">${a.gcal?'<span class="pill" style="background:#E8F0FE;color:#1A73E8">🗓 Google</span>':catChip(a.type)}</td>
+        <td style="width:132px"><span style="display:inline-flex;align-items:center;gap:6px">${calDot(apptCalKey(a))}${a.gcal?'<span class="pill" style="background:#E8F0FE;color:#1A73E8">🗓 Google</span>':catChip(a.type)}</span></td>
         <td><div class="tb-name">
           <div><div>${esc(a.title)}</div><div class="tiny muted"><b>${gcalLabel(a)}</b>${a.gcal?'':' · '+esc(a.provider||'')}${a.loc?' · '+esc(a.loc):''}</div></div></div></td>
         <td style="text-align:right">${a.cancelled?'<span class="pill neutral">✕ Cancelled</span>':a.flag?'<span class="pill warn">⚑ Review</span>':''}
@@ -4325,8 +4630,8 @@ function weekGrid(list){
     const evs=list.filter(a=>a.date===ds).sort((a,b)=>a.time.localeCompare(b.time));
     return `<div class="wk-col ${ds===T?'today':''}"><h4>${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i]} ${d.getDate()}${ds===T?' · today':''}
       ${state.role!=='family'?`<button class="btn ghost sm" style="float:right;padding:0 6px" title="Add on this day" onclick="openApptForm(null,'${ds}')">＋</button>`:''}</h4>
-      ${evs.map(a=>`<button class="wk-ev ${a.cancelled?'cx':''}" ${a.gcal?'style="background:#E8F0FE;border-color:#C6DBFA"':''} onclick="${a.gcal?`window.open('${a.link}','_blank')`:`openAppt('${a.id}')`}">
-        <b>${a.allday?'All day':hm12(a.time)} · ${gcalLabel(a)}</b>${esc(a.title)}</button>`).join('')||'<div class="tiny muted">—</div>'}
+      ${evs.map(a=>`<button class="wk-ev ${a.cancelled?'cx':''}" style="${a.gcal?'background:#E8F0FE;border-color:#C6DBFA;':''}border-left:3px solid ${calDef(apptCalKey(a)).color}" onclick="${a.gcal?`window.open('${a.link}','_blank')`:`openAppt('${a.id}')`}">
+        <b>${a.allday?'All day':hm12(a.time)} · ${gcalLabel(a)}</b>${a.gcal?'':catOf(a.type).emoji+' '}${esc(a.title)}</button>`).join('')||'<div class="tiny muted">—</div>'}
     </div>`;}).join('')}</div>`;
 }
 function monthGrid(list){
@@ -4341,7 +4646,7 @@ function monthGrid(list){
     const evs=list.filter(a=>a.date===ds);
     html+=`<div class="cell ${out?'out':''} ${ds===T?'today':''}"${state.role!=='family'?` style="cursor:pointer" title="Add an appointment on this day" ondblclick="openApptForm(null,'${ds}')"`:''}>
       <div class="dn">${d.getDate()}</div>
-      ${evs.slice(0,3).map(a=>`<button class="ce ${a.flag?'flag':'appt'}" ${a.gcal?'style="background:#E8F0FE;color:#1A4C9C"':''} onclick="${a.gcal?`window.open('${a.link}','_blank')`:`openAppt('${a.id}')`}">${a.allday?'•':hm12(a.time).replace(':00','')} ${a.gcal?'G':esc(client(a.cid).init)} ${esc(a.title)}</button>`).join('')}
+      ${evs.slice(0,3).map(a=>`<button class="ce ${a.flag?'flag':'appt'}" style="${a.gcal?'background:#E8F0FE;color:#1A4C9C;':''}box-shadow:inset 3px 0 0 ${calDef(apptCalKey(a)).color}" onclick="${a.gcal?`window.open('${a.link}','_blank')`:`openAppt('${a.id}')`}">${a.allday?'•':hm12(a.time).replace(':00','')} ${a.gcal?'G':catOf(a.type).emoji+' '+esc(client(a.cid).init)} ${esc(a.title)}</button>`).join('')}
       ${evs.length>3?`<div class="tiny muted">+${evs.length-3} more</div>`:''}
     </div>`;
   }
@@ -4745,7 +5050,11 @@ function obCard(sid){
     </div>`).join('')}</div></section>`;
 }
 function guidesSave(){ sbUpsert('np_demo_program',{key:'guides',value:{items:GUIDES},updated_by:auditActor()}); }
-function meSid(){ const m=STAFF.find(x=>x.name===ME.staff.name); return m?m.id:'s1'; }
+function meSid(){
+  const b=USERS[(AUTH.email||ONB.email||'').toLowerCase()];
+  if(b&&b.sid&&staff(b.sid)) return b.sid;
+  const m=STAFF.find(x=>x.name===ME.staff.name); return m?m.id:'s1';
+}
 function openGuide(gi){
   const g=GUIDES[gi]; if(!g) return;
   const acked=visibleStaff().filter(st=>(g.ack||[]).includes(st.id)), pending=visibleStaff().filter(st=>!(g.ack||[]).includes(st.id));
@@ -4847,7 +5156,7 @@ function openStaffDrawer(sid){
 }
 function staffPageBody(sid){
   const st=staff(sid);
-  const canColor=(state.role==='director'||(state.role==='staff'&&sid==='s1'));
+  const canColor=(state.role==='director'||(state.role==='staff'&&sid===meSid()));
   const sdocs=DOCS.filter(d=>d.cid===sid);
   const certs=CREDS[sid]||[];
   const tasks=TASKS.filter(t=>t.sid===sid&&t.stage!=='Done');
@@ -4855,6 +5164,7 @@ function staffPageBody(sid){
   return `
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 12px">
       ${canColor?`<button class="btn ghost sm" onclick="staffColorForm('${sid}')">🎨 Avatar</button>`:''}
+      ${state.role==='director'?`<button class="btn ghost sm" onclick="inviteStaff('${sid}')">✉ Invite to the portal</button>`:''}
       ${[['sfCerts','Certifications'],['sfTrain','Training'],['sfOb','Onboarding'],['sfShifts','Shifts'],['sfTasks','Tasks']].map(([a,l])=>`<button class="btn ghost sm" onclick="const t=el('${a}');if(t)t.scrollIntoView({behavior:'smooth',block:'start'})">${l} ↓</button>`).join('')}
     </div>
     <div id="sfOb"></div>${obCard(sid)}
@@ -5128,15 +5438,30 @@ function certForm(sid){
       <div class="field"><label>Expires <span class="tiny muted">leave blank if it does not expire</span></label><input class="inp" type="date" id="cfExp"></div>
       <div class="field"><label>Reference <span class="tiny muted">optional</span></label><input class="inp" id="cfRef" placeholder="Certificate number or issuer"></div>
     </div>
-    <div class="tiny muted">Anything expiring within 90 days is flagged Due soon, and past its date it shows Expired.</div>`,
+    <div class="field"><label>Certificate file <span class="tiny muted">optional — PDF or photo</span></label><input class="inp" type="file" id="cfFile" accept=".pdf,.png,.jpg,.jpeg"></div>
+    <div class="tiny muted">Anything expiring within 90 days is flagged Due soon, and past its date it shows Expired. The attached file is stored and opens from any device.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveCert('${sid}')">Add certification</button>`);
 }
-function saveCert(sid){
+async function saveCert(sid){
   const n=(el('cfName').value||'').trim(); if(!n) return toast('Name the certification.');
   const exp=el('cfExp').value, ref=(el('cfRef').value||'').trim();
   const st=!exp?'ok':(exp<T?'bad':(new Date(exp)-new Date(T))/864e5<90?'warn':'ok');
-  (CREDS[sid]=CREDS[sid]||[]).push({c:n,d:exp?'Expires '+fmtDate(exp):(ref||'On file'),s:st});
-  sbPush('np_demo_credentials',{sid,cred_name:n,expires_on:exp||null,label:exp?null:(ref||'On file'),status:exp?null:st});
+  const row={c:n,d:exp?'Expires '+fmtDate(exp):(ref||'On file'),s:st};
+  (CREDS[sid]=CREDS[sid]||[]).push(row);
+  // the certificate file itself, stored so it opens on any device
+  const cf=el('cfFile'), f=cf&&cf.files&&cf.files[0];
+  if(f){
+    const path=`creds/${sid}/${Date.now()}_${f.name.replace(/[^A-Za-z0-9._-]/g,'_')}`;
+    const url=await sbUpload(path,f);
+    if(url) row.doc={n:f.name,at:fmtDate(T),by:auditActor(),path,url};
+  }
+  if(sbOn()){
+    try{
+      const r=await fetch(`${BACKEND.url}/rest/v1/np_demo_credentials`,{method:'POST',headers:Object.assign({},sbH(),{Prefer:'return=representation'}),
+        body:JSON.stringify({sid,cred_name:n,expires_on:exp||null,label:exp?null:(ref||'On file'),status:exp?null:st,doc:row.doc||null})});
+      if(r.ok){ const j=await r.json(); if(j[0]) row.dbId=j[0].id; }
+    }catch(e){}
+  }
   logAudit('Added certification',`${staff(sid).init} · ${n}`);
   if(st!=='ok') pingStaff(sid,'Certification needs attention',n);
   closeAll(); openStaff(sid); render();
@@ -5145,8 +5470,16 @@ function saveCert(sid){
 function removeCred(sid,i){
   const c=(CREDS[sid]||[])[i]; if(!c) return;
   CREDS[sid].splice(i,1);
+  if(c.dbId!=null) sbDel('np_demo_credentials','id=eq.'+encodeURIComponent(c.dbId));
+  if(c.doc&&c.doc.path&&sbOn()) fetch(`${BACKEND.url}/storage/v1/object/np-demo-docs/${c.doc.path}`,{method:'DELETE',headers:sbH()}).catch(()=>{});
   logAudit('Removed certification',`${staff(sid).init} · ${c.c}`);
   openStaff(sid); render(); toast('Certification removed.');
+}
+async function openCredDoc(sid,i){
+  const c=(CREDS[sid]||[])[i]; if(!c||!c.doc) return;
+  const open=(c.doc.path?await sbSignedUrl(c.doc.path):null)||c.doc.url;
+  if(!open) return toast('Could not open the certificate file.');
+  window.open(open,'_blank','noopener');
 }
 function courseFormFor(sid){
   const avail=TRAINING.filter(t=>!t.req&&!(t.asg||[]).includes(sid));
@@ -5403,7 +5736,7 @@ function openStaff(sid){
         <section class="card"><div class="card-h"><h2>Certifications &amp; renewals</h2><div class="sub">Attach the certificate so the record lives here</div>
       ${state.role==='director'?`<div class="right"><button class="btn navy sm" onclick="certForm('${sid}')">＋ Cert</button></div>`:''}</div><div class="card-b flush">
       ${(CREDS[sid]||[]).map((c,i)=>`<div class="docrow"><div class="di">${c.s==='ok'?'✓':'!'}</div>
-      <div class="dt"><b>${esc(c.c)}</b><span>${esc(c.d)}${c.doc?` · <b>${esc(c.doc.n)}</b> uploaded ${esc(c.doc.at)} by ${esc(c.doc.by)}`:''}</span></div>
+      <div class="dt"><b>${esc(c.c)}</b><span>${esc(c.d)}${c.doc?` · <a href="#" onclick="event.preventDefault();openCredDoc('${sid}',${i})" style="font-weight:700">${esc(c.doc.n)}</a> uploaded ${esc(c.doc.at)} by ${esc(c.doc.by)}`:''}</span></div>
       <span class="pill ${c.s}">${c.s==='ok'?'Current':c.s==='warn'?'Due soon':'Expired'}</span>
       ${state.role==='director'?(c.doc?`<button class="btn ghost sm" onclick="toast('Opening ${esc(c.doc.n)}')">Open</button>`
         :`<button class="btn ghost sm" onclick="attachCred('${sid}',${i})">Attach record</button>`):''}
@@ -5434,7 +5767,7 @@ function openStaff(sid){
 
 /* ══════════════ MESSAGES ══════════════ */
 function viewMessages(){
-  const th=THREADS.find(t=>t.id===state.thread)||THREADS[0];
+  const th=visThreads().find(t=>t.id===state.thread)||visThreads()[0]||{id:'',who:'',msgs:[],unread:0};
   return `
   <div class="page-h">
     <div><h1>Messages</h1><div class="sub">Every message is logged to the client record</div></div>
@@ -5443,7 +5776,7 @@ function viewMessages(){
   <section class="card">
     <div style="display:grid;grid-template-columns:280px 1fr" class="msg-split">
       <div class="threads">
-        ${THREADS.filter(t=>!hid('thread',t.id)).map(t=>`<button class="thread-i ${t.id===th.id?'active':''}" onclick="state.thread='${t.id}';t_unread('${t.id}');render()">
+        ${visThreads().filter(t=>!hid('thread',t.id)).map(t=>`<button class="thread-i ${t.id===th.id?'active':''}" onclick="state.thread='${t.id}';t_unread('${t.id}');render()">
           <span class="av-sm ${t.role==='Guardian'?'g':t.role==='Group'?'gr':''}">${t.who.split(' ').map(w=>w[0]).slice(0,2).join('')}</span>
           <div class="tt"><b>${esc(t.who)}</b><span>${esc(t.sub)}</span><span class="tiny">${esc(t.last)}</span></div>
           ${t.unread?`<span class="badge" style="background:var(--bad);color:#fff;border-radius:20px;font-size:10.5px;font-weight:700;padding:1px 6px;height:17px">${t.unread}</span>`:''}
@@ -5572,7 +5905,7 @@ function openPolicy(){
     `<button class="btn ghost" onclick="closeAll()">Close</button><button class="btn navy" onclick="closeAll();logAudit('Acknowledged privacy policy',ME[state.role].name);toast('Acknowledgment recorded with your name and the time.')">I've read and agree</button>`);
 }
 function viewTraining(){
-  const me=staff('s1');
+  const me=staff(meSid())||staff('s1');
   return `
   <div class="page-h"><div><h1>Training & FAQ</h1><div class="sub">Your courses and the answers staff ask for most</div></div></div>
   <section class="card">
@@ -5585,9 +5918,9 @@ function viewTraining(){
   </section>
   <section class="card">
     <div class="card-h"><h2>Your training</h2><div class="right"><span class="pill ok">${TRAINING.filter(t=>!hid('course',t.id)&&t.done.includes(meSid())).length}/${TRAINING.filter(t=>!hid('course',t.id)).length} complete</span></div></div>
-    <div class="card-b flush">${TRAINING.filter(t=>!hid('course',t.id)).map(t=>`<div class="checkrow"><div class="cb ${t.done.includes('s1')?'on':''}">✓</div>
+    <div class="card-b flush">${TRAINING.filter(t=>!hid('course',t.id)).map(t=>`<div class="checkrow"><div class="cb ${t.done.includes(meSid())?'on':''}">✓</div>
       <div class="ct">${esc(t.n)}${t.req?' <span class="pill neutral">Required</span>':''}<div class="tiny muted">${t.mins} minutes</div></div>
-      ${t.link?`<a class="btn ghost sm" href="${t.link}" target="_blank" rel="noopener">Open link ↗</a>`:''}${t.done.includes('s1')?'<span class="pill ok">Current</span>':`${t.due?`<span class="pill warn">Due ${esc(t.due)}</span> `:''}<button class="btn gold sm" onclick="toast('Course opened.')">Start</button>`}</div>`).join('')}</div>
+      ${t.link?`<a class="btn ghost sm" href="${t.link}" target="_blank" rel="noopener">Open link ↗</a>`:''}${t.done.includes(meSid())?'<span class="pill ok">Current</span>':`${t.due?`<span class="pill warn">Due ${esc(t.due)}</span> `:''}<button class="btn gold sm" onclick="toast('Course opened.')">Start</button>`}</div>`).join('')}</div>
   </section>
   <section class="card">
     <div class="card-h"><h2>How to use the portal</h2><div class="sub">Short walkthroughs from the director</div></div>
@@ -5673,7 +6006,8 @@ function renameBinderSave(key){
 }
 function addSubBinder(key){
   const n=prompt('Name the new sub-binder:'); if(!n||!n.trim()) return;
-  SUB_BINDERS[key]=SUB_BINDERS[key]||[];
+  SUB_BINDERS[key]=(SUB_BINDERS[key]&&SUB_BINDERS[key].length)?SUB_BINDERS[key]:subsOf(key);  // keep the physical tabs when customizing
+  
   if(!SUB_BINDERS[key].includes(n.trim())) SUB_BINDERS[key].push(n.trim());
   subBindersSave(); logAudit('Created sub-binder',(FOLDER_NAMES[key]||key)+' · '+n.trim());
   render(); toast('Sub-binder added.');
@@ -5693,7 +6027,9 @@ function moveFiled(folderKey,idx){
   const item=(COMPLETED[folderKey]||[])[idx]; if(!item) return;
   filePicker('Move document',String(item.n).replace(/\.pdf$/,''),({name,binder,sub})=>{
     COMPLETED[folderKey].splice(idx,1);
+    sbDel('np_demo_documents','n=eq.'+encodeURIComponent(item.n)+'&cat=eq.'+encodeURIComponent('Completed — '+folderKey));
     (COMPLETED[binder]=COMPLETED[binder]||[]).unshift({n:name+'.pdf',sub:item.sub,sb:sub||'',at:item.at||T});
+    if(FILLED[item.n]&&item.n!==name+'.pdf'){ FILLED[name+'.pdf']=FILLED[item.n]; delete FILLED[item.n]; filledSave(); }
     sbPush('np_demo_documents',{cid:null,n:name+'.pdf',cat:'Completed — '+binder,uploaded_by:meInit(),doc_date:T,size:'8 KB',sub_binder:sub||null});
     logAudit('Moved document',`${item.n} → ${FOLDER_NAMES[binder]||binder}${sub?' / '+sub:''}`);
     render(); toast('Moved.');
@@ -5704,6 +6040,8 @@ function renameFiled(folderKey,idx){
   const v=prompt('Rename this document:',String(item.n).replace(/\.pdf$/,''));
   if(!v||!v.trim()) return;
   const old=item.n; item.n=v.trim()+'.pdf';
+  if(sbOn()) fetch(`${BACKEND.url}/rest/v1/np_demo_documents?n=eq.${encodeURIComponent(old)}&cat=eq.${encodeURIComponent('Completed — '+folderKey)}`,{method:'PATCH',headers:sbH(),body:JSON.stringify({n:item.n})}).catch(()=>{});
+  if(FILLED[old]){ FILLED[item.n]=FILLED[old]; delete FILLED[old]; filledSave(); }
   logAudit('Renamed document',`${old} → ${item.n}`);
   render(); toast('Renamed.');
 }
@@ -5724,14 +6062,14 @@ function viewForms(){
     <div><h1>Templates</h1><div class="sub">The blank forms the agency works from — fill one in, assign it, or print it blank</div></div>
     ${state.role==='director'?`<div class="right"><button class="btn navy" onclick="openTplEditor()">＋ Add new template</button></div>`:''}
   </div>
-  <div class="sec-note" style="margin-bottom:14px"><span>❏</span><div><b>Templates stay blank</b>Opening one creates a working copy that files into its binder when saved. The template itself is never overwritten, so it stays reusable.</div></div>
+  <div class="sec-note" style="margin-bottom:14px"><span>❏</span><div><b>Templates drive every document in the dashboard</b>Binder paperwork, client and staff filings, and incident report forms all generate from these templates. Opening one creates a working copy that files into its binder when saved — the template itself is never overwritten, so it stays reusable.</div></div>
   <section class="card">
     <div class="card-h"><h2>Agency templates</h2><div class="sub">${TEMPLATES5.filter(t=>!hid('template',t.id)).length} forms</div></div>
     <div class="card-b flush">
       ${TEMPLATES5.filter(t=>!hid('template',t.id)).map(t=>{
         const asg=(TPL_ASSIGN[t.id]||[]);
         return `<div class="docrow"><div class="di">❏</div>
-        <div class="dt"><b>${esc(t.name)}</b><span>${t.fields.length} fields · files to ${esc(FOLDER_NAMES[t.dest||'Agency']||'Agency docs')}${asg.length?` · <span style="color:var(--good);font-weight:700">assigned to ${asg.map(id=>(staff(id)||{}).init||'').join(', ')}</span>`:''}</span></div>
+        <div class="dt"><b>${esc(t.name)}</b><span>${t.fields.length} fields · files to ${esc(FOLDER_NAMES[normBinder(t.dest||'Agency').b]||'Agency binder')}${asg.length?` · <span style="color:var(--good);font-weight:700">assigned to ${asg.map(id=>(staff(id)||{}).init||'').join(', ')}</span>`:''}${(()=>{const lk=Object.keys(PROTOCOLS).filter(pk=>PROTOCOLS[pk]&&PROTOCOLS[pk].tpl===t.id); return lk.length?` · <span style="color:var(--navy);font-weight:700">⚠ ${lk.map(esc).join(', ')} report form</span>`:'';})()}</span></div>
         <button class="btn navy sm" onclick="tplOpenDoc('${t.id}')">Open &amp; fill</button>
         <button class="btn gold sm" onclick="openTplEditor('${t.id}')">Edit template</button>
         ${state.role==='director'?`<button class="btn ghost sm" onclick="tplAssign('${t.id}')">Assign</button>`:''}
@@ -5921,7 +6259,7 @@ function actJump(cid,act){
   if(a.includes('weekly checklist')) return go('weekly');
   if(a.includes('progress note')) return client('notes');
   if(a.includes('task')) return go('tasks');
-  if(a.includes('incident')||a.includes('sir')) return go('incidents');
+  if(a.includes('incident')||a.includes('sir')) return cid?client('incidents'):go('clients');
   if(a.includes('appointment')) return client('appointments');
   if(a.includes('document')||a.includes('generated')||a.includes('uploaded')||a.includes('filed')) return client('documents');
   if(a.includes('goal')||a.includes('medication')) return client('');
@@ -5964,8 +6302,7 @@ function viewChangeLog(){
   <div class="page-h">
     <div><h1>Change log</h1><div class="sub">Every change made in the portal — chronologically</div></div>
     <div class="right"><button class="btn navy sm" onclick="chgEntryForm()">＋ Add entry</button>
-      <button class="btn ghost sm" onclick="printSheet(chgSheet())">Export / print</button>
-      <button class="btn ghost sm" onclick="clearChangeLog()">Clear log</button></div>
+      <button class="btn ghost sm" onclick="printSheet(chgSheet())">Export / print</button></div>
   </div>
 
   <div class="sec-note" style="margin-bottom:14px"><span>🔒</span><div><b>No client names in the log</b>Entries record the staff member that made the change and the client ID a record belongs to.</div></div>
@@ -6171,13 +6508,13 @@ function editPrefs(){
       <div class="field"><label>Theme</label>${fillSelect('pfTheme','theme',['Light','Dark'],PREFS.theme)}</div>
       <div class="field"><label>Language</label>${fillSelect('pfLang','language',['English (US)','English (UK)','Spanish','Tagalog'],PREFS.lang)}</div>
     </div>
-    <div class="tiny muted">Saved to your workspace, so they follow you to any device.</div>`,
+    <div class="tiny muted">Saved to your account — they follow you to any device, and each teammate keeps their own.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>
      <button class="btn navy" onclick="savePrefs()">Save</button>`);
 }
 function savePrefs(){
   PREFS={dateFmt:el('pfDate').value,timeFmt:el('pfTime').value,theme:el('pfTheme').value,lang:el('pfLang').value};
-  prefsSave(); logAudit('Updated preferences','');
+  userSetSave({prefs:PREFS}); prefsSave(); logAudit('Updated preferences','');
   closeAll(); render(); toast('Preferences saved.');
 }
 function editMyName(){
@@ -6201,7 +6538,7 @@ function editTz(){
   openModal('Your time zone',`
     <div class="field"><label>Time zone</label><select class="inp" id="meTz">${zones.map(z=>`<option ${cur===z?'selected':''}>${z}</option>`).join('')}</select></div>
     <div class="tiny muted">Used for how times are labeled on your profile. The clock itself always follows this device.</div>`,
-    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="lsSet('np_tz',el('meTz').value);sbUpsert('np_demo_program',{key:'tz',value:{v:el('meTz').value},updated_by:auditActor()});closeAll();render();toast('Time zone saved.')">Save</button>`);
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="lsSet('np_tz',el('meTz').value);userSetSave({tz:el('meTz').value});closeAll();render();toast('Time zone saved — just for your account.')">Save</button>`);
 }
 function editSite(){
   openModal("Your organization's website",`
@@ -6230,7 +6567,7 @@ function saveOrgName(){
 }
 function viewProfile(){
   const m=ME[state.role];
-  const quals = state.role==='staff' ? (CREDS.s1||[]) : (MY_QUALS[state.role]||[]).filter(x=>!state.hideSample||!x._seed);
+  const quals = state.role==='staff' ? (CREDS[meSid()]||[]) : (MY_QUALS[state.role]||[]).filter(x=>!state.hideSample||!x._seed);
   const tab = state.profTab||'creds';
   return `
   <section class="hero" style="display:flex;gap:18px;align-items:center">
@@ -6248,7 +6585,7 @@ function viewProfile(){
           ${state.role==='director'&&tab==='training'?`<div class="right"><button class="btn navy sm" onclick="openTrainingForm()">＋ Add training</button></div>`:''}</div>
         <div class="card-b flush">
           <div class="tabs" style="margin:12px 18px 4px">
-            ${[['creds','Credentials'],['training','Training'],['onboard','Onboarding']].map(([k,lb])=>`<button class="${tab===k?'active':''}" onclick="state.profTab='${k}';render()">${lb}</button>`).join('')}
+            ${[['creds','Credentials']].map(([k,lb])=>`<button class="${tab===k?'active':''}" onclick="state.profTab='${k}';render()">${lb}</button>`).join('')}
           </div>
           ${tab==='creds'?`<table class="tb"><tbody>${quals.map(x=>`<tr><td><b>${esc(x.c)}</b></td><td style="text-align:right"><span class="pill ${x.s}">${esc(x.d)}</span></td></tr>`).join('')||'<tr><td class="empty">No credentials on file yet.</td></tr>'}</tbody></table>`
           :tab==='training'? profTrainingTab()
@@ -6311,7 +6648,7 @@ function profTrainingTab(){
     }).join('')}
     <div class="tiny muted" style="padding:10px 18px 14px">Add a course, attach a link or file, and assign it to specific staff. Assigned courses land on each person’s dashboard and show in the Staff section.</div>`;
   }
-  const mine=TRAINING.filter(t=>t.req||(t.asg||[]).includes('s1'));
+  const mine=TRAINING.filter(t=>t.req||(t.asg||[]).includes(meSid()));
   return `${mine.map(t=>{ const done=t.done.includes('s1');
     return `<div class="docrow"><div class="di">◉</div><div class="dt"><b>${esc(t.n)}</b><span>${t.mins} min${t.due?` · due ${esc(t.due)}`:''}${t.req?' · required':''}</span></div>
       ${done?'<span class="pill ok">Complete</span>':(t.link?`<a class="btn ghost sm" href="${t.link}" target="_blank" rel="noopener">Start ↗</a>`:'<span class="pill warn">Pending</span>')}</div>`;
@@ -6351,8 +6688,8 @@ function saveMyCredential(){
   const n=el('myCrName').value.trim(); if(!n) return toast('Give the credential a name.');
   const exp=el('myCrExp').value;
   const row=exp?credRowFromDb({cred_name:n,expires_on:exp}):{c:n,d:'On file',s:'ok'};
-  if(state.role==='staff'){ (CREDS.s1=CREDS.s1||[]).push(row); sbPush('np_demo_credentials',{sid:'s1',cred_name:n,expires_on:exp||null,label:exp?null:'On file',status:exp?null:'ok'}); }
-  else { (MY_QUALS[state.role]=MY_QUALS[state.role]||[]).push(row); }
+  if(state.role==='staff'){ const ms=meSid(); (CREDS[ms]=CREDS[ms]||[]).push(row); sbPush('np_demo_credentials',{sid:ms,cred_name:n,expires_on:exp||null,label:exp?null:'On file',status:exp?null:'ok'}); }
+  else { (MY_QUALS[state.role]=MY_QUALS[state.role]||[]).push(row); sbUpsert('np_demo_program',{key:'myquals',value:{map:MY_QUALS},updated_by:auditActor()}); }
   logAudit('Added credential',n); closeAll(); render(); toast('Credential added.');
 }
 /* ══════════════ v5.0: DIGITAL INSPECTIONS (log page) ══════════════ */
@@ -6652,7 +6989,7 @@ function viewSafety(){
       </div>
     <div class="card-b flush">
       ${INSP_TEMPLATES.filter(t=>!hid('insp',String(t.id||t.name))).map(t=>`<div class="docrow"><div class="di">▣</div>
-        <div class="dt"><b>${esc(t.name)}</b><span>${esc(t.desc||'')} · ${t.questions.length} questions · files to ${esc(FOLDER_NAMES[t.folder]||t.folder)}</span></div>
+        <div class="dt"><b>${esc(t.name)}</b><span>${esc(t.desc||'')} · ${t.questions.length} questions · files to ${esc(FOLDER_NAMES[normBinder(t.folder).b]||t.folder)}</span></div>
         <button class="btn navy sm" onclick="startInspection('${t.id}')">Start inspection</button>
         <button class="btn ghost sm" onclick="startInspection('${t.id}',1)">Preview</button>
         ${state.role==='director'?`<button class="btn ghost sm" onclick="openInspTemplateForm('${t.id}')">Edit</button><button class="btn ghost sm" onclick="inspTemplateRemove('${t.id}')">✕</button>`:''}</div>`).join('')}
@@ -6837,14 +7174,10 @@ function exportAll(){ openModal('Export everything',`
 
 /* ══════════════ TEMPLATES / KNOWLEDGE ══════════════ */
 function viewTemplates(){
-  const folders=[
-    ['Agency docs','Licenses, policies, disaster plan, admission agreements','Agency'],
-    ['Medical docs','Physician reports, consents, prescriber letters','Medical'],
-    ['Daily logs','Completed checklists file here automatically, stamped with date and time','Daily'],
-    ['Water temp logs','Each saved reading files here automatically, stamped with date and time','Water'],
-    ['Attendance','Daily attendance records','Attendance'],
-    ['Health and safety','Fire drills and safety walkthroughs — logged drills file here automatically','Safety'],
-    ['Compliance','SIRs, shared information forms and licensing records','Compliance']];
+  const stockSubs={Agency:'Face sheet, emergency info, insurance, IPP, SIR — the client agency file',
+    Medical:'Lab work, physician visits, medication orders, consents',
+    Daily:'MAR, vital signs, ADL, staff notes — daily care logs file here automatically'};
+  const folders=binderKeys().map(k=>[FOLDER_NAMES[k]||k, stockSubs[k]||((CUSTOM_BINDERS.find(b=>b.key===k)||{}).sub||'Custom binder'), k]);
   return `
   <div class="page-h">
     <div><h1>Documents${aiTag('templates')}</h1><div class="sub">Your binders — completed and filed paperwork, organized the way licensing expects</div></div>
@@ -6860,16 +7193,18 @@ function viewTemplates(){
     <div class="card-h"><h2>Binders</h2><div class="sub">Finished documents, filed. Blank forms live on the Templates page.</div>
       <div class="right"><button class="btn ghost sm" onclick="binderForm()">＋ New binder</button></div></div>
     <div class="card-b flush">
-      ${[...folders,...CUSTOM_BINDERS.map(b=>[b.name,b.sub||'Custom binder',b.key])].map(([t,su,key])=>{
+      ${folders.map(([t,su,key],fi)=>{
         const open=state.openBinder===key;
         const bf=binderFiles(key);
-        if(state.hideSample){ bf.forms=[]; bf.resources=[]; }
         const compVis=(COMPLETED[key]||[]).filter(d=>!hid('completed',key+'|'+d.n));
         const nAll=bf.forms.length+bf.resources.length+compVis.length;
         return `<div class="docrow" style="cursor:pointer" onclick="state.openBinder=state.openBinder==='${key}'?'':'${key}';render()">
           <div class="di">${open?'▼':'▸'} 🗀</div><div class="dt"><b>${t}</b><span>${su}</span></div>
           <span class="tiny muted">${nAll} file${nAll===1?'':'s'}</span>
-          <button class="btn ghost sm" onclick="event.stopPropagation();logAudit('Exported binder','${t}');docAct('exported','${t} binder','${t}');render();toast('${t} exported as PDF and logged.')">Export / print</button></div>
+          ${state.role==='director'?`<button class="btn ghost sm" style="padding:0 6px" title="Move up" ${fi===0?'disabled':''} onclick="event.stopPropagation();binderMove('${key}',-1)">↑</button>
+          <button class="btn ghost sm" style="padding:0 6px" title="Move down" ${fi===folders.length-1?'disabled':''} onclick="event.stopPropagation();binderMove('${key}',1)">↓</button>`:''}
+          <button class="btn ghost sm" onclick="event.stopPropagation();logAudit('Exported binder','${t}');docAct('exported','${t} binder','${t}');render();toast('${t} exported as PDF and logged.')">Export / print</button>
+          ${state.role==='director'?`<button class="btn ghost sm" title="Delete binder" onclick="event.stopPropagation();delBinder('${key}')">✕</button>`:''}</div>
         ${open?`<div style="background:#FAF8F3;border-bottom:1px solid var(--line);padding:4px 0 4px 34px">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 18px 2px"><div class="tiny muted" style="font-weight:800;text-transform:uppercase;letter-spacing:.06em">Forms</div><button class="btn ghost sm" onclick="event.stopPropagation();libUpload('${key}','forms')">＋ Upload</button></div>
           ${bf.forms.map(fl=>libRowHtml(fl,key)).join('')||'<div class="empty">No blank forms in this folder yet.</div>'}
@@ -6915,23 +7250,20 @@ function staffBinderCard(){
     </div></section>`;
 }
 function binderFiles(key){
-  const map={Medical:['Medication','Lab','Consent'],Compliance:['Incident'],Daily:['Report','Note'],Agency:['Policy'],Attendance:[],Safety:[],Water:[]};
+  const map={Medical:['Medication','Lab','Consent'],Agency:['Incident','Policy'],Daily:['Report','Note']};
   const fromDocs=DOCS.filter(d=>!hid('doc',docKey(d))&&(map[key]||[]).includes(d.cat)&&(!d.cid||client(d.cid))).map(d=>({n:d.n,sub:`${d.cat} · ${client(d.cid)?client(d.cid).uci:'Agency'} · ${fmtDate(d.at)}`}));
-  if(state.hideSample) return {forms:[],resources:fromDocs};
-  const stock={
+  // sample-only rows disappear with Hide sample data / Erase; real libraries and everything the user uploaded always stay
+  const stock=state.hideSample?{}:{
     Agency:[{n:'Facility license 2026.pdf',sub:'Licensing · renewed Jan 2026'},{n:'Disaster & evacuation plan.pdf',sub:'Policy · reviewed May 2026'},{n:'Admission agreement (blank).docx',sub:'Template'}],
-    Safety:[{n:'Fire drill log — print sheet',sub:'Generated from the Safety log page'}],
-    Water:[{n:'Water temperature log — print sheet',sub:'Generated from the Safety log page'}],
-    Attendance:[{n:'Attendance sheet — current month.pdf',sub:'Updated today'}],
     Daily:[{n:'Weekly checklist — all clients.pdf',sub:'Regenerated each Monday'}],
-    Compliance:INCIDENTS.map(i=>({n:`SIR — ${i.type} — ${client(i.cid).uci}.pdf`,sub:`${fmtDate(i.date)} · ${i.status}`})),
     Medical:[]};
-  const L=DOC_LIBRARY[key]||{};
-  const U=USER_LIB[key]||{forms:[],res:[]};
+  const legacyKeys=Object.keys(LEGACY_BINDERS).filter(k=>LEGACY_BINDERS[k].b===key);
+  const libs=[DOC_LIBRARY[key],...legacyKeys.map(k=>DOC_LIBRARY[k])].filter(Boolean);
+  const userLibs=[USER_LIB[key],...legacyKeys.map(k=>USER_LIB[k])].filter(Boolean);
   const ud={forms:[],res:[]};
-  for(const id in USER_DOCS){ const d=USER_DOCS[id]; if(d.key===key){ (d.sec==='res'?ud.res:ud.forms).push({n:d.name, docId:id, editable:true, url:d.url||'', desc:'Uploaded · editable in‑app', sub:''}); } }
-  return { forms:[...(L.forms||[]).map(x=>libRow(x[0],x[1])), ...ud.forms, ...U.forms],
-           resources:[...(L.res||[]).map(x=>libRow(x[0],x[1])), ...ud.res, ...U.res, ...(stock[key]||[]), ...fromDocs] };
+  for(const id in USER_DOCS){ const d=USER_DOCS[id]; if(normBinder(d.key).b===key){ (d.sec==='res'?ud.res:ud.forms).push({n:d.name, docId:id, editable:true, url:d.url||'', desc:'Uploaded · editable in‑app', sub:''}); } }
+  return { forms:[...libs.flatMap(L=>(L.forms||[]).map(x=>libRow(x[0],x[1]))), ...ud.forms, ...userLibs.flatMap(U=>U.forms||[])],
+           resources:[...libs.flatMap(L=>(L.res||[]).map(x=>libRow(x[0],x[1]))), ...ud.res, ...userLibs.flatMap(U=>U.res||[]), ...(stock[key]||[]), ...fromDocs] };
 }
 let COMPLETED={};
 const DOC_LIBRARY={
@@ -7082,17 +7414,26 @@ function docById(id){ return EXAMPLE_DOCS.find(d=>d.id===id) || USER_DOCS[id] ||
 /* ── v4.7: user-uploaded library docs + in-dashboard e-sign ── */
 let USER_LIB={};   // key -> {forms:[{dbId,n,sub,url}], res:[...]}
 let DOC_SIGS={};   // completed-form name -> {by, at}
-const FOLDER_NAMES={Agency:'Agency docs',Medical:'Medical docs',Daily:'Daily logs',Water:'Water temp logs',Attendance:'Attendance',Safety:'Health and safety',Compliance:'Compliance'};
+const FOLDER_NAMES={Agency:'Agency binder',Medical:'Medical binder',Daily:'Daily Logs binder',
+  /* legacy keys — kept so older filed documents still show a label; folded into the three binders */
+  Water:'Water temp logs',Attendance:'Attendance',Safety:'Health and safety',Compliance:'Compliance'};
+const LEGACY_BINDERS={Water:{b:'Daily',sb:'Water Temp Logs'},Safety:{b:'Daily',sb:'Fire Drills & Safety'},Attendance:{b:'Daily',sb:'Attendance'},Compliance:{b:'Agency',sb:'SIR'}};
+function normBinder(key,sb){ const lg=LEGACY_BINDERS[key]; return lg?{b:lg.b,sb:sb||lg.sb}:{b:key,sb:sb||''}; }
+/* sub-binders mirror the physical binders' tab dividers */
+const DEFAULT_SUBS={
+  Agency:['Face Sheet','Emergency Information','Insurance','Physical Report (CCF)','IPP','Quarterly','SIR','Placement Packet','Grievance & Acknowledgement','Personal Rights / Exit Criteria / House Rules','HCBS Survey & Acknowledgement','Release of Information','Personal Property','Quality of Life Questionnaire','Rights of Individuals'],
+  Medical:['Lab Work','Physician Visits','Medication Orders','Consents'],
+  Daily:['MAR','Vital Signs','ADL','Daily Activity Log','Staff Notes','Central Storage','Medication Destruction Record','Water Temp Logs','Fire Drills & Safety','Attendance']};
 let SUB_BINDERS={};                                                 // binderKey -> [sub-binder names]
 function subBindersSave(){ sbUpsert('np_demo_program',{key:'subbinders',value:{map:SUB_BINDERS},updated_by:auditActor()}); }
-function subsOf(key){ return (SUB_BINDERS[key]||[]).slice(); }
+function subsOf(key){ const own=SUB_BINDERS[key]; return ((own&&own.length)?own:(typeof DEFAULT_SUBS!=='undefined'&&DEFAULT_SUBS[key])||[]).slice(); }
 function binderNames(){ const o={}; Object.keys(FOLDER_NAMES).forEach(k=>o[k]=FOLDER_NAMES[k]); return o; }
 
 /* filePicker — the "save as" dialog: pick a binder, a sub-binder, or make either
    on the spot, then file whatever the user just created into it. */
 function filePicker(title,defaultName,onFile,opts){
   opts=opts||{};
-  const keys=Object.keys(FOLDER_NAMES);
+  const keys=binderKeys();
   const firstKey=opts.binder&&FOLDER_NAMES[opts.binder]?opts.binder:keys[0];
   openModal(title,`
     <div class="field"><label>Name</label><input class="inp" id="fpName" value="${esc(defaultName||'')}"></div>
@@ -7104,6 +7445,8 @@ function filePicker(title,defaultName,onFile,opts){
         </select></div>
       <div class="field"><label>Sub-binder</label><span id="fpSubWrap">${fpSubSelect(firstKey,opts.sub)}</span></div>
     </div>
+    ${opts.client?`<div class="field"><label>Also send to a client file <span class="tiny muted">optional</span></label>
+      <select class="inp" id="fpClient"><option value="">— no client —</option>${visibleClients().map(c=>`<option value="${c.id}">${esc(c.uci)}</option>`).join('')}</select></div>`:''}
     ${opts.extra||''}
     <div class="tiny muted">Filed copies are final records. The blank template stays reusable.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>
@@ -7122,7 +7465,7 @@ function fpSubs(){
   const b=el('fpBinder');
   if(b.value==='__new__'){
     const n=prompt('Name the new binder:');
-    if(!n||!n.trim()){ b.value=Object.keys(FOLDER_NAMES)[0]; }
+    if(!n||!n.trim()){ b.value=binderKeys()[0]; }
     else{
       const key='cb_'+Date.now();
       CUSTOM_BINDERS.push({key,name:n.trim(),sub:''}); FOLDER_NAMES[key]=n.trim(); bindersSave();
@@ -7146,12 +7489,79 @@ function fpGo(){
   const binder=el('fpBinder').value;
   let sub=el('fpSub').value;
   if(sub==='__new__'){ fpNewSub(); sub=el('fpSub').value; if(sub==='__new__') return; }
+  const cid=(el('fpClient')&&el('fpClient').value)||'';
   const fn=window._fpGo; closeAll();
-  if(typeof fn==='function') fn({name,binder,sub});
+  if(typeof fn==='function') fn({name,binder,sub,cid});
 }
 let CUSTOM_BINDERS=[];                                              // [{key,name,sub}] created by the director
+let BINDER_HIDDEN=[];                                               // stock binder keys the director deleted
+let BINDER_ORDER=[];                                                // full display order once the director rearranges
+const STOCK_BINDERS=['Agency','Medical','Daily'];
+function binderKeys(){
+  const all=[...STOCK_BINDERS,...CUSTOM_BINDERS.map(b=>b.key)].filter(k=>!BINDER_HIDDEN.includes(k));
+  if(!BINDER_ORDER.length) return all;
+  return [...BINDER_ORDER.filter(k=>all.includes(k)),...all.filter(k=>!BINDER_ORDER.includes(k))];
+}
+function binderMove(key,dir){
+  const ord=binderKeys(); const i=ord.indexOf(key), j=i+dir;
+  if(i<0||j<0||j>=ord.length) return;
+  ord[i]=ord[j]; ord[j]=key;
+  BINDER_ORDER=ord; bindersSave(); render();
+}
+function delBinder(key){
+  const name=FOLDER_NAMES[key]||key;
+  const n=((COMPLETED[key]||[]).length);
+  askDelete('Delete the '+name+' binder?',(n?n+' filed document'+(n===1?'':'s')+' inside are removed with it. ':'')+'The change log keeps a record that it existed.',()=>{
+    const cb=CUSTOM_BINDERS.find(b=>b.key===key);
+    if(cb){ CUSTOM_BINDERS=CUSTOM_BINDERS.filter(b=>b.key!==key); delete FOLDER_NAMES[key]; }
+    else if(!BINDER_HIDDEN.includes(key)) BINDER_HIDDEN.push(key);
+    delete COMPLETED[key];
+    BINDER_ORDER=BINDER_ORDER.filter(k=>k!==key);
+    if(state.openBinder===key) state.openBinder='';
+    bindersSave(); logAudit('Deleted binder',name);
+    render(); toast('Binder deleted.');
+  },'Delete binder');
+}
 function bindersSave(){
-  sbUpsert('np_demo_program',{key:'binders',value:{items:CUSTOM_BINDERS,names:FOLDER_NAMES},updated_by:auditActor()});
+  sbUpsert('np_demo_program',{key:'binders',value:{items:CUSTOM_BINDERS,names:FOLDER_NAMES,hidden:BINDER_HIDDEN,order:BINDER_ORDER},updated_by:auditActor()});
+}
+function linkDocForm(cid){
+  const items=[]; const seen={};
+  const add=(n,src,b,url,docId)=>{ if(!n||seen[n+'|'+src]) return; seen[n+'|'+src]=1; items.push({n,src,b:b||'',url:url||'',docId:docId||''}); };
+  binderKeys().forEach(k=>{
+    const bf=binderFiles(k);
+    (bf.forms||[]).forEach(r=>add(r.n||r.name,FOLDER_NAMES[k]||k,k,r.url,r.docId));
+    (bf.resources||[]).forEach(r=>add(r.n,FOLDER_NAMES[k]||k,k,r.url,r.docId));
+    (COMPLETED[k]||[]).forEach(r=>add(r.n,(FOLDER_NAMES[k]||k)+(r.sb?' / '+r.sb:''),k));
+  });
+  Object.keys(FILLED).forEach(n=>add(n,'Completed from template',''));
+  window._linkItems=items; window._linkCid=cid;
+  openModal('Link a document — '+esc((client(cid)||{}).uci||''),`
+    <div class="field"><label>Search every binder and completed document</label>
+      <input class="inp" id="ldQ" placeholder="Type part of a document name…" oninput="linkDocList()"></div>
+    <div class="tiny muted" style="margin-bottom:8px">Linking shows the document in this client\u2019s Files without moving it — it stays in its binder too.</div>
+    <div id="ldList" style="max-height:320px;overflow:auto"></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Close</button>`);
+  linkDocList();
+}
+function linkDocList(){
+  const q=((el('ldQ')&&el('ldQ').value)||'').toLowerCase();
+  const items=(window._linkItems||[]).filter(x=>!q||x.n.toLowerCase().includes(q)||String(x.src).toLowerCase().includes(q)).slice(0,40);
+  window._linkView=items;
+  el('ldList').innerHTML=items.map((x,i)=>`<div class="docrow"><div class="di">⇱</div>
+    <div class="dt"><b>${esc(x.n)}</b><span>${esc(x.src)}</span></div>
+    <button class="btn navy sm" onclick="linkDocGo(${i})">Link</button></div>`).join('')||'<div class="empty">Nothing matches that search.</div>';
+}
+function linkDocGo(i){
+  const x=(window._linkView||[])[i]; const cid=window._linkCid; if(!x||!cid) return;
+  if(DOCS.some(d=>d.cid===cid&&d.n===x.n)) return toast('That document is already in this client\u2019s files.');
+  const rec={id:'doc'+Date.now(),cid,n:x.n,cat:'Linked',by:meInit(),at:T,s:'—',url:x.url||null,path:null,note:'Linked from '+x.src};
+  DOCS.unshift(rec);
+  sbPush('np_demo_documents',{id:rec.id,cid,n:x.n,cat:'Linked',uploaded_by:meInit(),doc_date:T,size:'—',url:x.url||null,note:rec.note});
+  if(x.b){ if(!DOCTAG[x.n]){ DOCTAG[x.n]={b:normBinder(x.b).b,sb:''}; doctagSave(); } }
+  logAudit('Linked a document to a client file',`${x.n} → ${(client(cid)||{}).uci||''}`);
+  docAct('filed',x.n,(client(cid)||{}).uci||'client file');
+  closeAll(); render(); toast('Linked — it shows in this client\u2019s files and stays in '+x.src+'.');
 }
 function binderForm(){
   openModal('New binder',`
@@ -7304,16 +7714,23 @@ function docSave(id){
   const keep=EXAMPLE_VALUES[id]||{};
   const filled=Object.assign({}, keep, vals);
   const anyValue=Object.keys(vals).some(k=>String(vals[k]||'').trim());
-  filePicker('Save the completed document',`${d.name} — ${fmtDate(T)}`,({name,binder,sub})=>{
+  filePicker('Save the completed document',`${d.name} — ${fmtDate(T)}`,({name,binder,sub,cid})=>{
+    const nb=normBinder(binder,sub);
     autoFileLog(binder,name,`Completed by ${auditActor()} · ${nowStamp()}`,null,sub);
+    if(cid){                                                                    // the same completed copy in the client's file
+      const docName=name+(name.endsWith('.pdf')?'':'.pdf');
+      DOCS.unshift({id:'doc'+Date.now(),cid,n:docName,cat:'Completed form',by:meInit(),at:T,s:'6 KB'});
+      sbPush('np_demo_documents',{cid,n:docName,cat:'Completed form',uploaded_by:meInit(),doc_date:T,size:'6 KB'});
+      DOCTAG[docName]={b:nb.b,sb:nb.sb||''}; doctagSave();
+    }
     EXAMPLE_VALUES[id]=Object.keys(keep).filter(k=>k.startsWith('_'))          // the blank stays reusable
       .reduce((o,k)=>(o[k]=keep[k],o),{});
     docPersist(id);
-    docAct('generated',name,FOLDER_NAMES[binder]||binder,id);
-    logAudit('Completed document',`${name} → ${FOLDER_NAMES[binder]||binder}${sub?' / '+sub:''}`);
+    docAct('generated',name,FOLDER_NAMES[nb.b]||binder,id);
+    logAudit('Completed document',`${name} → ${FOLDER_NAMES[nb.b]||binder}${sub?' / '+sub:''}${cid?' + '+((client(cid)||{}).uci||'client file'):''}`);
     render();
-    toast(`Filed into ${FOLDER_NAMES[binder]||binder}${sub?' / '+sub:''} — the blank form is ready to use again.`);
-  },{binder:d.key,extra:anyValue?'':'<div class="tiny muted" style="margin-bottom:8px">Nothing has been filled in yet — this will file an empty copy.</div>'});
+    toast(`Filed into ${FOLDER_NAMES[nb.b]||binder}${sub?' / '+sub:''}${cid?' and '+((client(cid)||{}).uci||'the client')+'\u2019s file':''} — the blank form is ready to use again.`);
+  },{binder:d.key,client:true,extra:anyValue?'':'<div class="tiny muted" style="margin-bottom:8px">Nothing has been filled in yet — this will file an empty copy.</div>'});
   window._docFilled=filled;
 }
 function docFilledHtml(id){ return docSheet(id, EXAMPLE_VALUES[id]||{}); }
@@ -7667,7 +8084,11 @@ function signDocSave(key,name){ docAct('signed',name,FOLDER_NAMES[key]||key);
 async function openStoredDoc(id,name){
   const d=DOCS.find(x=>String(x.id)===String(id))||DOCS.find(x=>x.n===name);
   const path=d&&d.path, url=d&&d.url;
-  if(!path&&!url) return toast('No file attached to this record — it was logged before file storage was switched on.');
+  if(!path&&!url){
+    const key=FILLED[name]?name:(d&&FILLED[d.n]?d.n:null);
+    if(key){ docAct('exported',key,''); return printSheet(filledSheet(key)); }
+    return toast('No file attached to this record — it was logged before file storage was switched on.');
+  }
   const signed=path?await sbSignedUrl(path):null;
   const open=signed||url;
   if(!open) return toast('Could not open the file — check the storage bucket permissions.');
@@ -7699,11 +8120,11 @@ function inWeek(dateStr){ return dateStr>=weekStart() && dateStr<=T; }
 function delCount(){ return Object.keys(DEL).filter(k=>k!=='auditClearedAt').reduce((a,k)=>a+(DEL[k]||[]).length,0); }
 /* 'demo' puts the seeded demonstration data back; 'empty' hands over a blank workspace */
 function eraseAll(){
-  askDelete('Erase all workspace data?','Every record is deleted — clients, staff, shifts, tasks, documents, messages and logs — and sample data is hidden, leaving a clean workspace. Your account, sign-in, organization details and signed agreement are kept, and you stay right here. This cannot be undone.',async()=>{
+  askDelete('Erase all workspace data?','Every record is deleted — clients, staff, shifts, tasks, documents, messages and logs — and sample data is hidden, leaving a clean workspace. Everyone\'s accounts, sign-ins, personal settings and layouts, the organization details and the signed agreement are kept, and you stay right here. This cannot be undone.',async()=>{
     toast('Erasing the workspace…');
     const tables=['tasks','incidents','fire_drills','water_temps','med_logs','documents','credentials','appointments','templates','client_notes','notifications','audit_log','checklist_logs','clients','staff','shifts','threads','messages','ask_log','doc_activity','doc_signatures','example_docs','inspections','library'];
     for(const t of tables){ try{ await sbDel('np_demo_'+t,'id=not.is.null'); }catch(e){} }
-    try{ await sbDel('np_demo_program','key=not.in.(org,email,pilot)'); }catch(e){}   // identity + agreement survive
+    try{ await sbDel('np_demo_program','key=not.in.(org,email,pilot,users,usersettings)'); }catch(e){}   // identity, agreement, everyone's accounts + personal settings/layouts survive
     ['np_deleted','np_notif_prefs','np_training','np_onboard_steps','np_doc_activity'].forEach(k=>lsDel(k));
     try{ lsSet('np_hide_sample','1'); }catch(e){}
     [CLIENTS,STAFF,SHIFTS,TASKS,APPTS,INCIDENTS,DOCS,THREADS,WATERTEMP,FIREDRILLS,INSP_DONE,AUDIT,TEMPLATES5]
@@ -7730,7 +8151,7 @@ function resetWorkspace(mode){
       'np_demo_checklist_logs','np_demo_fire_drills','np_demo_water_temps','np_demo_inspections','np_demo_library',
       'np_demo_doc_signatures','np_demo_example_docs','np_demo_med_logs','np_demo_agreements','np_demo_ask_log'];
     tables.forEach(t=>sbDel(t,'id=not.is.null'));
-    sbDel('np_demo_program','key=neq.deleted');                     // the deletion registry row survives the wipe
+    sbDel('np_demo_program','key=not.in.(deleted,users,usersettings)');   // deletion registry + accounts + personal settings survive the wipe
     DEL={};
     if(empty){                                   // keep EXACTLY one of everything, all tied to the same kept client + staff member
       const keepC=CLIENTS[0], keepS=STAFF[0];
@@ -8105,7 +8526,7 @@ function openAppt(id){ if(String(id).startsWith('g_')){ return openGcalEvent(id)
     ${canEdit&&a.cancelled?`<div style="margin-bottom:14px"><button class="btn ghost sm" onclick="restoreAppt('${a.id}')">Restore appointment</button></div>`:''}
     <section class="card"><div class="card-h"><h2>Details</h2>
       ${canEdit?`<div class="right"><button class="btn ghost sm" onclick="editAppt('${a.id}')">✎ Edit details</button></div>`:''}</div><div class="card-b">
-      ${[['Client',(c||{}).uci||'—'],['Type',a.type],['Provider',a.provider],['Location',a.loc],['Duration',a.dur+' minutes'],['Date',fmtLong(a.date)+' at '+hm12(a.time)],...(a.ride!==undefined?[['Transport',a.ride||'Not arranged yet']]:[])]
+      ${[['Client',(c||{}).uci||'—'],['Calendar',calDef(apptCalKey(a)).name],['Type',a.type],['Provider',a.provider],['Location',a.loc],['Duration',a.dur+' minutes'],['Date',fmtLong(a.date)+' at '+hm12(a.time)],...(a.ride!==undefined?[['Transport',a.ride||'Not arranged yet']]:[])]
         .map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)"><span class="muted tiny">${k}</span><b style="font-size:13.2px;text-align:right">${esc(v)}</b></div>`).join('')}
     </div></section>
 
@@ -8121,8 +8542,7 @@ function openAppt(id){ if(String(id).startsWith('g_')){ return openGcalEvent(id)
       ${a.files.map(f=>`<div class="docrow"><div class="di">${f.n.split('.').pop().toUpperCase().slice(0,3)}</div><div class="dt"><b>${esc(f.n)}</b><span>${f.s}</span></div></div>`).join('')||'<div class="empty">No files attached.</div>'}
       ${canEdit?`<div style="padding:14px 18px"><div class="drop" onclick="attachToAppt('${a.id}')"><b>Attach a document</b><span>Referral letter, visit summary, lab result</span></div></div>`:''}
     </div></section>`,
-    canEdit?`<button class="btn ghost" onclick="closeAll()">Close</button><button class="btn navy" onclick="closeAll();toast('Appointment updated.')">Save changes</button>`
-           :`<button class="btn ghost" onclick="closeAll()">Close</button>`);
+    `<button class="btn ghost" onclick="closeAll()">Close</button>`);
 }
 function editAppt(id){
   const a=APPTS.find(x=>x.id===id); if(!a) return;
@@ -8132,6 +8552,7 @@ function editAppt(id){
       <div class="field"><label>Client</label><select class="inp" id="eaClient">${visibleClients().map(c=>`<option value="${c.id}" ${c.id===a.cid?'selected':''}>${esc(c.uci)}</option>`).join('')}</select></div>
       <div class="field"><label>Type</label>${fillSelect('eaType','appointment type',Object.keys(APPT_CATS),a.type)}</div>
     </div>
+    <div class="field"><label>Calendar</label>${calSelect('eaCal',apptCalKey(a))}</div>
     <div class="row2">
       <div class="field"><label>Date</label><input class="inp" type="date" id="eaDate" value="${a.date}"></div>
       <div class="field"><label>Time</label><input class="inp" type="time" id="eaTime" value="${a.time}"></div>
@@ -8153,7 +8574,9 @@ function saveApptEdit(id){
   a.dur=Math.max(5,+el('eaDur').value||a.dur||30);
   a.provider=(el('eaProv').value||'').trim(); a.loc=(el('eaLoc').value||'').trim();
   a.ride=(el('eaRide').value||'').trim();
-  sbPatch('np_demo_appointments',id,{title:a.title,cid:a.cid,type:a.type,date:a.date,time:a.time,dur:a.dur,provider:a.provider,loc:a.loc,ride:a.ride});
+  const _c=(el('eaCal')&&el('eaCal').value!=='__newct__'&&el('eaCal').value)||a.cal||'company';
+  a.cal=_c; if(_c==='personal'&&!a.owner) a.owner=userKey(); if(_c!=='personal') a.owner='';
+  sbPatch('np_demo_appointments',id,{title:a.title,cid:a.cid,type:a.type,date:a.date,time:a.time,dur:a.dur,provider:a.provider,loc:a.loc,ride:a.ride,cal:a.cal,owner:a.owner||null});
   if(a.gid&&GCAL.connected) gcalUpdate&&gcalUpdate(a);
   logAudit('Edited appointment',`${a.title} · ${(client(a.cid)||{}).uci||''}`);
   closeAll(); render(); openAppt(id); toast('Appointment updated.');
@@ -8179,6 +8602,8 @@ function openApptForm(cid,presetDate,presetTime){
       <div class="field"><label>Type</label><select class="inp" id="apType">${Object.keys(APPT_CATS).map(k=>`<option>${esc(k)}</option>`).join('')}</select></div>
     </div>
     <div class="field"><label>Title</label><input class="inp" id="apTitle" placeholder="Leave blank to keep it anonymous"></div>
+    <div class="field"><label>Calendar</label>${calSelect('apCal')}
+      <div class="tiny muted" style="margin-top:4px">Company is shared with everyone. My calendar is yours alone. Contractor calendars track outside providers.</div></div>
     <div class="row2">
       <div class="field"><label>Date</label><input class="inp" type="date" id="apDate" value="${(window._apPreset&&window._apPreset.d)||T}"></div>
       <div class="field"><label>Time</label><input class="inp" type="time" id="apTime" value="${(window._apPreset&&window._apPreset.t)||'10:00'}"></div>
@@ -8198,11 +8623,14 @@ function openApptForm(cid,presetDate,presetTime){
 }
 function saveAppt(){
   const title=el('apTitle').value.trim()||'Appointment';   // blank title stays anonymous
+  const _cal=(el('apCal')&&el('apCal').value!=='__newct__'&&el('apCal').value)||'company';
+  const _owner=_cal==='personal'?userKey():null;
   const a={id:'a'+Date.now(), cid:el('apClient').value, title, type:el('apType').value,
     date:el('apDate').value, time:el('apTime').value, dur:+el('apDur').value||30,
     provider:el('apProv').value.trim(), loc:el('apLoc').value.trim(), flag:el('apFlag').value.trim(), ride:'', notes:[], files:[]};
   APPTS.push(a);
-  sbPush('np_demo_appointments',{id:a.id,cid:a.cid,title:a.title,type:a.type,appt_date:a.date,appt_time:a.time,dur:a.dur,provider:a.provider,loc:a.loc,flag:a.flag,ride:a.ride});
+  a.cal=_cal; a.owner=_owner||'';
+  sbPush('np_demo_appointments',{id:a.id,cid:a.cid,title:a.title,type:a.type,appt_date:a.date,appt_time:a.time,dur:a.dur,provider:a.provider,loc:a.loc,flag:a.flag,ride:a.ride,cal:_cal,owner:_owner});
   n8nCal({event:'appointment.created', id:a.id, uci:client(a.cid).uci, init:client(a.cid).init, title:a.title, type:a.type, date:a.date, time:a.time, dur:a.dur, provider:a.provider, loc:a.loc});
   const toGcal=el('apGcal')&&el('apGcal').checked;
   if(toGcal){ GCAL.connected?gcalPush(a):gcalTemplateOpen(a); }
@@ -8233,17 +8661,24 @@ function restoreAppt(id){ /* re-creates the Google event, since cancelling delet
   if(GCAL.connected){ a.gid=null; gcalPush(a); toast('Appointment restored and put back on your Google Calendar.'); }
   else toast('Appointment restored.');
 }
+function apptExtrasSave(){
+  const map={};
+  APPTS.forEach(a=>{ if((a.notes||[]).length||(a.files||[]).length) map[a.id]={notes:a.notes||[],files:a.files||[]}; });
+  sbUpsert('np_demo_program',{key:'apptextras',value:{map},updated_by:auditActor()});
+}
 function addApptNote(id){
   const v=el('apptNote').value.trim(); if(!v) return toast('Write something first.');
   const a=APPTS.find(x=>x.id===id);
-  a.notes.push({by:meInit(),at:'Just now',txt:v});
-  sbPatch('np_demo_appointments',a.id,{notes:a.notes});
+  a.notes.push({by:meInit(),at:nowStamp(),txt:v});
+  apptExtrasSave();
   logAudit('Added appointment note',`${(client(a.cid)||{}).uci||''} · ${a.title}`);
   openAppt(id); toast('Note saved to the client record.');
 }
 function attachToAppt(id){
   const a=APPTS.find(x=>x.id===id);
   a.files.push({n:'visit-summary.pdf',s:'186 KB'});
+  apptExtrasSave();
+  logAudit('Attached file to appointment',`${(client(a.cid)||{}).uci||''} · ${a.title}`);
   openAppt(id); toast('File attached.');
 }
 
@@ -8451,10 +8886,14 @@ function openIncident(id){
         ${n.at?'<span class="pill ok">Done</span>':`<button class="btn gold sm" onclick="markNotified('${i.id}',${ix})">Mark notified</button>`}</div>`).join('')}
     </div></section>
     <section class="card"><div class="card-h"><h2>Follow-up</h2></div><div class="card-b">
-      <textarea class="inp" placeholder="Add a follow-up note…"></textarea>
+      ${(INC_NOTES[i.id]||[]).map(n=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+        <div style="font-size:13.2px;color:#4A4F60">${esc(n.t)}</div>
+        <div class="tiny muted" style="margin-top:2px">${esc(n.by)} · ${esc(n.at)}</div></div>`).join('')}
+      <textarea class="inp" id="incFu" placeholder="Add a follow-up note…" style="margin-top:${(INC_NOTES[i.id]||[]).length?'10px':'0'}"></textarea>
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn ghost sm" onclick="toast('Follow-up saved.')">Save note</button>
+        <button class="btn ghost sm" onclick="incNoteSave('${i.id}')">Save note</button>
         <button class="btn ghost sm" onclick="printSheet(incidentReportSheet('${i.id}'))">View report</button>
+        ${INC_REPORT[i.id]&&FILLED[INC_REPORT[i.id]]?`<button class="btn gold sm" onclick="printSheet(filledSheet('${esc(INC_REPORT[i.id])}'))">Open filled form</button>`:''}
         ${protoStepsOf(PROTOCOLS[i.type]).length?`<button class="btn ghost sm" onclick="incidentWalkthrough('${i.id}')">Protocol steps ${(i.protoAck||[]).length}/${protoStepsOf(PROTOCOLS[i.type]).length}</button>`:''}
         ${i.status!=='Closed'?`<button class="btn navy sm" onclick="closeIncident('${i.id}')">Close report</button>`:''}
       </div></div></section>`,
@@ -8489,6 +8928,17 @@ function markNotified(id,ix){
 }
 function closeIncident(id){ const i=INCIDENTS.find(x=>x.id===id); i.status='Closed'; sbPatch('np_demo_incidents',id,{status:'Closed'}); closeAll(); renderNav(); render(); toast('Incident report closed.'); }
 
+function openIncidentsList(){
+  const open=visIncidents().filter(i=>i.status!=='Closed');
+  openModal('Open incidents',
+    (open.length?open.map(i=>{ const c=client(i.cid)||{};
+      return `<button class="checkrow" style="width:100%;cursor:pointer;text-align:left;border-color:var(--line)" onclick="closeAll();openClient('${i.cid}','incidents')">
+        <div class="cb" style="background:#FBEAE8;color:#B3261E">⚠</div>
+        <div class="ct"><b>${esc(i.type)} — ${esc(c.uci||'')}</b><div class="tiny muted">${esc(relDay(i.date))} · ${esc(i.status)} · reported by ${esc(i.by)}</div></div></button>`; }).join('')
+     :'<div class="empty">No open incidents.</div>')+
+    `<div class="tiny muted" style="margin-top:8px">Incidents live on each client\u2019s page now — this is just the quick way in.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Close</button>`);
+}
 function openIncidentForm(cid){
   openModal('Report an incident',`
     <div class="sec-note" style="background:var(--bad-soft);border-color:#F0CBC7;color:#8C312B;margin-bottom:14px">
@@ -8507,8 +8957,7 @@ function openIncidentForm(cid){
       <div class="field"><label>Time</label><input class="inp" type="time" id="icTime" value="${nowHM()}"></div>
     </div>
     <div class="field"><label>Severity</label><select class="inp" id="icSev"><option>Minor</option><option>Moderate</option><option>Serious</option></select></div>
-    <div class="field"><label>What happened</label>
-      <textarea class="inp" id="icSum" placeholder="Facts and times only. What you saw and did, in order."></textarea></div>
+    <div id="icFields"></div>
     <div class="field"><label>Who has been told</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap">${['Shift lead','Nurse','Director','Guardian','Emergency services'].map(n=>
         `<button class="btn ghost sm" onclick="this.classList.toggle('navy');this.classList.toggle('ghost')">${n}</button>`).join('')}</div></div>
@@ -8556,6 +9005,15 @@ function openProtocol(k){
           <button class="btn ghost sm" style="padding:0 5px" title="Delete" onclick="protoStepDel('${esc(k)}',${i})">✕</button></span>`:''}
       </div>`).join(''):'<div class="empty">No steps yet — add the first thing staff should do.</div>'}
     </div></section>
+    <section class="card"><div class="card-h"><h2>Protocol document</h2><div class="sub">The form staff fill in when this incident type is reported</div></div>
+      <div class="card-b">
+        ${dir?`<select class="inp" onchange="protoTplSet('${esc(k)}',this.value)">
+          <option value="">Basic report (stock SIR form)</option>
+          ${TEMPLATES5.filter(t=>!hid('template',t.id)).map(t=>`<option value="${t.id}" ${p.tpl===t.id?'selected':''}>${esc(t.name)}</option>`).join('')}
+        </select>`:`<b style="font-size:13.2px">${esc(p.tpl&&tplById(p.tpl)?tplById(p.tpl).name:'Basic report (stock SIR form)')}</b>`}
+        ${p.tpl&&tplById(p.tpl)?`<div style="margin-top:8px"><button class="btn ghost sm" onclick="openTplEditor('${p.tpl}')">Open template</button></div>`:''}
+        <div class="tiny muted" style="margin-top:8px">Reporting a ${esc(k)} opens this template as the fillable report. The completed copy files itself to the Agency binder (SIR tab) and the client's Files.</div>
+      </div></section>
     <section class="card"><div class="card-h"><h2>Who to call</h2>
       ${dir?`<div class="right"><button class="btn ghost sm" onclick="protoCallAdd('${esc(k)}')">＋ Add contact</button></div>`:''}</div>
       <div class="card-b flush">
@@ -8630,6 +9088,29 @@ function protoToBinder(k){
     render(); toast('Protocol filed.');
   },{binder:'Compliance'});
 }
+let INC_REPORT={};                                                   // incident id -> completed report doc name
+let INC_NOTES={};                                                    // incident id -> [{t,by,at}] follow-up notes
+function incReportSave(){ sbUpsert('np_demo_program',{key:'increports',value:{map:INC_REPORT},updated_by:auditActor()}); }
+function incNotesSave(){ sbUpsert('np_demo_program',{key:'incnotes',value:{map:INC_NOTES},updated_by:auditActor()}); }
+function incidentTplOf(type){
+  const p=PROTOCOLS[type]||{};
+  const pick=id=>{ const t=id?tplById(id):null; return (t&&!hid('template',t.id))?t:null; };
+  return pick(p.tpl)||pick('tp2');                                   // linked template, else the stock SIR form
+}
+function protoTplSet(k,v){
+  if(!PROTOCOLS[k]) return;
+  PROTOCOLS[k].tpl=v||'';
+  protoSave();
+  logAudit('Linked protocol document',`${k} → ${v&&tplById(v)?tplById(v).name:'Basic report'}`);
+  openProtocol(k); toast(v?'Template linked — reporting this incident now opens that form.':'Back to the basic report form.');
+}
+function incNoteSave(id){
+  const v=(el('incFu').value||'').trim(); if(!v) return toast('Write the note first.');
+  (INC_NOTES[id]=INC_NOTES[id]||[]).unshift({t:v,by:meInit(),at:nowStamp()});
+  incNotesSave();
+  logAudit('Added incident follow-up',`Incident ${id}`);
+  openIncident(id); toast('Follow-up saved to the record.');
+}
 function protoStepsOf(p){
   if(!p) return [];
   if(Array.isArray(p.steps)&&p.steps.length) return p.steps;
@@ -8661,7 +9142,11 @@ function incidentReportSheet(id){
     <div class="p-sub">${esc(client(i.cid)?client(i.cid).uci:'')} · ${esc(i.date)} ${esc(i.time||'')} · severity ${esc(i.sev)} · filed by ${esc(i.by||meInit())}</div>
     <p><b>Summary.</b> ${esc(i.summary||i.sum||'')}</p>
     <p><b>Status.</b> ${esc(i.status)}${(i.hoursLeft!=null||i.hours_left!=null)?` · report due within ${i.hoursLeft!=null?i.hoursLeft:i.hours_left}h`:''}</p>
-    ${protoStepsOf(p).length?`<p><b>Protocol steps.</b></p><ul>${protoStepsOf(p).map((st,ix)=>`<li>${(i.protoAck||[]).includes(ix)?'☑':'☐'} ${esc(st)}</li>`).join('')}</ul>`:''}`;
+    ${protoStepsOf(p).length?`<p><b>Protocol steps.</b></p><ul>${protoStepsOf(p).map((st,ix)=>`<li>${(i.protoAck||[]).includes(ix)?'☑':'☐'} ${esc(st)}</li>`).join('')}</ul>`:''}
+    ${(()=>{const dn=INC_REPORT[i.id], f=dn&&FILLED[dn]; if(!f) return '';
+      return `<p><b>Report form — as filed.</b></p><table>${(f.vals||[]).filter(x=>x.ty!=='signature').map(x=>`<tr><th style="width:220px">${esc(x.l)}</th><td>${esc(x.v)||''}</td></tr>`).join('')}</table>
+      ${(f.vals||[]).some(x=>x.ty==='signature'&&x.v)?`<div class="siglines">${(f.vals||[]).filter(x=>x.ty==='signature'&&x.v).map(x=>`<div class="sig">${esc(x.v)}<br>${esc(x.l)} · ${esc(f.at||'')}</div>`).join('')}</div>`:''}`;})()}
+    ${(INC_NOTES[i.id]||[]).length?`<p><b>Follow-up notes.</b></p><ul>${(INC_NOTES[i.id]||[]).map(n=>`<li>${esc(n.t)} — ${esc(n.by)}, ${esc(n.at)}</li>`).join('')}</ul>`:''}`;
 }
 function icProtoShow(){
   const sel=el('icType'); if(!sel) return;
@@ -8678,6 +9163,27 @@ function icProtoShow(){
   const box=el('icProto'); if(!box) return;
   const k=sel.value, p=PROTOCOLS[k], steps=protoStepsOf(p||{}), calls=(p&&Array.isArray(p.call))?p.call:[];
   window._icAck=[];
+  const fb=el('icFields');
+  if(fb){
+    const t=incidentTplOf(k);
+    fb.innerHTML = t ? `
+      <div class="tiny muted" style="margin:2px 0 8px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">Report form — ${esc(t.name)}</div>
+      ${t.fields.map((fd,i)=>{
+        if(fd.ty==='signature') return `<div class="field"><label>${esc(fd.l)} (type name to sign)</label><input class="inp" id="tg${i}" placeholder="Full name"></div>`;
+        if(fd.ty==='checkbox') return `<div class="field"><label>${esc(fd.l)}</label><select class="inp" id="tg${i}"><option>Yes</option><option>No</option></select></div>`;
+        if(fd.ty==='long text') return `<div class="field"><label>${esc(fd.l)}</label><textarea class="inp" id="tg${i}" rows="3"></textarea></div>`;
+        return `<div class="field"><label>${esc(fd.l)}</label><input class="inp" id="tg${i}" type="${fd.ty==='date'?'date':fd.ty==='time'?'time':'text'}"></div>`;
+      }).join('')}
+      <div class="tiny muted" style="margin-bottom:8px">The completed form files to the Agency binder (SIR tab) and the client's Files, identified by UCI only.</div>`
+    : `<div class="field"><label>What happened</label>
+      <textarea class="inp" id="icSum" placeholder="Facts and times only. What you saw and did, in order."></textarea></div>`;
+    const uf=t&&t.fields.findIndex(f=>/client id/i.test(f.l));
+    if(t&&uf>-1&&el('tg'+uf)&&el('icClient')){ const c=client(el('icClient').value); if(c) el('tg'+uf).value=c.uci; }
+    const df=t&&t.fields.findIndex(f=>f.ty==='date'&&/date of incident/i.test(f.l));
+    if(t&&df>-1&&el('tg'+df)) el('tg'+df).value=T;
+    const tf=t&&t.fields.findIndex(f=>f.ty==='time');
+    if(t&&tf>-1&&el('tg'+tf)) el('tg'+tf).value=nowHM();
+  }
   box.innerHTML = (steps.length||calls.length) ? `
     <div class="sec-note" style="margin-bottom:12px;display:block">
       <b style="display:block;margin-bottom:6px">${esc(k)} protocol \u2014 tick each step as you do it</b>
@@ -8693,7 +9199,17 @@ function icAck(ix,on){
   if(!on) window._icAck=window._icAck.filter(x=>x!==ix);
 }
 function saveIncident(){
-  const s=el('icSum').value.trim(); if(!s) return toast('Describe what happened before filing.');
+  const t=incidentTplOf(el('icType').value);
+  let vals=[], s='';
+  if(t&&el('tg0')){
+    vals=tplVals(t);
+    const d=vals.find(x=>/description/i.test(x.l)&&(x.v||'').trim())||vals.find(x=>x.ty==='long text'&&(x.v||'').trim());
+    s=((d&&d.v)||'').trim();
+    if(!s) return toast('Fill in the description of the incident before filing.');
+  } else {
+    s=(el('icSum')?el('icSum').value:'').trim();
+    if(!s) return toast('Describe what happened before filing.');
+  }
   const rec={id:'i'+Date.now(),cid:el('icClient').value,type:el('icType').value,date:el('icDate').value,
     time:el('icTime').value,sev:el('icSev').value,status:'Follow-up due',by:meInit(),summary:s,notified:['Shift lead'],
     recips:[{who:'Regional center',how:'Phone',at:null,by:null},{who:'Guardian',how:'Phone',at:null,by:null},{who:'Licensing (CCLD) — written report',how:'Written',at:null,by:null}],
@@ -8703,8 +9219,20 @@ function saveIncident(){
   sbPush('np_demo_notifications',{title:'SIR clock started',body:`${rec.type} — 24h to notify, 48h written`,kind:'sir',for_staff:null});
   sbPush('np_demo_incidents',{id:rec.id,cid:rec.cid,type:rec.type,inc_date:rec.date,inc_time:rec.time,sev:rec.sev,status:rec.status,reported_by:rec.by,summary:rec.summary,notified:rec.notified,recips:rec.recips,hours_left:rec.hoursLeft});
   n8nPost({event:'incident.created', id:rec.id, uci:client(rec.cid).uci, home:client(rec.cid).home, type:rec.type, severity:rec.sev, date:rec.date, time:rec.time, summary:rec.summary, reported_by:rec.by});
+  if(t&&vals.length){
+    const c=client(rec.cid);
+    const docName=`${t.name} — ${c?c.uci:''} — ${rec.date}.pdf`;
+    FILLED[docName]={tid:t.id,vals,by:auditActor(),at:nowStamp()}; filledSave();
+    DOCS.unshift({id:'doc'+Date.now(),cid:rec.cid,n:docName,cat:'Incident',by:meInit(),at:T,s:'8 KB'});
+    sbPush('np_demo_documents',{cid:rec.cid,n:docName,cat:'Incident',uploaded_by:meInit(),doc_date:T,size:'8 KB'});
+    (COMPLETED.Agency=COMPLETED.Agency||[]).unshift({n:docName,sub:`Incident report · ${meInit()} · ${fmtDate(T)}`,sb:'SIR',at:T});
+    DOCTAG[docName]={b:'Agency',sb:'SIR'}; doctagSave();
+    INC_REPORT[rec.id]=docName; incReportSave();
+    docAct('generated',docName,'Agency');
+    rec.doc=docName;
+  }
   logAudit('Created incident report',`${(client(el('icClient').value)||{}).uci} · ${el('icType').value}`);
-  closeAll(); renderNav(); render(); toast('Report filed and timestamped.');
+  closeAll(); renderNav(); render(); toast(t?'Report filed — the completed form is in the Agency binder under SIR, and in the client\u2019s Files.':'Report filed and timestamped.');
   if((window._icAck||[]).length){
     rec.protoAck=window._icAck.slice();
     sbPatch('np_demo_incidents',rec.id,{proto_ack:rec.protoAck});
@@ -8737,7 +9265,8 @@ function uploadDoc(cid,cat){
       <div class="tiny muted" style="margin-top:5px">PDF, Word, Excel or image · up to 25 MB. The file itself is stored, not just its name.</div></div>
     <div class="field"><label>Title</label><input class="inp" id="udTitle" placeholder="e.g. Medication order — Dr. Feld"></div>
     <div class="row2">
-      <div class="field"><label>Category</label>${fillSelect('udCat','document category',['Medication','Care plan','Consent','Lab','Medical','Other'],cat)}</div>
+      <div class="field"><label>Category</label>${fillSelect('udCat','document category',DOC_CATS,cat)}
+        ${state.role==='director'?`<div class="tiny muted" style="margin-top:4px"><a href="#" onclick="event.preventDefault();closeAll();manageDocCats()">⚙ Manage categories</a> — lab work, vaccines, dental visits and more; add your own.</div>`:''}</div>
       <div class="field"><label>Date on document</label><input class="inp" type="date" id="udDate" value="${T}"></div>
     </div>
     <div class="field"><label>Notes</label><textarea class="inp" id="udNote" placeholder="Anything staff should know about this file"></textarea></div>
@@ -8748,9 +9277,9 @@ function uploadDoc(cid,cat){
       <div id="udBinderPick" class="row2" style="margin-top:8px">
         <div class="field"><label>Binder</label>
           <select class="inp" id="udBinderKey" onchange="udSubs()">
-            ${Object.keys(FOLDER_NAMES).map(k=>`<option value="${k}">${esc(FOLDER_NAMES[k])}</option>`).join('')}
+            ${binderKeys().map(k=>`<option value="${k}">${esc(FOLDER_NAMES[k])}</option>`).join('')}
           </select></div>
-        <div class="field"><label>Sub-binder</label><span id="udSubWrap">${udSubSelect(Object.keys(FOLDER_NAMES)[0])}</span></div>
+        <div class="field"><label>Sub-binder</label><span id="udSubWrap">${udSubSelect(binderKeys()[0])}</span></div>
       </div>
     </div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>
@@ -8782,6 +9311,7 @@ async function uploadDocSave(cid){
   sbPush('np_demo_documents',{id:rec.id, cid:rec.cid, n:rec.n, cat:rec.cat, uploaded_by:rec.by, doc_date:rec.at, size:rec.s, url:rec.url, storage_path:path, note});
   if(el('udBinder')&&el('udBinder').checked){
     const bk=el('udBinderKey').value, bsub=(el('udSub')&&el('udSub').value)||'';
+    DOCTAG[rec.n]={b:bk,sb:bsub}; doctagSave();
     autoFileLog(bk, title, `${(client(cid)||{}).uci||'Agency'} · uploaded by ${auditActor()}`, null, bsub);
     logAudit('Filed uploaded document',`${title} → ${FOLDER_NAMES[bk]||bk}${bsub?' / '+bsub:''}`);
   }
@@ -8803,6 +9333,7 @@ function saveNotifPrefs(){
   const em=el('np_emailTo'); if(em) NOTIF_PREFS.emailTo=em.value.trim();
   const sm=el('np_smsTo'); if(sm) NOTIF_PREFS.smsTo=sm.value.trim();
   lsSet('np_notif_prefs',JSON.stringify(NOTIF_PREFS));
+  userSetSave({notifprefs:NOTIF_PREFS});
   // hand the schedule to the automation backend so email/SMS can go out server-side
   // counts only — the appointment titles and client IDs never leave the portal
   n8nHook(BACKEND.notifyWebhook,{event:'reminder.prefs',prefs:{lead:NOTIF_PREFS.lead,inapp:NOTIF_PREFS.inapp,
@@ -8863,7 +9394,7 @@ function openAlerts(){
       <div class="ai info">✉</div><div class="at"><b>${esc(t.who)} — ${esc(t.sub)}</b><span>${esc(t.last)}</span></div>
       <div class="aa">Open →</div></div>`).join('')}</div></section>`:'';
   const sysHtml=SYS_NOTIFS.length?`<section class="card"><div class="card-h acc-navy"><h2>System notifications</h2><div class="sub">Delivered by the portal's automation backend</div></div>
-    <div class="card-b flush">${SYS_NOTIFS.filter(n=>!state.hideSample||!n._seed).map(n=>`<div class="attn"><div class="ai ${n.k==='bad'?'bad':'info'}">◈</div>
+    <div class="card-b flush">${SYS_NOTIFS.filter(n=>!state.hideSample||!n._seed).filter(n=>state.role!=='staff'||!n.sid||n.sid===meSid()).map(n=>`<div class="attn"><div class="ai ${n.k==='bad'?'bad':'info'}">◈</div>
     <div class="at"><b>${esc(n.t)}</b><span>${esc(n.s)} · ${esc(n.at)}</span></div></div>`).join('')}</div></section>`:'';
   openDrawer('Notifications',`${rem.length?rem.length+' upcoming · ':''}${un.length?un.reduce((a,t)=>a+t.unread,0)+' unread messages · ':''}${attn.length} items need attention`,
     remHtml+sysHtml+msgHtml+(attn.length?attn.map((a,i)=>`<div class="card" style="margin-bottom:10px"><div class="attn" style="border:none" onclick="closeAll();_attn[${i}].go()">
@@ -8907,21 +9438,23 @@ function openSettings(){
       </div>
     </div></section>`:''}
     ${state.role==='director'?`
-    <section class="card"><div class="card-h"><h2>Notification routing</h2><div class="sub">Who gets pinged when something happens — incident and SIR alerts always notify everyone</div></div><div class="card-b">
+    <section class="card"><div class="card-h"><h2>Push notifications</h2><div class="sub">Who gets pinged when something happens — incident and SIR alerts always notify everyone</div></div><div class="card-b">
       ${NOTIF_EVENTS.map(([ev,label])=>`
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)">
-          <span style="font-size:13.2px">${label}</span>
-          <select class="inp" style="max-width:130px" title="Reminder cadence" onchange="NOTIF_CADENCE['${ev}']=this.value;rulesSave()">
-            <option value="off" ${(NOTIF_CADENCE[ev]||'off')==='off'?'selected':''}>No reminders</option>
-            <option value="daily" ${NOTIF_CADENCE[ev]==='daily'?'selected':''}>Daily digest</option>
-            <option value="weekly" ${NOTIF_CADENCE[ev]==='weekly'?'selected':''}>Weekly digest</option>
-          </select>
-          <select class="inp" style="max-width:180px" onchange="NOTIF_RULES['${ev}']=this.value;rulesSave()">
-            <option value="off" ${NOTIF_RULES[ev]==='off'?'selected':''}>Off</option>
-            <option value="director" ${NOTIF_RULES[ev]==='director'?'selected':''}>Director only</option>
-            <option value="all" ${NOTIF_RULES[ev]==='all'?'selected':''}>All staff</option>
-            ${visibleStaff().map(st=>`<option value="${st.id}" ${NOTIF_RULES[ev]===st.id?'selected':''}>${esc(st.name)}</option>`).join('')}
-          </select>
+        <div style="padding:9px 0;border-bottom:1px solid var(--line)">
+          <div style="font-size:13.2px;font-weight:600;margin-bottom:6px">${label}</div>
+          <div style="display:flex;gap:8px">
+            <select class="inp" style="flex:1;min-width:0" title="Who is notified" onchange="NOTIF_RULES['${ev}']=this.value;rulesSave()">
+              <option value="off" ${NOTIF_RULES[ev]==='off'?'selected':''}>Off</option>
+              <option value="director" ${NOTIF_RULES[ev]==='director'?'selected':''}>Director only</option>
+              <option value="all" ${NOTIF_RULES[ev]==='all'?'selected':''}>All staff</option>
+              ${visibleStaff().map(st=>`<option value="${st.id}" ${NOTIF_RULES[ev]===st.id?'selected':''}>${esc(st.name)}</option>`).join('')}
+            </select>
+            <select class="inp" style="flex:1;min-width:0" title="Reminder cadence" onchange="NOTIF_CADENCE['${ev}']=this.value;rulesSave()">
+              <option value="off" ${(NOTIF_CADENCE[ev]||'off')==='off'?'selected':''}>No reminders</option>
+              <option value="daily" ${NOTIF_CADENCE[ev]==='daily'?'selected':''}>Daily digest</option>
+              <option value="weekly" ${NOTIF_CADENCE[ev]==='weekly'?'selected':''}>Weekly digest</option>
+            </select>
+          </div>
         </div>`).join('')}
     </div></section>`:''}
     <section class="card"><div class="card-h"><h2>Lists</h2><div class="sub">Houses and task categories — rename or remove</div></div><div class="card-b">
@@ -8933,7 +9466,7 @@ function openSettings(){
       <button class="btn ghost sm" onclick="openDemoView()">⤢ Open the demo dashboard with sample data</button>
       <div class="tiny muted" style="margin-top:8px">Opens in a new tab, clearly marked as test data. Your real workspace is untouched — nothing done in the demo is saved.</div>
     </div></section>
-    <section class="card"><div class="card-h"><h2>Session</h2><div class="sub">Sign out automatically after a period of inactivity</div></div><div class="card-b">
+    <section class="card"><div class="card-h"><h2>Session</h2><div class="sub">Sign out automatically after a period of inactivity — your setting only, teammates keep theirs</div></div><div class="card-b">
       <select class="inp" style="max-width:240px" onchange="setIdle(this.value)">
         ${[[0,'Never (stay signed in)'],[15,'After 15 minutes idle'],[30,'After 30 minutes idle'],[60,'After 1 hour idle']].map(([v,l])=>`<option value="${v}" ${IDLE_MIN===v?'selected':''}>${l}</option>`).join('')}
       </select></div></section>
@@ -8942,14 +9475,6 @@ function openSettings(){
         <button class="btn ${NAME_MODE==='full'?'navy':'ghost'} sm" onclick="setNameMode('full')">Full names</button>
         <button class="btn ${NAME_MODE==='initials'?'navy':'ghost'} sm" onclick="setNameMode('initials')">Initials only</button>
       </div></div></section>
-    <section class="card"><div class="card-h"><h2>This week's progress</h2><div class="sub">Pick which weekly metrics show in the sidebar</div></div><div class="card-b">
-      ${weeklyMetricDefs().map(d=>`<label class="checkrow" style="cursor:pointer"><input type="checkbox" ${(WEEKLY_CFG.metrics||[]).includes(d.id)?'checked':''} onchange="weeklyToggle('${d.id}',this.checked)"> <span>${esc(d.l)}${d.tpl?` <span class="tiny muted">(${d.tpl.perWeek}/week)</span>`:''}</span></label>`).join('')}
-      <div class="row2" style="margin-top:8px">
-        <div class="field"><label>Water temps per week</label><input class="inp" type="number" min="1" max="99" value="${(WEEKLY_CFG.targets&&WEEKLY_CFG.targets.temps)||7}" onchange="WEEKLY_CFG.targets=WEEKLY_CFG.targets||{};WEEKLY_CFG.targets.temps=Math.max(1,parseInt(this.value||'7',10)||7);weeklyCfgSave();sideProg()"></div>
-        <div class="field"><label>Fire drills per week</label><input class="inp" type="number" min="1" max="99" value="${(WEEKLY_CFG.targets&&WEEKLY_CFG.targets.drills)||1}" onchange="WEEKLY_CFG.targets=WEEKLY_CFG.targets||{};WEEKLY_CFG.targets.drills=Math.max(1,parseInt(this.value||'1',10)||1);weeklyCfgSave();sideProg()"></div>
-      </div>
-      <div class="tiny muted">Forms with a times-per-week quota appear here automatically as their own logs.</div>
-    </div></section>
     <section class="card"><div class="card-h"><h2>Signed agreement</h2><div class="sub">A read-only record — print it for your file</div></div>
       <div class="card-b">
         ${PILOT_AGREED?`<div style="background:var(--paper,#FAF9F6);border:1px solid var(--line);border-radius:10px;padding:14px;max-height:280px;overflow:auto">
@@ -9020,38 +9545,63 @@ function staffBinderRows(){
   });
   return out;
 }
+let FILLED={};                                                       // doc name -> {tid, vals, by, at} for docs completed from a template
+function filledSave(){ sbUpsert('np_demo_program',{key:'filleddocs',value:{map:FILLED},updated_by:auditActor()}); }
+function filledSheet(name){
+  const f=FILLED[name]; if(!f) return '';
+  const t=tplById(f.tid);
+  const rows=(f.vals||[]).filter(x=>x.ty!=='signature').map(x=>`<tr><th style="width:220px">${esc(x.l)}</th><td>${esc(x.v)||''}</td></tr>`).join('');
+  const sigs=(f.vals||[]).filter(x=>x.ty==='signature').map(x=>`<div class="sig">${esc(x.v)||''}<br>${esc(x.l)} · ${esc(f.at||'')}</div>`).join('');
+  return `<h2>${esc(String(name).replace(/\.pdf$/,''))}</h2><div class="p-sub">${esc(t?t.name:'Completed document')} · completed by ${esc(f.by||'')} · ${esc(f.at||'')} · clients identified by client ID only</div><table>${rows}</table>${sigs?`<div class="siglines">${sigs}</div>`:''}`;
+}
 function tplGenerate(tid){
   const t=tplById(tid); if(!t) return;
   openModal('Use template — '+esc(t.name),`
-    <div class="field"><label>File the generated document to</label>
-      <select class="inp" id="tgDest">
-        <optgroup label="Binders">${Object.keys(FOLDER_NAMES).map(k=>`<option value="binder:${k}">${esc(FOLDER_NAMES[k])}</option>`).join('')}</optgroup>
-        <optgroup label="Client folders">${visibleClients().map(c=>`<option value="client:${c.id}">${esc(c.name)} · ${esc(c.uci)}</option>`).join('')}</optgroup>
-        <optgroup label="Staff files">${visibleStaff().map(st=>`<option value="staff:${st.id}">${esc(st.name)} · ${esc(st.role)}</option>`).join('')}</optgroup>
-      </select></div>
-    <div class="field"><label>Document title</label><input class="inp" id="tgName" value="${esc(t.name)} — ${T}"></div>
-    <div class="tiny muted">A copy generated from the template is filed at the destination. The template itself stays blank and reusable.</div>`,
-    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="tplGenerateGo('${tid}')">Generate and file</button>`);
+    <div class="tiny muted" style="margin-bottom:10px">Fill it in, then send the completed document to a client's file, a binder, or both at once. The template itself stays blank and reusable.</div>
+    ${t.fields.map((fd,i)=>{
+      if(fd.ty==='signature') return `<div class="field"><label>${esc(fd.l)} (type name to sign)</label><input class="inp" id="tg${i}" placeholder="Full name"></div>`;
+      if(fd.ty==='checkbox') return `<div class="field"><label>${esc(fd.l)}</label><select class="inp" id="tg${i}"><option>Yes</option><option>No</option></select></div>`;
+      if(fd.ty==='long text') return `<div class="field"><label>${esc(fd.l)}</label><textarea class="inp" id="tg${i}" rows="3"></textarea></div>`;
+      return `<div class="field"><label>${esc(fd.l)}</label><input class="inp" id="tg${i}" type="${fd.ty==='date'?'date':fd.ty==='time'?'time':'text'}"></div>`;
+    }).join('')}
+    <div class="row2">
+      <div class="field"><label>Send to client file</label><select class="inp" id="tgClient"><option value="">— none —</option>${visibleClients().map(c=>`<option value="${c.id}">${esc(c.uci)}</option>`).join('')}</select></div>
+      <div class="field"><label>File into binder</label><select class="inp" id="tgBinder"><option value="">— none —</option>${binderKeys().map(k=>`<option value="${k}" ${k===normBinder(t.dest||'').b?'selected':''}>${esc(FOLDER_NAMES[k])}</option>`).join('')}</select></div>
+    </div>
+    <div class="field"><label>Staff file (optional)</label><select class="inp" id="tgStaff"><option value="">— none —</option>${visibleStaff().map(st=>`<option value="${st.id}">${esc(st.name)} · ${esc(st.role)}</option>`).join('')}</select></div>
+    <div class="field"><label>Document title</label><input class="inp" id="tgName" value="${esc(t.name)} — ${T}"></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button>
+     <button class="btn ghost" onclick="printSheet(tplFilledHtml('${tid}'))">Print filled</button>
+     <button class="btn navy" onclick="tplGenerateGo('${tid}')">Complete &amp; file</button>`);
 }
 function tplGenerateGo(tid){
   const t=tplById(tid); if(!t) return;
-  const dest=el('tgDest').value, name=((el('tgName').value||'').trim()||t.name)+'.pdf';
-  const [kind,ref]=dest.split(':');
-  if(kind==='binder'){
-    (COMPLETED[ref]=COMPLETED[ref]||[]).unshift({n:name,sub:'Generated from template · '+meInit()});
-    sbPush('np_demo_documents',{cid:null,n:name,cat:'Completed — '+ref,uploaded_by:meInit(),doc_date:T,size:'6 KB'});
-    logAudit('Generated document from template',`${name} · ${FOLDER_NAMES[ref]||ref}`);
-    toast('Filed to the '+(FOLDER_NAMES[ref]||ref)+' binder.');
-  } else {
-    DOCS.push({cid:ref,n:name,cat:'From template',by:meInit(),at:T,s:'6 KB'});
-    sbPush('np_demo_documents',{cid:ref,n:name,cat:'From template',uploaded_by:meInit(),doc_date:T,size:'6 KB'});
-    const label=kind==='client'?(client(ref)?client(ref).uci:ref):(staff(ref)?('Staff file — '+staff(ref).init):ref);
-    logAudit('Generated document from template',`${name} · ${label}`);
-    notifyRule('doc','Document filed',`${name} · ${label}`);
-    toast(kind==='client'?'Filed to the client folder.':'Filed to '+(staff(ref)?staff(ref).name:'the staff member')+"'s file.");
+  const cid=el('tgClient').value||'', bk=el('tgBinder').value||'', sid=(el('tgStaff')&&el('tgStaff').value)||'';
+  if(!cid&&!bk&&!sid) return toast('Pick a client file, a binder or a staff file.');
+  const name=((el('tgName').value||'').trim()||t.name)+'.pdf';
+  FILLED[name]={tid,vals:tplVals(t),by:auditActor(),at:nowStamp()}; filledSave();
+  const dests=[];
+  if(cid){
+    DOCS.unshift({id:'doc'+Date.now(),cid,n:name,cat:'From template',by:meInit(),at:T,s:'6 KB'});
+    sbPush('np_demo_documents',{cid,n:name,cat:'From template',uploaded_by:meInit(),doc_date:T,size:'6 KB'});
+    dests.push((client(cid)||{}).uci||'the client file');
   }
+  if(bk){
+    (COMPLETED[bk]=COMPLETED[bk]||[]).unshift({n:name,sub:`Completed from template · ${meInit()} · ${fmtDate(T)}`,at:T});
+    if(!cid) sbPush('np_demo_documents',{cid:null,n:name,cat:'Completed — '+bk,uploaded_by:meInit(),doc_date:T,size:'6 KB'});
+    if(cid){ DOCTAG[name]={b:bk,sb:''}; doctagSave(); }
+    dests.push('the '+(FOLDER_NAMES[bk]||bk)+' binder');
+  }
+  if(sid){
+    DOCS.unshift({id:'docst'+Date.now(),cid:null,n:name,cat:'Staff — '+(staff(sid)||{}).name,by:meInit(),at:T,s:'6 KB'});
+    sbPush('np_demo_documents',{cid:null,n:name,cat:'Staff — '+(staff(sid)||{}).name,uploaded_by:meInit(),doc_date:T,size:'6 KB'});
+    pingStaff(sid,'A completed document was filed to your staff file',name);
+    dests.push((staff(sid)||{}).name+"'s file");
+  }
+  logAudit('Completed document from template',`${name} → ${dests.join(' + ')}`);
+  notifyRule('doc','Document filed',`${name} · ${dests.join(' + ')}`);
   docAct('generated',name,'Templates');
-  closeAll(); render();
+  closeAll(); render(); toast('Filed to '+dests.join(' and ')+'.');
 }
 function tplOpenDoc(tid){
   const t=tplById(tid); if(!t) return;
@@ -9092,6 +9642,40 @@ function saveTplAssign(tid){
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
+/* ── v9.28: per-user layer ─────────────────────────────────────────────
+   USERS maps a signed-in email to a person in the workspace (their staff
+   row + role). USER_SET holds each person's own settings — preferences,
+   timezone, idle sign-out, reminder prefs — so teammates stop overwriting
+   each other. Both live in np_demo_program and sync across devices. */
+let USERS={};                                                        // email -> {sid, role, name}
+let USER_SET={};                                                     // email -> {prefs, tz, idle, notifprefs}
+function userKey(){ return ((AUTH.email||ONB.email||'').toLowerCase())||('role:'+state.role); }
+function usersSave(){ sbUpsert('np_demo_program',{key:'users',value:{map:USERS},updated_by:auditActor()}); }
+function userSetSave(patch){
+  const k=userKey();
+  USER_SET[k]=Object.assign({},USER_SET[k]||{},patch);
+  sbUpsert('np_demo_program',{key:'usersettings',value:{map:USER_SET},updated_by:auditActor()});
+}
+function applyUserSettings(){
+  const m=USER_SET[userKey()]; if(!m) return;
+  if(m.prefs) PREFS=Object.assign({},PREFS,m.prefs);
+  if(m.tz) lsSet('np_tz',m.tz);
+  if(m.idle!=null){ IDLE_MIN=+m.idle||0; lsSet('np_idle_min',String(IDLE_MIN)); }
+  if(m.notifprefs) Object.assign(NOTIF_PREFS,m.notifprefs);
+  if(m.tourSeen) state.tourSeen=Object.assign({},state.tourSeen,m.tourSeen);
+}
+function bindIdentity(role){
+  const b=USERS[(AUTH.email||ONB.email||'').toLowerCase()];
+  if(role==='staff'&&b&&b.sid&&staff(b.sid)){
+    const st=staff(b.sid);
+    ME.staff={name:st.name, init:(st.init||'').replace(/\./g,'').slice(0,2)||st.name.slice(0,2).toUpperCase(),
+      role:(st.role||'Direct Support Professional')+(st.home?' · '+st.home:''), label:'Staff view'};
+  }
+  applyUserSettings(); idleReset();
+  if(el('app').classList.contains('on')){
+    const m=ME[role]; el('suName').textContent=m.name; el('suRole').textContent=m.role; el('suAv').textContent=m.init;
+  }
+}
 function loadAuth(){
   try{ const r=lsGet('np_auth'); if(r) AUTH=Object.assign(AUTH,JSON.parse(r)||{}); }catch(e){}
   return AUTH;
@@ -9243,11 +9827,32 @@ function showLoginPage(){
 }
 async function finishRegister(){
   const em=(el('liEmail').value||'').trim(), pw=(el('liPw').value||'');
-  const roleTxt=((el('regRole')&&el('regRole').value)||'').trim();
-  const role=/\b(staff|dsp|support professional|aide|caregiver|nurse)\b/i.test(roleTxt)?'staff':'director';
+  const inv=window._joinInvite;
+  const roleTxt=inv?(inv.role_title||'Staff'):(((el('regRole')&&el('regRole').value)||'').trim());
+  const role=inv?'staff':(/\b(staff|dsp|support professional|aide|caregiver|nurse)\b/i.test(roleTxt)?'staff':'director');
   const r=await authRegister(em,pw);                                // Supabase Auth when the backend is configured
   if(!r.ok) return toast(r.msg);
   try{ lsSet('np_reg_done','1'); lsSet('np_resume','1'); }catch(e){}
+  if(inv){                                                          // invited staff: the workspace already exists — no setup flow
+    ONB.org=inv.org||ONB.org; ONB.name=inv.name||''; ONB.role='staff'; ONB.roleTitle=inv.role_title||'';
+    ONB.email=AUTH.email||em; ONB.registeredAt=new Date().toISOString();
+    lsSet('np_onboarding',JSON.stringify(ONB));
+    USERS[(AUTH.email||em).toLowerCase()]={sid:inv.sid,role:'staff',name:inv.name||''};
+    usersSave();
+    if(sbOn()) fetch(`${BACKEND.url}/rest/v1/np_demo_invites?token=eq.${encodeURIComponent(inv.token)}`,{method:'PATCH',headers:sbH(),body:JSON.stringify({used_at:new Date().toISOString()})}).catch(()=>{});
+    profileSave(); accountTouch('signup');
+    logAudit('Staff joined from an invite',`${inv.name||em} · ${em}`);
+    window._joinInvite=null; window._regMode=false;
+    const rw2=el('regRoleWrap'); if(rw2) rw2.remove();
+    const rs2=el('regSwap'); if(rs2) rs2.remove();
+    el('login').style.display='none';
+    try{ history.replaceState(null,'',location.pathname); }catch(e){}
+    toast('Welcome aboard'+(inv.name?', '+String(inv.name).split(' ')[0]:'')+'.'+(/confirm/i.test(r.msg||'')?' Confirm your email when you get a minute — you\u2019ll need it to sign in next time.':''));
+    HYDRATING=sbHydrate();
+    await Promise.race([HYDRATING, new Promise(r2=>setTimeout(r2,4000))]);
+    signIn('staff');
+    return;
+  }
   ONB.email=ONB.email||AUTH.email; ONB.role=role; if(roleTxt) ONB.roleTitle=roleTxt;
   ONB.registeredAt=ONB.registeredAt||new Date().toISOString();
   orgEnsure();
@@ -9289,7 +9894,8 @@ async function doLogin(){
   await orgResolve(AUTH.email);
   HYDRATING=sbHydrate();
   await Promise.race([HYDRATING, new Promise(r2=>setTimeout(r2,4000))]);
-  signIn((ONB.role&&ME[ONB.role])?ONB.role:'director');
+  const b=USERS[(AUTH.email||'').toLowerCase()];
+  signIn(b&&ME[b.role]?b.role:((ONB.role&&ME[ONB.role])?ONB.role:'director'));
 }
 
 /* ══════════════ v6.3: RECENT DOCUMENT ACTIVITY ══════════════
@@ -9441,7 +10047,7 @@ function msgNotify(th,snippet){
 }
 function pingStaff(sid,title,body){
   const st=staff(sid); if(!st) return;
-  SYS_NOTIFS.unshift({t:title,s:`${st.init} · ${body}`,at:nowStamp(),k:'info'});      // in-portal: full detail
+  SYS_NOTIFS.unshift({t:title,s:`${st.init} · ${body}`,at:nowStamp(),k:'info',sid});   // in-portal: full detail, routed to that person
   sbPush('np_demo_notifications',{title,body:`${st.init} · ${body}`,kind:'info',for_staff:sid});
   extNotify('assignment',1,{staffInit:st.init});                                       // outbound: generic only
   renderNav();
@@ -9474,8 +10080,56 @@ function openStaffForm(sid){
     <div class="sec-note"><span>☑</span><div><b>Onboarding starts automatically</b>The full new-hire checklist is assigned the moment the profile is created — progress shows on their record and the Staff page.</div></div>`}
     <div class="sec-note"><span>🔒</span><div><b>Staff records only</b>Personal addresses and ID numbers stay out of the portal — those live in the paper personnel file.</div></div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>
-     ${st?`<button class="btn ghost" onclick="removeStaff('${st.id}')">Remove</button>`:''}
+     ${st?`<button class="btn ghost" onclick="closeAll();inviteStaff('${st.id}')">✉ Invite</button><button class="btn ghost" onclick="removeStaff('${st.id}')">Remove</button>`:''}
      <button class="btn navy" onclick="saveStaff(${st?"'"+st.id+"'":'null'})">${st?'Save changes':'Add staff member'}</button>`);
+}
+function inviteStaff(sid){
+  const st=staff(sid); if(!st) return;
+  openModal('Invite '+esc(st.name)+' to the portal',`
+    <div class="field"><label>Send to</label><input class="inp" id="ivEmail" type="email" value="${esc(st.email||'')}" placeholder="name@agency.org"></div>
+    <div class="tiny muted">They get a link to a registration page already set up as <b>${esc(st.name)}</b> — they choose a password and land straight in the staff view, with their own settings.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="inviteCreate('${sid}')">Create invite link</button>`);
+}
+function sendPortalEmail(to,subject,html){
+  if(!BACKEND.emailWebhook) return Promise.reject(new Error('no webhook'));
+  return fetch(BACKEND.emailWebhook,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({token:BACKEND.emailToken,to,subject,html})});
+}
+function inviteSendNow(sid,email,link){
+  const st=staff(sid); if(!st) return;
+  const org=(ONB.org&&ONB.org!=='Spectrum')?ONB.org:'the team';
+  const html=`<div style="font-family:sans-serif;font-size:14px;line-height:1.6;color:#222">
+    <h2 style="margin:0 0 10px">You\u2019re invited to the ${esc(org)} dashboard</h2>
+    <p>Hi ${esc(st.name.split(' ')[0])},</p>
+    <p>You\u2019ve been invited to the care portal as <b>${esc(st.name)}</b>${st.role?' · '+esc(st.role):''}. Create your account here:</p>
+    <p><a href="${esc(link)}" style="background:#152B47;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;display:inline-block">Create my account</a></p>
+    <p style="font-size:12px;color:#666">Or paste this link into your browser:<br>${esc(link)}</p>
+    <p style="font-size:12px;color:#666">The link signs you up in the staff view and works once.</p></div>`;
+  sendPortalEmail(email,'You\u2019re invited to the '+org+' dashboard',html)
+    .then(()=>{ logAudit('Emailed portal invite',`${st.name} · ${email}`); toast('Invite emailed to '+email+'.'); })
+    .catch(()=>toast('Could not reach the email service — use Copy link or Gmail instead.'));
+}
+function inviteCreate(sid){
+  const st=staff(sid); if(!st) return;
+  const email=(el('ivEmail').value||'').trim().toLowerCase();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Enter a valid email address.');
+  if(st.email!==email){ st.email=email; sbPatch('np_demo_staff',sid,{email}); }
+  const token='iv'+Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+  sbPush('np_demo_invites',{token,workspace:NP_WS,org:ONB.org||'',email,sid,name:st.name,role_title:st.role||'',invited_by:auditActor()});
+  const link=location.origin+location.pathname+'?join='+token;
+  logAudit('Invited staff to the portal',`${st.name} · ${email}`);
+  const su=encodeURIComponent('You\u2019re invited to the '+(ONB.org&&ONB.org!=='Spectrum'?ONB.org:'team')+' dashboard');
+  const bd=encodeURIComponent('Hi '+st.name.split(' ')[0]+',\n\nYou\u2019ve been invited to our dashboard portal. Create your account here:\n'+link+'\n\nThe link signs you up as '+st.name+' in the staff view. It works once.');
+  openModal('Invite link ready',`
+    <div class="field"><label>Registration link for ${esc(st.name)}</label><input class="inp" id="ivLink" value="${esc(link)}" readonly onclick="this.select()"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn navy sm" onclick="inviteSendNow('${sid}','${esc(email)}',el('ivLink').value)">✉ Email the invite now</button>
+      <button class="btn ghost sm" onclick="el('ivLink').select();document.execCommand('copy');toast('Link copied.')">⧉ Copy link</button>
+      <a class="btn ghost sm" style="text-decoration:none" target="_blank" rel="noopener" href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(email)}&su=${su}&body=${bd}">Gmail draft</a>
+      <a class="btn ghost sm" style="text-decoration:none" href="mailto:${encodeURIComponent(email)}?subject=${su}&body=${bd}">Mail app</a>
+    </div>
+    <div class="tiny muted" style="margin-top:10px">The link works once. If it goes astray, create a fresh one — used links can\u2019t be reused.</div>`,
+    `<button class="btn navy" onclick="closeAll()">Done</button>`);
 }
 function goalsSave(){
   const map={}; CLIENTS.forEach(c=>{ if(c.goals&&c.goals.length) map[c.id]=c.goals; });
@@ -9673,6 +10327,106 @@ function removeShift(idx){
   closeAll(); render(); toast('Shift removed.');
 }
 /* appointment categories — color + emoji, editable by the director, dashboard-only (never synced to Google) */
+/* ── v9.29: multi-calendar model ──────────────────────────────────────
+   Every appointment lives on one calendar: the company calendar (default),
+   the signed-in person's own calendar, or a contractor's calendar.
+   Contractors are a separate list of people who are not staff — they come
+   into existence from a booking. Which calendars show is a per-user choice. */
+let CONTRACTORS=[];                                                  // [{id,name,color}] — not staff, born from bookings
+const CAL_COLORS=['#B0602F','#3E7BC4','#C25276','#2F8FA5','#B08A2E','#8A62C9','#3E8E5A'];
+function contractorsSave(){ sbUpsert('np_demo_program',{key:'contractors',value:{list:CONTRACTORS},updated_by:auditActor()}); }
+let CAL_ACCESS={};                                                   // {calKey:{mode:'all'|'listed', sids:[...]}}
+function calAccessSave(){ sbUpsert('np_demo_program',{key:'calaccess',value:{map:CAL_ACCESS},updated_by:auditActor()}); }
+function canSeeCal(key){
+  if(state.role==='director') return true;
+  if(key==='personal') return true;
+  const a=CAL_ACCESS[key];
+  if(!a||a.mode!=='listed') return true;                             // open to everyone
+  if(state.role!=='staff') return false;                             // restricted calendars hide from the family view
+  return (a.sids||[]).includes(meSid());
+}
+function calDefs(){
+  return calDefsAll().filter(c=>canSeeCal(c.key));
+}
+function calDefsAll(){
+  return [
+    {key:'company', name:((ONB.org&&ONB.org!=='Spectrum')?ONB.org:'Company')+' calendar', color:'#2A5245'},
+    {key:'personal', name:'My calendar', color:'#7A5CC6'},
+    ...CONTRACTORS.map(ct=>({key:'ct:'+ct.id, name:ct.name, color:ct.color||'#B0602F'})),
+    ...((typeof GCAL!=='undefined'&&GCAL.connected)?[{key:'google', name:'Google Calendar', color:'#1A73E8'}]:[])
+  ];
+}
+function calDef(k){ return calDefsAll().find(c=>c.key===k)||calDefsAll()[0]; }
+function apptCalKey(a){ return a.gcal?'google':(a.cal||'company'); }
+function calMine(a){
+  const k=apptCalKey(a);
+  if(k==='personal'&&(a.owner||'')!==userKey()) return false;        // your personal calendar is yours alone
+  return canSeeCal(k);                                               // restricted calendars vanish everywhere, not just the calendar page
+}
+function calVisible(k){ const off=((USER_SET[userKey()]||{}).calsOff)||[]; return !off.includes(k); }
+function calShow(a){ return calMine(a)&&calVisible(apptCalKey(a)); }
+function calToggle(k){
+  const off=(((USER_SET[userKey()]||{}).calsOff)||[]).slice();
+  const i=off.indexOf(k); if(i>-1) off.splice(i,1); else off.push(k);
+  userSetSave({calsOff:off}); render();
+}
+function calOnly(k){ userSetSave({calsOff:calDefs().map(c=>c.key).filter(x=>x!==k)}); render(); }
+function calAll(){ userSetSave({calsOff:[]}); render(); }
+function apCalNew(sel){
+  if(sel.value!=='__newct__') return;
+  const n=prompt('Contractor name (e.g. Bright Path Therapy):');
+  if(!n||!n.trim()){ sel.value='company'; return; }
+  const id='ct'+Date.now();
+  const ct={id,name:n.trim(),color:CAL_COLORS[CONTRACTORS.length%CAL_COLORS.length]};
+  CONTRACTORS.push(ct); contractorsSave();
+  logAudit('Added contractor calendar',ct.name);
+  sel.insertAdjacentHTML('afterbegin',`<option value="ct:${id}">${esc(ct.name)}</option>`);
+  sel.value='ct:'+id;
+  toast('Contractor calendar created — color-coded on every view.');
+}
+function calSelect(id,cur){
+  return `<select class="inp" id="${id}" onchange="apCalNew(this)">
+    ${calDefs().filter(c=>c.key!=='google').map(c=>`<option value="${c.key}" ${c.key===(cur||'company')?'selected':''}>${esc(c.name)}</option>`).join('')}
+    <option value="__newct__">＋ New contractor calendar…</option>
+  </select>`;
+}
+function calDot(k,sz){ const c=calDef(k); return `<span title="${esc(c.name)}" style="display:inline-block;width:${sz||9}px;height:${sz||9}px;border-radius:50%;background:${c.color};flex:none"></span>`; }
+function calAccessForm(){
+  const shared=calDefsAll().filter(c=>c.key!=='personal');
+  window._caKeys={};
+  shared.forEach(c=>{ window._caKeys[c.key.replace(/[^A-Za-z0-9]/g,'_')]=c.key; });
+  const staffList=STAFF.filter(st=>!hid('staff',st.id));
+  openModal('Who sees each calendar',`
+    <div class="tiny muted" style="margin-bottom:10px">Everyone means all staff (and the family view where it applies). Only listed staff hides the calendar — and its appointments — from anyone not on the list. Directors always see everything; personal calendars stay private to their owner.</div>
+    ${shared.map(c=>{ const cid2=c.key.replace(/[^A-Za-z0-9]/g,'_'); const a=CAL_ACCESS[c.key]||{mode:'all',sids:[]};
+      return `<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="width:9px;height:9px;border-radius:50%;background:${c.color};display:inline-block"></span><b>${esc(c.name)}</b></div>
+      <label style="display:flex;gap:6px;align-items:center;font-size:13px;margin-bottom:3px"><input type="radio" name="ca_${cid2}" value="all" ${a.mode!=='listed'?'checked':''}> Everyone</label>
+      <label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="radio" name="ca_${cid2}" value="listed" ${a.mode==='listed'?'checked':''}> Only listed staff</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 0 22px">${staffList.map(st=>`<label style="display:inline-flex;gap:5px;align-items:center;font-size:12.5px"><input type="checkbox" data-ca="${cid2}" value="${st.id}" ${(a.sids||[]).includes(st.id)?'checked':''}> ${esc(st.name)}</label>`).join('')||'<span class="tiny muted">No staff yet</span>'}</div>
+      </div>`; }).join('')}`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="calAccessApply()">Save access</button>`);
+}
+function calAccessApply(){
+  Object.entries(window._caKeys||{}).forEach(([cid2,key])=>{
+    const mode=(document.querySelector(`input[name="ca_${cid2}"]:checked`)||{}).value||'all';
+    const sids=[...document.querySelectorAll(`input[data-ca="${cid2}"]:checked`)].map(x=>x.value);
+    CAL_ACCESS[key]={mode:mode==='listed'?'listed':'all',sids};
+  });
+  calAccessSave(); logAudit('Updated calendar access','');
+  closeAll(); render(); toast('Calendar access saved.');
+}
+function manageContractors(){
+  listManage('Contractor calendars',
+    ()=>CONTRACTORS.map(c=>c.name),
+    (o,n)=>{ const c=CONTRACTORS.find(x=>x.name===o); if(c){ c.name=n; contractorsSave(); logAudit('Renamed contractor calendar',o+' → '+n); render(); } },
+    (o)=>{ const c=CONTRACTORS.find(x=>x.name===o); if(!c) return;
+      APPTS.forEach(a=>{ if(a.cal==='ct:'+c.id){ a.cal='company'; sbPatch('np_demo_appointments',a.id,{cal:'company'}); } });
+      CONTRACTORS=CONTRACTORS.filter(x=>x.id!==c.id); contractorsSave();
+      logAudit('Removed contractor calendar',o); render(); },
+    'Contractors are people who are not staff — they come from bookings. Removing one moves their appointments back to the company calendar.',
+    (n)=>{ const id='ct'+Date.now(); CONTRACTORS.push({id,name:n,color:CAL_COLORS[CONTRACTORS.length%CAL_COLORS.length]}); contractorsSave(); logAudit('Added contractor calendar',n); render(); });
+}
 let APPT_CATS={
   'Dental':  {color:'#3E7BC4', emoji:'🦷'},
   'Medical': {color:'#D97B29', emoji:'🩺'},
@@ -9712,6 +10466,7 @@ let PILOT_SIGNED={};
 let PILOT_AGREED=null;                                              // the signature for the CURRENT role
 function pilotSync(){ PILOT_AGREED=PILOT_SIGNED[state.role]||null; }
 function pilotGate(){
+  if(DEMO_VIEW) return;                                              // the demo sandbox is never gated
   pilotSync();
   if(PILOT_AGREED||state.role==='family') return;
   window._gateLock=true;                                            // the agreement cannot be dismissed
@@ -10057,14 +10812,20 @@ function askSeed(){
   askSugFill();
 }
 function askSugFill(){
-  // questions that name a sample client make no sense once the workspace is cleared
+  // starter questions always point at a client that actually exists in this workspace, by UCI
   const uciRe=/[A-Z]-\d{6}/;
-  const list=(ASK_SUG[state.role]||[]).filter(q=>{
-    if(!state.hideSample) return true;
+  const cl=visibleClients();
+  const seeded=c=>/^c\d{1,3}$/.test(String(c.id));                 // sample rows have short seed ids
+  const real=cl.filter(c=>!seeded(c));
+  const target=real[0]||(!state.hideSample?cl[0]:null);            // with sample data hidden, only real clients qualify
+  const list=(ASK_SUG[state.role]||[]).map(q=>{
     const m=String(q).match(uciRe);
-    if(!m) return true;
-    return visibleClients().some(c=>c.uci===m[0]);
-  });
+    if(!m) return q;
+    const owner=cl.find(c=>c.uci===m[0]);
+    if(owner&&!seeded(owner)) return q;                            // already points at a real client
+    if(owner&&seeded(owner)&&!state.hideSample&&!real.length) return q;  // sample mode with nothing real yet
+    return target?String(q).replace(uciRe,target.uci):null;        // retarget to a real client, or drop the chip
+  }).filter(Boolean);
   el('askSug').innerHTML=`<button style="border-color:#DCCEF9;background:var(--ai-soft);color:var(--ai);font-weight:700" onclick="askTour()">✦ Show me around</button>`+
     list.map(s=>`<button onclick="askSend('${s.replace(/'/g,"\\'")}')">${s}</button>`).join('');
 }
@@ -10368,7 +11129,7 @@ const TOURS={
     {sel:'.ask-fab', t:'Questions any time', p:'Ask about medications or the next appointment and get an answer from his actual record. For anything else, Messages reaches the care team.'}]
 };
 let tourI=0;
-function tourStart(){ state.tourSeen[state.role]=1; tourI=0; go('home'); tourShow(); }
+function tourStart(){ state.tourSeen[state.role]=1; userSetSave({tourSeen:state.tourSeen}); tourI=0; go('home'); tourShow(); }
 function tourShow(){
   tourEnd(false);
   const steps=TOURS[state.role], s=steps[tourI];
@@ -10458,7 +11219,7 @@ function saveDose(){
 
 /* ══════════════ BOOT ══════════════ */
 function credRowFromDb(r){
-  if(!r.expires_on) return {c:r.cred_name, d:r.label||'—', s:r.status||'ok'};
+  if(!r.expires_on) return {dbId:r.id, doc:r.doc||null, c:r.cred_name, d:r.label||'—', s:r.status||'ok'};
   const d=new Date(r.expires_on+'T12:00:00'), days=Math.round((d-TODAY)/86400000);
   if(days<0)   return {c:r.cred_name, d:'Expired '+d.toLocaleDateString(undefined,{month:'short',day:'numeric'}), s:'bad'};
   if(days<=90) return {c:r.cred_name, d:d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' — '+days+' days', s:'warn'};
@@ -10503,7 +11264,7 @@ async function sbHydrate(){
   });
   dbStaff.forEach(r=>{
     const ex=STAFF.find(x=>x.id===r.id);
-    const rec={id:r.id,name:r.name,init:r.init,role:r.role||'Direct Support Professional',home:r.home||'',hired:r.hired||'',email:r.email||''};
+    const rec={id:r.id,name:r.name,init:r.init,role:r.role||'Direct Support Professional',home:r.home||'',hired:r.hired||'',email:r.email||'',color:r.color||undefined,photo:r.photo||undefined};
     if(ex) Object.assign(ex,rec); else { STAFF.push(Object.assign({trainings:{},hrs:0},rec)); CREDS[r.id]=CREDS[r.id]||[]; }
   });
   dbShifts.forEach(r=>{
@@ -10571,7 +11332,20 @@ async function sbHydrate(){
       if(r.key==='binders'&&r.value){
         if(r.value.names&&typeof r.value.names==='object') Object.assign(FOLDER_NAMES,r.value.names);
         if(Array.isArray(r.value.items)){ CUSTOM_BINDERS=r.value.items; CUSTOM_BINDERS.forEach(b=>FOLDER_NAMES[b.key]=b.name); }
+        if(Array.isArray(r.value.hidden)) BINDER_HIDDEN=r.value.hidden;
+        if(Array.isArray(r.value.order)) BINDER_ORDER=r.value.order;
       }
+      if(r.key==='doctags'&&r.value&&r.value.map){ DOCTAG=r.value.map; }
+      if(r.key==='apptextras'&&r.value&&r.value.map){ window._APPT_EXTRAS=r.value.map; }
+      if(r.key==='increports'&&r.value&&r.value.map){ INC_REPORT=r.value.map; }
+      if(r.key==='users'&&r.value&&r.value.map){ USERS=r.value.map; }
+      if(r.key==='contractors'&&r.value&&Array.isArray(r.value.list)){ CONTRACTORS=r.value.list; }
+      if(r.key==='calaccess'&&r.value&&r.value.map){ CAL_ACCESS=r.value.map; }
+      if(r.key==='doccats'&&r.value&&Array.isArray(r.value.list)&&r.value.list.length){ DOC_CATS=r.value.list; }
+      if(r.key==='usersettings'&&r.value&&r.value.map){ USER_SET=r.value.map; }
+      if(r.key==='incnotes'&&r.value&&r.value.map){ INC_NOTES=r.value.map; }
+      if(r.key==='myquals'&&r.value&&r.value.map){ Object.assign(MY_QUALS,r.value.map); }
+      if(r.key==='filleddocs'&&r.value&&r.value.map){ FILLED=r.value.map; }
       if(r.key==='chklib'&&r.value&&Array.isArray(r.value.groups)&&r.value.groups.length){ CHECKLIST=r.value.groups; }
       if(r.key==='notifrules'&&r.value&&r.value.rules){ Object.assign(NOTIF_RULES,r.value.rules); if(r.value.cadence) NOTIF_CADENCE=r.value.cadence; }
       if(r.key==='access'&&r.value&&r.value.map){ ACCESS=r.value.map; }
@@ -10657,19 +11431,20 @@ async function sbHydrate(){
     DOCS.push({id:r.id||('doc-'+r.cid+'-'+r.n),cid:r.cid,n:r.n,cat:r.cat||'Other',by:r.uploaded_by||r.by||'',at:r.doc_date||r.at||T,s:r.size||r.s||'',url:r.url||null,path:r.storage_path||null});
   });
   docs.forEach(r=>{
-    if(r.cat&&r.cat.startsWith('Completed — ')){ const k=r.cat.slice(12); if(!(COMPLETED[k]||[]).some(x=>x.n===r.n)) (COMPLETED[k]=COMPLETED[k]||[]).push({n:r.n, sub:'Completed form · '+(r.uploaded_by||'')+' · '+fmtDate(r.doc_date)}); } });
+    if(r.cat&&r.cat.startsWith('Completed — ')){ const nb=normBinder(r.cat.slice(12), r.sub_binder||''); const k=nb.b; if(!(COMPLETED[k]||[]).some(x=>x.n===r.n)) (COMPLETED[k]=COMPLETED[k]||[]).push({n:r.n, sub:'Completed form · '+(r.uploaded_by||'')+' · '+fmtDate(r.doc_date), sb:nb.sb, at:r.doc_date||T}); } });
   if(tasks.length){ TASKS.length=0; tasks.forEach(r=>TASKS.push({id:r.id,title:r.title,sid:r.sid,cid:r.cid,due:r.due,stage:r.stage,pri:r.pri,cat:r.category||'',notes:r.notes||[],signoff:r.signoff||null,subs:r.subs||[]})); }
-  if(inc.length){ INCIDENTS.length=0; inc.forEach(r=>INCIDENTS.push({id:r.id,cid:r.cid,type:r.type,date:r.inc_date,time:r.inc_time,sev:r.sev,status:r.status,by:r.reported_by,summary:r.summary,notified:r.notified||[],recips:r.recips||[],hoursLeft:r.hours_left})); }
+  if(inc.length){ INCIDENTS.length=0; inc.forEach(r=>INCIDENTS.push({id:r.id,cid:r.cid,type:r.type,date:r.inc_date,time:r.inc_time,sev:r.sev,status:r.status,by:r.reported_by,summary:r.summary,notified:r.notified||[],recips:r.recips||[],hoursLeft:r.hours_left,protoAck:r.proto_ack||[]})); }
   if(fd.length){ FIREDRILLS.length=0; fd.forEach(r=>FIREDRILLS.push({date:r.drill_date,time:r.drill_time,home:r.home,shift:r.shift,evac:r.evac,by:r.conducted_by,wet:r.wet})); }
   if(wt.length){ WATERTEMP.length=0; wt.forEach(r=>WATERTEMP.push({date:r.reading_date,home:r.home,temp:r.temp,by:r.recorded_by,wet:r.wet})); }
   logs.forEach(r=>{ if(!LOGS.some(l=>l.mid===r.mid&&l.date===r.log_date&&l.time===r.log_time)) LOGS.unshift({id:r.id,cid:r.cid,mid:r.mid,date:r.log_date,time:r.log_time,status:r.status,by:r.recorded_by,sig:r.sig}); });
   docs.forEach(r=>{
-    if(r.storage_path&&!r.path) r.path=r.storage_path; if(!DOCS.some(d=>d.cid===r.cid&&d.n===r.n)) DOCS.unshift({cid:r.cid,n:r.n,cat:r.cat,by:r.uploaded_by,at:r.doc_date,s:r.size}); });
+    if(r.storage_path&&!r.path) r.path=r.storage_path; if(!DOCS.some(d=>d.cid===r.cid&&d.n===r.n)) DOCS.unshift({id:r.id||('doc-'+(r.cid||'x')+'-'+r.n),cid:r.cid,n:r.n,cat:r.cat,by:r.uploaded_by,at:r.doc_date,s:r.size,url:r.url||null,path:r.storage_path||null,note:r.note||''}); });
   if(creds.length){ Object.keys(CREDS).forEach(k=>delete CREDS[k]); creds.forEach(r=>{ (CREDS[r.sid]=CREDS[r.sid]||[]).push(credRowFromDb(r)); }); }
   if(tpls.length){ tpls.forEach(r=>{ const t=TEMPLATES5.find(x=>x.id===r.id); if(t){ t.name=r.name; t.fields=r.fields||t.fields; } }); }
   SYS_NOTIFS=notifs.map(r=>({t:r.title,s:r.body,_seed:0,at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),k:r.kind||'info'}));
   if(cnotes.length){ CLIENT_NOTES={}; cnotes.forEach(r=>{ (CLIENT_NOTES[r.cid]=CLIENT_NOTES[r.cid]||[]).push({text:r.note,by:r.noted_by,at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}); }); }
-  if(appts.length){ APPTS.length=0; appts.forEach(r=>APPTS.push({id:r.id,cid:r.cid,title:r.title,type:r.type,date:r.appt_date,time:r.appt_time,dur:r.dur,provider:r.provider||'',loc:r.loc||'',flag:r.flag||'',ride:r.ride||'',cancelled:r.cancelled||0,cxBy:r.cx_by||'',gid:r.gcal_id||null,notes:[],files:[]})); }
+  if(appts.length){ APPTS.length=0; appts.forEach(r=>APPTS.push({id:r.id,cid:r.cid,title:r.title,type:r.type,date:r.appt_date,time:r.appt_time,dur:r.dur,provider:r.provider||'',loc:r.loc||'',flag:r.flag||'',ride:r.ride||'',cancelled:r.cancelled||0,cxBy:r.cx_by||'',gid:r.gcal_id||null,cal:r.cal||'company',owner:r.owner||'',notes:[],files:[]})); }
+  if(window._APPT_EXTRAS){ APPTS.forEach(a=>{ const x=window._APPT_EXTRAS[a.id]; if(x){ a.notes=x.notes||a.notes||[]; a.files=x.files||a.files||[]; } }); }
   applyDeletions();
   if(el('app').classList.contains('on')){ renderNav(); render(); }
   HYDRATED=true; HYDRATE_OK=!(NET_BLOCKED||SB_DOWN);
