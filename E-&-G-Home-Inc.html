@@ -1663,7 +1663,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · v9.38 beta</span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · v9.39 beta</span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -2640,14 +2640,14 @@ const AUDIT = [
 /* ══════════════ STATE ══════════════ */
 const NAV = {
   director:[
-    {g:'Today'},   {id:'home',t:'Home',i:'⌂'}, {id:'tasks',t:'Tasks',i:'☑'}, {id:'calendar',t:'Calendar',i:'▤'},
-    {g:'Care'},    {id:'clients',t:'Clients',i:'☺'}, {id:'team',t:'Staff',i:'⚇'}, {id:'trainhub',t:'Training & onboarding',i:'🎓'}, {id:'safety',t:'Safety log',i:'▣'},
-    {g:'Records'}, {id:'templates',t:'Documents',i:'◫'}, {id:'forms',t:'Templates',i:'❏'}, {id:'compliance',t:'Reports',i:'▦'},
-    {g:'Setup'},   {id:'directory',t:'Directory',i:'☎'}, {id:'changelog',t:'Change log',i:'≡'}
+    {g:'Today'},   {id:'home',t:'Home',i:'🏠'}, {id:'tasks',t:'Tasks',i:'✅'}, {id:'calendar',t:'Calendar',i:'📅'},
+    {g:'Care'},    {id:'clients',t:'Clients',i:'😊'}, {id:'team',t:'Staff',i:'🤝'}, {id:'trainhub',t:'Training & onboarding',i:'🎓'}, {id:'safety',t:'Safety log',i:'🛡️'},
+    {g:'Records'}, {id:'templates',t:'Documents',i:'📁'}, {id:'forms',t:'Templates',i:'📑'}, {id:'compliance',t:'Reports',i:'📊'},
+    {g:'Setup'},   {id:'directory',t:'Directory',i:'📇'}, {id:'changelog',t:'Change log',i:'🕘'}
   ],
   staff:[
-    {g:'Today'},   {id:'home',t:'My shift',i:'⌂'}, {id:'tasks',t:'My tasks',i:'☑'}, {id:'calendar',t:'Calendar',i:'▤'},
-    {g:'Care'},    {id:'clients',t:'Clients',i:'☺'}, {id:'safety',t:'Safety log',i:'▣'}
+    {g:'Today'},   {id:'home',t:'My shift',i:'🏠'}, {id:'tasks',t:'My tasks',i:'✅'}, {id:'calendar',t:'Calendar',i:'📅'},
+    {g:'Care'},    {id:'clients',t:'Clients',i:'😊'}, {id:'safety',t:'Safety log',i:'🛡️'}
   ],
   family:[
     {g:'Client J-402318'},
@@ -3442,7 +3442,7 @@ function render(){
    Everything is stored under the signed-in account in 'usersettings', so
    the layout is tied to credentials and comes back on every login, on any
    device. Nobody else's view changes. */
-const LAYOUT_PAGES={home:1,clients:1,team:1};
+const LAYOUT_PAGES={home:1,clients:1,team:1,safety:1};
 function layPage(){
   if(state.client) return ((state.tab||'overview')==='overview')?'client':null;
   return LAYOUT_PAGES[state.view]?state.view:null;
@@ -3807,7 +3807,7 @@ function tlCard(full){
   return `
   <section class="rail-card">
     <div class="rail-head">
-      <h2>${state.role==='family'?"J-402318's day":full?'The floor':'The floor right now'}</h2>
+      <h2>${state.role==='family'?"J-402318's day":full?'The floor':''}</h2>
       ${full?`
         <button class="btn ghost sm" onclick="tlNav(-1)" title="Previous day">‹</button>
         <span class="pill ${D===T?'gold':'neutral'}" style="min-width:150px;justify-content:center">${relDay(D)} · ${fmtDate(D)}</span>
@@ -3823,9 +3823,7 @@ function tlCard(full){
             <button class="${tlState.kind==='appts'?'active':''}" onclick="tlState.kind='appts';tlfRefresh()">Appointments</button>
           </div>
         </div>`
-      :`<span class="pill neutral">${fmtLong(T)}</span>
-      <div class="now"><i></i>${hm12(nowHM())}</div>
-      <button class="btn ghost sm" onclick="tlExpand()" title="Expand timeline">⛶ Expand</button>`}
+      :`<button class="btn ghost sm" onclick="tlExpand()" title="Expand timeline">⛶ Expand</button>`}
     </div>
     ${body}
     <div class="rail-legend">
@@ -3853,22 +3851,22 @@ function attentionItems(){
   const out=[];
   const cl = visibleClients().map(c=>c.id);
   INCIDENTS.filter(i=>i.status!=='Closed'&&cl.includes(i.cid)&&client(i.cid)&&(!state.hideSample||!i._seed)).forEach(i=>out.push({k:'bad',ic:'⚠',t:`Incident follow-up open — ${(client(i.cid)||{}).uci||''}`,s:`${i.type} on ${relDay(i.date)} · reported by ${i.by}`,a:'Open report',go:()=>openClient(i.cid,'incidents')}));
-  APPTS.filter(a=>calMine(a)&&a.flag&&a.date>=T&&cl.includes(a.cid)&&client(a.cid)&&(!state.hideSample||!a._seed)).forEach(a=>out.push({k:'warn',ic:'▤',t:esc(a.flag),s:`${(client(a.cid)||{}).uci||''} · ${a.title} · ${relDay(a.date)} ${hm12(a.time)}`,a:'Open appointment',go:()=>openAppt(a.id)}));
+  APPTS.filter(a=>calMine(a)&&a.flag&&a.date>=T&&cl.includes(a.cid)&&client(a.cid)&&(!state.hideSample||!a._seed)).forEach(a=>out.push({k:'warn',ic:catOf(a.type).emoji||'▤',t:esc(a.flag),s:`${(client(a.cid)||{}).uci||''} · ${a.title} · ${relDay(a.date)} ${hm12(a.time)}`,a:'Open appointment',go:()=>openAppt(a.id)}));
   if(state.role!=='family'){
-    TASKS.filter(t=>t.stage==='Overdue'&&staff(t.sid)&&(!state.hideSample||!t._seed)).forEach(t=>out.push({k:'bad',ic:'☑',t:`Overdue task — ${t.title}`,s:`Assigned to ${(staff(t.sid)||{}).init||''} · due ${relDay(t.due)}`,a:'Open task',go:()=>openTask(t.id)}));
+    TASKS.filter(t=>t.stage==='Overdue'&&staff(t.sid)&&(!state.hideSample||!t._seed)).forEach(t=>out.push({k:'bad',ic:'📋',t:`Overdue task — ${t.title}`,s:`Assigned to ${(staff(t.sid)||{}).init||''} · due ${relDay(t.due)}`,a:'Open task',go:()=>openTask(t.id)}));
     APPTS.filter(a=>a.date===T&&a.ride===''&&client(a.cid)&&calMine(a)&&(!state.hideSample||!a._seed)).forEach(a=>out.push({k:'warn',ic:'🚐',t:`No ride arranged — ${a.title}`,s:`${(client(a.cid)||{}).uci||''} · today at ${hm12(a.time)} · ${a.loc}`,a:'Open appointment',go:()=>openAppt(a.id)}));
     if(state.role==='staff'){
-      trainPending(meSid()).t.forEach(t=>out.push({k:'info',ic:'◉',t:`Training due — ${t.n}`,s:`${t.mins} minutes${t.due?' · due '+t.due:''}`,a:'Start course',go:()=>go('training')}));
+      trainPending(meSid()).t.forEach(t=>out.push({k:'info',ic:'🎓',t:`Training due — ${t.n}`,s:`${t.mins} minutes${t.due?' · due '+t.due:''}`,a:'Start course',go:()=>go('training')}));
     }
     if(state.role==='director'){
       const g=ATTEND.filter(x=>x.gap&&client(x.cid)&&(!state.hideSample||!x._seed));
-      if(g.length) out.push({k:'warn',ic:'▦',t:`${g.length} service unit claim${g.length>1?'s':''} blocked`,s:g.map(x=>`${(client(x.cid)||{}).name||''} — ${x.gap}`).join(' · '),a:'Open billing',go:()=>go('billing')});
-      Object.entries(CREDS).forEach(([sid,cs])=>{ if(!staff(sid)||hid('staff',sid)) return; cs.filter(c=>c.s==='bad').forEach(c=>out.push({k:'bad',ic:'◉',t:`${(staff(sid)||{}).init||''} — ${c.c} ${c.d.toLowerCase()}`,s:'Cannot count toward required staffing until renewed',a:'Open team',go:()=>go('team')})); });
+      if(g.length) out.push({k:'warn',ic:'💳',t:`${g.length} service unit claim${g.length>1?'s':''} blocked`,s:g.map(x=>`${(client(x.cid)||{}).name||''} — ${x.gap}`).join(' · '),a:'Open billing',go:()=>go('billing')});
+      Object.entries(CREDS).forEach(([sid,cs])=>{ if(!staff(sid)||hid('staff',sid)) return; cs.filter(c=>c.s==='bad').forEach(c=>out.push({k:'bad',ic:'🪪',t:`${(staff(sid)||{}).init||''} — ${c.c} ${c.d.toLowerCase()}`,s:'Cannot count toward required staffing until renewed',a:'Open team',go:()=>go('team')})); });
     }
     const gaps=TRAINING.filter(t=>t.req&&!hid('course',t.id)).map(tr=>({n:tr.n,m:visibleStaff().filter(s=>!tr.done.includes(s.id))})).filter(g=>g.m.length);
     if(gaps.length && state.role==='director'){
       const people=[...new Set(gaps.flatMap(g=>g.m.map(m=>m.init)))];
-      out.push({k:'info',ic:'◉',t:`${people.length} staff behind on required training`,
+      out.push({k:'info',ic:'🎓',t:`${people.length} staff behind on required training`,
         s:gaps.map(g=>`${g.n} (${g.m.map(m=>m.init).join(', ')})`).join(' · '),a:'Open team',go:()=>go('team')});
     }
   }
@@ -3916,7 +3914,6 @@ function viewHome(){
     const od=TASKS.filter(t=>t.stage==='Overdue'||(t.stage!=='Done'&&t.due<T)).length;
     stats=[
       {lb:'Open tasks',vl:myTasks().filter(t=>t.stage!=='Done').length,ft:od?od+' overdue':'None overdue',c:od?'warn':'ok',go:"go('tasks')"},
-      {lb:'Clients in service',vl:visibleClients().length,ft:(()=>{const n=new Set(visibleClients().map(c=>c.home).filter(Boolean)).size;return n?`Across ${n} home${n===1?'':'s'}`:'No homes yet';})(),c:'',go:"go('clients')"},
       {lb:'Staff on shift now',vl:visShifts().filter(s=>s.start<=nowHM()&&s.end>=nowHM()).length,ft:`${visShifts().length} scheduled today`,c:'',go:"go('team')"},
       {lb:'Open incidents',vl:visIncidents().filter(i=>i.status!=='Closed').length,ft:visIncidents().filter(i=>i.status!=='Closed').length?'Follow-up required':'None open',c:visIncidents().filter(i=>i.status!=='Closed').length?'bad':'ok',go:"openIncidentsList()"}
     ];
@@ -3950,7 +3947,8 @@ function viewHome(){
   <section class="hero">
     <div style="display:flex;gap:14px;align-items:flex-start">
       <div style="flex:1;min-width:0">
-        <div class="eyebrow">${fmtLong(T)}</div>
+        <div class="eyebrow" style="font-size:22px;font-weight:800;letter-spacing:.01em;color:var(--navy);text-transform:none;display:flex;gap:14px;align-items:baseline;flex-wrap:wrap">
+          <span>${fmtLong(T)}</span><span style="font-size:20px;font-weight:700;color:#2F7A5B" id="heroClock">${hm12(nowHM())}</span></div>
         <h1>${greeting()}, ${esc(m.name.split(' ')[0])}.</h1>
         <p class="hsub">${homeSub(attn.length)}</p>
       </div>
@@ -4002,11 +4000,11 @@ function viewHome(){
       ${state.role!=='family'? `
       <section class="card">
         <div class="card-h acc-green"><h2>Who's working today</h2><div class="right">
-          ${state.role==='director'?`<button class="btn ghost sm" onclick="openShiftForm()">＋ Shift</button><button class="btn ghost sm" onclick="go('stafffiles')">Manage staff</button>`:'<span class="pill neutral">Initials only</span>'}</div></div>
+          ${state.role==='director'?`<button class="btn ghost sm" onclick="openShiftForm()">＋ Shift</button><button class="btn ghost sm" title="Home colors" onclick="homeColorForm()">🎨</button><button class="btn ghost sm" onclick="go('stafffiles')">Manage staff</button>`:'<span class="pill neutral">Initials only</span>'}</div></div>
         <div class="card-b flush">
           <table class="tb"><tbody>${visShifts().map(s=>{
             const on = s.start<=nowHM()&&s.end>=nowHM();
-            return `<tr><td><div class="tb-name"><span class="av-sm ${on?'gr':''}">${staff(s.sid).init.replace(/\./g,'')}</span><div><div>${staff(s.sid).init}</div><div class="tiny muted">${esc(s.home)}</div></div></div></td>
+            return `<tr style="box-shadow:inset 3px 0 0 ${homeColor(s.home)}"><td><div class="tb-name">${stAv(staff(s.sid),on?'gr':'')}<div><div>${staff(s.sid).init}</div><div class="tiny muted" style="display:flex;align-items:center;gap:5px">${homeDot(s.home,7)}${esc(s.home)}</div></div></div></td>
             <td style="text-align:right"><div>${hm12(s.start)} – ${hm12(s.end)}</div>${on?'<span class="pill ok"><i></i>On shift</span>':'<span class="tiny muted">Scheduled</span>'}</td></tr>`;
           }).join('')}</tbody></table>
         </div>
@@ -4080,7 +4078,7 @@ function trainCard(sid){
 function homeSub(n){
   if(state.role==='family') return 'Everything logged for J-402318 in the last 24 hours, updated as staff record it.';
   if(!n) return 'Nothing needs you right now. The floor is running clean.';
-  return `${n} thing${n>1?'s':''} need${n>1?'':'s'} a look before you get into the rest of the day.`;
+  return `${n} item${n>1?'s':''} for your attention.`;
 }
 function nextPassLabel(){
   const times=[...new Set(MEDS.filter(m=>m.status==='active'&&!m.times.includes('PRN')).flatMap(m=>m.times))].sort();
@@ -4260,13 +4258,13 @@ function clientOverview(c){
         <div class="card-b"><p style="margin:0;font-size:13.4px;color:#4A4F60;line-height:1.6">${esc(c.support||'No support profile written yet — add what staff should know.')}</p></div>
       </section>
       <section class="card">
-        <div class="card-h"><h2>IPP goals</h2><div class="right">${state.role!=='family'?`<button class="btn ghost sm" onclick="goalForm('${c.id}')">＋ Add goal</button>`:''}</div></div>
+        <div class="card-h"><h2>IPP goals & notes</h2><div class="right">${state.role!=='family'?`<button class="btn ghost sm" onclick="goalForm('${c.id}')">＋ Add goal</button>`:''}</div></div>
         <div class="card-b">
           ${(c.goals||[]).map((g,gi)=>`<div style="margin-bottom:13px">
             <div style="display:flex;justify-content:space-between;gap:6px;margin-bottom:5px;align-items:center"><span style="font-size:13.2px;font-weight:600">${esc(g.g)}</span>
               <span style="display:flex;gap:2px;align-items:center;flex:none"><span class="tiny muted" style="margin-right:4px">${(g.notes||[]).length?(g.notes.length+' note'+(g.notes.length>1?'s':'')):'no notes yet'}</span>
               ${state.role!=='family'?`${gi>0?`<button class="btn ghost sm" style="padding:0 5px" onclick="goalMove('${c.id}',${gi},-1)">↑</button>`:''}${gi<(c.goals.length-1)?`<button class="btn ghost sm" style="padding:0 5px" onclick="goalMove('${c.id}',${gi},1)">↓</button>`:''}<button class="btn ghost sm" style="padding:0 5px" onclick="goalForm('${c.id}',${gi})">✎</button><button class="btn ghost sm" style="padding:0 5px" onclick="goalDel('${c.id}',${gi})">✕</button>`:''}</span></div>
-            <div class="bar"><i class="${g.p>=70?'g':g.p>=40?'':'w'}" style="width:${g.p}%"></i></div></div>`).join('')||'<div class="muted tiny">No goals recorded.</div>'}
+            ${(g.notes||[]).length?`<div class="tiny" style="color:#4A4F60;line-height:1.5">${esc(g.notes[0].t)} <span class="muted">· ${esc(g.notes[0].by)} · ${esc(g.notes[0].at)}</span></div>`:`<div class="tiny muted">No notes yet — ✎ to add one.</div>`}</div>`).join('')||'<div class="muted tiny">No goals recorded.</div>'}
           <div class="tiny muted" style="margin-top:4px">Progress notes against these goals are what the regional center audits.</div>
         </div>
       </section>
@@ -4714,7 +4712,7 @@ function viewTasks(){
     </select>`:''}
     <select class="inp" style="max-width:170px" onchange="state.taskStage=this.value;render()">
       <option value="" ${!state.taskStage?'selected':''}>Any stage</option>
-      ${['To do','In progress','Overdue'].map(st=>`<option ${state.taskStage===st?'selected':''}>${st}</option>`).join('')}
+      ${['To do','In progress','Overdue','Done'].map(st=>`<option ${state.taskStage===st?'selected':''}>${st}</option>`).join('')}
     </select>
     <select class="inp" style="max-width:190px" onchange="state.taskSort=this.value;render()">
       <option value="due" ${(state.taskSort||'due')==='due'?'selected':''}>Due date (soonest)</option>
@@ -4724,7 +4722,7 @@ function viewTasks(){
     </select>
   </div>
   <section class="card">
-    <div class="card-h"><h2>Open tasks (${taskFiltered(open).length})</h2><div class="right"><span class="pill neutral">Completed ${taskFiltered(done).length}</span></div></div>
+    <div class="card-h"><h2 style="display:flex;align-items:center;gap:8px">Open tasks <span class="badge" style="position:static">${taskFiltered(open).length}</span></h2></div>
     <div class="card-b flush"><table class="tb">
       <thead><tr><th></th><th>Task</th>${state.role==='director'?'<th>Assigned to</th>':''}<th>Client</th><th>Category</th><th>Due</th><th>Stage</th><th>Priority</th></tr></thead>
       <tbody>${taskFiltered(open).map(t=>`
@@ -4740,13 +4738,8 @@ function viewTasks(){
         </tr>`).join('')}</tbody></table></div>
   </section>
 
-  <section class="card">
-    <div class="card-h"><h2>Completed <span class="pill ok">${done.length}</span></h2></div>
-    <div class="card-b flush"><table class="tb"><tbody>${done.map(t=>`<tr class="click" onclick="openTask('${t.id}')"><td><span class="muted" style="text-decoration:line-through">${esc(t.title)}</span>
-    ${t.signoff?`<div class="tiny muted">Signed off by ${esc(t.signoff.by)} · ${esc(t.signoff.at)}</div>`:''}</td>
-    ${state.role==='director'?`<td>${staff(t.sid)?staff(t.sid).init:'—'}</td>`:''}
-    <td style="text-align:right"><span class="pill ok">Done</span></td></tr>`).join('')||'<tr><td class="empty">Nothing completed yet.</td></tr>'}</tbody></table></div>
-  </section>`;
+  ${state.taskStage==='Done'?`<section class="card"><div class="card-h"><h2 style="display:flex;align-items:center;gap:8px">Completed <span class="badge" style="position:static;background:#2F7A5B">${done.length}</span></h2></div>
+    <div class="card-b flush"><table class="tb"><tbody>${done.map(t=>`<tr class="click" onclick="openTask('${t.id}')"><td><span class="muted" style="text-decoration:line-through">${esc(t.title)}</span>${t.signoff?`<div class="tiny muted">Signed off by ${esc(t.signoff.by)} · ${esc(t.signoff.at)}</div>`:''}</td>${state.role==='director'?`<td>${staff(t.sid)?staff(t.sid).init:'—'}</td>`:''}<td style="text-align:right"><span class="pill ok">Done</span></td></tr>`).join('')||'<tr><td class="empty">Nothing completed yet.</td></tr>'}</tbody></table></div></section>`:''}`;
 }
 function filterStaffTasks(sid){
   const mine=TASKS.filter(t=>t.sid===sid);
@@ -4760,7 +4753,7 @@ function filterStaffTasks(sid){
     <section class="card"><div class="card-h"><h2>Open tasks <span class="pill info">${TASKS.filter(t=>t.sid===sid&&t.stage!=='Done').length}</span></h2><div class="sub">Click any task to open it</div>
       ${state.role==='director'?`<div class="right"><button class="btn navy sm" onclick="window._qtFrom='tasks';quickTaskFor('${sid}')">＋ Task</button></div>`:''}</div>
       <div class="card-b flush">${open.map(row).join('')||'<div class="empty">Nothing open right now.</div>'}</div></section>
-    ${done.length?`<section class="card"><div class="card-h"><h2>Completed (${done.length})</h2></div>
+    ${(done.length&&state.taskStage==='Done')?`<section class="card"><div class="card-h"><h2 style="display:flex;align-items:center;gap:8px">Completed <span class="badge" style="position:static;background:#2F7A5B">${done.length}</span></h2></div>
       <div class="card-b flush">${done.map(row).join('')}</div></section>`:''}`,
     `<button class="btn ghost" onclick="closeAll()">Close</button>
      ${state.role==='director'?`<button class="btn navy" onclick="closeAll();openStaffPage('${sid}')">Open full record →</button>`:''}`);
@@ -4976,7 +4969,7 @@ function viewTeam(){
       <tbody>${tblApply('staff',visibleStaff(),{name:x=>x.name,role:x=>x.role,home:x=>x.home,out:x=>trainingsOutstanding(x.id),open:x=>TASKS.filter(t=>t.sid===x.id&&t.stage!=='Done').length}).map(s=>{
         const out=trainingsOutstanding(s.id), open=TASKS.filter(t=>t.sid===s.id&&t.stage!=='Done').length;
         return `<tr class="click" onclick="openStaffPage('${s.id}')">
-        <td><div class="tb-name">${s.photo?`<img src="${s.photo}" class="av-sm" style="object-fit:cover;padding:0">`:`<span class="av-sm" style="${s.color?`background:${s.color};color:#fff`:''}">${s.init.replace(/\./g,'')}</span>`}<div><div>${esc(stName(s))}</div><div class="tiny muted">Since ${new Date(s.hired).getFullYear()}</div></div></div></td>
+        <td><div class="tb-name">${stAv(s)}<div><div>${esc(stName(s))}</div><div class="tiny muted">Since ${new Date(s.hired).getFullYear()}</div></div></div></td>
         <td class="muted">${esc(s.role)}</td><td>${esc(s.home)}</td>
         <td>${credCell(s.id)}</td>
         <td><span class="pill ${out?'warn':'ok'}" title="Required or assigned courses not yet completed">${out?out+' to do':'All done'}</span></td>
@@ -5305,6 +5298,20 @@ function staffPhotoPick(sid){
   };
   inp.click();
 }
+const STAFF_ICONS=['🌿','🌸','🌻','🍀','🌈','⭐','🔥','💧','🍎','🍋','🦋','🐝','🐢','🐬','🦊','🐻','🎈','🎨','🎵','📚','🧩','☕','🧭','🛡️'];
+function stAv(s,cls){
+  if(!s) return `<span class="av-sm ${cls||''}">—</span>`;
+  if(s.photo) return `<img src="${s.photo}" class="av-sm ${cls||''}" style="object-fit:cover;padding:0">`;
+  if(s.icon) return `<span class="av-sm ${cls||''}" style="font-size:16px;${s.color?`background:${s.color};`:''}">${s.icon}</span>`;
+  return `<span class="av-sm ${cls||''}" style="${s.color?`background:${s.color};color:#fff`:''}">${(s.init||'').replace(/\./g,'')}</span>`;
+}
+function staffIconSet(sid,ic){
+  const st=staff(sid); if(!st) return;
+  if(ic) st.icon=ic; else delete st.icon;
+  sbPatch('np_demo_staff',sid,{icon:ic||null});
+  logAudit(ic?'Set staff icon':'Removed staff icon',`${st.init}${ic?' · '+ic:''}`);
+  closeAll(); render(); toast(ic?'Icon saved — it shows on shifts and the staff page.':'Back to initials.');
+}
 function staffColorForm(sid){
   const st=staff(sid); if(!st) return;
   openModal('Avatar — '+esc(st.name),`
@@ -5312,6 +5319,9 @@ function staffColorForm(sid){
     <div class="field"><label>Or use a photo</label>
       <div style="display:flex;gap:10px;align-items:center">
         ${st.photo?`<img src="${st.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`:''}
+        <div style="width:100%"><label class="tiny muted" style="display:block;margin:6px 0 4px">Or pick an icon</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">${STAFF_ICONS.map(i=>`<button class="btn ghost sm" style="font-size:17px;padding:4px 8px;${st.icon===i?'border-color:var(--gold);background:var(--gold-soft)':''}" onclick="staffIconSet('${sid}','${i}')">${i}</button>`).join('')}
+          ${st.icon?`<button class="btn ghost sm" onclick="staffIconSet('${sid}','')">Use initials</button>`:''}</div></div>
         <button class="btn ghost sm" onclick="staffPhotoPick('${sid}')">${st.photo?'Change photo':'Upload photo'}</button>
         ${st.photo?`<button class="btn ghost sm" onclick="delete staff('${sid}').photo;sbPatch('np_demo_staff','${sid}',{photo:null});closeAll();render();toast('Photo removed.')">Remove</button>`:''}
       </div></div>`,
@@ -8526,7 +8536,7 @@ function openAppt(id){ if(String(id).startsWith('g_')){ return openGcalEvent(id)
     ${canEdit&&a.cancelled?`<div style="margin-bottom:14px"><button class="btn ghost sm" onclick="restoreAppt('${a.id}')">Restore appointment</button></div>`:''}
     <section class="card"><div class="card-h"><h2>Details</h2>
       ${canEdit?`<div class="right"><button class="btn ghost sm" onclick="editAppt('${a.id}')">✎ Edit details</button></div>`:''}</div><div class="card-b">
-      ${[['Client',(c||{}).uci||'—'],['Calendar',calDef(apptCalKey(a)).name],['Type',a.type],['Provider',a.provider],['Location',a.loc],['Duration',a.dur+' minutes'],['Date',fmtLong(a.date)+' at '+hm12(a.time)],...(a.ride!==undefined?[['Transport',a.ride||'Not arranged yet']]:[])]
+      ${[['Client',(c||{}).uci||'—'],['Calendar',calDef(apptCalKey(a)).name],['Visible to',(a.acl&&a.acl.mode==='listed')?((a.acl.sids||[]).map(x=>(staff(x)||{}).name).filter(Boolean).join(', ')||'Listed staff'):'Everyone on this calendar'],['Type',a.type],['Provider',a.provider],['Location',a.loc],['Duration',a.dur+' minutes'],['Date',fmtLong(a.date)+' at '+hm12(a.time)],...(a.ride!==undefined?[['Transport',a.ride||'Not arranged yet']]:[])]
         .map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)"><span class="muted tiny">${k}</span><b style="font-size:13.2px;text-align:right">${esc(v)}</b></div>`).join('')}
     </div></section>
 
@@ -8553,6 +8563,7 @@ function editAppt(id){
       <div class="field"><label>Type</label>${fillSelect('eaType','appointment type',Object.keys(APPT_CATS),a.type)}</div>
     </div>
     <div class="field"><label>Calendar</label>${calSelect('eaCal',apptCalKey(a))}</div>
+    ${state.role==='director'?aclField('ea',a.acl):''}
     <div class="row2">
       <div class="field"><label>Date</label><input class="inp" type="date" id="eaDate" value="${a.date}"></div>
       <div class="field"><label>Time</label><input class="inp" type="time" id="eaTime" value="${a.time}"></div>
@@ -8576,7 +8587,8 @@ function saveApptEdit(id){
   a.ride=(el('eaRide').value||'').trim();
   const _c=(el('eaCal')&&el('eaCal').value!=='__newct__'&&el('eaCal').value)||a.cal||'company';
   a.cal=_c; if(_c==='personal'&&!a.owner) a.owner=userKey(); if(_c!=='personal') a.owner='';
-  sbPatch('np_demo_appointments',id,{title:a.title,cid:a.cid,type:a.type,date:a.date,time:a.time,dur:a.dur,provider:a.provider,loc:a.loc,ride:a.ride,cal:a.cal,owner:a.owner||null});
+  if(state.role==='director') a.acl=aclRead('ea');
+  sbPatch('np_demo_appointments',id,{title:a.title,cid:a.cid,type:a.type,date:a.date,time:a.time,dur:a.dur,provider:a.provider,loc:a.loc,ride:a.ride,cal:a.cal,owner:a.owner||null,acl:a.acl||null});
   if(a.gid&&GCAL.connected) gcalUpdate&&gcalUpdate(a);
   logAudit('Edited appointment',`${a.title} · ${(client(a.cid)||{}).uci||''}`);
   closeAll(); render(); openAppt(id); toast('Appointment updated.');
@@ -8604,6 +8616,7 @@ function openApptForm(cid,presetDate,presetTime){
     <div class="field"><label>Title</label><input class="inp" id="apTitle" placeholder="Leave blank to keep it anonymous"></div>
     <div class="field"><label>Calendar</label>${calSelect('apCal')}
       <div class="tiny muted" style="margin-top:4px">Company is shared with everyone. My calendar is yours alone. Contractor calendars track outside providers.</div></div>
+    ${state.role==='director'?aclField('ap',null):''}
     <div class="row2">
       <div class="field"><label>Date</label><input class="inp" type="date" id="apDate" value="${(window._apPreset&&window._apPreset.d)||T}"></div>
       <div class="field"><label>Time</label><input class="inp" type="time" id="apTime" value="${(window._apPreset&&window._apPreset.t)||'10:00'}"></div>
@@ -8629,8 +8642,8 @@ function saveAppt(){
     date:el('apDate').value, time:el('apTime').value, dur:+el('apDur').value||30,
     provider:el('apProv').value.trim(), loc:el('apLoc').value.trim(), flag:el('apFlag').value.trim(), ride:'', notes:[], files:[]};
   APPTS.push(a);
-  a.cal=_cal; a.owner=_owner||'';
-  sbPush('np_demo_appointments',{id:a.id,cid:a.cid,title:a.title,type:a.type,appt_date:a.date,appt_time:a.time,dur:a.dur,provider:a.provider,loc:a.loc,flag:a.flag,ride:a.ride,cal:_cal,owner:_owner});
+  a.cal=_cal; a.owner=_owner||''; a.acl=state.role==='director'?aclRead('ap'):null;
+  sbPush('np_demo_appointments',{id:a.id,cid:a.cid,title:a.title,type:a.type,appt_date:a.date,appt_time:a.time,dur:a.dur,provider:a.provider,loc:a.loc,flag:a.flag,ride:a.ride,cal:_cal,owner:_owner,acl:a.acl});
   n8nCal({event:'appointment.created', id:a.id, uci:client(a.cid).uci, init:client(a.cid).init, title:a.title, type:a.type, date:a.date, time:a.time, dur:a.dur, provider:a.provider, loc:a.loc});
   const toGcal=el('apGcal')&&el('apGcal').checked;
   if(toGcal){ GCAL.connected?gcalPush(a):gcalTemplateOpen(a); }
@@ -9970,6 +9983,20 @@ function extNotify(kind,count,opts){
 
 /* ══════════════ v5.8: STAFF, SHIFTS & ASSIGNMENT PINGS ══════════════ */
 let HOMES=['Maple House','Cedar House','Birch House'];
+let HOME_COLORS={};                                                  // home name -> hex, director-editable
+const HOME_PALETTE=['#2F7A5B','#3E7BC4','#B0602F','#8A62C9','#C25276','#B08A2E'];
+function homeColor(h){ if(!h) return '#9AA3B2'; if(HOME_COLORS[h]) return HOME_COLORS[h]; const i=Math.max(0,HOMES.indexOf(h)); return HOME_PALETTE[i%HOME_PALETTE.length]; }
+function homeColorsSave(){ sbUpsert('np_demo_program',{key:'homecolors',value:{map:HOME_COLORS},updated_by:auditActor()}); }
+function homeDot(h,sz){ return `<span title="${esc(h||'')}" style="display:inline-block;width:${sz||9}px;height:${sz||9}px;border-radius:50%;background:${homeColor(h)};flex:none"></span>`; }
+function homeColorForm(){
+  openModal('Home colors',`<div class="tiny muted" style="margin-bottom:10px">Each home gets a color so shifts and staff on shift are easy to tell apart at a glance.</div>
+    ${HOMES.map(h=>`<div class="field" style="display:flex;align-items:center;gap:10px"><input type="color" id="hc_${esc(h).replace(/[^A-Za-z0-9]/g,'_')}" value="${homeColor(h)}" style="width:44px;height:32px;border:none;background:none;padding:0"><label style="margin:0">${esc(h)}</label></div>`).join('')||'<div class="empty">No homes yet.</div>'}`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="homeColorApply()">Save colors</button>`);
+}
+function homeColorApply(){
+  HOMES.forEach(h=>{ const i=el('hc_'+h.replace(/[^A-Za-z0-9]/g,'_')); if(i&&i.value) HOME_COLORS[h]=i.value; });
+  homeColorsSave(); logAudit('Updated home colors',''); closeAll(); render(); toast('Home colors saved.');
+}
 let CLIENT_TYPES=['Supported living · Level 2','Supported living · Level 3','Day program · Level 2','Day program · Level 3'];
 function ctypesSave(){ sbUpsert('np_demo_program',{key:'clienttypes',value:{list:CLIENT_TYPES},updated_by:auditActor()}); }
 function ctypeField(id,cur){
@@ -10361,6 +10388,7 @@ function apptCalKey(a){ return a.gcal?'google':(a.cal||'company'); }
 function calMine(a){
   const k=apptCalKey(a);
   if(k==='personal'&&(a.owner||'')!==userKey()) return false;        // your personal calendar is yours alone
+  if(!aclOk(a)) return false;                                        // per-appointment sharing
   return canSeeCal(k);                                               // restricted calendars vanish everywhere, not just the calendar page
 }
 function calVisible(k){ const off=((USER_SET[userKey()]||{}).calsOff)||[]; return !off.includes(k); }
@@ -10372,6 +10400,26 @@ function calToggle(k){
 }
 function calOnly(k){ userSetSave({calsOff:calDefs().map(c=>c.key).filter(x=>x!==k)}); render(); }
 function calAll(){ userSetSave({calsOff:[]}); render(); }
+function aclField(prefix,acl){
+  const a=acl||{mode:'all',sids:[]};
+  const staffList=STAFF.filter(st=>!hid('staff',st.id));
+  return `<div class="field"><label>Who can see this appointment</label>
+    <label style="display:flex;gap:6px;align-items:center;font-size:13px;margin-bottom:3px"><input type="radio" name="${prefix}Acl" value="all" ${a.mode!=='listed'?'checked':''}> Everyone with access to this calendar</label>
+    <label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="radio" name="${prefix}Acl" value="listed" ${a.mode==='listed'?'checked':''}> Only these staff</label>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 0 22px">${staffList.map(st=>`<label style="display:inline-flex;gap:5px;align-items:center;font-size:12.5px"><input type="checkbox" data-acl="${prefix}" value="${st.id}" ${(a.sids||[]).includes(st.id)?'checked':''}> ${esc(st.name)}</label>`).join('')||'<span class="tiny muted">No staff yet</span>'}</div>
+    <div class="tiny muted" style="margin-top:4px">Directors always see every appointment. Restricting one hides it from other staff and the family view.</div></div>`;
+}
+function aclRead(prefix){
+  const r=document.querySelector(`input[name="${prefix}Acl"]:checked`); if(!r) return null;
+  if(r.value!=='listed') return null;
+  return {mode:'listed',sids:[...document.querySelectorAll(`input[data-acl="${prefix}"]:checked`)].map(x=>x.value)};
+}
+function aclOk(a){
+  if(state.role==='director') return true;
+  const acl=a&&a.acl; if(!acl||acl.mode!=='listed') return true;
+  if(state.role!=='staff') return false;
+  return (acl.sids||[]).includes(meSid());
+}
 function apCalNew(sel){
   if(sel.value!=='__newct__') return;
   const n=prompt('Contractor name (e.g. Bright Path Therapy):');
@@ -10653,7 +10701,7 @@ function askContext(){
     const parts=[`${c.init} · ${c.uci} · ${c.home} · ${c.dx||''}`];
     if(c.alerts&&c.alerts.length) parts.push(`alerts: ${c.alerts.join('; ')}`);
     if(c.support) parts.push(`support: ${askTr(c.support,110)}`);
-    if(c.goals&&c.goals.length) parts.push(`IPP goals: ${c.goals.map(g=>`${g.g} ${g.p}%`).join('; ')}`);
+    if(c.goals&&c.goals.length) parts.push(`IPP goals: ${c.goals.map(g=>`${g.g} (${(g.notes||[]).length} note${(g.notes||[]).length===1?'':'s'})`).join('; ')}`);
     return '- '+parts.join(' · ');
   }));
 
@@ -10957,7 +11005,7 @@ function askAnswer(q){
   }
   if(s.includes('goal')||s.includes('ipp')){
     const c=cl.includes('c1')?client('c1'):client(cl[0]);
-    return `${c.name}'s IPP goals:<br>${(c.goals||[]).map(g=>`${g.g} — ${g.p}%`).join('<br>')}`;
+    return `${c.uci}'s IPP goals:<br>${(c.goals||[]).map(g=>`${g.g}${(g.notes||[]).length?' — latest: '+g.notes[0].t:''}`).join('<br>')}`;
   }
   if(s.includes('training')){
     const gaps=TRAINING.filter(t=>t.req&&!hid('course',t.id)).map(t=>({n:t.n,m:STAFF.filter(x=>!t.done.includes(x.id))})).filter(x=>x.m.length);
@@ -11264,7 +11312,7 @@ async function sbHydrate(){
   });
   dbStaff.forEach(r=>{
     const ex=STAFF.find(x=>x.id===r.id);
-    const rec={id:r.id,name:r.name,init:r.init,role:r.role||'Direct Support Professional',home:r.home||'',hired:r.hired||'',email:r.email||'',color:r.color||undefined,photo:r.photo||undefined};
+    const rec={id:r.id,name:r.name,init:r.init,role:r.role||'Direct Support Professional',home:r.home||'',hired:r.hired||'',email:r.email||'',color:r.color||undefined,photo:r.photo||undefined,icon:r.icon||undefined};
     if(ex) Object.assign(ex,rec); else { STAFF.push(Object.assign({trainings:{},hrs:0},rec)); CREDS[r.id]=CREDS[r.id]||[]; }
   });
   dbShifts.forEach(r=>{
@@ -11341,6 +11389,7 @@ async function sbHydrate(){
       if(r.key==='users'&&r.value&&r.value.map){ USERS=r.value.map; }
       if(r.key==='contractors'&&r.value&&Array.isArray(r.value.list)){ CONTRACTORS=r.value.list; }
       if(r.key==='calaccess'&&r.value&&r.value.map){ CAL_ACCESS=r.value.map; }
+      if(r.key==='homecolors'&&r.value&&r.value.map){ HOME_COLORS=r.value.map; }
       if(r.key==='doccats'&&r.value&&Array.isArray(r.value.list)&&r.value.list.length){ DOC_CATS=r.value.list; }
       if(r.key==='usersettings'&&r.value&&r.value.map){ USER_SET=r.value.map; }
       if(r.key==='incnotes'&&r.value&&r.value.map){ INC_NOTES=r.value.map; }
@@ -11443,7 +11492,7 @@ async function sbHydrate(){
   if(tpls.length){ tpls.forEach(r=>{ const t=TEMPLATES5.find(x=>x.id===r.id); if(t){ t.name=r.name; t.fields=r.fields||t.fields; } }); }
   SYS_NOTIFS=notifs.map(r=>({t:r.title,s:r.body,_seed:0,at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),k:r.kind||'info'}));
   if(cnotes.length){ CLIENT_NOTES={}; cnotes.forEach(r=>{ (CLIENT_NOTES[r.cid]=CLIENT_NOTES[r.cid]||[]).push({text:r.note,by:r.noted_by,at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}); }); }
-  if(appts.length){ APPTS.length=0; appts.forEach(r=>APPTS.push({id:r.id,cid:r.cid,title:r.title,type:r.type,date:r.appt_date,time:r.appt_time,dur:r.dur,provider:r.provider||'',loc:r.loc||'',flag:r.flag||'',ride:r.ride||'',cancelled:r.cancelled||0,cxBy:r.cx_by||'',gid:r.gcal_id||null,cal:r.cal||'company',owner:r.owner||'',notes:[],files:[]})); }
+  if(appts.length){ APPTS.length=0; appts.forEach(r=>APPTS.push({id:r.id,cid:r.cid,title:r.title,type:r.type,date:r.appt_date,time:r.appt_time,dur:r.dur,provider:r.provider||'',loc:r.loc||'',flag:r.flag||'',ride:r.ride||'',cancelled:r.cancelled||0,cxBy:r.cx_by||'',gid:r.gcal_id||null,cal:r.cal||'company',owner:r.owner||'',acl:r.acl||null,notes:[],files:[]})); }
   if(window._APPT_EXTRAS){ APPTS.forEach(a=>{ const x=window._APPT_EXTRAS[a.id]; if(x){ a.notes=x.notes||a.notes||[]; a.files=x.files||a.files||[]; } }); }
   applyDeletions();
   if(el('app').classList.contains('on')){ renderNav(); render(); }
