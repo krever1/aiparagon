@@ -1950,6 +1950,17 @@ td,th{font-size:14.5px}
   .cal-ctl .view-toggle button{font-size:13px;padding:6px 12px}
   .hl-row{background:rgba(74,125,224,.10)!important;box-shadow:inset 3px 0 0 var(--blue)}
     .hl-row td:first-child,.hl-row.named{border-radius:6px}
+  .repo-tbl{width:100%;table-layout:fixed}
+  .repo-tbl th,.repo-tbl td{white-space:normal;overflow-wrap:break-word;padding:8px 10px}
+  .repo-tbl th{white-space:nowrap;font-size:10px}
+  .repo-tbl th:nth-child(1),.repo-tbl td:nth-child(1){width:30%}
+  .repo-tbl th:nth-child(2),.repo-tbl td:nth-child(2){width:10%}
+  .repo-tbl th:nth-child(3),.repo-tbl td:nth-child(3){width:10%}
+  .repo-tbl th:nth-child(4),.repo-tbl td:nth-child(4){width:14%}
+  .repo-tbl th:nth-child(5),.repo-tbl td:nth-child(5){width:13%}
+  .repo-tbl th:nth-child(6),.repo-tbl td:nth-child(6){width:11%}
+  .repo-tbl th:last-child,.repo-tbl td:last-child{width:12%;min-width:150px;text-align:right;white-space:nowrap}
+  .repo-tbl td:last-child .btn{padding:7px 11px;font-size:12px}
   .ed-hdr{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:9px;padding:11px 14px;background:var(--ivory);border:1px solid var(--line);border-radius:10px}
   .ed-hc{display:flex;flex-direction:column;gap:1px}
   .ed-hl{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
@@ -6920,11 +6931,22 @@ function renderDelivs(){
       ${isOpen?`<div class="repo-folders">
         ${stages.map(g=>`<div class="repo-folder">
           <div class="repo-folder-h"><span class="pill" style="background:${g.c}">${esc(g.st)}</span><span class="cnt">${g.docs.length}</span></div>
-          ${g.docs.map(d=>{const o=COMMENTS.filter(c=>c.on===d.id&&!c.resolved).length;return `<button class="repo-doc" onclick="openDeliv('${d.id}')">
-            <span style="flex:1;min-width:0"><b style="font-size:12.5px">${esc(d.title)}</b><span class="help" style="display:block;font-size:10.5px">${d.ver} · last modified ${d.upd}</span></span>
-            ${o?`<span class="chip red" style="font-size:9.5px">${o} open</span>`:''}
-            <span class="go" style="color:var(--gold);font-weight:800">→</span>
-          </button>`;}).join('')}
+          <div class="tbl-wrap"><table class="tbl repo-tbl">
+            <thead><tr><th>Document</th><th>Draft</th><th>Sources</th><th>Last modified date</th><th>Last modified by</th><th>Open comments</th><th></th></tr></thead>
+            <tbody>${g.docs.map(d=>{
+              const o=COMMENTS.filter(c=>c.on===d.id&&!c.resolved).length;
+              const src=SOURCES[d.id]||[];const on=src.filter(x=>x.on!==false).length;const tot=src.length||on;
+              const p=String(d.upd||'').split(' · ');
+              return `<tr>
+                <td><b style="cursor:pointer" onclick="openDeliv('${d.id}')">${esc(d.title)}</b></td>
+                <td class="mono" style="font-size:12px">${esc(d.ver)}</td>
+                <td class="mono" style="font-size:12px">${tot?on+' of '+tot:'—'}</td>
+                <td class="mono" style="font-size:12px">${esc(p[0]||'—')}</td>
+                <td><span class="by-chip ${d.owner==='System'?'sys':''}">${esc(d.owner||'—')}</span></td>
+                <td>${o?`<span class="chip red" style="font-size:9.5px">${o} open</span>`:'<span class="help">—</span>'}</td>
+                <td style="text-align:right"><button class="btn btn-review btn-sm" onclick="openDeliv('${d.id}')">Edit document<span class="ai-mark"></span></button></td>
+              </tr>`;}).join('')}</tbody>
+          </table></div>
         </div>`).join('')}
         <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin:4px 0 10px" onclick="openBuild(undefined,(CLIENTS.find(x=>x.name==='${esc(n)}')||{}).id)">＋ Build a new document for ${esc(n.split(' ')[0])}</button>
       </div>`:''}
