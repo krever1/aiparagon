@@ -609,6 +609,59 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xm
   .attn{padding:15px 14px}
   .tl-lab{width:118px;padding:0 9px;font-size:11.8px}
   .tlf-b{padding:10px}
+
+  /* ── v9.44 mobile pass ── */
+  /* wide tables scroll inside their card instead of squeezing the page */
+  .card-b.flush{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.tb{min-width:520px}
+  /* the header row and its buttons stack cleanly */
+  .page-h{flex-direction:column;align-items:flex-start;gap:10px}
+  .page-h h1{font-size:22px;line-height:1.25}
+  .page-h .right{display:flex;flex-wrap:wrap;gap:8px}
+  .page-h .right .btn{flex:1 1 auto;min-width:132px}
+  .card-h{flex-wrap:wrap;gap:8px}
+  .card-h .right{width:100%;display:flex;flex-wrap:wrap;gap:8px}
+  .card-h .right .btn{flex:1 1 auto}
+  /* filter rows become a horizontal scroll strip rather than a wrapped pile */
+  .filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+  .filters>*{flex:none}
+  .filters .inp,.filters select{min-width:150px}
+  /* forms: full-width fields, no cramped two-ups */
+  .row2,.row3{grid-template-columns:1fr!important}
+  .field .inp,select.inp,textarea.inp{font-size:16px}      /* 16px stops iOS zooming on focus */
+  .modal{width:100%;max-width:none;border-radius:16px 16px 0 0;position:fixed;left:0;right:0;bottom:0;top:auto;max-height:92vh;overflow-y:auto}
+  .modal-f{position:sticky;bottom:0;background:var(--white);border-top:1px solid var(--line);padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  .modal-f .btn{flex:1 1 auto}
+  /* client + staff page tab strips scroll */
+  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+  .tabs button{flex:none}
+  /* calendar: week view becomes a readable single column */
+  .wk-grid{grid-template-columns:1fr}
+  .wk-col{border-right:none;border-bottom:1px solid var(--line);min-height:0}
+  .cal-grid{font-size:12px}
+  .ce{font-size:11.5px;padding:3px 5px}
+  /* timeline stays usable */
+  .tl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tl-lab{width:96px;font-size:11px}
+  /* binder + document rows stack their actions */
+  .docrow{flex-wrap:wrap;row-gap:8px}
+  .docrow .dt{min-width:60%}
+  .docrow .btn{flex:1 1 auto}
+  /* layout editor controls stay thumb-sized */
+  .lay-bar{flex-wrap:wrap;row-gap:6px}
+  .lay-bar button{min-height:34px}
+  /* stat tiles two-up rather than one long column */
+  .stats{grid-template-columns:1fr 1fr}
+  .stat{padding:14px}
+  .stat .vl{font-size:21px}
+  /* nothing hides behind the ask button */
+  .main{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+}
+@media (max-width:520px){
+  .stats{grid-template-columns:1fr}
+  .hero h1{font-size:19px}
+  .page-h .right .btn{min-width:0;width:100%}
+  .btn{font-size:14.5px}
 }
 
 /* ── pilot v3: contrast + size pass (Erica's Loom) ── */
@@ -1663,7 +1716,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · v9.43 beta</span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · v9.46 beta</span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -3133,7 +3186,7 @@ function captureSamples(){
     course:TRAINING.map(t=>t.id), guide:GUIDES.map(g=>g.t), dir:DIRECTORY.map(d=>String(d.id||d.n)),
     insp:INSP_TEMPLATES.map(t=>String(t.id||t.name)),
     protocol:Object.keys(PROTOCOLS), obitem:ONBOARD.slice(),
-    template:TEMPLATES5.map(t=>t.id),
+    template:[],                                                     // templates are the system, not sample data — they survive Hide sample
     chk:CHECKLIST.flatMap(g=>g.items.map(i=>g.g+'|'+i.t)),
     completed:Object.entries(COMPLETED).flatMap(([f,arr])=>arr.map(d=>f+'|'+d.n))
   };
@@ -4593,8 +4646,10 @@ function viewCalendar(){
     ${state.role==='director'?`<button class="btn ghost sm" onclick="manageContractors()">⚙ Contractors</button><button class="btn ghost sm" onclick="calAccessForm()">🔒 Access</button>`:''}
   </div>`;
   const catLegend=`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0 2px">
-    ${types.map(t=>`<button style="all:unset;cursor:pointer" onclick="${state.role==='director'?`catForm('${esc(t)}')`:''}" title="${state.role==='director'?'Edit this category':''}">${catChip(t)}</button>`).join('')}
-    ${state.role==='director'?`<button class="btn ghost sm" onclick="catForm(null)">＋ Category</button>`:''}
+    ${types.map(t=>`<button style="all:unset;cursor:pointer;${state.calFilter.type===t?'outline:2px solid var(--gold);outline-offset:2px;border-radius:20px':''}"
+        onclick="state.calFilter.type=(state.calFilter.type==='${esc(t)}'?'':'${esc(t)}');render()" title="${state.calFilter.type===t?'Show all categories':'Show only '+esc(t)}">${catChip(t)}</button>`).join('')}
+    ${state.calFilter.type?`<button class="btn ghost sm" onclick="state.calFilter.type='';render()">Show all</button>`:''}
+    ${state.role==='director'?`<button class="btn ghost sm" onclick="catForm(null)">＋ Category</button><button class="btn ghost sm" onclick="catPick()">✎ Edit categories</button>`:''}
   </div>`;
 
   return `
@@ -5632,6 +5687,7 @@ function delStaff(sid){
     sbDel('np_demo_staff','id=eq.'+encodeURIComponent(sid));
     sbDel('np_demo_credentials','sid=eq.'+encodeURIComponent(sid));
     sbDel('np_demo_shifts','staff_id=eq.'+encodeURIComponent(sid));
+    sbDel('np_demo_tasks','sid=eq.'+encodeURIComponent(sid));           // their assigned tasks go with them everywhere, not just here
     delMark('staff',sid);
     logAudit('Deleted staff member',st.name);
     closeAll(); state.view='team'; render(); toast(st.name+' deleted.');
@@ -8963,7 +9019,9 @@ function saveApptEdit(id){
   const _c=(el('eaCal')&&el('eaCal').value!=='__newct__'&&el('eaCal').value)||a.cal||'company';
   a.cal=_c; if(_c==='personal'&&!a.owner) a.owner=userKey(); if(_c!=='personal') a.owner='';
   if(state.role==='director') a.acl=aclRead('ea');
-  sbPatch('np_demo_appointments',id,{title:a.title,cid:a.cid,type:a.type,date:a.date,time:a.time,dur:a.dur,provider:a.provider,loc:a.loc,ride:a.ride,cal:a.cal,owner:a.owner||null,acl:a.acl||null});
+  sbPatch('np_demo_appointments',id,{title:a.title,cid:a.cid,type:a.type,appt_date:a.date,appt_time:a.time,dur:a.dur,provider:a.provider,loc:a.loc,ride:a.ride,cal:a.cal,owner:a.owner||null,acl:a.acl||null});
+  n8nCal({event:'appointment.updated', id:a.id, uci:(client(a.cid)||{}).uci||'', init:(client(a.cid)||{}).init||'',
+    title:a.title, type:a.type, date:a.date, time:a.time, dur:a.dur, provider:a.provider, loc:a.loc});   // push the edit to Google
   if(a.gid&&GCAL.connected) gcalUpdate&&gcalUpdate(a);
   logAudit('Edited appointment',`${a.title} · ${(client(a.cid)||{}).uci||''}`);
   closeAll(); render(); openAppt(id); toast('Appointment updated.');
@@ -9483,7 +9541,7 @@ function incNotesSave(){ sbUpsert('np_demo_program',{key:'incnotes',value:{map:I
 function incidentTplOf(type){
   const p=PROTOCOLS[type]||{};
   const pick=id=>{ const t=id?tplById(id):null; return (t&&!hid('template',t.id))?t:null; };
-  return pick(p.tpl)||pick('tp2');                                   // linked template, else the stock SIR form
+  return pick(p.tpl)||pick('tp2')||tplById('tp2')||TEMPLATES5[0]||null;   // linked template, else the stock SIR form — never nothing
 }
 function protoTplSet(k,v){
   if(!PROTOCOLS[k]) return;
@@ -9977,7 +10035,7 @@ function tplGenerateGo(tid){
   if(bk){
     const sb=(normBinder(t.dest||'').b===bk&&t.sub)?t.sub:'';                   // the physical binder tab this form belongs to
     (COMPLETED[bk]=COMPLETED[bk]||[]).unshift({n:name,sub:`Completed from template · ${meInit()} · ${fmtDate(T)}`,sb,at:T});
-    if(!cid) sbPush('np_demo_documents',{cid:null,n:name,cat:'Completed — '+bk,uploaded_by:meInit(),doc_date:T,size:'6 KB',sub_binder:sb||null});
+    sbPush('np_demo_documents',{cid:null,n:name,cat:'Completed — '+bk,uploaded_by:meInit(),doc_date:T,size:'6 KB',sub_binder:sb||null});   // binder copy persists even when a client copy exists
     if(cid){ DOCTAG[name]={b:bk,sb}; doctagSave(); }
     dests.push('the '+(FOLDER_NAMES[bk]||bk)+' binder');
   }
@@ -10535,7 +10593,7 @@ function inviteCreate(sid){
     `<button class="btn navy" onclick="closeAll()">Done</button>`);
 }
 function goalsSave(){
-  const map={}; CLIENTS.forEach(c=>{ if(c.goals&&c.goals.length) map[c.id]=c.goals; });
+  const map={}; CLIENTS.forEach(c=>{ if(Array.isArray(c.goals)) map[c.id]=c.goals; });   // empty lists count — deleting the last goal must stick everywhere
   sbUpsert('np_demo_program',{key:'goals',value:{map},updated_by:auditActor()});
 }
 function goalForm(cid,gi){
@@ -10796,6 +10854,14 @@ function aclOk(a){
   if(state.role!=='staff') return false;
   return (acl.sids||[]).includes(meSid());
 }
+function catPick(){
+  const types=[...new Set([...Object.keys(APPT_CATS),...APPTS.map(a=>a.type)])];
+  openModal('Appointment categories',`<div class="tiny muted" style="margin-bottom:8px">Each category has its own icon and color — they show on the calendar and on items needing attention.</div>
+    ${types.map(t=>`<div class="docrow"><div class="di">${(catOf(t).emoji||'▤')}</div><div class="dt"><b>${esc(t)}</b><span>${APPS_COUNT(t)} appointment${APPS_COUNT(t)===1?'':'s'}</span></div>
+      <button class="btn ghost sm" onclick="closeAll();catForm('${esc(t)}')">✎ Edit</button></div>`).join('')||'<div class="empty">No categories yet.</div>'}`,
+    `<button class="btn ghost" onclick="closeAll()">Close</button><button class="btn navy" onclick="closeAll();catForm(null)">＋ Category</button>`);
+}
+function APPS_COUNT(t){ return APPTS.filter(a=>a.type===t).length; }
 function apCalNew(sel){
   if(sel.value!=='__newct__') return;
   const n=prompt('Contractor name (e.g. Bright Path Therapy):');
