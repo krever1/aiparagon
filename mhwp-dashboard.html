@@ -2940,6 +2940,7 @@ body.ai-hi .rd-cta .ai-mark,body.ai-hi .rd-btn.pri .ai-mark{box-shadow:0 0 0 3px
         <div class="brand-g">D</div>
         <div>
           <b class="brand-name" style="font-size:28px;font-weight:800">Delta Advisory</b>
+          <div class="brand-line">AI Paragon Consulting Group · 2026 · <em>Demo environment</em> · <em>Sample data</em></div>
         </div>
       </div>
       <h1>One intelligent workspace.<br>From <span class="hl-gold">your real sources</span>, in <span class="hl-gold">your voice</span>.</h1>
@@ -2951,10 +2952,7 @@ body.ai-hi .rd-cta .ai-mark,body.ai-hi .rd-btn.pri .ai-mark{box-shadow:0 0 0 3px
         <div class="login-cap"><div><b>Knowledge Base</b><span>A queryable brain for the firm: key documents, SOPs, templates, and every client's files</span></div></div>
       </div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <span class="demo-tag login-demo-tag"><span>Demo environment</span><span>Sample data</span></span>
-      <div class="mono" style="font-size:12px;letter-spacing:.12em;color:#6E7A90;text-transform:uppercase;font-weight:600">AI Paragon Consulting Group · 2026</div>
-    </div>
+    <div></div>
   </div>
   <div class="login-form-wrap">
     <div class="login-form">
@@ -2999,7 +2997,7 @@ body.ai-hi .rd-cta .ai-mark,body.ai-hi .rd-btn.pri .ai-mark{box-shadow:0 0 0 3px
       <h2>Build your workspace</h2>
       <p class="ob-lede">Pick the capabilities you want in your dashboard. Each is a full suite. Open any of them for a guided walkthrough first, then select the ones to include. Most firms take all four.</p>
       <div class="cap-grid" id="capGrid"></div>
-      <div class="how-learn" style="margin-top:6px">💡&nbsp;<div><b>Four tiles cover the whole system.</b> Templates live inside the Knowledge Base, and your calendar, action items and reminders live on Home, so nothing is left out.</div></div>
+      <div class="how-learn" style="margin-top:6px">✦&nbsp;<div><b>The system learns as you use it.</b> Every edit you make to a draft, every source you tick or untick, and every correction to the wording is captured as a rule, so the work it hands you next time already looks the way you wanted it.</div></div>
       <div id="obBuildWrap" class="hidden"></div>
       <div class="ob-foot" id="obFoot1"><span class="help" id="capCount"></span><button class="btn btn-navy" id="obBuildBtn" onclick="obBuild()">Build my workspace →</button></div>
     </div>
@@ -3853,7 +3851,7 @@ body.ai-hi .rd-cta .ai-mark,body.ai-hi .rd-btn.pri .ai-mark{box-shadow:0 0 0 3px
   <div class="modal">
     <div class="eyebrow">Before you save</div>
     <h3>Save these changes to memory?</h3>
-    <p class="help">Ticked changes become permanent rules the system follows on every future run. Untick anything that was a one-off for this client.</p>
+    <p class="help">Ticked changes are saved to <b>Dashboard AI memory</b>, not the audit log, and become rules the system follows on every future run. Untick anything that was a one-off for this client.</p>
     <div id="learnOpts" style="margin:12px 0"></div>
     <label class="lbl">Anything else about this run? <span style="font-weight:500;color:var(--muted)">optional</span></label>
     <textarea class="field" id="learnNote" rows="2" placeholder="Plain words are fine — 'too long', 'wrong order', 'missed the trust question'"></textarea>
@@ -3966,6 +3964,7 @@ body.ai-hi .rd-cta .ai-mark,body.ai-hi .rd-btn.pri .ai-mark{box-shadow:0 0 0 3px
     <div class="tabs" style="margin-bottom:14px" id="mtTabs">
       <button class="tab on" data-mt="doc" onclick="mtTab('doc')">Document</button>
       <button class="tab" data-mt="secs" onclick="mtTab('secs')">Section order</button>
+      <span class="mt-edit-hint hidden" id="mtEditHint">Editing · start with the document, then Section order to reorder or add a section</span>
       <button class="tab" data-mt="srcs" onclick="mtTab('srcs')">Sources utilized</button>
       <button class="tab" data-mt="rules" onclick="mtTab('rules')">Rules</button>
       <button class="tab" data-mt="use" onclick="mtTab('use')">Generate &amp; use</button>
@@ -5099,46 +5098,159 @@ function applyCaps(){
 }
 /* Guided walkthrough content: real names and screens from the dashboard */
 const pvH=(ic,t,tag)=>`<div class="pv-h"><span>${ic}</span><b>${t}</b>${tag?`<span class="chip ${tag[1]||'grey'}" style="margin-left:auto;font-size:9.5px">${tag[0]}</span>`:''}</div>`;
+const pvTbl=(heads,rows)=>`<table class="pv-tbl"><thead><tr>${heads.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+const pvChips=arr=>`<div class="pv-chips">${arr.map(x=>`<button class="pv-chip" onclick="event.stopPropagation()">${x}</button>`).join('')}</div>`;
+const pvFold=(name,meta,subs,open)=>`<div class="pv-fold ${open?'open':''}"><div class="pv-fold-h"><span class="fn">📁 <b>${name}</b></span><small>${meta}</small><span class="car">${open?'▾':'▸'}</span></div>${open?pvChips(subs):''}</div>`;
+const PV_SYNC='<span class="pv-sync">⟳ Two-way sync</span>';
+const pvLearn=t=>`<div class="pv-learn"><span>✦</span><div>${t}</div></div>`;
 const TOURS={
  c360:{t:'Client 360 & Meeting Intelligence',ic:'🧭',steps:[
-  {t:'Every client in one place',d:'Open a client and their whole relationship is on one page: profile, brief, touchpoints, documents, sources, goals, and drafts.',b:['Notes mirror two-way with HubSpot','Pipeline stage shown at a glance','Nothing to hunt for across systems'],
-   p:pvH('🧭','Dr. Alicia Boone',['Client Onboarding','gold'])+`<div class="pv-b"><div class="help" style="margin-bottom:8px">Equity Comp · Private Client · $3.1M · advisor R. Okafor</div><div class="pv-tabs"><span class="on">Intelligence brief</span><span>Touchpoints</span><span>Document history</span><span>Source repository</span><span>Goals & life events</span><span>Meeting intelligence</span><span>Drafts under review</span></div><div class="pv-row"><span class="k">Notes</span><span>Anything you write here mirrors to HubSpot ⟳</span></div></div>`},
-  {t:'A brief written before every meeting',d:'The night before a meeting, the system reads the client\u2019s sources and writes a Client Intelligence Brief: what changed, what to raise, what to ask.',b:['Written from named sources only','Overview, changes, questions, considerations','Filed to Document history when you say so'],
-   p:pvH('📋','Client intelligence brief',['Written 06:11','green'])+`<div class="pv-b"><div class="pv-doc">Dr. Alicia Boone</div><div class="help" style="margin-bottom:8px">Updated since last call Jul 9 · 4 sources read</div><div class="pv-row"><span class="k">What changed</span><span>Employer stock now 41% of investable assets</span></div><div class="pv-row"><span class="k">Ask</span><span>Sell at vest, or stage across Q4?</span></div><div class="pv-row"><span class="k">Consider</span><span>Single-year sale triggers NIIT</span></div></div>`},
+  {t:'Every client in one place',d:'Open a client and their whole relationship is on one page: profile, brief, touchpoints, documents, sources, goals, and drafts.',b:['Notes stay in step with your CRM, both directions','Pipeline stage shown at a glance','Nothing to hunt for across systems'],
+   p:pvH('🧭','Dr. Alicia Boone',['Client Onboarding','gold'])+`<div class="pv-b">
+     ${pvTbl(['Client category','AUM','Advisor'],[['Equity Comp · Private Client','$3.1M','R. Okafor']])}
+     <div class="pv-tabs" style="margin-top:10px"><span class="on">Intelligence brief</span><span>Touchpoints</span><span>Document history</span><span>Source repository</span><span>Goals & life events</span><span>Meeting intelligence</span><span>Drafts under review</span></div>
+     ${pvTbl(['Field','Where it goes'],[['Notes on Dr. Boone','Written here, mirrored to HubSpot '+PV_SYNC]])}
+   </div>`},
+  {t:'A brief written before every meeting',d:'The night before a meeting the system reads the client\u2019s sources and writes a Pre-meeting brief: what changed, what to raise, what to ask. The Client intelligence brief is something different, it is the overview you land on when you open their page.',b:['Written from named sources only','What changed · what to ask · what to consider','Filed to Document history when you say so'],
+   p:pvH('📋','Pre-meeting brief',['Written 06:11','green'])+`<div class="pv-b">
+     <div class="pv-doc">Dr. Alicia Boone · Equity Comp review</div>
+     <div class="help" style="margin-bottom:8px">Updated since last call Jul 9 · 4 sources read</div>
+     ${pvTbl(['Section','What the brief says'],[
+       ['What changed','Employer stock now 41% of investable assets, up from 36%'],
+       ['What to ask','Sell at vest, or stage the sale across Q4?'],
+       ['What to consider','A single-year sale triggers NIIT']])}
+   </div>`},
   {t:'Meeting intelligence from any transcript',d:'Paste a transcript or drop the recording. It writes the recap, action items and follow-up email in your voice, then saves where you choose.',b:['Recap report · Action items · Follow-up email','Every run logged with template, time and owner','Save to Client Deliverables or Drafts under review'],
-   p:pvH('🎧','Meeting intelligence',['Processed 08:49','green'])+`<div class="pv-b"><div class="pv-tabs"><span class="on">Recap report</span><span>Written to the record</span><span>Action items</span><span>Follow-up email</span></div><div class="pv-row"><span class="k">Agreed</span><span>Model the Sonoma purchase at $1.4M and $1.8M</span></div><div class="pv-row"><span class="k">By when</span><span>R. Okafor · two-scenario ladder · Aug 20</span></div><div style="margin-top:8px;display:flex;gap:6px"><span class="chip grey">Save ▾</span><span class="chip gold">Approve & send</span></div></div>`},
-  {t:'Touchpoints and history, synced with HubSpot',d:'Every call, email and sent document is a touchpoint you can open. Document history shows what went out, when, and from which template.',b:['Date · Category · Name · Description, clickable','Sent copies one click away','Two-way with HubSpot'],
-   p:pvH('🗂️','Touchpoints & Document history',['⟳ Two-way','green'])+`<div class="pv-b"><div class="pv-row"><span class="k">Aug 6</span><span><b>Email</b> · Sent vest schedule PDF</span></div><div class="pv-row"><span class="k">Jul 9</span><span><b>Call</b> · Mid-year check-in · 28 min</span></div><div class="pv-row"><span class="k">Aug 11</span><span><b>Sent</b> · Concentration Risk Memo · Annual Plan</span><span class="chip green" style="margin-left:auto;font-size:9px">Synced</span></div></div>`}
+   p:pvH('🎧','Meeting intelligence',['Processed 08:49','green'])+`<div class="pv-b">
+     <div class="pv-tabs"><span class="on">Recap report</span><span>Action items</span><span>Follow-up email</span></div>
+     ${pvTbl(['What was agreed','Who owns it','Due by'],[
+       ['Model the Sonoma purchase at $1.4M and $1.8M','R. Okafor','Aug 20, 2026'],
+       ['Send the two-scenario bond ladder','R. Okafor','Aug 20, 2026'],
+       ['Confirm the September vest schedule','Dr. Boone','Aug 14, 2026']])}
+     <div style="margin-top:10px;display:flex;gap:6px"><span class="chip grey">Save ▾</span><span class="chip gold">Approve & send</span></div>
+   </div>`},
+  {t:'Touchpoints and history, in step with your CRM',d:'Every call, email and sent document is a touchpoint you can open. Document history shows what went out, when, and from which template.',b:['Date · Type · What happened, all clickable','Sent copies one click away','Two-way sync with HubSpot'],
+   p:pvH('🗂️','Touchpoints & Document history',['Two-way sync','green'])+`<div class="pv-b">
+     ${pvTbl(['Date','Type','What happened','Sync'],[
+       ['Aug 11, 2026','Sent','Concentration Risk Memo · Annual Plan','<span class="chip green" style="font-size:9px">Synced</span>'],
+       ['Aug 6, 2026','Email','Vest schedule PDF sent to Dr. Boone','<span class="chip green" style="font-size:9px">Synced</span>'],
+       ['Jul 9, 2026','Call','Mid-year check-in · 28 min','<span class="chip green" style="font-size:9px">Synced</span>']])}
+   </div>`}
  ]},
  delivs:{t:'Client Deliverables',ic:'📄',steps:[
   {t:'Pick a template, pick a client',d:'Every document starts from one of your templates. Choose the client and the system knows which sources to reach for.',b:['Quarterly Review · Annual Plan · Action Plan and more','Templates learned from your own example files','One click to generate, or build step by step'],
-   p:pvH('📄','Templates',['Client Deliverables','gold'])+`<div class="pv-b"><div class="pv-row"><span class="pv-doc" style="margin:0">Quarterly Review</span><span class="chip gold" style="margin-left:auto;font-size:9.5px">✨ Generate</span></div><div class="pv-row"><span class="pv-doc" style="margin:0">Annual Plan</span><span class="chip gold" style="margin-left:auto;font-size:9.5px">✨ Generate</span></div><div class="pv-row"><span class="pv-doc" style="margin:0">Action Plan</span><span class="chip gold" style="margin-left:auto;font-size:9.5px">✨ Generate</span></div></div>`},
+   p:pvH('📄','Templates',['Client Deliverables','gold'])+`<div class="pv-b">
+     ${pvTbl(['Template','Category','Last updated','Uses'],[
+       ['<b>Quarterly Review</b>','Client deliverables','Aug 2, 2026','34'],
+       ['<b>Annual Plan</b>','Client deliverables','Jul 8, 2026','19'],
+       ['<b>Action Plan</b>','Client deliverables','Jul 8, 2026','11']])}
+     <div style="margin-top:10px;display:flex;gap:6px"><span class="chip gold">✨ Generate</span><span class="chip grey">Edit</span></div>
+   </div>`},
   {t:'Drafted from their real sources',d:'The draft is written from that client\u2019s own repository: transcripts, custodian files, prior letters. Every figure traces to a named source.',b:['Sources pulled from the client\u2019s folder, not the firm\u2019s','Untick a source and the section rewrites','Upload a missing source right where it is needed'],
-   p:pvH('🔗','Sources in this draft',['6 of 6','green'])+`<div class="pv-b"><div class="pv-src"><i>✓</i>Custodian positions & cost basis</div><div class="pv-src"><i>✓</i>Latest review call transcript</div><div class="pv-src"><i>✓</i>Prior quarter review</div><div class="pv-src"><i>✓</i>Client record & goals</div><div class="help" style="margin-top:8px">Every line above traces to one of these.</div></div>`},
-  {t:'Edit, comment and approve in Canvas',d:'The finished draft opens in Canvas. Ask AI to rewrite a section, leave comments for the team, and move the stage as it progresses.',b:['Ask AI on any section','Comments and version history','Stage: Drafting → Internal review → Client review → Approved'],
-   p:pvH('✍️','Q2 Review · Diane & Victor Ellison',['Internal review','blue'])+`<div class="pv-b"><div class="pv-doc">Q2 2026 Review</div><div class="help">Draft 3 · 2 comments open · written with your Quarterly Review template</div><div class="pv-row" style="margin-top:6px"><span><b>What changed this quarter</b><br><span class="help">Portfolio value $8,412,900, up 3.1% since 31 Mar</span></span></div><div style="margin-top:8px;display:flex;gap:6px"><span class="chip grey">Ask AI</span><span class="chip grey">Add comment</span><span class="chip gold">Approve</span></div></div>`},
-  {t:'Approved documents land in the client\u2019s file',d:'Approve and it files itself: into Document history, onto the client\u2019s touchpoints, and into their repository, all synced to HubSpot.',b:['Sent copy kept forever','Touchpoint created automatically','Drafts under review and Canvas stay in sync'],
-   p:pvH('✅','Document history',['⟳ Synced','green'])+`<div class="pv-b"><div class="pv-row"><span><b>Q2 Review</b><br><span class="help">Quarterly Review · Aug 7 · R. Okafor</span></span><span class="chip green" style="margin-left:auto;font-size:9.5px">APPROVED</span></div><div class="pv-row"><span><b>Concentration Risk Memo</b><br><span class="help">Annual Plan · Aug 11 · R. Okafor</span></span><span class="chip grey" style="margin-left:auto;font-size:9.5px">View sent copy</span></div></div>`}
+   p:pvH('🔗','Sources in this draft',['4 of 4 verified','green'])+`<div class="pv-b">
+     ${pvTbl(['Source','Type','Date','Status'],[
+       ['Custodian positions & cost basis','CSV','Aug 7, 2026','<span class="chip green" style="font-size:9px">Verified</span>'],
+       ['Latest review call transcript','Transcript','Jul 21, 2026','<span class="chip green" style="font-size:9px">Verified</span>'],
+       ['Prior quarter review','PDF','Apr 2, 2026','<span class="chip green" style="font-size:9px">Verified</span>'],
+       ['Client record & goals','CRM','Live','<span class="chip green" style="font-size:9px">Verified</span>']])}
+     <div class="help" style="margin-top:8px">Every figure in the draft traces to one of these four.</div>
+   </div>`},
+  {t:'Edit, comment and approve in Canvas',d:'The finished draft opens in Canvas, looking like the document it is. Ask AI to rewrite a section, leave comments for the team, and move the prep stage as it progresses.',b:['Ask AI on any section','Comments and version history','Advisor review → Client ready → Approved'],
+   p:pvH('✍️','Canvas',['Advisor review','blue'])+`<div class="pv-b">
+     <div class="pv-docmock">
+       <div class="pv-dm-h"><span class="pv-dm-brand">DELTA ADVISORY</span><span class="pv-dm-badge">💬 2 comments open</span></div>
+       <div class="pv-dm-t">Q2 2026 Review</div>
+       <div class="pv-dm-m">Diane &amp; Victor Ellison · Draft 3 · written with your <b>Quarterly Review</b> template</div>
+       <div class="pv-dm-sec">
+         <div class="pv-dm-st">What changed this quarter</div>
+         <p>Portfolio value $8,412,900, up 3.1% since 31 Mar. Income covered through 2028.</p>
+         <p>On the 21 July call you asked us to hold the ladder steady rather than extend it. We did.</p>
+       </div>
+       <div class="pv-dm-sec dim"><div class="pv-dm-st">Performance vs plan</div><div class="pv-dm-chart"><i style="height:40%"></i><i style="height:66%"></i><i style="height:52%"></i><i style="height:78%"></i></div></div>
+     </div>
+     <div style="margin-top:10px;display:flex;gap:6px"><span class="chip grey">Ask AI</span><span class="chip grey">Add comment</span><span class="chip gold">Approve</span></div>
+   </div>`},
+  {t:'Approved documents land in the client\u2019s file',d:'Approve and it files itself: into Document history, onto the client\u2019s touchpoints, and into their repository, all kept in step with your CRM.',b:['Sent copy kept forever','Touchpoint created automatically','Drafts under review and Canvas stay in sync'],
+   p:pvH('✅','Document history',['Two-way sync','green'])+`<div class="pv-b">
+     ${pvTbl(['Document name','Date','Status','Last modified by'],[
+       ['<b>Q2 Review</b><br><span class="help">Quarterly Review template</span>','Aug 7, 2026','<span class="chip green" style="font-size:9px">Approved</span>','R. Okafor'],
+       ['<b>Concentration Risk Memo</b><br><span class="help">Annual Plan template</span>','Aug 11, 2026','<span class="chip green" style="font-size:9px">Sent</span>','R. Okafor'],
+       ['<b>Pre-meeting brief</b><br><span class="help">Pre-Meeting Brief template</span>','Aug 11, 2026','<span class="chip blue" style="font-size:9px">Filed</span>','System']])}
+   </div>`}
  ]},
  studio:{t:'Content Studio',ic:'🎙️',steps:[
   {t:'One episode in',d:'Upload a podcast episode or recording. The transcript comes back automatically with the strongest hooks pulled out.',b:['Fathom, Zoom, Teams or a file','Transcript and chapters in minutes','Hooks ranked by strength'],
-   p:pvH('🎙️','Episode 42 · 26 min',['4 assets ready','green'])+`<div class="pv-b"><div class="pv-doc">Protecting the human side while automation does the rest</div><div class="pv-row"><span class="k">Transcript</span><span>4,160 words · 6 chapters · auto</span></div><div class="pv-row"><span class="k">Hook 01</span><span>AI can support almost any part of a business. What makes this industry different is what you are trying to protect.</span></div></div>`},
+   p:pvH('🎙️','Episode 42 · 26 min',['4 assets ready','green'])+`<div class="pv-b">
+     <div class="pv-doc">Protecting the human side while automation does the rest</div>
+     ${pvTbl(['What came back','Detail'],[
+       ['Transcript','4,160 words · 6 chapters · 2 speakers'],
+       ['Strongest hook','AI can support almost any part of a business. What makes this industry different is what you are trying to protect.'],
+       ['Uploaded','Aug 28, 2026 · 1080p · Erica Dresslar &amp; John Browning']])}
+   </div>`},
   {t:'A week of content out',d:'From one episode the studio drafts a LinkedIn post, a short clip card, a newsletter section and advisor talking points, all in Rita\u2019s voice.',b:['LinkedIn · clip · newsletter · talking points','Written from your voice samples','Meta and LinkedIn campaigns'],
-   p:pvH('✨','What do you want out of this episode?')+`<div class="pv-b"><div class="pv-src"><i>✓</i>LinkedIn post · Rita voice · 120–180 words</div><div class="pv-src"><i>✓</i>Short clip card · hook frame + 10s cut</div><div class="pv-src"><i>✓</i>Newsletter section · 250 words + one CTA</div><div class="pv-src"><i>✓</i>Advisor talking points · 5 bullets</div><div style="margin-top:8px"><span class="chip blue">Run the engine →</span></div></div>`},
+   p:pvH('✨','What do you want out of this episode?')+`<div class="pv-b">
+     ${pvTbl(['Asset','Shape','Source'],[
+       ['LinkedIn post','120–180 words, Rita voice','Ep 42 transcript'],
+       ['Short clip card','Hook frame + 10s cut','Ep 42 recording'],
+       ['Newsletter section','250 words + one CTA','Ep 42 chapters 3–4'],
+       ['Advisor talking points','5 bullets','Ep 42 transcript']])}
+     <div style="margin-top:10px"><span class="chip blue">Run the engine →</span></div>
+   </div>`},
   {t:'Nothing publishes without you',d:'Every asset waits for your approval. Approve it and it moves to the scheduler; edit it and the studio learns your voice a little better.',b:['Ready to approve queue','Edits become voice feedback','Scheduler handles the posting'],
-   p:pvH('🛡️','Ready to approve',['4','gold'])+`<div class="pv-b"><div class="pv-row"><span><b>LinkedIn post from Ep 41</b><br><span class="help">Drafted in the firm voice · 3 of 3 sources</span></span><span class="chip gold" style="margin-left:auto;font-size:9.5px">Approve</span></div><div class="pv-row"><span><b>IG carousel from Ep 41</b><br><span class="help">5 slides · thumbnail picked</span></span><span class="chip gold" style="margin-left:auto;font-size:9.5px">Approve</span></div><div class="help" style="margin-top:8px">You approve each asset, then it moves to the scheduler.</div></div>`},
+   p:pvH('🛡️','Ready to approve',['4','gold'])+`<div class="pv-b">
+     ${pvTbl(['Asset','From','Sources','Action'],[
+       ['<b>LinkedIn post</b>','Episode 41','3 of 3','<span class="chip gold" style="font-size:9px">Approve</span>'],
+       ['<b>IG carousel</b> · 5 slides','Episode 41','3 of 3','<span class="chip gold" style="font-size:9px">Approve</span>']])}
+     ${pvLearn('Every edit you make before approving is saved as a voice rule, so the next draft needs fewer of them.')}
+   </div>`},
   {t:'Recently published, with results',d:'See what went out and how it performed, by week or month, so the next episode leans into what worked.',b:['Engagement and open rates per asset','Filter by last week or last month','Feeds back into what gets drafted next'],
-   p:pvH('📈','Recently published',['Last month','grey'])+`<div class="pv-b"><div class="pv-row"><span>The family meeting nobody wants to schedule<br><span class="help">Ep 39 · LinkedIn · Jul 8</span></span><span class="chip green" style="margin-left:auto;font-size:9.5px">4.1% engagement</span></div><div class="pv-row"><span>Your unvested shares are not yours<br><span class="help">Ep 40 · Newsletter · Jul 25</span></span><span class="chip green" style="margin-left:auto;font-size:9.5px">38% open rate</span></div></div>`}
+   p:pvH('📈','Recently published',['Last month','grey'])+`<div class="pv-b">
+     ${pvTbl(['Asset','Channel','Published','Result'],[
+       ['The family meeting nobody wants to schedule','LinkedIn','Jul 8, 2026','<span class="chip green" style="font-size:9px">4.1% engagement</span>'],
+       ['Your unvested shares are not yours','Newsletter','Jul 25, 2026','<span class="chip green" style="font-size:9px">38% open rate</span>']])}
+   </div>`}
  ]},
  kb:{t:'Knowledge Base',ic:'📚',steps:[
-  {t:'The firm\u2019s brain, queryable',d:'Ask a question in plain English and get an answer from your own documents, with the source named.',b:['Answers from your files, not the open web','Company documents and client files together','Two-way synced with HubSpot and the vault'],
-   p:pvH('🔎','Ask the company knowledge base')+`<div class="pv-b"><div class="pv-row" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px"><span class="help">Ask anything about a client or the firm…</span><span class="chip blue" style="margin-left:auto;font-size:9.5px">Ask the AI</span></div><div class="pv-tabs" style="margin-top:8px"><span>How we write to clients</span><span>Whitfield deferred comp</span><span>Firm fee policy</span></div></div>`},
-  {t:'Company folders with standard subfolders',d:'Every company folder carries the same four subfolders, so the team always knows where forms, guidelines, tutorials and templates live.',b:['Forms · Guidelines · Video tutorials · Templates','Same structure in every folder','Upload to a folder and it is indexed'],
-   p:pvH('📁','Company repository',['Two-way synced','green'])+`<div class="pv-b"><div class="pv-row"><span>📁 <b>Firm & brand</b></span><span class="help" style="margin-left:auto">Forms · Guidelines · Video tutorials · Templates</span></div><div class="pv-row"><span>📁 <b>Compliance</b></span><span class="help" style="margin-left:auto">Forms · Guidelines · Video tutorials · Templates</span></div><div class="pv-row"><span>📁 <b>Client onboarding</b></span><span class="help" style="margin-left:auto">Forms · Guidelines · Video tutorials · Templates</span></div></div>`},
-  {t:'Every client\u2019s own repository',d:'Each client has a source repository: custodian statements, transcripts, tax and estate documents, past deliverables. Canvas draws from it when it drafts for them.',b:['One folder per client, subfolders by type','Uploads here appear in Canvas instantly','Mirrors their Client 360 Source repository tab'],
-   p:pvH('👥','Client folders',['12 clients','grey'])+`<div class="pv-b"><div class="pv-row"><span>📁 <b>Diane & Victor Ellison</b></span><span class="help" style="margin-left:auto">3 files · Custodian · Transcripts · Deliverables</span></div><div class="pv-row"><span>📁 <b>Daniel & Priya Raman</b></span><span class="help" style="margin-left:auto">2 files · Intake · Tax · Estate</span></div><div class="pv-row"><span>📁 <b>Dr. Alicia Boone</b></span><span class="help" style="margin-left:auto">2 files · Deal documents · Transcripts</span></div></div>`},
-  {t:'Templates live here too, and feed Canvas',d:'Upload an example document and the system learns its shape as a template. From the Templates subfolder you can generate a complete document in one click.',b:['Upload once, reuse forever','Section order and source mapping learned automatically','Generate a document straight from the folder'],
-   p:pvH('📐','Templates subfolder',['Knowledge Base','gold'])+`<div class="pv-b"><div class="pv-row"><span><b>Quarterly Review</b><br><span class="help">Q2-Review-Ellison-APPROVED.docx · 5 sections</span></span><span class="chip gold" style="margin-left:auto;font-size:9.5px">✨ Generate</span></div><div class="pv-row"><span><b>Annual Plan</b><br><span class="help">Annual-Plan-Whitfield.docx · 6 sections</span></span><span class="chip gold" style="margin-left:auto;font-size:9.5px">✨ Generate</span></div><div class="help" style="margin-top:8px">A generated document opens in Canvas, written from the client\u2019s repository.</div></div>`}
+  {t:'The firm\u2019s brain, queryable',d:'Ask a question in plain English and get an answer from your own documents, with the source named.',b:['Answers from your files, not the open web','Company documents and client files together','Two-way sync with HubSpot and the vault'],
+   p:pvH('🔎','Ask the company knowledge base')+`<div class="pv-b">
+     <div class="pv-ask"><span>How do we write to clients?</span><span class="chip blue" style="font-size:9.5px">Ask the AI</span></div>
+     ${pvTbl(['Answered from','Type'],[
+       ['Client-Communication-Standards.docx','Guidelines'],
+       ['Escalation-and-Response-Times.pdf','Guidelines'],
+       ['SOP-Quarterly-Review-Cycle.docx','Guidelines']])}
+   </div>`},
+  {t:'Company folders with standard subfolders',d:'Every company folder carries the same four subfolders, so the team always knows where forms, guidelines, tutorials and templates live. Click one to open it.',b:['Forms · Guidelines · Video tutorials · Templates','Same structure in every folder','Upload to a folder and it is indexed'],
+   p:pvH('📁','Company repository',['Two-way sync','green'])+`<div class="pv-b">
+     ${pvFold('Firm &amp; brand','11 files',['Forms','Guidelines','Video tutorials','Templates'],true)}
+     ${pvFold('Compliance','7 files',['Forms','Guidelines','Video tutorials','Templates'],false)}
+     ${pvFold('Client onboarding','9 files',['Forms','Guidelines','Video tutorials','Templates'],false)}
+     ${pvFold('Policies &amp; governance','3 files',['Forms','Guidelines','Video tutorials','Templates'],false)}
+   </div>`},
+  {t:'Every client\u2019s own repository',d:'Each client has a source repository laid out the same way. Open a client folder and the same subfolders are waiting. Canvas draws from it when it drafts for them.',b:['One folder per client, same subfolders every time','Uploads here appear in Canvas instantly','Mirrors their Client 360 Source repository tab'],
+   p:pvH('👥','Client folders',['11 clients','grey'])+`<div class="pv-b">
+     ${pvFold('Dr. Alicia Boone','2 files · Client',['Forms','Guidelines','Video tutorials','Templates','Deal documents','Transcripts'],true)}
+     ${pvFold('Diane &amp; Victor Ellison','3 files · Client',['Forms','Guidelines','Video tutorials','Templates'],false)}
+     ${pvFold('Daniel &amp; Priya Raman','2 files · Client',['Forms','Guidelines','Video tutorials','Templates'],false)}
+     ${pvFold('Tom Hollis','2 files · Client',['Forms','Guidelines','Video tutorials','Templates'],false)}
+   </div>`},
+  {t:'Upload once, and it becomes sources',d:'Drop a document into a folder and the system reads it, names what it found, and makes each piece available as a source Canvas can draft from.',b:['Upload once, reuse forever','Section order and source mapping learned automatically','Generate a document straight from the folder'],
+   p:pvH('📥','Upload → sources',['Knowledge Base','gold'])+`<div class="pv-b">
+     <div class="pv-flow">
+       <div class="pv-fp">
+         <div class="pv-fp-k">You uploaded</div>
+         <div class="pv-file"><span class="ic">📄</span><span><b>Q2-Review-Ellison-APPROVED.docx</b><small>Aug 7, 2026 · 1.2 MB · uploaded by Mark</small></span></div>
+       </div>
+       <div class="pv-arrow">→</div>
+       <div class="pv-fp">
+         <div class="pv-fp-k">Sources pulled from it</div>
+         <div class="pv-src"><i>✓</i>Section shape · 5 sections in order</div>
+         <div class="pv-src"><i>✓</i>Performance vs plan figures</div>
+         <div class="pv-src"><i>✓</i>Closing language and sign-off</div>
+         <div class="pv-src"><i>✓</i>Chart formats used</div>
+       </div>
+     </div>
+     ${pvLearn('The system keeps learning from what you put in and what you change. Every edit and correction refines the next document it writes for you.')}
+   </div>`}
  ]}
 };
 const TOUR={k:null,i:0};
@@ -5558,7 +5670,11 @@ function eyeb(id,def){return `<span class="eyebrow wtitle" data-wid="${id}" ${S.
 let HOME_FILTER='all';
 const HOME_AGENDA=[
  {d:1,dow:'TUE',today:true,items:[
+  {time:'9:00 AM',t:'Delaney review — annual review pack',m:'Draft ready for your approval',chip:'DRAFT UNDER REVIEW',ck:'blue',act:'Open draft',go:"rdOpenClientDoc('c9')",k:['meeting']},
+  {time:'11:00 AM',t:'Fournier kickoff — account consolidation',m:'No brief yet · build one from a template',chip:'PREP NEEDED',ck:'gold',act:'Prepare',go:"prepMeeting('c5','Fournier kickoff')",k:['meeting']},
+  {time:'1:00 PM',t:'Adebayo check-in — 529 drawdown',m:'Draft 2 · waiting on your review',chip:'DRAFT UNDER REVIEW',ck:'blue',act:'Open draft',go:"rdOpenClientDoc('c6')",k:['meeting']},
   {time:'3:30 PM',t:'Boone review',m:'Brief written 06:11 · no open questions',chip:'DRAFT READY',ck:'green',act:'Open brief',gold:true,go:"openClient('c2');cdTab('deliv');setTimeout(()=>docPreview('Pre-meeting brief','Pre-Meeting-Brief.docx'),120)",k:['meeting']},
+  {time:'4:30 PM',t:'Whitfield check-in — retirement income',m:'Brief written this morning',chip:'DRAFT READY',ck:'green',act:'Open brief',go:"openClient('c11');setTimeout(()=>cdTab('brief'),60)",k:['meeting']},
   ]},
  {d:2,dow:'WED',items:[{time:'10:00 AM',t:'Ellison review — Q2 portfolio',m:'Draft 3 · 2 comments open',chip:'DRAFT UNDER REVIEW',ck:'blue',act:'Open Canvas',deliv:'d1',go:"openDeliv('d1','c1')",k:['meeting','draft']}]},
  {d:3,dow:'THU',items:[{time:'11:00 AM',t:'Hollis deal call',m:'No brief yet · build one from a template',chip:'PREP NEEDED',ck:'gold',act:'Prepare',go:"prepMeeting('c4','Hollis deal call')",k:['meeting']}]},
@@ -6811,18 +6927,11 @@ function renderCdBody(){
   if(t==='delivall'){
     const mine=DELIVS.filter(d=>d.client===c.name&&d.status!=='Approved');
     const latest=mine.slice().sort((a,b)=>String(b.upd).localeCompare(String(a.upd)))[0];
-    B.innerHTML=`<div class="card" style="display:flex;flex-direction:column;gap:10px">
-      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;align-items:flex-start">
-        <span><span class="help">Document drafts under review</span><br><b>${mine.length?mine.map(d=>esc(d.title)).join(', '):'None'}</b></span>
-        ${latest?`<span><span class="help">Latest document edited</span><br><b>${esc(latest.title)}</b> ${stageChip(latest.stage)}</span>`:''}
-        <span style="flex:1"></span>
-        <span class="chip grey" style="font-size:9.5px;align-self:center">Same view as their Canvas file</span>
-      </div>
-      ${mine.length?stageTablesHtml(mine):'<p class="help">Nothing under review for this client right now. Anything you build stays here until it is approved.</p>'}
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" onclick="openClientPane('${esc(c.name)}')">📁 Open in Canvas · ${esc(c.name.split(' ')[0])}\u2019s file</button>
-        <button class="btn btn-gold btn-sm" onclick="openBuild(undefined,'${c.id}')">＋ Build something new for ${esc(c.name.split(' ')[0])}</button>
-      </div>
+    const dq=(RD.cdDraftQ||'').toLowerCase();
+    const shown=dq?mine.filter(d=>(d.title+' '+(d.tpl||'')).toLowerCase().includes(dq)):mine;
+    B.innerHTML=`<div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <label class="rd-search cd-dsearch"><input placeholder="Search drafts under review…" value="${esc(RD.cdDraftQ||'')}" oninput="RD.cdDraftQ=this.value;renderCdBody();const i=document.querySelector('.cd-dsearch input');i.focus();i.setSelectionRange(this.value.length,this.value.length)"></label>
+      ${shown.length?stageTablesHtml(shown):`<p class="help">${mine.length?'No draft matches that search.':'Nothing under review for this client right now. Anything you build stays here until it is approved.'}</p>`}
     </div>`;
     return;
   }
@@ -6852,21 +6961,18 @@ function renderCdBody(){
     return;
   }
   if(t==='goals'){
-    B.innerHTML=`<div class="two-col">
-      <div class="card"><div class="eyebrow" style="margin-bottom:8px">What they're trying to do — click the text to edit</div>
-        <div class="kb-sum" style="font-size:13.5px;line-height:1.65;margin:0" contenteditable="true" spellcheck="false" onblur="clientBy(S.client).goals=this.textContent.trim();toast('Goals updated — every future brief and draft uses them')">${esc(c.goals)}</div></div>
+    B.innerHTML=`<div class="cd-goals">
       <div class="card"><div class="eyebrow" style="margin-bottom:8px">Life events on file — editable</div>
         ${c.events.length?c.events.map((e,ei)=>`<div class="ai-item" style="cursor:default"><span>${e[1]==='birthday'?'🎂':e[1]==='life'?'📅':e[1]==='goal'?'🎯':'📌'}</span><div style="flex:1"><b class="kb-sum" style="display:inline-block;margin:0;padding:3px 6px" contenteditable="true" spellcheck="false" onblur="clientBy(S.client).events[${ei}][0]=this.textContent.trim();toast('Life event updated')">${esc(e[0])}</b><span style="display:block">${e[1]==='birthday'?'Birthday':e[1]==='life'?'Life event':e[1]==='goal'?'Goal':'Event'}</span></div><button class="btn btn-ghost btn-xs" onclick="clientBy(S.client).events.splice(${ei},1);cdTab('goals');toast('Removed')">✕</button></div>`).join(''):'<p class="help">Nothing recorded. Life events picked up on calls land here automatically.</p>'}
-        <div style="display:flex;gap:6px;margin-top:10px"><input class="field" id="cdEvIn" placeholder="Add a life event or goal…" style="padding:7px 10px;font-size:12px" onkeydown="if(event.key==='Enter')addCdEvent()"><button class="btn btn-ghost btn-xs" onclick="addCdEvent()">Add</button></div>
-      </div></div>
-    <div class="card" style="margin-top:14px">
-      <div class="eyebrow" style="margin-bottom:8px">Turn a goal or life event into a message</div>
+        <div style="display:flex;gap:6px;margin-top:10px"><input class="field" id="cdEvIn" placeholder="Add a life event or goal…" style="padding:8px 11px;font-size:13.5px" onkeydown="if(event.key==='Enter')addCdEvent()"><button class="btn btn-ghost btn-sm" onclick="addCdEvent()">Add</button></div>
+      <div class="cd-draftbar">
+      <div class="eyebrow" style="margin-bottom:8px">Turn one of these into a message</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
         <button class="btn btn-gold btn-sm" onclick="openAiDraft('${esc(c.name)} — goals follow-up','',{client:'${esc(c.name)}',cid:'${c.id}'})">Draft a message now<span class="ai-mark"></span></button>
         <span style="position:relative;display:inline-block"><button class="btn btn-ghost btn-sm" onclick="this.nextElementSibling.classList.toggle('open')">Or pick a template<span class="ai-mark"></span></button>
         <span class="gen-menu" style="min-width:240px">${TEMPLATES.filter(x=>x.type==='Email').map(x=>`<button onclick="followupFromTpl('${c.id}','${x.id}');this.closest('.gen-menu').classList.remove('open')">${esc(x.name)}</button>`).join('')||'<button disabled>No email templates yet</button>'}</span></span>
-      </div>
-    </div>`;
+      </div></div>
+      </div></div>`;
     return;
   }
   /* meeting intelligence */
@@ -8151,17 +8257,21 @@ let REPO_OPEN={};
 function stageChip(st){return `<span class="chip ${st==='Approved'?'green':st==='Gathering sources'?'blue':st==='Client review'?'gold':'amber'}" style="font-size:10px">${esc(st)}</span>`;}
 let DLV_PANE=null;
 function stageTablesHtml(docs){
-  const stages=DLV_STAGES.map(st=>({st:st.n,c:st.c,docs:docs.filter(d=>d.stage===st.n)})).filter(g=>g.docs.length);
+  /* group and label by the same prep stage Canvas shows, so a document never
+     reads one way on the client page and another way in Canvas */
+  const stages=(typeof rdStage==='function'&&typeof RD_STAGES!=='undefined')
+    ? RD_STAGES.map(st=>({st:st[1],c:st[2],docs:docs.filter(d=>rdStage(d).k===st[0])})).filter(g=>g.docs.length)
+    : DLV_STAGES.map(st=>({st:st.n,c:st.c,docs:docs.filter(d=>d.stage===st.n)})).filter(g=>g.docs.length);
   return stages.map(g=>`<div class="repo-folder">
     <div class="repo-folder-h"><span class="pill" style="background:${g.c}">${esc(g.st)}</span><span class="cnt">${g.docs.length}</span></div>
     <div class="tbl-wrap"><table class="tbl repo-tbl">
-      <thead><tr><th>Document</th><th>Stage</th><th>Draft</th><th>Sources</th><th>Last modified</th><th>Last modified by</th><th>Open comments</th><th></th></tr></thead>
+      <thead><tr><th>Document</th><th>Prep stage</th><th>Draft</th><th>Sources</th><th>Last modified</th><th>Last modified by</th><th>Open comments</th><th></th></tr></thead>
       <tbody>${g.docs.map(d=>{
         const o=COMMENTS.filter(c=>c.on===d.id&&!c.resolved).length;
         const src=SOURCES[d.id]||[];const on=src.filter(x=>x.on!==false).length;const tot=src.length||on;
         return `<tr>
           <td><b style="cursor:pointer" onclick="openDeliv('${d.id}')">${esc(d.title)}</b></td>
-          <td>${stageChip(d.stage)}</td>
+          <td>${typeof rdStage==='function'?`<span class="rd-status ${rdStage(d).k}">${esc(rdStage(d).l)}</span>`:stageChip(d.stage)}</td>
           <td class="mono" style="font-size:12px">${esc(d.ver)}</td>
           <td class="mono" style="font-size:12px">${tot?on+' of '+tot:'—'}</td>
           <td class="mono" style="font-size:12px">${esc(d.upd||'—')}</td>
@@ -9528,7 +9638,8 @@ function openTpl(id,edit){
   TPL_EDIT=!!edit;
   $('mtDocFile').textContent=t.src;
   $('mtDocMeta').textContent=t.pages+' pages · updated '+t.upd+' · sections read from it';
-  mtTab(edit?'secs':'doc');
+  mtTab('doc');
+  {const h=$('mtEditHint');if(h)h.classList.toggle('hidden',!edit);}
   $('mtEyebrow').textContent=t.use;
   $('mtTitle').textContent=t.name;
   $('mtMeta').textContent='Built from '+t.src+' · '+t.pages+' pages · '+t.runs+' runs · updated '+t.upd;
@@ -9568,12 +9679,11 @@ function openTpl(id,edit){
   $('mtOuts').innerHTML=t.outs&&t.outs.length?t.outs.map(o=>`<div class="ai-item"><span style="color:var(--green)">✓</span><div style="flex:1"><b>${esc(o[0])}</b></div><button class="btn btn-ghost btn-xs" onclick="closeModal('mTpl');${o[1]}">Open</button></div>`).join(''):'<p class="help" style="padding:10px">No documents built from it yet. Generate one above.</p>';
   const nSecs=(t.secs||[]).filter(x=>x!=='Header block').length;
   $('mtGenBlock').innerHTML=
-    '<p class="help" style="margin:0 0 9px">One click writes a complete '+esc(t.name)+' from its '+nSecs+' section'+(nSecs===1?'':'s')+' and '+(t.srcs||[]).length+' mapped source'+((t.srcs||[]).length===1?'':'s')+', then opens it in Canvas ready to review.</p>'
+    '<p class="help" style="margin:0 0 9px">Runs the same guided build Canvas runs: template, client, the sources this template needs, anything else from their repository, then where each one lands. '+esc(t.name)+' has '+nSecs+' section'+(nSecs===1?'':'s')+' and '+(t.srcs||[]).length+' mapped source'+((t.srcs||[]).length===1?'':'s')+'.</p>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
     +'<span class="help">For</span>'
     +'<select class="field" id="mtGenClient" style="max-width:250px;padding:7px 10px;font-size:12.5px">'+CLIENTS.map(cc=>'<option value="'+cc.id+'">'+esc(cc.name)+'</option>').join('')+'</select>'
-    +'<button class="btn btn-gold btn-sm" onclick="genDocFromTpl(\''+t.id+'\',$(\'mtGenClient\').value)">✨ Generate complete document</button>'
-    +'<button class="btn btn-ghost btn-sm" onclick="closeModal(\'mTpl\');genFrom(\''+t.id+'\')">Or build step by step, choosing sources →</button>'
+    +'<button class="btn btn-gold btn-sm" onclick="closeModal(\'mTpl\');genFrom(\''+t.id+'\')">✨ Generate a document</button>'
     +'</div>';
   $('mtGen').onclick=()=>{mtTab('use');setTimeout(()=>{const el=$('mtGenBlock');if(el&&el.scrollIntoView)el.scrollIntoView({block:'center'});},40);};
   openModal('mTpl');
@@ -10469,23 +10579,21 @@ function rdHome(){
   const nextM=mtgs[0];
   const emails=TASKS.filter(t=>t.lane==='email'&&!t.done);
   const docs=rdQueueDocs();
-  const queue=docs.slice(0,4).map(d=>{const cid=rdCid(rdShort(d.client))||'';const v=rdVerb(d);
-      return {dot:rdDot(d),title:d.title,client:rdShort(d.client),state:rdNextAction(d),stage:rdStage(d),ai:rdTouch(d).by==='ai',act:v,go:v==='Approve'?`rdApproveDeliv('${d.id}')`:`openDeliv('${d.id}','${cid}')`};})
-    .concat(emails.slice(0,1).map(t=>({dot:'amber',title:t.title,client:t.rcpt,state:'Read the draft and send it, or edit the wording first',stage:{k:'ai',l:'AI draft ready'},ai:true,act:'Approve',go:`openAiDraft('${esc(t.title)}','${esc(t.tpl||'Client Check-in Email')}')`})));
+  const queue=rdQueueItems();
   const high=docs.filter(d=>rdStageKey(d)==='blocked'||rdOpenComments(d)>0).length;
   const plans=DELIVS.filter(d=>d.status==='Draft ready').length;
   const briefs=rdMtgAll().filter(m=>!m.past&&/Brief ready/.test(rdMtgState(m)[1])).length;
   const aiDone=emails.length+briefs+plans;
-  const nextUp=rdMtgAll().filter(m=>!m.past&&!(m.m===RD_TODAY.m&&m.d===RD_TODAY.d)).slice(0,Math.max(0,5-mtgs.length));
+  const nextUp=rdMtgAll().filter(m=>!m.past&&!(m.m===RD_TODAY.m&&m.d===RD_TODAY.d)).slice(0,3);
   const dayLabel=m=>dowFor(m.d,m.m)+', '+CALM[m.m].name.split(' ')[0].slice(0,3)+' '+m.d;
   const mtgRow=(m,dim)=>`<div class="rd-mtg${dim?' next':''}" onclick="RD.mtgSel=rdMtgAll().find(x=>x.cid==='${m.cid}'&&x.d===${m.d}&&x.m===${m.m});nav('meetings')">
       <div class="t"><b>${esc(m.time)}</b><span>${esc(dayLabel(m))}</span></div>
       <div><b>${esc(m.client)}</b><small class="d">${esc(m.label)}</small></div>
       <span class="stg"><span class="rd-status ${m.chip==='PREP NEEDED'?'blocked':m.chip==='DRAFT UNDER REVIEW'?'advisor':m.life?'life':'client'}">${rdMtgState(m)[1]}</span></span>
-      <button class="rd-btn sm" onclick="event.stopPropagation();${esc(m.go)}">${rdMtgState(m)[2]}</button></div>`;
+      <button class="rd-btn sm" onclick="event.stopPropagation();${esc(rdMtgGo(m))}">${rdMtgState(m)[2]}</button></div>`;
   el.innerHTML=`
   <div class="rd-head"><div><div class="rd-date">${dateLabel}</div><h1>${greet}, ${esc(name)}.</h1>
-    <p>You have ${queue.length} items requiring attention and ${mtgs.length} meeting${mtgs.length===1?'':'s'} today.</p></div>
+    <p>${queue.length} item${queue.length===1?'':'s'} need${queue.length===1?'s':''} your attention today, and you have ${mtgs.length} meeting${mtgs.length===1?'':'s'} on the calendar.</p></div>
     <button class="rd-cta" onclick="rdCatchUp()">${RD_ICON.spark}Catch me up with AI${AIM}</button></div>
   <div class="rd-stats">
     <button class="rd-card rd-stat gold" onclick="nav('delivs')"><span class="ic">${RD_ICON.alert}</span><span><span class="n">${queue.length}</span><span class="l">Need attention</span><span class="s">${high} high priority</span></span><span class="chev">${RD_ICON.chev}</span></button>
@@ -10494,12 +10602,14 @@ function rdHome(){
   </div>
   <div class="rd-home-grid">
     <div class="rd-card">
-      <div class="rd-sec-h gold"><div><div class="k">Today\u2019s priority queue${AIM}</div><h3>Needs your attention</h3><small class="rd-sub">Ranked by AI on what is due today or this week.</small></div><button class="lnk" onclick="nav('delivs')">View Canvas ${RD_ICON.chev}</button></div>
+      <div class="rd-sec-h gold"><div><div class="k">Today\u2019s priority queue${AIM}</div><h3>Needs your attention today</h3><small class="rd-sub">Ranked on when it was last touched, what is due for an upcoming meeting, open tasks and outstanding comments. Due today or this week.</small></div><button class="lnk" onclick="nav('delivs')">View Canvas ${RD_ICON.chev}</button></div>
+      <div class="rd-qnote">Needing attention today is not the same as being due today. Items appear here when something is waiting on you, even when the deadline is later.</div>
       <div class="rd-qhead"><span></span><span>Client</span><span>Document</span><span>Prep stage</span><span>What to do next${AIM}</span><span></span></div>
-      ${queue.map(t=>`<div class="rd-row"><span class="dot ${t.dot}"></span><b class="nm">${esc(t.client)}</b><span class="dc">${esc(t.title)}</span><span class="stg"><span class="rd-status ${t.stage.k}">${esc(t.stage.l)}</span>${t.ai?'<span class="rd-aitag">AI</span>':''}</span><span class="m">${esc(t.state)}</span><button class="rd-btn sm" onclick="${t.go}">${t.act}</button></div>`).join('')}
+      ${(()=>{const pg=rdPageN('queue',queue,5);return (pg.rows.length?pg.rows.map(t=>`<div class="rd-row"><span class="dot ${t.dot}"></span><b class="nm">${esc(t.client)}</b><span class="dc">${esc(t.title)}<small class="rd-why ${t.dueToday?'due':''}">${esc(t.why)}</small></span><span class="stg"><span class="rd-status ${t.stage.k}">${esc(t.stage.l)}</span>${t.ai?'<span class="rd-aitag">AI</span>':''}</span><span class="m">${esc(t.state)}</span><button class="rd-btn sm" onclick="${t.go}">${t.act}</button></div>`).join('')
+        :`<div class="rd-empty">Nothing is waiting on you today.</div>`)+rdPagerN('queue',pg);})()}
     </div>
     <div class="rd-card">
-      <div class="rd-sec-h gold"><div><div class="k">Next five</div><h3>Meetings</h3><small class="rd-sub">Today first, then what is coming.</small></div><button class="lnk" onclick="nav('meetings')">View meetings ${RD_ICON.chev}</button></div>
+      <div class="rd-sec-h gold"><div><div class="k">Upcoming meetings</div><h3>Today, then what is coming</h3><small class="rd-sub">${mtgs.length} today \u00b7 ${nextUp.length} more in the next fortnight.</small></div><button class="lnk" onclick="nav('meetings')">View meetings ${RD_ICON.chev}</button></div>
       <div class="rd-mhead"><span>When</span><span>Client and meeting</span><span>Prep stage</span><span></span></div>
       ${mtgs.length?mtgs.map(m=>mtgRow(m,false)).join(''):`<div class="rd-empty">Nothing on the calendar today.<br><button class="rd-btn link" style="margin-top:8px" onclick="nav('meetings')">See what is coming up</button></div>`}
       ${rdLifeToday().map(e=>rdLifeRow(e)).join('')}
@@ -10590,33 +10700,26 @@ function rdClients(){
   el.innerHTML=rdHeadHtml('Catalyst','Client 360','Every client, when you next speak to them, and where their prep stands.')+
   rdPurposeBar('c360')+
   `<div class="rd-banner"><span class="ic">${RD_ICON.alert}</span><div><b>2 client records need review</b><small>Potential data conflicts detected</small></div><button class="lnk" onclick="c360Conflicts();RD.c360Pick=C360_PICK.slice();RD.c360Tile=null;rdClients()">Review records ${RD_ICON.chev}</button></div>
-  <div class="rd-strip">
-    <button class="${!RD.c360Tile&&!RD.c360Pick?'on':''}" onclick="RD.c360Pick=null;RD.c360Tile=null;RD.c360Q='';rdClients()"><span class="n">${CLIENTS.length}</span>Households</button>
-    <button onclick="RD.catTab='meetings';rdMtgSetPreset('upcoming');rdClients()"><span class="n">${booked}</span>Meetings booked</button>
-    <button class="${RD.c360Tile==='prep'?'on':''}" onclick="RD.c360Pick=null;RD.c360Tile='prep';rdClients()"><span class="n">${prep}</span>Need prep</button>
-    <button class="${RD.c360Tile==='ready'?'on':''}" onclick="RD.c360Pick=null;RD.c360Tile='ready';rdClients()"><span class="n">${ready}</span>Briefs ready</button>
+  <div class="rd-strip rd-strip-read">
+    <div><span class="n">${CLIENTS.length}</span><span class="rd-sl">Households<small>on the book</small></span></div>
+    <div><span class="n">${booked}</span><span class="rd-sl">Meetings booked<small>next 30 days</small></span></div>
+    <div><span class="n">${rdAua()}</span><span class="rd-sl">Assets under advisement<small>across all households</small></span></div>
   </div>
   ${rdCatTabs()}
   <div class="rd-card">
-    <div class="rd-sec-h gold"><div><div class="k">Meeting prep${AIM}</div><h3>Who you are seeing next</h3></div><span class="rd-secn">${rows.length} of ${CLIENTS.length} households</span></div>
+    <div class="rd-sec-h gold"><div><div class="k">Client list</div><h3>Every household</h3><small class="rd-sub">Open a client to see their full portal. Prep stage and what to prepare live on the Meetings tab.</small></div><span class="rd-secn">${rows.length} of ${CLIENTS.length} households</span></div>
     <div class="rd-tools"><label class="rd-search">${RD_ICON.search}<input placeholder="Search clients, service, or advisor\u2026" value="${esc(RD.c360Q)}" oninput="RD.c360Q=this.value;RD.c360Pick=null;rdClients();const i=document.querySelector('#rd-c360 .rd-search input');i.focus();i.setSelectionRange(this.value.length,this.value.length)"></label>
       <span style="position:relative"><button class="rd-btn" onclick="event.stopPropagation();RD.c360Menu=!RD.c360Menu;rdClients()">${RD_ICON.filter}Filters ${RD_ICON.down}</button>
       ${RD.c360Menu?`<div class="rd-menu" style="right:0;left:auto" onclick="event.stopPropagation()"><div class="rd-menu-k">Prep stage</div>${[[null,'Everyone'],['prep','Prep needed'],['draft','Draft under review'],['ready','Brief ready'],['none','No meeting booked']].map(x=>`<button class="${(RD.c360Tile||null)===x[0]?'on':''}" onclick="RD.c360Tile=${x[0]?`'${x[0]}'`:'null'};RD.c360Pick=null;RD.c360Menu=false;rdClients()">${x[1]}</button>`).join('')}<div class="rd-menu-k">Search by</div>${[['any','Everything'],['client','Client name'],['email','Email address'],['line','Service line'],['adv','Advisor']].map(x=>`<button class="${sc===x[0]?'on':''}" onclick="RD.c360Scope='${x[0]}';RD.c360Menu=false;rdClients();const i=document.querySelector('#rd-c360 .rd-search input');if(i)i.focus()">${x[1]}</button>`).join('')}</div>`:''}</span></div>
     ${(RD.c360Pick||RD.c360Tile)?`<div style="padding:10px 18px;font-size:13.5px;color:var(--rd-muted);border-bottom:1px solid var(--rd-line-soft)">Filtered to ${rows.length} record${rows.length===1?'':'s'} \u00b7 <button class="rd-btn link" style="font-size:13.5px" onclick="RD.c360Pick=null;RD.c360Tile=null;rdClients()">Clear</button></div>`:''}
-    <div class="rd-chead"><span></span><button onclick="rdCatSortBy('client')">Client ${rdCatArrow('client')}</button><button onclick="rdCatSortBy('line')">Category ${rdCatArrow('line')}</button><button onclick="rdCatSortBy('meeting')">Next meeting ${rdCatArrow('meeting')}</button><button onclick="rdCatSortBy('prep')">Prep stage ${rdCatArrow('prep')}</button><span></span></div>
-    ${(()=>{const pg=rdPage('cat',rows);return (pg.rows.length?pg.rows.map(c=>{const p=rdPrepState(c),m=p.m,open=RD.catOpen===c.id;
-      const d=DELIVS.find(x=>rdCid(x.client)===c.id);
-      return `<div class="rd-crow2 ${open?'open':''}" onclick="RD.catOpen=RD.catOpen==='${c.id}'?null:'${c.id}';rdClients()">
-        <span class="car">${RD_ICON.down}</span>
+    <div class="rd-chead cl4"><button onclick="rdCatSortBy('client')">Client ${rdCatArrow('client')}</button><button onclick="rdCatSortBy('line')">Category ${rdCatArrow('line')}</button><button onclick="rdCatSortBy('meeting')">Next meeting ${rdCatArrow('meeting')}</button><span></span></div>
+    ${(()=>{const pg=rdPage('cat',rows);return (pg.rows.length?pg.rows.map(c=>{const p=rdPrepState(c),m=p.m;
+      return `<div class="rd-crow2 flat" onclick="openClient('${c.id}')">
         <b class="nm">${esc(c.name)}</b>
         <span class="cat">${esc(c.line)}</span>
-        <span class="mt">${m?esc(dowFor(m.d,m.m)+' '+CALM[m.m].name.split(' ')[0].slice(0,3)+' '+m.d+' \u00b7 '+m.time):'\u2014'}</span>
-        <span><span class="rd-status ${p.k==='prep'?'blocked':p.k==='ready'?'client':p.k==='draft'?'advisor':'gather'}">${esc(p.l)}</span></span>
-        <span class="go">${RD_ICON.chev}</span></div>
-      ${open?`<div class="rd-cexp wide">
-        <div><div class="k">What to prepare${AIM}</div><b>${esc(rdPrepTodo(c))}</b><small>${esc(rdPrepWhy(c))}</small><small>${d?esc(d.title)+' \u00b7 '+esc(rdStage(d).l):'No document in progress for this client'}</small></div>
-        <div class="acts">${m?`<button class="rd-btn pri" onclick="event.stopPropagation();${esc(p.go)}">${esc(p.act)}</button>`:''}<button class="rd-btn" onclick="event.stopPropagation();openClient('${c.id}')">Open Client 360</button>${d?`<button class="rd-btn" onclick="event.stopPropagation();openDeliv('${d.id}','${c.id}')">Open the document</button>`:`<button class="rd-btn" onclick="event.stopPropagation();openBuild(undefined,'${c.id}')">Build a document</button>`}</div></div>`:''}`;}).join('')
-      :`<div class="rd-empty">No clients match that filter.</div>`)+rdPager('cat',pg);})()}
+        <span class="mt">${m?esc(dowFor(m.d,m.m)+' '+CALM[m.m].name.split(' ')[0].slice(0,3)+' '+m.d+' \u00b7 '+m.time):'No meeting booked'}</span>
+        <button class="rd-btn sm" onclick="event.stopPropagation();openClient('${c.id}')">Client 360 ${RD_ICON.chev}</button></div>`;}).join('')
+      :`<div class="rd-empty">No clients match that search.</div>`)+rdPager('cat',pg);})()}
   </div>`;
 }
 function rdCatTabs(){
@@ -10704,10 +10807,14 @@ function rdMailMsgHtml(cid,m){
   const c=clientBy(cid);
   const open=(RD.mailOpen||{})[cid+':'+m.id];
   return `<div class="rd-mailmsg ${m.dir} ${open?'open':''}">
-    <button class="rd-mailrow ${m.dir}" onclick="event.stopPropagation();rdMailToggle('${cid}','${m.id}')">
+    <button class="rd-mailrow cols ${m.dir}" onclick="event.stopPropagation();rdMailToggle('${cid}','${m.id}')">
       <span class="dirtag">${m.dir==='in'?'Received':'Sent'}</span>
-      <span class="body"><b>${esc(m.subj)}</b><small>${esc(m.from)} \u00b7 ${esc(rdEmail(c))} \u00b7 ${esc(m.when)}${m.att?' \u00b7 1 attachment':''}</small></span>
-      ${m.unread?'<span class="unread">New</span>':''}<span class="car">${RD_ICON.down}</span></button>
+      <span class="subj" title="${esc(m.subj)}">${esc(m.subj)}${m.unread?'<i class="unread">New</i>':''}</span>
+      <span class="rcpt" title="${esc(rdMailRcpt(cid,m))}">${esc(rdMailRcpt(cid,m))}</span>
+      <span class="dt">${esc(rdMailDate(m))}</span>
+      <span class="tm">${esc(rdMailTime(m))}</span>
+      <span class="att">${m.att?'1':'0'}</span>
+      <span class="car">${RD_ICON.down}</span></button>
     ${open?`<div class="rd-mailread">
       <div class="rd-mailbody">${esc(m.body)}</div>
       ${m.att?`<div class="rd-mailatt">${RD_ICON.file}<span>${esc(m.att)}</span><button class="rd-btn sm" onclick="event.stopPropagation();nav('kb')">Open in Atlas</button></div>`:''}
@@ -10745,7 +10852,7 @@ function rdMailPanel(cid,compact){
   return `<div class="rd-mail" onclick="event.stopPropagation()">
     <div class="rd-mail-h"><b>Email history${AIM}</b><span class="rd-crmchip">HubSpot \u2014 Live Sync</span><small>${matched.length} of ${list.length} message${list.length===1?'':'s'}${unread?' \u00b7 '+unread+' unread':''}</small></div>
     ${rdMailToolbar(cid)}
-    ${show.length?show.map(m=>rdMailMsgHtml(cid,m)).join(''):`<p class="rd-mail-empty">No message matches that search. <button class="rd-btn link" onclick="event.stopPropagation();RD.mailQ='';RD.mailFilter='all';rdMailRerender()">Clear</button></p>`}
+    ${show.length?rdMailHead()+show.map(m=>rdMailMsgHtml(cid,m)).join(''):`<p class="rd-mail-empty">No message matches that search. <button class="rd-btn link" onclick="event.stopPropagation();RD.mailQ='';RD.mailFilter='all';rdMailRerender()">Clear</button></p>`}
     ${(!showAll&&matched.length>2)?`<button class="rd-btn sm" onclick="event.stopPropagation();RD.mailShowAll=RD.mailShowAll||{};RD.mailShowAll['${cid}']=true;rdMailRerender()">Show all ${matched.length} messages</button>`:''}
     <div class="rd-mail-f"><button class="rd-btn sm" onclick="event.stopPropagation();rdMailThread('${cid}')">Open the full thread</button><button class="rd-btn sm" onclick="event.stopPropagation();rdMailCompose('${cid}')">Draft a reply${AIM}</button></div>
   </div>`;
@@ -10934,10 +11041,15 @@ function rdMeetingsPage(host){
   const el=host||$('rd-c360');if(!el)return;
   if(!RD.mtgPreset)RD.mtgPreset='week';
   const all=rdMtgAll(),rows=rdMtgFiltered(),a=rdMtgAnchor();
-  const today=all.filter(m=>m.m===RD_TODAY.m&&m.d===RD_TODAY.d);
-  const prep=all.filter(m=>!m.past&&/Prep needed|Draft under review/.test(rdMtgState(m)[1])).length;
-  const briefs=all.filter(m=>!m.past&&/Brief ready/.test(rdMtgState(m)[1])).length;
-  const recaps=all.filter(m=>m.past).length;
+  const today=all.filter(m=>m.m===RD_TODAY.m&&m.d===RD_TODAY.d&&!m.life);
+  const upc=all.filter(m=>!m.past&&!m.life);
+  const prep=upc.filter(m=>/Prep needed/.test(rdMtgState(m)[1])).length;
+  const briefs=upc.filter(m=>/Brief ready/.test(rdMtgState(m)[1])).length;
+  const recapRows=all.filter(m=>m.past);
+  const recaps=recapRows.length;
+  const rdShortDay=x=>CALM[x.m].name.split(' ')[0].slice(0,3)+' '+x.d;
+  const recapSpan=recaps?(rdShortDay(recapRows.reduce((a,b)=>rdOrd(a)<rdOrd(b)?a:b))+' to '+rdShortDay(recapRows.reduce((a,b)=>rdOrd(a)>rdOrd(b)?a:b))):'none on file';
+  const upcSpan=upc.length?(rdShortDay(upc[0])+' to '+rdShortDay(upc[upc.length-1])):'none upcoming';
   const days=[];rows.forEach(m=>{const k=m.m+'-'+m.d;let g=days.find(x=>x.k===k);if(!g){g={k,m:m.m,d:m.d,items:[]};days.push(g);}g.items.push(m);});
   const sel=RD.mtgSel;
   let brief;
@@ -10950,10 +11062,15 @@ function rdMeetingsPage(host){
       <h4>Suggested discussion</h4><p style="font-size:13.5px;color:var(--rd-muted);margin:0 0 14px">${b?esc(b.ask[0]):'Confirm priorities, resolve the open decision, and agree on next steps.'}</p>
       ${sel.cid?rdMailPanel(sel.cid,true):''}
       ${sel.past?`<div class="rd-after"><div><b>This meeting is done.</b><small>Move ${esc(rdShort(sel.client))} to the next stage and Canvas offers the document that stage needs.</small></div><button class="rd-btn pri" onclick="rdAfterMeeting('${sel.cid}')">Move to the next stage</button></div>`:''}
-      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="rd-btn pri" onclick="openClient('${sel.cid}');setTimeout(()=>cdTab('brief'),60)">Open full intelligence brief</button>${sel.chip==='PREP NEEDED'?`<button class="rd-btn" onclick="${esc(sel.go)}">Prepare with a template</button>`:''}${sel.past?`<button class="rd-btn" onclick="openClient('${sel.cid}');setTimeout(()=>cdTab('meeting'),60)">Run meeting intelligence</button>`:''}</div></div>`;
+      <div class="rd-brief-note">This panel is the pre-meeting brief. The client intelligence brief is the overview of the client themselves, on their own page.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="rd-btn pri" onclick="openClient('${sel.cid}');setTimeout(()=>cdTab('brief'),60)">Open client overview</button>${/Brief ready/.test(rdMtgState(sel)[1])?`<button class="rd-btn" onclick="rdOpenFinal('${sel.cid}')">Open the finalised brief</button>`:''}${sel.chip==='PREP NEEDED'?`<button class="rd-btn" onclick="${esc(sel.go)}">Prepare with a template</button>`:''}${sel.past?`<button class="rd-btn" onclick="openClient('${sel.cid}');setTimeout(()=>cdTab('meeting'),60)">Run meeting intelligence</button>`:''}</div></div>`;
   }else brief=`<div class="rd-brief-empty">${RD_ICON.cal}<b>Select a meeting</b>Preview the essential context and preparation status without leaving this page.</div>`;
   el.innerHTML=rdHeadHtml('Catalyst','Meetings','Prepare faster, enter every conversation informed, and close the loop automatically.')+rdPurposeBar('meetings')+rdCatTabs()+
-  `<div class="rd-strip"><button onclick="rdMtgSetPreset('today')"><span class="n">${today.length}</span>Today</button><button onclick="RD.mtgFilter='prep';rdMtgSetPreset('upcoming')"><span class="n">${prep}</span>Need preparation</button><button onclick="RD.mtgFilter='ready';rdMtgSetPreset('upcoming')"><span class="n">${briefs}</span>Briefs ready</button><button onclick="RD.mtgFilter='recap';rdMtgSetPreset('last')"><span class="n">${recaps}</span>Recaps to review</button></div>
+  `<div class="rd-strip rd-strip-read">
+    <div><span class="n">${today.length}</span><span class="rd-sl">Today<small>${esc(rdMtgDateLabel(RD_TODAY).replace(', 2026',''))}</small></span></div>
+    <div><span class="n">${prep}</span><span class="rd-sl">Need preparation<small>${esc(upcSpan)}</small></span></div>
+    <div><span class="n">${briefs}</span><span class="rd-sl">Briefs ready<small>${esc(upcSpan)}</small></span></div>
+    <div><span class="n">${recaps}</span><span class="rd-sl">Recaps to review<small>${esc(recapSpan)}</small></span></div></div>
   <div class="rd-mtgbar">
     <div class="rd-mtgbar-r">
       <label class="rd-search" style="flex:0 1 340px">${RD_ICON.search}<input placeholder="${(RD.mtgScope||'any')==='email'?'Search by email address':(RD.mtgScope||'any')==='client'?'Search by client name':(RD.mtgScope||'any')==='title'?'Search by meeting name':'Search name, email, or meeting'}" value="${esc(RD.mtgQ||'')}" oninput="RD.mtgQ=this.value;rdClients();const i=document.querySelector('.rd-mtgbar .rd-search input');i.focus();i.setSelectionRange(this.value.length,this.value.length)"></label>
@@ -10970,16 +11087,15 @@ function rdMeetingsPage(host){
   <div class="rd-mtg-grid">
     <div class="rd-card">
       <div class="rd-sec-h gold"><div><div class="k">${RD.mtgPreset==='last'?'Recent':RD.mtgPreset==='today'?'Today':RD.mtgPreset==='date'?'Selected day':'Upcoming'}</div><h3>${RD.mtgPreset==='today'?'On the calendar today':RD.mtgPreset==='last'?'Last week':RD.mtgPreset==='date'?esc(rdMtgDateLabel(a)):RD.mtgPreset==='week'?'This week':'Next 14 days'}</h3></div><span class="rd-secn">${rows.length} meeting${rows.length===1?'':'s'}</span></div>
-      <div class="rd-mtghead"><span>Time</span><span>Client and meeting</span><span>Document</span><span>Status</span><span></span></div>
+      <div class="rd-mtghead m4"><span>Time</span><span>Client and meeting</span><span>Prep stage</span><span>What to prepare next${AIM}</span><span></span></div>
       ${days.length?days.map(g=>`<div class="rd-dayband"><b>${dowFor(g.d,g.m)}</b><span>${CALM[g.m].name.split(' ')[0].slice(0,3)} ${g.d}</span></div>
         ${g.items.map(m=>{const st=rdMtgState(m),on=sel&&sel.cid===m.cid&&sel.d===m.d&&sel.m===m.m;const ix=all.findIndex(x=>x.cid===m.cid&&x.d===m.d&&x.m===m.m);
-          const doc=DELIVS.find(x=>rdCid(x.client)===m.cid&&rdStageKey(x)!=='client')||DELIVS.find(x=>rdCid(x.client)===m.cid);
-          return `<div class="rd-mrow cal ${on?'sel':''}" onclick="RD.mtgSel=rdMtgAll()[${ix}];rdClients()">
+          return `<div class="rd-mrow cal m4 ${on?'sel':''}" onclick="RD.mtgSel=rdMtgAll()[${ix}];rdClients()">
             <span class="w">${esc(m.time)}</span>
             <div><b>${esc(m.client)}</b><small>${esc(m.label)} \u00b7 ${esc(rdEmail(clientBy(m.cid)))}</small></div>
-            <span class="mdoc">${doc?`<button class="rd-linkbtn" onclick="event.stopPropagation();openDeliv('${doc.id}','${m.cid}')">${esc(doc.title)}<small>${esc(rdStage(doc).l)}</small></button>`:'<span class="none">No document yet</span>'}<button class="rd-addoc" onclick="event.stopPropagation();openBuild(undefined,'${m.cid}')" title="Build another document for this meeting">${RD_ICON.plus}New document</button></span>
             <span class="st ${st[0]}">${st[1]}</span>
-            <button class="rd-btn sm" onclick="event.stopPropagation();${m.past?`openClient('${m.cid}');setTimeout(()=>cdTab('touch'),60)`:esc(m.go)}">${st[2]} ${RD_ICON.chev}</button></div>`;}).join('')}`).join('')
+            <span class="prep">${esc(rdMtgPrep(m))}</span>
+            <button class="rd-btn sm" onclick="event.stopPropagation();${esc(rdMtgGo(m))}">${st[2]} ${RD_ICON.chev}</button></div>`;}).join('')}`).join('')
       :`<div class="rd-empty">No meetings in this range.<br><button class="rd-btn link" style="margin-top:10px" onclick="RD.mtgQ='';RD.mtgFilter='all';rdMtgSetPreset('upcoming')">Show everything upcoming</button></div>`}
     </div>
     <div class="rd-card">${brief}</div>
@@ -11042,11 +11158,11 @@ function rdDlvListHtml(withSt){
     <div class="rd-sec-h gold"><div><div class="k">Client deliverables${AIM}</div><h3>Every document in progress</h3></div><span class="rd-secn">${rows.length} of ${withSt.length} documents</span></div>
     <div class="rd-tools"><label class="rd-search">${RD_ICON.search}<input placeholder="Search client, document, or template\u2026" value="${esc(RD.dlvQ||'')}" oninput="RD.dlvQ=this.value;rdDelivs();const i=document.querySelector('#rd-delivs .rd-search input');i.focus();i.setSelectionRange(this.value.length,this.value.length)"></label>
       <span style="position:relative"><button class="rd-btn" onclick="event.stopPropagation();RD.dlvMenu=!RD.dlvMenu;rdDelivs()">${RD_ICON.filter}${esc((RD_STATUS_FILTERS.find(x=>x[0]===f)||RD_STATUS_FILTERS[0])[1])} ${RD_ICON.down}</button>
-      ${RD.dlvMenu?`<div class="rd-menu" style="right:0;left:auto" onclick="event.stopPropagation()"><div class="rd-menu-k">Stage</div>${RD_STATUS_FILTERS.map(x=>`<button class="${f===x[0]?'on':''}" onclick="RD.dlvFilter='${x[0]}';RD.dlvMenu=false;rdDelivs()">${x[1]}</button>`).join('')}<div class="rd-menu-k">Search by</div>${RD_DLV_SCOPES.map(x=>`<button class="${sc===x[0]?'on':''}" onclick="RD.dlvScope='${x[0]}';RD.dlvMenu=false;rdDelivs();const i=document.querySelector('#rd-delivs .rd-search input');if(i)i.focus()">${x[1]}</button>`).join('')}</div>`:''}</span></div>
-    <div class="rd-dhead"><span></span><span>Client</span><span>Document</span><span>Stage</span><span>Detail</span><span>Last touched by</span><span>Due</span><span></span></div>
+      ${RD.dlvMenu?`<div class="rd-menu" style="right:0;left:auto" onclick="event.stopPropagation()"><div class="rd-menu-k">Prep stage</div>${RD_STATUS_FILTERS.map(x=>`<button class="${f===x[0]?'on':''}" onclick="RD.dlvFilter='${x[0]}';RD.dlvMenu=false;rdDelivs()">${x[1]}</button>`).join('')}<div class="rd-menu-k">Search by</div>${RD_DLV_SCOPES.map(x=>`<button class="${sc===x[0]?'on':''}" onclick="RD.dlvScope='${x[0]}';RD.dlvMenu=false;rdDelivs();const i=document.querySelector('#rd-delivs .rd-search input');if(i)i.focus()">${x[1]}</button>`).join('')}</div>`:''}</span></div>
+    <div class="rd-dhead"><span></span><span>Client</span><span>Document</span><span>Prep stage</span><span>Detail</span><span>Last touched by</span><span>Due</span><span></span></div>
     ${(()=>{const pg=rdPage('dlv',rows);return (pg.rows.length?pg.rows.map(x=>{const d=x.d,cid=rdCid(rdShort(d.client)),open=RD.dlvOpen===d.id,s=rdSrcs(d);
       return `<div class="rd-drow ${open?'open':''}" onclick="RD.dlvOpen=RD.dlvOpen==='${d.id}'?null:'${d.id}';rdDelivs()"><span class="car">${RD_ICON.down}</span><b class="cl">${esc(rdShort(d.client))}</b><span class="dc">${esc(d.title)}<small>${esc(d.tpl||'')}</small></span><span class="stg"><span class="rd-status ${x.st.k}">${x.st.l}</span>${rdTouch(d).by==='ai'?'<span class="rd-aitag" title="AI was the last thing to touch this draft">AI</span>':''}</span><span class="m">${esc(meta(x))}</span><span class="m tb">${rdTouch(d).by==='ai'?'<span class="rd-by ai">AI</span> AI draft':'<span class="rd-by hu">\u25cf</span> '+esc(rdTouch(d).who)}</span><span class="due">${rdDue(d)?"Due "+esc(rdDue(d)):"Updated "+esc((d.upd||"").split(",")[0])}</span><span class="go" onclick="event.stopPropagation();openDeliv('${d.id}','${cid||''}')">${RD_ICON.chev}</span></div>
-      ${open?`<div class="rd-dexp"><div><div class="k">Next best action${AIM}</div><b>${esc(nba(d))}</b><small>AI has prepared the work and highlighted the decisions requiring human judgment.</small></div><div><div class="srcl"><span>Sources</span><small>${s.n} of ${s.of} verified</small></div><div class="rd-bar"><i style="width:${Math.round(s.n/s.of*100)}%"></i></div><div class="srcl" style="margin-top:12px"><span>Stage</span></div><select class="rd-sel" style="height:38px;font-size:14px" onchange="rdSetStage('${d.id}',this.value)" onclick="event.stopPropagation()">${RD_STAGES.map(st=>`<option value="${st[0]}" ${x.st.k===st[0]?'selected':''}>${esc(st[1])}</option>`).join('')}</select></div><div style="display:flex;flex-direction:column;gap:8px"><button class="rd-btn pri" onclick="openDeliv('${d.id}','${cid||''}')">Open deliverable</button>${x.st.k==='advisor'&&!rdOpenComments(d)?`<button class="rd-btn" onclick="event.stopPropagation();rdApproveDeliv('${d.id}')">Approve and send${AIM}</button>`:''}</div></div>`:''}`;}).join('')
+      ${open?`<div class="rd-dexp"><div><div class="k">Next best action${AIM}</div><b>${esc(nba(d))}</b><small>AI has prepared the work and highlighted the decisions requiring human judgment.</small>${rdSiblingHtml(d)}</div><div><div class="srcl"><span>Sources</span><small>${s.n} of ${s.of} verified</small></div><div class="rd-bar"><i style="width:${Math.round(s.n/s.of*100)}%"></i></div><div class="srcl" style="margin-top:12px"><span>Prep stage</span></div><select class="rd-sel" style="height:38px;font-size:14px" onchange="rdSetStage('${d.id}',this.value)" onclick="event.stopPropagation()">${RD_STAGES.map(st=>`<option value="${st[0]}" ${x.st.k===st[0]?'selected':''}>${esc(st[1])}</option>`).join('')}</select></div><div style="display:flex;flex-direction:column;gap:8px"><button class="rd-btn pri" onclick="openDeliv('${d.id}','${cid||''}')">Open deliverable</button>${x.st.k==='advisor'&&!rdOpenComments(d)?`<button class="rd-btn" onclick="event.stopPropagation();rdApproveDeliv('${d.id}')">Approve and send${AIM}</button>`:''}</div></div>`:''}`;}).join('')
     :`<div class="rd-empty">Nothing matches that filter.<br><button class="rd-btn link" style="margin-top:10px" onclick="RD.dlvFilter='all';RD.dlvQ='';rdDelivs()">Show every deliverable</button></div>`)+rdPager('dlv',pg);})()}
   </div>`;
 }
@@ -11234,15 +11350,21 @@ function rdKb(){
     const subs=hasSubs?KB_SUBS.map(sub=>({sub,n:g.docs.filter(d=>kbSubFor(d)===sub).length+(sub==='Templates'?tpls.length:0)})).filter(x=>x.n):[];
     return {id:'f'+i,name:g.f,n:g.docs.length+tpls.length,kind:'Firm',subs,
       docs:[...g.docs.map(d=>({fn:d.fn,upd:d.upd,t:d.t,sub:hasSubs?kbSubFor(d):''})),...tpls.map(t=>({fn:t.src,upd:t.upd,t:t.name+' template',sub:'Templates',tpl:t.id}))]};});
-  const cli=KB_CLIENTS.map((c,i)=>({id:'c'+i,name:c.c,n:c.subs.reduce((a,s)=>a+s.files.length,0),kind:'Client',docs:c.subs.flatMap(s=>s.files.map(f=>({fn:f[0],upd:f[1],t:s.f})))}));
+  const cli=KB_CLIENTS.map((c,i)=>{
+    const docs=c.subs.flatMap(s=>s.files.map(f=>({fn:f[0],upd:f[1],t:s.f,sub:s.f})));
+    const own=c.subs.filter(s=>KB_SUBS.indexOf(s.f)<0).map(s=>({sub:s.f,n:s.files.length}));
+    const std=KB_SUBS.map(sub=>({sub,n:docs.filter(d=>d.sub===sub).length}));
+    return {id:'c'+i,name:c.c,n:docs.reduce((a)=>a+1,0),kind:'Client',subs:[...std,...own],docs};});
   const folders=[...firm,...cli];
-  const card=f=>{const open=RD.kbOpen[f.id];return `<div class="rd-card rd-folder"><button onclick="RD.kbOpen['${f.id}']=!RD.kbOpen['${f.id}'];rdKb()">${RD_ICON.folder.replace('<svg','<svg class="f"')}<div><b>${esc(f.name)}</b><small>${f.n} files \u00b7 ${f.kind}</small></div><span class="chev">${open?RD_ICON.down:RD_ICON.chev}</span></button>
-    ${open?`<div class="body">${(f.subs&&f.subs.length)?`<div style="display:flex;gap:6px;flex-wrap:wrap;padding:12px 0 6px">${f.subs.map(x=>`<span class="rd-chip">${esc(x.sub)} \u00b7 ${x.n}</span>`).join('')}</div>`:''}${f.docs.slice(0,4).map(d=>`<div class="doc" onclick="${d.tpl?`openTpl('${d.tpl}')`:`$('rdKbQ').value='${esc(d.t||d.fn).replace(/'/g,'')}';rdKbAsk()`}">${RD_ICON.file}<span style="flex:1">${esc(d.fn)}</span><small style="color:var(--rd-muted)">${d.sub?esc(d.sub)+' \u00b7 ':''}${esc(d.upd)}</small></div>`).join('')}${f.docs.length>4?`<small style="color:var(--rd-muted);display:block;margin:4px 0 8px">+ ${f.docs.length-4} more</small>`:''}<button class="rd-btn pri sm" style="margin-top:6px" onclick="RD.kbLegacy=true;rdKb();const t=document.getElementById('rdKbLegacy');if(t)t.scrollIntoView({behavior:'smooth'})">Open folder</button></div>`:''}</div>`;};
+  const card=f=>{const open=RD.kbOpen[f.id];const pick=(RD.kbSub||{})[f.id]||null;
+    const shown=pick?f.docs.filter(d=>(d.sub||d.t)===pick):f.docs;
+    return `<div class="rd-card rd-folder"><button onclick="RD.kbOpen['${f.id}']=!RD.kbOpen['${f.id}'];rdKb()">${RD_ICON.folder.replace('<svg','<svg class="f"')}<div><b>${esc(f.name)}</b><small>${f.n} files \u00b7 ${f.kind}</small></div><span class="chev">${open?RD_ICON.down:RD_ICON.chev}</span></button>
+    ${open?`<div class="body">${(f.subs&&f.subs.length)?`<div class="rd-subs">${f.subs.map(x=>`<button class="rd-sub ${pick===x.sub?'on':''} ${x.n?'':'empty'}" onclick="event.stopPropagation();rdKbSub('${f.id}','${esc(x.sub)}')">${RD_ICON.folder.replace('<svg','<svg class="s"')}${esc(x.sub)}<i>${x.n}</i></button>`).join('')}${pick?`<button class="rd-sub clr" onclick="event.stopPropagation();rdKbSub('${f.id}',null)">Show all</button>`:''}</div>`:''}${shown.slice(0,5).map(d=>`<div class="doc" onclick="${d.tpl?`openTpl('${d.tpl}')`:`$('rdKbQ').value='${esc(d.t||d.fn).replace(/'/g,'')}';rdKbAsk()`}">${RD_ICON.file}<span style="flex:1">${esc(d.fn)}</span><small style="color:var(--rd-muted)">${d.sub?esc(d.sub)+' \u00b7 ':''}${esc(d.upd)}</small></div>`).join('')||'<div class="rd-empty" style="padding:14px 0;font-size:13px">Nothing filed under that subfolder yet.</div>'}${shown.length>5?`<small style="color:var(--rd-muted);display:block;margin:4px 0 8px">+ ${shown.length-5} more</small>`:''}<div style="display:flex;gap:8px;margin-top:8px"><button class="rd-btn pri sm" onclick="RD.kbLegacy=true;rdKb();const t=document.getElementById('rdKbLegacy');if(t)t.scrollIntoView({behavior:'smooth'})">Open folder</button><button class="rd-btn sm" onclick="event.stopPropagation();rdKbUpload('${esc(f.name)}','${f.id}')">${RD_ICON.upload}Upload here</button></div></div>`:''}</div>`;};
   el.innerHTML=rdHeadHtml('Atlas','Knowledge Base','One place to ask questions across approved firm knowledge and permissioned client records.')+
   `<div class="rd-card rd-ask"><div class="row">${RD_ICON.spark}<input id="rdKbQ" placeholder="Ask a question using your firm\u2019s trusted sources\u2026" onkeydown="if(event.key==='Enter')rdKbAsk()"><button class="rd-btn pri" style="height:46px;padding:0 20px" onclick="rdKbAsk()">Ask AI${AIM}</button></div>
     <div class="try">Try: ${[['How do we write to clients?','How do we write to clients, and how fast do we have to reply?'],['What is our held-away asset policy?','Where is the Whitfield held-away 401k and what happens to it?'],['Summarize the Whitfield deferred comp','What does the Whitfield deferred comp plan pay out, and did it land yet?']].map(t=>`<button class="rd-chip" onclick="$('rdKbQ').value='${esc(t[1])}';rdKbAsk()">${esc(t[0])}</button>`).join('')}</div>
     <div id="rdKbAnswerSlot"></div></div>
-  <div class="rd-kb-h"><div><h3>Browse knowledge</h3><p>Firm-wide guidance and client-specific folders stay clearly separated.</p></div><button class="rd-btn" onclick="toast('Upload received. Pick a folder and it is indexed within the minute.')">${RD_ICON.upload}Upload</button></div>
+  <div class="rd-kb-h"><div><h3>Browse knowledge</h3><p>Company and client folders carry the same subfolders, laid out the way they appear in HubSpot, so a file is always in the place you would look for it.</p></div><button class="rd-btn" onclick="rdKbUpload()">${RD_ICON.upload}Upload</button></div>
   <div class="rd-kb-grid">${folders.map(card).join('')}</div>
   <div class="rd-kb-legacy ${RD.kbLegacy?'':'rd-hide'}" id="rdKbLegacy"><div class="rd-kb-h" style="margin-top:10px"><div><h3>All files</h3><p>Every document with its date, time, and who added it. Two-way synced with HubSpot and the vault.</p></div><button class="rd-btn sm" onclick="RD.kbLegacy=false;rdKb()">Hide</button></div><div id="rdKbLegacySlot"></div></div>`;
   const ans=$('kbAnswer');if(ans)$('rdKbAnswerSlot').appendChild(ans);
@@ -11638,6 +11760,682 @@ initApp=function(){
   const nb=$('rdNotifBdg');if(nb&&typeof NOTIFS!=='undefined')nb.textContent=NOTIFS.length;
 };
 
+</script>
+<style id="b1css">
+/* Batch 1 (Sep 7 Loom) */
+.rd-strip.rd-strip-read>div{cursor:default;align-items:flex-start}
+.rd-strip.rd-strip-read>div:hover{background:#fff}
+.rd-strip .rd-sl{display:flex;flex-direction:column;gap:3px;line-height:1.25}
+.rd-strip .rd-sl small{font-size:12.5px;color:var(--rd-muted);font-weight:600;letter-spacing:.01em}
+</style>
+<script>
+/* ===================================================================
+   BATCH 1 — Sep 7 Loom
+   (a) return behaviour: a flow opened from a page comes back to it
+   (b) Prepare starts at the template step, not mid-way at sources
+   (c) Generate from Templates does not jump to Canvas
+   =================================================================== */
+
+RD.ret=null;
+
+var RD_RET_LABEL={home:'Touchpoint',c360:'Catalyst',delivs:'Canvas',templates:'Templates',kb:'Atlas',studio:'Pipeline'};
+
+function rdRetLabelNow(){
+  if(S.page==='c360')return RD.catTab==='meetings'?'meetings':'clients';
+  if(S.page==='cdetail'){var c=clientBy(S.client);return c?(c.name.split(' ')[0]+'\u2019s page'):'the client page';}
+  if(S.page==='delivs')return RD.dlvTab==='stages'?'the stage board':'Canvas';
+  return RD_RET_LABEL[S.page]||'where you were';
+}
+
+/* snapshot the page you are leaving, so closing whatever opens next comes back here */
+function rdRetSet(){
+  if(S.page==='editor')return;              /* already inside a flow */
+  if(!RD_RET_LABEL[S.page]&&S.page!=='cdetail')return;
+  RD.ret={page:S.page,client:S.client,cdTab:S.cdTab,label:rdRetLabelNow(),
+    catTab:RD.catTab,catOpen:RD.catOpen,
+    mtgPreset:RD.mtgPreset,mtgDate:RD.mtgDate&&{m:RD.mtgDate.m,d:RD.mtgDate.d},
+    mtgSel:RD.mtgSel,mtgFilter:RD.mtgFilter,mtgQ:RD.mtgQ,mtgTab:RD.mtgTab,
+    dlvTab:RD.dlvTab,dlvQ:RD.dlvQ,dlvFilter:RD.dlvFilter,dlvOpen:RD.dlvOpen,
+    tplTab:RD.tplTab,c360Q:RD.c360Q,c360Pick:RD.c360Pick,c360Tile:RD.c360Tile};
+}
+function rdRetClear(){RD.ret=null;}
+
+function rdRetGo(){
+  var r=RD.ret;if(!r)return false;
+  RD.ret=null;
+  RD.catTab=r.catTab;RD.catOpen=r.catOpen;
+  RD.mtgPreset=r.mtgPreset;if(r.mtgDate)RD.mtgDate=r.mtgDate;
+  RD.mtgSel=r.mtgSel;RD.mtgFilter=r.mtgFilter;RD.mtgQ=r.mtgQ;RD.mtgTab=r.mtgTab;
+  RD.dlvTab=r.dlvTab;RD.dlvQ=r.dlvQ;RD.dlvFilter=r.dlvFilter;RD.dlvOpen=r.dlvOpen;
+  RD.tplTab=r.tplTab;RD.c360Q=r.c360Q;RD.c360Pick=r.c360Pick;RD.c360Tile=r.c360Tile;
+  if(r.page==='cdetail'&&r.client){openClient(r.client);if(r.cdTab)setTimeout(function(){cdTab(r.cdTab);},60);return true;}
+  nav(r.page);
+  return true;
+}
+
+/* the editor back button reads for the page you actually came from */
+var _b1_openDeliv=openDeliv;
+openDeliv=function(id,fromClient){
+  var had=RD.ret;
+  if(S.page!=='editor'&&!had)rdRetSet();
+  _b1_openDeliv(id,fromClient);
+  /* only relabel when the document was opened from somewhere other than Canvas —
+     opening from Canvas keeps the client-file back link */
+  var b=$('edBack');
+  if(b&&RD.ret&&RD.ret.page!=='delivs')b.textContent='\u2190 Back to '+RD.ret.label;
+};
+
+var _b1_leaveEditor=leaveEditor;
+leaveEditor=function(){
+  var r=RD.ret;
+  if(r&&r.page!=='delivs'){S.backTo=null;var lab=r.label;if(rdRetGo()){toast('Back to '+lab);return;}}
+  RD.ret=null;
+  _b1_leaveEditor();
+};
+
+/* the build wizard is a modal — it never needed a page change */
+var _b1_openBuild=openBuild;
+openBuild=function(tplName,cid){
+  if(S.page!=='editor'&&!RD.ret)rdRetSet();
+  _b1_openBuild(tplName,cid);
+};
+
+/* closing the wizard without building leaves you exactly where you were */
+var _b1_closeModal=closeModal;
+closeModal=function(id){
+  _b1_closeModal(id);
+  if((id==='mBuild'||id==='mTpl')&&RD.ret&&S.page!=='editor'){
+    var r=RD.ret;
+    if(r.page===S.page&&r.page!=='cdetail'){RD.ret=null;return;}
+    rdRetGo();
+  }
+};
+
+/* Generate from a template card: stay on Templates, open the wizard at step 1 */
+function genFrom(tid){
+  var gm=$('genMenu');if(gm)gm.classList.remove('open');
+  var t=TEMPLATES.find(function(x){return x.id===tid;});if(!t)return;
+  rdRetSet();
+  openBuild(t.name);
+  bldStepGo(1);
+  toast(t.name+' loaded \u2014 start at the template, then pick who it is for');
+}
+
+/* Prepare from a meeting: start at the template step, come back to the meeting list */
+function prepMeeting(cid,label){
+  rdRetSet();
+  BLD={client:cid,srcs:[],map:{},slots:{},secmap:null,tplId:null,step:1};
+  openBuild('Pre-Meeting Brief');
+  BLD.client=cid;BLD.lockClient=false;
+  renderBldClients();renderBldSources();bldStepGo(1);
+  toast('Preparing for '+label+' \u2014 starts at the template, drafts into Canvas');
+}
+
+/* generating a complete document from the template modal keeps Templates as the way back */
+var _b1_genDocFromTpl=genDocFromTpl;
+genDocFromTpl=function(tid,cid){
+  if(!RD.ret)rdRetSet();
+  _b1_genDocFromTpl(tid,cid);
+};
+</script>
+<style id="b2css">
+/* Batch 2 (Sep 7 Loom) */
+.rd-chead.cl4,.rd-crow2.flat{grid-template-columns:1.3fr 1fr 1.15fr 150px}
+.rd-crow2.flat{padding:16px 20px}
+.rd-crow2.flat .rd-btn.sm{justify-content:center}
+.rd-mtghead.m4,.rd-mrow.cal.m4{grid-template-columns:104px 1.35fr 128px 1.5fr 128px}
+.rd-mrow.cal.m4 .prep{font-size:14px;color:var(--rd-muted);line-height:1.4}
+.rd-qnote{padding:10px 24px;background:#FCFAF4;border-bottom:1px solid #EFE3C6;font-size:13px;color:#8A6D1F;line-height:1.45}
+.rd-row .dc small.rd-why{display:block;font-size:12.5px;color:var(--rd-muted);margin-top:3px;font-weight:600}
+.rd-row .dc small.rd-why.due{color:var(--rd-red)}
+.rd-pager.q{padding:14px 24px}
+@media(max-width:1400px){.rd-mtghead.m4>*:nth-child(4),.rd-mrow.cal.m4 .prep{display:none}
+  .rd-mtghead.m4,.rd-mrow.cal.m4{grid-template-columns:104px 1.35fr 128px 128px}}
+</style>
+<script>
+/* ===================================================================
+   BATCH 2 — Sep 7 Loom
+   priority queue, Catalyst tables, prep-stage naming, Sep 1 seeding
+   =================================================================== */
+
+/* pager with a caller-chosen page size (the queue shows five) */
+function rdPageN(key,rows,size){
+  RD.pages=RD.pages||{};
+  var total=Math.max(1,Math.ceil(rows.length/size));
+  var p=Math.min(RD.pages[key]||1,total);RD.pages[key]=p;
+  return {rows:rows.slice((p-1)*size,p*size),p:p,total:total,count:rows.length,size:size};
+}
+function rdPagerN(key,pg){
+  if(pg.count<=pg.size)return '';
+  var nums='';for(var i=1;i<=pg.total;i++)nums+='<button class="'+(i===pg.p?'on':'')+'" onclick="rdPageGo(\''+key+'\','+i+')">'+i+'</button>';
+  return '<div class="rd-pager q"><span>'+((pg.p-1)*pg.size+1)+'\u2013'+Math.min(pg.p*pg.size,pg.count)+' of '+pg.count+'</span>'+
+    '<button '+(pg.p===1?'disabled':'')+' onclick="rdPageGo(\''+key+'\','+(pg.p-1)+')">\u2039 Back</button>'+nums+
+    '<button '+(pg.p===pg.total?'disabled':'')+' onclick="rdPageGo(\''+key+'\','+(pg.p+1)+')">Next \u203a</button></div>';
+}
+
+/* open the document a client is actually working on */
+function rdOpenClientDoc(cid){
+  var mine=DELIVS.filter(function(d){return rdCid(d.client)===cid;});
+  var d=mine.filter(function(x){return rdStageKey(x)!=='client';})[0]||mine[0];
+  if(!d){openBuild(undefined,cid);return;}
+  openDeliv(d.id,cid);
+}
+
+/* what to prepare next, per meeting — moved off the clients tab */
+function rdMtgPrep(m){
+  if(m.life)return m.note||'Draft a message for the life event';
+  if(m.past)return 'Recap on file \u2014 read it and file the follow-ups';
+  var c=clientBy(m.cid);
+  if(!c)return 'Confirm the agenda and who is attending';
+  var st=rdMtgState(m)[1];
+  if(st==='Prep needed')return 'Build the brief from a template \u2014 no sources gathered yet';
+  if(st==='Draft under review')return rdPrepTodo(c);
+  return rdPrepTodo(c);
+}
+
+/* ---- today's priority queue: everything waiting on you today ---- */
+var RD_MON={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+function rdDueOrd(v){
+  if(!v)return 9999;
+  var m=String(v).match(/([A-Za-z]{3})[a-z]*\s+(\d+)/);
+  if(!m)return 9999;
+  return (RD_MON[m[1]]||9)*100+parseInt(m[2],10);
+}
+function rdWeekEnd(){return rdOrd(RD_TODAY)+6;}
+
+function rdQueueItems(){
+  var todayOrd=rdOrd(RD_TODAY),weekOrd=rdWeekEnd(),out=[];
+
+  /* documents that are blocked, waiting on review, carrying comments, or due this week */
+  DELIVS.filter(function(d){return d.client!=='Firm content';}).forEach(function(d){
+    var k=rdStageKey(d),cm=rdOpenComments(d),due=rdDueOrd(d.due);
+    var dueSoon=due<=weekOrd;
+    if(!(k==='blocked'||k==='advisor'||cm>0||(dueSoon&&k!=='client')))return;
+    var cid=rdCid(rdShort(d.client))||'',v=rdVerb(d);
+    var why;
+    if(due===todayOrd)why='Due today';
+    else if(k==='blocked')why='Waiting on a source \u00b7 '+(d.due?'due '+d.due:'no date set');
+    else if(cm>0)why=cm+' open comment'+(cm===1?'':'s')+(d.due?' \u00b7 due '+d.due:'');
+    else if(dueSoon)why='Due '+d.due+' \u00b7 this week';
+    else why='With you for review'+(d.due?' \u00b7 due '+d.due:'');
+    out.push({dot:rdDot(d),title:d.title,client:rdShort(d.client),state:rdNextAction(d),
+      stage:rdStage(d),ai:rdTouch(d).by==='ai',act:v,why:why,dueToday:due===todayOrd,
+      rank:(due<=todayOrd?0:k==='blocked'?1:cm>0?2:dueSoon?3:4),due:due,
+      go:v==='Approve'?"rdApproveDeliv('"+d.id+"')":"openDeliv('"+d.id+"','"+cid+"')"});
+  });
+
+  /* meetings today that still have no brief */
+  rdMtgAll().filter(function(m){return m.m===RD_TODAY.m&&m.d===RD_TODAY.d&&!m.life&&rdMtgState(m)[1]==='Prep needed';})
+    .forEach(function(m){
+      out.push({dot:'red',title:'Pre-meeting brief',client:rdShort(m.client),
+        state:'Build the brief from a template before you sit down',
+        stage:{k:'blocked',l:'Prep needed'},ai:false,act:'Prepare',
+        why:'Meeting today at '+m.time,dueToday:true,rank:0,due:todayOrd,go:m.go});
+    });
+
+  /* AI email drafts sitting unsent */
+  TASKS.filter(function(t){return t.lane==='email'&&!t.done;}).forEach(function(t){
+    out.push({dot:'amber',title:t.title,client:t.rcpt||'Client',
+      state:'Read the draft and send it, or edit the wording first',
+      stage:{k:'ai',l:'AI draft ready'},ai:true,act:'Approve',
+      why:'Drafted for you \u00b7 not sent yet',dueToday:false,rank:2,due:9999,
+      go:"openAiDraft('"+String(t.title).replace(/'/g,"\\'")+"','"+String(t.tpl||'Client Check-in Email').replace(/'/g,"\\'")+"')"});
+  });
+
+  out.sort(function(a,b){return a.rank-b.rank||a.due-b.due;});
+  return out;
+}
+
+/* days with several meetings have to sort by clock time, not by string
+   ("1:00 PM" sorted before "11:00 AM" before Sep 1 had more than one meeting) */
+function rdMinOf(t){
+  var m=String(t||'').match(/(\d{1,2}):(\d{2})\s*([AP])M/i);
+  if(!m)return -1;                       /* "All day" sorts to the top */
+  var h=parseInt(m[1],10)%12;
+  if(/p/i.test(m[3]))h+=12;
+  return h*60+parseInt(m[2],10);
+}
+rdMtgSort=function(a,b){return rdOrd(a)-rdOrd(b)||rdMinOf(a.time)-rdMinOf(b.time);};
+
+/* the badge counts the same queue the page shows */
+if(typeof rdQueueCount==='function'){rdQueueCount=function(){return rdQueueItems().length;};}
+</script>
+<style id="b4css">
+/* Batch 4 (Sep 7 Loom) — login lockup + walkthrough previews */
+.brand-line{display:block;margin-top:6px;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:#6E7A90}
+.brand-line em{font-family:'Libre Caslon Text',serif;font-style:italic;text-transform:none;letter-spacing:.01em;font-size:14px;font-weight:400;color:#B99B55}
+
+/* the preview panel earns more room and bigger type */
+#mTour .modal{width:min(1020px,100%)!important}
+#mTour .modal>div:nth-child(2){grid-template-columns:.85fr 1.25fr}
+.tour-prev{padding:20px 18px}
+.tour-prev .pv{width:100%}
+.tour-prev .pv-h{padding:11px 14px}
+.tour-prev .pv-h b{font-size:14px}
+.tour-prev .pv-b{padding:14px}
+.tour-prev .pv-row{font-size:13px}
+.tour-prev .pv-row .k{font-size:12px;min-width:86px}
+.tour-prev .pv-doc{font-size:16px}
+.tour-prev .pv-src{font-size:12.5px;padding:5px 0}
+.tour-prev .pv-tabs span{font-size:11px;padding:4px 9px}
+.tour-prev .help{font-size:12px}
+
+/* real column headers instead of stacked phrases */
+.pv-tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin:2px 0}
+.pv-tbl th{text-align:left;font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:#8A6D1F;background:#FCFAF4;border-bottom:1px solid #EFE3C6;padding:7px 9px;white-space:nowrap}
+.pv-tbl td{padding:8px 9px;border-bottom:1px solid #F0EEE7;vertical-align:top;line-height:1.45;color:var(--ink)}
+.pv-tbl tr:last-child td{border-bottom:0}
+.pv-tbl td .help{font-size:11px}
+
+/* subfolders as buttons, per folder, expandable */
+.pv-fold{border:1px solid var(--line);border-radius:8px;margin-bottom:7px;background:#fff}
+.pv-fold-h{display:flex;align-items:center;gap:8px;padding:9px 11px;font-size:13px}
+.pv-fold-h .fn{flex:1;min-width:0}
+.pv-fold-h small{font-size:11px;color:var(--muted)}
+.pv-fold-h .car{color:var(--muted);font-size:11px}
+.pv-fold.open{border-color:#E3D6B4;box-shadow:0 1px 0 #F3ECDC}
+.pv-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 11px 11px}
+.pv-chip{font-size:11.5px;padding:5px 10px;border-radius:999px;border:1px solid #E3D6B4;background:#FCFAF4;color:#8A6D1F;font-weight:600}
+
+/* document snapshot */
+.pv-docmock{border:1px solid var(--line);border-radius:8px;background:#fff;overflow:hidden}
+.pv-dm-h{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #F0EEE7;background:#FBFAF6}
+.pv-dm-brand{font-size:9px;letter-spacing:.16em;font-weight:700;color:#8A6D1F}
+.pv-dm-badge{margin-left:auto;font-size:10px;font-weight:700;color:#B4522F;background:#FBEDE7;border:1px solid #F0D3C6;border-radius:999px;padding:3px 8px}
+.pv-dm-t{font-family:'Libre Caslon Text',serif;font-size:19px;padding:12px 12px 2px}
+.pv-dm-m{font-size:11px;color:var(--muted);padding:0 12px 10px}
+.pv-dm-sec{padding:10px 12px;border-top:1px solid #F0EEE7}
+.pv-dm-sec.dim{background:#FAFAF7}
+.pv-dm-st{font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:5px}
+.pv-dm-sec p{font-size:11.5px;line-height:1.55;color:var(--slate);margin:0 0 5px}
+.pv-dm-chart{display:flex;align-items:flex-end;gap:6px;height:44px;margin-top:6px}
+.pv-dm-chart i{flex:1;background:linear-gradient(180deg,#B99B55,#D9C48C);border-radius:2px 2px 0 0}
+
+/* upload → sources */
+.pv-flow{display:grid;grid-template-columns:1fr 26px 1fr;gap:6px;align-items:center}
+.pv-fp{border:1px solid var(--line);border-radius:8px;background:#fff;padding:10px}
+.pv-fp-k{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:#8A6D1F;margin-bottom:7px}
+.pv-arrow{text-align:center;font-size:19px;color:#B99B55;font-weight:700}
+.pv-file{display:flex;gap:8px;align-items:flex-start;font-size:11.5px}
+.pv-file .ic{font-size:15px}
+.pv-file b{display:block;font-size:11.5px;line-height:1.35;word-break:break-word}
+.pv-file small{display:block;font-size:10px;color:var(--muted);margin-top:3px}
+
+.pv-ask{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:12.5px;background:#fff;margin-bottom:10px}
+.pv-ask span:first-child{flex:1;color:var(--ink)}
+.pv-sync{display:inline-block;font-size:9.5px;font-weight:700;color:#2E7D5B;background:#E8F5EE;border:1px solid #CFE8DB;border-radius:999px;padding:2px 7px;margin-left:4px;white-space:nowrap}
+.pv-learn{display:flex;gap:8px;margin-top:10px;padding:9px 11px;border-radius:8px;background:#FCFAF4;border:1px solid #EFE3C6;font-size:11.5px;line-height:1.5;color:#7A6428}
+.pv-learn span{color:#B99B55;font-weight:700}
+@media(max-width:900px){.pv-flow{grid-template-columns:1fr;gap:4px}.pv-arrow{transform:rotate(90deg)}}
+</style>
+<style id="b5css">
+/* Batch 5 (Sep 7 Loom) */
+.rd-subs{display:flex;gap:7px;flex-wrap:wrap;padding:12px 0 10px}
+.rd-sub{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:7px 11px;border-radius:999px;border:1px solid #E3D6B4;background:#FCFAF4;color:#8A6D1F}
+.rd-sub:hover{background:#F7EFDC}
+.rd-sub.on{background:#8A6D1F;border-color:#8A6D1F;color:#fff}
+.rd-sub.on i{background:rgba(255,255,255,.24);color:#fff}
+.rd-sub.empty{opacity:.55}
+.rd-sub i{font-style:normal;font-size:11px;font-weight:700;background:#F0E4C6;color:#8A6D1F;border-radius:999px;padding:1px 6px;min-width:18px;text-align:center}
+.rd-sub svg.s{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+.rd-sub.clr{border-style:dashed;background:transparent}
+.mt-edit-hint{margin-left:auto;align-self:center;font-size:11.5px;color:#8A6D1F;background:#FCFAF4;border:1px solid #EFE3C6;border-radius:999px;padding:4px 10px}
+.kbu-row{display:flex;gap:10px;align-items:flex-end;margin-bottom:12px}
+.kbu-row>div{flex:1;min-width:0}
+.kbu-push{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:#FBFAF6;margin-top:4px}
+.kbu-push b{display:block;font-size:13px}
+.kbu-push small{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.45}
+.kbu-sw{width:42px;height:24px;border-radius:999px;background:#D6DAE2;position:relative;flex:0 0 42px;margin-top:2px;transition:background .15s}
+.kbu-sw i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.kbu-sw.on{background:#2E7D5B}
+.kbu-sw.on i{left:21px}
+</style>
+<script>
+/* ===================================================================
+   BATCH 5 — Sep 7 Loom
+   Atlas subfolders + HubSpot push, one template generate path,
+   AI memory demoable from a document edit
+   =================================================================== */
+
+/* ---------- Atlas: subfolders open inside their folder ---------- */
+RD.kbSub={};
+function rdKbSub(fid,sub){
+  RD.kbSub=RD.kbSub||{};
+  RD.kbSub[fid]=(RD.kbSub[fid]===sub)?null:sub;
+  rdKb();
+}
+
+/* ---------- Atlas: every client folder has its Forms subfolder filled ----------
+   Advisory agreement and risk questionnaire exist for every household in real life,
+   so the standard Forms subfolder is never empty on a client. */
+var KB_FORM_DATES={'Robert & Susan Whitfield':['Feb 19, 2024','Feb 19, 2024'],
+ 'Daniel & Priya Raman':['Aug 12, 2026','Aug 12, 2026'],
+ 'Diane & Victor Ellison':['Mar 4, 2019','Jan 16, 2026'],
+ 'Tom Hollis':['Sep 30, 2022','Feb 2, 2026'],
+ 'Dr. Alicia Boone':['Jun 11, 2026','Jun 11, 2026'],
+ 'The Vance Family Trust':['May 8, 2021','Jan 22, 2026'],
+ 'Nadia Fournier':['Jul 24, 2026','Jul 24, 2026'],
+ 'Terrence & Joy Adebayo':['Oct 3, 2023','Feb 9, 2026'],
+ 'Lindgren Family Office':['Apr 17, 2020','Jan 29, 2026'],
+ 'Cormac & Ruth Delaney':['Nov 14, 2022','Feb 6, 2026'],
+ 'Everly Trust (Marisol Everly)':['Jan 9, 2024','Jan 30, 2026']};
+(function(){
+  if(typeof KB_CLIENTS==='undefined')return;
+  KB_CLIENTS.forEach(function(c){
+    if(c.subs.some(function(s){return s.f==='Forms';}))return;
+    var slug=c.c.replace(/\(.*\)/,'').replace(/&/g,'and').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    var d=KB_FORM_DATES[c.c]||['Jan 15, 2026','Jan 15, 2026'];
+    c.subs.unshift({f:'Forms',files:[
+      [slug+'-Advisory-Agreement-Signed.pdf',d[0]],
+      [slug+'-Risk-Profile-Questionnaire.pdf',d[1]]]});
+  });
+})();
+
+/* ---------- Atlas: upload, with the push to HubSpot ---------- */
+var KBU={folder:null,sub:'Guidelines',file:'',push:true};
+(function(){
+  var d=document.createElement('div');
+  d.className='scrim';d.id='mKbUp';
+  d.innerHTML='<div class="modal" style="width:min(560px,100%)">'+
+    '<div class="eyebrow">Knowledge Base</div><h3>Upload a document</h3>'+
+    '<p class="help">It is indexed for search, filed under the subfolder you choose, and made available to Canvas as a source.</p>'+
+    '<div class="kbu-row" style="margin-top:14px">'+
+      '<div><label class="lbl">Folder</label><select class="field" id="kbuFolder"></select></div>'+
+      '<div><label class="lbl">Subfolder</label><select class="field" id="kbuSub"></select></div>'+
+    '</div>'+
+    '<label class="lbl">File</label>'+
+    '<div class="kbu-row"><div><input class="field" id="kbuFile" placeholder="Name the file, or choose one"></div>'+
+      '<label class="btn btn-ghost" style="cursor:pointer">Choose file<input type="file" style="display:none" onchange="if(this.files[0]){document.getElementById(\'kbuFile\').value=this.files[0].name}"></label></div>'+
+    '<div class="kbu-push"><button class="kbu-sw on" id="kbuSw" onclick="kbuPush()"><i></i></button>'+
+      '<div><b>Also upload to HubSpot</b><small>The file lands in the same folder on the HubSpot record, so nothing is left orphaned in one system.</small></div></div>'+
+    '<div class="m-foot"><button class="btn btn-ghost" onclick="closeModal(\'mKbUp\')">Cancel</button>'+
+      '<button class="btn btn-gold" onclick="kbuCommit()">Upload</button></div></div>';
+  document.body.appendChild(d);
+})();
+function kbuPush(){KBU.push=!KBU.push;document.getElementById('kbuSw').classList.toggle('on',KBU.push);}
+function rdKbUpload(folderName,fid){
+  var firm=KB_COMPANY.map(function(g){return g.f;});
+  var cliN=KB_CLIENTS.map(function(c){return c.c;});
+  var all=firm.concat(cliN);
+  KBU.folder=folderName||all[0];KBU.file='';KBU.push=true;
+  document.getElementById('kbuFolder').innerHTML=
+    '<optgroup label="Company">'+firm.map(function(f){return '<option '+(f===KBU.folder?'selected':'')+'>'+esc(f)+'</option>';}).join('')+'</optgroup>'+
+    '<optgroup label="Clients">'+cliN.map(function(f){return '<option '+(f===KBU.folder?'selected':'')+'>'+esc(f)+'</option>';}).join('')+'</optgroup>';
+  kbuSubs();
+  document.getElementById('kbuFolder').onchange=function(){KBU.folder=this.value;kbuSubs();};
+  document.getElementById('kbuFile').value='';
+  document.getElementById('kbuSw').classList.add('on');
+  openModal('mKbUp');
+}
+function kbuSubs(){
+  var c=KB_CLIENTS.filter(function(x){return x.c===KBU.folder;})[0];
+  var own=c?c.subs.map(function(s){return s.f;}):[];
+  var list=KB_SUBS.concat(own.filter(function(x){return KB_SUBS.indexOf(x)<0;}));
+  document.getElementById('kbuSub').innerHTML=list.map(function(x){return '<option>'+esc(x)+'</option>';}).join('');
+}
+function kbuCommit(){
+  var fn=document.getElementById('kbuFile').value.trim();
+  if(!fn){toast('Name the file first',false);return;}
+  var folder=document.getElementById('kbuFolder').value;
+  var sub=document.getElementById('kbuSub').value;
+  var c=KB_CLIENTS.filter(function(x){return x.c===folder;})[0];
+  if(c){
+    var slot=c.subs.filter(function(s){return s.f===sub;})[0];
+    if(!slot){slot={f:sub,files:[]};c.subs.push(slot);}
+    slot.files.unshift([fn,stampDate()]);
+  } else {
+    var g=KB_COMPANY.filter(function(x){return x.f===folder;})[0];
+    if(g)g.docs.unshift({fn:fn,upd:stampDate(),t:sub});
+  }
+  AUDIT.unshift({who:'Mark',doc:fn,when:nowStamp(),
+    what:'Uploaded to '+folder+' \u00b7 '+sub,
+    detail:KBU.push?'Pushed to the matching HubSpot folder in the same action':'Kept in the Knowledge Base only \u2014 not pushed to HubSpot'});
+  renderAudit();
+  if(KBU.push&&typeof crmPush==='function')crmPush(fn+' \u2014 uploaded to '+folder+' / '+sub);
+  closeModal('mKbUp');
+  if(typeof renderKb==='function')renderKb();
+  rdKb();
+  toast(KBU.push?(fn+' filed under '+sub+' and pushed to HubSpot'):(fn+' filed under '+sub));
+}
+
+/* ---------- AI memory: a typed edit becomes a named change ---------- */
+var B5_SEC=null;
+function b5SecOf(n){
+  while(n&&n!==document.body){
+    if(n.classList&&n.classList.contains('doc-sec'))return n.dataset.sec||null;
+    n=n.parentNode;
+  }
+  return null;
+}
+function b5SecAtCaret(){
+  var sel=window.getSelection&&window.getSelection();
+  return b5SecOf(sel&&sel.anchorNode)||B5_SEC||S.selSec||null;
+}
+(function(){
+  var pg=document.getElementById('docPage');
+  if(!pg)return;
+  /* remember the section the cursor was last in, so a typed edit can be named
+     even when the selection has moved on by the time the debounce fires */
+  ['click','keyup','focusin'].forEach(function(ev){
+    pg.addEventListener(ev,function(e){var sc=b5SecOf(e.target);if(sc)B5_SEC=sc;});
+  });
+  var t=null;
+  pg.addEventListener('input',function(e){
+    var sc=b5SecOf(e.target)||b5SecOf(document.activeElement);
+    if(sc)B5_SEC=sc;
+    clearTimeout(t);
+    t=setTimeout(function(){
+      var sec=b5SecAtCaret();
+      noteChange(sec?('Wording changed in \u201c'+sec+'\u201d'):'Wording changed in the draft text');
+    },600);
+  });
+})();
+</script>
+<style id="b3css">
+/* Batch 3 (Sep 7 Loom) */
+
+/* email history reads as columns, like the CRM does */
+.rd-mailhead{display:grid;grid-template-columns:74px 1.5fr 1.15fr 96px 62px 44px 22px;gap:10px;align-items:center;
+  padding:8px 12px;background:#FCFAF4;border:1px solid #EFE3C6;border-radius:8px 8px 0 0;
+  font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:#8A6D1F}
+.rd-mailrow.cols{display:grid;grid-template-columns:74px 1.5fr 1.15fr 96px 62px 44px 22px;gap:10px;align-items:center;text-align:left}
+.rd-mailrow.cols>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-mailrow.cols .subj{font-weight:700;color:var(--rd-ink);font-size:13.5px}
+.rd-mailrow.cols .subj i{font-style:normal;font-size:9.5px;font-weight:700;color:#B4522F;background:#FBEDE7;border:1px solid #F0D3C6;border-radius:999px;padding:1px 6px;margin-left:7px}
+.rd-mailrow.cols .rcpt{font-size:13px;color:var(--rd-muted)}
+.rd-mailrow.cols .dt,.rd-mailrow.cols .tm{font-size:12.5px;color:var(--rd-muted)}
+.rd-mailrow.cols .att{font-size:12.5px;color:var(--rd-muted);text-align:center}
+@media(max-width:1240px){.rd-mailhead>*:nth-child(n+4):nth-child(-n+6),.rd-mailrow.cols>*:nth-child(n+4):nth-child(-n+6){display:none}
+  .rd-mailhead,.rd-mailrow.cols{grid-template-columns:74px 1.5fr 1.15fr 22px}}
+
+/* nothing in the portal wraps to a second line inside a row */
+.rd-row .nm,.rd-row .dc,.rd-row .m,.rd-drow .m,.rd-drow .dc,
+.rd-mrow.cal.m4 .prep,.rd-crow2 .cat,.rd-crow2 .mt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-row .dc small.rd-why{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.rd-brief-note{font-size:12.5px;line-height:1.5;color:#8A6D1F;background:#FCFAF4;border:1px solid #EFE3C6;border-radius:8px;padding:9px 11px;margin:0 0 12px}
+
+/* client 360: goals tab flows life events straight into the draft action */
+.cd-goals{max-width:820px}
+.cd-goals .card .ai-item b{font-size:14px}
+.cd-draftbar{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.cd-dsearch{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;padding:0 12px;height:42px;background:#fff}
+.cd-dsearch input{border:0;outline:0;flex:1;font:inherit;font-size:14px;background:transparent}
+
+/* sub-panel text was too small to read */
+#cdBody .repo-tbl th,#cdBody .dh-tbl th{font-size:12px}
+#cdBody .repo-tbl td,#cdBody .dh-tbl td{font-size:14px}
+#cdBody .repo-tbl td .mono,#cdBody .dh-tbl td.mono,#cdBody .repo-tbl td.mono{font-size:13.5px!important}
+#cdBody .repo-folder-h .pill{font-size:12px}
+#cdBody .repo-folder-h .cnt{font-size:12.5px}
+#cdBody .help{font-size:13.5px}
+#cdBody .ai-item b{font-size:14px}
+#cdBody .ai-item span{font-size:13px}
+#cdBody .chip{font-size:11px}
+#cdBody .rd-status{font-size:12px}
+
+/* canvas: the expanded row no longer collides */
+.rd-dexp{grid-template-columns:1.4fr 300px 200px;align-items:start;gap:28px}
+.rd-dexp .srcl{flex-wrap:wrap;gap:4px}
+.rd-dexp .rd-sel{width:100%}
+.rd-dexp .k{white-space:nowrap}
+@media(max-width:1240px){.rd-dexp{grid-template-columns:1fr;padding-left:20px}}
+
+/* the finalised document, opened in read mode */
+.rd-prompt-c.fdoc{width:min(880px,94vw);max-height:88vh;overflow:auto;padding:0}
+.rd-fdoc-top{display:flex;align-items:center;gap:14px;padding:16px 22px;border-bottom:1px solid var(--rd-line);background:#FBFAF6;position:sticky;top:0;z-index:2}
+.rd-fdoc-top .k{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--rd-muted);margin-bottom:4px}
+.rd-fdoc-top b{font-size:16px;color:var(--rd-ink)}
+.rd-fdoc-top button{margin-left:auto}
+.rd-fdoc{margin:22px;border:1px solid var(--rd-line);border-radius:6px;background:#fff;box-shadow:0 2px 14px rgba(20,30,50,.07)}
+.rd-fdoc-h,.rd-fdoc-f{display:flex;align-items:center;gap:10px;padding:11px 30px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:#8A6D1F;background:#FCFAF4;border-bottom:1px solid #EFE3C6}
+.rd-fdoc-f{border-bottom:0;border-top:1px solid #EFE3C6;letter-spacing:.06em;text-transform:none;font-weight:600;color:var(--rd-muted)}
+.rd-fdoc-h .rt,.rd-fdoc-f span:last-child{margin-left:auto;font-weight:600;letter-spacing:.04em;text-transform:none;color:var(--rd-muted)}
+.rd-fdoc-b{padding:30px 34px 34px}
+.rd-fdoc-b h1{font-family:'Libre Caslon Text',serif;font-size:30px;font-weight:400;margin:0 0 8px;color:var(--rd-ink)}
+.rd-fdoc-b .meta{font-size:13px;color:var(--rd-muted);margin:0 0 22px;padding-bottom:16px;border-bottom:1px solid var(--rd-line-soft)}
+.rd-fdoc-b h3{font-size:15px;font-weight:700;color:var(--rd-ink);margin:22px 0 8px}
+.rd-fdoc-b p{font-size:15px;line-height:1.65;color:var(--rd-text);margin:0 0 8px}
+.rd-fdoc-b ul{margin:0;padding-left:20px}
+.rd-fdoc-b li{font-size:15px;line-height:1.7;color:var(--rd-text);margin-bottom:4px}
+.rd-prompt-c.fdoc .acts{display:flex;gap:10px;justify-content:flex-end;padding:0 22px 22px}
+
+/* canvas: which documents are actually being worked on */
+.rd-drow.working .dc{position:relative}
+.rd-sib{margin-top:14px;padding-top:12px;border-top:1px solid var(--rd-line-soft)}
+.rd-sib .k2{font-size:12.5px;font-weight:700;color:var(--rd-ink);margin-bottom:7px}
+.rd-sib .k2 em{font-style:normal;font-weight:600;color:var(--rd-muted)}
+.rd-sib-row{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13.5px;min-width:0}
+.rd-sib-row b{font-weight:700;color:var(--rd-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.rd-sib-row .rd-status{flex:0 0 auto}
+.rd-sib-row button{flex:0 0 auto}
+.rd-wtag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:#2B5FBF;background:#EAF0FC;border:1px solid #CFDDF7;border-radius:999px;padding:2px 8px;margin-left:8px;vertical-align:1px}
+.rd-wtag i{width:6px;height:6px;border-radius:50%;background:#2B5FBF;font-style:normal}
+</style>
+<script>
+/* ===================================================================
+   BATCH 3 — Sep 7 Loom
+   finalised brief view, email columns, client 360 tidy-up, Canvas clarity
+   =================================================================== */
+
+/* ---------- Brief ready opens the finished document, in read mode ---------- */
+function rdMtgGo(m){
+  if(m.past)return "openClient('"+m.cid+"');setTimeout(function(){cdTab('touch')},60)";
+  if(!m.life&&/Brief ready/.test(rdMtgState(m)[1])&&m.cid)return "rdOpenFinal('"+m.cid+"')";
+  return m.go;
+}
+function rdFinalBriefHtml(c){
+  var b=c.brief||{},moved=(b.moved||[]),ask=(b.ask||[]);
+  var m=(typeof rdClientMtg==='function')?rdClientMtg(c):null;
+  var when=m?(dowFor(m.d,m.m)+' '+CALM[m.m].name.split(' ')[0].slice(0,3)+' '+m.d+', 2026 \u00b7 '+m.time):(c.next||'');
+  return '<div class="rd-fdoc">'+
+    '<div class="rd-fdoc-h"><span class="bt">DELTA ADVISORY</span><span class="rt">Confidential \u00b7 prepared for internal use</span></div>'+
+    '<div class="rd-fdoc-b">'+
+      '<h1>Pre-meeting brief</h1>'+
+      '<p class="meta">'+esc(c.name)+' \u00b7 '+esc(when)+' \u00b7 written from '+((c.brief&&c.brief.srcs)||4)+' named sources</p>'+
+      '<h3>What changed since your last contact</h3>'+
+      (moved.length?'<ul>'+moved.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>':'<p>Nothing material has moved since the last conversation.</p>')+
+      '<h3>What to ask</h3>'+
+      (ask.length?'<ul>'+ask.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>':'<p>Confirm priorities and agree the next step.</p>')+
+      '<h3>What to prepare next</h3>'+
+      '<p>'+esc((typeof rdPrepTodo==='function')?rdPrepTodo(c):'Confirm the agenda before the meeting.')+'</p>'+
+      '<h3>Considerations</h3>'+
+      '<p>'+esc(c.goals||'Keep the plan consistent with what they told you they are trying to do.')+'</p>'+
+    '</div>'+
+    '<div class="rd-fdoc-f"><span>Delta Advisory \u00b7 Member FINRA/SIPC \u00b7 Confidential</span><span>Page 1 of 1</span></div>'+
+  '</div>';
+}
+function rdOpenFinal(cid){
+  var c=clientBy(cid);if(!c)return;
+  var box=document.getElementById('rdFinal')||(function(){var n=document.createElement('div');n.id='rdFinal';document.body.appendChild(n);return n;})();
+  box.className='rd-prompt';
+  box.innerHTML='<div class="rd-prompt-c fdoc"><div class="rd-fdoc-top">'+
+      '<div><div class="k">Finalised document \u00b7 read mode</div><b>'+esc(rdShort(c.name))+' \u2014 pre-meeting brief</b></div>'+
+      '<button class="rd-btn sm" onclick="rdFinalClose()">Close</button></div>'+
+    rdFinalBriefHtml(c)+
+    '<div class="acts"><button class="rd-btn" onclick="rdFinalClose();openClient(\''+cid+'\');setTimeout(function(){cdTab(\'deliv\')},60)">See it in Document history</button>'+
+      '<button class="rd-btn pri" onclick="rdFinalEdit(\''+cid+'\')">Edit this document</button></div></div>';
+  box.style.display='flex';
+}
+function rdFinalClose(){var b=document.getElementById('rdFinal');if(b)b.style.display='none';}
+function rdFinalEdit(cid){
+  rdFinalClose();
+  var mine=DELIVS.filter(function(d){return rdCid(d.client)===cid;});
+  var d=mine.filter(function(x){return rdStageKey(x)!=='client';})[0]||mine[0];
+  if(d){openDeliv(d.id,cid);toast('Open for editing \u2014 the read view is always one click away');}
+  else{openClient(cid);setTimeout(function(){cdTab('deliv');},60);}
+}
+
+/* ---------- email history columns ---------- */
+function rdMailHead(){
+  return '<div class="rd-mailhead"><span></span><span>Subject line</span><span>Recipient</span>'+
+    '<span>Date received</span><span>Time</span><span>Att.</span><span></span></div>';
+}
+function rdMailRcpt(cid,m){
+  var c=clientBy(cid);
+  if(m.dir==='out')return rdEmail(c);
+  return 'mark.whitfield@deltaadvisory.com';
+}
+function rdMailDate(m){return String(m.when||'').split('\u00b7')[0].trim();}
+function rdMailTime(m){var p=String(m.when||'').split('\u00b7');return p.length>1?p[1].trim():'\u2014';}
+
+/* ---------- a client with more than one document in flight ----------
+   Erica's example was Alicia Boone. She had one, so the several-documents
+   layout never showed. She now has a second, at a different prep stage. */
+(function(){
+  if(typeof DELIVS==='undefined')return;
+  if(DELIVS.some(function(d){return d.id==='d8';}))return;
+  DELIVS.push({id:'d8',title:'Vest Schedule Analysis',client:'Dr. Alicia Boone',tpl:'Action Plan',
+    status:'Draft ready',stage:'Internal review',ver:'Draft 2',upd:'Sep 1, 2026 \u00b7 07:40',owner:'R. Okafor',due:'Sep 5'});
+  if(typeof SOURCES!=='undefined')SOURCES['d8']=[
+    {id:'s1',name:'Boone-Vest-Schedule-Sep2026.xlsx',meta:'Sent by Dr. Boone \u00b7 Aug 6, 2026',on:true,adds:'vault'},
+    {id:'s2',name:'Custodian positions & cost basis',meta:'CSV \u00b7 pulled Aug 7, 2026',on:true,adds:'custodian'},
+    {id:'s3',name:'Equity comp review call transcript',meta:'Transcript \u00b7 Jul 9, 2026 \u00b7 28 min',on:true,adds:'call'}];
+  if(typeof DRAFT_BLOCKS!=='undefined')DRAFT_BLOCKS['d8']=[
+    {sec:'Header',src:null,html:'<h2>Vest Schedule Analysis</h2><div class="doc-meta">Dr. Alicia Boone \u00b7 Draft 2 \u00b7 written with your Action Plan template</div>'},
+    {sec:'Where the position stands',src:'custodian',html:'<h3>Where the position stands</h3><p>Employer stock is 41% of investable assets, up from 36% at the last review. The September tranche adds an estimated $310k pre-tax.</p>'},
+    {sec:'Pace options',src:'vault',html:'<h3>Pace options</h3><p>Sell at vest, or stage the sale across Q4. Staging spreads the gain across two tax years; selling at vest removes the concentration in one move.</p>'},
+    {sec:'What would change the pace',src:'call',html:'<h3>What would change the pace</h3><p>A firm date on the practice sale would move this decision forward by a quarter.</p>'}];
+})();
+
+/* ---------- canvas: one recommendation when a client has several ---------- */
+function rdSiblingHtml(d){
+  var cid=rdCid(rdShort(d.client));
+  var mine=DELIVS.filter(function(x){return x.id!==d.id&&rdCid(rdShort(x.client))===cid&&rdStageKey(x)!=='client';});
+  if(!mine.length)return '';
+  var order={blocked:0,advisor:1,gather:2,ai:3,client:4};
+  mine=mine.slice().sort(function(a,b){return order[rdStage(a).k]-order[rdStage(b).k];});
+  var first=order[rdStage(d).k]<=order[rdStage(mine[0]).k];
+  return '<div class="rd-sib"><div class="k2">'+esc(rdShort(d.client))+' has '+(mine.length+1)+' documents in progress. '+
+    '<em>'+(first?'Do this one first.':'Start with '+esc(mine[0].title)+'.')+'</em></div>'+
+    mine.slice(0,3).map(function(x){
+      return '<div class="rd-sib-row"><b>'+esc(x.title)+'</b>'+
+        '<span class="rd-status '+rdStage(x).k+'">'+esc(rdStage(x).l)+'</span>'+
+        '<button class="rd-btn sm" onclick="event.stopPropagation();openDeliv(\''+x.id+'\',\''+(cid||'')+'\')">Open</button></div>';
+    }).join('')+
+    (mine.length>3?'<div class="rd-sib-row"><b>+ '+(mine.length-3)+' more in their Canvas folder</b></div>':'')+
+  '</div>';
+}
+
+/* ---------- canvas: mark the rows actually being worked on ---------- */
+(function(){
+  var _rdDelivs=rdDelivs;
+  rdDelivs=function(){
+    _rdDelivs.apply(this,arguments);
+    var host=document.getElementById('rd-delivs');if(!host)return;
+    host.querySelectorAll('.rd-drow').forEach(function(row){
+      var st=row.querySelector('.rd-status');if(!st)return;
+      var k=(st.className.match(/rd-status\s+(\w+)/)||[])[1];
+      var working=(k&&k!=='client');
+      row.classList.toggle('working',!!working);
+      var dc=row.querySelector('.dc');
+      if(working&&dc&&!dc.querySelector('.rd-wtag'))
+        dc.insertAdjacentHTML('beforeend','<span class="rd-wtag"><i></i>Working on</span>');
+      if(!working&&dc){var t=dc.querySelector('.rd-wtag');if(t)t.remove();}
+    });
+  };
+})();
 </script>
 </body>
 </html>
