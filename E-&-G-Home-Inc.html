@@ -1716,7 +1716,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · v9.46 beta</span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · v9.47 beta</span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -2244,6 +2244,11 @@ function sbUpsert(t,row){ if(!sbOn()) return Promise.resolve(false);
 function sbPatch(t,id,patch){ if(!sbOn()) return Promise.resolve(false);
   return sbSend('patch',t,`${BACKEND.url}/rest/v1/${t}?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:sbH()},patch); }
 function n8nPost(payload){ n8nHook(BACKEND.incidentWebhook,payload); }
+function apptInvitees(a){                                             // staff listed on the appointment, by their sign-in email
+  if(!a||!a.acl||a.acl.mode!=='listed') return [];
+  return (a.acl.sids||[]).map(sid=>{ const st=staff(sid); if(!st) return ''; if(st.email) return st.email;
+    const u=Object.entries(USERS).find(([em,b])=>b&&b.sid===sid); return u?u[0]:''; }).filter(Boolean);
+}
 function n8nCal(payload){ n8nHook(BACKEND.calendarWebhook,payload); }
 function n8nHook(url,payload){
   if(!url) return;
@@ -2903,7 +2908,9 @@ function setNameMode(v){ NAME_MODE=v; lsSet('np_name_mode',v); sbUpsert('np_demo
 const visShifts = () => SHIFTS.filter(s=>staff(s.sid)&&!hid('shift',shiftKey(s))&&!hid('staff',s.sid));
 const visIncidents = () => INCIDENTS.filter(i=>client(i.cid)&&visibleClients().some(c=>c.id===i.cid));
 const visAppts = () => APPTS.filter(a=>!hid('appt',a.id)&&client(a.cid)&&visibleClients().some(c=>c.id===a.cid)&&calMine(a));
-const visThreads = () => THREADS.filter(t=>!t.cid||(client(t.cid)&&visibleClients().some(c=>c.id===t.cid))).filter(t=>!state.hideSample||t._user);
+const visThreads = () => THREADS.filter(t=>!t.cid||(client(t.cid)&&visibleClients().some(c=>c.id===t.cid))).filter(t=>!hid('thread',t.id))                                       // sample threads hide; real conversations never do
+  .filter(t=>{ if(state.role!=='staff') return true;                 // staff see threads addressed to them, house-wide threads, and ones they started
+    const me=ME.staff.name; return t.who===me||t.role==='Group'||(t.msgs||[]).some(m=>m.w===me)||(USERS[(AUTH.email||'').toLowerCase()]||{}).sid&&t.who===stName(staff(meSid())||{}); });
 
 const meInit=()=>ME[state.role].name.split(' ').map(w=>w[0]+'.').join('');
 
@@ -3279,6 +3286,7 @@ function signIn(role){ loadNotifPrefs(); loadPilot(); loadDocAct(); loadProgram(
   bindIdentity(role);
   whenHydrated(()=>{
     bindIdentity(role);
+    try{ if(certReminderRun()) renderNav(); }catch(e){}
     if(!HYDRATE_OK && !PILOT_AGREED && (ONB.org||ONB.name||AUTH.email)){
       // the workspace could not be loaded — do not make a returning user sign again
       console.warn('[np-demo] backend unreachable — holding the agreement gate rather than re-asking');
@@ -3343,6 +3351,28 @@ function renderTbSample(){
   b.textContent=state.hideSample?'⦿ Show sample data':'⦸ Hide sample data';
   b.title='Applies everywhere — anything you create stays';
 }
+let LABELS={};                                                       // navId -> label the director prefers ("Alta binder" over "Agency binder")
+function labelsSave(){ sbUpsert('np_demo_program',{key:'labels',value:{map:LABELS},updated_by:auditActor()}); }
+function navLabel(n){ return LABELS[n.id]||n.t; }
+function labelsForm(){
+  const items=[]; const seen={};
+  Object.values(NAV).forEach(list=>list.forEach(n=>{ if(n.id&&!seen[n.id]){ seen[n.id]=1; items.push(n); } }));
+  openModal('Rename menus and binders',`
+    <div class="tiny muted" style="margin-bottom:10px">Call things what your team calls them. Leave a field blank to keep the standard name. Binder names apply to the Documents and Templates pages and every filing picker.</div>
+    <div class="tiny muted" style="font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin:6px 0">Menus</div>
+    ${items.map(n=>`<div class="field" style="display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:center"><label style="margin:0">${n.i||''} ${esc(n.t)}</label><input class="inp" data-lbl="${n.id}" value="${esc(LABELS[n.id]||'')}" placeholder="${esc(n.t)}"></div>`).join('')}
+    <div class="tiny muted" style="font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px">Binders</div>
+    ${binderKeys().map(k=>`<div class="field" style="display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:center"><label style="margin:0">🗀 ${esc(k)}</label><input class="inp" data-bnd="${k}" value="${esc(FOLDER_NAMES[k]||'')}" placeholder="${esc(k)} binder"></div>`).join('')}`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="labelsApply()">Save names</button>`);
+}
+function labelsApply(){
+  LABELS={};
+  document.querySelectorAll('input[data-lbl]').forEach(i=>{ const v=(i.value||'').trim(); if(v) LABELS[i.getAttribute('data-lbl')]=v; });
+  document.querySelectorAll('input[data-bnd]').forEach(i=>{ const v=(i.value||'').trim(); if(v) FOLDER_NAMES[i.getAttribute('data-bnd')]=v; });
+  labelsSave(); if(typeof bindersSave==='function') bindersSave(); else sbUpsert('np_demo_program',{key:'binders',value:{names:FOLDER_NAMES,order:BINDER_ORDER||[],hidden:BINDER_HIDDEN||[]},updated_by:auditActor()});
+  logAudit('Renamed menus or binders','');
+  closeAll(); renderNav(); render(); toast('Names saved — they show for everyone in the workspace.');
+}
 function renderNav(){
   renderTbSample();
   const items = NAV[state.role];
@@ -3352,7 +3382,7 @@ function renderNav(){
     if(n.id==='tasks'){ const c=myTasks().filter(t=>t.stage!=='Done' && t.due<=T).length; if(c) badge=`<span class="badge">${c}</span>`; }
     if(n.id==='incidents'){ const c=visIncidents().filter(i=>i.status!=='Closed').length; if(c) badge=`<span class="badge">${c}</span>`; }
     if(n.id==='messages'){ const c=THREADS.reduce((a,t)=>a+t.unread,0); if(c) badge=`<span class="badge">${c}</span>`; }
-    return `<button class="nav-item ${state.view===n.id?'active':''}" onclick="go('${n.id}')"><span class="ni">${n.i}</span>${esc(n.t)}${badge}</button>`;
+    return `<button class="nav-item ${state.view===n.id?'active':''}" onclick="go('${n.id}')"><span class="ni">${n.i}</span>${esc(navLabel(n))}${badge}</button>`;
   }).join('');
   sideProg();
   const un=visThreads().reduce((a,t)=>a+t.unread,0);
@@ -4490,11 +4520,31 @@ const NOTIF_EVENTS=[['note','New progress notes'],['doc','Document uploads'],['a
   ['onboard','Onboarding checklist shared'],['onboarddone','Onboarding item completed'],['tasksign','Task signed off']];
 let NOTIF_CADENCE={};                                                          // ev -> 'off' | 'daily' | 'weekly'
 function rulesSave(){ sbUpsert('np_demo_program',{key:'notifrules',value:{rules:NOTIF_RULES,cadence:NOTIF_CADENCE},updated_by:auditActor()}); }
+function ruleOf(ev){                                                  // {who:[...], email, sms}; older single-value rules upgrade in place
+  let r=NOTIF_RULES[ev];
+  if(!r||r==='off') return {who:[],email:false,sms:false};
+  if(typeof r==='string') return {who:[r],email:false,sms:false};
+  return {who:r.who||[],email:!!r.email,sms:!!r.sms};
+}
+function ruleWho(ev,v,on){
+  const r=ruleOf(ev); const who=new Set(r.who);
+  if(on) who.add(v); else who.delete(v);
+  NOTIF_RULES[ev]={who:[...who],email:r.email,sms:r.sms}; rulesSave();
+}
+function ruleChan(ev,ch,on){ const r=ruleOf(ev); r[ch]=!!on; NOTIF_RULES[ev]={who:r.who,email:r.email,sms:r.sms}; rulesSave(); }
 function notifyRule(ev,title,body){
-  const to=NOTIF_RULES[ev]||'off'; if(to==='off') return;
-  const for_staff=(to==='all'||to==='director')?null:to;             // null = broadcast; a sid targets one person
-  SYS_NOTIFS.unshift({t:title,s:body,at:nowStamp(),k:ev});
-  sbPush('np_demo_notifications',{title,body,kind:ev,for_staff});
+  const r=ruleOf(ev); if(!r.who.length) return;
+  const all=r.who.includes('all'), dir=r.who.includes('director');
+  const sids=all?STAFF.filter(st=>!hid('staff',st.id)).map(st=>st.id):r.who.filter(x=>x!=='director'&&x!=='all');
+  if(all||dir){ SYS_NOTIFS.unshift({t:title,s:body,at:nowStamp(),k:ev}); sbPush('np_demo_notifications',{title,body,kind:ev,for_staff:null}); }
+  sids.forEach(sid=>{ SYS_NOTIFS.unshift({t:title,s:body,at:nowStamp(),k:ev,sid}); sbPush('np_demo_notifications',{title,body,kind:ev,for_staff:sid}); });
+  if(r.email){                                                       // email goes to each chosen person's sign-in address
+    const emails=new Set();
+    if(dir||all){ if(ONB.email) emails.add(ONB.email); }
+    sids.forEach(sid=>{ const st=staff(sid); if(st&&st.email) emails.add(st.email); const u=Object.entries(USERS).find(([em,b])=>b&&b.sid===sid); if(u) emails.add(u[0]); });
+    emails.forEach(to=>sendPortalEmail(to,'[Care portal] '+title,`<div style="font-family:sans-serif;font-size:14px"><h3 style="margin:0 0 8px">${esc(title)}</h3><p>${esc(body)}</p><p style="color:#666;font-size:12px">Sent by the care portal notification rules.</p></div>`).catch(()=>{}));
+  }
+  if(r.sms) console.info('[np-demo] text routing is set for '+ev+' — connect a texting provider in n8n to deliver');
 }
 let ACCESS={};                                                       // sid -> 'all' | [client ids]
 function accessSave(){ sbUpsert('np_demo_program',{key:'access',value:{map:ACCESS},updated_by:auditActor()}); }
@@ -5541,8 +5591,8 @@ function certForm(sid){
 async function saveCert(sid){
   const n=(el('cfName').value||'').trim(); if(!n) return toast('Name the certification.');
   const exp=el('cfExp').value, ref=(el('cfRef').value||'').trim();
-  const st=!exp?'ok':(exp<T?'bad':(new Date(exp)-new Date(T))/864e5<90?'warn':'ok');
-  const row={c:n,d:exp?'Expires '+fmtDate(exp):(ref||'On file'),s:st};
+  const st=!exp?'ok':(exp<T?'bad':(new Date(exp)-new Date(T))/864e5<certWindow()?'warn':'ok');
+  const row={c:n,d:exp?'Expires '+fmtDate(exp):(ref||'On file'),s:st,exp:exp||null};
   (CREDS[sid]=CREDS[sid]||[]).push(row);
   // the certificate file itself, stored so it opens on any device
   const cf=el('cfFile'), f=cf&&cf.files&&cf.files[0];
@@ -6171,9 +6221,9 @@ function printLogsGo(){
   if(picks.includes('temps')){
     const rows=WATERTEMP.filter(w=>inRange(w.date)&&(!home||w.home===home));
     parts.push(`<h2>Water Temperature Log</h2>${hdr}
-      <table><thead><tr><th>Date</th><th>Home</th><th>Fixture</th><th>°F</th><th>By</th><th>Signature</th></tr></thead><tbody>
-      ${rows.map(w=>`<tr><td>${fmtDate(w.date)}</td><td>${esc(w.home)}</td><td>${esc(w.fixture||'Fixtures')}</td><td>${esc(String(w.temp||''))}</td><td>${esc(w.by||'')}</td><td style="width:150px">&nbsp;</td></tr>`).join('')||'<tr><td colspan="6">No readings in this period — blank rows below.</td></tr>'}
-      ${Array.from({length:Math.max(0,8-rows.length)}).map(()=>'<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>').join('')}
+      <table><thead><tr><th>Date</th><th>Home</th><th>Water (°F)</th><th>Fridge (°F)</th><th>Freezer (°F)</th><th>By</th><th>Signature</th></tr></thead><tbody>
+      ${rows.map(w=>`<tr><td>${fmtDate(w.date)}</td><td>${esc(w.home)}</td><td>${esc(String(w.temp||''))}</td><td>${w.fridge!=null?esc(String(w.fridge)):''}</td><td>${w.freezer!=null?esc(String(w.freezer)):''}</td><td>${esc(w.by||'')}</td><td style="width:150px">&nbsp;</td></tr>`).join('')||'<tr><td colspan="7">No readings in this period — blank rows below.</td></tr>'}
+      ${Array.from({length:Math.max(0,8-rows.length)}).map(()=>'<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>').join('')}
       </tbody></table>`);
   }
   if(picks.includes('drills')){
@@ -7123,7 +7173,7 @@ function openInspCompleted(id){ const s=INSP_DONE.find(x=>x.id===id); if(s) prin
    readings stay on the page as history. */
 const BUILTIN_LOG_SEED={
   temps:{name:'Water temperature log',folder:'Daily',desc:'Fixture readings — limit 120°F',perWeek:7,
-    lines:[['Home','text'],['Kitchen sink (°F)','num'],['Bathroom 1 (°F)','num'],['Bathroom 2 (°F)','num'],['Time checked','time'],['All fixtures within range','yn']]},
+    lines:[['Home','text'],['Kitchen sink (°F)','num'],['Bathroom 1 (°F)','num'],['Bathroom 2 (°F)','num'],['Refrigerator (°F)','num'],['Freezer (°F)','num'],['Time checked','time'],['All readings within range','yn']]},
   drills:{name:'Fire drill log',folder:'Daily',desc:'Monthly drill record per home',perWeek:1,
     lines:[['Home','text'],['Shift','text'],['Time started','time'],['Evacuation time (minutes)','num'],['All residents accounted for','yn'],['Issues observed','text']]}
 };
@@ -7448,13 +7498,18 @@ function saveDrill(){ const d={date:el('fdDate').value,time:el('fdTime').value,h
 function openTempForm(){ openModal('Add water temperature reading',`
   <div class="row2">
     <div class="field"><label>Home</label>${homeField('wtHome','')}</div>
-    <div class="field"><label>Temperature (°F)</label><input class="inp" type="number" id="wtTemp" value="116"></div>
+    <div class="field"><label>Water at fixtures (°F)</label><input class="inp" type="number" id="wtTemp" value="116"></div>
+  </div>
+  <div class="row2">
+    <div class="field"><label>Refrigerator (°F) <span class="tiny muted">optional</span></label><input class="inp" type="number" id="wtFridge" placeholder="34–40"></div>
+    <div class="field"><label>Freezer (°F) <span class="tiny muted">optional</span></label><input class="inp" type="number" id="wtFreezer" placeholder="0 or below"></div>
   </div>
   <div class="field"><label>Date</label><input class="inp" type="date" id="wtDate" value="${T}"></div>`,
   `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveTemp()">Save reading</button>`); }
-function saveTemp(){ const w={date:el('wtDate').value,home:el('wtHome').value,temp:+el('wtTemp').value,by:meInit(),wet:0};
+function saveTemp(){ const fr=el('wtFridge')&&el('wtFridge').value!==''?+el('wtFridge').value:null, fz=el('wtFreezer')&&el('wtFreezer').value!==''?+el('wtFreezer').value:null;
+  const w={date:el('wtDate').value,home:el('wtHome').value,temp:+el('wtTemp').value,fridge:fr,freezer:fz,by:meInit(),wet:0};
   WATERTEMP.unshift(w);
-  sbPush('np_demo_water_temps',{reading_date:w.date,home:w.home,temp:w.temp,recorded_by:w.by,wet:0});
+  sbPush('np_demo_water_temps',{reading_date:w.date,home:w.home,temp:w.temp,fridge:fr,freezer:fz,recorded_by:w.by,wet:0});
   const it=CHECKLIST[2].items.find(i=>i.t.includes('Water temperature')); if(it){it.s='ok';it.d='Current';}
   logAudit('Logged water temperature',el('wtHome').value+' · '+el('wtTemp').value+'°F');
   notifyRule('temp','Water temperature logged',el('wtHome').value+' · '+el('wtTemp').value+'°F'+(+el('wtTemp').value<=TEMP_LIMIT?' · in range':' · OVER LIMIT'));
@@ -9021,7 +9076,7 @@ function saveApptEdit(id){
   if(state.role==='director') a.acl=aclRead('ea');
   sbPatch('np_demo_appointments',id,{title:a.title,cid:a.cid,type:a.type,appt_date:a.date,appt_time:a.time,dur:a.dur,provider:a.provider,loc:a.loc,ride:a.ride,cal:a.cal,owner:a.owner||null,acl:a.acl||null});
   n8nCal({event:'appointment.updated', id:a.id, uci:(client(a.cid)||{}).uci||'', init:(client(a.cid)||{}).init||'',
-    title:a.title, type:a.type, date:a.date, time:a.time, dur:a.dur, provider:a.provider, loc:a.loc});   // push the edit to Google
+    title:a.title, type:a.type, date:a.date, time:a.time, dur:a.dur, provider:a.provider, loc:a.loc, attendees:apptInvitees(a)});   // push the edit to Google, invites included
   if(a.gid&&GCAL.connected) gcalUpdate&&gcalUpdate(a);
   logAudit('Edited appointment',`${a.title} · ${(client(a.cid)||{}).uci||''}`);
   closeAll(); render(); openAppt(id); toast('Appointment updated.');
@@ -9077,7 +9132,7 @@ function saveAppt(){
   APPTS.push(a);
   a.cal=_cal; a.owner=_owner||''; a.acl=state.role==='director'?aclRead('ap'):null;
   sbPush('np_demo_appointments',{id:a.id,cid:a.cid,title:a.title,type:a.type,appt_date:a.date,appt_time:a.time,dur:a.dur,provider:a.provider,loc:a.loc,flag:a.flag,ride:a.ride,cal:_cal,owner:_owner,acl:a.acl});
-  n8nCal({event:'appointment.created', id:a.id, uci:client(a.cid).uci, init:client(a.cid).init, title:a.title, type:a.type, date:a.date, time:a.time, dur:a.dur, provider:a.provider, loc:a.loc});
+  n8nCal({event:'appointment.created', id:a.id, uci:client(a.cid).uci, init:client(a.cid).init, title:a.title, type:a.type, date:a.date, time:a.time, dur:a.dur, provider:a.provider, loc:a.loc, attendees:apptInvitees(a)});
   const toGcal=el('apGcal')&&el('apGcal').checked;
   if(toGcal){ GCAL.connected?gcalPush(a):gcalTemplateOpen(a); }
   logAudit('Added appointment',`${(client(a.cid)||{}).uci} · ${a.title}`);
@@ -9101,7 +9156,7 @@ function restoreAppt(id){ /* re-creates the Google event, since cancelling delet
   const a=APPTS.find(x=>x.id===id);
   a.cancelled=0; a.cxBy='';
   sbPatch('np_demo_appointments',id,{cancelled:0,cx_by:''});
-  n8nCal({event:'appointment.created', id:a.id, uci:client(a.cid).uci, init:client(a.cid).init, title:a.title, type:a.type, date:a.date, time:a.time, dur:a.dur, provider:a.provider, loc:a.loc});
+  n8nCal({event:'appointment.created', id:a.id, uci:client(a.cid).uci, init:client(a.cid).init, title:a.title, type:a.type, date:a.date, time:a.time, dur:a.dur, provider:a.provider, loc:a.loc, attendees:apptInvitees(a)});
   logAudit('Restored appointment',`${(client(a.cid)||{}).uci} · ${a.title}`);
   render(); openAppt(id);
   if(GCAL.connected){ a.gid=null; gcalPush(a); toast('Appointment restored and put back on your Google Calendar.'); }
@@ -9888,13 +9943,14 @@ function openSettings(){
       ${NOTIF_EVENTS.map(([ev,label])=>`
         <div style="padding:9px 0;border-bottom:1px solid var(--line)">
           <div style="font-size:13.2px;font-weight:600;margin-bottom:6px">${label}</div>
-          <div style="display:flex;gap:8px">
-            <select class="inp" style="flex:1;min-width:0" title="Who is notified" onchange="NOTIF_RULES['${ev}']=this.value;rulesSave()">
-              <option value="off" ${NOTIF_RULES[ev]==='off'?'selected':''}>Off</option>
-              <option value="director" ${NOTIF_RULES[ev]==='director'?'selected':''}>Director only</option>
-              <option value="all" ${NOTIF_RULES[ev]==='all'?'selected':''}>All staff</option>
-              ${visibleStaff().map(st=>`<option value="${st.id}" ${NOTIF_RULES[ev]===st.id?'selected':''}>${esc(st.name)}</option>`).join('')}
-            </select>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">
+            <div style="flex:2;min-width:220px;display:flex;gap:8px;flex-wrap:wrap" title="Who is notified — pick as many as you like">
+              ${[['director','Director'],['all','All staff'],...visibleStaff().map(st=>[st.id,st.name])].map(([v,l])=>`<label style="display:inline-flex;gap:5px;align-items:center;font-size:12.5px;border:1px solid var(--line);border-radius:20px;padding:3px 9px"><input type="checkbox" ${ruleOf(ev).who.includes(v)?'checked':''} onchange="ruleWho('${ev}','${v}',this.checked)"> ${esc(l)}</label>`).join('')}
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;min-width:150px">
+              <label style="display:inline-flex;gap:5px;align-items:center;font-size:12.5px"><input type="checkbox" ${ruleOf(ev).email?'checked':''} onchange="ruleChan('${ev}','email',this.checked)"> ✉ Email</label>
+              <label style="display:inline-flex;gap:5px;align-items:center;font-size:12.5px" title="Needs a texting provider connected before it delivers"><input type="checkbox" ${ruleOf(ev).sms?'checked':''} onchange="ruleChan('${ev}','sms',this.checked)"> 💬 Text</label>
+            </div>
             <select class="inp" style="flex:1;min-width:0" title="Reminder cadence" onchange="NOTIF_CADENCE['${ev}']=this.value;rulesSave()">
               <option value="off" ${(NOTIF_CADENCE[ev]||'off')==='off'?'selected':''}>No reminders</option>
               <option value="daily" ${NOTIF_CADENCE[ev]==='daily'?'selected':''}>Daily digest</option>
@@ -9912,6 +9968,8 @@ function openSettings(){
       <button class="btn ghost sm" onclick="openDemoView()">⤢ Open the demo dashboard with sample data</button>
       <div class="tiny muted" style="margin-top:8px">Opens in a new tab, clearly marked as test data. Your real workspace is untouched — nothing done in the demo is saved.</div>
     </div></section>
+    <section class="card"><div class="card-h"><h2>Names</h2><div class="sub">Rename menus and binders to match what your team says — "Alta binder", "House log", anything</div><div class="right"><button class="btn ghost sm" onclick="labelsForm()">✎ Rename</button></div></div></section>
+    <section class="card"><div class="card-h"><h2>Certification reminders</h2><div class="sub">${certWindow()} days ahead · ${CERT_REMIND.who==='both'?'staff member and director':CERT_REMIND.who==='staff'?'staff member only':'director only'}</div><div class="right"><button class="btn ghost sm" onclick="certRemindForm()">✎ Edit</button></div></div></section>
     <section class="card"><div class="card-h"><h2>Session</h2><div class="sub">Sign out automatically after a period of inactivity — your setting only, teammates keep theirs</div></div><div class="card-b">
       <select class="inp" style="max-width:240px" onchange="setIdle(this.value)">
         ${[[0,'Never (stay signed in)'],[15,'After 15 minutes idle'],[30,'After 30 minutes idle'],[60,'After 1 hour idle']].map(([v,l])=>`<option value="${v}" ${IDLE_MIN===v?'selected':''}>${l}</option>`).join('')}
@@ -10110,6 +10168,46 @@ function applyUserSettings(){
   if(m.idle!=null){ IDLE_MIN=+m.idle||0; lsSet('np_idle_min',String(IDLE_MIN)); }
   if(m.notifprefs) Object.assign(NOTIF_PREFS,m.notifprefs);
   if(m.tourSeen) state.tourSeen=Object.assign({},state.tourSeen,m.tourSeen);
+}
+let CERT_NOTIFIED={};                                                // 'sid|cert|date' -> 1, so a reminder goes out once a day
+function certReminderRun(){
+  if(state.role!=='director'&&state.role!=='staff') return;
+  const win=certWindow(); let fired=0;
+  Object.entries(CREDS).forEach(([sid,list])=>{
+    if(!staff(sid)) return;
+    (list||[]).forEach(c=>{
+      if(!c.exp) return;
+      const days=Math.round((new Date(c.exp+'T12:00:00')-TODAY)/86400000);
+      if(days>win) return;
+      const key=`${sid}|${c.c}|${T}`; if(CERT_NOTIFIED[key]) return;
+      CERT_NOTIFIED[key]=1;
+      const st=staff(sid);
+      const title=days<0?`Certification expired — ${c.c}`:`Certification due in ${days} day${days===1?'':'s'} — ${c.c}`;
+      const body=`${st.name} · ${days<0?'expired':'expires'} ${fmtDate(c.exp)}. Upload the renewal to their staff file.`;
+      if(CERT_REMIND.who!=='director'){ SYS_NOTIFS.unshift({t:title,s:body,at:nowStamp(),k:days<0?'bad':'warn',sid}); sbPush('np_demo_notifications',{title,body,kind:'cert',for_staff:sid}); }
+      if(CERT_REMIND.who!=='staff'){ SYS_NOTIFS.unshift({t:title,s:body,at:nowStamp(),k:days<0?'bad':'warn'}); sbPush('np_demo_notifications',{title,body,kind:'cert',for_staff:null}); }
+      fired++;
+    });
+  });
+  if(fired){ sbUpsert('np_demo_program',{key:'certnotified',value:{map:CERT_NOTIFIED},updated_by:auditActor()}); }
+  return fired;
+}
+function certRemindForm(){
+  openModal('Certification reminders',`
+    <div class="tiny muted" style="margin-bottom:10px">Certifications inside this window show as Due soon on staff files and send a reminder notification once a day until renewed.</div>
+    <div class="row2">
+      <div class="field"><label>Remind this many days before expiry</label><input class="inp" type="number" min="1" max="365" id="crDays" value="${certWindow()}"></div>
+      <div class="field"><label>Who is reminded</label><select class="inp" id="crWho">
+        <option value="both" ${CERT_REMIND.who==='both'?'selected':''}>The staff member and the director</option>
+        <option value="staff" ${CERT_REMIND.who==='staff'?'selected':''}>The staff member only</option>
+        <option value="director" ${CERT_REMIND.who==='director'?'selected':''}>The director only</option></select></div>
+    </div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="certRemindApply()">Save</button>`);
+}
+function certRemindApply(){
+  CERT_REMIND={days:Math.max(1,parseInt(el('crDays').value||'90',10)||90),who:el('crWho').value||'both'};
+  certRemindSave(); logAudit('Updated certification reminders',CERT_REMIND.days+' days · '+CERT_REMIND.who);
+  closeAll(); const n=certReminderRun(); render(); toast('Reminders set to '+CERT_REMIND.days+' days'+(n?' — '+n+' sent now':'.'));
 }
 function bindIdentity(role){
   const b=USERS[(AUTH.email||ONB.email||'').toLowerCase()];
@@ -10745,7 +10843,7 @@ function saveStaff(sid){
     [[el('sfCert1'),el('sfExp1')],[el('sfCert2'),el('sfExp2')]].forEach(([cEl,eEl])=>{
       const n=cEl&&(cEl.value||'').trim(); if(!n) return;
       const exp=eEl?eEl.value:'';
-      const st2=!exp?'ok':(exp<T?'bad':(new Date(exp)-new Date(T))/864e5<90?'warn':'ok');
+      const st2=!exp?'ok':(exp<T?'bad':(new Date(exp)-new Date(T))/864e5<certWindow()?'warn':'ok');
       CREDS[id].push({c:n,d:exp?'Expires '+fmtDate(exp):'On file',s:st2});
       sbPush('np_demo_credentials',{sid:id,cred_name:n,expires_on:exp||null,label:exp?null:'On file',status:exp?null:st2});
     });
@@ -10841,7 +10939,7 @@ function aclField(prefix,acl){
     <label style="display:flex;gap:6px;align-items:center;font-size:13px;margin-bottom:3px"><input type="radio" name="${prefix}Acl" value="all" ${a.mode!=='listed'?'checked':''}> Everyone with access to this calendar</label>
     <label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="radio" name="${prefix}Acl" value="listed" ${a.mode==='listed'?'checked':''}> Only these staff</label>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 0 22px">${staffList.map(st=>`<label style="display:inline-flex;gap:5px;align-items:center;font-size:12.5px"><input type="checkbox" data-acl="${prefix}" value="${st.id}" ${(a.sids||[]).includes(st.id)?'checked':''}> ${esc(st.name)}</label>`).join('')||'<span class="tiny muted">No staff yet</span>'}</div>
-    <div class="tiny muted" style="margin-top:4px">Directors always see every appointment. Restricting one hides it from other staff and the family view.</div></div>`;
+    <div class="tiny muted" style="margin-top:4px">Directors always see every appointment. Restricting one hides it from other staff and the family view. Listed staff also get a Google Calendar invite, so it lands on their own phone calendar.</div></div>`;
 }
 function aclRead(prefix){
   const r=document.querySelector(`input[name="${prefix}Acl"]:checked`); if(!r) return null;
@@ -11708,12 +11806,16 @@ function saveDose(){
 }
 
 /* ══════════════ BOOT ══════════════ */
+let CERT_REMIND={days:90, who:'both'};                               // warn this many days ahead; notify staff, director, or both
+function certRemindSave(){ sbUpsert('np_demo_program',{key:'certremind',value:CERT_REMIND,updated_by:auditActor()}); }
+function certWindow(){ return Math.max(1,+CERT_REMIND.days||90); }
 function credRowFromDb(r){
-  if(!r.expires_on) return {dbId:r.id, doc:r.doc||null, c:r.cred_name, d:r.label||'—', s:r.status||'ok'};
+  const base={dbId:r.id, doc:r.doc||null, exp:r.expires_on||null};
+  if(!r.expires_on) return Object.assign(base,{c:r.cred_name, d:r.label||'—', s:r.status||'ok'});
   const d=new Date(r.expires_on+'T12:00:00'), days=Math.round((d-TODAY)/86400000);
-  if(days<0)   return {c:r.cred_name, d:'Expired '+d.toLocaleDateString(undefined,{month:'short',day:'numeric'}), s:'bad'};
-  if(days<=90) return {c:r.cred_name, d:d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' — '+days+' days', s:'warn'};
-  return {c:r.cred_name, d:d.toLocaleDateString(undefined,{month:'short',year:'numeric'}), s:'ok'};
+  if(days<0)   return Object.assign(base,{c:r.cred_name, d:'Expired '+d.toLocaleDateString(undefined,{month:'short',day:'numeric'}), s:'bad'});
+  if(days<=certWindow()) return Object.assign(base,{c:r.cred_name, d:d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' — '+days+' days', s:'warn'});
+  return Object.assign(base,{c:r.cred_name, d:d.toLocaleDateString(undefined,{month:'short',year:'numeric'}), s:'ok'});
 }
 let HYDRATED=false, HYDRATING=null, HYDRATE_OK=false;
 async function sbHydrate(){
@@ -11837,6 +11939,9 @@ async function sbHydrate(){
       if(r.key==='calaccess'&&r.value&&r.value.map){ CAL_ACCESS=r.value.map; }
       if(r.key==='homecolors'&&r.value&&r.value.map){ HOME_COLORS=r.value.map; }
       if(r.key==='clientdir'&&r.value&&r.value.map){ CLIENT_DIR=r.value.map; }
+      if(r.key==='labels'&&r.value&&r.value.map){ LABELS=r.value.map; }
+      if(r.key==='certremind'&&r.value&&r.value.days){ CERT_REMIND=r.value; }
+      if(r.key==='certnotified'&&r.value&&r.value.map){ CERT_NOTIFIED=r.value.map; }
       if(r.key==='doccats'&&r.value&&Array.isArray(r.value.list)&&r.value.list.length){ DOC_CATS=r.value.list; }
       if(r.key==='usersettings'&&r.value&&r.value.map){ USER_SET=r.value.map; }
       if(r.key==='incnotes'&&r.value&&r.value.map){ INC_NOTES=r.value.map; }
@@ -11931,13 +12036,13 @@ async function sbHydrate(){
   if(tasks.length){ TASKS.length=0; tasks.forEach(r=>TASKS.push({id:r.id,title:r.title,sid:r.sid,cid:r.cid,due:r.due,stage:r.stage,pri:r.pri,cat:r.category||'',notes:r.notes||[],signoff:r.signoff||null,subs:r.subs||[]})); }
   if(inc.length){ INCIDENTS.length=0; inc.forEach(r=>INCIDENTS.push({id:r.id,cid:r.cid,type:r.type,date:r.inc_date,time:r.inc_time,sev:r.sev,status:r.status,by:r.reported_by,summary:r.summary,notified:r.notified||[],recips:r.recips||[],hoursLeft:r.hours_left,protoAck:r.proto_ack||[]})); }
   if(fd.length){ FIREDRILLS.length=0; fd.forEach(r=>FIREDRILLS.push({date:r.drill_date,time:r.drill_time,home:r.home,shift:r.shift,evac:r.evac,by:r.conducted_by,wet:r.wet})); }
-  if(wt.length){ WATERTEMP.length=0; wt.forEach(r=>WATERTEMP.push({date:r.reading_date,home:r.home,temp:r.temp,by:r.recorded_by,wet:r.wet})); }
+  if(wt.length){ WATERTEMP.length=0; wt.forEach(r=>WATERTEMP.push({date:r.reading_date,home:r.home,temp:r.temp,fridge:r.fridge!=null?+r.fridge:null,freezer:r.freezer!=null?+r.freezer:null,by:r.recorded_by,wet:r.wet})); }
   logs.forEach(r=>{ if(!LOGS.some(l=>l.mid===r.mid&&l.date===r.log_date&&l.time===r.log_time)) LOGS.unshift({id:r.id,cid:r.cid,mid:r.mid,date:r.log_date,time:r.log_time,status:r.status,by:r.recorded_by,sig:r.sig}); });
   docs.forEach(r=>{
     if(r.storage_path&&!r.path) r.path=r.storage_path; if(!DOCS.some(d=>d.cid===r.cid&&d.n===r.n)) DOCS.unshift({id:r.id||('doc-'+(r.cid||'x')+'-'+r.n),cid:r.cid,n:r.n,cat:r.cat,by:r.uploaded_by,at:r.doc_date,s:r.size,url:r.url||null,path:r.storage_path||null,note:r.note||''}); });
   if(creds.length){ Object.keys(CREDS).forEach(k=>delete CREDS[k]); creds.forEach(r=>{ (CREDS[r.sid]=CREDS[r.sid]||[]).push(credRowFromDb(r)); }); }
   if(tpls.length){ tpls.forEach(r=>{ const t=TEMPLATES5.find(x=>x.id===r.id); if(t){ t.name=r.name; t.fields=r.fields||t.fields; } }); }
-  SYS_NOTIFS=notifs.map(r=>({t:r.title,s:r.body,_seed:0,at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),k:r.kind||'info'}));
+  SYS_NOTIFS=notifs.map(r=>({t:r.title,s:r.body,_seed:0,at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),k:r.kind||'info',sid:r.for_staff||undefined}));
   if(cnotes.length){ CLIENT_NOTES={}; cnotes.forEach(r=>{ (CLIENT_NOTES[r.cid]=CLIENT_NOTES[r.cid]||[]).push({text:r.note,by:r.noted_by,at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}); }); }
   if(appts.length){ APPTS.length=0; appts.forEach(r=>APPTS.push({id:r.id,cid:r.cid,title:r.title,type:r.type,date:r.appt_date,time:r.appt_time,dur:r.dur,provider:r.provider||'',loc:r.loc||'',flag:r.flag||'',ride:r.ride||'',cancelled:r.cancelled||0,cxBy:r.cx_by||'',gid:r.gcal_id||null,cal:r.cal||'company',owner:r.owner||'',acl:r.acl||null,notes:[],files:[]})); }
   if(window._APPT_EXTRAS){ APPTS.forEach(a=>{ const x=window._APPT_EXTRAS[a.id]; if(x){ a.notes=x.notes||a.notes||[]; a.files=x.files||a.files||[]; } }); }
