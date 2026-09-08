@@ -6824,7 +6824,7 @@ function renderCdBody(){
 
          <h3>Previous conversations</h3>
          ${D.convos.length?`<ul>${D.convos.map(t=>`<li><b>${esc(t[0])} · ${esc(t[1])}</b> — ${esc(t[2])}</li>`).join('')}</ul>`:'<p>No prior conversations on file.</p>'}
-         ${D.notes.length?`<p>Advisor notes: ${esc(D.notes.slice(0,2).map(n=>n.t||n).join(' · '))}</p>`:''}
+         ${D.notes.length?`<p>Advisor notes: ${esc(D.notes.slice(0,2).map(n=>(n&&(n.t||n.text||n.note||n.body))||(typeof n==='string'?n:'')).filter(Boolean).join(' · '))}</p>`:''}
 
          <h3>Portfolio &amp; position changes</h3>
          <ul>${b.moved.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
@@ -13288,6 +13288,152 @@ function rdLifeBriefHtml(sel){
     _ensure.apply(this,arguments);
   };
 })();
+</script>
+
+<style id="s4css">
+/* Sep 8 feedback round 4 */
+
+/* email history opens wide enough to read the subject line and recipient */
+.rd-prompt-c.wide.mailbox{width:min(1040px,94vw)}
+.rd-prompt-c.wide.mailbox .rd-mail{margin:14px 0 0}
+.rd-prompt-c.wide.mailbox .rd-mail-search{min-width:280px}
+@media(max-width:1100px){.rd-prompt-c.wide.mailbox{width:min(680px,94vw)}}
+
+/* source repository: the folder tag had no rule of its own, so it inherited dark
+   text on top of its dark blue background. Same shape as the folder-header tag. */
+.tbl td .pill,.tbl th .pill{
+  display:inline-block;color:#fff;border-radius:999px;padding:3px 10px;
+  font-size:10px;font-weight:700;letter-spacing:.03em;line-height:1.5;white-space:nowrap}
+</style>
+
+<script>
+/* ===================================================================
+   SEP 8 FEEDBACK ROUND 4
+   =================================================================== */
+
+/* the email history box gets its own width so no column is cut off */
+['rdClientMail','rdMailThread'].forEach(function(fn){
+  if(typeof window[fn]!=='function')return;
+  var _orig=window[fn];
+  window[fn]=function(){
+    _orig.apply(this,arguments);
+    ['rdMailBox','rdStagePrompt'].forEach(function(id){
+      var box=document.getElementById(id);if(!box||box.style.display==='none')return;
+      var c=box.querySelector('.rd-prompt-c.wide');
+      if(c)c.classList.add('mailbox');
+    });
+  };
+});
+</script>
+
+<style id="s5css">
+/* Sep 8 feedback round 5 */
+.repo-tbl .doc-acts{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:nowrap}
+.btn.btn-del{border:1px solid var(--line);background:#fff;color:var(--rd-muted);flex:none}
+.btn.btn-del:hover{border-color:var(--rd-red);color:var(--rd-red);background:#FFF6F5}
+/* the drafts table gained a column and an action, so the widths are redealt */
+table.repo-tbl th:nth-child(1),table.repo-tbl td:nth-child(1){width:24%}
+table.repo-tbl th:nth-child(2),table.repo-tbl td:nth-child(2){width:12%}
+table.repo-tbl th:nth-child(3),table.repo-tbl td:nth-child(3){width:8%}
+table.repo-tbl th:nth-child(4),table.repo-tbl td:nth-child(4){width:8%}
+table.repo-tbl th:nth-child(5),table.repo-tbl td:nth-child(5){width:14%}
+table.repo-tbl th:nth-child(6),table.repo-tbl td:nth-child(6){width:11%}
+table.repo-tbl th:nth-child(7),table.repo-tbl td:nth-child(7){width:9%}
+table.repo-tbl th:last-child,table.repo-tbl td:last-child{width:14%;min-width:212px;text-align:right;white-space:nowrap}
+table.repo-tbl td:last-child .btn{padding:7px 11px;font-size:12px}
+</style>
+
+<script>
+/* ===================================================================
+   SEP 8 FEEDBACK ROUND 5
+   =================================================================== */
+
+/* ---------- email history rows open in place ----------
+   Clicking a row flipped RD.mailOpen and re-rendered the page behind the
+   modal, so the modal itself never changed and the click looked dead. */
+var RD_MAILBOX_CID=null;
+(function(){
+  var _open=rdClientMail;
+  rdClientMail=function(){
+    RD_MAILBOX_CID=(typeof S!=='undefined'&&S.client)||null;
+    return _open.apply(this,arguments);
+  };
+  var _close=rdMailBoxClose;
+  rdMailBoxClose=function(){RD_MAILBOX_CID=null;return _close.apply(this,arguments);};
+  var _re=rdMailRerender;
+  rdMailRerender=function(){
+    var box=document.getElementById('rdMailBox');
+    var live=box&&box.style.display!=='none'&&RD_MAILBOX_CID;
+    var r=_re.apply(this,arguments);
+    if(live){
+      var panel=box.querySelector('.rd-mail');
+      if(panel)panel.outerHTML=rdMailPanel(RD_MAILBOX_CID,false);
+    }
+    return r;
+  };
+})();
+
+/* ---------- a drafted document can be deleted from the client page ---------- */
+function cdDeleteDraft(id){
+  var d=(typeof delivBy==='function')&&delivBy(id);if(!d)return;
+  var who=rdShort(d.client);
+  $('cfTitle').textContent='Delete '+d.title+'?';
+  $('cfBody').innerHTML='This removes the draft, its sources and any open comments from '+esc(who)+
+    '\u2019s record and from Canvas. Approved documents in Document history are not touched. It cannot be undone from here.';
+  $('cfNo').textContent='No, keep it';
+  $('cfGo').textContent='Yes, delete it';
+  $('cfGo').onclick=function(){closeModal('mConfirm');cdDeleteDraftGo(id);};
+  $('cfNo').onclick=function(){closeModal('mConfirm');};
+  openModal('mConfirm');
+}
+function cdDeleteDraftGo(id){
+  var d=delivBy(id);if(!d)return;
+  var title=d.title,who=rdShort(d.client);
+  var i=DELIVS.indexOf(d);if(i>-1)DELIVS.splice(i,1);
+  if(typeof SOURCES!=='undefined')delete SOURCES[id];
+  if(typeof DRAFT_BLOCKS!=='undefined')delete DRAFT_BLOCKS[id];
+  if(typeof RD_MOVED!=='undefined')delete RD_MOVED[id];
+  if(typeof RD_HUMAN!=='undefined')delete RD_HUMAN[id];
+  if(typeof COMMENTS!=='undefined')for(var j=COMMENTS.length-1;j>=0;j--)if(COMMENTS[j].on===id)COMMENTS.splice(j,1);
+  if(typeof TASKS!=='undefined')for(var k=TASKS.length-1;k>=0;k--)if(TASKS[k].deliv===id)TASKS.splice(k,1);
+  if(typeof AUDIT!=='undefined')AUDIT.unshift({who:'Mark',doc:title+' \u2014 '+who,
+    when:(typeof nowStamp==='function'?nowStamp():'today'),what:'Draft deleted',
+    detail:'Removed from Canvas and from '+who+'\u2019s drafts under review. Sources and open comments went with it.'});
+  if(typeof RD!=='undefined'&&RD.dlvOpen===id)RD.dlvOpen=null;
+  if(typeof renderCdBody==='function')renderCdBody();
+  if(typeof renderAudit==='function')renderAudit();
+  rdRefresh();
+  toast(title+' deleted from '+who+'\u2019s drafts');
+}
+
+/* rebuilt: adds the delete action and drops the dash that sat next to the CTA */
+function stageTablesHtml(docs){
+  const stages=(typeof rdStage==='function'&&typeof RD_STAGES!=='undefined')
+    ? RD_STAGES.map(st=>({st:st[1],c:st[2],docs:docs.filter(d=>rdStage(d).k===st[0])})).filter(g=>g.docs.length)
+    : DLV_STAGES.map(st=>({st:st.n,c:st.c,docs:docs.filter(d=>d.stage===st.n)})).filter(g=>g.docs.length);
+  return stages.map(g=>`<div class="repo-folder">
+    <div class="repo-folder-h"><span class="pill" style="background:${g.c}">${esc(g.st)}</span><span class="cnt">${g.docs.length}</span></div>
+    <div class="tbl-wrap"><table class="tbl repo-tbl">
+      <thead><tr><th>Document</th><th>Prep stage</th><th>Draft</th><th>Sources</th><th>Last modified</th><th>Last modified by</th><th>Open comments</th><th></th></tr></thead>
+      <tbody>${g.docs.map(d=>{
+        const o=COMMENTS.filter(c=>c.on===d.id&&!c.resolved).length;
+        const src=SOURCES[d.id]||[];const on=src.filter(x=>x.on!==false).length;const tot=src.length||on;
+        return `<tr>
+          <td><b style="cursor:pointer" onclick="openDeliv('${d.id}')">${esc(d.title)}</b></td>
+          <td>${typeof rdStage==='function'?`<span class="rd-status ${rdStage(d).k}">${esc(rdStage(d).l)}</span>`:stageChip(d.stage)}</td>
+          <td class="mono" style="font-size:12px">${esc(d.ver)}</td>
+          <td class="mono" style="font-size:12px">${tot?on+' of '+tot:''}</td>
+          <td class="mono" style="font-size:12px">${esc(d.upd||'')}</td>
+          <td><span class="by-chip ${d.owner==='System'?'sys':''}">${esc(d.owner||'')}</span></td>
+          <td>${o?`<span class="chip red" style="font-size:9.5px">${o} open</span>`:'<span class="help">None</span>'}</td>
+          <td><div class="doc-acts">
+            <button class="btn btn-del btn-sm" title="Delete this draft" onclick="event.stopPropagation();cdDeleteDraft('${d.id}')">Delete</button>
+            <button class="btn btn-review btn-sm" onclick="openDeliv('${d.id}')">Edit document<span class="ai-mark"></span></button>
+          </div></td>
+        </tr>`;}).join('')}</tbody>
+    </table></div>
+  </div>`).join('');
+}
 </script>
 </body>
 </html>
