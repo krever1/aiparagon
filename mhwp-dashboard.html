@@ -3248,7 +3248,10 @@ body.ai-hi .rd-cta .ai-mark,body.ai-hi .rd-btn.pri .ai-mark{box-shadow:0 0 0 3px
           <p class="help" id="cdMeta"></p>
           <div id="cdNotes" style="margin-top:12px;max-width:720px"></div>
         </div>
-        <span class="chip gold" id="cdStage" style="align-self:center"></span>
+        <div class="cd-head-acts">
+          <button class="btn btn-ghost btn-sm" id="cdMailBtn" onclick="rdClientMail()">✉ View email history</button>
+          <span class="chip gold" id="cdStage"></span>
+        </div>
       </div>
       <div id="cdNotice"></div>
       <div class="tabs" id="cdTabs">
@@ -3797,7 +3800,7 @@ body.ai-hi .rd-cta .ai-mark,body.ai-hi .rd-btn.pri .ai-mark{box-shadow:0 0 0 3px
 <!-- ============ OVERLAYS ============ -->
 <button class="chat-fab hidden" id="chatFab" onclick="toggleChat()" title="Ask the assistant">✨</button>
 <div class="chat-panel" id="chatPanel">
-  <div class="chat-h"><div class="avvy" style="background:var(--gold-bright)">✳</div><div><b>Workspace assistant</b><span>Answers from your dashboard and Knowledge Base</span></div><span style="flex:1"></span><button onclick="toggleChat()" style="color:#B9C2D6;font-size:16px">✕</button></div>
+  <div class="chat-h"><div class="avvy" style="background:var(--gold-bright)">✳</div><div><b>Workspace assistant</b><span>Answers from your dashboard and Knowledge Base</span></div><span style="flex:1"></span><button onclick="chatMin()" id="chatMinBtn" title="Minimise" style="color:#B9C2D6;font-size:18px;margin-right:6px;line-height:1">&#8211;</button><button onclick="toggleChat()" title="Close" style="color:#B9C2D6;font-size:16px">✕</button></div>
   <div class="chat-body" id="chatBody">
     <div class="msg bot">Hi Mark — ask me anything on this dashboard: a client, a draft, a template, or a document in the Knowledge Base.</div>
   </div>
@@ -5423,7 +5426,7 @@ function nav(p){
 
 /* ================= CALENDAR ================= */
 const CAL={span:'week',mode:'grid',m:9,ws:{m:9,n:1},layout:'mini',sel:{m:9,n:1}};
-const CALM={7:{name:'July 2026',days:31,first:3},8:{name:'August 2026',days:31,first:6},9:{name:'September 2026',days:30,first:2}};
+const CALM={7:{name:'July 2026',days:31,first:3},8:{name:'August 2026',days:31,first:6},9:{name:'September 2026',days:30,first:2},10:{name:'October 2026',days:31,first:4}};
 const EVS={
  7:{6:[{t:'Ep 39 published',k:'green',go:"nav('studio')"}],
     9:[{t:'Boone check-in call',k:'grey',go:"openClient('c2')"}],
@@ -5848,8 +5851,10 @@ function renderNotifPane(){
   const p=$('notifPane');if(!p)return;
   if($('notifBdg'))$('notifBdg').textContent=NOTIFS.length;
   p.innerHTML=`<div style="display:flex;align-items:center;margin-bottom:8px"><b style="font-size:15px">Notifications (${NOTIFS.length})</b>${NOTIFS.length?`<button class="btn btn-ghost btn-xs" style="margin-left:auto" onclick="NOTIFS.length=0;renderNotifPane();renderHome();toast('All clear')">Clear all</button>`:''}</div>`+
-   (NOTIFS.length?NOTIFS.map((n,i)=>`<div class="named" style="align-items:flex-start" onclick="$('notifPane').classList.remove('open');${n.go}"><b>${esc(n.t)}<span class="help" style="display:block;font-weight:500;font-size:11px">${esc(n.s)}</span><span class="mono" style="display:block;font-size:10px;color:#8A93A6;margin-top:2px;font-weight:600">${esc(n.when||'')}</span></b><span class="tag" style="display:flex;gap:4px;align-items:center"><i class="evdot ${n.k}" style="width:8px;height:8px;border-radius:50%;display:inline-block"></i><button class="nx" onclick="event.stopPropagation();dismissNotif(${i})" title="Dismiss">✕</button></span></div>`).join(''):'<p class="help">Nothing new — you are caught up.</p>');
+   (NOTIFS.length?`<div class="notif-list">`+NOTIFS.slice(0,RD_NOTIF_SHOW).map((n,i)=>`<div class="named" style="align-items:flex-start" onclick="$('notifPane').classList.remove('open');${n.go}"><b>${esc(n.t)}<span class="help" style="display:block;font-weight:500;font-size:11px">${esc(n.s)}</span><span class="mono" style="display:block;font-size:10px;color:#8A93A6;margin-top:2px;font-weight:600">${esc(n.when||'')}</span></b><span class="tag" style="display:flex;gap:4px;align-items:center"><i class="evdot ${n.k}" style="width:8px;height:8px;border-radius:50%;display:inline-block"></i><button class="nx" onclick="event.stopPropagation();dismissNotif(${i})" title="Dismiss">✕</button></span></div>`).join('')+`</div>`+(NOTIFS.length>RD_NOTIF_SHOW?`<button class="btn btn-ghost btn-xs" style="width:100%;justify-content:center;margin-top:8px" onclick="event.stopPropagation();RD_NOTIF_SHOW+=8;renderNotifPane()">Show ${Math.min(8,NOTIFS.length-RD_NOTIF_SHOW)} more of ${NOTIFS.length}</button>`:''):'<p class="help">Nothing new — you are caught up.</p>');
 }
+var RD_NOTIF_SHOW=8;
+function rdOpenNotifs(){RD_NOTIF_SHOW=8;renderNotifPane();const p=$('notifPane');if(p)p.classList.add('open');}
 document.addEventListener('click',()=>{const p=$('notifPane');if(p)p.classList.remove('open');});
 document.addEventListener('click',(e)=>{
   if(e.target.classList&&e.target.classList.contains('scrim'))e.target.classList.remove('open');
@@ -6107,8 +6112,9 @@ function openCrm(){
 }
 function clientByName(n){return CLIENTS.find(c=>c.name===n);}
 let DEMO_MIN=14;
-function nowStamp(){DEMO_MIN+=1;if(DEMO_MIN>59)DEMO_MIN=15;return 'Sep 1, 2026 · 10:'+String(DEMO_MIN).padStart(2,'0');}
-function stampDate(){return 'Sep 1, 2026';}
+function rdTodayStr(){var t=(typeof RD_TODAY!=='undefined')?RD_TODAY:{m:9,d:1};var MN=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return MN[t.m]+' '+t.d+', 2026';}
+function nowStamp(){DEMO_MIN+=1;if(DEMO_MIN>59)DEMO_MIN=15;return rdTodayStr()+' · 10:'+String(DEMO_MIN).padStart(2,'0');}
+function stampDate(){return rdTodayStr();}
 function draftCtxClient(){const x=(DRAFT_CTX&&DRAFT_CTX.ctx)||{};if(typeof x!=='object'||!x)return null;return x.cid?clientBy(x.cid):(x.client?clientByName(x.client):null);}
 function bumpDraft(d,what,changes){
   if(!d)return;
@@ -10505,22 +10511,23 @@ function rdOpenCounts(){
 function rdCatchUp(){
   const docs=rdQueueDocs(),mtgs=rdMtgAll().filter(m=>m.m===RD_TODAY.m&&m.d===RD_TODAY.d),
         soon=rdMtgAll().filter(m=>!m.past&&!(m.m===RD_TODAY.m&&m.d===RD_TODAY.d)).slice(0,3),
-        notifs=(typeof NOTIFS!=='undefined')?NOTIFS.slice(0,4):[],
+        notifs=(typeof NOTIFS!=='undefined')?NOTIFS.slice():[],
         mail=rdMailAll().filter(m=>m.unread);
   const box=$('rdStagePrompt')||(()=>{const n=document.createElement('div');n.id='rdStagePrompt';document.body.appendChild(n);return n;})();
   box.className='rd-prompt';
   box.innerHTML=`<div class="rd-prompt-c wide"><div class="k">Catch me up${AIM}</div>
-    <b>${esc(dowFor(RD_TODAY.d,RD_TODAY.m))}, ${esc(CALM[RD_TODAY.m].name.split(' ')[0])} ${RD_TODAY.d} \u2014 here is where things stand</b>
-    <p>${docs.length} document${docs.length===1?'':'s'} need you, ${mtgs.length} meeting${mtgs.length===1?'':'s'} today, ${mail.length} unread client email${mail.length===1?'':'s'}.</p>
+    <b>${esc(dowFor(RD_TODAY.d,RD_TODAY.m))}, ${esc((CALM[RD_TODAY.m]?CALM[RD_TODAY.m].name.split(' ')[0]:rdMonAbbr(RD_TODAY.m)))} ${RD_TODAY.d} \u2014 here is where things stand</b>
+    <p>${rdQueueItems().length} item${rdQueueItems().length===1?'':'s'} need your attention, ${mtgs.length} meeting${mtgs.length===1?'':'s'} today, ${notifs.length} update${notifs.length===1?'':'s'} since you were last here.</p>
     <div class="rd-catch">
-      <div class="grp"><div class="k">Do these first</div>
-        ${docs.slice(0,3).map(d=>`<button class="row" onclick="rdStageClose();openDeliv('${d.id}','${rdCid(rdShort(d.client))||''}')"><span class="rd-status ${rdStageKey(d)}">${esc(rdStage(d).l)}</span><span class="tx"><b>${esc(rdShort(d.client))} \u2014 ${esc(d.title)}</b><small>${esc(rdNextAction(d))}</small></span></button>`).join('')||'<p class="none">Nothing waiting on you.</p>'}</div>
+      <div class="grp"><div class="k">Attention items</div>
+        ${rdQueueItems().slice(0,5).map(t=>`<button class="row" onclick="rdStageClose();${t.go}"><span class="rd-status ${t.stage.k}">${esc(t.stage.l)}</span><span class="tx"><b>${esc(t.client)} \u2014 ${esc(t.title)}</b><small>${esc(t.short||t.state)}</small></span></button>`).join('')||'<p class="none">Nothing waiting on you.</p>'}
+        ${rdQueueItems().length>5?`<p class="none">+ ${rdQueueItems().length-5} more in today\u2019s priority queue</p>`:''}</div>
       <div class="grp"><div class="k">Conversations</div>
-        ${mtgs.concat(soon).slice(0,3).map(m=>`<button class="row" onclick="rdStageClose();RD.mtgSel=rdMtgAll().find(x=>x.cid==='${m.cid}'&&x.d===${m.d}&&x.m===${m.m});nav('meetings')"><span class="rd-status ${m.chip==='PREP NEEDED'?'blocked':m.life?'life':'client'}">${esc(rdMtgState(m)[1])}</span><span class="tx"><b>${esc(m.client)}</b><small>${esc(dowFor(m.d,m.m)+', '+CALM[m.m].name.split(' ')[0].slice(0,3)+' '+m.d+' \u00b7 '+m.time)} \u00b7 ${esc(m.label)}</small></span></button>`).join('')||'<p class="none">Nothing booked.</p>'}</div>
-      <div class="grp"><div class="k">Since you were last here</div>
+        ${mtgs.concat(soon).slice(0,3).map(m=>`<button class="row" onclick="rdStageClose();RD.mtgSel=rdMtgAll().find(x=>x.cid==='${m.cid}'&&x.d===${m.d}&&x.m===${m.m});nav('meetings')"><span class="rd-status ${m.chip==='PREP NEEDED'?'blocked':m.life?'life':'client'}">${esc(rdMtgState(m)[1])}</span><span class="tx"><b>${esc(m.client)}</b><small>${esc(dowFor(m.d,m.m)+', '+rdMonAbbr(m.m)+' '+m.d+' \u00b7 '+m.time)} \u00b7 ${esc(m.label)}</small></span></button>`).join('')||'<p class="none">Nothing booked.</p>'}</div>
+      <div class="grp"><div class="k">Since you were last here <em class="rd-cnt">${notifs.length} update${notifs.length===1?'':'s'} \u00b7 same list as your notifications</em></div>
         ${notifs.map(n=>`<button class="row" onclick="rdStageClose();${esc(n.go||"nav('home')")}"><span class="rd-status ${n.k==='green'?'client':n.k==='amber'?'gather':'ai'}">${n.k==='green'?'Done':n.k==='amber'?'Needs you':'Update'}</span><span class="tx"><b>${esc(n.t)}</b><small>${esc(n.s||'')}</small></span></button>`).join('')||'<p class="none">Nothing new.</p>'}</div>
     </div>
-    <div class="acts"><button class="rd-btn" onclick="rdStageClose()">Close</button><button class="rd-btn" onclick="rdStageClose();toggleNotifPane()">All notifications</button><button class="rd-btn pri" onclick="rdStageClose();rdAsk('Walk me through today in more detail')">Ask a follow-up${AIM}</button></div></div>`;
+    <div class="acts"><button class="rd-btn" onclick="rdStageClose()">Close</button><button class="rd-btn" onclick="event.stopPropagation();rdStageClose();rdOpenNotifs()">All notifications</button><button class="rd-btn pri" onclick="rdStageClose();rdAsk('Walk me through today in more detail')">Ask a follow-up${AIM}</button></div></div>`;
   box.style.display='flex';
 }
 function rdAsk(q){toggleChat(true);setTimeout(()=>askChat(q),120);}
@@ -10585,7 +10592,7 @@ function rdHome(){
   const briefs=rdMtgAll().filter(m=>!m.past&&/Brief ready/.test(rdMtgState(m)[1])).length;
   const aiDone=emails.length+briefs+plans;
   const nextUp=rdMtgAll().filter(m=>!m.past&&!(m.m===RD_TODAY.m&&m.d===RD_TODAY.d)).slice(0,3);
-  const dayLabel=m=>dowFor(m.d,m.m)+', '+CALM[m.m].name.split(' ')[0].slice(0,3)+' '+m.d;
+  const dayLabel=m=>dowFor(m.d,m.m)+', '+rdMonAbbr(m.m)+' '+m.d;
   const mtgRow=(m,dim)=>`<div class="rd-mtg${dim?' next':''}" onclick="RD.mtgSel=rdMtgAll().find(x=>x.cid==='${m.cid}'&&x.d===${m.d}&&x.m===${m.m});nav('meetings')">
       <div class="t"><b>${esc(m.time)}</b><span>${esc(dayLabel(m))}</span></div>
       <div><b>${esc(m.client)}</b><small class="d">${esc(m.label)}</small></div>
@@ -10596,24 +10603,22 @@ function rdHome(){
     <p>${queue.length} item${queue.length===1?'':'s'} need${queue.length===1?'s':''} your attention today, and you have ${mtgs.length} meeting${mtgs.length===1?'':'s'} on the calendar.</p></div>
     <button class="rd-cta" onclick="rdCatchUp()">${RD_ICON.spark}Catch me up with AI${AIM}</button></div>
   <div class="rd-stats">
-    <button class="rd-card rd-stat gold" onclick="nav('delivs')"><span class="ic">${RD_ICON.alert}</span><span><span class="n">${queue.length}</span><span class="l">Need attention</span><span class="s">${high} high priority</span></span><span class="chev">${RD_ICON.chev}</span></button>
-    <button class="rd-card rd-stat" onclick="rdMtgSetPreset('today');nav('meetings')"><span class="ic">${RD_ICON.cal}</span><span><span class="n">${mtgs.length}</span><span class="l">Meetings today</span><span class="s">${nextM?'Next at '+nextM.time:'Nothing else today'}</span></span><span class="chev">${RD_ICON.chev}</span></button>
-    <button class="rd-card rd-stat" onclick="nav('delivs')"><span class="ic">${RD_ICON.spark}</span><span><span class="n">${aiDone}</span><span class="l">AI tasks completed${AIM}</span><span class="s">Ready for review</span></span><span class="chev">${RD_ICON.chev}</span></button>
+    <button class="rd-card rd-stat gold" onclick="rdFocus('queue')"><span class="ic">${RD_ICON.alert}</span><span><span class="n">${queue.length}</span><span class="l">Need attention</span><span class="s">${high} high priority</span></span><span class="chev">${RD_ICON.chev}</span></button>
+    <button class="rd-card rd-stat" onclick="rdFocus('mtgs')"><span class="ic">${RD_ICON.cal}</span><span><span class="n">${mtgs.length}</span><span class="l">Meetings today</span><span class="s">${nextM?'Next at '+nextM.time:'Nothing else today'}</span></span><span class="chev">${RD_ICON.chev}</span></button>
+    <button class="rd-card rd-stat" onclick="rdShowAiWork()"><span class="ic">${RD_ICON.spark}</span><span><span class="n">${aiDone}</span><span class="l">AI tasks completed${AIM}</span><span class="s">Ready for review</span></span><span class="chev">${RD_ICON.chev}</span></button>
   </div>
   <div class="rd-home-grid">
     <div class="rd-card">
-      <div class="rd-sec-h gold"><div><div class="k">Today\u2019s priority queue${AIM}</div><h3>Needs your attention today</h3><small class="rd-sub">Ranked on when it was last touched, what is due for an upcoming meeting, open tasks and outstanding comments. Due today or this week.</small></div><button class="lnk" onclick="nav('delivs')">View Canvas ${RD_ICON.chev}</button></div>
-      <div class="rd-qnote">Needing attention today is not the same as being due today. Items appear here when something is waiting on you, even when the deadline is later.</div>
-      <div class="rd-qhead"><span></span><span>Client</span><span>Document</span><span>Prep stage</span><span>What to do next${AIM}</span><span></span></div>
-      ${(()=>{const pg=rdPageN('queue',queue,5);return (pg.rows.length?pg.rows.map(t=>`<div class="rd-row"><span class="dot ${t.dot}"></span><b class="nm">${esc(t.client)}</b><span class="dc">${esc(t.title)}<small class="rd-why ${t.dueToday?'due':''}">${esc(t.why)}</small></span><span class="stg"><span class="rd-status ${t.stage.k}">${esc(t.stage.l)}</span>${t.ai?'<span class="rd-aitag">AI</span>':''}</span><span class="m">${esc(t.state)}</span><button class="rd-btn sm" onclick="${t.go}">${t.act}</button></div>`).join('')
+      <div class="rd-sec-h gold" id="rdQueueH"><div><div class="k">Today\u2019s priority queue${rdTip('Ranked by AI on when each item was last touched, what is due for an upcoming meeting, open tasks and outstanding comments. Needing attention today is not the same as being due today \u2014 an item appears here when something is waiting on you, even when the deadline is later.')}</div><h3>Needs your attention today</h3></div><button class="lnk" onclick="nav('delivs')">View Canvas ${RD_ICON.chev}</button></div>
+      <div class="rd-qhead q4"><span></span><span>Client</span><span>Document</span><span class="ctr">What to prepare next${AIM}</span><span></span></div>
+      ${(()=>{const pg=rdPageN('queue',queue,5);return (pg.rows.length?pg.rows.map(t=>`<div class="rd-row q4"><span class="dot ${t.dot}"></span><b class="nm" title="${esc(t.client)}">${esc(t.client)}</b><span class="dc">${esc(t.title)}<small class="rd-why ${t.dueToday?'due':''}">${esc(t.why)}</small></span><span class="m ctr" title="${esc(t.state)}">${esc(t.short||t.state)}</span><button class="rd-btn sm" onclick="${t.go}">${t.act}</button></div>`).join('')
         :`<div class="rd-empty">Nothing is waiting on you today.</div>`)+rdPagerN('queue',pg);})()}
     </div>
     <div class="rd-card">
-      <div class="rd-sec-h gold"><div><div class="k">Upcoming meetings</div><h3>Today, then what is coming</h3><small class="rd-sub">${mtgs.length} today \u00b7 ${nextUp.length} more in the next fortnight.</small></div><button class="lnk" onclick="nav('meetings')">View meetings ${RD_ICON.chev}</button></div>
-      <div class="rd-mhead"><span>When</span><span>Client and meeting</span><span>Prep stage</span><span></span></div>
+      <div class="rd-sec-h gold" id="rdMtgsH"><div><div class="k">Upcoming meetings</div><h3>On the calendar today</h3></div><button class="lnk" onclick="nav('meetings')">View meetings ${RD_ICON.chev}</button></div>
+      <div class="rd-mhead"><span>When</span><span>Client and meeting</span><span class="ctr">Prep stage</span><span></span></div>
       ${mtgs.length?mtgs.map(m=>mtgRow(m,false)).join(''):`<div class="rd-empty">Nothing on the calendar today.<br><button class="rd-btn link" style="margin-top:8px" onclick="nav('meetings')">See what is coming up</button></div>`}
       ${rdLifeToday().map(e=>rdLifeRow(e)).join('')}
-      ${nextUp.map(m=>mtgRow(m,true)).join('')}
     </div>
   </div>
 `;
@@ -10717,7 +10722,7 @@ function rdClients(){
       return `<div class="rd-crow2 flat" onclick="openClient('${c.id}')">
         <b class="nm">${esc(c.name)}</b>
         <span class="cat">${esc(c.line)}</span>
-        <span class="mt">${m?esc(dowFor(m.d,m.m)+' '+CALM[m.m].name.split(' ')[0].slice(0,3)+' '+m.d+' \u00b7 '+m.time):'No meeting booked'}</span>
+        <span class="mt">${m?esc(dowFor(m.d,m.m)+' '+rdMonAbbr(m.m)+' '+m.d+' \u00b7 '+m.time):'No meeting booked'}</span>
         <button class="rd-btn sm" onclick="event.stopPropagation();openClient('${c.id}')">Client 360 ${RD_ICON.chev}</button></div>`;}).join('')
       :`<div class="rd-empty">No clients match that search.</div>`)+rdPager('cat',pg);})()}
   </div>`;
@@ -10918,8 +10923,8 @@ function rdMailSend(cid,asDraft){
 }
 
 /* ---------- LIFE EVENTS ---------- */
-function rdLifeAll(){return (typeof LIFE_EVENTS!=='undefined'?LIFE_EVENTS:[]).map((e,i)=>({i,m:9,d:e.d,cid:e.cid,who:e.who,ev:e.ev,ic:e.ic,kind:e.kind,note:e.note,line:e.line,tpl:e.tpl,drafted:!!e.drafted}));}
-function rdLifeToday(){return rdLifeAll().filter(e=>e.d===RD_TODAY.d);}
+function rdLifeAll(){return (typeof LIFE_EVENTS!=='undefined'?LIFE_EVENTS:[]).map((e,i)=>({i,m:e.m||9,d:e.d,cid:e.cid,who:e.who,ev:e.ev,ic:e.ic,kind:e.kind,note:e.note,line:e.line,tpl:e.tpl,drafted:!!e.drafted}));}
+function rdLifeToday(){return rdLifeAll().filter(e=>e.d===RD_TODAY.d&&e.m===RD_TODAY.m);}
 function rdLifeRow(e){
   return `<div class="rd-mtg life" onclick="rdLifeOpen(${e.i})">
     <div class="t"><b>${esc(e.ic)}</b><span>${esc(dowFor(e.d,9)+', Sep '+e.d)}</span></div>
@@ -10946,7 +10951,7 @@ function rdLifeDraft(i){
 
 /* ---------- MEETINGS ---------- */
 const RD_TODAY={m:9,d:1};
-const MTG_PRESETS=[['today','Today'],['upcoming','Upcoming'],['week','This week'],['last','Last week']];
+const MTG_PRESETS=[['today','Today'],['upcoming','Upcoming'],['week','This week'],['last','Last week'],['past','Recaps']];
 const MTG_FILTERS=[['all','All meetings'],['prep','Needs preparation'],['ready','Brief ready'],['recap','Recaps on file'],['life','Life events']];
 const MTG_SCOPES=[['any','Everything'],['client','Client name'],['email','Email address'],['title','Meeting name']];
 function rdEmail(c){if(!c)return '';if(c.email)return c.email;const parts=c.name.replace(/^(Dr\.|The)\s+/,'').replace(/\(.*\)/,'').replace(/&.*?(?=\s\S+$)/,'').trim().split(/\s+/);const first=parts[0].toLowerCase().replace(/[^a-z]/g,''),last=parts[parts.length-1].toLowerCase().replace(/[^a-z]/g,'');return first+'.'+last+'@example.com';}
@@ -10964,10 +10969,11 @@ function rdMtgAll(){
     if(!(it.k||[]).includes('meeting'))return;
     const cid=(it.go.match(/c\d+/)||[])[0];const c=cid?clientBy(cid):null;const r=agResolve(it);
     const label=it.t.includes('\u2014')?it.t.split('\u2014')[1].trim().replace(/^\w/,ch=>ch.toUpperCase()):rdMtgLabel(c&&c.name,it.t);
-    out.push({m:9,d:day.d,time:it.time,cid,client:c?c.name:it.t,label,chip:r.chip,go:r.go,act:r.act});
-    seen['9-'+day.d+'-'+(cid||'')]=1;
+    const amo=day.mo||9;
+    out.push({m:amo,d:day.d,time:it.time,cid,client:c?c.name:it.t,label,chip:r.chip,go:r.go,act:r.act});
+    seen[amo+'-'+day.d+'-'+(cid||'')]=1;
   }));
-  [7,8,9].forEach(mo=>{
+  Object.keys(EVS).map(Number).sort((a,b)=>a-b).forEach(mo=>{
     const mon=EVS[mo]||{};
     Object.keys(mon).forEach(k=>{
       const d=+k;
@@ -10996,8 +11002,9 @@ function rdMtgRange(){
   const p=RD.mtgPreset;
   if(p==='date')return {from:rdOrd(RD.mtgDate),to:rdOrd(RD.mtgDate)};
   if(p==='today')return {from:rdOrd(RD_TODAY),to:rdOrd(RD_TODAY)};
-  if(p==='week')return {from:901,to:907};
-  if(p==='last')return {from:825,to:831};
+  if(p==='week'){const e=rdMD(RD_TODAY,6);return {from:rdOrd(RD_TODAY),to:rdOrd(e)};}
+  if(p==='last'){const a=rdMD(RD_TODAY,-7),b=rdMD(RD_TODAY,-1);return {from:rdOrd(a),to:rdOrd(b)};}
+  if(p==='past'){const b=rdMD(RD_TODAY,-1);return {from:0,to:rdOrd(b)};}
   return {from:rdOrd(RD_TODAY),to:9999};
 }
 function rdMtgAnchor(){
@@ -11010,15 +11017,16 @@ function rdMtgFiltered(){
     const o=rdOrd(m);if(o<r.from||o>r.to)return false;
     if(q){const c=clientBy(m.cid);const hay=sc==='client'?m.client:sc==='email'?rdEmail(c):sc==='title'?m.label:(m.client+' '+m.label+' '+rdEmail(c));if(!hay.toLowerCase().includes(q))return false;}
     if(f==='life')return !!m.life;
-    if(m.life)return true;
+    if(m.life)return f==='all';
     const st=rdMtgState(m)[1];
-    if(f==='prep'&&!/Prep needed|AI preparing/.test(st))return false;
-    if(f==='ready'&&!/Brief ready|Draft under review/.test(st))return false;
+    if(f==='prep'&&!/Prep needed/.test(st))return false;
+    if(f==='ready'&&!/Brief ready/.test(st))return false;
     if(f==='recap'&&!m.past)return false;
     return true;
   });
 }
-function rdMtgDateLabel(a){return dowFor(a.d,a.m)+' '+CALM[a.m].name.split(' ')[0].slice(0,3)+' '+a.d+', 2026';}
+function rdMonAbbr(m){return CALM[m]?CALM[m].name.split(' ')[0].slice(0,3):['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m]||'';}
+function rdMtgDateLabel(a){return dowFor(a.d,a.m)+' '+rdMonAbbr(a.m)+' '+a.d+', 2026';}
 function rdMtgSetPreset(p){RD.mtgPreset=p;RD.mtgSel=null;RD.mtgCal=false;if(S.page==='c360')rdClients();}
 function rdMtgPick(m,d){RD.mtgPreset='date';RD.mtgDate={m,d};RD.mtgSel=null;RD.mtgCal=false;rdClients();}
 function rdMtgCalNav(dir){const m=RD.mtgCalM+dir;if(!CALM[m])return;RD.mtgCalM=m;rdClients();}
@@ -11047,7 +11055,7 @@ function rdMeetingsPage(host){
   const briefs=upc.filter(m=>/Brief ready/.test(rdMtgState(m)[1])).length;
   const recapRows=all.filter(m=>m.past);
   const recaps=recapRows.length;
-  const rdShortDay=x=>CALM[x.m].name.split(' ')[0].slice(0,3)+' '+x.d;
+  const rdShortDay=x=>rdMonAbbr(x.m)+' '+x.d;
   const recapSpan=recaps?(rdShortDay(recapRows.reduce((a,b)=>rdOrd(a)<rdOrd(b)?a:b))+' to '+rdShortDay(recapRows.reduce((a,b)=>rdOrd(a)>rdOrd(b)?a:b))):'none on file';
   const upcSpan=upc.length?(rdShortDay(upc[0])+' to '+rdShortDay(upc[upc.length-1])):'none upcoming';
   const days=[];rows.forEach(m=>{const k=m.m+'-'+m.d;let g=days.find(x=>x.k===k);if(!g){g={k,m:m.m,d:m.d,items:[]};days.push(g);}g.items.push(m);});
@@ -11056,21 +11064,21 @@ function rdMeetingsPage(host){
   if(sel){
     const c=clientBy(sel.cid),b=c&&c.brief;
     brief=`<div class="rd-brief" style="position:relative"><button class="x" onclick="RD.mtgSel=null;rdClients()">${RD_ICON.x}</button>
-      <div class="k">Meeting brief</div><h3>${esc(c?c.name:sel.client)}</h3><div class="sub">${esc(sel.label)} \u00b7 ${esc(rdMtgDateLabel(sel))} \u00b7 ${esc(sel.time)}</div>
-      <div class="callout">${RD_ICON.spark}<div><b>Three things to know${AIM}</b><small>Generated from CRM, documents, emails, and prior meetings.</small></div></div>
+      <div class="k">Meeting</div><h3>${esc(c?c.name:sel.client)}</h3><div class="sub">${esc(sel.label)}</div>
+      ${rdMtgDetails(sel)}
+      <div class="callout">${RD_ICON.spark}<div><b>Meeting notes${AIM}</b><small>Written from CRM, documents, emails, and prior meetings.</small></div></div>
       <ul>${(b?b.moved.slice(0,3):['No brief on file yet.']).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
       <h4>Suggested discussion</h4><p style="font-size:13.5px;color:var(--rd-muted);margin:0 0 14px">${b?esc(b.ask[0]):'Confirm priorities, resolve the open decision, and agree on next steps.'}</p>
-      ${sel.cid?rdMailPanel(sel.cid,true):''}
+      ${rdMtgDocHtml(sel)}
       ${sel.past?`<div class="rd-after"><div><b>This meeting is done.</b><small>Move ${esc(rdShort(sel.client))} to the next stage and Canvas offers the document that stage needs.</small></div><button class="rd-btn pri" onclick="rdAfterMeeting('${sel.cid}')">Move to the next stage</button></div>`:''}
-      <div class="rd-brief-note">This panel is the pre-meeting brief. The client intelligence brief is the overview of the client themselves, on their own page.</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="rd-btn pri" onclick="openClient('${sel.cid}');setTimeout(()=>cdTab('brief'),60)">Open client overview</button>${/Brief ready/.test(rdMtgState(sel)[1])?`<button class="rd-btn" onclick="rdOpenFinal('${sel.cid}')">Open the finalised brief</button>`:''}${sel.chip==='PREP NEEDED'?`<button class="rd-btn" onclick="${esc(sel.go)}">Prepare with a template</button>`:''}${sel.past?`<button class="rd-btn" onclick="openClient('${sel.cid}');setTimeout(()=>cdTab('meeting'),60)">Run meeting intelligence</button>`:''}</div></div>`;
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="rd-btn pri" onclick="openClient('${sel.cid}')">Open Client 360</button><button class="rd-btn" onclick="rdMailCompose('${sel.cid}')">Draft an email</button>${sel.past?`<button class="rd-btn" onclick="openClient('${sel.cid}');setTimeout(()=>cdTab('meeting'),60)">Run meeting intelligence</button>`:''}</div></div>`;
   }else brief=`<div class="rd-brief-empty">${RD_ICON.cal}<b>Select a meeting</b>Preview the essential context and preparation status without leaving this page.</div>`;
-  el.innerHTML=rdHeadHtml('Catalyst','Meetings','Prepare faster, enter every conversation informed, and close the loop automatically.')+rdPurposeBar('meetings')+rdCatTabs()+
-  `<div class="rd-strip rd-strip-read">
-    <div><span class="n">${today.length}</span><span class="rd-sl">Today<small>${esc(rdMtgDateLabel(RD_TODAY).replace(', 2026',''))}</small></span></div>
-    <div><span class="n">${prep}</span><span class="rd-sl">Need preparation<small>${esc(upcSpan)}</small></span></div>
-    <div><span class="n">${briefs}</span><span class="rd-sl">Briefs ready<small>${esc(upcSpan)}</small></span></div>
-    <div><span class="n">${recaps}</span><span class="rd-sl">Recaps to review<small>${esc(recapSpan)}</small></span></div></div>
+  el.innerHTML=rdHeadHtml('Catalyst','Meetings','Prepare faster, enter every conversation informed, and close the loop automatically.')+rdPurposeBar('meetings')+
+  `<div class="rd-strip">
+    <button onclick="rdMtgTile('today')"><span class="n">${today.length}</span><span class="rd-sl">Today<small>${esc(rdMtgDateLabel(RD_TODAY).replace(', 2026',''))}</small></span></button>
+    <button onclick="rdMtgTile('prep')"><span class="n">${prep}</span><span class="rd-sl">Need preparation<small>${esc(upcSpan)}</small></span></button>
+    <button onclick="rdMtgTile('ready')"><span class="n">${briefs}</span><span class="rd-sl">Briefs ready<small>${esc(upcSpan)}</small></span></button>
+    <button onclick="rdMtgTile('recap')"><span class="n">${recaps}</span><span class="rd-sl">Recaps to review<small>${esc(recapSpan)}</small></span></button></div>`+rdCatTabs()+`
   <div class="rd-mtgbar">
     <div class="rd-mtgbar-r">
       <label class="rd-search" style="flex:0 1 340px">${RD_ICON.search}<input placeholder="${(RD.mtgScope||'any')==='email'?'Search by email address':(RD.mtgScope||'any')==='client'?'Search by client name':(RD.mtgScope||'any')==='title'?'Search by meeting name':'Search name, email, or meeting'}" value="${esc(RD.mtgQ||'')}" oninput="RD.mtgQ=this.value;rdClients();const i=document.querySelector('.rd-mtgbar .rd-search input');i.focus();i.setSelectionRange(this.value.length,this.value.length)"></label>
@@ -11086,16 +11094,15 @@ function rdMeetingsPage(host){
   </div>
   <div class="rd-mtg-grid">
     <div class="rd-card">
-      <div class="rd-sec-h gold"><div><div class="k">${RD.mtgPreset==='last'?'Recent':RD.mtgPreset==='today'?'Today':RD.mtgPreset==='date'?'Selected day':'Upcoming'}</div><h3>${RD.mtgPreset==='today'?'On the calendar today':RD.mtgPreset==='last'?'Last week':RD.mtgPreset==='date'?esc(rdMtgDateLabel(a)):RD.mtgPreset==='week'?'This week':'Next 14 days'}</h3></div><span class="rd-secn">${rows.length} meeting${rows.length===1?'':'s'}</span></div>
-      <div class="rd-mtghead m4"><span>Time</span><span>Client and meeting</span><span>Prep stage</span><span>What to prepare next${AIM}</span><span></span></div>
-      ${days.length?days.map(g=>`<div class="rd-dayband"><b>${dowFor(g.d,g.m)}</b><span>${CALM[g.m].name.split(' ')[0].slice(0,3)} ${g.d}</span></div>
+      <div class="rd-sec-h gold"><div><div class="k">${RD.mtgPreset==='last'||RD.mtgPreset==='past'?'Recent':RD.mtgPreset==='today'?'Today':RD.mtgPreset==='date'?'Selected day':'Upcoming'}</div><h3>${RD.mtgPreset==='today'?'On the calendar today':RD.mtgPreset==='last'?'Last week':RD.mtgPreset==='past'?'Meetings already held':RD.mtgPreset==='date'?esc(rdMtgDateLabel(a)):RD.mtgPreset==='week'?'This week':'Coming up'}</h3></div><span class="rd-secn">${rows.length} meeting${rows.length===1?'':'s'}</span></div>
+      <div class="rd-mtghead m3"><span>Time</span><span>Client and meeting</span><span>What to prepare next${AIM}</span><span></span></div>
+      ${days.length?days.map(g=>`<div class="rd-dayband"><b>${dowFor(g.d,g.m)}</b><span>${rdMonAbbr(g.m)} ${g.d}</span></div>
         ${g.items.map(m=>{const st=rdMtgState(m),on=sel&&sel.cid===m.cid&&sel.d===m.d&&sel.m===m.m;const ix=all.findIndex(x=>x.cid===m.cid&&x.d===m.d&&x.m===m.m);
-          return `<div class="rd-mrow cal m4 ${on?'sel':''}" onclick="RD.mtgSel=rdMtgAll()[${ix}];rdClients()">
+          return `<div class="rd-mrow cal m3 ${on?'sel':''}" onclick="RD.mtgSel=rdMtgAll()[${ix}];rdClients()">
             <span class="w">${esc(m.time)}</span>
             <div><b>${esc(m.client)}</b><small>${esc(m.label)} \u00b7 ${esc(rdEmail(clientBy(m.cid)))}</small></div>
-            <span class="st ${st[0]}">${st[1]}</span>
-            <span class="prep">${esc(rdMtgPrep(m))}</span>
-            <button class="rd-btn sm" onclick="event.stopPropagation();${esc(rdMtgGo(m))}">${st[2]} ${RD_ICON.chev}</button></div>`;}).join('')}`).join('')
+            <span class="prep" title="${esc(rdMtgPrep(m))}">${esc(rdMtgPrep(m))}</span>
+            <span class="go">${RD_ICON.chev}</span></div>`;}).join('')}`).join('')
       :`<div class="rd-empty">No meetings in this range.<br><button class="rd-btn link" style="margin-top:10px" onclick="RD.mtgQ='';RD.mtgFilter='all';rdMtgSetPreset('upcoming')">Show everything upcoming</button></div>`}
     </div>
     <div class="rd-card">${brief}</div>
@@ -11150,18 +11157,19 @@ function rdDlvListHtml(withSt){
   const lbl=k=>(RD_STAGES.find(x=>x[0]===k)||[k,k])[1];
   const sc=RD.dlvScope||'any';
   const hay=d=>sc==='client'?d.client:sc==='doc'?d.title:sc==='tpl'?(d.tpl||''):(d.title+' '+d.client+' '+(d.tpl||''));
-  let rows=withSt.map(x=>({d:x.d,st:rdStage(x.d)})).filter(x=>(f==='all'||x.st.k===f)&&(!q||hay(x.d).toLowerCase().includes(q)));
+  let rows=withSt.map(x=>({d:x.d,st:rdStage(x.d)})).filter(x=>(f==='all'||x.st.k===f)&&(!q||hay(x.d).toLowerCase().includes(q))&&(!RD.dlvAi||rdTouch(x.d).by==='ai'));
   const order={blocked:0,advisor:1,gather:2,ai:3,client:4};rows=rows.slice().sort((a,b)=>order[a.st.k]-order[b.st.k]);
   const nba=d=>rdNextAction(d);
   const meta=x=>rdDetail(x.d);
   return `<div class="rd-card">
     <div class="rd-sec-h gold"><div><div class="k">Client deliverables${AIM}</div><h3>Every document in progress</h3></div><span class="rd-secn">${rows.length} of ${withSt.length} documents</span></div>
+    ${RD.dlvAi?`<div class="rd-aifilter">${RD_ICON.spark}<b>Showing the ${rows.length} document${rows.length===1?'':'s'} last touched by AI</b><button class="rd-btn sm" onclick="RD.dlvAi=false;rdDelivs()">Show every document</button></div>`:''}
     <div class="rd-tools"><label class="rd-search">${RD_ICON.search}<input placeholder="Search client, document, or template\u2026" value="${esc(RD.dlvQ||'')}" oninput="RD.dlvQ=this.value;rdDelivs();const i=document.querySelector('#rd-delivs .rd-search input');i.focus();i.setSelectionRange(this.value.length,this.value.length)"></label>
       <span style="position:relative"><button class="rd-btn" onclick="event.stopPropagation();RD.dlvMenu=!RD.dlvMenu;rdDelivs()">${RD_ICON.filter}${esc((RD_STATUS_FILTERS.find(x=>x[0]===f)||RD_STATUS_FILTERS[0])[1])} ${RD_ICON.down}</button>
       ${RD.dlvMenu?`<div class="rd-menu" style="right:0;left:auto" onclick="event.stopPropagation()"><div class="rd-menu-k">Prep stage</div>${RD_STATUS_FILTERS.map(x=>`<button class="${f===x[0]?'on':''}" onclick="RD.dlvFilter='${x[0]}';RD.dlvMenu=false;rdDelivs()">${x[1]}</button>`).join('')}<div class="rd-menu-k">Search by</div>${RD_DLV_SCOPES.map(x=>`<button class="${sc===x[0]?'on':''}" onclick="RD.dlvScope='${x[0]}';RD.dlvMenu=false;rdDelivs();const i=document.querySelector('#rd-delivs .rd-search input');if(i)i.focus()">${x[1]}</button>`).join('')}</div>`:''}</span></div>
     <div class="rd-dhead"><span></span><span>Client</span><span>Document</span><span>Prep stage</span><span>Detail</span><span>Last touched by</span><span>Due</span><span></span></div>
     ${(()=>{const pg=rdPage('dlv',rows);return (pg.rows.length?pg.rows.map(x=>{const d=x.d,cid=rdCid(rdShort(d.client)),open=RD.dlvOpen===d.id,s=rdSrcs(d);
-      return `<div class="rd-drow ${open?'open':''}" onclick="RD.dlvOpen=RD.dlvOpen==='${d.id}'?null:'${d.id}';rdDelivs()"><span class="car">${RD_ICON.down}</span><b class="cl">${esc(rdShort(d.client))}</b><span class="dc">${esc(d.title)}<small>${esc(d.tpl||'')}</small></span><span class="stg"><span class="rd-status ${x.st.k}">${x.st.l}</span>${rdTouch(d).by==='ai'?'<span class="rd-aitag" title="AI was the last thing to touch this draft">AI</span>':''}</span><span class="m">${esc(meta(x))}</span><span class="m tb">${rdTouch(d).by==='ai'?'<span class="rd-by ai">AI</span> AI draft':'<span class="rd-by hu">\u25cf</span> '+esc(rdTouch(d).who)}</span><span class="due">${rdDue(d)?"Due "+esc(rdDue(d)):"Updated "+esc((d.upd||"").split(",")[0])}</span><span class="go" onclick="event.stopPropagation();openDeliv('${d.id}','${cid||''}')">${RD_ICON.chev}</span></div>
+      return `<div class="rd-drow ${open?'open':''}" onclick="RD.dlvOpen=RD.dlvOpen==='${d.id}'?null:'${d.id}';rdDelivs()"><span class="car">${RD_ICON.down}</span><b class="cl">${esc(rdShort(d.client))}</b><span class="dc">${esc(d.title)}<small>${esc(d.tpl||'')}</small></span><span class="stg"><span class="rd-status ${x.st.k}">${x.st.l}</span></span><span class="m">${esc(meta(x))}</span><span class="m tb">${rdTouch(d).by==='ai'?'<span class="rd-by ai">AI</span> AI draft':'<span class="rd-by hu">\u25cf</span> '+esc(rdTouch(d).who)}</span><span class="due">${rdDue(d)?"Due "+esc(rdDue(d)):"Updated "+esc((d.upd||"").split(",")[0])}</span><span class="go" onclick="event.stopPropagation();openDeliv('${d.id}','${cid||''}')">${RD_ICON.chev}</span></div>
       ${open?`<div class="rd-dexp"><div><div class="k">Next best action${AIM}</div><b>${esc(nba(d))}</b><small>AI has prepared the work and highlighted the decisions requiring human judgment.</small>${rdSiblingHtml(d)}</div><div><div class="srcl"><span>Sources</span><small>${s.n} of ${s.of} verified</small></div><div class="rd-bar"><i style="width:${Math.round(s.n/s.of*100)}%"></i></div><div class="srcl" style="margin-top:12px"><span>Prep stage</span></div><select class="rd-sel" style="height:38px;font-size:14px" onchange="rdSetStage('${d.id}',this.value)" onclick="event.stopPropagation()">${RD_STAGES.map(st=>`<option value="${st[0]}" ${x.st.k===st[0]?'selected':''}>${esc(st[1])}</option>`).join('')}</select></div><div style="display:flex;flex-direction:column;gap:8px"><button class="rd-btn pri" onclick="openDeliv('${d.id}','${cid||''}')">Open deliverable</button>${x.st.k==='advisor'&&!rdOpenComments(d)?`<button class="rd-btn" onclick="event.stopPropagation();rdApproveDeliv('${d.id}')">Approve and send${AIM}</button>`:''}</div></div>`:''}`;}).join('')
     :`<div class="rd-empty">Nothing matches that filter.<br><button class="rd-btn link" style="margin-top:10px" onclick="RD.dlvFilter='all';RD.dlvQ='';rdDelivs()">Show every deliverable</button></div>`)+rdPager('dlv',pg);})()}
   </div>`;
@@ -11405,7 +11413,7 @@ function rdMergeMail(cid){
     tr.innerHTML=`<td class="mono" style="font-size:12.5px;white-space:nowrap;color:var(--blue);font-weight:600">${esc((m.when||'').split(' \u00b7')[0])}</td>
       <td><span class="chip grey">Email</span></td>
       <td><b>${esc(m.subj)}</b>${m.unread?' <span class="rd-newtag">New</span>':''}</td>
-      <td>${m.dir==='in'?'Received from ':'Sent to '}${esc(m.from)} \u00b7 ${esc(m.tpl||'HubSpot \u2014 Live Sync')}</td>
+      <td>${m.dir==='in'?'Received from '+esc(m.from):'Sent to '+esc(rdEmail(clientBy(cid)))} \u00b7 ${esc(m.tpl||'HubSpot \u2014 Live Sync')}</td>
       <td style="text-align:right;white-space:nowrap"><span class="rd-linkbtn">Read \u2192</span></td>`;
     tb.appendChild(tr);
   });
@@ -11682,7 +11690,7 @@ function rdSeedMeetingNotifs(){
   if(typeof NOTIFS==='undefined'||NOTIFS.some(n=>n.mtg))return;
   const all=rdMtgAll().filter(m=>!m.past).slice(0,4);
   const items=[];
-  all.forEach(m=>{const st=rdMtgState(m)[1];const when=(m.m===RD_TODAY.m&&m.d===RD_TODAY.d)?'Today':dowFor(m.d,m.m)+' '+CALM[m.m].name.split(' ')[0].slice(0,3)+' '+m.d;
+  all.forEach(m=>{const st=rdMtgState(m)[1];const when=(m.m===RD_TODAY.m&&m.d===RD_TODAY.d)?'Today':dowFor(m.d,m.m)+' '+rdMonAbbr(m.m)+' '+m.d;
     if(st==='Brief ready')items.push({t:'Brief ready \u2014 '+rdShort(m.client)+', '+when+' '+m.time,s:'Meeting intelligence \u00b7 written from CRM, documents and prior meetings',when:'Today \u00b7 06:11',k:'green',mtg:true,go:`RD.mtgSel=rdMtgAll().find(x=>x.cid==='${m.cid}'&&x.d===${m.d}&&x.m===${m.m});nav('meetings')`});
     if(st==='Prep needed')items.push({t:'No brief yet \u2014 '+rdShort(m.client)+', '+when+' '+m.time,s:'Prepare from a template before the call',when:'Today \u00b7 06:11',k:'amber',mtg:true,go:`RD.mtgSel=rdMtgAll().find(x=>x.cid==='${m.cid}'&&x.d===${m.d}&&x.m===${m.m});nav('meetings')`});
     if(st==='Draft under review')items.push({t:'Draft to finish before '+rdShort(m.client)+' on '+when,s:'The document is still in advisor review',when:'Today \u00b7 06:14',k:'blue',mtg:true,go:`RD.mtgSel=rdMtgAll().find(x=>x.cid==='${m.cid}'&&x.d===${m.d}&&x.m===${m.m});nav('meetings')`});});
@@ -11707,7 +11715,7 @@ function rdSave(){
   try{
     const extra=RD_STAGES.slice(5).map(st=>[st[0],st[1],st[2],RD_STAGE_TPL[st[0]]||'Client Check-in Email']);
     const done=TASKS.filter(t=>t.done).map(t=>t.id);
-    const notifs=(typeof NOTIFS!=='undefined')?NOTIFS.map(n=>({t:n.t,s:n.s,when:n.when,k:n.k,go:n.go,mtg:!!n.mtg,rd:!!n.rd})):null;
+    const notifs=(typeof NOTIFS!=='undefined')?NOTIFS.map(n=>({t:n.t,s:n.s,when:n.when,k:n.k,go:n.go,mtg:!!n.mtg,rd:!!n.rd,mail:!!n.mail})):null;
     const dl=DELIVS.map(d=>({id:d.id,status:d.status,stage:d.stage,ver:d.ver,upd:d.upd}));
     const cm=(typeof COMMENTS!=='undefined')?COMMENTS.filter(c=>c.resolved).map(c=>c.id):[];
     const src={};if(typeof SOURCES!=='undefined')Object.keys(SOURCES).forEach(k=>{src[k]=SOURCES[k].map(x=>({id:x.id,on:!!x.on,name:x.name,meta:x.meta}));});
@@ -11724,7 +11732,7 @@ function rdLoad(){
     (o.dl||[]).forEach(x=>{const d=delivBy(x.id);if(d){d.status=x.status;d.stage=x.stage;if(x.ver)d.ver=x.ver;if(x.upd)d.upd=x.upd;}});
     (o.cm||[]).forEach(id=>{const c=(typeof COMMENTS!=='undefined')&&COMMENTS.find(x=>x.id===id);if(c)c.resolved=true;});
     if(o.src&&typeof SOURCES!=='undefined')Object.keys(o.src).forEach(k=>{if(!SOURCES[k])return;o.src[k].forEach(sv=>{const x=SOURCES[k].find(y=>y.id===sv.id);if(x){x.on=sv.on;x.name=sv.name;x.meta=sv.meta;}});});
-    if(o.notifs&&typeof NOTIFS!=='undefined'){NOTIFS.length=0;o.notifs.forEach(n=>NOTIFS.push(n));}
+    if(o.notifs&&typeof NOTIFS!=='undefined'){NOTIFS.length=0;const seen={};o.notifs.forEach(n=>{const key=n.t+'|'+(n.when||'');if(seen[key])return;seen[key]=1;NOTIFS.push(n);});}
     return true;
   }catch(_){return false;}
 }
@@ -12328,7 +12336,7 @@ function rdMtgGo(m){
 function rdFinalBriefHtml(c){
   var b=c.brief||{},moved=(b.moved||[]),ask=(b.ask||[]);
   var m=(typeof rdClientMtg==='function')?rdClientMtg(c):null;
-  var when=m?(dowFor(m.d,m.m)+' '+CALM[m.m].name.split(' ')[0].slice(0,3)+' '+m.d+', 2026 \u00b7 '+m.time):(c.next||'');
+  var when=m?(dowFor(m.d,m.m)+' '+rdMonAbbr(m.m)+' '+m.d+', 2026 \u00b7 '+m.time):(c.next||'');
   return '<div class="rd-fdoc">'+
     '<div class="rd-fdoc-h"><span class="bt">DELTA ADVISORY</span><span class="rt">Confidential \u00b7 prepared for internal use</span></div>'+
     '<div class="rd-fdoc-b">'+
@@ -12431,9 +12439,385 @@ function rdSiblingHtml(d){
       row.classList.toggle('working',!!working);
       var dc=row.querySelector('.dc');
       if(working&&dc&&!dc.querySelector('.rd-wtag'))
-        dc.insertAdjacentHTML('beforeend','<span class="rd-wtag"><i></i>Working on</span>');
+        dc.insertAdjacentHTML('beforeend','');
       if(!working&&dc){var t=dc.querySelector('.rd-wtag');if(t)t.remove();}
     });
+  };
+})();
+</script>
+<script>
+/* ===================================================================
+   SEP 8 LOOM — the demo world follows the real date
+   Anchor stays Sep 1; everything shifts by however many days have passed,
+   so the dashboard opens on today with today's five meetings on it.
+   =================================================================== */
+function rdMD(md,n){
+  var d=new Date(Date.UTC(2026,md.m-1,md.d));
+  d.setUTCDate(d.getUTCDate()+n);
+  return {m:d.getUTCMonth()+1,d:d.getUTCDate()};
+}
+function rdDaysFrom(a,b){
+  return Math.round((Date.UTC(2026,b.m-1,b.d)-Date.UTC(2026,a.m-1,a.d))/86400000);
+}
+var RD_SHIFT=0,RD_SYNCED=false;
+function rdSyncToToday(){
+  if(RD_SYNCED)return;               /* rdEnsureDocs runs again after some actions; shift exactly once */
+  RD_SYNCED=true;
+  var now=new Date();
+  var n=0;
+  if(now.getFullYear()===2026)n=rdDaysFrom({m:9,d:1},{m:now.getMonth()+1,d:now.getDate()});
+  if(n<0)n=0;
+  if(n>21)n=21;                    /* keep the world inside the seeded calendar */
+  RD_SHIFT=n;
+  var t=rdMD({m:9,d:1},n);
+  RD_TODAY.m=t.m;RD_TODAY.d=t.d;
+  if(!n)return;
+
+  /* calendar events */
+  var moved={};
+  Object.keys(EVS).forEach(function(mo){
+    Object.keys(EVS[mo]).forEach(function(dd){
+      var s=rdMD({m:+mo,d:+dd},n);
+      moved[s.m]=moved[s.m]||{};
+      moved[s.m][s.d]=(moved[s.m][s.d]||[]).concat(EVS[mo][dd]);
+    });
+  });
+  Object.keys(EVS).forEach(function(k){delete EVS[k];});
+  Object.keys(moved).forEach(function(k){EVS[k]=moved[k];});
+
+  /* today's agenda */
+  HOME_AGENDA.forEach(function(day){
+    var s=rdMD({m:9,d:day.d},n);
+    day.d=s.d;day.mo=s.m;
+    day.dow=(dowFor(s.d,s.m)||'').toUpperCase();
+    day.today=(s.m===RD_TODAY.m&&s.d===RD_TODAY.d);
+  });
+
+  /* dated strings */
+  if(typeof DELIVS!=='undefined')DELIVS.forEach(function(d){
+    if(d.due)d.due=shiftDemoDate(d.due,n);
+    if(d.upd)d.upd=shiftDemoDate(d.upd,n);
+  });
+  if(typeof CLIENTS!=='undefined')CLIENTS.forEach(function(c){
+    if(c.next&&c.next!=='\u2014')c.next=shiftDemoDate(c.next,n);
+  });
+  if(typeof TASKS!=='undefined')TASKS.forEach(function(t){
+    if(t.due)t.due=shiftDemoDate(t.due,n);
+  });
+  if(typeof COMMENTS!=='undefined')COMMENTS.forEach(function(c){
+    if(c.when)c.when=shiftDemoDate(c.when,n);
+  });
+  if(typeof LIFE_EVENTS!=='undefined')LIFE_EVENTS.forEach(function(e){
+    var sd=rdMD({m:e.m||9,d:e.d},n);e.m=sd.m;e.d=sd.d;
+  });
+}
+
+/* legacy calendar highlight has to follow the same today */
+isToday=function(m,n){return m===RD_TODAY.m&&n===RD_TODAY.d;};
+
+/* run once the seeded documents exist, before the first render */
+(function(){
+  var _ensure=rdEnsureDocs;
+  rdEnsureDocs=function(){
+    _ensure.apply(this,arguments);
+    try{rdSyncToToday();}catch(e){console.warn('date sync skipped',e);}
+  };
+})();
+</script>
+<style id="q2css">
+/* Sep 8 Loom — Touchpoint */
+.rd-home-grid{grid-template-columns:1.45fr 1fr}
+.rd-qhead.q4,.rd-row.q4{grid-template-columns:8px 1fr 1.2fr 1.85fr 104px}
+.rd-qhead .ctr,.rd-row .ctr,.rd-mhead .ctr,.rd-mtg .stg{text-align:center;justify-content:center}
+.rd-row.q4 .m{font-size:13.5px;color:var(--rd-ink);font-weight:600}
+.rd-row.q4 .nm,.rd-row.q4 .dc,.rd-row.q4 .m{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-mtg .stg{display:flex}
+.rd-stat{cursor:pointer}
+
+/* the panel the tile points at, flashed rather than navigated away from */
+@keyframes rdFocusPulse{0%{box-shadow:0 0 0 0 rgba(185,155,85,.55)}100%{box-shadow:0 0 0 14px rgba(185,155,85,0)}}
+.rd-focus{animation:rdFocusPulse 1.1s ease-out 2;border-color:#D9C48C!important}
+
+/* AI-only view in Canvas */
+.rd-aifilter{display:flex;align-items:center;gap:10px;padding:11px 24px;background:#F4F7FE;border-bottom:1px solid #DCE6F8;font-size:13.5px;color:#2B5FBF}
+.rd-aifilter b{font-weight:700}
+.rd-aifilter button{margin-left:auto}
+.rd-aifilter svg{width:16px;height:16px}
+
+/* hover explanation on an AI mark */
+.rd-tip{position:relative;display:inline-block;vertical-align:-3px;margin-left:6px;cursor:help}
+.rd-tip .ai-mark{margin:0}
+.rd-tip .tipbox{position:absolute;left:50%;top:calc(100% + 9px);transform:translateX(-42%);width:330px;z-index:60;
+  background:#1E2A3D;color:#F2F5FA;font-size:12.5px;line-height:1.55;font-weight:500;padding:11px 13px;border-radius:9px;
+  box-shadow:0 10px 28px rgba(15,25,45,.28);opacity:0;visibility:hidden;transition:opacity .12s;pointer-events:none}
+.rd-tip .tipbox:before{content:'';position:absolute;left:42%;top:-5px;width:10px;height:10px;background:#1E2A3D;transform:rotate(45deg)}
+.rd-tip:hover .tipbox{opacity:1;visibility:visible}
+</style>
+<script>
+/* ===================================================================
+   SEP 8 LOOM — Touchpoint
+   =================================================================== */
+
+/* an AI mark that explains itself on hover */
+function rdTip(text){
+  return '<span class="rd-tip">'+AIM+'<span class="tipbox">'+esc(text)+'</span></span>';
+}
+
+/* the tiles stay on the page and point at the panel they count */
+function rdFocus(which){
+  if(S.page!=='home'){nav('home');}
+  setTimeout(function(){
+    var h=document.getElementById(which==='queue'?'rdQueueH':'rdMtgsH');
+    if(!h)return;
+    var card=h.closest('.rd-card')||h.parentNode;
+    if(card.scrollIntoView)card.scrollIntoView({behavior:'smooth',block:'center'});
+    card.classList.remove('rd-focus');
+    void card.offsetWidth;
+    card.classList.add('rd-focus');
+    setTimeout(function(){card.classList.remove('rd-focus');},2600);
+  },S.page!=='home'?260:20);
+}
+
+/* the AI tile opens Canvas showing only what AI last touched */
+function rdShowAiWork(){
+  RD.dlvAi=true;RD.dlvFilter='all';RD.dlvQ='';
+  nav('delivs');
+  setTimeout(function(){toast('Canvas filtered to the work AI completed');},240);
+}
+var _q2_rdDelivs=rdDelivs;
+rdDelivs=function(){ _q2_rdDelivs.apply(this,arguments); };
+
+/* short, readable status text for the queue; the full sentence stays on hover */
+function rdShortStatus(it){
+  var k=it.stage&&it.stage.k,l=(it.stage&&it.stage.l)||'';
+  var m=/(\d+) open comment/.exec(it.why||'');
+  if(it.act==='Prepare')return 'Build the brief from a template';
+  if(it.act==='Approve'&&k==='ai')return 'Read the draft and send it';
+  if(m)return 'Resolve '+m[1]+' comment'+(m[1]==='1'?'':'s')+', then approve';
+  if(k==='advisor')return 'Approve the draft';
+  if(k==='blocked'||k==='gather')return 'Chase the outstanding sources';
+  if(k==='client')return 'Waiting on the client';
+  return l||'Open it and take the next step';
+}
+var _q2_queue=rdQueueItems;
+rdQueueItems=function(){
+  var rows=_q2_queue.apply(this,arguments);
+  rows.forEach(function(r){r.short=rdShortStatus(r);});
+  return rows;
+};
+</script>
+<style id="q3css">
+/* Sep 8 Loom — Catalyst meetings */
+.rd-mtghead.m3,.rd-mrow.cal.m3{grid-template-columns:104px 1.4fr 1.9fr 28px}
+.rd-mrow.cal.m3{cursor:pointer}
+.rd-mrow.cal.m3 .prep{font-size:14px;color:var(--rd-muted);line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-mrow.cal.m3 .go svg{width:16px;height:16px;stroke:var(--rd-muted)}
+.rd-mrow.cal.m3.sel .go svg{stroke:var(--rd-gold)}
+
+/* the meeting itself, the way a calendar entry opens */
+.rd-mdet{border:1px solid var(--rd-line);border-radius:11px;padding:14px 16px;margin-bottom:14px;background:#FBFAF6}
+.rd-mdet-r{display:grid;grid-template-columns:96px 1fr;gap:8px 12px;font-size:13.5px;align-items:start}
+.rd-mdet-r dt{font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;font-weight:700;color:var(--rd-muted);padding-top:3px}
+.rd-mdet-r dd{margin:0;color:var(--rd-ink)}
+.rd-mdet-r dd small{display:block;font-size:12.5px;color:var(--rd-muted);margin-top:2px}
+.rd-mdet a.zoom{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:#2B5FBF;text-decoration:none;
+  background:#EAF0FC;border:1px solid #CFDDF7;border-radius:8px;padding:6px 11px}
+.rd-mdet a.zoom:hover{background:#DEE8FA}
+.rd-att{display:flex;flex-wrap:wrap;gap:5px}
+.rd-att span{font-size:12.5px;background:#fff;border:1px solid var(--rd-line);border-radius:999px;padding:3px 9px;color:var(--rd-ink)}
+.rd-att span i{font-style:normal;color:var(--rd-muted)}
+
+/* what is being drafted for the meeting */
+.rd-mdoc{border:1px solid var(--rd-line);border-radius:11px;padding:14px 16px;margin-bottom:14px}
+.rd-mdoc .k2{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--rd-muted);margin-bottom:8px}
+.rd-mdoc-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;min-width:0}
+.rd-mdoc-row b{font-size:15px;color:var(--rd-ink);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-mdoc small{display:block;font-size:12.5px;color:var(--rd-muted);margin-bottom:10px}
+.rd-mdoc .acts{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+<script>
+/* ===================================================================
+   SEP 8 LOOM — the meeting panel
+   Clicking a meeting shows the meeting itself, its notes, and the
+   document being drafted for it. Email history moved to Client 360.
+   =================================================================== */
+
+/* attendees and a joining link, the way the calendar entry would carry them */
+var RD_ADVISORS={c1:'R. Okafor',c2:'R. Okafor',c3:'S. Whitfield',c4:'D. Marchetti',c5:'R. Okafor',
+  c6:'D. Marchetti',c7:'S. Whitfield',c9:'S. Whitfield',c10:'D. Marchetti',c11:'S. Whitfield',c12:'R. Okafor'};
+function rdMtgZoom(m){
+  var seed=String((m.cid||'c0')+m.d+m.m).replace(/\D/g,'');
+  var id=('000000000'+seed).slice(-9).replace(/(\d{3})(\d{3})(\d{3})/,'$1 $2 $3');
+  return {url:'https://zoom.us/j/'+id.replace(/ /g,''),id:id};
+}
+function rdMtgAttendees(m){
+  var c=clientBy(m.cid),out=[];
+  var adv=RD_ADVISORS[m.cid]||'R. Okafor';
+  out.push({n:'Mark Whitfield',r:'Advisor \u00b7 organiser'});
+  if(adv!=='Mark Whitfield')out.push({n:adv,r:'Advisor'});
+  if(c){
+    String(c.name).replace(/\(.*\)/,'').split(/ & | and /).forEach(function(p){
+      p=p.trim();if(p)out.push({n:p,r:'Client'});
+    });
+  }
+  return out.slice(0,4);
+}
+function rdMtgDur(m){return m.life?'\u2014':(/review|annual/i.test(m.label||'')?'60 min':'45 min');}
+function rdMtgDetails(m){
+  if(!m||m.life)return '';
+  var z=rdMtgZoom(m),c=clientBy(m.cid);
+  return '<div class="rd-mdet"><dl class="rd-mdet-r">'+
+    '<dt>When</dt><dd>'+esc(rdMtgDateLabel(m))+' \u00b7 '+esc(m.time)+'<small>'+esc(rdMtgDur(m))+(m.past?' \u00b7 already held':'')+'</small></dd>'+
+    '<dt>Meeting</dt><dd>'+esc(m.label)+'<small>'+esc(c?c.line:'')+'</small></dd>'+
+    '<dt>Attendees</dt><dd><div class="rd-att">'+rdMtgAttendees(m).map(function(a){
+        return '<span>'+esc(a.n)+' <i>'+esc(a.r)+'</i></span>';}).join('')+'</div></dd>'+
+    '<dt>Join</dt><dd><a class="zoom" href="'+z.url+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">Zoom \u00b7 '+esc(z.id)+'</a>'+
+      '<small>Synced from the calendar invitation</small></dd>'+
+  '</dl></div>';
+}
+
+/* the document this meeting is waiting on */
+function rdMtgDocHtml(m){
+  if(!m||!m.cid)return '';
+  var mine=DELIVS.filter(function(d){return rdCid(rdShort(d.client))===m.cid;});
+  var d=mine.filter(function(x){return rdStageKey(x)!=='client';})[0]||mine[0];
+  if(!m.past&&/Prep needed/.test(rdMtgState(m)[1])){
+    return '<div class="rd-mdoc"><div class="k2">Being drafted for this meeting</div>'+
+      '<small>No brief yet. Build one from a template in a few steps.</small>'+
+      '<div class="acts"><button class="rd-btn pri" onclick="prepMeeting(\''+m.cid+'\',\''+esc(String(m.label).replace(/'/g,""))+'\')">Prepare the brief</button>'+
+      (d?'<button class="rd-btn" onclick="openDeliv(\''+d.id+'\',\''+m.cid+'\')">Open '+esc(d.title)+'</button>':'')+'</div>'+
+      (d?'<small style="margin:10px 0 0">Also in progress for this client: '+esc(d.title)+' \u00b7 '+esc(rdStage(d).l)+'</small>':'')+
+      '</div>';
+  }
+  if(!d){
+    return '<div class="rd-mdoc"><div class="k2">Being drafted for this meeting</div>'+
+      '<small>No document started yet. The brief builds from a template in a few steps.</small>'+
+      '<div class="acts"><button class="rd-btn pri" onclick="prepMeeting(\''+m.cid+'\',\''+esc(String(m.label).replace(/'/g,"")) +'\')">Prepare the brief</button></div></div>';
+  }
+  var cm=rdOpenComments(d),st=rdStage(d);
+  return '<div class="rd-mdoc"><div class="k2">Being drafted for this meeting</div>'+
+    '<div class="rd-mdoc-row"><b title="'+esc(d.title)+'">'+esc(d.title)+'</b>'+
+      '<span class="rd-status '+st.k+'">'+esc(st.l)+'</span></div>'+
+    '<small>'+esc(d.ver||'Draft')+' \u00b7 '+esc(d.tpl||'no template')+
+      (cm?' \u00b7 '+cm+' open comment'+(cm===1?'':'s'):'')+
+      (d.due?' \u00b7 due '+esc(d.due):'')+'</small>'+
+    '<div class="acts">'+
+      '<button class="rd-btn pri" onclick="openDeliv(\''+d.id+'\',\''+m.cid+'\')">Open and edit</button>'+
+      (/Brief ready/.test(rdMtgState(m)[1])?'<button class="rd-btn" onclick="rdOpenFinal(\''+m.cid+'\')">Read the finalised brief</button>':'')+
+    '</div></div>';
+}
+
+/* the four Catalyst counters filter the list without moving the date preset */
+function rdMtgTile(k){
+  if(k==='today'){RD.mtgFilter='all';RD.mtgTileFrom=null;rdMtgSetPreset('today');return;}
+  var off=(RD.mtgFilter===k);
+  RD.mtgSel=null;
+  if(!off){
+    if(!RD.mtgTileFrom)RD.mtgTileFrom=RD.mtgPreset||'today';
+    RD.mtgFilter=k;
+    RD.mtgPreset=(k==='recap')?'past':'upcoming';
+  } else {
+    RD.mtgFilter='all';
+    RD.mtgPreset=RD.mtgTileFrom||'today';RD.mtgTileFrom=null;
+  }
+  rdClients();
+}
+</script>
+<style id="q4css">
+/* Sep 8 Loom */
+.cd-head-acts{display:flex;flex-direction:column;align-items:flex-end;gap:8px;align-self:center}
+#cdMailBtn{white-space:nowrap}
+
+/* catch me up sits clear of the notification tray and can be moved or resized */
+.rd-prompt-c.wide{width:min(560px,100%);max-height:74vh;overflow:auto;resize:both;position:relative}
+.rd-prompt-c.wide .rd-drag{position:absolute;top:0;left:0;right:0;height:34px;cursor:move}
+.rd-prompt-c.wide .rd-catch .row small{font-size:12px}
+.rd-prompt.rd-prompt-nudge{align-items:flex-start;justify-content:flex-start;padding:78px 0 0 60px}
+.rd-resize-hint{position:absolute;right:8px;bottom:6px;font-size:10.5px;color:var(--rd-muted);pointer-events:none}
+</style>
+<script>
+/* ===================================================================
+   SEP 8 LOOM — Client 360 email history, catch me up
+   =================================================================== */
+
+/* email history lives on the client, not on the meeting panel */
+function rdClientMail(){
+  var cid=S.client;if(!cid)return;
+  var c=clientBy(cid);if(!c)return;
+  var box=document.getElementById('rdMailBox')||(function(){
+    var n=document.createElement('div');n.id='rdMailBox';document.body.appendChild(n);return n;})();
+  box.className='rd-prompt';
+  box.innerHTML='<div class="rd-prompt-c wide" onclick="event.stopPropagation()">'+
+    '<div class="k">Email history</div><b style="font-size:18px;display:block;margin-bottom:4px">'+esc(rdShort(c.name))+'</b>'+
+    '<p style="font-size:13px;color:var(--rd-muted);margin:0 0 14px">Everything sent and received, in step with HubSpot. Anything you send from here lands in their touchpoints.</p>'+
+    rdMailPanel(cid,false)+
+    '<div class="acts" style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">'+
+      '<button class="rd-btn" onclick="rdMailBoxClose();cdTab(\'touch\')">See it in touchpoints</button>'+
+      '<button class="rd-btn pri" onclick="rdMailBoxClose()">Close</button></div></div>';
+  box.style.display='flex';
+  box.onclick=function(e){if(e.target===box)rdMailBoxClose();};
+}
+function rdMailBoxClose(){var b=document.getElementById('rdMailBox');if(b)b.style.display='none';}
+
+/* the catch-up panel opens clear of the notification tray, and can be dragged */
+var _q4_catch=rdCatchUp;
+rdCatchUp=function(){
+  _q4_catch.apply(this,arguments);
+  var box=document.getElementById('rdStagePrompt');if(!box)return;
+  box.classList.remove('rd-prompt-nudge');
+  var c=box.querySelector('.rd-prompt-c');if(!c)return;
+  if(!c.querySelector('.rd-drag')){
+    var h=document.createElement('div');h.className='rd-drag';c.appendChild(h);
+
+    var sx,sy,ox,oy,on=false;
+    h.addEventListener('mousedown',function(e){
+      on=true;sx=e.clientX;sy=e.clientY;
+      var r=c.getBoundingClientRect();ox=r.left;oy=r.top;
+      c.style.position='fixed';c.style.left=ox+'px';c.style.top=oy+'px';c.style.margin='0';
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove',function(e){
+      if(!on)return;
+      c.style.left=(ox+e.clientX-sx)+'px';
+      c.style.top=(oy+e.clientY-sy)+'px';
+    });
+    document.addEventListener('mouseup',function(){on=false;});
+  }
+};
+</script>
+<style id="q7css">
+.rd-mrow.cal.m3 .prep{white-space:normal;overflow:visible;text-overflow:clip;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4}
+.rd-mtghead.m3,.rd-mrow.cal.m3{grid-template-columns:96px 1.25fr 2.1fr 26px}
+.rd-catch .k .rd-cnt{font-style:normal;font-weight:600;letter-spacing:0;text-transform:none;color:var(--rd-muted);margin-left:8px;font-size:11.5px}
+.rd-catch .grp{max-height:260px;overflow:auto}
+</style>
+<style id="r1css">
+/* Sep 8 fixes */
+.notif-list{max-height:min(58vh,520px);overflow:auto;margin:0 -4px;padding:0 4px}
+.rd-catch{max-height:none;overflow:visible}
+.rd-catch .grp{max-height:none;overflow:visible}
+.rd-prompt-c.wide{max-height:82vh;overflow:auto;resize:both}
+.rd-prompt-c.wide .rd-catch{max-height:none}
+.rd-resize-hint{display:none}
+.chat-panel.min{max-height:none;height:auto}
+.chat-panel.min>*:not(.chat-h){display:none}
+.chat-panel.min .chat-h{cursor:pointer}
+</style>
+<script>
+/* AI Assistant minimise: collapse to the header, click the header to restore */
+function chatMin(){
+  var p=document.getElementById('chatPanel');if(!p)return;
+  var min=p.classList.toggle('min');
+  var b=document.getElementById('chatMinBtn');if(b)b.innerHTML=min?'&#9633;':'&#8211;';
+  var h=p.querySelector('.chat-h');
+  if(h){h.onclick=min?function(e){if(e.target.tagName==='BUTTON')return;chatMin();}:null;}
+}
+/* once a new seed guard sees a restored mail notification it will not re-add it */
+(function(){
+  var _seed=rdSeedMailNotifs;
+  rdSeedMailNotifs=function(){
+    if(typeof NOTIFS!=='undefined'&&NOTIFS.some(function(n){return n.mail||/^New email/.test(n.t||'');}))return;
+    _seed();
   };
 })();
 </script>
