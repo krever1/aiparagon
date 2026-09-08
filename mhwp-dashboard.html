@@ -13178,7 +13178,11 @@ function rdOrdinalNum(n){
   return n+(s[(v-20)%10]||s[v]||s[0]);
 }
 function rdOrdinalize(str){
-  return String(str).replace(/\bturns (\d+)\b/g,function(_,n){return 'turns '+rdOrdinalNum(+n);});
+  /* "turns 63" reads as "63rd Birthday". Keeps an existing em dash rather than
+     adding a second one, so the AI_DRAFTS keys still match. */
+  return String(str)
+    .replace(/(\s*\u2014\s*)turns (\d+)(?:st|nd|rd|th)?\b/g,function(_,sep,n){return sep+rdOrdinalNum(+n)+' Birthday';})
+    .replace(/\bturns (\d+)(?:st|nd|rd|th)?\b/g,function(_,n){return rdOrdinalNum(+n)+' Birthday';});
 }
 var RD_ORD_DONE=false;
 function rdApplyOrdinals(){
