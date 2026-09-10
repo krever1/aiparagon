@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turn one recording into five assets | AI Paragon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root{
+  --ink:#0A0A0A;
+  --ink-2:#3F444B;
+  --mut:#767C85;
+  --mut-2:#9AA0A8;
+  --line:#E9EBEF;
+  --line-2:#F0F1F4;
+
+  --blue:#1B6BFF;
+  --blue-d:#0E4FD4;
+  --blue-soft:#EDF3FF;
+  --gold:#E0A82E;
+  --gold-soft:#FDF6E6;
+  --green:#12B76A;
+  --green-soft:#E7F8F0;
+  --navy:#16233D;
+
+  --page:#E4E5E7;
+  --card:#FFFFFF;
+  --panel:#F6F7F9;
+
+  --gut:clamp(20px,5vw,72px);
+  --r-xl:28px;
+  --r-lg:22px;
+  --r-md:16px;
+  --r-sm:11px;
+
+  --sh-1:0 1px 2px rgba(16,24,40,.05), 0 10px 22px rgba(16,24,40,.06);
+  --sh-2:0 2px 4px rgba(16,24,40,.05), 0 26px 50px rgba(16,24,40,.10);
+  --sh-tile:0 1px 3px rgba(16,24,40,.08), 0 12px 24px rgba(16,24,40,.14);
+  --sh-btn:0 1px 2px rgba(11,60,160,.24), 0 8px 18px rgba(11,60,160,.24);
+
+  --dots:radial-gradient(rgba(15,23,42,.055) 1px, transparent 1px);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--card);
+  color:var(--ink);
+  font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-size:15px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+img{max-width:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+input,textarea,select{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:6px}
+
+/* ============================================================
+   SHELL
+   ============================================================ */
+.shell{
+  width:100%;
+  background:var(--card);
+  overflow:hidden;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 var(--gut)}
+.wrap-wide{max-width:1440px;margin:0 auto;padding:0 var(--gut)}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+.nav{
+  display:flex;align-items:center;gap:18px;
+  padding:16px var(--gut);
+  border-bottom:1px solid var(--line-2);
+  background:var(--card);
+  position:sticky;top:0;z-index:60;
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;letter-spacing:-.02em}
+.mark{height:30px;width:auto;flex:none;display:block}
+.nav-links{display:flex;gap:30px;margin:0 auto;font-size:14px;color:var(--ink-2);font-weight:500}
+.nav-links a:hover{color:var(--ink)}
+.nav-right{display:flex;align-items:center;gap:14px}
+
+.btn{
+  border:0;border-radius:999px;font-weight:600;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  transition:transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.btn:active{transform:translateY(1px)}
+.btn-pri{background:var(--blue);color:#fff;padding:12px 24px;font-size:14.5px;box-shadow:var(--sh-btn)}
+.btn-pri:hover{background:var(--blue-d)}
+.btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line);padding:9px 18px;font-size:14px}
+.btn-ghost:hover{border-color:#D6DAE1}
+.btn-lg{padding:15px 30px;font-size:16px}
+.btn-sm{padding:8px 15px;font-size:13px}
+.btn-quiet{background:var(--panel);color:var(--ink-2);padding:9px 16px;font-size:13.5px;border:1px solid var(--line)}
+.btn-quiet:hover{background:#EFF1F4}
+.link-sm{font-size:14px;font-weight:600;color:var(--ink-2)}
+
+/* ============================================================
+   TYPE
+   ============================================================ */
+h1,h2,h3{margin:0;letter-spacing:-.035em;font-weight:600;line-height:1.06}
+.h-xl{font-size:clamp(38px,6vw,62px)}
+.h-lg{font-size:clamp(30px,4.4vw,46px);line-height:1.1}
+.h-md{font-size:22px;letter-spacing:-.02em;font-weight:600}
+.dim{color:#9DA3AB}
+.lede{color:var(--mut);font-size:15.5px;margin:18px 0 0}
+.center{text-align:center}
+.badge{
+  display:inline-block;background:#fff;border:1px solid var(--line);
+  border-radius:999px;padding:6px 16px;font-size:12.5px;color:var(--mut);
+  font-weight:600;box-shadow:0 1px 2px rgba(16,24,40,.04);
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero{
+  position:relative;
+  background:var(--dots);
+  background-size:9px 9px;
+  padding:126px 0 158px;
+  min-height:min(88vh,860px);
+  display:flex;align-items:center;
+  overflow:hidden;
+  border-bottom:1px solid var(--line-2);
+}
+.hero-in{position:relative;z-index:3;text-align:center;max-width:880px;margin:0 auto;padding:0 var(--gut);width:100%}
+.hero .lede{font-size:17px;margin-top:22px;max-width:600px;margin-inline:auto}
+.hero .cta-row{margin-top:28px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.hero-note{margin-top:16px;font-size:13px;color:var(--mut-2)}
+
+/* floating layer */
+.float{position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:1340px;z-index:1;pointer-events:none}
+.float > *{position:absolute}
+
+.tile{
+  background:#fff;border-radius:18px;box-shadow:var(--sh-tile);
+  display:flex;align-items:center;justify-content:center;
+}
+.tile-lg{width:64px;height:64px;border-radius:20px}
+.mini-card{background:#fff;border-radius:16px;box-shadow:var(--sh-2);padding:14px;border:1px solid rgba(16,24,40,.04)}
+
+.sticky{
+  background:#FFF3B8;padding:18px 20px;width:210px;
+  font-family:'Caveat',cursive;font-size:19px;line-height:1.32;color:#4A4222;
+  box-shadow:0 12px 26px rgba(16,24,40,.14);
+  transform:rotate(-5deg);
+}
+.sticky:before{
+  content:"";position:absolute;top:-7px;left:50%;width:12px;height:12px;
+  border-radius:50%;background:#D5493F;box-shadow:0 3px 6px rgba(0,0,0,.3);
+}
+.paper{
+  position:absolute;background:#fff;width:196px;height:150px;border-radius:8px;
+  box-shadow:0 10px 22px rgba(16,24,40,.10);
+}
+
+.f-sticky{top:12%;left:2%}
+.f-check{top:34%;left:0;z-index:2}
+.f-logo{top:9%;left:50%;transform:translateX(-50%)}
+.f-timer{top:16%;right:14%}
+.f-panel{top:11%;right:-1%;width:246px;transform:rotate(3deg)}
+.f-assets{bottom:8%;left:2%;width:252px}
+.f-integr{bottom:10%;right:1%;width:216px}
+
+.row{display:flex;align-items:center;gap:9px}
+.dot{width:7px;height:7px;border-radius:50%;flex:none}
+.bar{height:5px;border-radius:99px;background:#EDEFF3;overflow:hidden;flex:1}
+.bar > i{display:block;height:100%;border-radius:99px;background:var(--blue)}
+.tiny{font-size:11px;color:var(--mut)}
+.tiny-b{font-size:11.5px;font-weight:700}
+.sq{width:20px;height:20px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700}
+
+/* ============================================================
+   SECTIONS
+   ============================================================ */
+.sec{padding:104px 0}
+.sec-head{text-align:center;max-width:640px;margin:0 auto 52px}
+.sec-head .badge{margin-bottom:22px}
+.sec-head p{color:var(--mut);margin:16px 0 0;font-size:15.5px}
+.panel{background:var(--panel);border-radius:var(--r-xl);margin:0 var(--gut);padding:92px 0}
+
+/* three challenge columns */
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-bottom:44px}
+.col{padding:0 26px;border-left:1px solid var(--line)}
+.col:first-child{border-left:0;padding-left:0}
+.col:last-child{padding-right:0}
+.col svg{margin-bottom:16px}
+.col p{margin:0;font-size:14px;color:var(--ink-2);line-height:1.6}
+
+/* ============================================================
+   DEMO
+   ============================================================ */
+.demo-frame{
+  margin:0 auto;
+  max-width:1440px;
+  width:calc(100% - (var(--gut) * 2));
+  position:relative;
+}
+.demo{
+  background:#fff;border-radius:20px;overflow:hidden;
+  border:1px solid var(--line);
+  box-shadow:0 1px 3px rgba(16,24,40,.05), 0 18px 36px rgba(16,24,40,.09), 0 48px 90px rgba(16,24,40,.10);
+}
+.demo-bar{
+  display:flex;align-items:center;gap:14px;
+  padding:12px 18px;border-bottom:1px solid var(--line-2);background:#FCFCFD;
+}
+.chrome{display:flex;gap:6px}
+.chrome i{width:9px;height:9px;border-radius:50%;background:#E2E5EA;display:block}
+.url{
+  flex:1;background:#fff;border:1px solid var(--line);border-radius:999px;
+  padding:5px 14px;font-size:12px;color:var(--mut-2);text-align:center;max-width:340px;margin:0 auto;
+}
+.demo-body{padding:32px 36px 40px;min-height:436px}
+
+/* firm analysis */
+.analyze{display:flex;gap:10px;align-items:stretch;max-width:520px}
+.analyze .inp{height:46px}
+.btn-ai{background:var(--navy);color:#fff;padding:0 26px;font-size:14.5px;box-shadow:0 1px 2px rgba(16,24,40,.16), 0 8px 18px rgba(22,35,61,.18)}
+.btn-ai:hover{background:#0E1729}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.found{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:20px}
+.fchip{
+  display:flex;gap:10px;align-items:flex-start;background:var(--green-soft);
+  border:1px solid #CDEEDE;border-radius:12px;padding:11px 13px;
+  opacity:0;transform:translateY(6px);transition:opacity .3s ease, transform .3s ease;
+}
+.fchip.in{opacity:1;transform:none}
+.fchip b{display:block;font-size:13px;letter-spacing:-.01em;line-height:1.3}
+.fchip span{display:block;font-size:11px;color:#4A7A63;margin-top:2px}
+.scan{height:4px;border-radius:99px;background:#EDEFF3;overflow:hidden;margin-top:18px;max-width:520px;display:none}
+.scan i{display:block;height:100%;width:0;background:var(--gold);border-radius:99px;transition:width .5s ease}
+
+/* source picker */
+.or-row{display:flex;align-items:center;gap:14px;margin:20px 0;color:var(--mut-2);font-size:12.5px}
+.or-row:before,.or-row:after{content:"";flex:1;height:1px;background:var(--line)}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pick-b{
+  text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:14px;
+  padding:15px 16px;transition:border-color .16s ease, background .16s ease;
+}
+.pick-b b{display:block;font-size:14px;margin-bottom:3px}
+.pick-b span{display:block;font-size:12.5px;color:var(--mut);line-height:1.45}
+.pick-b.on{border-color:var(--blue);background:var(--blue-soft)}
+.pick-b.on b{color:var(--blue-d)}
+
+/* stepper */
+.steps{display:flex;align-items:center;gap:8px;margin-bottom:26px;flex-wrap:wrap}
+.step{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--mut-2)}
+.step .n{
+  width:22px;height:22px;border-radius:50%;background:#F0F1F4;color:var(--mut-2);
+  display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;flex:none;
+}
+.step.on{color:var(--ink)}
+.step.on .n{background:var(--blue);color:#fff}
+.step.done .n{background:var(--green-soft);color:var(--green)}
+.step.done{color:var(--ink-2)}
+.step-sep{width:16px;height:1px;background:var(--line);flex:none}
+
+.pane{display:none}
+.pane.on{display:block}
+.pane-h{font-size:21px;font-weight:600;letter-spacing:-.02em;margin:0 0 6px}
+.pane-s{color:var(--mut);font-size:14px;margin:0 0 22px}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;flex-wrap:wrap}
+.tab{
+  background:none;border:0;padding:9px 14px;font-size:13.5px;font-weight:600;
+  color:var(--mut);border-bottom:2px solid transparent;margin-bottom:-1px;
+}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue)}
+
+.drop{
+  border:1.5px dashed #CFD5DE;border-radius:14px;background:#FBFCFD;
+  padding:30px 20px;text-align:center;
+}
+.drop .up{width:38px;height:38px;margin:0 auto 10px;color:var(--blue)}
+.drop b{display:block;font-size:14.5px;font-weight:600}
+.drop span{display:block;font-size:12.5px;color:var(--mut);margin-top:4px}
+.drop .btn{margin-top:14px}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-2);margin-bottom:6px}
+.inp{
+  width:100%;border:1px solid var(--line);border-radius:10px;
+  padding:10px 13px;font-size:14px;background:#fff;
+}
+.inp:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(27,107,255,.12)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{
+  border:1px solid var(--line);background:#fff;border-radius:999px;
+  padding:6px 13px;font-size:12.5px;font-weight:600;color:var(--ink-2);
+}
+.chip.on{background:var(--blue-soft);border-color:#C9DCFF;color:var(--blue-d)}
+.chip.on:after{content:" ✓";font-size:11px}
+
+.sample{
+  display:flex;gap:14px;align-items:center;background:var(--panel);
+  border:1px solid var(--line);border-radius:14px;padding:14px 16px;
+}
+.wave{display:flex;align-items:center;gap:2px;height:30px}
+.wave i{width:2.5px;border-radius:2px;background:#B9C3D2;display:block}
+
+.foot{display:flex;align-items:center;gap:12px;margin-top:24px;padding-top:20px;border-top:1px solid var(--line-2)}
+.foot .sp{margin-left:auto}
+
+/* generate */
+.gen-list{display:flex;flex-direction:column;gap:2px;margin-bottom:22px}
+.gen-row{display:flex;align-items:center;gap:11px;padding:9px 0;font-size:14px;color:var(--mut-2)}
+.gen-row.active{color:var(--ink);font-weight:600}
+.gen-row.done{color:var(--ink-2)}
+.ic{width:19px;height:19px;border-radius:50%;flex:none;border:2px solid #E4E7EC}
+.gen-row.done .ic{background:var(--green);border-color:var(--green);position:relative}
+.gen-row.done .ic:after{content:"";position:absolute;left:5px;top:2px;width:4px;height:8px;border:2px solid #fff;border-top:0;border-left:0;transform:rotate(42deg)}
+.gen-row.active .ic{border-color:var(--gold);border-top-color:transparent;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.gen-bar{height:8px;border-radius:99px;background:#EDEFF3;overflow:hidden}
+.gen-bar > i{display:block;height:100%;width:0;background:var(--gold);border-radius:99px;transition:width .35s ease}
+.gen-note{display:flex;gap:9px;align-items:center;margin-top:22px;font-size:12.5px;color:var(--mut)}
+.ai-dot{width:16px;height:16px;border-radius:50%;background:var(--gold-soft);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:9px;flex:none}
+
+/* results */
+.res{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:26px}
+.asset{
+  border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:#fff;
+}
+.asset-h{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.asset-h b{font-size:13.5px}
+.asset-body{
+  font-size:14px;line-height:1.62;color:var(--ink-2);white-space:pre-wrap;
+  border-radius:8px;padding:2px 4px;margin:0 -4px;
+}
+.asset-body:focus{outline:none;background:var(--blue-soft);box-shadow:0 0 0 3px rgba(27,107,255,.10)}
+.asset-acts{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.rail-card{border:1px solid var(--line);border-radius:14px;padding:15px 16px;margin-bottom:14px}
+.rail-card h4{margin:0 0 10px;font-size:12.5px;font-weight:700;letter-spacing:-.01em}
+.rail-card.gold-edge{background:var(--gold-soft);border-color:#F2E3BE}
+.rail-row{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--ink-2);padding:4px 0}
+.tick{width:15px;height:15px;border-radius:50%;background:var(--green-soft);color:var(--green);flex:none;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;margin-top:2px}
+.src{font-size:12px;color:var(--mut);padding:4px 0;line-height:1.45}
+
+/* reel mock */
+.reel{
+  width:150px;aspect-ratio:9/16;border-radius:12px;background:#1D2433;
+  position:relative;overflow:hidden;margin-bottom:14px;
+}
+.reel:before{content:"";position:absolute;inset:0;background:linear-gradient(160deg,#2C3B57,#141A26)}
+.reel-cap{
+  position:absolute;bottom:16px;left:10px;right:10px;text-align:center;
+  color:#fff;font-size:12.5px;font-weight:700;line-height:1.3;z-index:2;
+}
+.reel-cap em{background:var(--gold);color:#20180A;font-style:normal;border-radius:3px;padding:0 3px}
+
+/* tuning, after the reveal */
+.tune{
+  margin-top:26px;border:1px solid #F0E2BE;background:var(--gold-soft);
+  border-radius:16px;padding:22px 24px;
+}
+.tune-h{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.tune-h h4{margin:0;font-size:17px;font-weight:600;letter-spacing:-.02em}
+.badge-gold{background:#fff;border:1px solid #EFDFB8;color:#8A6D1E;border-radius:999px;padding:4px 12px;font-size:11px;font-weight:700}
+.tune-s{margin:0 0 18px;font-size:13.5px;color:#7A6836}
+.tune-grid{display:grid;grid-template-columns:minmax(0,1fr) 236px;gap:22px}
+.tiles3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.tile-up{
+  background:#fff;border:1px solid #EFE3C6;border-radius:12px;padding:12px 13px;text-align:left;
+}
+.tile-up b{display:block;font-size:12.5px;margin-bottom:2px;line-height:1.3}
+.tile-up span{display:block;font-size:11px;color:var(--mut);line-height:1.4}
+.tile-up.done{border-color:#BCE4CF;background:var(--green-soft)}
+.tune .rail-card{background:#fff;border-color:#EFE3C6}
+.tune-acts{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;align-items:center}
+.chip-add{border-style:dashed;color:var(--mut)}
+
+/* gate */
+.gate{max-width:440px;margin:0 auto;text-align:center;padding:14px 0 6px}
+.gate .inp{text-align:center;margin-bottom:10px}
+.gate .btn{width:100%}
+.gate .or{font-size:12.5px;color:var(--mut-2);margin:14px 0 10px}
+.slots{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.slot{border:1px solid var(--line);border-radius:10px;padding:8px 13px;background:#fff;font-size:12.5px;font-weight:600}
+.slot b{display:block;font-size:11px;color:var(--mut);font-weight:600}
+.slot.on{border-color:var(--blue);background:var(--blue-soft);color:var(--blue-d)}
+.done-mark{width:52px;height:52px;border-radius:50%;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px}
+
+.toast{
+  position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);
+  background:var(--navy);color:#fff;padding:11px 20px;border-radius:999px;
+  font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s ease;z-index:200;
+}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ============================================================
+   BENTO
+   ============================================================ */
+.bento{display:grid;grid-template-columns:2fr 3fr;gap:22px}
+.bento .b-card{
+  background:#fff;border:1px solid var(--line-2);border-radius:var(--r-lg);
+  padding:26px;box-shadow:var(--sh-1);overflow:hidden;position:relative;
+}
+.bento .b-card h3{font-size:17px;margin-bottom:8px}
+.bento .b-card p{margin:0;font-size:13.5px;color:var(--mut);line-height:1.55}
+.b-art{margin:-6px -26px 20px;padding:22px 26px 0;min-height:150px}
+.b-row2{display:grid;grid-template-columns:3fr 2fr;gap:22px;margin-top:22px}
+.dest{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-2)}
+.dest > div{flex:1;min-width:0}
+.dest b{display:block;font-size:12.5px;font-weight:700;letter-spacing:-.01em}
+.dest span{display:block;font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;flex:none}
+.pill-b{background:var(--blue-soft);color:var(--blue-d)}
+.pill-g{background:var(--green-soft);color:#0B8A50}
+.more{text-align:center;color:var(--mut-2);font-size:13.5px;margin-top:34px}
+
+/* ============================================================
+   FAQ
+   ============================================================ */
+.faq{display:grid;grid-template-columns:1fr 1fr;gap:0 46px;max-width:1000px;margin:0 auto}
+.q{border-bottom:1px solid var(--line)}
+.q:first-child,.q:nth-child(2){border-top:1px solid var(--line)}
+.q button{
+  width:100%;background:none;border:0;text-align:left;padding:20px 34px 20px 0;
+  font-size:15.5px;font-weight:600;letter-spacing:-.015em;position:relative;line-height:1.35;
+}
+.q button:after{
+  content:"";position:absolute;right:6px;top:27px;width:9px;height:9px;
+  border-right:1.8px solid var(--mut-2);border-bottom:1.8px solid var(--mut-2);
+  transform:rotate(45deg);transition:transform .22s ease;
+}
+.q.open button:after{transform:rotate(225deg);border-color:var(--blue)}
+.q .a{
+  overflow:hidden;max-height:0;transition:max-height .3s ease;
+  font-size:14px;color:var(--mut);line-height:1.62;
+}
+.q.open .a{max-height:340px}
+.q .a p{margin:0 0 20px;padding-right:20px}
+
+/* ============================================================
+   CLOSING CTA
+   ============================================================ */
+.close-band{
+  margin:0 var(--gut);border-radius:var(--r-xl);
+  background:linear-gradient(150deg,#2C8BFF 0%,#1B6BFF 48%,#0E4FD4 100%);
+  padding:76px clamp(24px,5vw,72px);color:#fff;position:relative;overflow:hidden;
+  box-shadow:0 30px 70px rgba(15,79,212,.26);
+}
+.close-band:before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(rgba(255,255,255,.10) 1px,transparent 1px);
+  background-size:9px 9px;
+}
+.close-in{position:relative;z-index:2;max-width:760px;margin:0 auto;text-align:center}
+.close-in h2{color:#fff}
+.close-in p{color:rgba(255,255,255,.82);font-size:16px;margin:18px 0 0;max-width:540px;margin-inline:auto}
+.close-in .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+.close-in .btn-white{background:#fff;color:var(--blue-d);padding:15px 30px;font-size:16px;box-shadow:0 10px 24px rgba(0,0,0,.16)}
+.close-in .btn-clear{background:rgba(255,255,255,.13);color:#fff;border:1px solid rgba(255,255,255,.32);padding:15px 28px;font-size:16px}
+.close-in .btn-clear:hover{background:rgba(255,255,255,.2)}
+.close-note{margin-top:20px;font-size:13px;color:rgba(255,255,255,.65)}
+.close-tiles{position:absolute;inset:0;z-index:1;pointer-events:none}
+.close-tiles > *{position:absolute}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.foot-panel{
+  margin:0 var(--gut) var(--gut);border-radius:var(--r-xl);background:var(--panel);
+  background-image:var(--dots);background-size:9px 9px;
+  padding:60px clamp(24px,4vw,58px) 28px;position:relative;overflow:hidden;
+}
+.foot-in{max-width:1180px;margin:0 auto}
+.foot-top{display:flex;gap:40px;flex-wrap:wrap;position:relative;z-index:2}
+.foot-links{display:grid;grid-template-columns:1fr 1fr;gap:8px 44px;margin-left:auto;font-size:13.5px;color:var(--ink-2)}
+.foot-links a{display:flex;gap:8px;align-items:center}
+.foot-links a:hover{color:var(--ink)}
+.foot-links i{color:var(--mut-2);font-style:normal}
+.foot-art{position:relative;height:170px;margin-top:10px}
+.foot-art > *{position:absolute}
+.foot-end{display:flex;justify-content:space-between;font-size:12px;color:var(--mut-2);border-top:1px solid var(--line);padding-top:16px;flex-wrap:wrap;gap:10px}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width:1100px){
+  .f-panel{right:-70px}
+  .f-integr{right:-20px}
+}
+@media (max-width:1200px){
+  .res{grid-template-columns:minmax(0,1fr) 240px}
+}
+@media (max-width:900px){
+  .nav-links{display:none}
+  .hero{padding:64px 0 76px;min-height:0;display:block}
+  .float .f-sticky,.float .f-check,.float .f-panel,.float .f-timer,.float .paper{display:none}
+  .f-assets{left:50%;transform:translateX(-50%) scale(.9);bottom:-58px}
+  .f-integr{display:none}
+  .sec{padding:70px 0}
+  .panel{margin:0 14px;padding:64px 0}
+  .cols{grid-template-columns:1fr;gap:22px}
+  .col{border-left:0;padding:0}
+  .demo-frame{margin:0 14px;padding:10px}
+  .demo-body{padding:22px 18px 26px}
+  .res{grid-template-columns:1fr}
+  .found,.pick,.tiles3{grid-template-columns:1fr}
+  .tune-grid{grid-template-columns:1fr}
+  .analyze{flex-direction:column}
+  .bento,.b-row2{grid-template-columns:1fr}
+  .faq{grid-template-columns:1fr;gap:0}
+  .faq .q:nth-child(2){border-top:0}
+  .close-band{padding:52px 24px}
+  .close-tiles{display:none}
+  .two{grid-template-columns:1fr}
+  .foot-panel{padding:36px 22px 20px}
+  .foot-links{margin-left:0;grid-template-columns:1fr 1fr}
+  .foot-art{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<!-- ========================= NAV ========================= -->
+<nav class="nav">
+  <div class="brand">
+    <img class="mark" src="https://www.aiparagonconsulting.com/logo.png" alt="AI Paragon">
+    AI Paragon
+  </div>
+  <div class="nav-links">
+    <a href="#demo">Live demo</a>
+    <a href="#how">How it works</a>
+    <a href="#faq">Questions</a>
+    <a href="#start">Start</a>
+  </div>
+  <div class="nav-right">
+    <a class="link-sm" href="#demo">See a sample</a>
+    <button class="btn btn-ghost" onclick="jump('#start')">Book a call</button>
+  </div>
+</nav>
+
+<!-- ========================= HERO ========================= -->
+<header class="hero">
+  <div class="float" aria-hidden="true">
+    <div class="paper" style="top:19%;left:4%;transform:rotate(4deg)"></div>
+    <div class="sticky f-sticky">One client webinar, one podcast, one recorded call. Each is a week of content you never published.</div>
+    <div class="tile f-check" style="width:52px;height:52px;border-radius:15px">
+      <div style="width:28px;height:28px;border-radius:8px;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px">✓</div>
+    </div>
+    <div class="tile tile-lg f-logo">
+      <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
+        <path d="M16 4 28 27H21L16 16 11 27H4L16 4Z" fill="#1B6BFF"/>
+      </svg>
+    </div>
+    <div class="tile f-timer" style="width:58px;height:58px;border-radius:17px;flex-direction:column;gap:1px">
+      <div style="font-size:13px;font-weight:800;letter-spacing:-.03em">26:14</div>
+      <div style="font-size:8px;color:var(--mut-2);font-weight:600">recording</div>
+    </div>
+
+    <div class="mini-card f-panel">
+      <div class="tiny-b" style="margin-bottom:10px">Generating your assets</div>
+      <div class="row" style="margin-bottom:8px"><span class="sq" style="background:#0A66C2">in</span><span class="tiny">LinkedIn post</span><span style="margin-left:auto;color:var(--green);font-size:11px">✓</span></div>
+      <div class="row" style="margin-bottom:8px"><span class="sq" style="background:#1877F2">f</span><span class="tiny">Meta post</span><span style="margin-left:auto;color:var(--green);font-size:11px">✓</span></div>
+      <div class="row" style="margin-bottom:8px"><span class="sq" style="background:#E0A82E">▶</span><span class="tiny">Video hook</span><span style="margin-left:auto;color:var(--green);font-size:11px">✓</span></div>
+      <div class="row"><span class="sq" style="background:#12B76A">✉</span><span class="tiny">Newsletter</span><span style="margin-left:auto"><span class="bar" style="width:34px"><i style="width:62%"></i></span></span></div>
+    </div>
+
+    <div class="mini-card f-assets">
+      <div class="tiny-b" style="margin-bottom:11px">Your assets</div>
+      <div style="margin-bottom:11px">
+        <div class="row" style="margin-bottom:5px"><span class="dot" style="background:#0A66C2"></span><span style="font-size:11.5px;font-weight:600">Quarterly insights post</span></div>
+        <div class="row"><span class="bar"><i style="width:100%"></i></span><span class="tiny">ready</span></div>
+      </div>
+      <div>
+        <div class="row" style="margin-bottom:5px"><span class="dot" style="background:#E0A82E"></span><span style="font-size:11.5px;font-weight:600">Talking points</span></div>
+        <div class="row"><span class="bar"><i style="width:78%;background:#E0A82E"></i></span><span class="tiny">78%</span></div>
+      </div>
+    </div>
+
+    <div class="mini-card f-integr">
+      <div class="tiny-b" style="margin-bottom:12px">Publishes where you already work</div>
+      <div style="display:flex;gap:9px">
+        <div class="tile" style="position:static;width:44px;height:44px;border-radius:13px;font-size:13px;font-weight:800;color:#0A66C2">in</div>
+        <div class="tile" style="position:static;width:44px;height:44px;border-radius:13px;font-size:13px;font-weight:800;color:#FF7A59">H</div>
+        <div class="tile" style="position:static;width:44px;height:44px;border-radius:13px;font-size:14px;color:#12B76A">✉</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-in">
+    <h1 class="h-xl">Turn one recording<br><span class="dim">into five assets</span></h1>
+    <p class="lede">Paste your website, add something you already recorded, and get five publish-ready pieces written in your firm's voice. About ninety seconds, no sign-up.</p>
+    <div class="cta-row">
+      <button class="btn btn-pri btn-lg" onclick="startDemo(true)">Try it with a recording</button>
+      <button class="btn btn-ghost btn-lg" onclick="jump('#demo')">Watch the 60-second version</button>
+    </div>
+    <p class="hero-note">No sign-up. Nothing is saved. Use the sample or paste your own.</p>
+  </div>
+</header>
+
+<!-- ========================= PROBLEM + DEMO ========================= -->
+<section class="sec" id="demo" style="padding-bottom:0">
+  <div class="sec-head">
+    <span class="badge">Live demo</span>
+    <h2 class="h-lg">See it work before<br>you talk to anyone</h2>
+  </div>
+  <div class="wrap">
+    <div class="cols">
+      <div class="col">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E0A82E" stroke-width="1.7"><path d="M3 18v-2a4 4 0 014-4h4"/><circle cx="9" cy="7" r="3"/><path d="M17 11v8M21 15h-8"/></svg>
+        <p>Your best thinking already happened out loud. It is sitting in a recording nobody will hear twice.</p>
+      </div>
+      <div class="col">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E0A82E" stroke-width="1.7"><path d="M9 6h12M9 12h12M9 18h12"/><path d="M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></svg>
+        <p>Writing it up takes an afternoon you do not have, so the post gets pushed to next week. Again.</p>
+      </div>
+      <div class="col">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E0A82E" stroke-width="1.7"><path d="M12 3v10M8 9l4 4 4-4"/><rect x="4" y="15" width="16" height="6" rx="2"/></svg>
+        <p>Generic AI writes something you would never send. It does not sound like you and it cannot cite your work.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== INTERACTIVE DEMO =================== -->
+  <div class="demo-frame">
+    <div class="demo">
+      <div class="demo-bar">
+        <div class="chrome"><i></i><i></i><i></i></div>
+        <div class="url">demo.aiparagonconsulting.com/demo/pipeline</div>
+        <div style="width:44px"></div>
+      </div>
+
+      <div class="demo-body">
+        <div class="steps" id="steps"></div>
+
+        <!-- STEP 1 : READ THE FIRM -->
+        <div class="pane on" data-pane="1">
+          <h3 class="pane-h">Start with your firm</h3>
+          <p class="pane-s">We read your public pages so the first draft already sounds like you. Nothing is uploaded and nothing is stored.</p>
+
+          <div class="analyze">
+            <input class="inp" id="firmUrl" placeholder="yourfirm.com" onkeydown="if(event.key==='Enter')analyze()">
+            <button class="btn btn-ai" id="analyzeBtn" onclick="analyze()">Analyze</button>
+          </div>
+          <div class="scan" id="scan"><i></i></div>
+          <p class="tiny" style="margin-top:11px" id="analyzeHint">Reads your homepage, about page, and services pages. Takes a few seconds.</p>
+
+          <div class="found" id="found" style="display:none">
+            <div class="fchip"><span class="tick">&#10003;</span><div><b id="fName"></b><span>Firm found</span></div></div>
+            <div class="fchip"><span class="tick">&#10003;</span><div><b id="fWho"></b><span>Who you serve</span></div></div>
+            <div class="fchip"><span class="tick">&#10003;</span><div><b id="fVoice"></b><span>Voice learned</span></div></div>
+          </div>
+
+          <div class="foot">
+            <button class="btn btn-quiet" onclick="sampleFirm()">Use a sample firm</button>
+            <button class="btn btn-pri sp" id="s1next" onclick="go(2)" disabled>Continue</button>
+          </div>
+        </div>
+
+        <!-- STEP 2 : ADD SOURCE -->
+        <div class="pane" data-pane="2">
+          <h3 class="pane-h">Add something you already recorded</h3>
+          <p class="pane-s">A webinar, a client education session, a podcast appearance. Two minutes is enough.</p>
+
+          <div class="field">
+            <label>Paste a YouTube, Vimeo, or podcast link</label>
+            <input class="inp" id="srcUrl" placeholder="https://www.youtube.com/watch?v=..." oninput="markLink()">
+          </div>
+
+          <div class="or-row"><span>or</span></div>
+
+          <div class="pick">
+            <button class="pick-b on" id="pkSample" onclick="pickSrc('sample')">
+              <b>Use the sample</b>
+              <span>A 26-minute advisory webinar. Fastest way to see the whole thing.</span>
+            </button>
+            <button class="pick-b" id="pkOwn" onclick="pickSrc('own')">
+              <b>Upload your own</b>
+              <span>MP3, MP4, WAV or MOV. Deleted the moment you leave.</span>
+            </button>
+          </div>
+
+          <div id="ownDrop" style="display:none;margin-top:14px">
+            <div class="drop">
+              <svg class="up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+              <b>Drop an audio or video file</b>
+              <span>Up to two hours.</span>
+              <button class="btn btn-quiet" onclick="fakeUpload()">Choose a file</button>
+            </div>
+          </div>
+
+          <div class="foot">
+            <button class="btn btn-quiet" onclick="go(1)">Back</button>
+            <span class="tiny" id="srcNote">Sample selected. 26:14 of audio.</span>
+            <button class="btn btn-pri sp" onclick="go(3)">Generate five assets</button>
+          </div>
+        </div>
+
+        <!-- STEP 3 : GENERATE -->
+        <div class="pane" data-pane="3">
+          <h3 class="pane-h">Working through the recording</h3>
+          <p class="pane-s" id="genSub">26:14 of audio. Five assets.</p>
+          <div class="gen-list" id="genList"></div>
+          <div class="gen-bar"><i id="genBar"></i></div>
+          <div class="gen-note"><span class="ai-dot">&#9733;</span><span id="genPct">0%</span></div>
+        </div>
+
+        <!-- STEP 4 : REVIEW -->
+        <div class="pane" data-pane="4">
+          <h3 class="pane-h" id="revH">Five assets, ready to edit</h3>
+          <p class="pane-s">Change anything. It is your name on it.</p>
+
+          <div class="tabs" id="assetTabs"></div>
+
+          <div class="res">
+            <div>
+              <div class="asset">
+                <div class="asset-h">
+                  <span class="sq" id="aIcon" style="background:#0A66C2">in</span>
+                  <b id="aName">LinkedIn post</b>
+                  <span class="tiny" style="margin-left:auto" id="aMeta"></span>
+                </div>
+                <div id="aReel" style="display:none">
+                  <div class="reel"><div class="reel-cap" id="reelCap"></div></div>
+                </div>
+                <div class="asset-body" id="aBody" contenteditable="true" spellcheck="false" oninput="edited()"></div>
+                <div class="asset-acts">
+                  <button class="btn btn-quiet btn-sm" onclick="regen()">Regenerate this one</button>
+                  <button class="btn btn-quiet btn-sm" onclick="shorter()">Make it shorter</button>
+                  <button class="btn btn-quiet btn-sm" onclick="copyAsset()">Copy</button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="rail-card">
+                <h4>Everything came from</h4>
+                <div class="src" id="srcRow1">Q3-client-webinar.mp4 &middot; 26:14</div>
+                <div class="src">Transcript, auto &middot; 4,160 words &middot; 6 chapters</div>
+                <div class="src" id="srcRow3">Your public pages &middot; 4 read</div>
+              </div>
+              <div class="rail-card gold-edge">
+                <h4>What this replaced</h4>
+                <p style="margin:0;font-size:12.5px;color:#6B5A28;line-height:1.5">About four hours of writing, per recording, every week.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- tuning lives after the value, on purpose -->
+          <div class="tune">
+            <div class="tune-h">
+              <span class="badge-gold">Optional</span>
+              <h4>Not quite your voice? Adjust and regenerate.</h4>
+            </div>
+            <p class="tune-s">Everything above already exists. This only sharpens it.</p>
+
+            <div class="tune-grid">
+              <div>
+                <div class="chips" id="voiceChips"></div>
+                <div class="tiles3">
+                  <button class="tile-up" id="up1" onclick="upTile(1,this)"><b>Upload a past post</b><span>Sharpens the voice</span></button>
+                  <button class="tile-up" id="up2" onclick="upTile(2,this)"><b>Upload a past ad</b><span>Matches tone and style</span></button>
+                  <button class="tile-up" id="up3" onclick="upTile(3,this)"><b>Add style notes</b><span>Positioning, values</span></button>
+                </div>
+                <div class="tune-acts">
+                  <button class="btn btn-ai btn-sm" style="padding:9px 18px" onclick="regenAll()">Regenerate all five</button>
+                  <span class="tiny" id="tuneNote"></span>
+                </div>
+              </div>
+              <div class="rail-card">
+                <h4>Voice check</h4>
+                <div class="rail-row"><span class="tick">&#10003;</span><span id="vc1">On-brand tone</span></div>
+                <div class="rail-row"><span class="tick">&#10003;</span><span>No jargon</span></div>
+                <div class="rail-row"><span class="tick">&#10003;</span><span id="vc3">Matches your pages</span></div>
+                <div class="rail-row"><span class="tick">&#10003;</span><span>Clear and concise</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="foot">
+            <button class="btn btn-quiet" onclick="go(2)">Try another recording</button>
+            <button class="btn btn-pri sp" onclick="go(5)">Send these to me</button>
+          </div>
+        </div>
+
+        <!-- STEP 5 : SEND -->
+        <div class="pane" data-pane="5">
+          <div class="gate" id="gateForm">
+            <h3 class="pane-h" style="font-size:23px">Where should we send them?</h3>
+            <p class="pane-s">Five assets plus the transcript, as a branded PDF and editable text.</p>
+            <input class="inp" id="gateEmail" type="email" placeholder="you@yourfirm.com">
+            <button class="btn btn-pri" onclick="sendAssets()">Email me these assets</button>
+            <p class="or">Or see it run on your own content, with someone who does this daily</p>
+            <div class="slots" id="slots"></div>
+            <button class="btn btn-quiet btn-sm" style="margin-top:12px" onclick="book()">Book 20 minutes</button>
+          </div>
+          <div class="gate" id="gateDone" style="display:none">
+            <div class="done-mark">&#10003;</div>
+            <h3 class="pane-h" style="font-size:23px">On the way</h3>
+            <p class="pane-s" id="doneMsg"></p>
+            <button class="btn btn-quiet" onclick="resetDemo()">Run it again</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= FEATURES ========================= -->
+<section class="sec" id="how">
+  <div class="panel">
+    <div class="sec-head">
+      <span class="badge">How it works</span>
+      <h2 class="h-lg">Built for firms that<br>have to stand behind it</h2>
+      <p>Content you can put your name on, without an afternoon of writing.</p>
+    </div>
+    <div class="wrap">
+      <div class="bento">
+        <div class="b-card">
+          <div class="b-art">
+            <div class="mini-card" style="padding:13px">
+              <div class="tiny-b" style="margin-bottom:9px">Voice profile</div>
+              <div class="chips">
+                <span class="chip on" style="font-size:11px">Plain-spoken</span>
+                <span class="chip on" style="font-size:11px">Precise</span>
+                <span class="chip on" style="font-size:11px">Warm</span>
+                <span class="chip" style="font-size:11px">No jargon</span>
+              </div>
+            </div>
+            <div class="mini-card" style="margin:-16px 0 0 34px;padding:12px 13px">
+              <div class="row"><span class="tick">✓</span><span class="tiny">Matched against 6 past posts</span></div>
+            </div>
+          </div>
+          <h3>It learns your voice</h3>
+          <p>Give it a few traits or upload things you have already published. Every asset gets checked against that profile before you see it.</p>
+        </div>
+
+        <div class="b-card">
+          <div class="b-art" style="display:flex;gap:14px;align-items:flex-start">
+            <div class="mini-card" style="flex:1;padding:13px">
+              <div class="tiny-b" style="margin-bottom:10px">From one 26-minute recording</div>
+              <div class="row" style="margin-bottom:7px"><span class="sq" style="background:#0A66C2">in</span><span class="tiny">LinkedIn post</span></div>
+              <div class="row" style="margin-bottom:7px"><span class="sq" style="background:#1877F2">f</span><span class="tiny">Meta post</span></div>
+              <div class="row" style="margin-bottom:7px"><span class="sq" style="background:#12B76A">✉</span><span class="tiny">Newsletter section</span></div>
+              <div class="row" style="margin-bottom:7px"><span class="sq" style="background:#E0A82E">▶</span><span class="tiny">Video hook, 9:16</span></div>
+              <div class="row"><span class="sq" style="background:#6B7BA3">≡</span><span class="tiny">Advisor talking points</span></div>
+            </div>
+            <div class="reel" style="width:76px;margin:0">
+              <div class="reel-cap" style="font-size:8.5px;bottom:9px">Waiting has<br><em>a price.</em></div>
+            </div>
+          </div>
+          <h3>Five formats, every time</h3>
+          <p>One upload produces the whole set. Same message, shaped for where each one is going, in the format that platform actually rewards.</p>
+        </div>
+      </div>
+
+      <div class="b-row2">
+        <div class="b-card">
+          <div class="b-art">
+            <div class="mini-card" style="padding:14px">
+              <div class="row" style="margin-bottom:10px"><span class="tiny-b">Quarterly insights: what we are seeing</span><span class="chip" style="margin-left:auto;font-size:10.5px;padding:3px 9px">Edited by you</span></div>
+              <div style="height:6px;background:#EEF0F4;border-radius:9px;margin-bottom:6px"></div>
+              <div style="height:6px;background:#EEF0F4;border-radius:9px;width:88%;margin-bottom:6px"></div>
+              <div style="height:6px;background:var(--blue-soft);border-radius:9px;width:64%"></div>
+            </div>
+            <div class="mini-card" style="margin:-14px 0 0 auto;width:190px;padding:12px 13px">
+              <div class="src" style="padding:2px 0">Ellison-webinar.mp4 · 04:12</div>
+              <div class="src" style="padding:2px 0">Transcript · lines 210-244</div>
+            </div>
+          </div>
+          <h3>Nothing ships until you say so</h3>
+          <p>Every line is editable and every claim traces back to a timestamp in your own recording. No black box, no invented statistics.</p>
+        </div>
+
+        <div class="b-card">
+          <div class="b-art">
+            <div class="mini-card" style="padding:13px 14px">
+              <div class="dest">
+                <span class="sq" style="background:#0A66C2">in</span>
+                <div><b>LinkedIn</b><span>Scheduled for Tuesday, 9:00</span></div>
+                <span class="pill pill-b">Queued</span>
+              </div>
+              <div class="dest">
+                <span class="sq" style="background:#12B76A">&#9993;</span>
+                <div><b>Monthly client letter</b><span>Section 2 dropped into the draft</span></div>
+                <span class="pill pill-g">Ready</span>
+              </div>
+              <div class="dest" style="border:0;padding-bottom:0">
+                <span class="sq" style="background:#FF7A59">H</span>
+                <div><b>HubSpot</b><span>Filed against 3 client records</span></div>
+                <span class="pill pill-g">Synced</span>
+              </div>
+            </div>
+          </div>
+          <h3>Then it goes where you work</h3>
+          <p>Scheduled, sent, or filed against the right client record. LinkedIn, Meta, Mailchimp, HubSpot, Gmail and Outlook.</p>
+        </div>
+      </div>
+      <p class="more">Part of a wider system. Pre-meeting briefs, client 360, knowledge base.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= FAQ ========================= -->
+<section class="sec" id="faq" style="padding-top:24px">
+  <div class="sec-head">
+    <span class="badge">Before you try it</span>
+    <h2 class="h-lg">The questions firms<br>ask us first</h2>
+  </div>
+  <div class="wrap">
+    <div class="faq"></div>
+  </div>
+</section>
+
+<!-- ========================= CLOSING ========================= -->
+<section class="sec" id="start" style="padding-bottom:76px">
+  <div class="close-band">
+    <div class="close-tiles" aria-hidden="true">
+      <div class="tile" style="width:56px;height:56px;border-radius:16px;left:5%;top:26%;font-size:19px;transform:rotate(-8deg)">&#127897;</div>
+      <div class="tile" style="width:50px;height:50px;border-radius:14px;left:12%;bottom:18%;font-size:17px;transform:rotate(6deg)">&#9654;</div>
+      <div class="tile" style="width:62px;height:62px;border-radius:18px;right:6%;top:22%;font-size:13px;font-weight:800;letter-spacing:-.03em;color:#0A0A0A">26:14</div>
+      <div class="tile" style="width:52px;height:52px;border-radius:15px;right:14%;bottom:16%;font-size:18px">&#10003;</div>
+    </div>
+    <div class="close-in">
+      <h2 class="h-lg">You already recorded it.<br>See what it turns into.</h2>
+      <p>Run the demo on the sample, or paste a link to something your firm published this year. It takes about ninety seconds either way.</p>
+      <div class="cta-row">
+        <button class="btn btn-white" onclick="startDemo()">Run the demo</button>
+        <button class="btn btn-clear" onclick="startDemo(true)">Use my own recording</button>
+      </div>
+      <p class="close-note">No sign-up. Nothing saved. Ask for a call only if you want one.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= FOOTER ========================= -->
+<div class="foot-panel">
+  <div class="foot-in">
+  <div class="foot-top">
+    <div>
+      <div class="brand" style="margin-bottom:22px">
+        <img class="mark" src="https://www.aiparagonconsulting.com/logo.png" alt="AI Paragon">
+        AI Paragon
+      </div>
+      <h2 class="h-lg" style="max-width:400px">Less busy work.<br>More client relationships.</h2>
+    </div>
+    <div class="foot-links">
+      <a href="#"><i>→</i>About us</a><a href="#demo"><i>→</i>Pipeline</a>
+      <a href="#"><i>→</i>Contact</a><a href="#"><i>→</i>Pre-meeting brief</a>
+      <a href="#"><i>→</i>Careers</a><a href="#"><i>→</i>Client 360</a>
+      <a href="#start"><i>→</i>Book a call</a><a href="#"><i>→</i>Knowledge base</a>
+    </div>
+  </div>
+
+  <div class="foot-art" aria-hidden="true">
+    <div class="tile" style="width:52px;height:52px;border-radius:15px;left:2%;top:70px;font-size:18px;transform:rotate(-8deg)">💬</div>
+    <div class="tile" style="width:56px;height:56px;border-radius:16px;left:14%;top:20px;font-weight:800;font-size:17px;transform:rotate(6deg)">5</div>
+    <div class="tile" style="width:50px;height:50px;border-radius:14px;left:27%;top:96px;font-size:18px">✓</div>
+    <div class="tile" style="width:58px;height:58px;border-radius:17px;left:40%;top:34px;font-size:19px;transform:rotate(-5deg)">🎙</div>
+    <div class="tile" style="width:52px;height:52px;border-radius:15px;left:54%;top:100px;font-size:17px">▶</div>
+    <div class="tile" style="width:60px;height:60px;border-radius:18px;left:67%;top:26px;font-size:12px;font-weight:800;letter-spacing:-.03em">26:14</div>
+    <div class="tile" style="width:50px;height:50px;border-radius:14px;left:81%;top:92px;font-size:18px">✉</div>
+    <div class="tile" style="width:54px;height:54px;border-radius:16px;left:91%;top:24px;font-size:18px;transform:rotate(7deg)">💡</div>
+  </div>
+
+  <div class="foot-end">
+    <span>© 2026 AI Paragon Consulting Group. All rights reserved.</span>
+    <span>Privacy policy · Terms of service</span>
+  </div>
+  </div>
+</div>
+
+</div><!-- /shell -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   FUNNEL EVENTS
+   Wire these to Meta CAPI / LinkedIn CAPI / HubSpot server-side.
+   ============================================================ */
+window.dataLayer = window.dataLayer || [];
+var EVENTS = [];
+function track(name, props){
+  var e = Object.assign({
+    event: name,
+    demo_module: 'pipeline',
+    creative_id: qs('creative_id') || 'direct',
+    personalization_source: S.pers,
+    sample_or_own: S.srcMode === 'sample' ? 'sample' : 'own',
+    ts: Date.now()
+  }, props || {});
+  EVENTS.push(e);
+  window.dataLayer.push(e);
+  console.log('[funnel]', name, e);
+}
+function qs(k){ return new URLSearchParams(location.search).get(k); }
+
+/* ============================================================
+   STATE
+   ============================================================ */
+var S = {
+  step: 1,
+  pers: 'none',          // none | url | sample_firm
+  firm: 'Northlake Advisory',
+  who: 'Households in transition',
+  srcMode: 'sample',     // sample | own | link
+  fileName: 'Q3-client-webinar.mp4',
+  duration: '26:14',
+  asset: 'li',
+  edited: false,
+  tuned: 0,
+  slot: null,
+  voice: ['Plain-spoken','Precise','Warm','Confident without hype'],
+  started: false
+};
+
+var VOICE_ALL = ['Plain-spoken','Precise','Warm','Confident without hype','Direct','Reassuring','No jargon','Data-led'];
+var STEPS = ['Firm','Source','Generate','Review','Send'];
+
+/* ============================================================
+   ASSET CONTENT
+   ============================================================ */
+var ASSETS = {
+  li: {
+    name:'LinkedIn post', icon:'in', color:'#0A66C2', meta:'214 words',
+    body:`Three families asked us the same question last week. Should we wait for rates to come down before we move?
+
+Here is what we told them.
+
+Waiting has a price. A year sitting in cash while you decide is a year that money is not doing the job you hired it for. The real question is not where rates go next. It is whether your plan still works if they go nowhere at all.
+
+We run three checks:
+
+1. Does the cash you are holding have a job and a date attached to it?
+2. What actually breaks if rates sit here for two more years?
+3. Which would you regret more, moving early or moving late?
+
+For {WHO}, that third question usually answers the first two.
+
+If you are sitting on a decision you have been putting off since spring, that is worth an hour of someone's time. Ours or anyone's.`
+  },
+  meta: {
+    name:'Meta post', icon:'f', color:'#1877F2', meta:'92 words, feed-native',
+    body:`"Should we wait for rates to come down?"
+
+We heard it three times last week.
+
+Here is the part people miss. Waiting is a decision too, and it has a cost. A year in cash is a year that money is not doing the job you hired it for.
+
+Before you decide, answer one question honestly: which would you regret more, moving early or moving late?
+
+If you are in the middle of a retirement, a sale, or an inheritance, that answer usually points the whole way.`
+  },
+  clip: {
+    name:'Clip card', icon:'\u25B6', color:'#E0A82E', meta:'0:00 to 0:08, burned captions',
+    reel:true,
+    cap:'"Should we wait for rates<br>to drop?"<br><em>Waiting has a price.</em>',
+    body:`FRAME 1 (0:00 to 0:02)
+On screen: "Should we wait for rates to drop?"
+Spoken: Three families asked us this last week.
+
+FRAME 2 (0:02 to 0:05)
+On screen: "Waiting has a price."
+Spoken: A year in cash is a year that money is not doing the job you hired it for.
+
+FRAME 3 (0:05 to 0:08)
+On screen: "Which would you regret more?"
+Spoken: Moving early, or moving late. That question usually answers the rest.
+
+Cut suggested at 0:08. Pulled from 04:12 to 04:31 of the source.`
+  },
+  news: {
+    name:'Newsletter section', icon:'\u2709', color:'#12B76A', meta:'Section 2 of your monthly letter',
+    body:`WHAT WE ARE HEARING THIS QUARTER
+
+The most common question in our client conversations this month has not been about markets. It has been about timing.
+
+Specifically: is it better to wait?
+
+Our answer has stayed the same. Waiting is not neutral. Every month a decision sits open is a month your capital is doing something you did not choose deliberately. That is fine if it is intentional and dated. It is expensive if it is just deferred.
+
+So we have been walking clients through the same three checks. Does the cash have a job and a date. What breaks if nothing changes for two years. And which direction of error would be harder to live with.
+
+For families in the middle of a transition, that last one tends to settle it.
+
+If you would like to run those three checks against your own position, reply to this email and we will find a time.`
+  },
+  tp: {
+    name:'Talking points', icon:'\u2261', color:'#6B7BA3', meta:'5 points, for client calls',
+    body:`1. Open by naming the question before they ask it. "You are probably wondering whether to wait." It lowers the temperature immediately.
+
+2. Reframe waiting as a decision, not the absence of one. Most clients have not thought of it that way and it lands hard.
+
+3. Give the three checks in order. Job and date. What breaks in two years. Which regret is worse. Do not skip to the third.
+
+4. If they are mid-transition, anchor on the regret question. It is the one that produces an actual answer instead of more deliberation.
+
+5. Close with a dated next step, not an offer to keep an eye on it. Put a review on the calendar before the call ends.`
+  }
+};
+var ORDER = ['li','meta','clip','news','tp'];
+
+var ALT = {
+  li: `We got the same question from three families last week.
+
+"Should we wait for rates to come down before we move anything?"
+
+The honest answer is that waiting is not free, and it is not neutral. Every month a decision stays open is a month your capital is doing something you did not actually choose.
+
+So before you decide, three questions:
+
+Does the cash you are holding have a job and a date on it?
+What breaks if rates simply sit where they are for another two years?
+Which would be harder to live with, moving early or moving late?
+
+For {WHO}, the third one usually answers the other two before you finish reading it.`,
+  meta: `Waiting is a decision. It just does not feel like one.
+
+Three families asked us last week whether to hold off until rates move.
+
+Here is the question we gave them instead: which would you regret more, moving early or moving late?
+
+For anyone in the middle of a transition, that one usually settles it.`
+};
+
+function fill(t){
+  return t.replace(/\{FIRM\}/g, S.firm).replace(/\{WHO\}/g, S.who.toLowerCase());
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function el(id){ return document.getElementById(id); }
+
+function renderSteps(){
+  var h = '';
+  STEPS.forEach(function(s2,i){
+    var n = i+1;
+    var cls = n === S.step ? 'on' : (n < S.step ? 'done' : '');
+    if(i) h += '<span class="step-sep"></span>';
+    h += '<span class="step '+cls+'"><span class="n">'+(n < S.step ? '\u2713' : n)+'</span>'+s2+'</span>';
+  });
+  el('steps').innerHTML = h;
+}
+
+function renderWave(){
+  var h = '';
+  for(var i=0;i<38;i++){ h += '<i style="height:'+(6 + Math.abs(Math.sin(i*0.9))*22).toFixed(0)+'px"></i>'; }
+  var w = el('wave'); if(w) w.innerHTML = h;
+}
+
+function renderChips(){
+  el('voiceChips').innerHTML = VOICE_ALL.map(function(v){
+    return '<button class="chip '+(S.voice.indexOf(v)>-1?'on':'')+'" onclick="toggleVoice(\''+v+'\')">'+v+'</button>';
+  }).join('') + '<button class="chip chip-add" onclick="addTrait()">+ Add a trait</button>';
+}
+function toggleVoice(v){
+  var i = S.voice.indexOf(v);
+  if(i>-1) S.voice.splice(i,1); else S.voice.push(v);
+  S.tuned++;
+  renderChips();
+  el('tuneNote').textContent = S.voice.length + ' traits set';
+  track('demo_tuned', {what:'trait'});
+}
+function addTrait(){
+  var v = prompt('Describe the voice in two or three words');
+  if(v && v.trim()){
+    VOICE_ALL.push(v.trim());
+    S.voice.push(v.trim());
+    S.tuned++;
+    renderChips();
+    track('demo_tuned', {what:'custom_trait'});
+  }
+}
+function upTile(n, b){
+  b.classList.add('done');
+  b.querySelector('span').textContent = 'Added';
+  S.tuned++;
+  el('tuneNote').textContent = 'Regenerate to apply what you added';
+  track('demo_tuned', {what:'upload_'+n});
+}
+
+function renderAssetTabs(){
+  el('assetTabs').innerHTML = ORDER.map(function(k){
+    return '<button class="tab '+(S.asset===k?'on':'')+'" onclick="pickAsset(\''+k+'\')">'+ASSETS[k].name+'</button>';
+  }).join('');
+}
+function pickAsset(k){
+  S.asset = k;
+  renderAssetTabs();
+  var a = ASSETS[k];
+  el('aIcon').textContent = a.icon;
+  el('aIcon').style.background = a.color;
+  el('aName').textContent = a.name;
+  el('aMeta').textContent = a.meta;
+  el('aBody').textContent = fill(a.body);
+  el('aReel').style.display = a.reel ? 'block' : 'none';
+  if(a.reel) el('reelCap').innerHTML = a.cap;
+}
+
+function renderSlots(){
+  var days = ['Mon','Tue','Thu'], times = ['10:00 AM','2:00 PM','9:30 AM'];
+  el('slots').innerHTML = days.map(function(d,i){
+    return '<button class="slot '+(S.slot===i?'on':'')+'" onclick="pickSlot('+i+')"><b>'+d+'</b>'+times[i]+'</button>';
+  }).join('');
+}
+function pickSlot(i){ S.slot = i; renderSlots(); }
+
+/* ============================================================
+   STEP 1 : READ THE FIRM
+   ============================================================ */
+function titleCase(t){ return t.charAt(0).toUpperCase() + t.slice(1); }
+
+function analyze(){
+  var raw = el('firmUrl').value.trim().replace(/^https?:\/\//,'').replace(/^www\./,'');
+  if(!raw || raw.indexOf('.') < 1){ toast('Add your website first'); el('firmUrl').focus(); return; }
+  var host = raw.split('/')[0].split('.')[0].replace(/[-_]/g,' ');
+  var name = host.split(' ').map(titleCase).join(' ');
+  if(!/advis|wealth|capital|partners|group|financial/i.test(name)) name += ' Advisory';
+
+  el('analyzeBtn').disabled = true;
+  el('analyzeBtn').textContent = 'Reading';
+  el('scan').style.display = 'block';
+  el('analyzeHint').textContent = 'Reading homepage, about, services, and insights.';
+
+  var p = 0;
+  var t = setInterval(function(){
+    p += 22 + Math.random()*16;
+    el('scan').firstElementChild.style.width = Math.min(p,100) + '%';
+    if(p >= 100){
+      clearInterval(t);
+      S.pers = 'url';
+      S.firm = name;
+      showFound(name, S.who, 'Plain-spoken, precise, warm');
+    }
+  }, 320);
+  track('firm_analyze_started');
+}
+
+function sampleFirm(){
+  S.pers = 'sample_firm';
+  S.firm = 'Northlake Advisory';
+  el('firmUrl').value = 'northlakeadvisory.com';
+  showFound(S.firm, S.who, 'Plain-spoken, precise, warm');
+  track('sample_firm_used');
+}
+
+function showFound(name, who, voice){
+  el('fName').textContent = name;
+  el('fWho').textContent = who;
+  el('fVoice').textContent = voice;
+  el('found').style.display = 'grid';
+  el('analyzeBtn').disabled = false;
+  el('analyzeBtn').textContent = 'Analyze again';
+  el('scan').style.display = 'none';
+  el('scan').firstElementChild.style.width = '0%';
+  el('analyzeHint').textContent = 'Nothing was uploaded. You can change any of this after you see the output.';
+  el('s1next').disabled = false;
+  var chips = document.querySelectorAll('#found .fchip');
+  chips.forEach(function(c,i){ setTimeout(function(){ c.classList.add('in'); }, i*140); });
+  track('firm_analyzed', {firm: name});
+}
+
+/* ============================================================
+   STEP 2 : SOURCE
+   ============================================================ */
+function pickSrc(kind){
+  S.srcMode = kind;
+  el('pkSample').classList.toggle('on', kind === 'sample');
+  el('pkOwn').classList.toggle('on', kind === 'own');
+  el('ownDrop').style.display = kind === 'own' ? 'block' : 'none';
+  if(kind === 'sample'){
+    S.fileName = 'Q3-client-webinar.mp4'; S.duration = '26:14';
+    el('srcNote').textContent = 'Sample selected. 26:14 of audio.';
+  } else {
+    el('srcNote').textContent = 'Choose a file to continue.';
+  }
+}
+function fakeUpload(){
+  S.srcMode = 'own';
+  S.fileName = 'Client-education-call.mp4';
+  S.duration = '31:08';
+  el('srcNote').textContent = S.fileName + ' \u00b7 31:08 \u00b7 ready';
+  toast('File added');
+}
+function markLink(){
+  var v = el('srcUrl').value.trim();
+  if(v){
+    S.srcMode = 'link';
+    S.fileName = 'Pasted link';
+    el('pkSample').classList.remove('on');
+    el('pkOwn').classList.remove('on');
+    el('ownDrop').style.display = 'none';
+    el('srcNote').textContent = 'Link added. We will pull the audio.';
+  } else {
+    pickSrc('sample');
+  }
+}
+
+/* ============================================================
+   STEP 3 : GENERATE
+   ============================================================ */
+var GEN = [
+  'Transcribing the audio',
+  'Finding the moments worth using',
+  'Matching your voice',
+  'Drafting five assets',
+  'Final compliance pass'
+];
+function runGen(){
+  if(!S.started){ S.started = true; track('demo_start'); }
+  el('genSub').textContent = S.fileName + (S.srcMode === 'link' ? '' : ' \u00b7 ' + S.duration) + ' \u00b7 five assets';
+  el('genList').innerHTML = GEN.map(function(g,i){
+    return '<div class="gen-row" id="g'+i+'"><span class="ic"></span><span>'+g+'</span></div>';
+  }).join('');
+  el('genBar').style.width = '0%';
+  var i = 0;
+  function next(){
+    if(i > 0) el('g'+(i-1)).className = 'gen-row done';
+    if(i >= GEN.length){
+      el('genBar').style.width = '100%';
+      el('genPct').textContent = 'Done';
+      setTimeout(function(){
+        S.step = 4; paint(); reveal();
+        track('artifact_rendered');
+      }, 480);
+      return;
+    }
+    el('g'+i).className = 'gen-row active';
+    var pct = Math.round(((i+1)/GEN.length)*100);
+    el('genBar').style.width = pct + '%';
+    el('genPct').textContent = pct + '% \u00b7 ' + GEN[i].toLowerCase();
+    i++;
+    setTimeout(next, 850 + Math.random()*450);
+  }
+  next();
+}
+
+/* ============================================================
+   STEP 4 : REVIEW
+   ============================================================ */
+function reveal(){
+  el('revH').textContent = 'Five assets for ' + S.firm;
+  el('srcRow1').textContent = S.fileName + (S.srcMode === 'link' ? '' : ' \u00b7 ' + S.duration);
+  el('srcRow3').textContent = S.pers === 'none'
+    ? 'Voice traits you set \u00b7 ' + S.voice.length
+    : 'Your public pages \u00b7 4 read';
+  el('vc1').textContent = 'Sounds like ' + S.firm;
+  el('vc3').textContent = S.pers === 'none' ? 'Matches your traits' : 'Matches your pages';
+  el('tuneNote').textContent = '';
+  pickAsset('li');
+}
+function edited(){
+  if(!S.edited){ S.edited = true; track('demo_edited', {asset: S.asset}); }
+}
+function regen(){
+  var b = el('aBody'), k = S.asset;
+  b.style.opacity = .3;
+  setTimeout(function(){
+    if(ALT[k]){
+      var cur = b.textContent.trim();
+      b.textContent = (cur === fill(ALT[k]).trim()) ? fill(ASSETS[k].body) : fill(ALT[k]);
+      toast('New draft, same voice');
+    } else {
+      toast('That is already the strongest cut');
+    }
+    b.style.opacity = 1;
+    track('demo_regenerated', {asset: k});
+  }, 700);
+}
+function regenAll(){
+  var b = el('aBody');
+  b.style.opacity = .3;
+  toast('Rewriting all five with your changes');
+  setTimeout(function(){
+    var k = S.asset;
+    b.textContent = ALT[k] ? fill(ALT[k]) : fill(ASSETS[k].body);
+    b.style.opacity = 1;
+    track('demo_regenerated', {asset:'all', tuned: S.tuned});
+  }, 1100);
+}
+function shorter(){
+  var b = el('aBody');
+  var t = b.textContent.split('\n\n');
+  if(t.length > 2) b.textContent = t.slice(0, Math.max(2, t.length-2)).join('\n\n');
+  toast('Trimmed');
+  edited();
+}
+function copyAsset(){
+  if(navigator.clipboard) navigator.clipboard.writeText(el('aBody').textContent);
+  toast('Copied');
+  track('share_clicked', {asset: S.asset});
+}
+
+/* ============================================================
+   STEP 5 : SEND
+   ============================================================ */
+function sendAssets(){
+  var v = el('gateEmail').value.trim();
+  if(!/.+@.+\..+/.test(v)){ toast('Add a work email first'); el('gateEmail').focus(); return; }
+  track('email_captured', {intent: (S.edited || S.tuned) ? 'high' : 'mid'});
+  el('gateForm').style.display = 'none';
+  el('gateDone').style.display = 'block';
+  el('doneMsg').textContent = 'Five assets and the transcript are heading to ' + v + '. Usually lands within a minute.';
+}
+function book(){
+  track('book_clicked', {slot: S.slot});
+  jump('#demo');
+  S.step = 5; paint();
+  toast('Pick a time below');
+  setTimeout(function(){ el('slots').scrollIntoView({block:'center', behavior:'smooth'}); }, 300);
+}
+
+/* ============================================================
+   FLOW
+   ============================================================ */
+function go(n){
+  if(n === 3){ S.step = 3; paint(); runGen(); return; }
+  S.step = n;
+  paint();
+  if(n === 5) track('gate_view');
+}
+function paint(){
+  document.querySelectorAll('.pane').forEach(function(p){
+    p.classList.toggle('on', +p.dataset.pane === S.step);
+  });
+  renderSteps();
+}
+function startDemo(own){
+  jump('#demo');
+  S.step = 1; paint();
+  if(own) setTimeout(function(){ el('firmUrl').focus(); }, 500);
+}
+function resetDemo(){
+  S.step = 1; S.edited = false; S.tuned = 0; S.slot = null; S.started = false;
+  S.pers = 'none'; S.firm = 'Northlake Advisory'; S.srcMode = 'sample';
+  S.fileName = 'Q3-client-webinar.mp4'; S.duration = '26:14';
+  el('gateForm').style.display = 'block';
+  el('gateDone').style.display = 'none';
+  el('gateEmail').value = '';
+  el('firmUrl').value = '';
+  el('found').style.display = 'none';
+  document.querySelectorAll('#found .fchip').forEach(function(c){ c.classList.remove('in'); });
+  el('s1next').disabled = true;
+  el('analyzeBtn').textContent = 'Analyze';
+  document.querySelectorAll('.tile-up').forEach(function(t){ t.classList.remove('done'); });
+  pickSrc('sample');
+  pickAsset('li');
+  renderSlots();
+  paint();
+}
+
+function jump(sel){
+  var t = document.querySelector(sel);
+  if(t) t.scrollIntoView({behavior:'smooth', block:'start'});
+}
+var tTimer;
+function toast(msg){
+  var t = el('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(tTimer);
+  tTimer = setTimeout(function(){ t.classList.remove('on'); }, 2000);
+}
+
+/* ============================================================
+   FAQ
+   ============================================================ */
+var FAQ = [
+  ['Will it actually sound like us?',
+   'That is what step two of the demo is for. You give it a few voice traits, or upload two or three things you have already published, and every asset gets written against that profile and checked before you see it. The first pass on a new firm usually needs one round of edits. After that it holds.'],
+  ['What happens to our recording?',
+   'In this demo, nothing leaves your browser and nothing is stored. In the live product, the file is transcribed, used once, and deleted on a schedule you set. We do not train anything on your client conversations.'],
+  ['Will compliance sign off on it?',
+   'Every sentence traces back to a timestamp in your own recording, so a reviewer can check any claim against what was actually said. You also set a never-say list. Nothing publishes without a human approving it.'],
+  ['What if we do not like the output?',
+   'Edit it in place, regenerate a single asset, or throw it out. It is a draft, not a decision. The point is to start from something in your voice instead of a blank page.'],
+  ['Do we need to record something new?',
+   'No, and most firms do not. Client education sessions, recorded webinars, podcast appearances, and internal calls all work. Two minutes of audio is enough. Most people start with something from six months ago that never got used.'],
+  ['Where does the finished content go?',
+   'Copy it out, or connect LinkedIn, your email tool, and HubSpot so approved assets schedule and file themselves against the right client record.']
+];
+function renderFaq(){
+  document.querySelector('.faq').innerHTML = FAQ.map(function(f,i){
+    return '<div class="q'+(i===0?' open':'')+'"><button onclick="tq(this)">'+f[0]+'</button>'+
+           '<div class="a"><p>'+f[1]+'</p></div></div>';
+  }).join('');
+}
+function tq(b){
+  var q = b.parentNode;
+  q.classList.toggle('open');
+  if(q.classList.contains('open')) track('faq_opened', {q: b.textContent});
+}
+
+/* init */
+renderFaq();
+renderSteps();
+renderWave();
+renderChips();
+renderAssetTabs();
+pickAsset('li');
+renderSlots();
+if(qs('firm')){ el('firmUrl').value = qs('firm'); analyze(); }
+document.querySelectorAll('.nav-links a, .foot-links a').forEach(function(a){
+  a.addEventListener('click', function(e){
+    var h = a.getAttribute('href');
+    if(h && h.length > 1 && h[0] === '#'){ e.preventDefault(); jump(h); }
+  });
+});
+</script>
+</body>
+</html>
