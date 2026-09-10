@@ -416,11 +416,15 @@
       throw new Error("Could not reach n8n. Check the webhook URL and that the workflow is active.");
     }
 
-    if (!res.ok) throw new Error("n8n returned " + res.status + ". Open the execution log to see which node failed.");
+    const raw = await res.text();
+
+    if (!res.ok && !raw) throw new Error("n8n returned " + res.status + " with an empty body. Open the execution log to see which node failed.");
 
     let payload;
-    try { payload = await res.json(); }
-    catch (err) { throw new Error("n8n replied with something that was not JSON. Check the Return Session Key node."); }
+    try { payload = JSON.parse(raw); }
+    catch (err) {
+      throw new Error("n8n replied with " + res.status + " and this, which is not JSON: " + (raw.slice(0, 180) || "an empty body"));
+    }
 
     const status = payload.statusCode || 200;
     const body = payload.body || payload;
