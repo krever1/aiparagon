@@ -55,7 +55,7 @@
   .stage { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 44px 0 34px; }
 
   .orb-wrap { position: relative; width: 208px; height: 208px; display: grid; place-items: center; }
-  .rings { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .rings { position: absolute; inset: 0; transform: rotate(-90deg); pointer-events: none; }
   .rings circle { fill: none; stroke-linecap: round; }
   .rings .track { stroke: var(--line); stroke-width: 1.5; }
   .rings .arc { stroke-width: 4; transition: stroke-dashoffset .07s linear, opacity .3s ease; opacity: 0; }
@@ -63,20 +63,41 @@
   .rings .you-arc { stroke: var(--you); }
   .live .rings .arc { opacity: 1; }
 
-  .call {
+  .orb-face {
     width: 126px; height: 126px; border-radius: 50%;
     border: 1px solid var(--line); background: var(--panel-2);
-    color: var(--text); font-family: inherit; font-size: 15px; font-weight: 600;
-    cursor: pointer; display: grid; place-items: center; padding: 0 16px; line-height: 1.25;
+    color: var(--dim); font-size: 14px; font-weight: 600;
+    display: grid; place-items: center; text-align: center; padding: 0 16px; line-height: 1.3;
+    pointer-events: none;
+    transition: color .2s ease, border-color .2s ease;
+  }
+  .live .orb-face { color: var(--text); border-color: #52456B; }
+
+  .cta {
+    min-width: 220px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: var(--you);
+    color: #241C0A;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    padding: 15px 32px;
+    cursor: pointer;
     transition: background .2s ease, border-color .2s ease, transform .12s ease, color .2s ease;
   }
-  .call:hover { border-color: #52456B; }
-  .call:active { transform: scale(.97); }
-  .call:focus-visible { outline: 2px solid var(--you); outline-offset: 4px; }
-  .call[data-state="live"], .call[data-state="hearing"], .call[data-state="speaking"] {
-    background: rgba(232,112,90,.14); border-color: rgba(232,112,90,.5); color: #F4B6A8;
+  .cta:hover { background: #FFC33D; }
+  .cta:active { transform: scale(.98); }
+  .cta:focus-visible { outline: 2px solid var(--you); outline-offset: 3px; }
+  .cta[data-state="live"], .cta[data-state="hearing"], .cta[data-state="speaking"] {
+    background: transparent; border-color: rgba(232,112,90,.6); color: #F4B6A8;
   }
-  .call:disabled { cursor: wait; color: var(--dim); }
+  .cta[data-state="live"]:hover, .cta[data-state="hearing"]:hover, .cta[data-state="speaking"]:hover {
+    background: rgba(232,112,90,.12);
+  }
+  .cta:disabled { background: var(--panel-2); color: var(--dim); cursor: wait; }
+  .cta:disabled:hover { background: var(--panel-2); }
 
   .hint { font-size: 13px; color: var(--dim); text-align: center; min-height: 18px; }
 
@@ -156,9 +177,10 @@
         <circle class="track" cx="104" cy="104" r="79"></circle>
         <circle class="arc you-arc" id="youArc" cx="104" cy="104" r="79"></circle>
       </svg>
-      <button class="call" id="call" data-state="idle">Call</button>
+      <div class="orb-face" id="orbFace">Ready</div>
     </div>
-    <p class="hint" id="hint">Tap to start. Talk normally, and interrupt whenever you like.</p>
+    <button class="cta" id="call" data-state="idle">Start call</button>
+    <p class="hint" id="hint">Talk normally once connected, and interrupt whenever you like.</p>
     <div class="controls">
       <button class="chip" id="mute" aria-pressed="false" disabled>Mute</button>
       <button class="chip" id="copy">Copy transcript</button>
@@ -207,6 +229,7 @@
   const els = {
     shell: document.getElementById("shell"),
     call: document.getElementById("call"),
+    orbFace: document.getElementById("orbFace"),
     mute: document.getElementById("mute"),
     copy: document.getElementById("copy"),
     clear: document.getElementById("clear"),
@@ -240,12 +263,28 @@
     error: "Call ended"
   };
   const HINTS = {
-    idle: "Tap to start. Talk normally, and interrupt whenever you like.",
+    idle: "Talk normally once connected, and interrupt whenever you like.",
     connecting: "Opening the line.",
     live: "Go ahead, it is listening.",
     hearing: "Go ahead, it is listening.",
     speaking: "Talk over it any time to cut in.",
-    error: "Tap to try again."
+    error: "Something went wrong. Start the call again to retry."
+  };
+  const CTA = {
+    idle: "Start call",
+    connecting: "Connecting",
+    live: "End call",
+    hearing: "End call",
+    speaking: "End call",
+    error: "Start call"
+  };
+  const FACE = {
+    idle: "Ready",
+    connecting: "Dialling",
+    live: "Listening",
+    hearing: "Listening",
+    speaking: "Speaking",
+    error: "Ready"
   };
 
   let state = "idle";
@@ -267,8 +306,9 @@
     els.statusText.textContent = STATUS[next];
     els.hint.textContent = HINTS[next];
     els.call.dataset.state = next;
-    els.call.textContent = next === "idle" || next === "error" ? "Call" : next === "connecting" ? "Connecting" : "Hang up";
+    els.call.textContent = CTA[next];
     els.call.disabled = next === "connecting";
+    els.orbFace.textContent = FACE[next];
     els.mute.disabled = !(next === "live" || next === "hearing" || next === "speaking");
     els.shell.classList.toggle("live", next === "live" || next === "hearing" || next === "speaking");
   }
