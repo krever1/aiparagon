@@ -93,9 +93,23 @@
   .step-meta { font-size: 12px; color: var(--dim); white-space: nowrap; padding-top: 3px; }
 
   .card { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 18px 20px; margin-bottom: 14px; }
+  .card[data-state="approved"] { border-color: rgba(143,214,148,.35); }
+  .card[data-state="changes"] { border-color: rgba(232,112,90,.35); }
   .card-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
-  .card-title { font-size: 16px; font-weight: 600; margin: 0; }
-  .card-sub { font-size: 12px; color: var(--dim); margin: 3px 0 0; }
+  .card[data-open="false"] .card-head { margin-bottom: 0; }
+  .card[data-open="false"] .card-body { display: none; }
+  .card-toggle { background: none; border: 0; padding: 0; margin: 0; display: flex; align-items: flex-start; gap: 10px; cursor: pointer; color: inherit; font-family: inherit; text-align: left; flex: 1 1 240px; }
+  .card-toggle:focus-visible { outline: 2px solid var(--you); outline-offset: 4px; border-radius: 6px; }
+  .caret { color: var(--dim); font-size: 17px; line-height: 1.3; display: inline-block; transition: transform .18s ease; }
+  .card[data-open="true"] .caret { transform: rotate(90deg); }
+  .card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .chip.act { padding: 5px 12px; font-size: 12px; }
+  .chip[data-approve][aria-pressed="true"] { border-color: rgba(143,214,148,.6); color: var(--ok); }
+  .chip[data-changes][aria-pressed="true"] { border-color: rgba(232,112,90,.6); color: #F4B6A8; }
+  .review-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+  .review-count { font-size: 14px; color: var(--dim); }
+  .card-title { display: block; font-size: 16px; font-weight: 600; margin: 0; }
+  .card-sub { display: block; font-size: 12px; color: var(--dim); margin: 3px 0 0; }
   .tag { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); }
   .tag.external { border-color: rgba(255,179,0,.45); color: var(--you); }
   .tag.internal { border-color: rgba(116,198,181,.4); color: var(--agent); }
@@ -235,6 +249,13 @@
   <section id="resultsWrap" hidden>
     <h2>3. Deliverables, pending review</h2>
     <div class="gate">Nothing below has been sent, filed or written to any system. Approving marks an item ready for a person to act on, which is the only way it leaves this screen.</div>
+    <div class="review-bar">
+      <span class="review-count" id="reviewCount"></span>
+      <div class="controls" style="justify-content:flex-end">
+        <button class="chip" id="expandAll">Expand all</button>
+        <button class="chip" id="collapseAll">Collapse all</button>
+      </div>
+    </div>
     <div id="results"></div>
   </section>
 
@@ -345,7 +366,7 @@
   const els = {};
   ["shell","status","statusText","orbFace","call","hint","mute","skip","sample","copy","clear","agentArc","youArc",
    "transcript","steps","error","results","resultsWrap","audit","auditWrap","runMission","autoRun",
-   "preset","persona","brief","sessionUrl","missionUrl","voice","mode","modeBadge","modeNote","testVoice","voiceNote"].forEach((id) => { els[id] = document.getElementById(id); });
+   "preset","persona","brief","sessionUrl","missionUrl","voice","mode","modeBadge","modeNote","testVoice","voiceNote","reviewCount","expandAll","collapseAll"].forEach((id) => { els[id] = document.getElementById(id); });
 
   const LEN_OUT = 2 * Math.PI * 86;
   const LEN_IN = 2 * Math.PI * 72;
@@ -490,6 +511,9 @@
   let stepState = {};
   let mission = { intake: null, research: null, draft: null, sources: [], log: [] };
   let approvals = {};
+  let expanded = {};
+  let cardText = {};
+  let approvableIds = [];
   let missionRunning = false;
   let tickTimer = null;
   let slots = {};
@@ -1028,22 +1052,42 @@
     }
   }
 
-  function approvalRow(id) {
-    const st = approvals[id] || "pending";
-    const tag = st === "approved" ? '<span class="tag approved">Approved for a human to send</span>'
-      : st === "changes" ? '<span class="tag changes">Changes requested</span>' : "";
-    return '<div class="approve"><button class="chip" data-approve="' + id + '">Approve</button>' +
-      '<button class="chip" data-changes="' + id + '">Request changes</button>' + tag + "</div>";
+  const DEFAULT_OPEN = { intake: true };
+
+  function actionChips(o) {
+    const st = approvals[o.id] || "pending";
+    let h = '<div class="card-actions">';
+    if (o.tag) h += '<span class="tag ' + o.tagClass + '">' + esc(o.tag) + "</span>";
+    if (o.approvable) {
+      h += '<button class="chip act" data-approve="' + o.id + '" aria-pressed="' + (st === "approved") + '">' +
+        (st === "approved" ? "\u2713 Approved" : "Approve") + "</button>";
+      h += '<button class="chip act" data-changes="' + o.id + '" aria-pressed="' + (st === "changes") + '">' +
+        (st === "changes" ? "Sent back" : "Changes") + "</button>";
+    }
+    h += '<button class="chip act" data-copy="' + o.id + '">Copy</button></div>';
+    return h;
   }
 
   function card(o) {
+    if (expanded[o.id] === undefined) expanded[o.id] = !!DEFAULT_OPEN[o.id];
+    cardText[o.id] = o.text || "";
+    if (o.approvable && approvableIds.indexOf(o.id) === -1) approvableIds.push(o.id);
+    const open = !!expanded[o.id];
     const el = document.createElement("div");
     el.className = "card";
+    el.dataset.id = o.id;
+    el.dataset.open = String(open);
+    el.dataset.state = approvals[o.id] || "pending";
     el.innerHTML =
-      '<div class="card-head"><div><p class="card-title">' + esc(o.title) + "</p>" +
-      (o.sub ? '<p class="card-sub">' + esc(o.sub) + "</p>" : "") + "</div>" +
-      (o.tag ? '<span class="tag ' + o.tagClass + '">' + esc(o.tag) + "</span>" : "") + "</div>" +
-      o.body + (o.approveId ? approvalRow(o.approveId) : "");
+      '<div class="card-head">' +
+        '<button class="card-toggle" data-toggle="' + o.id + '" aria-expanded="' + open + '">' +
+          '<span class="caret" aria-hidden="true">\u203A</span>' +
+          '<span><span class="card-title">' + esc(o.title) + "</span>" +
+          (o.sub ? '<span class="card-sub">' + esc(o.sub) + "</span>" : "") + "</span>" +
+        "</button>" +
+        actionChips(o) +
+      "</div>" +
+      '<div class="card-body">' + o.body + "</div>";
     return el;
   }
 
@@ -1051,8 +1095,19 @@
     ? "<ul>" + arr.map((x) => "<li>" + esc(typeof x === "string" ? x : JSON.stringify(x)) + "</li>").join("") + "</ul>"
     : "<p>None.</p>";
 
+  const bullets = (arr) => (Array.isArray(arr) && arr.length) ? arr.map((x) => "- " + x).join("\n") : "None.";
+
+  function updateReviewCount() {
+    const total = approvableIds.length;
+    if (!total) { els.reviewCount.textContent = ""; return; }
+    const done = approvableIds.filter((id) => approvals[id] === "approved").length;
+    const back = approvableIds.filter((id) => approvals[id] === "changes").length;
+    els.reviewCount.textContent = done + " of " + total + " approved" + (back ? ", " + back + " sent back" : "");
+  }
+
   function renderResults() {
     els.results.innerHTML = "";
+    approvableIds = [];
     const intake = mission.intake || {};
     const research = mission.research || {};
     const draft = mission.draft || {};
@@ -1063,7 +1118,10 @@
         ["Classification", intake.classification], ["Urgency", intake.urgencyLevel],
         ["Timeline", intake.incidentDate], ["Confidence", intake.confidence]].filter((r) => r[1]);
       els.results.appendChild(card({
-        title: "What the agent heard", tag: "Internal", tagClass: "internal",
+        id: "intake", title: "What the agent heard", tag: "Internal", tagClass: "internal",
+        text: (intake.callSummary || "") + "\n\n" + rows.map((r) => r[0] + ": " + r[1]).join("\n") +
+          "\n\nStill needs asking:\n" + bullets(intake.missingInfo) +
+          "\n\nConcerns raised:\n" + bullets(intake.objections),
         body: '<div class="doc"><p>' + esc(intake.callSummary || "") + "</p></div>" +
           '<dl class="kv" style="margin-top:14px">' + rows.map((r) => "<dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1]) + "</dd>").join("") + "</dl>" +
           (intake.missingInfo && intake.missingInfo.length ? '<div class="doc" style="margin-top:14px"><h4>Still needs asking</h4>' + listOr(intake.missingInfo) + "</div>" : "") +
@@ -1074,9 +1132,14 @@
     if (mission.research) {
       const f = Array.isArray(research.findings) ? research.findings : [];
       els.results.appendChild(card({
-        title: "Research",
+        id: "research", title: "Research",
         sub: els.mode.value === "demo" ? "Illustrative findings. Source links are real, the conclusions are not verified." : "Verified against live sources",
         tag: "Internal", tagClass: "internal",
+        text: (research.weatherAssessment ? "Conditions: " + research.weatherAssessment + "\n\n" : "") +
+          (research.regulatoryNotes ? "Rules and context: " + research.regulatoryNotes + "\n\n" : "") +
+          "Findings:\n" + (f.length ? f.map((x) => "- " + (x.claim || "") + " " + (x.detail || "") + (x.sourceUrl ? "\n  " + x.sourceUrl : "")).join("\n") : "None.") +
+          "\n\nCould not confirm:\n" + bullets(research.unresolved) +
+          (research.recommendation ? "\n\nRecommendation: " + research.recommendation : ""),
         body: '<div class="doc">' +
           (research.weatherAssessment ? "<h4>Conditions</h4><p>" + esc(research.weatherAssessment) + "</p>" : "") +
           (research.regulatoryNotes ? "<h4>Rules and context</h4><p>" + esc(research.regulatoryNotes) + "</p>" : "") +
@@ -1090,40 +1153,51 @@
     }
 
     if (draft.customerPacket) els.results.appendChild(card({
-      title: draft.customerPacket.title, sub: "Goes to the customer once approved",
-      tag: "External", tagClass: "external", approveId: "packet",
+      id: "packet", title: draft.customerPacket.title, sub: "Goes to the customer once approved",
+      tag: "External", tagClass: "external", approvable: true,
+      text: draft.customerPacket.markdown,
       body: '<div class="doc">' + markdown(draft.customerPacket.markdown) + "</div>"
     }));
     if (draft.internalBrief) els.results.appendChild(card({
-      title: draft.internalBrief.title, sub: "For the rep before they walk in",
-      tag: "Internal", tagClass: "internal", approveId: "brief",
+      id: "brief", title: draft.internalBrief.title, sub: "For the rep before they walk in",
+      tag: "Internal", tagClass: "internal", approvable: true,
+      text: draft.internalBrief.markdown,
       body: '<div class="doc">' + markdown(draft.internalBrief.markdown) + "</div>"
     }));
     if (draft.followUpEmail) els.results.appendChild(card({
-      title: "Follow-up email", sub: "Drafted, not sent", tag: "External", tagClass: "external", approveId: "email",
+      id: "email", title: "Follow-up email", sub: "Drafted, not sent",
+      tag: "External", tagClass: "external", approvable: true,
+      text: "Subject: " + draft.followUpEmail.subject + "\n\n" + draft.followUpEmail.body,
       body: '<dl class="kv"><dt>Subject</dt><dd>' + esc(draft.followUpEmail.subject) + "</dd></dl>" +
         '<div class="doc" style="margin-top:12px">' + markdown(draft.followUpEmail.body) + "</div>"
     }));
     if (draft.followUpSms) els.results.appendChild(card({
-      title: "Follow-up SMS", sub: "Drafted, not sent", tag: "External", tagClass: "external", approveId: "sms",
+      id: "sms", title: "Follow-up SMS", sub: "Drafted, not sent",
+      tag: "External", tagClass: "external", approvable: true,
+      text: draft.followUpSms.body,
       body: '<div class="doc"><p>' + esc(draft.followUpSms.body) + "</p></div>"
     }));
     if (draft.crmUpdates && draft.crmUpdates.length) els.results.appendChild(card({
-      title: "Proposed CRM changes", sub: "Nothing has been written", tag: "Internal", tagClass: "internal", approveId: "crm",
+      id: "crm", title: "Proposed CRM changes", sub: "Nothing has been written",
+      tag: "Internal", tagClass: "internal", approvable: true,
+      text: draft.crmUpdates.map((u) => u.field + " -> " + u.proposedValue + (u.rationale ? "\n  " + u.rationale : "")).join("\n"),
       body: '<div class="doc"><ul>' + draft.crmUpdates.map((u) => "<li><strong>" + esc(u.field) + "</strong> \u2192 " + esc(u.proposedValue) +
         (u.rationale ? "<br><em>" + esc(u.rationale) + "</em>" : "") + "</li>").join("") + "</ul></div>"
     }));
     if (draft.tasks && draft.tasks.length) els.results.appendChild(card({
-      title: "Suggested tasks", tag: "Internal", tagClass: "internal", approveId: "tasks",
+      id: "tasks", title: "Suggested tasks", tag: "Internal", tagClass: "internal", approvable: true,
+      text: draft.tasks.map((t) => t.owner + ": " + t.task + (t.due ? " (" + t.due + ")" : "")).join("\n"),
       body: '<div class="doc"><ul>' + draft.tasks.map((t) => "<li><strong>" + esc(t.owner) + "</strong> " + esc(t.task) +
         (t.due ? " \u00B7 " + esc(t.due) : "") + "</li>").join("") + "</ul></div>"
     }));
     if (draft.questionsForHuman && draft.questionsForHuman.length) els.results.appendChild(card({
-      title: "Needs a human decision", sub: "The agent stopped rather than guessing",
+      id: "questions", title: "Needs a human decision", sub: "The agent stopped rather than guessing",
+      text: bullets(draft.questionsForHuman),
       body: '<div class="doc">' + listOr(draft.questionsForHuman) + "</div>"
     }));
 
     els.resultsWrap.hidden = !els.results.children.length;
+    updateReviewCount();
     renderAudit();
   }
 
@@ -1139,11 +1213,50 @@
     els.auditWrap.hidden = false;
   }
 
+  function setAllExpanded(v) {
+    Object.keys(expanded).forEach((k) => { expanded[k] = v; });
+    Array.prototype.forEach.call(els.results.querySelectorAll(".card"), (c) => {
+      c.dataset.open = String(v);
+      const tg = c.querySelector("[data-toggle]");
+      if (tg) tg.setAttribute("aria-expanded", String(v));
+    });
+  }
+
+  async function copyCard(id, btn) {
+    try {
+      await navigator.clipboard.writeText(cardText[id] || "");
+      const was = btn.textContent;
+      btn.textContent = "Copied";
+      setTimeout(() => { btn.textContent = was; }, 1300);
+    } catch (err) { showError("Copying was blocked by the browser."); }
+  }
+
+  els.expandAll.addEventListener("click", () => setAllExpanded(true));
+  els.collapseAll.addEventListener("click", () => setAllExpanded(false));
+
   els.results.addEventListener("click", (e) => {
-    const a = e.target.getAttribute && e.target.getAttribute("data-approve");
-    const c = e.target.getAttribute && e.target.getAttribute("data-changes");
-    if (a) { approvals[a] = approvals[a] === "approved" ? "pending" : "approved"; renderResults(); }
-    if (c) { approvals[c] = approvals[c] === "changes" ? "pending" : "changes"; renderResults(); }
+    const t = e.target.closest ? e.target.closest("[data-toggle],[data-approve],[data-changes],[data-copy]") : null;
+    if (!t) return;
+    if (t.hasAttribute("data-toggle")) {
+      const id = t.getAttribute("data-toggle");
+      expanded[id] = !expanded[id];
+      const c = t.closest(".card");
+      if (c) c.dataset.open = String(expanded[id]);
+      t.setAttribute("aria-expanded", String(expanded[id]));
+      return;
+    }
+    if (t.hasAttribute("data-copy")) { copyCard(t.getAttribute("data-copy"), t); return; }
+    if (t.hasAttribute("data-approve")) {
+      const id = t.getAttribute("data-approve");
+      approvals[id] = approvals[id] === "approved" ? "pending" : "approved";
+      renderResults();
+      return;
+    }
+    if (t.hasAttribute("data-changes")) {
+      const id = t.getAttribute("data-changes");
+      approvals[id] = approvals[id] === "changes" ? "pending" : "changes";
+      renderResults();
+    }
   });
 
   /* ---------- mission ---------- */
@@ -1173,6 +1286,9 @@
     missionRunning = true;
     clearError();
     approvals = {};
+    expanded = {};
+    cardText = {};
+    approvableIds = [];
     mission = { intake: null, research: null, draft: null, sources: [], log: [] };
     stepState = {};
     els.results.innerHTML = "";
@@ -1419,6 +1535,10 @@
     mission = { intake: null, research: null, draft: null, sources: [], log: [] };
     stepState = {};
     approvals = {};
+    expanded = {};
+    cardText = {};
+    approvableIds = [];
+    els.reviewCount.textContent = "";
     els.results.innerHTML = "";
     els.resultsWrap.hidden = true;
     els.auditWrap.hidden = true;
