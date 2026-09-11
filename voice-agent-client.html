@@ -171,6 +171,14 @@
       </label>
       <p class="note-line" id="modeNote"></p>
       <label class="field">
+        Voice
+        <select id="voice"></select>
+      </label>
+      <div class="controls" style="justify-content:flex-start">
+        <button class="chip" id="testVoice" type="button">Test voice</button>
+      </div>
+      <p class="note-line" id="voiceNote"></p>
+      <label class="field">
         Scenario
         <select id="preset"></select>
       </label>
@@ -246,15 +254,6 @@
       <label class="field">
         Mission webhook
         <input type="text" id="missionUrl" spellcheck="false">
-      </label>
-      <label class="field">
-        Voice
-        <select id="voice">
-          <option value="marin">Marin</option>
-          <option value="cedar">Cedar</option>
-          <option value="alloy">Alloy</option>
-          <option value="shimmer">Shimmer</option>
-        </select>
       </label>
     </div>
   </details>
@@ -346,7 +345,7 @@
   const els = {};
   ["shell","status","statusText","orbFace","call","hint","mute","skip","sample","copy","clear","agentArc","youArc",
    "transcript","steps","error","results","resultsWrap","audit","auditWrap","runMission","autoRun",
-   "preset","persona","brief","sessionUrl","missionUrl","voice","mode","modeBadge","modeNote"].forEach((id) => { els[id] = document.getElementById(id); });
+   "preset","persona","brief","sessionUrl","missionUrl","voice","mode","modeBadge","modeNote","testVoice","voiceNote"].forEach((id) => { els[id] = document.getElementById(id); });
 
   const LEN_OUT = 2 * Math.PI * 86;
   const LEN_IN = 2 * Math.PI * 72;
@@ -374,6 +373,80 @@
   els.preset.addEventListener("change", () => applyPreset(els.preset.value));
 
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const OPENAI_VOICES = [["marin", "Marin"], ["cedar", "Cedar"], ["alloy", "Alloy"], ["shimmer", "Shimmer"]];
+
+  // Local TTS quality varies wildly. Neural voices ship under names like "Natural",
+  // "Neural", "Google" or "Premium"; the legacy formant voices are the robotic ones.
+  function rankVoice(v) {
+    const n = (v.name || "") + " " + (v.voiceURI || "");
+    let score = 0;
+    if (/natural/i.test(n)) score += 60;
+    if (/neural/i.test(n)) score += 55;
+    if (/google/i.test(n)) score += 45;
+    if (/premium|enhanced/i.test(n)) score += 35;
+    if (/siri/i.test(n)) score += 30;
+    if (/samantha|ava|allison|serena|kate|moira|tessa/i.test(n)) score += 18;
+    if (/david|zira|mark|hazel|susan|espeak|compact|novelty|albert|bad news|bahh|bells|boing|bubbles|cellos|jester|organ|superstar|trinoids|whisper|wobble|zarvox|junior|ralph|fred|kathy|princess/i.test(n)) score -= 50;
+    if (/en[-_]us/i.test(v.lang || "")) score += 12;
+    else if (/^en/i.test(v.lang || "")) score += 6;
+    if (v.localService === false) score += 10;
+    return score;
+  }
+
+  function bestVoices(all) {
+    return (all || [])
+      .filter((v) => /^en/i.test(v.lang || ""))
+      .slice()
+      .sort((a, b) => rankVoice(b) - rankVoice(a));
+  }
+
+  function populateVoices() {
+    const demo = els.mode.value === "demo";
+    const previous = els.voice.value;
+    els.voice.innerHTML = "";
+
+    if (!demo) {
+      OPENAI_VOICES.forEach(([v, label]) => {
+        const o = document.createElement("option");
+        o.value = v; o.textContent = label;
+        els.voice.appendChild(o);
+      });
+      els.voice.value = OPENAI_VOICES.some((x) => x[0] === previous) ? previous : "marin";
+      els.testVoice.disabled = true;
+      els.voiceNote.textContent = "OpenAI realtime voices. These only play in live mode.";
+      return;
+    }
+
+    const list = bestVoices(window.speechSynthesis ? window.speechSynthesis.getVoices() : []);
+    if (!list.length) {
+      const o = document.createElement("option");
+      o.value = ""; o.textContent = "System default";
+      els.voice.appendChild(o);
+      els.testVoice.disabled = false;
+      els.voiceNote.textContent = "No voices reported yet. Reopen this panel in a moment, or just press Test voice.";
+      return;
+    }
+    list.forEach((v) => {
+      const o = document.createElement("option");
+      o.value = v.name;
+      o.textContent = v.name + " (" + v.lang + ")" + (v.localService === false ? " \u00B7 online" : "");
+      els.voice.appendChild(o);
+    });
+    els.voice.value = list.some((v) => v.name === previous) ? previous : list[0].name;
+    els.testVoice.disabled = false;
+    els.voiceNote.textContent = "These come from your operating system, so quality depends on the machine. Anything named Natural, Neural or Google sounds far better than the legacy ones. Audition before a demo.";
+  }
+
+  function previewVoice() {
+    if (!window.speechSynthesis) return;
+    const voices = window.speechSynthesis.getVoices() || [];
+    const pick = voices.find((v) => v.name === els.voice.value) || bestVoices(voices)[0];
+    const u = new SpeechSynthesisUtterance("Thanks for calling. Who am I speaking with?");
+    u.rate = 1; u.pitch = 1;
+    if (pick) { u.voice = pick; u.lang = pick.lang; }
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  }
   function updateModeNote() {
     const demo = els.mode.value === "demo";
     els.modeBadge.dataset.mode = demo ? "demo" : "live";
@@ -384,8 +457,11 @@
         : "Nothing leaves this browser. Speech recognition is not available here, so use Load sample call. Chrome or Edge gives you the spoken version.")
       : "Calls the n8n workflows. The voice call needs the OpenAI credential attached to the Mint Realtime Session node, and the mission steps need an OpenAI credential whose base URL reaches the Responses API.";
   }
-  els.mode.addEventListener("change", () => { updateModeNote(); setState("idle"); });
+  els.mode.addEventListener("change", () => { updateModeNote(); populateVoices(); setState("idle"); });
+  els.testVoice.addEventListener("click", previewVoice);
+  if (window.speechSynthesis) window.speechSynthesis.addEventListener("voiceschanged", populateVoices);
   updateModeNote();
+  populateVoices();
 
   const STATUS = { idle: "Not connected", connecting: "Connecting", live: "On the call", hearing: "Hearing you", speaking: "Speaking", error: "Call ended" };
   const CTA = { idle: "Start call", connecting: "Connecting", live: "End call", hearing: "End call", speaking: "End call", error: "Start call" };
@@ -523,11 +599,11 @@
       setState("speaking");
       if (!window.speechSynthesis) { setTimeout(resolve, 900); return; }
       const u = new SpeechSynthesisUtterance(text);
-      u.rate = 1.04;
+      u.rate = 1;
       u.pitch = 1;
       const voices = window.speechSynthesis.getVoices() || [];
-      const pick = voices.find((v) => /en-US/i.test(v.lang) && /female|samantha|zira|aria|jenny/i.test(v.name)) || voices.find((v) => /en/i.test(v.lang));
-      if (pick) u.voice = pick;
+      const pick = voices.find((v) => v.name === els.voice.value) || bestVoices(voices)[0];
+      if (pick) { u.voice = pick; u.lang = pick.lang; }
       let done = false;
       const finish = () => { if (!done) { done = true; resolve(); } };
       u.onend = finish;
@@ -1360,7 +1436,7 @@
   });
 
   window.addEventListener("beforeunload", teardown);
-  if (window.speechSynthesis) window.speechSynthesis.getVoices();
+  if (window.speechSynthesis) { window.speechSynthesis.getVoices(); setTimeout(populateVoices, 250); }
 
   setState("idle");
   renderSteps();
