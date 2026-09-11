@@ -3,58 +3,42 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Voice agent</title>
+<title>Post-call mission console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400;12..96,75..100,600;12..96,75..100,800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #1B1526;
-    --panel: #262034;
-    --panel-2: #2E2740;
-    --line: #3C3350;
-    --text: #EFE9F5;
-    --dim: #A093B2;
-    --you: #FFB300;
-    --agent: #74C6B5;
-    --danger: #E8705A;
+    --ink: #1B1526; --panel: #242030; --panel-2: #2E2740; --line: #3C3350;
+    --line-soft: rgba(60,51,80,.55); --text: #EFE9F5; --dim: #A093B2;
+    --you: #FFB300; --agent: #74C6B5; --danger: #E8705A; --ok: #8FD694;
   }
-
   * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--ink); color: var(--text); font-family: "Bricolage Grotesque", system-ui, sans-serif; font-optical-sizing: auto; }
+  body { min-height: 100vh; display: flex; justify-content: center; padding: 32px 20px 80px; }
+  .shell { width: 100%; max-width: 820px; }
 
-  html, body {
-    margin: 0;
-    background: var(--ink);
-    color: var(--text);
-    font-family: "Bricolage Grotesque", system-ui, sans-serif;
-    font-optical-sizing: auto;
-  }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-bottom: 8px; }
+  .title-wrap { display: flex; align-items: center; gap: 11px; flex-wrap: wrap; }
+  h1 { font-size: 21px; font-weight: 800; font-stretch: 90%; letter-spacing: -0.02em; margin: 0; }
+  .mode-badge { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); }
+  .mode-badge[data-mode="demo"] { border-color: rgba(143,127,214,.5); color: #B0A3E8; }
+  .mode-badge[data-mode="live"] { border-color: rgba(143,214,148,.5); color: var(--ok); }
+  .tagline { font-size: 14px; color: var(--dim); margin: 0 0 22px; padding-bottom: 22px; border-bottom: 1px solid var(--line); max-width: 62ch; line-height: 1.5; }
 
-  body { min-height: 100vh; display: flex; justify-content: center; padding: 32px 20px 56px; }
-  .shell { width: 100%; max-width: 720px; }
-
-  header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 16px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--line);
-  }
-  h1 { font-size: 20px; font-weight: 800; font-stretch: 90%; letter-spacing: -0.02em; margin: 0; }
-
-  .status { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--dim); }
+  .status { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--dim); white-space: nowrap; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); transition: background .2s ease; }
   .status[data-state="connecting"] .dot { background: #8F7FD6; animation: pulse 1.1s ease-in-out infinite; }
-  .status[data-state="live"] .dot,
-  .status[data-state="hearing"] .dot { background: var(--you); }
+  .status[data-state="live"] .dot, .status[data-state="hearing"] .dot { background: var(--you); }
   .status[data-state="speaking"] .dot { background: var(--agent); }
   .status[data-state="error"] .dot { background: var(--danger); }
   @keyframes pulse { 50% { opacity: .25; } }
 
-  .stage { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 44px 0 34px; }
+  h2 { font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); margin: 0 0 14px; }
+  section { margin-bottom: 38px; }
 
-  .orb-wrap { position: relative; width: 208px; height: 208px; display: grid; place-items: center; }
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .orb-wrap { position: relative; width: 190px; height: 190px; display: grid; place-items: center; }
   .rings { position: absolute; inset: 0; transform: rotate(-90deg); pointer-events: none; }
   .rings circle { fill: none; stroke-linecap: round; }
   .rings .track { stroke: var(--line); stroke-width: 1.5; }
@@ -62,102 +46,104 @@
   .rings .agent-arc { stroke: var(--agent); }
   .rings .you-arc { stroke: var(--you); }
   .live .rings .arc { opacity: 1; }
-
-  .orb-face {
-    width: 126px; height: 126px; border-radius: 50%;
-    border: 1px solid var(--line); background: var(--panel-2);
-    color: var(--dim); font-size: 14px; font-weight: 600;
-    display: grid; place-items: center; text-align: center; padding: 0 16px; line-height: 1.3;
-    pointer-events: none;
-    transition: color .2s ease, border-color .2s ease;
-  }
+  .orb-face { width: 116px; height: 116px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel-2); color: var(--dim); font-size: 14px; font-weight: 600; display: grid; place-items: center; text-align: center; padding: 0 14px; line-height: 1.3; pointer-events: none; transition: color .2s ease, border-color .2s ease; }
   .live .orb-face { color: var(--text); border-color: #52456B; }
 
-  .cta {
-    min-width: 220px;
-    border-radius: 999px;
-    border: 1px solid transparent;
-    background: var(--you);
-    color: #241C0A;
-    font-family: inherit;
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    padding: 15px 32px;
-    cursor: pointer;
-    transition: background .2s ease, border-color .2s ease, transform .12s ease, color .2s ease;
-  }
-  .cta:hover { background: #FFC33D; }
+  .cta { min-width: 210px; border-radius: 999px; border: 1px solid transparent; background: var(--you); color: #241C0A; font-family: inherit; font-size: 16px; font-weight: 600; padding: 14px 30px; cursor: pointer; transition: background .2s ease, border-color .2s ease, transform .12s ease, color .2s ease; }
+  .cta:hover:not(:disabled) { background: #FFC33D; }
   .cta:active { transform: scale(.98); }
   .cta:focus-visible { outline: 2px solid var(--you); outline-offset: 3px; }
-  .cta[data-state="live"], .cta[data-state="hearing"], .cta[data-state="speaking"] {
-    background: transparent; border-color: rgba(232,112,90,.6); color: #F4B6A8;
-  }
-  .cta[data-state="live"]:hover, .cta[data-state="hearing"]:hover, .cta[data-state="speaking"]:hover {
-    background: rgba(232,112,90,.12);
-  }
-  .cta:disabled { background: var(--panel-2); color: var(--dim); cursor: wait; }
-  .cta:disabled:hover { background: var(--panel-2); }
+  .cta[data-state="live"], .cta[data-state="hearing"], .cta[data-state="speaking"] { background: transparent; border-color: rgba(232,112,90,.6); color: #F4B6A8; }
+  .cta[data-state="live"]:hover, .cta[data-state="hearing"]:hover, .cta[data-state="speaking"]:hover { background: rgba(232,112,90,.12); }
+  .cta:disabled { background: var(--panel-2); color: var(--dim); cursor: not-allowed; }
+  .cta.secondary { background: transparent; border-color: var(--line); color: var(--text); }
+  .cta.secondary:hover:not(:disabled) { background: var(--panel-2); border-color: #52456B; }
 
-  .hint { font-size: 13px; color: var(--dim); text-align: center; min-height: 18px; }
-
-  .controls { display: flex; gap: 10px; }
-  .chip {
-    background: transparent; border: 1px solid var(--line); color: var(--dim);
-    border-radius: 999px; padding: 7px 15px; font-family: inherit; font-size: 13px; cursor: pointer;
-  }
-  .chip:hover { border-color: #52456B; color: var(--text); }
+  .hint { font-size: 13px; color: var(--dim); text-align: center; min-height: 18px; max-width: 46ch; line-height: 1.5; }
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .chip { background: transparent; border: 1px solid var(--line); color: var(--dim); border-radius: 999px; padding: 7px 15px; font-family: inherit; font-size: 13px; cursor: pointer; }
+  .chip:hover:not(:disabled) { border-color: #52456B; color: var(--text); }
   .chip[aria-pressed="true"] { border-color: var(--you); color: var(--you); }
   .chip:disabled { opacity: .4; cursor: not-allowed; }
   .chip:focus-visible { outline: 2px solid var(--you); outline-offset: 2px; }
 
-  .transcript { border-top: 1px solid var(--line); padding-top: 24px; }
-  .turn { display: grid; grid-template-columns: 78px 1fr; gap: 16px; padding: 12px 0; border-bottom: 1px solid rgba(60,51,80,.5); }
+  .turn { display: grid; grid-template-columns: 78px 1fr; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--line-soft); }
   .turn:last-child { border-bottom: none; }
   .who { font-size: 13px; font-weight: 600; padding-top: 3px; }
   .turn[data-who="you"] .who { color: var(--you); }
   .turn[data-who="agent"] .who { color: var(--agent); }
   .turn[data-who="note"] .who { color: var(--dim); }
   .time { display: block; font-size: 12px; color: var(--dim); font-weight: 400; margin-top: 3px; }
-  .said { font-family: "Newsreader", Georgia, serif; font-size: 18px; line-height: 1.55; margin: 0; max-width: 62ch; }
+  .said { font-family: "Newsreader", Georgia, serif; font-size: 18px; line-height: 1.55; margin: 0; max-width: 64ch; }
   .turn[data-live="true"] .said { color: var(--dim); }
   .turn[data-who="note"] .said { font-style: italic; color: var(--dim); font-size: 16px; }
   .empty { color: var(--dim); font-family: "Newsreader", Georgia, serif; font-size: 18px; margin: 0; }
 
-  .error {
-    margin-top: 16px; border: 1px solid rgba(232,112,90,.4); background: rgba(232,112,90,.08);
-    color: #F4B6A8; border-radius: 14px; padding: 12px 14px; font-size: 14px; line-height: 1.5;
-  }
+  .steps { display: grid; gap: 10px; margin-bottom: 22px; }
+  .step { display: grid; grid-template-columns: 22px 1fr auto; gap: 13px; align-items: start; padding: 13px 15px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+  .step[data-state="running"] { border-color: rgba(255,179,0,.45); }
+  .step[data-state="done"] { border-color: rgba(143,214,148,.3); }
+  .step[data-state="failed"] { border-color: rgba(232,112,90,.45); }
+  .marker { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line); margin-top: 1px; display: grid; place-items: center; font-size: 11px; color: var(--dim); }
+  .step[data-state="running"] .marker { border-color: var(--you); color: var(--you); animation: pulse 1.1s ease-in-out infinite; }
+  .step[data-state="done"] .marker { border-color: var(--ok); color: var(--ok); }
+  .step[data-state="failed"] .marker { border-color: var(--danger); color: var(--danger); }
+  .step-name { font-size: 15px; font-weight: 600; }
+  .step-desc { font-size: 13px; color: var(--dim); margin-top: 3px; line-height: 1.45; }
+  .step-meta { font-size: 12px; color: var(--dim); white-space: nowrap; padding-top: 3px; }
+
+  .card { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 18px 20px; margin-bottom: 14px; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+  .card-title { font-size: 16px; font-weight: 600; margin: 0; }
+  .card-sub { font-size: 12px; color: var(--dim); margin: 3px 0 0; }
+  .tag { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); }
+  .tag.external { border-color: rgba(255,179,0,.45); color: var(--you); }
+  .tag.internal { border-color: rgba(116,198,181,.4); color: var(--agent); }
+  .tag.approved { border-color: rgba(143,214,148,.5); color: var(--ok); }
+  .tag.changes { border-color: rgba(232,112,90,.5); color: #F4B6A8; }
+
+  .doc { font-family: "Newsreader", Georgia, serif; font-size: 17px; line-height: 1.6; max-width: 68ch; }
+  .doc h3 { font-family: "Bricolage Grotesque", sans-serif; font-size: 15px; font-weight: 700; margin: 18px 0 7px; }
+  .doc h4 { font-family: "Bricolage Grotesque", sans-serif; font-size: 14px; font-weight: 600; margin: 15px 0 6px; color: var(--dim); }
+  .doc p { margin: 0 0 11px; }
+  .doc ul { margin: 0 0 11px; padding-left: 20px; }
+  .doc li { margin-bottom: 5px; }
+  .doc a { color: var(--agent); }
+  .doc em { color: var(--dim); }
+
+  .kv { display: grid; grid-template-columns: minmax(120px, 190px) 1fr; gap: 8px 18px; font-size: 14px; }
+  .kv dt { color: var(--dim); }
+  .kv dd { margin: 0; }
+
+  .approve { display: flex; gap: 9px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-soft); flex-wrap: wrap; align-items: center; }
+  .gate { border: 1px solid rgba(255,179,0,.35); background: rgba(255,179,0,.07); border-radius: 12px; padding: 13px 16px; font-size: 14px; line-height: 1.5; color: #F5D48A; margin-bottom: 20px; }
+  .source { display: block; font-size: 13px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); color: var(--agent); text-decoration: none; word-break: break-word; }
+  .source:last-child { border-bottom: none; }
+  .source:hover { text-decoration: underline; }
+  .source span { display: block; color: var(--dim); font-size: 12px; margin-top: 2px; }
+
+  .error { margin-top: 16px; border: 1px solid rgba(232,112,90,.4); background: rgba(232,112,90,.08); color: #F4B6A8; border-radius: 14px; padding: 12px 14px; font-size: 14px; line-height: 1.5; }
   .error:empty { display: none; }
 
-  .settings { margin-top: 32px; }
-  .settings summary { cursor: pointer; font-size: 14px; color: var(--dim); list-style: none; }
-  .settings summary::-webkit-details-marker { display: none; }
-  .settings summary::before { content: "+ "; }
-  .settings[open] summary::before { content: "\2013 "; }
-  .settings summary:focus-visible { outline: 2px solid var(--you); outline-offset: 3px; }
-  .fields {
-    margin-top: 16px; background: var(--panel); border: 1px solid var(--line);
-    border-radius: 14px; padding: 18px; display: grid; gap: 14px;
-  }
+  details.panel { margin-bottom: 26px; }
+  details.panel summary { cursor: pointer; font-size: 14px; color: var(--dim); list-style: none; }
+  details.panel summary::-webkit-details-marker { display: none; }
+  details.panel summary::before { content: "+ "; }
+  details.panel[open] summary::before { content: "\2013 "; }
+  details.panel summary:focus-visible { outline: 2px solid var(--you); outline-offset: 3px; }
+  .fields { margin-top: 15px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 14px; }
   label.field { display: grid; gap: 6px; font-size: 13px; color: var(--dim); }
-  input[type="text"], select {
-    background: var(--ink); border: 1px solid var(--line); border-radius: 9px; color: var(--text);
-    padding: 10px 12px; font-family: inherit; font-size: 14px; width: 100%;
-  }
-  input:focus, select:focus { outline: 2px solid var(--you); outline-offset: 1px; border-color: transparent; }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; }
-  button.plain {
-    background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
-    border-radius: 9px; padding: 9px 14px; font-family: inherit; font-size: 14px; cursor: pointer;
-  }
-  button.plain:hover { border-color: #52456B; }
-  button.plain:focus-visible { outline: 2px solid var(--you); outline-offset: 2px; }
+  .note-line { font-size: 13px; color: var(--dim); line-height: 1.55; margin: 0; }
+  input[type="text"], select, textarea { background: var(--ink); border: 1px solid var(--line); border-radius: 9px; color: var(--text); padding: 10px 12px; font-family: inherit; font-size: 14px; width: 100%; line-height: 1.5; }
+  textarea { resize: vertical; min-height: 84px; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--you); outline-offset: 1px; border-color: transparent; }
 
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
-  @media (max-width: 520px) {
-    .turn { grid-template-columns: 62px 1fr; gap: 12px; }
+  @media (max-width: 560px) {
+    .turn { grid-template-columns: 60px 1fr; gap: 12px; }
     .said { font-size: 17px; }
+    .kv { grid-template-columns: 1fr; gap: 2px 0; }
+    .kv dd { margin-bottom: 10px; }
   }
 </style>
 </head>
@@ -165,40 +151,101 @@
 <main class="shell" id="shell">
 
   <header>
-    <h1>Voice agent</h1>
+    <div class="title-wrap">
+      <h1>Post-call mission console</h1>
+      <span class="mode-badge" id="modeBadge" data-mode="demo">Demo mode</span>
+    </div>
     <span class="status" id="status" data-state="idle"><span class="dot"></span><span id="statusText">Not connected</span></span>
   </header>
+  <p class="tagline">The call is the trigger, not the demo. When it ends, the agent reads the transcript, researches it, and prepares the customer packet, internal brief, follow-ups and CRM changes. Nothing is sent. Everything comes back for approval.</p>
 
-  <section class="stage">
-    <div class="orb-wrap">
-      <svg class="rings" viewBox="0 0 208 208" aria-hidden="true">
-        <circle class="track" cx="104" cy="104" r="94"></circle>
-        <circle class="arc agent-arc" id="agentArc" cx="104" cy="104" r="94"></circle>
-        <circle class="track" cx="104" cy="104" r="79"></circle>
-        <circle class="arc you-arc" id="youArc" cx="104" cy="104" r="79"></circle>
-      </svg>
-      <div class="orb-face" id="orbFace">Ready</div>
-    </div>
-    <button class="cta" id="call" data-state="idle">Start call</button>
-    <p class="hint" id="hint">Talk normally once connected, and interrupt whenever you like.</p>
-    <div class="controls">
-      <button class="chip" id="mute" aria-pressed="false" disabled>Mute</button>
-      <button class="chip" id="copy">Copy transcript</button>
-    </div>
-  </section>
-
-  <section class="transcript" id="transcript">
-    <p class="empty">No call yet. Start one and the conversation appears here as it happens.</p>
-  </section>
-
-  <div class="error" id="error" role="alert"></div>
-
-  <details class="settings">
-    <summary>Connection</summary>
+  <details class="panel" id="setupPanel">
+    <summary>Mission setup</summary>
     <div class="fields">
       <label class="field">
-        Session webhook (n8n mints the call key here)
-        <input type="text" id="webhook" spellcheck="false">
+        Mode
+        <select id="mode">
+          <option value="demo">Demo, runs entirely in this browser</option>
+          <option value="live">Live, calls the n8n workflows</option>
+        </select>
+      </label>
+      <p class="note-line" id="modeNote"></p>
+      <label class="field">
+        Scenario
+        <select id="preset"></select>
+      </label>
+      <label class="field">
+        Intake agent instructions
+        <textarea id="persona"></textarea>
+      </label>
+      <label class="field">
+        Mission brief
+        <textarea id="brief"></textarea>
+      </label>
+    </div>
+  </details>
+
+  <section>
+    <h2>1. The call</h2>
+    <div class="stage">
+      <div class="orb-wrap">
+        <svg class="rings" viewBox="0 0 190 190" aria-hidden="true">
+          <circle class="track" cx="95" cy="95" r="86"></circle>
+          <circle class="arc agent-arc" id="agentArc" cx="95" cy="95" r="86"></circle>
+          <circle class="track" cx="95" cy="95" r="72"></circle>
+          <circle class="arc you-arc" id="youArc" cx="95" cy="95" r="72"></circle>
+        </svg>
+        <div class="orb-face" id="orbFace">Ready</div>
+      </div>
+      <button class="cta" id="call" data-state="idle">Start call</button>
+      <p class="hint" id="hint">Talk normally once connected.</p>
+      <div class="controls">
+        <button class="chip" id="skip" disabled>Skip question</button>
+        <button class="chip" id="mute" aria-pressed="false" disabled>Mute</button>
+        <button class="chip" id="sample">Load sample call</button>
+        <button class="chip" id="copy">Copy transcript</button>
+        <button class="chip" id="clear">Clear</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Transcript</h2>
+    <div id="transcript"><p class="empty">No call yet. Start one, or load the sample call to run a mission without talking.</p></div>
+  </section>
+
+  <section>
+    <h2>2. The mission</h2>
+    <div class="controls" style="justify-content:flex-start; margin-bottom:18px;">
+      <button class="cta secondary" id="runMission" disabled>Run post-call mission</button>
+      <button class="chip" id="autoRun" aria-pressed="true">Auto-run on hang up</button>
+    </div>
+    <div class="steps" id="steps"></div>
+    <div class="error" id="error" role="alert"></div>
+  </section>
+
+  <section id="resultsWrap" hidden>
+    <h2>3. Deliverables, pending review</h2>
+    <div class="gate">Nothing below has been sent, filed or written to any system. Approving marks an item ready for a person to act on, which is the only way it leaves this screen.</div>
+    <div id="results"></div>
+  </section>
+
+  <section id="auditWrap" hidden>
+    <h2>Audit trail</h2>
+    <div class="card" id="audit"></div>
+  </section>
+
+  <details class="panel">
+    <summary>Connection</summary>
+    <div class="fields">
+      <p class="note-line">Only used in live mode.</p>
+      <label class="field">
+        Session webhook
+        <input type="text" id="sessionUrl" spellcheck="false">
+      </label>
+      <label class="field">
+        Mission webhook
+        <input type="text" id="missionUrl" spellcheck="false">
       </label>
       <label class="field">
         Voice
@@ -209,13 +256,6 @@
           <option value="shimmer">Shimmer</option>
         </select>
       </label>
-      <label class="field">
-        Transcript log webhook (optional, each finished turn is POSTed here)
-        <input type="text" id="logUrl" spellcheck="false" placeholder="Leave empty to skip">
-      </label>
-      <div class="row">
-        <button class="plain" id="clear">Clear transcript</button>
-      </div>
     </div>
   </details>
 
@@ -223,82 +263,186 @@
 
 <script>
 (() => {
-  const DEFAULT_WEBHOOK = "https://n8n.aiparagonconsulting.com/webhook/voice-session";
+  "use strict";
+
+  const SESSION_URL = "https://n8n.aiparagonconsulting.com/webhook/voice-session";
+  const MISSION_URL = "https://n8n.aiparagonconsulting.com/webhook/post-call-mission";
   const CALLS_URL = "https://api.openai.com/v1/realtime/calls";
 
-  const els = {
-    shell: document.getElementById("shell"),
-    call: document.getElementById("call"),
-    orbFace: document.getElementById("orbFace"),
-    mute: document.getElementById("mute"),
-    copy: document.getElementById("copy"),
-    clear: document.getElementById("clear"),
-    status: document.getElementById("status"),
-    statusText: document.getElementById("statusText"),
-    hint: document.getElementById("hint"),
-    agentArc: document.getElementById("agentArc"),
-    youArc: document.getElementById("youArc"),
-    transcript: document.getElementById("transcript"),
-    error: document.getElementById("error"),
-    webhook: document.getElementById("webhook"),
-    voice: document.getElementById("voice"),
-    logUrl: document.getElementById("logUrl")
+  const PRESETS = {
+    roofing: {
+      label: "Roofing storm damage intake",
+      company: "Summit Roofing",
+      persona: "You are the intake agent for a roofing company taking an inbound homeowner call. Be warm and brisk. Ask one question at a time, two sentences at most. Work out: their name, the property address including city and state, what they are seeing on the roof, when it started or when the storm hit, whether water is coming in right now, whether they have contacted their insurer yet, and the best callback number and email. If water is actively coming in, tell them a coordinator will call within the hour. Never quote a price, never say whether insurance will cover it, never claim to be an adjuster.",
+      brief: "Inbound roofing lead, likely storm related. Prepare a homeowner education packet, an internal brief for the inspector, follow-up drafts, and proposed CRM updates. Research severe weather for the property location around the date given, and local roofing permit requirements.",
+      script: [
+        { say: "Thanks for calling Summit Roofing. Who am I speaking with?", slot: "name" },
+        { say: "Good to meet you. What are you seeing with the roof?", slot: "issue" },
+        { say: "Understood. What's the property address, including the city and state?", slot: "address" },
+        { say: "And when did this start, or when did the storm come through?", slot: "incidentDate" },
+        { say: "Is there water coming into the house right now?", slot: "activeLeak" },
+        { say: "Have you contacted your insurance carrier about it yet?", slot: "insurance" },
+        { say: "Last thing. What's the best number and email to reach you on?", slot: "contact" }
+      ],
+      closing: (s) => /yes|yeah|drip|leak|coming in|water|bucket/i.test(s.activeLeak || "")
+        ? "Since there's water coming in now, a coordinator will call you within the hour to get an inspection scheduled. Keep something under the drip and please stay off the roof. Thanks for calling."
+        : "I'll have a coordinator reach out to schedule an inspection and walk you through what to expect. Thanks for calling."
+    },
+    wealth: {
+      label: "Wealth advisory discovery call",
+      company: "Harbor Ridge Advisors",
+      persona: "You are the intake coordinator for a wealth advisory firm taking an inbound prospect call. Be calm and unhurried. Ask one question at a time, two sentences at most. Work out: their name, what prompted them to call now, their broad situation, what they want help with, their timeline, the city and state they are in, and the best callback number and email. Never give investment advice, never recommend a product, never quote fees or returns.",
+      brief: "Inbound discovery call for a wealth advisory firm. Prepare a client-facing recap packet, an internal advisor brief, follow-up drafts, and proposed CRM updates. Research planning or regulatory context relevant to what the prospect described. Produce no investment advice and no product recommendations.",
+      script: [
+        { say: "Thanks for calling Harbor Ridge Advisors. Who am I speaking with?", slot: "name" },
+        { say: "Good to meet you. What prompted you to reach out today?", slot: "issue" },
+        { say: "Tell me a little about your situation. Work, family, anything that's changed recently?", slot: "situation" },
+        { say: "What would you most want help with?", slot: "goal" },
+        { say: "And what sort of timeline are you working with?", slot: "incidentDate" },
+        { say: "What city and state are you in?", slot: "address" },
+        { say: "Last thing. Best number and email to reach you on?", slot: "contact" }
+      ],
+      closing: () => "I'll get this to an advisor and someone will follow up to set up a proper conversation. Nothing we discussed today is advice, it's just so we know how to help. Thanks for calling."
+    }
   };
 
-  const LEN_OUT = 2 * Math.PI * 94;
-  const LEN_IN = 2 * Math.PI * 79;
+  const SAMPLE = {
+    roofing: [
+      ["agent", "Thanks for calling Summit Roofing. Who am I speaking with?"],
+      ["you", "Hi, this is Brian Alvarez. I've got a situation with my roof."],
+      ["agent", "Good to meet you. What are you seeing with the roof?"],
+      ["you", "There's a brown stain spreading across the ceiling in the back bedroom, and this morning it started actually dripping into a bucket."],
+      ["agent", "Understood. What's the property address, including the city and state?"],
+      ["you", "4412 Northridge Drive, Dallas, Georgia. Three oh one three two."],
+      ["agent", "And when did this start, or when did the storm come through?"],
+      ["you", "The stain's been there about two weeks, but the big storm was the night of the twentieth. Lot of wind, hail hitting the windows. The dripping only started today."],
+      ["agent", "Is there water coming into the house right now?"],
+      ["you", "Yeah, slow drip into a bucket. I'm not getting on that roof though. From the driveway there's shingles missing on the back slope, and my neighbor two doors down already had someone out."],
+      ["agent", "Have you contacted your insurance carrier about it yet?"],
+      ["you", "No, and honestly that's what I'm nervous about. Is this the kind of thing they cover? I don't want to file a claim and get dropped."],
+      ["agent", "Last thing. What's the best number and email to reach you on?"],
+      ["you", "Six seven eight, five five five, oh one four four. And email is b.alvarez at gmail dot com."],
+      ["agent", "Since there's water coming in now, a coordinator will call you within the hour to get an inspection scheduled. Keep something under the drip and please stay off the roof. Thanks for calling."]
+    ],
+    wealth: [
+      ["agent", "Thanks for calling Harbor Ridge Advisors. Who am I speaking with?"],
+      ["you", "Hi, my name's Dana Whitfield."],
+      ["agent", "Good to meet you. What prompted you to reach out today?"],
+      ["you", "My company got acquired and my shares are vesting all at once next quarter. It's a lot more money than I've ever had to think about and I have no idea what I'm doing."],
+      ["agent", "Tell me a little about your situation. Work, family, anything that's changed recently?"],
+      ["you", "I'm forty four, I've been an engineering director there nine years. Married, two kids, one starting college in three years. We've got a 401k and not much else organised."],
+      ["agent", "What would you most want help with?"],
+      ["you", "Mainly not getting destroyed on taxes, and figuring out whether I can step back from full time work in the next five or six years."],
+      ["agent", "And what sort of timeline are you working with?"],
+      ["you", "The vest is in about ten weeks, so I'd like to have a plan before then."],
+      ["agent", "What city and state are you in?"],
+      ["you", "Austin, Texas."],
+      ["agent", "Last thing. Best number and email to reach you on?"],
+      ["you", "Five one two, five five five, oh nine eight eight. Email is dana.whitfield at fastmail dot com."],
+      ["agent", "I'll get this to an advisor and someone will follow up to set up a proper conversation. Nothing we discussed today is advice, it's just so we know how to help. Thanks for calling."]
+    ]
+  };
+
+  const els = {};
+  ["shell","status","statusText","orbFace","call","hint","mute","skip","sample","copy","clear","agentArc","youArc",
+   "transcript","steps","error","results","resultsWrap","audit","auditWrap","runMission","autoRun",
+   "preset","persona","brief","sessionUrl","missionUrl","voice","mode","modeBadge","modeNote"].forEach((id) => { els[id] = document.getElementById(id); });
+
+  const LEN_OUT = 2 * Math.PI * 86;
+  const LEN_IN = 2 * Math.PI * 72;
   els.agentArc.style.strokeDasharray = LEN_OUT;
   els.youArc.style.strokeDasharray = LEN_IN;
   els.agentArc.style.strokeDashoffset = LEN_OUT;
   els.youArc.style.strokeDashoffset = LEN_IN;
+  els.sessionUrl.value = SESSION_URL;
+  els.missionUrl.value = MISSION_URL;
 
-  els.webhook.value = DEFAULT_WEBHOOK;
+  Object.keys(PRESETS).forEach((k) => {
+    const o = document.createElement("option");
+    o.value = k;
+    o.textContent = PRESETS[k].label;
+    els.preset.appendChild(o);
+  });
 
-  const STATUS = {
-    idle: "Not connected",
-    connecting: "Connecting",
-    live: "On the call",
-    hearing: "Hearing you",
-    speaking: "Speaking",
-    error: "Call ended"
-  };
+  let presetKey = "roofing";
+  function applyPreset(k) {
+    presetKey = k;
+    els.persona.value = PRESETS[k].persona;
+    els.brief.value = PRESETS[k].brief;
+  }
+  applyPreset("roofing");
+  els.preset.addEventListener("change", () => applyPreset(els.preset.value));
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  function updateModeNote() {
+    const demo = els.mode.value === "demo";
+    els.modeBadge.dataset.mode = demo ? "demo" : "live";
+    els.modeBadge.textContent = demo ? "Demo mode" : "Live mode";
+    els.modeNote.textContent = demo
+      ? (SR
+        ? "Nothing leaves this browser. The agent follows a fixed question list, your speech is transcribed by the browser, and the deliverables are built from a template using the answers you actually gave. Research findings are illustrative, though every source link is real."
+        : "Nothing leaves this browser. Speech recognition is not available here, so use Load sample call. Chrome or Edge gives you the spoken version.")
+      : "Calls the n8n workflows. The voice call needs the OpenAI credential attached to the Mint Realtime Session node, and the mission steps need an OpenAI credential whose base URL reaches the Responses API.";
+  }
+  els.mode.addEventListener("change", () => { updateModeNote(); setState("idle"); });
+  updateModeNote();
+
+  const STATUS = { idle: "Not connected", connecting: "Connecting", live: "On the call", hearing: "Hearing you", speaking: "Speaking", error: "Call ended" };
+  const CTA = { idle: "Start call", connecting: "Connecting", live: "End call", hearing: "End call", speaking: "End call", error: "Start call" };
+  const FACE = { idle: "Ready", connecting: "Dialling", live: "Listening", hearing: "Listening", speaking: "Speaking", error: "Ready" };
   const HINTS = {
-    idle: "Talk normally once connected, and interrupt whenever you like.",
+    idle: "Talk normally once connected.",
     connecting: "Opening the line.",
-    live: "Go ahead, it is listening.",
-    hearing: "Go ahead, it is listening.",
-    speaking: "Talk over it any time to cut in.",
+    live: "Go ahead, it is listening. Pause when you are done and it moves on.",
+    hearing: "Go ahead, it is listening. Pause when you are done and it moves on.",
+    speaking: "Wait for it to finish, then answer.",
     error: "Something went wrong. Start the call again to retry."
   };
-  const CTA = {
-    idle: "Start call",
-    connecting: "Connecting",
-    live: "End call",
-    hearing: "End call",
-    speaking: "End call",
-    error: "Start call"
-  };
-  const FACE = {
-    idle: "Ready",
-    connecting: "Dialling",
-    live: "Listening",
-    hearing: "Listening",
-    speaking: "Speaking",
-    error: "Ready"
-  };
+
+  const STEP_DEFS = [
+    { key: "read", name: "Read the call", desc: "Pull the contact, the situation, urgency, objections and what the rep still needs to ask." },
+    { key: "research", name: "Research and verify", desc: "Check the claim against outside sources and record where each finding came from." },
+    { key: "draft", name: "Draft the deliverables", desc: "Write the customer packet, internal brief, follow-ups, CRM changes and open questions." }
+  ];
 
   let state = "idle";
-  let pc = null;
-  let dc = null;
-  let micStream = null;
-  let audioEl = null;
-  let audioCtx = null;
-  let youAnalyser = null;
-  let agentAnalyser = null;
-  let rafId = null;
+  let pc = null, dc = null, micStream = null, audioEl = null, audioCtx = null;
+  let youAnalyser = null, agentAnalyser = null, rafId = null;
   let sessionId = null;
   let turns = [];
-  let live = { you: null, agent: null };
+  let livePartial = { you: null, agent: null };
+  let stepState = {};
+  let mission = { intake: null, research: null, draft: null, sources: [], log: [] };
+  let approvals = {};
+  let missionRunning = false;
+  let tickTimer = null;
+  let slots = {};
+  let scriptIndex = 0;
+  let recog = null;
+  let demoActive = false;
+  let fakeLevel = 0;
+
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+  function markdown(src) {
+    const lines = String(src || "").split("\n");
+    let out = "", inList = false;
+    const inline = (s) => esc(s)
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/(https?:\/\/[^\s)<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) { if (inList) { out += "</ul>"; inList = false; } continue; }
+      const b = line.match(/^[-*]\s+(.*)$/);
+      if (b) { if (!inList) { out += "<ul>"; inList = true; } out += "<li>" + inline(b[1]) + "</li>"; continue; }
+      if (inList) { out += "</ul>"; inList = false; }
+      const h = line.match(/^(#{1,6})\s+(.*)$/);
+      if (h) { const t = h[1].length <= 2 ? "h3" : "h4"; out += "<" + t + ">" + inline(h[2]) + "</" + t + ">"; continue; }
+      out += "<p>" + inline(line) + "</p>";
+    }
+    if (inList) out += "</ul>";
+    return out;
+  }
 
   function setState(next) {
     state = next;
@@ -309,89 +453,703 @@
     els.call.textContent = CTA[next];
     els.call.disabled = next === "connecting";
     els.orbFace.textContent = FACE[next];
-    els.mute.disabled = !(next === "live" || next === "hearing" || next === "speaking");
-    els.shell.classList.toggle("live", next === "live" || next === "hearing" || next === "speaking");
+    const onCall = next === "live" || next === "hearing" || next === "speaking";
+    els.mute.disabled = !onCall || els.mode.value === "demo";
+    els.skip.disabled = !onCall || els.mode.value !== "demo";
+    els.shell.classList.toggle("live", onCall);
   }
 
-  function showError(msg) { els.error.textContent = msg; }
-  function clearError() { els.error.textContent = ""; }
+  const showError = (m) => { els.error.textContent = m; };
+  const clearError = () => { els.error.textContent = ""; };
+  const spokenTurns = () => turns.filter((t) => t.who !== "note");
 
-  function render() {
+  function renderTranscript() {
     if (!turns.length) {
-      els.transcript.innerHTML = '<p class="empty">No call yet. Start one and the conversation appears here as it happens.</p>';
-      return;
+      els.transcript.innerHTML = '<p class="empty">No call yet. Start one, or load the sample call to run a mission without talking.</p>';
+    } else {
+      els.transcript.innerHTML = "";
+      for (const t of turns) {
+        const row = document.createElement("div");
+        row.className = "turn";
+        row.dataset.who = t.who;
+        if (t.live) row.dataset.live = "true";
+        const who = document.createElement("div");
+        who.className = "who";
+        who.textContent = t.who === "you" ? "Caller" : t.who === "agent" ? "Agent" : "Note";
+        const time = document.createElement("span");
+        time.className = "time";
+        time.textContent = t.at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        who.appendChild(time);
+        const said = document.createElement("p");
+        said.className = "said";
+        said.textContent = t.text;
+        row.append(who, said);
+        els.transcript.appendChild(row);
+      }
+      const last = els.transcript.lastElementChild;
+      if (last && state !== "idle") last.scrollIntoView({ block: "nearest" });
     }
-    els.transcript.innerHTML = "";
-    for (const t of turns) {
-      const row = document.createElement("div");
-      row.className = "turn";
-      row.dataset.who = t.who;
-      if (t.live) row.dataset.live = "true";
-
-      const who = document.createElement("div");
-      who.className = "who";
-      who.textContent = t.who === "you" ? "You" : t.who === "agent" ? "Agent" : "Note";
-      const time = document.createElement("span");
-      time.className = "time";
-      time.textContent = t.at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      who.appendChild(time);
-
-      const said = document.createElement("p");
-      said.className = "said";
-      said.textContent = t.text;
-
-      row.append(who, said);
-      els.transcript.appendChild(row);
-    }
-    els.transcript.lastElementChild.scrollIntoView({ block: "nearest" });
+    els.runMission.disabled = missionRunning || spokenTurns().length < 2;
   }
 
-  function note(text) {
-    turns.push({ who: "note", text, at: new Date(), live: false });
-    render();
-  }
+  const note = (text) => { turns.push({ who: "note", text, at: new Date(), live: false }); renderTranscript(); };
+  const push = (who, text) => { turns.push({ who, text, at: new Date(), live: false }); renderTranscript(); };
 
-  function partial(who, chunk) {
-    if (!live[who]) {
-      live[who] = { who, text: "", at: new Date(), live: true };
-      turns.push(live[who]);
-    }
-    live[who].text += chunk;
-    render();
+  function partial(who, chunk, replace) {
+    if (!livePartial[who]) { livePartial[who] = { who, text: "", at: new Date(), live: true }; turns.push(livePartial[who]); }
+    livePartial[who].text = replace ? chunk : livePartial[who].text + chunk;
+    renderTranscript();
   }
 
   function finalize(who, text) {
-    if (live[who]) {
-      if (text) live[who].text = text;
-      live[who].live = false;
-      live[who] = null;
+    if (livePartial[who]) {
+      if (text) livePartial[who].text = text;
+      livePartial[who].live = false;
+      if (!livePartial[who].text) turns = turns.filter((t) => t !== livePartial[who]);
+      livePartial[who] = null;
     } else if (text) {
       turns.push({ who, text, at: new Date(), live: false });
     }
-    render();
-    if (text) logTurn(who, text);
+    renderTranscript();
   }
 
-  function logTurn(who, text) {
-    const url = els.logUrl.value.trim();
-    if (!url) return;
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, speaker: who, text, at: new Date().toISOString() })
-    }).catch(() => {});
+  const flatten = () => spokenTurns().map((t) => (t.who === "you" ? "Caller: " : "Agent: ") + t.text).join("\n");
+
+  /* ---------- demo call: browser speech in, browser speech out ---------- */
+
+  function speak(text) {
+    return new Promise((resolve) => {
+      push("agent", text);
+      setState("speaking");
+      if (!window.speechSynthesis) { setTimeout(resolve, 900); return; }
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.04;
+      u.pitch = 1;
+      const voices = window.speechSynthesis.getVoices() || [];
+      const pick = voices.find((v) => /en-US/i.test(v.lang) && /female|samantha|zira|aria|jenny/i.test(v.name)) || voices.find((v) => /en/i.test(v.lang));
+      if (pick) u.voice = pick;
+      let done = false;
+      const finish = () => { if (!done) { done = true; resolve(); } };
+      u.onend = finish;
+      u.onerror = finish;
+      setTimeout(finish, Math.max(3000, text.length * 90));
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    });
   }
+
+  function listenOnce() {
+    return new Promise((resolve) => {
+      if (!SR) { resolve(""); return; }
+      recog = new SR();
+      recog.lang = "en-US";
+      recog.interimResults = true;
+      recog.continuous = false;
+      recog.maxAlternatives = 1;
+      let finalText = "";
+      let settled = false;
+      const done = (v) => { if (!settled) { settled = true; recog = null; resolve(v); } };
+      recog.onresult = (e) => {
+        let interim = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const r = e.results[i];
+          if (r.isFinal) finalText += r[0].transcript;
+          else interim += r[0].transcript;
+        }
+        partial("you", (finalText + interim).trim(), true);
+      };
+      recog.onerror = () => { finalize("you", finalText.trim()); done(finalText.trim()); };
+      recog.onend = () => { finalize("you", finalText.trim()); done(finalText.trim()); };
+      setState("hearing");
+      try { recog.start(); } catch (err) { done(""); }
+    });
+  }
+
+  function stopListening() { if (recog) { try { recog.stop(); } catch (e) {} } }
+
+  async function runDemoCall() {
+    const preset = PRESETS[presetKey];
+    demoActive = true;
+    slots = {};
+    scriptIndex = 0;
+    setState("live");
+    animateFake();
+
+    for (; scriptIndex < preset.script.length; scriptIndex++) {
+      if (!demoActive) return;
+      const q = preset.script[scriptIndex];
+      await speak(q.say);
+      if (!demoActive) return;
+      const answer = await listenOnce();
+      if (!demoActive) return;
+      slots[q.slot] = (answer || "").trim();
+    }
+
+    if (!demoActive) return;
+    await speak(preset.closing(slots));
+    if (!demoActive) return;
+    endCall("Call ended.");
+  }
+
+  function animateFake() {
+    const tick = () => {
+      if (!demoActive) { els.youArc.style.strokeDashoffset = LEN_IN; els.agentArc.style.strokeDashoffset = LEN_OUT; return; }
+      fakeLevel += 0.18;
+      const wave = (Math.sin(fakeLevel) * 0.5 + 0.5) * 0.65 + 0.15;
+      if (state === "speaking") {
+        els.agentArc.style.strokeDashoffset = String(LEN_OUT * (1 - wave));
+        els.youArc.style.strokeDashoffset = LEN_IN;
+      } else if (state === "hearing") {
+        els.youArc.style.strokeDashoffset = String(LEN_IN * (1 - wave));
+        els.agentArc.style.strokeDashoffset = LEN_OUT;
+      } else {
+        els.youArc.style.strokeDashoffset = LEN_IN;
+        els.agentArc.style.strokeDashoffset = LEN_OUT;
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+
+  /* ---------- demo mission: built from the answers actually given ---------- */
+
+  const has = (v) => v && String(v).trim().length > 0;
+  const or = (v, fallback) => (has(v) ? String(v).trim() : fallback);
+
+  function cleanName(raw) {
+    let s = or(raw, "").split(/[.!?\n]/)[0];
+    let prev;
+    do {
+      prev = s;
+      s = s.replace(/^\s*(good morning|good afternoon|my name is|my name's|this is|it's|i'm|i am|name's|its|hi|hey|hello|yeah|yes|yep|ok|okay|so|um|uh|well|speaking|my)\b[\s,.'-]*/i, "");
+    } while (s !== prev);
+    s = s.replace(/[^A-Za-z' -]+.*$/, "").trim();
+    const words = s.split(/\s+/).filter(Boolean).slice(0, 2);
+    if (!words.length) return "";
+    return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  }
+  function firstName(full) {
+    const c = cleanName(full);
+    return c ? c.split(" ")[0] : "there";
+  }
+  function extractPhone(s) { const m = or(s, "").match(/(\+?\d[\d\s\-().]{6,}\d)/); return m ? m[1].trim() : null; }
+  function extractEmail(s) {
+    const t = or(s, "").replace(/\s+at\s+/gi, "@").replace(/\s+dot\s+/gi, ".").replace(/\s+/g, "");
+    const m = t.match(/[^\s@]+@[^\s@]+\.[a-z]{2,}/i);
+    return m ? m[0] : null;
+  }
+
+  function buildIntake() {
+    const person = cleanName(slots.name);
+    const urgent = /yes|yeah|drip|leak|coming in|water|bucket|active|now/i.test(or(slots.activeLeak, "")) ||
+      /urgent|asap|weeks|soon|quarter/i.test(or(slots.incidentDate, ""));
+    const missing = [];
+    if (!has(slots.address)) missing.push("Property location was never captured.");
+    if (!has(slots.incidentDate)) missing.push("No date or timeline was given.");
+    if (!extractPhone(slots.contact)) missing.push("No callback number captured.");
+    if (!extractEmail(slots.contact)) missing.push("No email address captured.");
+    if (presetKey === "roofing" && !has(slots.insurance)) missing.push("Insurance status unknown.");
+    if (presetKey === "wealth" && !has(slots.goal)) missing.push("Primary objective not stated.");
+
+    const objections = [];
+    const blob = [slots.insurance, slots.issue, slots.goal, slots.situation].map((x) => or(x, "")).join(" ");
+    if (/nervous|worried|scared|afraid|dropped|no idea|don't know|dont know|anxious/i.test(blob)) {
+      objections.push("Caller expressed anxiety about the process, not about price.");
+    }
+    if (/cover|claim|premium|dropped/i.test(blob)) objections.push("Wants to know about insurance coverage before committing.");
+    if (/tax|destroyed on taxes/i.test(blob)) objections.push("Tax exposure is the stated worry.");
+
+    return {
+      callSummary: presetKey === "roofing"
+        ? (person || "The caller") + " reported " + or(slots.issue, "a roof problem").toLowerCase() + " at " + or(slots.address, "an address not captured") + ". Timeline given: " + or(slots.incidentDate, "not stated") + ". " + (urgent ? "Active water intrusion means this is time sensitive." : "No active water intrusion was reported.")
+        : (person || "The caller") + " reached out about " + or(slots.issue, "a planning question").toLowerCase() + ". Situation: " + or(slots.situation, "not described") + ". Stated goal: " + or(slots.goal, "not stated") + ", on a timeline of " + or(slots.incidentDate, "unspecified") + ".",
+      contact: {
+        name: person || null,
+        address: or(slots.address, null),
+        city: null, region: null,
+        phone: extractPhone(slots.contact),
+        email: extractEmail(slots.contact)
+      },
+      situation: or(slots.issue, "Not captured"),
+      urgencyLevel: urgent ? "high" : "medium",
+      incidentDate: or(slots.incidentDate, null),
+      insuranceQuestions: presetKey === "roofing" && /cover|claim|insur/i.test(or(slots.insurance, "")) ? ["Asked whether the damage would be covered and whether filing risks non-renewal."] : [],
+      objections,
+      classification: presetKey === "roofing"
+        ? (urgent ? "Storm damage, active leak, needs same-day contact" : "Storm damage, no active leak, standard inspection path")
+        : "Liquidity event discovery, tax-led",
+      confidence: has(slots.address) && has(slots.issue) ? "high" : "medium",
+      missingInfo: missing
+    };
+  }
+
+  function buildResearch() {
+    if (presetKey === "roofing") {
+      return {
+        weatherAssessment: "The stated date of " + or(slots.incidentDate, "an unspecified date") + " for " + or(slots.address, "the property") + " needs checking against the NOAA storm record before the inspector treats this as storm related rather than wear.",
+        regulatoryNotes: "Residential roof replacement in Georgia generally requires a permit through the county building department, and the contractor must hold a state residential licence. Confirm both for the specific county before quoting scope.",
+        findings: [
+          { claim: "Hail and high wind reports are searchable by county and date.", detail: "NOAA Storm Events Database is the record insurers and adjusters cite. Search the county containing the property for the week around the stated date.", sourceUrl: "https://www.ncdc.noaa.gov/stormevents/", confidence: "high" },
+          { claim: "Local storm reports and archived warnings back up the homeowner's account.", detail: "National Weather Service local office archives cover warnings issued and verified reports.", sourceUrl: "https://www.weather.gov/", confidence: "high" },
+          { claim: "Georgia residential contractors must be state licensed.", detail: "Licence status is publicly verifiable, which matters if the homeowner is comparing against a door knocker who has already been in the neighbourhood.", sourceUrl: "https://sos.ga.gov/georgia-state-board-residential-general-contractors", confidence: "medium" },
+          { claim: "A neighbour already having a contractor out is a useful corroborating signal.", detail: "Multiple claims in one ZIP strengthen the storm narrative. Worth flagging to the inspector, not to the homeowner as a promise.", sourceUrl: "https://www.ncdc.noaa.gov/stormevents/", confidence: "medium" }
+        ],
+        unresolved: [
+          "Whether the specific date the caller gave shows a verified hail or wind event at this location.",
+          "Whether the missing shingles are storm related or end of life. Only the inspection settles that.",
+          "The carrier and policy terms, which the caller has not shared."
+        ],
+        recommendation: "Treat as time sensitive because of the active drip. Send the inspector with the storm record for the date already pulled, and keep every insurance statement descriptive rather than predictive."
+      };
+    }
+    return {
+      weatherAssessment: null,
+      regulatoryNotes: "A concentrated equity vest is a tax event before it is an investment question. Withholding on supplemental wages is frequently short of the actual liability at higher brackets, which is where the surprise usually lands.",
+      findings: [
+        { claim: "Retirement plan contribution limits change annually and are published by the IRS.", detail: "Worth confirming current year figures before any conversation about deferral capacity.", sourceUrl: "https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-401k-and-profit-sharing-plan-contribution-limits", confidence: "high" },
+        { claim: "Supplemental wage withholding may not match actual liability.", detail: "IRS guidance on supplemental wages explains the flat withholding rate, which commonly under-withholds for high earners on a large vest.", sourceUrl: "https://www.irs.gov/publications/p15", confidence: "high" },
+        { claim: "Early retirement modelling depends on claiming age assumptions.", detail: "Social Security reduction and delayed credit figures are published and should anchor any step-back scenario.", sourceUrl: "https://www.ssa.gov/benefits/retirement/planner/agereduction.html", confidence: "high" },
+        { claim: "Prospects can and do verify the firm before the first meeting.", detail: "Adviser registration and disclosure history are public. Assume it has been checked.", sourceUrl: "https://adviserinfo.sec.gov/", confidence: "medium" }
+      ],
+      unresolved: [
+        "The equity type, whether RSU, ISO or NSO, which changes the tax treatment entirely.",
+        "Whether there is a lockup or trading window.",
+        "Current household income and filing status."
+      ],
+      recommendation: "Book the advisor conversation inside the next two weeks given the ten week vest window. Lead with the tax question the caller raised rather than with portfolio construction."
+    };
+  }
+
+  function buildDraft() {
+    const person = cleanName(slots.name);
+    const fn = firstName(slots.name);
+    const phone = extractPhone(slots.contact);
+    const email = extractEmail(slots.contact);
+    const urgent = /yes|yeah|drip|leak|coming in|water|bucket/i.test(or(slots.activeLeak, ""));
+
+    if (presetKey === "roofing") {
+      return {
+        customerPacket: {
+          title: "What to expect from your roof inspection",
+          markdown:
+"Hi " + fn + ", thanks for calling. Here is what happens next and what you can do in the meantime.\n\n" +
+"## Right now\n" +
+(urgent
+  ? "- Keep a container under the drip and empty it before it overflows\n- Move anything valuable out from under the affected ceiling\n- Do not go up on the roof. Wet decking after wind damage is where people get hurt\n- If the ceiling starts to bulge or sag, stay out of that room and call us\n"
+  : "- Keep an eye on the stain and photograph it every few days so there is a record of whether it is spreading\n- Do not go up on the roof yourself\n") +
+"\n## Before we arrive\n" +
+"Photos help more than anything else. If you can safely take them from the ground:\n\n" +
+"- The affected ceiling, wide shot and close up\n- The exterior slope where you noticed missing shingles\n- Anything in the yard, gutters or on the ground such as shingle granules or debris\n- A wide shot of the whole house from the street\n\n" +
+"Date stamped photos are useful later. Your phone does that automatically.\n\n" +
+"## What the inspection covers\n" +
+"- The full roof surface, including slopes you cannot see from the ground\n- Flashing, valleys and penetrations, which is where leaks usually start\n- Attic and decking where accessible, to trace where the water is actually entering\n- Gutters and drainage\n- Photo documentation of everything found, which you keep regardless of what you decide\n\n" +
+"## About insurance\n" +
+"You asked whether this would be covered. We cannot answer that and neither can anyone who is not your carrier. What we can do is document what is actually up there so you have facts to work with.\n\n" +
+"If you do decide to contact your insurer, these are reasonable questions to ask them:\n\n" +
+"- What is my deductible for wind and hail specifically\n- Is there a time limit for reporting storm damage on my policy\n- Does an inspection report from a contractor help or hinder the process\n- What is the difference between an inspection and a claim on my record\n\n" +
+"We are not adjusters and we do not file claims on your behalf.\n\n" +
+"## Storm damage versus normal wear\n" +
+"These look similar from the ground and different up close. Storm damage tends to show as bruising or granule loss in a scattered pattern, creased or torn shingles, and damage to soft metal like vents and gutters. Age related wear shows up as uniform granule loss, curling and brittleness across the whole roof. The inspection tells you which one you have.\n\n" +
+"## Your details as we have them\n" +
+"- Property: " + or(slots.address, "not captured on the call, please confirm") + "\n" +
+"- Reported: " + or(slots.issue, "not captured") + "\n" +
+"- Timeline given: " + or(slots.incidentDate, "not captured") + "\n" +
+"- Callback: " + (phone || "not captured, please confirm") + "\n" +
+"- Email: " + (email || "not captured, please confirm") + "\n\n" +
+"If anything above is wrong, reply and we will correct it before the visit."
+        },
+        internalBrief: {
+          title: "Inspector brief: " + (person || "unnamed caller"),
+          markdown:
+"## Snapshot\n" +
+"- Caller: " + (person || "not given") + "\n" +
+"- Property: " + or(slots.address, "NOT CAPTURED, get this before dispatch") + "\n" +
+"- Reported: " + or(slots.issue, "not captured") + "\n" +
+"- Timeline: " + or(slots.incidentDate, "not given") + "\n" +
+"- Active water: " + (urgent ? "Yes. Treat as same day." : or(slots.activeLeak, "not stated")) + "\n" +
+"- Insurance: " + or(slots.insurance, "not stated") + "\n" +
+"- Contact: " + (phone || "no number") + " / " + (email || "no email") + "\n\n" +
+"## Read on the call\n" +
+"The worry here is process, not price. They raised coverage and the risk of being dropped before anyone mentioned cost. Walking in with a quote first will land badly.\n\n" +
+"## Verify before the visit\n" +
+"- Pull the NOAA storm record for the county and date given: https://www.ncdc.noaa.gov/stormevents/\n" +
+"- Cross check the NWS local archive for warnings issued: https://www.weather.gov/\n" +
+"- Confirm county permit requirements for a full replacement at this address\n\n" +
+"## Ask on site\n" +
+"- Any previous repairs, and do they have paperwork\n" +
+"- Age of the roof and whether they are the original owners\n" +
+"- Which neighbours have had contractors out, and did anything get replaced\n" +
+"- Has anyone else already been on this roof\n\n" +
+"## Boundaries\n" +
+"Do not estimate claim viability. Do not describe yourself as working with their carrier. Document, photograph, hand over the report.\n\n" +
+"## Open\n" +
+"Whether the missing shingles are storm related or end of life is the whole question and only the inspection settles it. If it reads marginal, flag for senior review before any scope conversation."
+        },
+        followUpEmail: {
+          subject: "Your roof inspection with Summit Roofing" + (has(slots.address) ? " at " + or(slots.address, "") : ""),
+          body:
+"Hi " + fn + ",\n\n" +
+"Thanks for calling. I have attached a short guide covering what the inspection looks at, what to photograph beforehand, and some questions worth putting to your insurer.\n\n" +
+(urgent
+  ? "Because there is water coming in now, a coordinator will call you within the hour to get you scheduled. Please keep something under the drip and stay off the roof until we have looked at it.\n\n"
+  : "A coordinator will be in touch shortly to find a time that works.\n\n") +
+"On your question about coverage, I honestly cannot tell you what your carrier will decide, and I would be wary of anyone who says they can. What we can do is document exactly what is up there so you are deciding with facts rather than guesses.\n\n" +
+"If anything in the guide does not match what you told us, just reply and we will fix it.\n\n" +
+"Summit Roofing"
+        },
+        followUpSms: {
+          body: "Hi " + fn + ", Summit Roofing here. Thanks for the call. " + (urgent ? "A coordinator will ring you within the hour to book the inspection. Keep a bucket under the drip and please stay off the roof." : "We will be in touch shortly to book your inspection.") + " We have emailed a short guide on what to expect."
+        },
+        crmUpdates: [
+          { field: "Pipeline stage", proposedValue: urgent ? "Urgent inspection, awaiting dispatch" : "Inspection to be scheduled", rationale: urgent ? "Active water intrusion reported on the call." : "No active leak, standard scheduling." },
+          { field: "Storm damage suspected", proposedValue: has(slots.incidentDate) ? "Unconfirmed, pending storm record check" : "Unknown, no date given", rationale: "Caller reported a storm but nothing has been verified against NOAA yet." },
+          { field: "Lead source", proposedValue: "Inbound call", rationale: "Captured from the call channel." },
+          { field: "Insurance status", proposedValue: or(slots.insurance, "Not stated"), rationale: "Taken from the caller's own words, not interpreted." },
+          { field: "Property address", proposedValue: or(slots.address, "MISSING"), rationale: has(slots.address) ? "Stated on the call." : "Never captured. Blocking for dispatch." }
+        ],
+        tasks: [
+          { owner: "Coordinator", task: "Call " + (person || "the caller") + " to schedule the inspection", due: urgent ? "Within the hour" : "Today" },
+          { owner: "Inspector", task: "Pull NOAA storm record for the property county and date before the visit", due: "Before dispatch" },
+          { owner: "CSR", task: "Confirm any details marked missing above", due: "Before the packet is sent" },
+          { owner: "Senior estimator", task: "Review if the inspection comes back marginal on storm versus wear", due: "After inspection" }
+        ],
+        questionsForHuman: [
+          "Should the homeowner packet go out before the inspection or after, given they are nervous about the insurance process?",
+          has(slots.address) ? "Confirm the county so the permit note in the brief is right." : "The property address was never captured. Nothing can be dispatched until someone gets it.",
+          "The caller mentioned a neighbour already had a contractor out. Worth knowing who, but that is a judgement call about how to ask without sounding competitive."
+        ]
+      };
+    }
+
+    return {
+      customerPacket: {
+        title: "Recap of your call with Harbor Ridge",
+        markdown:
+"Hi " + fn + ", thanks for the call. Here is what we heard, so you can correct anything we got wrong before we speak properly.\n\n" +
+"## What you told us\n" +
+"- What prompted the call: " + or(slots.issue, "not captured") + "\n" +
+"- Your situation: " + or(slots.situation, "not captured") + "\n" +
+"- What you want help with: " + or(slots.goal, "not captured") + "\n" +
+"- Timeline: " + or(slots.incidentDate, "not captured") + "\n" +
+"- Location: " + or(slots.address, "not captured") + "\n\n" +
+"## What happens next\n" +
+"An advisor reviews this and reaches out to set up a longer conversation. That first meeting is about understanding the full picture, not about recommending anything.\n\n" +
+"## Useful to have ready\n" +
+"Nothing here is required, and none of it needs to be perfect:\n\n" +
+"- Your equity paperwork, particularly the grant type and vesting schedule\n- Last year's tax return\n- A rough sense of household income and monthly commitments\n- Current retirement account statements\n- Any trading window or lockup restrictions your employer has told you about\n\n" +
+"The grant type matters more than most people expect. RSUs, ISOs and NSOs are taxed quite differently, and the right move depends on which you hold.\n\n" +
+"## What we are not doing\n" +
+"Nothing in this recap is investment, tax or legal advice, and no recommendation has been made. It is a summary of a phone call so that the advisor arrives prepared.\n\n" +
+"## Your details as we have them\n" +
+"- Callback: " + (phone || "not captured, please confirm") + "\n" +
+"- Email: " + (email || "not captured, please confirm") + "\n\n" +
+"Reply if any of this is wrong."
+      },
+      internalBrief: {
+        title: "Advisor brief: " + (person || "unnamed prospect"),
+        markdown:
+"## Snapshot\n" +
+"- Prospect: " + (person || "not given") + "\n" +
+"- Trigger: " + or(slots.issue, "not captured") + "\n" +
+"- Situation: " + or(slots.situation, "not captured") + "\n" +
+"- Stated goal: " + or(slots.goal, "not captured") + "\n" +
+"- Timeline: " + or(slots.incidentDate, "not given") + "\n" +
+"- Location: " + or(slots.address, "not given") + "\n" +
+"- Contact: " + (phone || "no number") + " / " + (email || "no email") + "\n\n" +
+"## Read on the call\n" +
+"They led with tax exposure, not returns. Opening with portfolio construction would miss where their head actually is. The phrase used was closer to not getting destroyed than to growth.\n\n" +
+"## Verify before the meeting\n" +
+"- Current year contribution limits: https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-401k-and-profit-sharing-plan-contribution-limits\n" +
+"- Supplemental wage withholding mechanics: https://www.irs.gov/publications/p15\n" +
+"- Claiming age assumptions for any step-back modelling: https://www.ssa.gov/benefits/retirement/planner/agereduction.html\n\n" +
+"## Ask in the meeting\n" +
+"- Grant type, because RSU versus ISO versus NSO changes everything downstream\n" +
+"- Lockup or trading window constraints\n" +
+"- Household income and filing status\n" +
+"- What stepping back actually means to them, full stop or reduced hours\n" +
+"- Existing advisors, accountant or attorney already involved\n\n" +
+"## Boundaries\n" +
+"No recommendation, no fee quote, no projected return in any written follow up. Tax questions go to a CPA or an in-house tax resource, not answered off the cuff.\n\n" +
+"## Open\n" +
+"The ten week window is tight if any pre-vest planning is on the table. Worth deciding internally whether that is realistic before setting expectations."
+      },
+      followUpEmail: {
+        subject: "Following up on your call with Harbor Ridge Advisors",
+        body:
+"Hi " + fn + ",\n\n" +
+"Thanks for taking the time on the phone. I have put together a short recap of what you told us so you can correct anything before we speak properly.\n\n" +
+"An advisor will reach out shortly to set up a longer conversation. Given the timeline you mentioned, we will try to get that in the diary in the next week or two.\n\n" +
+"One thing worth digging out beforehand is your equity paperwork, specifically the grant type and vesting schedule. It shapes most of what follows and it is the question we will ask first.\n\n" +
+"To be clear, nothing in the recap is advice and no recommendation has been made. It is just a summary so the advisor arrives prepared.\n\n" +
+"Harbor Ridge Advisors"
+      },
+      followUpSms: {
+        body: "Hi " + fn + ", Harbor Ridge here. Thanks for the call. We have emailed a short recap. An advisor will reach out this week to set up a longer conversation."
+      },
+      crmUpdates: [
+        { field: "Pipeline stage", proposedValue: "Discovery complete, advisor meeting to be booked", rationale: "Intake call finished, no advisor contact yet." },
+        { field: "Lead trigger", proposedValue: or(slots.issue, "Not stated"), rationale: "Taken from the prospect's own words." },
+        { field: "Timeline", proposedValue: or(slots.incidentDate, "Not stated"), rationale: "Drives urgency of scheduling." },
+        { field: "Primary concern", proposedValue: or(slots.goal, "Not stated"), rationale: "Should lead the first advisor conversation." },
+        { field: "Lead source", proposedValue: "Inbound call", rationale: "Captured from the call channel." }
+      ],
+      tasks: [
+        { owner: "Advisor", task: "Review brief and call " + (person || "the prospect"), due: "Within 2 business days" },
+        { owner: "Client service", task: "Send recap packet once approved", due: "Today" },
+        { owner: "Advisor", task: "Confirm equity grant type before building any scenario", due: "At first meeting" },
+        { owner: "Compliance", task: "Spot check outbound copy for advice language", due: "Before send" }
+      ],
+      questionsForHuman: [
+        "Is the ten week window realistic for pre-vest planning, or should expectations be reset on the first call?",
+        "Does this prospect meet the minimum for the full planning engagement, or is it a different service tier?",
+        "Should a tax specialist join the first meeting given tax is the stated concern?"
+      ]
+    };
+  }
+
+  const DEMO_SOURCES = {
+    roofing: [
+      { url: "https://www.ncdc.noaa.gov/stormevents/", title: "NOAA Storm Events Database" },
+      { url: "https://www.weather.gov/", title: "National Weather Service" },
+      { url: "https://sos.ga.gov/georgia-state-board-residential-general-contractors", title: "Georgia State Board of Residential and General Contractors" }
+    ],
+    wealth: [
+      { url: "https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-401k-and-profit-sharing-plan-contribution-limits", title: "IRS retirement plan contribution limits" },
+      { url: "https://www.irs.gov/publications/p15", title: "IRS Publication 15, supplemental wages" },
+      { url: "https://www.ssa.gov/benefits/retirement/planner/agereduction.html", title: "SSA claiming age reduction" },
+      { url: "https://adviserinfo.sec.gov/", title: "SEC Investment Adviser Public Disclosure" }
+    ]
+  };
+
+  function slotsFromTranscript() {
+    if (Object.keys(slots).length) return;
+    const preset = PRESETS[presetKey];
+    const answers = spokenTurns().filter((t) => t.who === "you").map((t) => t.text);
+    preset.script.forEach((q, i) => { if (answers[i]) slots[q.slot] = answers[i]; });
+  }
+
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  /* ---------- rendering ---------- */
+
+  function renderSteps() {
+    els.steps.innerHTML = "";
+    for (const def of STEP_DEFS) {
+      const s = stepState[def.key] || { state: "pending" };
+      const row = document.createElement("div");
+      row.className = "step";
+      row.dataset.state = s.state;
+      const glyph = s.state === "done" ? "\u2713" : s.state === "failed" ? "\u2715" : s.state === "running" ? "\u25CF" : "";
+      let meta = "";
+      if (s.state === "running") meta = ((Date.now() - s.startedAt) / 1000).toFixed(0) + "s";
+      else if (s.state === "done") meta = s.seconds + "s" + (s.sources ? " \u00B7 " + s.sources + " sources" : "");
+      else if (s.state === "failed") meta = "failed";
+      row.innerHTML =
+        '<div class="marker">' + glyph + "</div>" +
+        '<div><div class="step-name">' + esc(def.name) + '</div><div class="step-desc">' + esc(def.desc) + "</div></div>" +
+        '<div class="step-meta">' + esc(meta) + "</div>";
+      els.steps.appendChild(row);
+    }
+  }
+
+  function approvalRow(id) {
+    const st = approvals[id] || "pending";
+    const tag = st === "approved" ? '<span class="tag approved">Approved for a human to send</span>'
+      : st === "changes" ? '<span class="tag changes">Changes requested</span>' : "";
+    return '<div class="approve"><button class="chip" data-approve="' + id + '">Approve</button>' +
+      '<button class="chip" data-changes="' + id + '">Request changes</button>' + tag + "</div>";
+  }
+
+  function card(o) {
+    const el = document.createElement("div");
+    el.className = "card";
+    el.innerHTML =
+      '<div class="card-head"><div><p class="card-title">' + esc(o.title) + "</p>" +
+      (o.sub ? '<p class="card-sub">' + esc(o.sub) + "</p>" : "") + "</div>" +
+      (o.tag ? '<span class="tag ' + o.tagClass + '">' + esc(o.tag) + "</span>" : "") + "</div>" +
+      o.body + (o.approveId ? approvalRow(o.approveId) : "");
+    return el;
+  }
+
+  const listOr = (arr) => (Array.isArray(arr) && arr.length)
+    ? "<ul>" + arr.map((x) => "<li>" + esc(typeof x === "string" ? x : JSON.stringify(x)) + "</li>").join("") + "</ul>"
+    : "<p>None.</p>";
+
+  function renderResults() {
+    els.results.innerHTML = "";
+    const intake = mission.intake || {};
+    const research = mission.research || {};
+    const draft = mission.draft || {};
+
+    if (mission.intake) {
+      const c = intake.contact || {};
+      const rows = [["Name", c.name], ["Address", c.address], ["Phone", c.phone], ["Email", c.email],
+        ["Classification", intake.classification], ["Urgency", intake.urgencyLevel],
+        ["Timeline", intake.incidentDate], ["Confidence", intake.confidence]].filter((r) => r[1]);
+      els.results.appendChild(card({
+        title: "What the agent heard", tag: "Internal", tagClass: "internal",
+        body: '<div class="doc"><p>' + esc(intake.callSummary || "") + "</p></div>" +
+          '<dl class="kv" style="margin-top:14px">' + rows.map((r) => "<dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1]) + "</dd>").join("") + "</dl>" +
+          (intake.missingInfo && intake.missingInfo.length ? '<div class="doc" style="margin-top:14px"><h4>Still needs asking</h4>' + listOr(intake.missingInfo) + "</div>" : "") +
+          (intake.objections && intake.objections.length ? '<div class="doc"><h4>Concerns raised</h4>' + listOr(intake.objections) + "</div>" : "")
+      }));
+    }
+
+    if (mission.research) {
+      const f = Array.isArray(research.findings) ? research.findings : [];
+      els.results.appendChild(card({
+        title: "Research",
+        sub: els.mode.value === "demo" ? "Illustrative findings. Source links are real, the conclusions are not verified." : "Verified against live sources",
+        tag: "Internal", tagClass: "internal",
+        body: '<div class="doc">' +
+          (research.weatherAssessment ? "<h4>Conditions</h4><p>" + esc(research.weatherAssessment) + "</p>" : "") +
+          (research.regulatoryNotes ? "<h4>Rules and context</h4><p>" + esc(research.regulatoryNotes) + "</p>" : "") +
+          "<h4>Findings</h4>" +
+          (f.length ? "<ul>" + f.map((x) => "<li>" + esc(x.claim || "") + (x.detail ? " " + esc(x.detail) : "") +
+            (x.confidence ? " <em>(" + esc(x.confidence) + " confidence)</em>" : "") +
+            (x.sourceUrl ? '<br><a href="' + esc(x.sourceUrl) + '" target="_blank" rel="noopener">' + esc(x.sourceUrl) + "</a>" : "") + "</li>").join("") + "</ul>" : "<p>Nothing confirmed.</p>") +
+          (research.unresolved && research.unresolved.length ? "<h4>Could not confirm</h4>" + listOr(research.unresolved) : "") +
+          (research.recommendation ? "<h4>Recommendation</h4><p>" + esc(research.recommendation) + "</p>" : "") + "</div>"
+      }));
+    }
+
+    if (draft.customerPacket) els.results.appendChild(card({
+      title: draft.customerPacket.title, sub: "Goes to the customer once approved",
+      tag: "External", tagClass: "external", approveId: "packet",
+      body: '<div class="doc">' + markdown(draft.customerPacket.markdown) + "</div>"
+    }));
+    if (draft.internalBrief) els.results.appendChild(card({
+      title: draft.internalBrief.title, sub: "For the rep before they walk in",
+      tag: "Internal", tagClass: "internal", approveId: "brief",
+      body: '<div class="doc">' + markdown(draft.internalBrief.markdown) + "</div>"
+    }));
+    if (draft.followUpEmail) els.results.appendChild(card({
+      title: "Follow-up email", sub: "Drafted, not sent", tag: "External", tagClass: "external", approveId: "email",
+      body: '<dl class="kv"><dt>Subject</dt><dd>' + esc(draft.followUpEmail.subject) + "</dd></dl>" +
+        '<div class="doc" style="margin-top:12px">' + markdown(draft.followUpEmail.body) + "</div>"
+    }));
+    if (draft.followUpSms) els.results.appendChild(card({
+      title: "Follow-up SMS", sub: "Drafted, not sent", tag: "External", tagClass: "external", approveId: "sms",
+      body: '<div class="doc"><p>' + esc(draft.followUpSms.body) + "</p></div>"
+    }));
+    if (draft.crmUpdates && draft.crmUpdates.length) els.results.appendChild(card({
+      title: "Proposed CRM changes", sub: "Nothing has been written", tag: "Internal", tagClass: "internal", approveId: "crm",
+      body: '<div class="doc"><ul>' + draft.crmUpdates.map((u) => "<li><strong>" + esc(u.field) + "</strong> \u2192 " + esc(u.proposedValue) +
+        (u.rationale ? "<br><em>" + esc(u.rationale) + "</em>" : "") + "</li>").join("") + "</ul></div>"
+    }));
+    if (draft.tasks && draft.tasks.length) els.results.appendChild(card({
+      title: "Suggested tasks", tag: "Internal", tagClass: "internal", approveId: "tasks",
+      body: '<div class="doc"><ul>' + draft.tasks.map((t) => "<li><strong>" + esc(t.owner) + "</strong> " + esc(t.task) +
+        (t.due ? " \u00B7 " + esc(t.due) : "") + "</li>").join("") + "</ul></div>"
+    }));
+    if (draft.questionsForHuman && draft.questionsForHuman.length) els.results.appendChild(card({
+      title: "Needs a human decision", sub: "The agent stopped rather than guessing",
+      body: '<div class="doc">' + listOr(draft.questionsForHuman) + "</div>"
+    }));
+
+    els.resultsWrap.hidden = !els.results.children.length;
+    renderAudit();
+  }
+
+  function renderAudit() {
+    if (!mission.log.length) { els.auditWrap.hidden = true; return; }
+    els.audit.innerHTML =
+      '<div class="doc"><h4>Steps</h4><ul>' +
+      mission.log.map((l) => "<li>" + esc(l.step) + " \u00B7 " + esc(l.seconds) + "s \u00B7 " + esc(l.at) + " \u00B7 " + (l.ok ? "completed" : "failed") + "</li>").join("") +
+      "</ul><h4>Sources" + (els.mode.value === "demo" ? " that would be checked" : " opened") + "</h4></div>" +
+      (mission.sources.length
+        ? mission.sources.map((s) => '<a class="source" href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.title || s.url) + (s.title ? "<span>" + esc(s.url) + "</span>" : "") + "</a>").join("")
+        : '<div class="doc"><p>None recorded.</p></div>');
+    els.auditWrap.hidden = false;
+  }
+
+  els.results.addEventListener("click", (e) => {
+    const a = e.target.getAttribute && e.target.getAttribute("data-approve");
+    const c = e.target.getAttribute && e.target.getAttribute("data-changes");
+    if (a) { approvals[a] = approvals[a] === "approved" ? "pending" : "approved"; renderResults(); }
+    if (c) { approvals[c] = approvals[c] === "changes" ? "pending" : "changes"; renderResults(); }
+  });
+
+  /* ---------- mission ---------- */
+
+  async function callStepLive(step, extra) {
+    const res = await fetch(els.missionUrl.value.trim(), {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(Object.assign({ step, sessionId: sessionId || "console", missionBrief: els.brief.value.trim(), transcript: flatten() }, extra || {}))
+    });
+    const raw = await res.text();
+    let payload;
+    try { payload = JSON.parse(raw); }
+    catch (err) { throw new Error("n8n replied with " + res.status + " and this, which is not JSON: " + (raw.slice(0, 180) || "an empty body")); }
+    if (payload.ok === false) throw new Error((payload.error && payload.error.message) || "The " + step + " step did not return usable JSON.");
+    return payload;
+  }
+
+  async function callStepDemo(step) {
+    if (step === "read") { await wait(1600); slotsFromTranscript(); return { data: buildIntake(), sources: [] }; }
+    if (step === "research") { await wait(4200); return { data: buildResearch(), sources: DEMO_SOURCES[presetKey] }; }
+    await wait(2600);
+    return { data: buildDraft(), sources: [] };
+  }
+
+  async function runMission() {
+    if (missionRunning) return;
+    missionRunning = true;
+    clearError();
+    approvals = {};
+    mission = { intake: null, research: null, draft: null, sources: [], log: [] };
+    stepState = {};
+    els.results.innerHTML = "";
+    els.resultsWrap.hidden = true;
+    els.auditWrap.hidden = true;
+    els.runMission.disabled = true;
+    renderSteps();
+    tickTimer = setInterval(renderSteps, 400);
+
+    const demo = els.mode.value === "demo";
+    try {
+      for (const def of STEP_DEFS) {
+        stepState[def.key] = { state: "running", startedAt: Date.now() };
+        renderSteps();
+        const extra = def.key === "research" ? { intake: mission.intake }
+          : def.key === "draft" ? { intake: mission.intake, research: mission.research } : {};
+        let payload;
+        try { payload = demo ? await callStepDemo(def.key) : await callStepLive(def.key, extra); }
+        catch (err) { stepState[def.key] = { state: "failed" }; renderSteps(); throw err; }
+
+        const seconds = ((Date.now() - stepState[def.key].startedAt) / 1000).toFixed(0);
+        const srcs = Array.isArray(payload.sources) ? payload.sources : [];
+        for (const s of srcs) if (!mission.sources.some((x) => x.url === s.url)) mission.sources.push(s);
+        stepState[def.key] = { state: "done", seconds, sources: srcs.length || 0 };
+        mission.log.push({ step: def.name, seconds, at: new Date().toLocaleTimeString(), ok: true });
+
+        if (def.key === "read") mission.intake = payload.data;
+        if (def.key === "research") mission.research = payload.data;
+        if (def.key === "draft") mission.draft = payload.data;
+        renderSteps();
+        renderResults();
+      }
+    } catch (err) {
+      showError(err.message);
+      mission.log.push({ step: "Mission halted", seconds: "0", at: new Date().toLocaleTimeString(), ok: false });
+      renderResults();
+    } finally {
+      clearInterval(tickTimer);
+      missionRunning = false;
+      renderSteps();
+      renderTranscript();
+    }
+  }
+
+  /* ---------- live call ---------- */
 
   function meter() {
-    const read = (analyser) => {
-      if (!analyser) return 0;
-      const buf = new Uint8Array(analyser.fftSize);
-      analyser.getByteTimeDomainData(buf);
+    const read = (an) => {
+      if (!an) return 0;
+      const buf = new Uint8Array(an.fftSize);
+      an.getByteTimeDomainData(buf);
       let sum = 0;
-      for (let i = 0; i < buf.length; i++) {
-        const v = (buf[i] - 128) / 128;
-        sum += v * v;
-      }
+      for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
       return Math.min(1, Math.sqrt(sum / buf.length) * 6);
     };
     els.youArc.style.strokeDashoffset = String(LEN_IN * (1 - read(youAnalyser)));
@@ -400,62 +1158,32 @@
   }
 
   async function getSessionKey() {
-    const url = els.webhook.value.trim();
+    const url = els.sessionUrl.value.trim();
     if (!url) throw new Error("Add the session webhook URL under Connection first.");
-
     sessionId = "call-" + Math.random().toString(36).slice(2, 8) + "-" + Date.now().toString(36);
-
     let res;
     try {
-      res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, voice: els.voice.value })
-      });
-    } catch (err) {
-      throw new Error("Could not reach n8n. Check the webhook URL and that the workflow is active.");
-    }
-
+      res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, voice: els.voice.value, instructions: els.persona.value.trim() }) });
+    } catch (err) { throw new Error("Could not reach n8n. Check the webhook URL and that the workflow is active."); }
     const raw = await res.text();
-
-    if (!res.ok && !raw) throw new Error("n8n returned " + res.status + " with an empty body. Open the execution log to see which node failed.");
-
     let payload;
     try { payload = JSON.parse(raw); }
-    catch (err) {
-      throw new Error("n8n replied with " + res.status + " and this, which is not JSON: " + (raw.slice(0, 180) || "an empty body"));
-    }
-
+    catch (err) { throw new Error("n8n replied with " + res.status + " and this, which is not JSON: " + (raw.slice(0, 180) || "an empty body")); }
     const status = payload.statusCode || 200;
     const body = payload.body || payload;
-
-    if (status >= 400) {
-      const detail = body && body.error && body.error.message ? body.error.message : "status " + status;
-      throw new Error("OpenAI refused the session: " + detail);
-    }
-
+    if (status >= 400) throw new Error("OpenAI refused the session: " + ((body.error && body.error.message) || "status " + status));
     const key = body.value || (body.client_secret && body.client_secret.value);
     if (!key) throw new Error("No session key came back from n8n. Check the Mint Realtime Session node output.");
     return key;
   }
 
-  async function startCall() {
-    clearError();
-    setState("connecting");
-
+  async function startLiveCall() {
     let key;
+    try { key = await getSessionKey(); }
+    catch (err) { setState("error"); showError(err.message); return; }
     try {
-      key = await getSessionKey();
-    } catch (err) {
-      setState("error");
-      showError(err.message);
-      return;
-    }
-
-    try {
-      micStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-      });
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
     } catch (err) {
       setState("error");
       showError(err && err.name === "NotAllowedError"
@@ -463,13 +1191,10 @@
         : "No microphone available. Check that one is connected and that this page is on https or localhost.");
       return;
     }
-
     try {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === "suspended") await audioCtx.resume();
-
       pc = new RTCPeerConnection();
-
       audioEl = document.createElement("audio");
       audioEl.autoplay = true;
       pc.ontrack = (e) => {
@@ -480,43 +1205,26 @@
           agentAnalyser.fftSize = 1024;
           agentAnalyser.smoothingTimeConstant = 0.7;
           src.connect(agentAnalyser);
-        } catch (err) { /* meter is cosmetic */ }
+        } catch (err) {}
       };
-
       const micSrc = audioCtx.createMediaStreamSource(micStream);
       youAnalyser = audioCtx.createAnalyser();
       youAnalyser.fftSize = 1024;
       youAnalyser.smoothingTimeConstant = 0.7;
       micSrc.connect(youAnalyser);
-
       pc.addTrack(micStream.getTracks()[0], micStream);
-
       dc = pc.createDataChannel("oai-events");
       dc.addEventListener("open", onChannelOpen);
       dc.addEventListener("message", onServerEvent);
-
       pc.onconnectionstatechange = () => {
-        if (pc && ["failed", "disconnected", "closed"].indexOf(pc.connectionState) !== -1 && state !== "idle") {
-          endCall("The connection dropped.");
-        }
+        if (pc && ["failed", "disconnected", "closed"].indexOf(pc.connectionState) !== -1 && state !== "idle") endCall("The connection dropped.");
       };
-
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-
-      const sdpRes = await fetch(CALLS_URL, {
-        method: "POST",
-        body: offer.sdp,
-        headers: { Authorization: "Bearer " + key, "Content-Type": "application/sdp" }
-      });
-
+      const sdpRes = await fetch(CALLS_URL, { method: "POST", body: offer.sdp, headers: { Authorization: "Bearer " + key, "Content-Type": "application/sdp" } });
       const sdpText = await sdpRes.text();
-      if (!sdpRes.ok) {
-        throw new Error("OpenAI rejected the call handshake (" + sdpRes.status + "). " + sdpText.slice(0, 200));
-      }
-
+      if (!sdpRes.ok) throw new Error("OpenAI rejected the call handshake (" + sdpRes.status + "). " + sdpText.slice(0, 200));
       await pc.setRemoteDescription({ type: "answer", sdp: sdpText });
-
       setState("live");
       meter();
       note("Call connected.");
@@ -528,80 +1236,78 @@
   }
 
   function onChannelOpen() {
-    send({
-      type: "session.update",
-      session: {
-        type: "realtime",
-        audio: {
-          input: {
-            transcription: { model: "gpt-4o-transcribe" },
-            turn_detection: { type: "semantic_vad", interrupt_response: true }
-          }
-        }
-      }
-    });
-    send({
-      type: "response.create",
-      response: { instructions: "Greet the caller in one short friendly sentence and ask how you can help." }
-    });
+    send({ type: "session.update", session: { type: "realtime", audio: { input: { transcription: { model: "gpt-4o-transcribe" }, turn_detection: { type: "semantic_vad", interrupt_response: true } } } } });
+    send({ type: "response.create", response: { instructions: "Greet the caller in one short sentence and ask who you are speaking with." } });
   }
-
-  function send(obj) {
-    if (dc && dc.readyState === "open") dc.send(JSON.stringify(obj));
-  }
+  const send = (o) => { if (dc && dc.readyState === "open") dc.send(JSON.stringify(o)); };
 
   function onServerEvent(e) {
     let ev;
     try { ev = JSON.parse(e.data); } catch (err) { return; }
     const t = ev.type || "";
-
-    if (t === "error") {
-      showError(ev.error && ev.error.message ? ev.error.message : "The session reported an error.");
-      return;
-    }
-
+    if (t === "error") { showError((ev.error && ev.error.message) || "The session reported an error."); return; }
     if (t === "input_audio_buffer.speech_started") { if (state !== "hearing") setState("hearing"); return; }
     if (t === "input_audio_buffer.speech_stopped") { if (state === "hearing") setState("live"); return; }
-
     if (t === "conversation.item.input_audio_transcription.delta") { partial("you", ev.delta || ""); return; }
     if (t === "conversation.item.input_audio_transcription.completed") { finalize("you", ev.transcript || ""); return; }
-    if (t === "conversation.item.input_audio_transcription.failed") { finalize("you", ""); note("That last bit could not be transcribed."); return; }
-
+    if (t === "conversation.item.input_audio_transcription.failed") { finalize("you", ""); return; }
     if (t.indexOf("response.") === 0 && /audio_transcript\.delta$/.test(t)) { partial("agent", ev.delta || ""); return; }
     if (t.indexOf("response.") === 0 && /audio_transcript\.done$/.test(t)) { finalize("agent", ev.transcript || ""); return; }
-
     if (t === "response.created") { setState("speaking"); return; }
     if (t === "response.done") { if (state !== "idle") setState("live"); return; }
   }
 
   function teardown() {
     cancelAnimationFrame(rafId);
+    demoActive = false;
+    stopListening();
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
     if (dc) { try { dc.close(); } catch (e) {} dc = null; }
     if (pc) { try { pc.close(); } catch (e) {} pc = null; }
     if (micStream) { micStream.getTracks().forEach((t) => t.stop()); micStream = null; }
     if (audioEl) { audioEl.srcObject = null; audioEl = null; }
     if (audioCtx) { try { audioCtx.close(); } catch (e) {} audioCtx = null; }
-    youAnalyser = null;
-    agentAnalyser = null;
+    youAnalyser = null; agentAnalyser = null;
     els.youArc.style.strokeDashoffset = LEN_IN;
     els.agentArc.style.strokeDashoffset = LEN_OUT;
     els.mute.setAttribute("aria-pressed", "false");
     els.mute.textContent = "Mute";
-    live = { you: null, agent: null };
+    livePartial = { you: null, agent: null };
     turns.forEach((t) => (t.live = false));
-    render();
+    renderTranscript();
   }
 
   function endCall(reason) {
+    const had = spokenTurns().length >= 2;
     teardown();
     setState("idle");
     note(reason || "Call ended.");
+    if (had && els.autoRun.getAttribute("aria-pressed") === "true") runMission();
+  }
+
+  async function startCall() {
+    clearError();
+    slots = {};
+    if (els.mode.value === "demo") {
+      if (!SR) {
+        showError("This browser has no speech recognition, so the spoken demo will not run. Chrome or Edge does. Use Load sample call instead and the mission works exactly the same.");
+        return;
+      }
+      setState("connecting");
+      await wait(400);
+      runDemoCall();
+      return;
+    }
+    setState("connecting");
+    startLiveCall();
   }
 
   els.call.addEventListener("click", () => {
     if (state === "idle" || state === "error") startCall();
     else endCall();
   });
+
+  els.skip.addEventListener("click", () => { stopListening(); });
 
   els.mute.addEventListener("click", () => {
     if (!micStream) return;
@@ -611,30 +1317,54 @@
     els.mute.textContent = track.enabled ? "Mute" : "Unmute";
   });
 
+  els.autoRun.addEventListener("click", () => {
+    els.autoRun.setAttribute("aria-pressed", String(els.autoRun.getAttribute("aria-pressed") !== "true"));
+  });
+
+  els.runMission.addEventListener("click", runMission);
+
+  els.sample.addEventListener("click", () => {
+    const k = els.preset.value;
+    applyPreset(k);
+    turns = [];
+    slots = {};
+    const rows = SAMPLE[k];
+    const base = Date.now() - rows.length * 9000;
+    rows.forEach((s, i) => turns.push({ who: s[0], text: s[1], at: new Date(base + i * 9000), live: false }));
+    note("Sample call loaded. Run the mission to see what the agent does with it.");
+    clearError();
+    renderTranscript();
+  });
+
   els.clear.addEventListener("click", () => {
     turns = [];
-    live = { you: null, agent: null };
-    render();
+    slots = {};
+    livePartial = { you: null, agent: null };
+    mission = { intake: null, research: null, draft: null, sources: [], log: [] };
+    stepState = {};
+    approvals = {};
+    els.results.innerHTML = "";
+    els.resultsWrap.hidden = true;
+    els.auditWrap.hidden = true;
     clearError();
+    renderSteps();
+    renderTranscript();
   });
 
   els.copy.addEventListener("click", async () => {
-    const text = turns
-      .map((t) => (t.who === "you" ? "You" : t.who === "agent" ? "Agent" : "Note") + ": " + t.text)
-      .join("\n");
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(flatten());
       els.copy.textContent = "Copied";
       setTimeout(() => (els.copy.textContent = "Copy transcript"), 1400);
-    } catch (err) {
-      showError("Copying was blocked. Select the transcript and copy it manually.");
-    }
+    } catch (err) { showError("Copying was blocked. Select the transcript and copy it manually."); }
   });
 
   window.addEventListener("beforeunload", teardown);
+  if (window.speechSynthesis) window.speechSynthesis.getVoices();
 
   setState("idle");
-  render();
+  renderSteps();
+  renderTranscript();
 })();
 </script>
 </body>
