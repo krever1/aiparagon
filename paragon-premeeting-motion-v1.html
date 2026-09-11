@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pre-Meeting Intelligence | AI Paragon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0B1220; --ink-2:#3A4353; --mut:#727B8A; --mut-2:#98A0AD;
+  --line:#E7EAEF; --line-2:#F0F2F5;
+  --navy:#111C33; --navy-2:#1B2A4A;
+  --blue:#1B6BFF; --blue-d:#0E4FD4; --blue-soft:#EDF3FF;
+  --gold:#D9A526; --gold-soft:#FDF6E4;
+  --green:#12B76A; --green-soft:#E7F8F0;
+  --panel:#F6F7F9; --cream:#FBF7EC;
+  --gut:clamp(20px,5vw,72px);
+  --sh-2:0 2px 6px rgba(11,18,32,.06), 0 30px 60px rgba(11,18,32,.13);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#fff;color:var(--ink);font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+input{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:6px}
+h1,h2,h3{margin:0;letter-spacing:-.02em;font-weight:600;line-height:1.06}
+h1,h2,.serif{font-family:'Playfair Display',Georgia,serif;letter-spacing:-.015em}
+.cream{background:#FBF7EC}
+.wrap{max-width:1180px;margin:0 auto;padding:0 var(--gut)}
+
+.btn{border-radius:999px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .16s ease,background .16s ease}
+.btn:active{transform:translateY(1px)}
+.btn-pri{background:var(--blue);color:#fff;padding:14px 28px;font-size:15.5px;box-shadow:0 2px 4px rgba(11,60,160,.22), 0 12px 26px rgba(11,60,160,.22)}
+.btn-pri:hover{background:var(--blue-d)}
+.btn-dark{background:var(--navy);color:#fff;padding:13px 26px;font-size:15px}
+.btn-dark:hover{background:#080F1E}
+.btn-line{border:1px solid var(--line);background:#fff;color:var(--ink);padding:12px 24px;font-size:15px}
+.btn-line:hover{border-color:#D3D8E0}
+.btn-sm{padding:9px 17px;font-size:13.5px}
+.ai-star{color:var(--gold)}
+
+/* ---------------- NAV ---------------- */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;gap:20px;padding:16px var(--gut);background:rgba(255,255,255,.86);backdrop-filter:blur(14px);border-bottom:1px solid var(--line-2);transition:background .35s ease,border-color .35s ease,color .35s ease}
+.nav.dark{background:rgba(17,28,51,.72);border-bottom-color:rgba(255,255,255,.1);color:#fff}
+.nav.dark .nav-links a{color:rgba(255,255,255,.82)}
+.nav.dark .btn-line{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff}
+.nav.dark .mark{filter:brightness(0) invert(1)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17.5px;letter-spacing:-.02em}
+.mark{height:28px;width:auto;display:block;transition:filter .35s ease}
+.nav-links{display:flex;gap:28px;margin:0 auto;font-size:14px;font-weight:500;color:var(--ink-2)}
+
+/* ---------------- HERO ---------------- */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:140px 0 60px;text-align:center;position:relative;background:radial-gradient(rgba(11,18,32,.05) 1px,transparent 1px);background-size:9px 9px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 16px;font-size:12.5px;font-weight:700;color:var(--ink-2);margin-bottom:26px}
+.eyebrow i{width:6px;height:6px;border-radius:50%;background:var(--blue);display:block}
+.hero h1{font-size:clamp(36px,6.4vw,76px);font-weight:600;line-height:1.05}
+.hero h1 span{color:#9AA2AF}
+.hero p.lede{color:var(--mut);font-size:17px;max-width:600px;margin:24px auto 0}
+.cta{display:flex;gap:12px;justify-content:center;margin-top:32px;flex-wrap:wrap}
+.scroll-cue{margin-top:56px;font-size:12px;color:var(--mut-2);font-weight:600;display:flex;flex-direction:column;align-items:center;gap:8px}
+.scroll-cue i{width:1px;height:34px;background:linear-gradient(var(--mut-2),transparent);display:block}
+
+/* ---------------- STAGE ---------------- */
+.stage{height:420vh;position:relative}
+body.auto .stage{height:172vh}
+.stage-pin{position:sticky;top:0;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff}
+.card{position:relative;z-index:2;width:330px;height:600px;border-radius:28px;overflow:hidden;background:linear-gradient(165deg,#22345C,#111C33 62%,#080F1E);box-shadow:var(--sh-2);display:flex;align-items:flex-end;will-change:width,height,border-radius}
+.card:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 68% 18%, rgba(27,107,255,.34), transparent 62%)}
+.wavebox{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;gap:9px;z-index:2;opacity:.5;padding:0 12%}
+.wavebox i{height:7px;border-radius:4px;background:rgba(255,255,255,.62);display:block}
+.wavebox .wv{display:flex;align-items:center;gap:3px;height:34px;margin-top:8px}
+.wavebox .wv i{width:3px;height:auto;border-radius:3px;background:rgba(217,165,38,.9)}
+.card-in{position:relative;z-index:3;width:100%;padding:34px;color:#fff}
+.hook{font-weight:600;letter-spacing:-.03em;line-height:1.1;max-width:17ch}
+.hook em{font-style:normal;color:#7FB0FF}
+.sub-hook{color:rgba(255,255,255,.68);margin-top:14px}
+.badge-live{position:absolute;top:26px;left:34px;z-index:4;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:rgba(255,255,255,.85)}
+.badge-live i{width:7px;height:7px;border-radius:50%;background:#FF4D4D;display:block;animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.35}}
+
+.board{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 var(--gut);z-index:4;pointer-events:none}
+.board-in{width:100%;max-width:1080px}
+.board-h{color:#fff;text-align:center;margin-bottom:26px}
+.board-h b{display:block;font-size:clamp(21px,3vw,34px);font-weight:600;letter-spacing:-.03em}
+.board-h span{display:block;color:rgba(255,255,255,.6);font-size:14px;margin-top:8px}
+.bits{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.bit{background:#fff;border-radius:14px;padding:15px;box-shadow:0 18px 38px rgba(0,0,0,.3);will-change:transform,opacity}
+.bit .k{font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--blue);display:block;margin-bottom:8px}
+.bit b{display:block;font-size:13px;letter-spacing:-.02em;line-height:1.3}
+.bit .ts{display:block;font-size:10.5px;color:var(--mut-2);margin-top:8px;font-weight:700}
+
+/* ---------------- SECTIONS ---------------- */
+.sec{padding:120px 0}
+.sec-lead{max-width:740px;margin:0 auto 56px;text-align:center}
+.sec-lead h2{font-size:clamp(28px,4.2vw,48px)}
+.sec-lead p{color:var(--mut);font-size:16px;margin:18px 0 0}
+.kicker{font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--blue);margin-bottom:16px}
+
+.stat{display:flex;align-items:center;gap:34px;padding:38px 0;border-top:1px solid var(--line)}
+.stat:last-child{border-bottom:1px solid var(--line)}
+.stat .art{width:104px;height:104px;border-radius:22px;flex:none;display:flex;align-items:center;justify-content:center;font-size:30px}
+.stat .num{font-size:clamp(40px,6.4vw,76px);font-weight:600;letter-spacing:-.05em;line-height:1;min-width:3.2ch}
+.stat .txt{flex:1}
+.stat .txt b{display:block;font-size:17px;letter-spacing:-.02em;margin-bottom:6px}
+.stat .txt p{margin:0;color:var(--mut);font-size:14px;max-width:46ch}
+
+.bigword{padding:150px 0;text-align:center;overflow:hidden}
+.bigword h2{font-size:clamp(36px,8.6vw,116px);font-weight:600;letter-spacing:-.05em;line-height:.96;will-change:transform,opacity}
+.bigword .tile{display:inline-flex;align-items:center;justify-content:center;width:.84em;height:.84em;border-radius:.18em;background:var(--blue);vertical-align:-.06em;margin:0 .06em;font-size:.7em;color:#fff;box-shadow:0 10px 24px rgba(11,60,160,.3)}
+.bigword p{color:var(--mut);font-size:17px;max-width:540px;margin:30px auto 0}
+.checks{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:740px;margin:40px auto 0;text-align:left}
+.check{display:flex;gap:11px;align-items:flex-start;background:var(--panel);border-radius:14px;padding:15px 17px}
+.check .t{width:19px;height:19px;border-radius:50%;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex:none;margin-top:1px}
+.check b{display:block;font-size:14px}
+.check span{display:block;font-size:12.5px;color:var(--mut);margin-top:2px;line-height:1.45}
+
+/* two engines */
+.engines{display:grid;grid-template-columns:1fr 92px 1fr;gap:0;align-items:stretch;max-width:960px;margin:0 auto}
+.eng{border:1px solid var(--line);border-radius:20px;padding:26px}
+.eng.e3{background:var(--panel)}
+.eng.pl{background:#fff;border-color:var(--blue);box-shadow:0 18px 40px rgba(11,60,160,.1)}
+.eng h3{font-size:19px;margin-bottom:6px}
+.eng .who{font-size:12px;font-weight:800;letter-spacing:.06em;margin-bottom:14px}
+.eng.e3 .who{color:var(--gold)}
+.eng.pl .who{color:var(--blue)}
+.eng p{margin:0 0 16px;font-size:13.5px;color:var(--mut);line-height:1.55}
+.eng ul{list-style:none;margin:0;padding:0}
+.eng li{font-size:13px;color:var(--ink-2);padding:5px 0;display:flex;gap:9px}
+.eng li:before{content:"";width:5px;height:5px;border-radius:50%;background:var(--mut-2);margin-top:8px;flex:none}
+.join{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--mut-2)}
+.join .ln{width:1px;flex:1;background:var(--line)}
+.join .bx{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 6px;font-size:9.5px;font-weight:800;writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:.08em;color:var(--ink-2)}
+
+/* ---------------- DEMO ---------------- */
+.demo-sec{background:var(--navy);color:#fff;padding:120px 0;position:relative;overflow:hidden}
+.demo-sec:before{content:"";position:absolute;inset:0;background:radial-gradient(90% 60% at 78% 0%, rgba(27,107,255,.2), transparent 62%)}
+.demo-sec .sec-lead h2{color:#fff}
+.demo-sec .sec-lead p{color:rgba(255,255,255,.62)}
+.panelbox{position:relative;z-index:2;background:#fff;color:var(--ink);border-radius:22px;max-width:1040px;margin:0 auto;box-shadow:0 40px 90px rgba(0,0,0,.35);overflow:hidden}
+.pbar{display:flex;align-items:center;gap:12px;padding:13px 20px;border-bottom:1px solid var(--line-2);background:#FCFCFD}
+.pbar .dots{display:flex;gap:6px}
+.pbar .dots i{width:9px;height:9px;border-radius:50%;background:#E2E5EA;display:block}
+.pbar .url{flex:1;text-align:center;font-size:12px;color:var(--mut-2)}
+.pbody{padding:28px 32px 34px;min-height:440px}
+
+.steps{display:flex;align-items:center;gap:7px;margin-bottom:24px;flex-wrap:wrap}
+.stp{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--mut-2)}
+.stp .n{width:21px;height:21px;border-radius:50%;background:#F0F1F4;color:var(--mut-2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none}
+.stp.on{color:var(--ink)} .stp.on .n{background:var(--blue);color:#fff}
+.stp.done{color:var(--ink-2)} .stp.done .n{background:var(--green-soft);color:var(--green)}
+.sep{width:14px;height:1px;background:var(--line);flex:none}
+
+.pane{display:none} .pane.on{display:block}
+.pane h3{font-size:21px;margin-bottom:6px}
+.pane .s{color:var(--mut);font-size:14px;margin:0 0 20px}
+.row-in{display:flex;gap:10px;max-width:520px}
+.inp{width:100%;border:1px solid var(--line);border-radius:11px;padding:12px 14px;font-size:14.5px;background:#fff}
+.inp:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(27,107,255,.14)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:8px 15px;font-size:13px;font-weight:600;color:var(--ink-2);background:#fff}
+.chip.on{background:var(--blue-soft);border-color:#C9DCFF;color:var(--blue-d)}
+.chip.on:after{content:" ✓";font-size:11px}
+.lbl{display:block;font-size:12.5px;font-weight:700;color:var(--ink-2);margin:20px 0 9px}
+.foot{display:flex;align-items:center;gap:12px;margin-top:24px;padding-top:20px;border-top:1px solid var(--line-2)}
+.foot .sp{margin-left:auto}
+.tiny{font-size:12.5px;color:var(--mut)}
+
+.gen-row{display:flex;align-items:center;gap:11px;padding:9px 0;font-size:14px;color:var(--mut-2)}
+.gen-row.active{color:var(--ink);font-weight:600}
+.gen-row.done{color:var(--ink-2)}
+.ic{width:19px;height:19px;border-radius:50%;flex:none;border:2px solid #E4E7EC}
+.gen-row.done .ic{background:var(--green);border-color:var(--green);position:relative}
+.gen-row.done .ic:after{content:"";position:absolute;left:5px;top:2px;width:4px;height:8px;border:2px solid #fff;border-top:0;border-left:0;transform:rotate(42deg)}
+.gen-row.active .ic{border-color:var(--gold);border-top-color:transparent;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.gbar{height:8px;border-radius:99px;background:#EDEFF3;overflow:hidden;margin-top:16px}
+.gbar i{display:block;height:100%;width:0;background:var(--gold);border-radius:99px;transition:width .35s ease}
+
+/* extraction grid */
+.ex-tabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:16px}
+.ex-tab{font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:999px;background:var(--panel);color:var(--mut)}
+.ex-tab.on{background:var(--navy);color:#fff}
+.ex-tab b{color:inherit;opacity:.6;margin-left:5px}
+.ex-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ex{
+  display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;
+  border:1.5px solid var(--line);border-radius:13px;padding:13px 15px;background:#fff;
+}
+.ex.on{border-color:var(--blue);background:var(--blue-soft)}
+.ex .bx{width:18px;height:18px;border-radius:5px;border:1.5px solid #D3D8E0;flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;background:#fff}
+.ex.on .bx{background:var(--blue);border-color:var(--blue)}
+.ex .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.05em;color:var(--mut-2);margin-bottom:5px}
+.ex b{display:block;font-size:13.5px;letter-spacing:-.015em;line-height:1.35}
+.ex .ts{display:inline-block;font-size:10.5px;font-weight:700;color:var(--blue-d);background:#fff;border:1px solid #D9E5FF;border-radius:99px;padding:2px 8px;margin-top:8px}
+
+/* build pane */
+.bd{display:grid;grid-template-columns:186px minmax(0,1fr) 230px;gap:20px}
+.hk-rail .hk-item{
+  display:block;width:100%;text-align:left;border:1.5px solid var(--line);border-radius:11px;
+  padding:11px 12px;margin-bottom:8px;background:#fff;font-size:12.5px;line-height:1.35;font-weight:600;
+}
+.hk-item.on{border-color:var(--blue);background:var(--blue-soft);color:var(--blue-d)}
+.hk-item .src{display:block;font-size:10px;font-weight:700;margin-top:6px;color:var(--mut-2)}
+.hk-item.inf .src{color:#8A6D1E}
+.slot{border-left:2px solid var(--line-2);padding:0 0 0 14px;margin-bottom:16px}
+.slot .sl{font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--mut-2);display:block;margin-bottom:6px}
+.slot .tx{font-size:14px;line-height:1.6;color:var(--ink-2)}
+.slot .tx:focus{outline:none;background:var(--blue-soft);border-radius:6px;box-shadow:0 0 0 4px var(--blue-soft)}
+.slot.hookslot{border-left-color:var(--blue)}
+.slot.resslot{border-left-color:#8E7CC8}
+.pill{display:inline-block;font-size:10px;font-weight:700;border-radius:99px;padding:2px 8px;margin-top:7px}
+.pill.srcd{background:var(--blue-soft);color:var(--blue-d)}
+.pill.inf{background:var(--gold-soft);color:#8A6D1E}
+.rail-card{border:1px solid var(--line);border-radius:13px;padding:14px 15px;margin-bottom:12px}
+.rail-card h4{margin:0 0 10px;font-size:12px;font-weight:800}
+.rail-row{display:flex;gap:8px;font-size:12px;color:var(--ink-2);padding:3px 0;line-height:1.4}
+.rail-card.gold{background:var(--gold-soft);border-color:#F0E2BE}
+.brief-bar{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--gold-soft);
+  border:1px solid #F0E2BE;border-radius:12px;padding:12px 15px;margin-bottom:18px;
+}
+.brief-bar b{font-size:13px}
+.brief-bar span{font-size:12px;color:#7A6836}
+.sw{width:38px;height:21px;border-radius:99px;background:#D8DCE3;position:relative;flex:none;transition:background .2s}
+.sw:after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;transition:transform .2s}
+.sw.on{background:var(--gold)} .sw.on:after{transform:translateX(17px)}
+.fmt-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;flex-wrap:wrap}
+.fmt{background:none;padding:8px 14px;font-size:13.5px;font-weight:600;color:var(--mut);border-bottom:2px solid transparent;margin-bottom:-1px;text-align:left}
+.fmt span{display:block;font-size:10.5px;font-weight:600;color:var(--mut-2);margin-top:1px}
+.fmt.on{color:var(--blue);border-bottom-color:var(--blue)}
+.fmt.on span{color:var(--blue-d);opacity:.7}
+
+.gate{max-width:430px;margin:0 auto;text-align:center;padding:12px 0}
+.gate .inp{text-align:center;margin-bottom:10px}
+.gate .btn{width:100%}
+.done-mark{width:52px;height:52px;border-radius:50%;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px}
+
+/* funnel path + pillars */
+.path{max-width:900px;margin:44px auto 0;background:var(--cream);border:1px solid #EEE3CC;border-radius:20px;padding:24px 26px;text-align:center}
+.lbl2{display:block;font-size:11px;font-weight:800;letter-spacing:.09em;color:#8A6D1E;margin-bottom:16px}
+.path-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.pstep{background:#fff;border:1px solid #EEE3CC;border-radius:999px;padding:9px 18px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.pstep.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;max-width:960px;margin:48px auto 0}
+.pil h4{margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;font-size:19px;font-weight:600}
+.pil p{margin:0;font-size:13.5px;color:var(--mut);line-height:1.55}
+@media (max-width:820px){ .pillars{grid-template-columns:1fr;gap:20px} }
+
+/* ---------- engine 3 panes ---------- */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cmp-c{border:1px solid var(--line);border-radius:14px;padding:16px 17px;background:#fff}
+.cmp-h{display:flex;align-items:center;gap:8px;margin-bottom:11px;flex-wrap:wrap}
+.tagm{font-size:9.5px;font-weight:800;letter-spacing:.05em;border-radius:99px;padding:3px 9px}
+.tagm.paid{background:var(--gold-soft);color:#8A6D1E}
+.tagm.org{background:var(--blue-soft);color:var(--blue-d)}
+.days{margin-left:auto;font-size:11px;font-weight:700;color:var(--mut)}
+.days.hot{color:#0B8A50}
+.cmp-c b{display:block;font-size:15px;letter-spacing:-.02em;line-height:1.3;margin-bottom:8px}
+.cmp-c p{margin:0}
+.ev{margin-top:12px;background:var(--green-soft);color:#0B8A50;border-radius:9px;padding:8px 10px;font-size:11.5px;font-weight:600}
+
+.bd2{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:22px}
+.op{border:1.5px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:10px;background:#fff}
+.op.off{opacity:.5}
+.op.blocked{border-color:#F3D7D7;background:#FDF4F4}
+.op b{display:block;font-size:14.5px;letter-spacing:-.02em;line-height:1.35;margin-bottom:5px}
+.op p{margin:0}
+.op-acts{display:flex;align-items:center;gap:10px;margin-top:11px}
+.flag{display:inline-block;margin-top:9px;font-size:11px;font-weight:700;color:#A84343;background:#FBE9E9;border-radius:99px;padding:4px 10px}
+
+.nx{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.nx-c{border:1px solid var(--line);border-radius:16px;padding:20px}
+.nx-c.gold{background:var(--gold-soft);border-color:#F0E2BE}
+.nx-c h4{margin:0 0 6px;font-family:'Playfair Display',Georgia,serif;font-size:18px;font-weight:600}
+.cal-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.cal-head .tiny{margin-left:auto}
+
+.vid-modal{position:fixed;inset:0;z-index:300;background:rgba(11,18,32,.72);display:none;align-items:center;justify-content:center;padding:24px}
+.vid-card{background:#fff;border-radius:18px;max-width:760px;width:100%;overflow:hidden}
+.vid-head{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line-2)}
+.vid-head b{font-size:14px}
+.vid-ph{background:var(--navy);color:#fff;aspect-ratio:16/9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:24px}
+.vid-ph span:first-child{font-size:30px}
+.vid-ph b{font-family:'Playfair Display',Georgia,serif;font-size:20px}
+.vid-ph .tiny{color:rgba(255,255,255,.55)}
+
+@media (max-width:900px){ .cmp,.bd2,.nx{grid-template-columns:1fr} }
+
+/* ---------- post preview ---------- */
+.mail-top{display:flex;gap:10px;align-items:center;padding:12px 14px 8px}
+.mail-subj{padding:0 14px 6px;font-family:'Playfair Display',Georgia,serif;font-size:16px;font-weight:600;letter-spacing:-.01em}
+.ad-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#F7F8FA;border-top:1px solid var(--line)}
+.ad-bar b{display:block;font-size:12px}
+.ad-bar span{display:block;font-size:10.5px;color:var(--mut)}
+.ad-btn{margin-left:auto;background:#E4E6EB;border-radius:6px;padding:7px 12px;font-size:11.5px;font-weight:700;flex:none;color:var(--ink)}
+.pv-wrap{display:grid;grid-template-columns:minmax(0,400px) 232px;gap:26px;justify-content:center}
+.pv-tabs{display:flex;gap:5px;margin-bottom:16px}
+.pv-tab{font-size:11.5px;font-weight:700;padding:6px 13px;border-radius:999px;background:var(--panel);color:var(--mut)}
+.pv-tab.on{background:var(--navy);color:#fff}
+
+.post{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 10px 26px rgba(11,18,32,.07)}
+.post-top{display:flex;gap:10px;align-items:center;padding:12px 14px 10px}
+.av{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.post-who b{display:block;font-size:13px;font-weight:700;line-height:1.25}
+.post-who span{display:block;font-size:11px;color:var(--mut)}
+.post-more{margin-left:auto;color:var(--mut-2);font-size:15px}
+.post-txt{padding:0 14px 12px;font-size:13px;line-height:1.5;color:var(--ink-2);white-space:pre-wrap}
+.post-txt i{color:var(--mut-2);font-style:normal}
+.see-more{
+  display:inline;padding:0;margin:0;font:inherit;font-weight:700;
+  color:var(--mut-2);background:none;border:0;cursor:pointer;
+}
+.see-more:hover{color:var(--ink-2);text-decoration:underline}
+.see-more.less{display:block;margin-top:8px}
+.post-counts{display:flex;gap:6px;align-items:center;padding:8px 14px;font-size:11px;color:var(--mut);border-top:1px solid var(--line-2)}
+.post-act{display:flex;padding:4px 6px;border-top:1px solid var(--line-2)}
+.post-act span{flex:1;text-align:center;padding:8px 0;font-size:11.5px;font-weight:600;color:var(--mut)}
+
+/* generated creative */
+.cre{position:relative;overflow:hidden;background:var(--navy);color:#fff;font-size:14px;display:block}
+.cre.r45{aspect-ratio:4/5}
+.cre.r11{aspect-ratio:1/1}
+.cre.r169{aspect-ratio:1.91/1}
+.cre .bgw{position:absolute;inset:0;background:linear-gradient(165deg,#22345C,#111C33 64%,#080F1E)}
+.cre .glow{position:absolute;inset:0;background:radial-gradient(120% 80% at 70% 18%, rgba(27,107,255,.32), transparent 62%)}
+.cre .cnt{position:absolute;inset:0;padding:1.2em;display:flex;flex-direction:column;justify-content:center;z-index:3}
+.cre .qt{font-weight:600;letter-spacing:-.03em;line-height:1.14;font-size:1.42em}
+.cre .who{font-size:.6em;color:rgba(255,255,255,.6);margin-top:1em;font-weight:700;letter-spacing:.04em}
+.cre .stamp{position:absolute;bottom:1.1em;right:1.2em;z-index:4;font-size:.55em;font-weight:700;color:rgba(255,255,255,.42)}
+.cre.t-clip .cnt{justify-content:flex-end}
+.cre.t-clip .qt{font-size:1.2em}
+.cre.t-clip .pl{background:var(--blue);border-radius:.14em;padding:0 .22em;display:inline-block}
+.cre.t-clip .bars{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:.14em;z-index:2;opacity:.4;padding:0 12%}
+.cre.t-clip .bars i{width:.14em;border-radius:.1em;background:rgba(255,255,255,.85);display:block}
+
+.vars{display:grid;gap:9px}
+.var{border:1.5px solid var(--line);border-radius:11px;overflow:hidden;background:#fff;padding:0;display:block;text-align:left}
+.var.on{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
+.var .cre{font-size:4.6px}
+.var-lbl{font-size:11px;font-weight:700;padding:8px 10px;color:var(--ink-2)}
+.var-lbl span{display:block;font-size:10px;font-weight:600;color:var(--mut-2);margin-top:1px}
+.var.on .var-lbl{color:var(--blue-d)}
+.var-none{height:52px;background:repeating-linear-gradient(135deg,#F6F7F9,#F6F7F9 7px,#EFF1F4 7px,#EFF1F4 14px)}
+
+@media (max-width:820px){ .pv-wrap{grid-template-columns:1fr} }
+
+/* close */
+.close{padding:130px 0;text-align:center}
+.close h2{font-size:clamp(30px,5vw,58px)}
+.close p{color:var(--mut);font-size:17px;max-width:540px;margin:22px auto 0}
+.foot-b{background:var(--navy);color:rgba(255,255,255,.6);padding:40px var(--gut);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:13px}
+.foot-b .mark{filter:brightness(0) invert(1)}
+
+.replay{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:9;display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.62);background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:8px 16px;opacity:0;pointer-events:none;transition:opacity .4s ease}
+.replay.on{opacity:1;pointer-events:auto}
+.replay:hover{color:#fff;background:rgba(255,255,255,.16)}
+.rv{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}
+.rv.in{opacity:1;transform:none}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,18px);background:var(--navy);color:#fff;padding:11px 20px;border-radius:999px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s ease;z-index:200}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:1000px){ .bd{grid-template-columns:1fr} }
+@media (max-width:900px){
+  .nav-links{display:none}
+  .stage{height:300vh} body.auto .stage{height:150vh}
+  .bits{grid-template-columns:1fr 1fr;gap:8px}
+  .bit:nth-child(5){display:none}
+  .board-in{max-width:440px}
+  .checks,.ex-grid{grid-template-columns:1fr}
+  .engines{grid-template-columns:1fr;gap:14px}
+  .join{flex-direction:row;padding:0} .join .ln{height:1px;width:auto;flex:1} .join .bx{writing-mode:horizontal-tb}
+  .stat{gap:18px;flex-wrap:wrap}
+  .stat .art{width:68px;height:68px;border-radius:16px;font-size:22px}
+  .pbody{padding:22px 18px 26px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .rv{opacity:1;transform:none;transition:none}
+  .stage{height:auto} .stage-pin{position:static;height:auto;padding:80px 0}
+}
+
+/* ---------- pre-meeting additions ---------- */
+.mtypes{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.mtype{border:1.5px solid var(--line);border-radius:14px;padding:15px 16px;background:#fff;text-align:left;display:block;width:100%}
+.mtype.on{border-color:var(--blue);background:var(--blue-soft)}
+.mtype .stg{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--mut-2);margin-bottom:8px}
+.mtype.on .stg{color:var(--blue-d)}
+.mtype b{display:block;font-size:14.5px;letter-spacing:-.02em;line-height:1.3;margin-bottom:5px}
+.mtype p{margin:0;font-size:12.5px;color:var(--mut);line-height:1.45}
+@media (max-width:820px){ .mtypes{grid-template-columns:1fr} }
+
+.who-card{display:flex;gap:14px;align-items:center;border:1px solid var(--line);border-radius:13px;padding:13px 15px;background:#fff;margin-top:4px}
+.who-card .av{width:40px;height:40px;font-size:13px}
+.who-card b{display:block;font-size:14.5px;letter-spacing:-.02em}
+.who-card span{display:block;font-size:12px;color:var(--mut)}
+.who-card .when{margin-left:auto;text-align:right;font-size:11.5px;font-weight:700;color:var(--blue-d);background:var(--blue-soft);border-radius:99px;padding:5px 12px;flex:none}
+
+.doc{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;background:#fff}
+.doc .st{font-size:9.5px;font-weight:800;letter-spacing:.05em;border-radius:99px;padding:4px 9px;flex:none;margin-top:1px}
+.st.ok{background:var(--green-soft);color:#0B8A50}
+.st.miss{background:#FBE9E9;color:#A84343}
+.st.part{background:var(--gold-soft);color:#8A6D1E}
+.doc b{display:block;font-size:13.5px;letter-spacing:-.015em;line-height:1.35}
+.doc p{margin:3px 0 0;font-size:12px;color:var(--mut);line-height:1.45}
+
+.tl{position:relative;padding-left:22px;margin-top:4px}
+.tl:before{content:"";position:absolute;left:5px;top:7px;bottom:10px;width:1px;background:var(--line)}
+.tli{position:relative;padding:0 0 17px}
+.tli:before{content:"";position:absolute;left:-22px;top:4px;width:11px;height:11px;border-radius:50%;background:#fff;border:2px solid var(--line);box-sizing:border-box}
+.tli.done:before{background:var(--green);border-color:var(--green)}
+.tli.open:before{background:#fff;border-color:#D98A8A}
+.tli .dt{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--mut-2)}
+.tli b{display:block;font-size:13.5px;letter-spacing:-.015em;margin:3px 0 3px;line-height:1.35}
+.tli p{margin:0;font-size:12px;color:var(--mut);line-height:1.5}
+
+.tpl{border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:#fff}
+.tpl .tl-row{font-size:13.5px;line-height:1.95;color:var(--ink-2)}
+.tpl .sl2{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--mut-2);margin:14px 0 2px}
+.tpl .sl2:first-child{margin-top:0}
+.mf{background:var(--blue-soft);color:var(--blue-d);border-radius:5px;padding:1px 7px;font-weight:700;font-size:12.5px;white-space:nowrap}
+
+.sysgrid{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:20px}
+@media (max-width:900px){ .sysgrid{grid-template-columns:1fr} }
+.sys-item{border:1px solid var(--line);border-radius:13px;padding:13px 15px;margin-bottom:9px;background:#fff}
+.sys-item .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.05em;color:var(--mut-2);margin-bottom:5px}
+.sys-item.flag{border-color:#F0E2BE;background:var(--gold-soft)}
+.sys-item.flag .k{color:#8A6D1E}
+.sys-item b{display:block;font-size:13.5px;letter-spacing:-.015em;line-height:1.35}
+.sys-item p{margin:5px 0 0;font-size:12.5px;color:var(--mut);line-height:1.5}
+.sys-item.empty{background:var(--panel);border-style:dashed}
+
+.brf{display:grid;grid-template-columns:200px minmax(0,1fr) 236px;gap:20px}
+@media (max-width:1000px){ .brf{grid-template-columns:1fr} }
+.pill.res{background:#F0EEF9;color:#5B4B9B}
+.hk-item .src.res{color:#5B4B9B}
+
+.dv-wrap{display:grid;grid-template-columns:minmax(0,440px) 224px;gap:26px;justify-content:center}
+@media (max-width:820px){ .dv-wrap{grid-template-columns:1fr} }
+.sheet{background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 34px rgba(11,18,32,.1);padding:26px 28px}
+.sheet .sh-k{font-size:9.5px;font-weight:800;letter-spacing:.09em;color:var(--blue);display:block;margin-bottom:9px}
+.sheet h5{margin:0 0 4px;font-family:'Playfair Display',Georgia,serif;font-size:21px;font-weight:600;letter-spacing:-.02em}
+.sheet .sh-m{font-size:11.5px;color:var(--mut);border-bottom:1px solid var(--line-2);padding-bottom:12px;margin-bottom:14px}
+.sheet .sh-s{font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--mut-2);display:block;margin:13px 0 4px}
+.sheet .sh-t{font-size:12.5px;line-height:1.6;color:var(--ink-2)}
+.teams{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 10px 26px rgba(11,18,32,.07)}
+.teams-top{display:flex;gap:10px;align-items:center;padding:12px 14px;background:#F7F8FA;border-bottom:1px solid var(--line-2)}
+.teams-top b{font-size:12.5px}
+.teams-body{padding:14px}
+.teams-card{border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:9px;padding:13px 14px}
+.teams-card b{display:block;font-size:13.5px;letter-spacing:-.015em;margin-bottom:6px}
+.teams-card .ln2{font-size:12px;color:var(--ink-2);padding:2px 0;display:flex;gap:8px;line-height:1.45}
+.teams-acts{display:flex;gap:8px;margin-top:12px}
+.teams-acts span{font-size:11.5px;font-weight:700;border:1px solid var(--line);border-radius:7px;padding:6px 12px;color:var(--ink-2)}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <div class="brand"><img class="mark" src="https://www.aiparagonconsulting.com/logo.png" alt="AI Paragon">AI Paragon</div>
+  <div class="nav-links">
+    <a href="#finds">What it reads</a>
+    <a href="#engines">How it fits</a>
+    <a href="#demo">Live demo</a>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <button class="btn btn-line btn-sm" onclick="openCal('nav')">Book a call</button>
+    <button class="btn btn-pri btn-sm" onclick="jump('#demo')">Brief a meeting</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow"><i></i>Pre-Meeting Intelligence</span>
+    <h1>Everything your firm<br><span>already knew, in the room with you.</span></h1>
+    <p class="lede">The CRM record, the email thread, the notes from the last meeting, the documents on file, and what has changed on the client's side since you spoke. Pulled into one brief, written to the meeting template you already use.</p>
+    <div class="cta">
+      <button class="btn btn-pri" onclick="jump('#demo')">Brief a meeting</button>
+      <button class="btn btn-line" onclick="openVideo()">&#9654;&nbsp; Watch 60 seconds</button>
+    </div>
+    <div class="scroll-cue"><i></i>Scroll into tomorrow at ten</div>
+  </div>
+</header>
+
+<!-- =================== STAGE =================== -->
+<section class="stage" id="stage">
+  <div class="stage-pin" id="pin">
+    <div class="card" id="card">
+      <div class="wavebox" id="wave"></div>
+      <div class="badge-live" id="live"><i></i>TOMORROW &middot; 10:00 &middot; 45 MINUTES</div>
+      <div class="card-in" id="cardIn">
+        <div class="hook" id="hook">The context exists. <em>It is in five places.</em></div>
+        <div class="sub-hook" id="subHook">None of them is the one you open at 9:55.</div>
+      </div>
+    </div>
+
+    <div class="board" id="board">
+      <div class="board-in">
+        <div class="board-h" id="boardH">
+          <b>A meeting is not a calendar entry. It is everything that led to it.</b>
+          <span>Where they sit in your pipeline, what was promised, what is still outstanding, and what changed on their side.</span>
+        </div>
+        <div class="bits">
+          <div class="bit"><span class="k">CRM RECORD</span><b>Plan delivery, third meeting</b><span class="ts">UPDATED 3 MAR</span></div>
+          <div class="bit"><span class="k">EMAIL THREAD</span><b>One question asked twice, never answered in writing</b><span class="ts">27 MAR</span></div>
+          <div class="bit"><span class="k">MEETING NOTES</span><b>Three things you said you would do</b><span class="ts">14 FEB</span></div>
+          <div class="bit"><span class="k">DOCUMENTS</span><b>Two on file, one still missing</b><span class="ts">3 ITEMS</span></div>
+          <div class="bit"><span class="k">OUTSIDE</span><b>Their firm closed an acquisition in March</b><span class="ts">PUBLIC</span></div>
+        </div>
+      </div>
+    </div>
+    <button class="replay" id="replay" onclick="playStage(true)">&#8635; Replay</button>
+  </div>
+</section>
+
+<!-- =================== WHAT IT READS =================== -->
+<section class="sec" id="finds">
+  <div class="sec-lead rv">
+    <div class="kicker">WHAT COMES OUT</div>
+    <h2>One brief. Every system. Nothing invented.</h2>
+    <p>Most tools summarise the last email. This reads the whole relationship, works out what kind of meeting you are walking into, and writes to the template you already use for that kind of meeting.</p>
+  </div>
+  <div class="wrap">
+    <div class="stat rv">
+      <div class="art" style="background:var(--blue-soft)">&#9635;</div>
+      <div class="num">3</div>
+      <div class="txt"><b>Meeting types, one engine</b>
+      <p>A first conversation, an onboarding session and a deliverable review need completely different preparation. Same pipeline, different sources and a different template at the end of it.</p></div>
+    </div>
+    <div class="stat rv">
+      <div class="art" style="background:var(--gold-soft)">&#8644;</div>
+      <div class="num">1</div>
+      <div class="txt"><b>Brief, assembled from every system</b>
+      <p>CRM record, email threads, notes from prior meetings, documents on file and outside research on the client, merged into one page you read in four minutes.</p></div>
+    </div>
+    <div class="stat rv">
+      <div class="art" style="background:var(--green-soft)">&#10003;</div>
+      <div class="num">0</div>
+      <div class="txt"><b>Facts without a record behind them</b>
+      <p>Every line points at the record, thread or note it came from. What is missing is shown as missing rather than filled in with something plausible.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== GAPS =================== -->
+<section class="bigword">
+  <div class="wrap">
+      <h2 id="bw">What is missing <span class="tile">?</span><br>stays missing.</h2>
+    <p class="rv">The gap list is the part that saves the meeting. It is also the part a summary tool will quietly invent.</p>
+    <div class="checks">
+      <div class="check rv"><span class="t">&#10003;</span><div><b>Every line is traceable</b><span>Each fact carries the record, thread or note it was pulled from.</span></div></div>
+      <div class="check rv"><span class="t">&#10003;</span><div><b>Nothing is assumed</b><span>If your systems never recorded it, the brief says so instead of guessing.</span></div></div>
+      <div class="check rv"><span class="t">&#10003;</span><div><b>Outside research stays labelled</b><span>Anything found in public sources is marked, so you know what you can safely raise.</span></div></div>
+      <div class="check rv"><span class="t">&#10003;</span><div><b>You review before you walk in</b><span>The brief is a draft you edit, not a script to read out in the room.</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== TWO HALVES =================== -->
+<section class="sec" id="engines" style="background:var(--panel)">
+  <div class="sec-lead rv">
+    <div class="kicker">HOW IT FITS</div>
+    <h2>What your systems know, and what we find out</h2>
+    <p>Your records tell you where the relationship stands. They do not tell you what has changed in the client's world since you last spoke. The two halves meet inside your own meeting template.</p>
+  </div>
+  <div class="wrap">
+    <div class="engines rv">
+      <div class="eng pl">
+        <div class="who">WHAT YOUR SYSTEMS KNOW</div>
+        <h3>The record of the relationship</h3>
+        <p>Your CRM, your inbox, your notes and your document store, read together rather than one tab at a time.</p>
+        <ul>
+          <li>Where they sit in the pipeline and how long they have been there</li>
+          <li>Questions asked and never answered in writing</li>
+          <li>What you committed to in the last meeting</li>
+          <li>Documents on file, and the ones still outstanding</li>
+        </ul>
+      </div>
+      <div class="join">
+        <span class="ln"></span>
+        <span class="bx">YOUR TEMPLATE</span>
+        <span class="ln"></span>
+      </div>
+      <div class="eng e3">
+        <div class="who">WHAT WE FIND OUT</div>
+        <h3>What has changed on their side</h3>
+        <p>For a first meeting there is no history to read, so the research does the work instead.</p>
+        <ul>
+          <li>The company, the role and the recent public moves</li>
+          <li>What a change of that shape usually puts on the table</li>
+          <li>The objections firms like theirs tend to raise</li>
+        </ul>
+      </div>
+    </div>
+    <p class="tiny rv" style="text-align:center;margin-top:26px;max-width:660px;margin-inline:auto">You approve the brief before the meeting. The system assembles and flags, you decide what matters and what gets raised in the room.</p>
+
+    <div class="path rv">
+      <span class="lbl2">THE SAME ENGINE ACROSS THE RELATIONSHIP</span>
+      <div class="path-row">
+        <span class="pstep on">Initial meeting</span>
+        <span class="pstep on">Onboarding</span>
+        <span class="pstep on">Deliverable review</span>
+        <span class="pstep">Every review after</span>
+      </div>
+      <p class="tiny" style="margin:14px 0 0">Each meeting writes back into the record, so the next brief starts from a fuller picture than the last one did.</p>
+    </div>
+
+    <div class="pillars rv">
+      <div class="pil"><h4>It knows where you left off</h4><p>Commitments and open questions carry forward on their own, so nothing gets asked twice and nothing gets quietly dropped.</p></div>
+      <div class="pil"><h4>It writes to your template</h4><p>Your discovery script, your onboarding agenda, your review structure. The brief fills in the sections you already use.</p></div>
+      <div class="pil"><h4>It shows the gaps</h4><p>What you still need from the client is listed before the meeting, rather than discovered halfway through it.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== DEMO =================== -->
+<section class="demo-sec" id="demo">
+  <div class="sec-lead rv">
+    <div class="kicker">LIVE DEMO</div>
+    <h2>Brief a meeting</h2>
+    <p>Pick the kind of meeting, watch it read the systems, then edit the brief. No sign-up, nothing saved.</p>
+    <p style="margin-top:14px"><button class="btn btn-line btn-sm" onclick="openVideo()">&#9654;&nbsp; Watch the 60-second version instead</button></p>
+  </div>
+
+  <div class="panelbox rv">
+    <div class="pbar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="url">demo.aiparagonconsulting.com/demo/pre-meeting</div>
+      <div style="width:40px"></div>
+    </div>
+    <div class="pbody">
+      <div class="steps" id="steps"></div>
+
+      <!-- 1 MEETING -->
+      <div class="pane on" data-p="1">
+        <h3>Which meeting are you preparing for?</h3>
+        <p class="s">The stage decides what gets read and which template comes out at the end.</p>
+        <div class="mtypes" id="mtypes"></div>
+        <span class="lbl">Who is it with?</span>
+        <div id="whoBox"></div>
+        <span class="lbl">Where does your client data live?</span>
+        <div class="chips" id="crmChips"></div>
+        <div class="foot">
+          <span class="tiny" id="mtNote"></span>
+          <button class="btn btn-pri btn-sm sp" onclick="go(2)">Read my systems</button>
+        </div>
+      </div>
+
+      <!-- 2 READING SYSTEMS -->
+      <div class="pane" data-p="2">
+        <h3>Reading your systems</h3>
+        <p class="s" id="resSub"></p>
+        <div id="resList"></div>
+        <div class="gbar"><i id="resBar"></i></div>
+      </div>
+
+      <!-- 3 WHAT WE FOUND -->
+      <div class="pane" data-p="3">
+        <h3 id="ctxH">What your systems already hold</h3>
+        <p class="s">Four places, read together. This is the picture before anyone researches anything.</p>
+        <div class="ex-tabs" id="ctxTabs"></div>
+        <div class="sysgrid">
+          <div id="ctxBody"></div>
+          <div>
+            <div class="rail-card"><h4>Where this client sits</h4><div id="stageRail"></div></div>
+            <div class="rail-card gold"><h4>Needs your attention</h4><div id="flagRail"></div></div>
+          </div>
+        </div>
+        <div class="foot">
+          <button class="btn btn-line btn-sm" onclick="go(1)">Different meeting</button>
+          <span class="tiny" id="ctxNote"></span>
+          <button class="btn btn-pri btn-sm sp" id="toRes" onclick="go(4)">Next</button>
+        </div>
+      </div>
+
+      <!-- 4 RESEARCH / STAGE SPECIFIC -->
+      <div class="pane" data-p="4">
+        <h3 id="rsH"></h3>
+        <p class="s" id="rsSub"></p>
+        <div class="sysgrid">
+          <div id="rsBody"></div>
+          <div id="rsRail"></div>
+        </div>
+        <div class="foot">
+          <button class="btn btn-line btn-sm" onclick="go(3)">Back to the record</button>
+          <span class="tiny" id="rsNote"></span>
+          <button class="btn btn-pri btn-sm sp" onclick="go(5)">Choose the template</button>
+        </div>
+      </div>
+
+      <!-- 5 TEMPLATE -->
+      <div class="pane" data-p="5">
+        <h3>Your template for this meeting</h3>
+        <p class="s">Your own script or agenda, with the fields the brief will fill. Swap it for any other template you run.</p>
+        <div class="chips" id="tplChips"></div>
+        <div style="height:16px"></div>
+        <div class="sysgrid">
+          <div class="tpl" id="tplBody"></div>
+          <div>
+            <div class="rail-card"><h4>Fields it will fill</h4><div id="tplFields"></div></div>
+            <div class="rail-card gold"><h4>Bring your own</h4>
+              <div class="rail-row">Upload the script your team already uses. The brief is written into your sections, not ours.</div>
+            </div>
+          </div>
+        </div>
+        <div class="foot">
+          <button class="btn btn-line btn-sm" onclick="go(4)">Back</button>
+          <span class="tiny" id="tplNote"></span>
+          <button class="btn btn-pri btn-sm sp" onclick="go(6)">Build the brief</button>
+        </div>
+      </div>
+
+      <!-- 6 BUILDING -->
+      <div class="pane" data-p="6">
+        <h3>Writing the brief</h3>
+        <p class="s" id="genSub"></p>
+        <div id="genList"></div>
+        <div class="gbar"><i id="genBar"></i></div>
+        <p class="tiny" style="margin-top:12px" id="genPct">0%</p>
+      </div>
+
+      <!-- 7 THE BRIEF -->
+      <div class="pane" data-p="7">
+        <h3 id="bfH">Your pre-meeting brief</h3>
+        <p class="s">Every section is editable. Every line carries the place it came from.</p>
+
+        <div class="brief-bar">
+          <button class="sw on" id="resSw" onclick="toggleRes()" aria-label="Toggle outside research"></button>
+          <div style="flex:1;min-width:220px">
+            <b>Outside research applied</b>
+            <span id="resLine"></span>
+          </div>
+          <span class="tiny" id="resMeta"></span>
+        </div>
+
+        <div class="brf">
+          <div>
+            <span class="lbl" style="margin-top:0">The meeting</span>
+            <div class="rail-card" id="mtgCard"></div>
+          </div>
+          <div id="bodyCol"></div>
+          <div>
+            <div class="rail-card"><h4>Source ledger</h4><div id="ledger"></div></div>
+            <div class="rail-card gold"><h4>Still to confirm</h4><div id="gaps"></div></div>
+          </div>
+        </div>
+
+        <div class="foot">
+          <button class="btn btn-line btn-sm" onclick="go(5)">Back to the template</button>
+          <span class="tiny" id="bfNote"></span>
+          <button class="btn btn-pri btn-sm sp" onclick="go(8)">See how it arrives</button>
+        </div>
+      </div>
+
+      <!-- 8 DELIVERY -->
+      <div class="pane" data-p="8">
+        <h3>How it reaches you</h3>
+        <p class="s">The same brief, wherever you actually look before a meeting.</p>
+        <div class="pv-tabs" id="dvTabs"></div>
+        <div class="dv-wrap">
+          <div id="dvStage"></div>
+          <div>
+            <span class="lbl" style="margin-top:0">When it lands</span>
+            <div class="rail-card"><div id="timing"></div></div>
+            <div class="rail-card gold"><h4>If something changes</h4>
+              <div class="rail-row">A reply lands or a document arrives after the brief is sent, and it reruns and flags only what moved.</div>
+            </div>
+          </div>
+        </div>
+        <div class="foot">
+          <button class="btn btn-line btn-sm" onclick="go(7)">Back to the brief</button>
+          <span class="tiny" id="dvNote"></span>
+          <button class="btn btn-pri btn-sm sp" onclick="go(9)">What happens next</button>
+        </div>
+      </div>
+
+      <!-- 9 NEXT -->
+      <div class="pane" data-p="9">
+        <h3>That was one meeting</h3>
+        <p class="s">Here is what the full run looks like once it is reading your own systems.</p>
+        <div class="nx">
+          <div class="nx-c">
+            <h4>Take this brief with you</h4>
+            <p class="tiny">The brief you just built, plus the template and the source ledger behind it, as a PDF and editable text.</p>
+            <input class="inp" id="gateEmail" type="email" placeholder="you@yourfirm.com" style="margin:12px 0 10px">
+            <button class="btn btn-pri btn-sm" style="width:100%" onclick="send()">Email me the brief</button>
+            <p class="tiny" id="doneMsg" style="margin-top:10px"></p>
+          </div>
+          <div class="nx-c gold">
+            <h4>Or walk it through with Erica</h4>
+            <p class="tiny">Twenty minutes, on your own meeting types and your own systems. No pitch.</p>
+            <button class="btn btn-dark btn-sm" style="width:100%;margin-top:12px" onclick="openCal('demo')">Book a 20-minute session</button>
+            <p class="tiny" style="margin-top:10px">Connecting it to your CRM and inbox is the first thing we scope.</p>
+          </div>
+        </div>
+        <div class="foot">
+          <button class="btn btn-line btn-sm" onclick="go(8)">Back</button>
+          <button class="btn btn-line btn-sm sp" onclick="reset()">Run another meeting</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="close">
+  <div class="wrap">
+    <h2 class="rv">Your firm already knew.<br>Nobody had time to look.</h2>
+    <p class="rv">Pick one meeting on tomorrow's calendar. We will show you what the brief for it looks like.</p>
+    <div class="cta">
+      <button class="btn btn-pri rv" onclick="jump('#demo')">Brief a meeting</button>
+      <button class="btn btn-line rv" onclick="openCal('close')">Book a 20-minute session</button>
+    </div>
+  </div>
+</section>
+
+<footer class="foot-b">
+  <div class="brand" style="display:flex;align-items:center;gap:10px;font-weight:800;color:#fff">
+    <img class="mark" src="https://www.aiparagonconsulting.com/logo.png" alt="AI Paragon">AI Paragon
+  </div>
+  <span>&copy; 2026 AI Paragon Consulting Group &middot; Privacy &middot; Terms</span>
+</footer>
+
+<div class="vid-modal" id="calModal" onclick="if(event.target===this)closeCal()">
+  <div class="vid-card" style="max-width:840px">
+    <div class="vid-head"><b>Book a 20-minute strategy session</b>
+      <button class="btn btn-line btn-sm" style="margin-left:auto" onclick="closeCal()">Close</button></div>
+    <div id="calBox"></div>
+  </div>
+</div>
+
+<div class="vid-modal" id="vidModal" onclick="if(event.target===this)closeVideo()">
+  <div class="vid-card">
+    <div class="vid-head"><b>See it in sixty seconds</b>
+      <button class="btn btn-line btn-sm" style="margin-left:auto" onclick="closeVideo()">Close</button></div>
+    <div id="vidBox"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================== EVENTS ===================== */
+window.dataLayer = window.dataLayer || [];
+var EVENTS = [];
+function qs(k){ return new URLSearchParams(location.search).get(k); }
+function track(name, props){
+  var e = Object.assign({
+    event:name, demo_module:'pre_meeting',
+    creative_id: qs('creative_id') || 'direct',
+    crm: S.crm,
+    meeting_type: S.type,
+    ts: Date.now()
+  }, props || {});
+  EVENTS.push(e); window.dataLayer.push(e);
+  console.log('[funnel]', name, e);
+}
+
+/* ===================== MOTION ===================== */
+var REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function seg(p,a,b){ return clamp((p-a)/(b-a),0,1); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+function ease(t){ return t<.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; }
+
+var stage=document.getElementById('stage'), pin=document.getElementById('pin'),
+    card=document.getElementById('card'), cardIn=document.getElementById('cardIn'),
+    hook=document.getElementById('hook'), subH=document.getElementById('subHook'),
+    live=document.getElementById('live'), board=document.getElementById('board'),
+    boardH=document.getElementById('boardH'), nav=document.getElementById('nav'),
+    bw=document.getElementById('bw'), waveBox=document.getElementById('wave');
+var bits = Array.prototype.slice.call(document.querySelectorAll('.bit'));
+
+(function buildWave(){
+  /* the meeting: agenda lines, then the row of pipeline stages underneath */
+  var h = '';
+  var widths = [92, 84, 90, 70, 88, 60];
+  widths.forEach(function(w){ h += '<i style="width:'+w+'%"></i>'; });
+  var bars = '';
+  for(var i=0;i<5;i++){ bars += '<i style="width:16px;border-radius:4px;height:'+(i===2?100:46)+'%"></i>'; }
+  h += '<span class="wv" style="gap:10px">'+bars+'</span>';
+  waveBox.innerHTML = h;
+})();
+
+var MODE = qs('scrub') ? 'scrub' : 'auto';
+var DUR = 3400;
+var A = { p:0, playing:false, done:false, t0:0, raf:0 };
+if(MODE === 'auto') document.body.classList.add('auto');
+
+function playStage(force){
+  if(REDUCED) return;
+  if(!force && (A.playing || A.done)) return;
+  cancelAnimationFrame(A.raf);
+  A.playing = true; A.done = false; A.t0 = 0; A.p = 0;
+  renderStage(0);
+  document.getElementById('replay').classList.remove('on');
+  A.raf = requestAnimationFrame(step);
+  if(force) track('stage_replayed');
+}
+function step(now){
+  if(!A.t0) A.t0 = now;
+  var t = clamp((now - A.t0)/DUR, 0, 1);
+  A.p = t; renderStage(t);
+  if(t < 1){ A.raf = requestAnimationFrame(step); }
+  else { A.playing = false; A.done = true; document.getElementById('replay').classList.add('on'); }
+}
+
+var pending = false;
+function onScroll(){ if(!pending){ pending = true; requestAnimationFrame(frame); } }
+function frame(){
+  pending = false;
+  var vh = window.innerHeight, r = stage.getBoundingClientRect();
+  if(MODE === 'auto'){
+    if(r.top < vh*0.28 && r.bottom > vh*0.2 && !A.playing && !A.done) playStage();
+    if(r.top > vh*0.92 && A.done && !A.playing){
+      A.done = false; A.p = 0; renderStage(0);
+      document.getElementById('replay').classList.remove('on');
+    }
+    renderStage(A.p);
+  } else {
+    var span = stage.offsetHeight - vh;
+    renderStage(span > 0 ? clamp(-r.top/span, 0, 1) : 0);
+  }
+  renderWord();
+}
+
+function renderStage(p){
+  var vw = window.innerWidth, vh = window.innerHeight;
+  var grow = ease(seg(p, 0, .42));
+  var swap = seg(p, .44, .56);
+
+  var w0 = Math.min(330, vw*.78), h0 = Math.min(600, vh*.74);
+  card.style.width = lerp(w0, vw+2, grow)+'px';
+  card.style.height = lerp(h0, vh+2, grow)+'px';
+  card.style.borderRadius = lerp(28, 0, grow)+'px';
+  card.style.boxShadow = grow > .96 ? 'none' : '0 2px 6px rgba(11,18,32,.06), 0 30px 60px rgba(11,18,32,.13)';
+
+  hook.style.fontSize = lerp(28, Math.min(78, vw*.068), grow)+'px';
+  subH.style.fontSize = lerp(14, 19, grow)+'px';
+  cardIn.style.padding = lerp(34, Math.max(34, vw*.06), grow)+'px';
+  live.style.opacity = 1 - seg(p, .34, .46);
+  waveBox.style.opacity = (1 - seg(p, .30, .52)) * .55;
+
+  hook.style.opacity = 1 - swap;
+  subH.style.opacity = 1 - swap;
+  cardIn.style.transform = 'translateY('+(-swap*40)+'px)';
+
+  board.style.opacity = seg(p, .56, .60) > 0 ? 1 : 0;
+  boardH.style.opacity = seg(p, .56, .70);
+  boardH.style.transform = 'translateY('+lerp(30,0,seg(p,.56,.72))+'px)';
+  bits.forEach(function(b,i){
+    var t = seg(p, .60 + i*.045, .82 + i*.045);
+    b.style.opacity = t;
+    b.style.transform = 'translateY('+lerp(110,0,ease(t))+'px)';
+  });
+
+  var covering = stage.getBoundingClientRect().top <= 1 && stage.getBoundingClientRect().bottom > vh*.5;
+  nav.classList.toggle('dark', covering && p > .30);
+}
+function renderWord(){
+  if(!bw) return;
+  var vh = window.innerHeight, r = bw.getBoundingClientRect();
+  var q = clamp(1 - (r.top - vh*.15)/(vh*.85), 0, 1);
+  bw.style.transform = 'scale('+lerp(.82,1,ease(q))+')';
+  bw.style.opacity = clamp(q*1.6, 0, 1);
+}
+
+if(!REDUCED){
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onScroll);
+  frame();
+} else {
+  card.style.width='100%'; card.style.height='420px'; card.style.borderRadius='20px';
+  board.style.position='static'; board.style.opacity=1; board.style.padding='40px 0';
+  bits.forEach(function(b){ b.style.opacity=1; });
+  pin.style.display='block';
+}
+
+if(!REDUCED && window.IntersectionObserver){
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, {threshold:.18});
+  document.querySelectorAll('.rv').forEach(function(n,i){ n.style.transitionDelay = (i%4)*70+'ms'; io.observe(n); });
+} else {
+  document.querySelectorAll('.rv').forEach(function(n){ n.classList.add('in'); });
+}
+
+
+/* ===================== DEMO STATE ===================== */
+var CAL_URL = 'https://calendly.com/erica-aiparagonconsulting/20-minute-strategy-session';
+var VIDEO_URL = '';   /* drop a 60-second walkthrough embed URL here */
+
+var S = { step:1, type:'initial', crm:'HubSpot', ctxTab:0, tplKey:null,
+          res:true, edited:false, engaged:false, started:false, dv:0, expand:false };
+
+var STEPS = ['Meeting','Record','Research','Template','Brief','Delivery','Next'];
+var STEP_CHIP = {1:1, 2:2, 3:2, 4:3, 5:4, 6:5, 7:5, 8:6, 9:7};
+var CRMS = ['HubSpot','Salesforce','Wealthbox','Redtail','Something else'];
+
+var TYPES = [
+  {k:'initial',     stg:'STAGE ONE',   label:'Initial client meeting',
+   sub:'First real conversation with someone who is not a client yet. No history to read, so the research does the work.'},
+  {k:'onboarding',  stg:'STAGE TWO',   label:'Onboarding session',
+   sub:'Signed, not yet set up. The brief is mostly about what you have, what is missing and what they already asked.'},
+  {k:'deliverable', stg:'STAGE THREE', label:'Deliverable review',
+   sub:'Presenting work. The brief carries forward every commitment from the meetings that led here.'}
+];
+
+var M = {
+
+/* ---------------- STAGE ONE : INITIAL ---------------- */
+initial:{
+  client:'Reva Hartley', org:'COO, Calder Medical Group', when:'Tomorrow, 10:00',
+  kind:'Discovery call, 45 minutes', owner:'Erica',
+  read:[
+    ['Matching the calendar entry to a record','crm','contact','found a lead record created 9 days ago'],
+    ['Reading the pipeline stage and history','crm','stage','qualified lead, no meeting logged'],
+    ['Pulling the email thread','inbox','gmail','4 messages, 1 question unanswered'],
+    ['Looking for prior meeting notes','notes','crm','none found, this is the first'],
+    ['Checking the document store','drive','files','nothing expected at this stage'],
+    ['Researching the client and their firm','research','web','company, role and one recent change']
+  ],
+  stageRail:[['Stage','Qualified lead'],['In stage','9 days'],['Owner','Erica'],['Source','Referral, existing client'],['Last contact','Scheduling email, 4 days ago']],
+  flags:['One question in the thread has never been answered','No financial picture on file at all'],
+  ctx:{
+    crm:[
+      {k:'STAGE', t:'Qualified lead, 9 days', d:'Record created from the referral form on 3 September. No meeting has been logged against it yet.'},
+      {k:'SOURCE', t:'Referred by Daniel Okafor', d:'A client since 2021. The referral is recorded as a one-line note with no detail on why he made the introduction.', flag:true},
+      {k:'FIELDS', t:'Name, role, employer, phone', d:'Everything else on the record is blank. No assets, no timeline, no household detail.'}
+    ],
+    email:[
+      {k:'THREAD', t:'Four messages, scheduling only', d:'Two from her, two from you. No discovery questions asked or answered in writing.'},
+      {k:'UNANSWERED', t:'"Can you send something on how you charge?"', d:'Asked on 6 September. The reply that followed confirmed the time and did not address it.', flag:true},
+      {k:'TONE', t:'Short, direct, replies within the hour', d:'She writes in two lines. Expect the same pace in the room.'}
+    ],
+    notes:[
+      {k:'NO HISTORY', t:'No prior meetings recorded', d:'This is the first conversation. Everything in this brief about her comes from the referral note and from public sources, and it is labelled that way.', empty:true}
+    ],
+    docs:[
+      {k:'NOTHING ON FILE', t:'No documents yet', d:'Expected at this stage. Nothing should be requested before a first meeting.', empty:true}
+    ]
+  },
+  rsTitle:'What we found about the client',
+  rsSub:'She has no history with you, so this is the half that does the work. Everything here is public and labelled.',
+  rsKind:'cards',
+  research:[
+    {k:'THE FIRM', t:'Calder Medical Group', d:'A fourteen-clinic group across two states. Completed the acquisition of a four-clinic practice in March.', src:'Company site and local press'},
+    {k:'THE PERSON', t:'COO since 2019, finance background', d:'Promoted internally from finance director. Public commentary is about integration and staffing rather than growth.', src:'Public profile'},
+    {k:'WHAT CHANGED', t:'The March acquisition', d:'A transaction of that shape usually puts equity, concentration and timing questions on the table within the year.', src:'Inferred', inf:true},
+    {k:'WHY NOW', t:'The referral came nine days later', d:'Daniel Okafor went through a similar transaction in 2021. That is very likely the reason he made the introduction.', src:'Inferred', inf:true},
+    {k:'EXPECT TO HEAR', t:'"We already have someone who does our taxes."', d:'The usual opener from owner-operators at this stage. Worth having an answer that does not compete with the accountant.', src:'Inferred', inf:true}
+  ],
+  rsRail:[['What we did not find','No public record of a sale process, and nothing about the household. Treat both as unknown.']],
+  tpl:'discovery',
+  slots:[
+    {sl:'OPEN WITH', from:'CRM record', tx:'Daniel Okafor made the introduction. Open there, and ask what he said to her about the firm, because the record does not say.'},
+    {sl:'WHY NOW', res:true, tx:'Calder closed a four-clinic acquisition in March and the referral arrived nine days later. Worth confirming rather than assuming, but it is the most likely reason this meeting exists.'},
+    {sl:'WHERE SHE STANDS', from:'CRM record', tx:'Qualified lead, nine days old, no meeting logged. The record holds her name, role, employer and phone number, and nothing else. This is a genuinely cold first conversation.'},
+    {sl:'CLEAR THIS FIRST', from:'Email thread', tx:'She asked on 6 September how you charge and never got an answer. Handle it in the first five minutes rather than letting it sit under the whole conversation.'},
+    {sl:'QUESTIONS TO ASK', from:'Discovery script', tx:'What changed in March and what it changed for her personally. Whether her stake is a fixed schedule or a negotiation. What she has already been told, and by whom. What would make this a good use of forty-five minutes.'},
+    {sl:'CLOSE', from:'Discovery script', tx:'No proposal today. Offer the written second opinion on whatever she already has in place, and agree who else needs to be in the next conversation.'}
+  ],
+  gaps:['No financial picture on file. Assets, timelines and household are all unknown.','Daniel\u2019s reason for the introduction was never written down.','The fee question is still unanswered in writing.'],
+  ledgerFile:'Lead record · Reva Hartley'
+},
+
+/* ---------------- STAGE TWO : ONBOARDING ---------------- */
+onboarding:{
+  client:'Marcus and Ana Ferreira', org:'New clients, signed 31 August', when:'Thursday, 14:00',
+  kind:'Onboarding session, 60 minutes', owner:'Erica',
+  read:[
+    ['Matching the calendar entry to a record','crm','contact','found the household record'],
+    ['Reading the onboarding checklist','crm','tasks','2 of 5 steps closed, 1 overdue'],
+    ['Pulling the email thread since signing','inbox','gmail','9 messages, 1 question unanswered'],
+    ['Reading the notes from the signing call','notes','crm','one concern raised twice'],
+    ['Auditing the document store','drive','files','7 items expected, 4 complete'],
+    ['Checking what is dated or incomplete','drive','review','2 items need attention']
+  ],
+  stageRail:[['Stage','Onboarding'],['In stage','12 days'],['Owner','Erica'],['Service','Core planning, quarterly reviews'],['Last contact','Document request, 4 days ago']],
+  flags:['A question from the signing call is still unanswered','The account transfer form has been open since 2 September'],
+  ctx:{
+    crm:[
+      {k:'STAGE', t:'Onboarding, 12 days', d:'Agreement signed 31 August. Two of five onboarding steps are closed.'},
+      {k:'OPEN TASKS', t:'Three open, one overdue', d:'The account transfer authorisation has been sitting open since 2 September.', flag:true},
+      {k:'SERVICE', t:'Core planning with quarterly reviews', d:'Fee agreed at signing. Nothing in the record suggests it has been revisited.'}
+    ],
+    email:[
+      {k:'THREAD', t:'Nine messages since signing', d:'Almost all of it is document requests going out from your side.'},
+      {k:'UNANSWERED', t:'"Does the trust need to be retitled first?"', d:'Asked by Ana on 8 September. The reply that followed attached a form and did not answer the question.', flag:true},
+      {k:'PATTERN', t:'Marcus replies. Ana asks the questions.', d:'Worth noticing before the room, because the questions are the ones that matter.'}
+    ],
+    notes:[
+      {k:'SIGNING CALL, 29 AUG', t:'They asked twice about the prior advisor', d:'Both times about how the transfer would look to him, not about cost or process. It was not resolved on the call.', flag:true},
+      {k:'SIGNING CALL, 29 AUG', t:'The trust came up late and briefly', d:'Recorded as one line. No detail on when it was set up or who drafted it.'}
+    ],
+    docs:[
+      {k:'ON FILE', t:'Four of seven items complete', d:'Identification for both, the signed agreement, and two of three prior statements.'},
+      {k:'OUTSTANDING', t:'Three items still missing or partial', d:'The full list and what is wrong with each one is on the next screen.', flag:true}
+    ]
+  },
+  rsTitle:'What is on file, and what is not',
+  rsSub:'The onboarding half of the engine is an audit rather than a search. Nothing here is inferred.',
+  rsKind:'docs',
+  docs:[
+    {st:'ok',   lbl:'ON FILE',  t:'Identification, both spouses', d:'Received 2 September. Both current.'},
+    {st:'ok',   lbl:'ON FILE',  t:'Signed advisory agreement', d:'Executed 31 August.'},
+    {st:'part', lbl:'PARTIAL',  t:'Risk questionnaire', d:'Returned with section four left blank. That is the section on time horizon.'},
+    {st:'miss', lbl:'MISSING',  t:'Account transfer authorisation', d:'Requested 2 September, chased once, never returned. This is the item blocking everything else.'},
+    {st:'miss', lbl:'MISSING',  t:'Trust deed', d:'Mentioned at signing, never requested in writing. Nobody has asked for it.'},
+    {st:'part', lbl:'CHECK',    t:'Beneficiary designations', d:'On file but dated 2016, which predates the trust they mentioned.'},
+    {st:'part', lbl:'PARTIAL',  t:'Prior advisor statements', d:'Two of three received. The missing one is the pension account.'}
+  ],
+  rsRail:[['Ask for in the room','The transfer authorisation and the trust deed. Both are faster to sign in front of you than to chase by email.'],
+          ['Do not ask again','Identification and the agreement are done. Asking a second time is the thing that makes onboarding feel disorganised.']],
+  tpl:'onboarding',
+  slots:[
+    {sl:'FRAME THE MEETING', from:'CRM record', tx:'Twelve days in, two of five steps closed. The honest framing is that this hour exists to clear the other three, and saying so up front is better than working around it.'},
+    {sl:'ANSWER THIS FIRST', from:'Email thread', tx:'Ana asked on 8 September whether the trust needs retitling before the transfer, and the reply attached a form instead of answering. She asked a version of the same thing at signing. Answer it before anything else.'},
+    {sl:'WHAT YOU ALREADY HAVE', from:'Document store', tx:'Identification for both, the signed agreement, and two of the three prior statements. Say this out loud so they know the paperwork is moving.'},
+    {sl:'WHAT IS STILL OUTSTANDING', from:'Document store', tx:'The account transfer authorisation, the trust deed and the pension statement. The transfer form has been open since 2 September and is holding up the rest.'},
+    {sl:'FLAG BEFORE THEY FIND IT', from:'Document store', tx:'The beneficiary designations on file are dated 2016 and predate the trust they mentioned. Raise it now rather than at the first quarterly review.'},
+    {sl:'THE UNSPOKEN ONE', from:'Meeting notes', tx:'They asked twice at signing how the transfer would look to their previous advisor. It was never resolved. They are unlikely to raise it a third time, so raise it yourself.'},
+    {sl:'NEXT STEP', from:'Onboarding agenda', tx:'Two signatures in the room, section four of the questionnaire completed together, and a date for the first review before they leave.'}
+  ],
+  gaps:['Section four of the risk questionnaire is blank.','The prior advisor is not named anywhere in the record.','The trust deed has never been formally requested.'],
+  ledgerFile:'Household record · Ferreira'
+},
+
+/* ---------------- STAGE THREE : DELIVERABLE ---------------- */
+deliverable:{
+  client:'Sandoval Family Trust', org:'Third meeting, plan delivery', when:'Monday, 09:30',
+  kind:'Deliverable review, 60 minutes', owner:'Erica',
+  read:[
+    ['Matching the calendar entry to a record','crm','contact','found the engagement record'],
+    ['Reading the meeting history','crm','stage','discovery 14 Feb, data gathering 3 Mar'],
+    ['Pulling notes from both prior meetings','notes','crm','4 commitments recorded'],
+    ['Checking which commitments were closed','crm','tasks','2 done, 2 still open'],
+    ['Reading the thread since the last meeting','inbox','gmail','22 messages, 1 question repeated'],
+    ['Reading the deliverable itself','drive','files','plan draft v3, 31 pages']
+  ],
+  stageRail:[['Stage','Plan delivery'],['Meetings','Third'],['Owner','Erica'],['Deliverable','Plan draft v3, 31 pages'],['Last contact','Email, 27 March']],
+  flags:['One question has now been asked twice and answered only verbally','Two commitments from the last meeting are still open'],
+  ctx:{
+    crm:[
+      {k:'HISTORY', t:'Discovery 14 Feb, data gathering 3 Mar', d:'Both logged with notes. This is the third meeting and the first where you present anything.'},
+      {k:'OPEN TASKS', t:'Two tasks tied to this meeting are open', d:'Both were created from the 3 March notes and neither has been closed.', flag:true},
+      {k:'ATTENDEES', t:'Their son attended the second half last time', d:'Added to the record as an attendee, not as a contact. No email on file for him.'}
+    ],
+    email:[
+      {k:'THREAD', t:'Twenty-two messages across the engagement', d:'Mostly document collection, with two longer exchanges about the property.'},
+      {k:'ASKED TWICE', t:'"Will you cover the property in Lisbon?"', d:'Raised on 3 March and again by email on 27 March. Answered verbally both times and never in writing.', flag:true},
+      {k:'TONE', t:'Formal, and they keep the paper trail', d:'Every verbal answer has been followed by an email confirming it. Except this one.'}
+    ],
+    notes:[
+      {k:'14 FEBRUARY', t:'You promised a written second opinion on the pension', d:'Their words were that they wanted something they could show someone else. That framing matters for how it is presented.'},
+      {k:'3 MARCH', t:'The son asked about control, not returns', d:'Three of his four questions were about who decides what and when. None were about performance.', flag:true},
+      {k:'3 MARCH', t:'Lisbon came up for the first time', d:'Recorded as an aside. It has been raised in every contact since.'}
+    ],
+    docs:[
+      {k:'THE DELIVERABLE', t:'Plan draft v3, 31 pages', d:'Version three, last edited four days ago. The property section is two paragraphs.', flag:true},
+      {k:'SUPPORTING', t:'Valuation, pension statement, trust summary', d:'All three on file and current.'}
+    ]
+  },
+  rsTitle:'What you said you would do',
+  rsSub:'Pulled from the notes of both prior meetings and checked against what has actually been delivered.',
+  rsKind:'timeline',
+  timeline:[
+    {st:'done', dt:'14 FEBRUARY', t:'A written second opinion on the pension arrangement', d:'Delivered. It is section four of the plan. They asked for something they could show someone else, so lead with that framing rather than the analysis.'},
+    {st:'done', dt:'14 FEBRUARY', t:'Model the property sale two ways', d:'Delivered. Both scenarios are in section six.'},
+    {st:'open', dt:'3 MARCH', t:'Come back on whether Lisbon sits inside the plan', d:'Not delivered in writing. Answered verbally twice, and asked again by email on 27 March. The plan gives it two paragraphs.'},
+    {st:'open', dt:'3 MARCH', t:'Send something the son can read on his own', d:'Not delivered. Nothing has been sent to him and there is no email address on file for him.'}
+  ],
+  rsRail:[['Two of four still open','Both open items are the ones raised by the family rather than by you. That is the pattern worth noticing.'],
+          ['They keep the paper trail','Every other verbal answer in this engagement was followed up in writing. The Lisbon one was not.']],
+  tpl:'review',
+  slots:[
+    {sl:'RECAP', from:'CRM record', tx:'Third meeting. Discovery on 14 February, data gathering on 3 March, and the plan today. Thirty-one pages, so the recap should take two minutes and no more.'},
+    {sl:'WHAT THEY ASKED FOR', from:'Meeting notes', tx:'A second opinion on the pension arrangement they could show someone else, and the property sale modelled two ways. Both are delivered, in sections four and six.'},
+    {sl:'OPEN THE MEETING WITH THIS', from:'Email thread', tx:'Lisbon. Raised on 3 March, answered verbally, asked again by email on 27 March and still not answered in writing. They confirm everything else in writing, so the silence on this one is visible to them. Do not wait to be asked a third time.'},
+    {sl:'WHO IS IN THE ROOM', from:'Meeting notes', tx:'Their son joined the second half last time and asked about control rather than returns. There is no email address for him on file and nothing has been sent to him, which was also a commitment.'},
+    {sl:'DECISIONS NEEDED TODAY', from:'Review agenda', tx:'Which of the two property scenarios they want built out. Whether the pension moves or stays. Whether the son becomes a named contact on the engagement.'},
+    {sl:'NEXT STEP', from:'Review agenda', tx:'Written confirmation on Lisbon within two days, in the thread rather than on a call. A separate short summary for the son. A date for the implementation meeting before they leave.'}
+  ],
+  gaps:['No written answer on the Lisbon property.','No email address on file for the son.','The pension provider has not confirmed transfer timing.'],
+  ledgerFile:'Engagement record · Sandoval Family Trust'
+}
+};
+function D(){ return M[S.type]; }
+
+var CTX_TABS = [
+  {k:'crm',   label:'CRM record'},
+  {k:'email', label:'Email thread'},
+  {k:'notes', label:'Meeting notes'},
+  {k:'docs',  label:'Documents'}
+];
+
+var TEMPLATES = {
+  discovery:{name:'Discovery script', owner:'Your script',
+    lines:[['OPENING','Referred by {{referral_source}}, introduced {{referral_date}}.'],
+           ['WHY NOW','{{trigger_event}}, found in {{research_source}}.'],
+           ['THEIR SITUATION','{{pipeline_stage}}, {{days_in_stage}} days. Known: {{known_fields}}.'],
+           ['CLEAR FIRST','{{unanswered_question}}, asked {{question_date}}.'],
+           ['QUESTIONS TO ASK','{{discovery_questions}}'],
+           ['CLOSE','{{next_step}}']]},
+  onboarding:{name:'Onboarding agenda', owner:'Your agenda',
+    lines:[['FRAME','{{days_since_signing}} days in, {{steps_closed}} of {{steps_total}} closed.'],
+           ['ANSWER FIRST','{{unanswered_question}}, asked {{question_date}}.'],
+           ['WHAT WE HAVE','{{documents_received}}'],
+           ['WHAT IS OUTSTANDING','{{documents_missing}}'],
+           ['FLAG','{{document_conflicts}}'],
+           ['NEXT STEP','{{next_step}}']]},
+  review:{name:'Deliverable review agenda', owner:'Your agenda',
+    lines:[['RECAP','Meeting {{meeting_number}}. {{prior_meetings}}.'],
+           ['WHAT THEY ASKED FOR','{{commitments_closed}}'],
+           ['STILL OPEN','{{commitments_open}}, raised {{commitment_date}}.'],
+           ['WHO IS IN THE ROOM','{{attendees}}'],
+           ['DECISIONS TODAY','{{decisions_required}}'],
+           ['NEXT STEP','{{next_step}}']]},
+  generic:{name:'Blank one-pager', owner:'Ours, not yours',
+    lines:[['CONTEXT','{{everything_we_found}}'],
+           ['OPEN ITEMS','{{open_items}}'],
+           ['NEXT STEP','{{next_step}}']]}
+};
+var TPL_ORDER = ['discovery','onboarding','review','generic'];
+
+var GEN = ['Merging the record, the thread and the notes','Ordering it by what matters in this meeting',
+           'Writing into your template','Attaching a source to every line','Listing what is still missing'];
+
+var DELIVER = [
+  {k:'email', label:'Email, 7am'},
+  {k:'teams', label:'Teams'},
+  {k:'pdf',   label:'One-page PDF'}
+];
+
+/* ===================== HELPERS ===================== */
+function el(id){ return document.getElementById(id); }
+function esc(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function initials(n){ return n.split(/\s+/).slice(0,2).map(function(x){ return x[0]; }).join('').toUpperCase(); }
+function typeLabel(){ return TYPES.filter(function(t){ return t.k===S.type; })[0].label; }
+function tplKey(){ return S.tplKey || D().tpl; }
+function tpl(){ return TEMPLATES[tplKey()]; }
+
+function renderSteps(){
+  var cur = STEP_CHIP[S.step] || 1;
+  el('steps').innerHTML = STEPS.map(function(s2,i){
+    var n = i+1, cls = n===cur ? 'on' : (n<cur ? 'done' : '');
+    return (i ? '<span class="sep"></span>' : '') +
+      '<span class="stp '+cls+'"><span class="n">'+(n<cur?'\u2713':n)+'</span>'+s2+'</span>';
+  }).join('');
+}
+
+/* ===================== 1 : MEETING ===================== */
+function renderMeeting(){
+  el('mtypes').innerHTML = TYPES.map(function(t){
+    return '<button class="mtype '+(S.type===t.k?'on':'')+'" onclick="setType(\''+t.k+'\')">'+
+      '<span class="stg">'+t.stg+'</span><b>'+t.label+'</b><p>'+t.sub+'</p></button>';
+  }).join('');
+  var d = D();
+  el('whoBox').innerHTML =
+    '<div class="who-card"><span class="av">'+initials(d.client)+'</span>' +
+    '<div><b>'+esc(d.client)+'</b><span>'+esc(d.org)+'</span></div>' +
+    '<span class="when">'+esc(d.when)+'</span></div>' +
+    '<p class="tiny" style="margin:9px 0 0">Sample meeting. In your own account this comes straight off the calendar entry.</p>';
+  el('crmChips').innerHTML = CRMS.map(function(c){
+    return '<button class="chip '+(S.crm===c?'on':'')+'" onclick="setCrm(\''+c+'\')">'+c+'</button>';
+  }).join('');
+  el('mtNote').textContent = d.kind;
+}
+function setType(k){
+  S.type = k; S.tplKey = null; S.ctxTab = 0; S.dv = 0; S.expand = false;
+  renderMeeting();
+  track('meeting_type_selected',{type:k});
+}
+function setCrm(c){ S.crm = c; renderMeeting(); track('crm_selected',{crm:c}); }
+
+/* ===================== 2 : READING ===================== */
+function srcLabel(sys){
+  if(sys === 'crm' || sys === 'notes') return S.crm;
+  if(sys === 'inbox') return 'Inbox';
+  if(sys === 'drive') return 'Document store';
+  return 'Public sources';
+}
+function runRead(){
+  if(!S.started){ S.started = true; track('demo_start'); }
+  var d = D();
+  el('resSub').textContent = d.client + ' \u00b7 ' + typeLabel() + ' \u00b7 ' + S.crm;
+  var R = d.read;
+  el('resList').innerHTML = R.map(function(r,i){
+    return '<div class="gen-row" id="rr'+i+'"><span class="ic"></span><span>'+r[0]+
+      ' <span class="tiny" style="font-weight:600">\u00b7 '+srcLabel(r[1])+'</span></span></div>';
+  }).join('');
+  el('resBar').style.width = '0%';
+  var i = 0;
+  (function next(){
+    if(i > 0){
+      var prev = el('rr'+(i-1));
+      prev.className = 'gen-row done';
+      prev.innerHTML = prev.innerHTML.replace(/<span class="tiny"[^>]*>.*?<\/span>/,
+        '<span class="tiny" style="font-weight:600">\u00b7 '+R[i-1][3]+'</span>');
+    }
+    if(i >= R.length){
+      el('resBar').style.width = '100%';
+      setTimeout(function(){ S.step = 3; paint(); renderCtx(); track('artifact_rendered',{stage:'record'}); }, 420);
+      return;
+    }
+    el('rr'+i).className = 'gen-row active';
+    el('resBar').style.width = Math.round(((i+1)/R.length)*100)+'%';
+    i++;
+    setTimeout(next, 600 + Math.random()*260);
+  })();
+}
+
+/* ===================== 3 : THE RECORD ===================== */
+function renderCtx(){
+  var d = D();
+  el('ctxH').textContent = 'What your systems already hold on ' + d.client;
+  el('ctxTabs').innerHTML = CTX_TABS.map(function(t,i){
+    var n = d.ctx[t.k].length;
+    return '<button class="ex-tab '+(S.ctxTab===i?'on':'')+'" onclick="setCtx('+i+')">'+t.label+'<b>'+n+'</b></button>';
+  }).join('');
+  var items = d.ctx[CTX_TABS[S.ctxTab].k];
+  el('ctxBody').innerHTML = items.map(function(it){
+    return '<div class="sys-item '+(it.flag?'flag':'')+' '+(it.empty?'empty':'')+'">'+
+      '<span class="k">'+it.k+'</span><b>'+esc(it.t)+'</b><p>'+esc(it.d)+'</p></div>';
+  }).join('');
+  el('stageRail').innerHTML = d.stageRail.map(function(r){
+    return '<div class="rail-row"><span style="color:var(--mut-2);min-width:78px">'+r[0]+'</span><span>'+esc(r[1])+'</span></div>';
+  }).join('');
+  el('flagRail').innerHTML = d.flags.map(function(f){
+    return '<div class="rail-row">\u2022&nbsp; '+esc(f)+'</div>';
+  }).join('');
+  el('ctxNote').textContent = CTX_TABS[S.ctxTab].label + ' \u00b7 ' + srcLabel(S.ctxTab===1?'inbox':(S.ctxTab===3?'drive':'crm'));
+  el('toRes').textContent = S.type === 'initial' ? 'Research the client'
+                          : (S.type === 'onboarding' ? 'Audit the documents' : 'Check what was promised');
+}
+function setCtx(i){ S.ctxTab = i; S.engaged = true; renderCtx(); track('record_viewed',{tab:CTX_TABS[i].k}); }
+
+/* ===================== 4 : STAGE-SPECIFIC ===================== */
+function renderRs(){
+  var d = D();
+  el('rsH').textContent = d.rsTitle;
+  el('rsSub').textContent = d.rsSub;
+  var h = '';
+  if(d.rsKind === 'cards'){
+    h = d.research.map(function(r){
+      return '<div class="sys-item"><span class="k">'+r.k+'</span><b>'+esc(r.t)+'</b>'+
+        '<p>'+esc(r.d)+'</p><span class="pill '+(r.inf?'inf':'res')+'">'+esc(r.src)+'</span></div>';
+    }).join('');
+    el('rsNote').textContent = d.research.filter(function(r){ return r.inf; }).length + ' of ' + d.research.length + ' inferred, and labelled';
+  } else if(d.rsKind === 'docs'){
+    h = d.docs.map(function(x){
+      return '<div class="doc"><span class="st '+x.st+'">'+x.lbl+'</span>'+
+        '<div><b>'+esc(x.t)+'</b><p>'+esc(x.d)+'</p></div></div>';
+    }).join('');
+    var miss = d.docs.filter(function(x){ return x.st !== 'ok'; }).length;
+    el('rsNote').textContent = miss + ' of ' + d.docs.length + ' items need something';
+  } else {
+    h = '<div class="tl">' + d.timeline.map(function(x){
+      return '<div class="tli '+x.st+'"><span class="dt">'+x.dt+' \u00b7 '+(x.st==='done'?'DELIVERED':'STILL OPEN')+'</span>'+
+        '<b>'+esc(x.t)+'</b><p>'+esc(x.d)+'</p></div>';
+    }).join('') + '</div>';
+    el('rsNote').textContent = d.timeline.filter(function(x){ return x.st==='open'; }).length + ' of ' + d.timeline.length + ' commitments still open';
+  }
+  el('rsBody').innerHTML = h;
+  el('rsRail').innerHTML = d.rsRail.map(function(r,i){
+    return '<div class="rail-card '+(i===0?'gold':'')+'"><h4>'+esc(r[0])+'</h4><div class="rail-row">'+esc(r[1])+'</div></div>';
+  }).join('');
+}
+
+/* ===================== 5 : TEMPLATE ===================== */
+function renderTpl(){
+  el('tplChips').innerHTML = TPL_ORDER.map(function(k){
+    var t = TEMPLATES[k];
+    return '<button class="chip '+(tplKey()===k?'on':'')+'" onclick="setTpl(\''+k+'\')">'+t.name+'</button>';
+  }).join('') + '<button class="chip" onclick="toast(\'Upload is enabled once it is connected to your systems\')">Upload your own</button>';
+  var t = tpl();
+  el('tplBody').innerHTML = t.lines.map(function(l){
+    var body = l[1].replace(/\{\{([a-z_]+)\}\}/g, function(m, f){ return '<span class="mf">'+f+'</span>'; });
+    return '<span class="sl2">'+l[0]+'</span><div class="tl-row">'+body+'</div>';
+  }).join('');
+  var fields = [];
+  t.lines.forEach(function(l){
+    var m = l[1].match(/\{\{([a-z_]+)\}\}/g) || [];
+    m.forEach(function(x){ fields.push(x.replace(/[{}]/g,'')); });
+  });
+  el('tplFields').innerHTML = fields.map(function(f){
+    return '<div class="rail-row"><span class="mf">'+f+'</span></div>';
+  }).join('');
+  el('tplNote').textContent = t.name + ' \u00b7 ' + t.owner + ' \u00b7 ' + fields.length + ' fields';
+}
+function setTpl(k){ S.tplKey = k; S.engaged = true; renderTpl(); track('template_selected',{template:k}); }
+
+/* ===================== 6 : BUILD ===================== */
+function runGen(){
+  var d = D();
+  el('genSub').textContent = d.client + ' \u00b7 ' + tpl().name;
+  el('genList').innerHTML = GEN.map(function(g,i){
+    return '<div class="gen-row" id="gg'+i+'"><span class="ic"></span><span>'+g+'</span></div>';
+  }).join('');
+  el('genBar').style.width='0%';
+  var i = 0;
+  (function next(){
+    if(i > 0) el('gg'+(i-1)).className='gen-row done';
+    if(i >= GEN.length){
+      el('genBar').style.width='100%'; el('genPct').textContent='Done';
+      setTimeout(function(){ S.step=7; paint(); renderBrief(); track('artifact_rendered',{stage:'brief'}); }, 400);
+      return;
+    }
+    el('gg'+i).className='gen-row active';
+    var pct = Math.round(((i+1)/GEN.length)*100);
+    el('genBar').style.width=pct+'%';
+    el('genPct').textContent=pct+'% \u00b7 '+GEN[i].toLowerCase();
+    i++;
+    setTimeout(next, 600+Math.random()*300);
+  })();
+}
+
+/* ===================== 7 : THE BRIEF ===================== */
+function slots(){
+  return D().slots.filter(function(sl){ return S.res || !sl.res; });
+}
+function renderBrief(){
+  var d = D();
+  el('bfH').textContent = 'Brief for ' + d.client;
+  el('resSw').classList.toggle('on', S.res);
+  el('resLine').textContent = S.res
+    ? (S.type === 'initial' ? 'Public research on the client and their firm, labelled where it is inferred.'
+                            : 'Outside research is on, though this meeting runs almost entirely on your own records.')
+    : 'Your own systems only. Nothing from outside sources.';
+  el('resMeta').textContent = S.res ? 'Public sources \u00b7 labelled' : 'Not applied';
+
+  el('mtgCard').innerHTML =
+    '<h4>'+esc(d.when)+'</h4>' +
+    '<div class="rail-row"><span style="color:var(--mut-2);min-width:60px">Type</span><span>'+esc(typeLabel())+'</span></div>' +
+    '<div class="rail-row"><span style="color:var(--mut-2);min-width:60px">With</span><span>'+esc(d.client)+'</span></div>' +
+    '<div class="rail-row"><span style="color:var(--mut-2);min-width:60px">Length</span><span>'+esc(d.kind)+'</span></div>' +
+    '<div class="rail-row"><span style="color:var(--mut-2);min-width:60px">Owner</span><span>'+esc(d.owner)+'</span></div>' +
+    '<div class="rail-row" style="margin-top:8px;color:var(--mut)">Written to '+esc(tpl().name)+'.</div>';
+
+  el('bodyCol').innerHTML = slots().map(function(sl){
+    var res = !!sl.res;
+    return '<div class="slot'+(res?' resslot':'')+'"><span class="sl">'+sl.sl+'</span>' +
+      '<div class="tx" contenteditable="true" spellcheck="false" oninput="edited()">'+esc(sl.tx)+'</div>' +
+      '<span class="pill '+(res?'res':'srcd')+'">'+(res?'Outside research':'From '+esc(sl.from))+'</span></div>';
+  }).join('');
+
+  var used = {};
+  slots().forEach(function(sl){ if(!sl.res) used[sl.from] = true; });
+  el('ledger').innerHTML =
+    '<div class="rail-row"><b style="font-weight:700">'+esc(d.ledgerFile)+'</b></div>' +
+    Object.keys(used).map(function(k){ return '<div class="rail-row">'+esc(k)+'</div>'; }).join('') +
+    (S.res ? '<div class="rail-row" style="color:#5B4B9B">Public sources \u00b7 labelled inferred</div>' : '');
+
+  el('gaps').innerHTML = d.gaps.map(function(g){ return '<div class="rail-row">\u2022&nbsp; '+esc(g)+'</div>'; }).join('');
+  el('bfNote').textContent = slots().length + ' sections \u00b7 ' + d.gaps.length + ' open items';
+}
+function toggleRes(){ S.res = !S.res; S.engaged = true; renderBrief(); track('research_toggled',{applied:S.res}); }
+function edited(){ S.engaged = true; if(!S.edited){ S.edited = true; track('demo_edited',{type:S.type}); } }
+
+/* ===================== 8 : DELIVERY ===================== */
+function briefLines(){
+  var live = document.querySelectorAll('#bodyCol .slot');
+  var out = [];
+  if(live && live.length){
+    for(var i=0;i<live.length;i++){
+      out.push([live[i].querySelector('.sl').textContent, live[i].querySelector('.tx').textContent.trim()]);
+    }
+  } else {
+    slots().forEach(function(sl){ out.push([sl.sl, sl.tx]); });
+  }
+  return out;
+}
+function clipText(t, n){
+  if(t.length <= n) return esc(t);
+  if(S.expand) return esc(t) + '<button class="see-more less" onclick="expandBrief()">see less</button>';
+  return esc(t.slice(0, n).replace(/\s+\S*$/,'')) + '\u2026 <button class="see-more" onclick="expandBrief()">see more</button>';
+}
+function expandBrief(){ S.expand = !S.expand; S.engaged = true; renderDv(); }
+function renderDv(){
+  var d = D(), k = DELIVER[S.dv].k, L = briefLines();
+  el('dvTabs').innerHTML = DELIVER.map(function(p,i){
+    return '<button class="pv-tab '+(S.dv===i?'on':'')+'" onclick="setDv('+i+')">'+p.label+'</button>';
+  }).join('');
+
+  if(k === 'email'){
+    var body = L.slice(0,3).map(function(l){ return l[0]+'\n'+l[1]; }).join('\n\n');
+    el('dvStage').innerHTML =
+      '<div class="post">' +
+        '<div class="mail-top"><span class="av">AP</span>' +
+          '<div class="post-who"><b>Pre-Meeting Intelligence</b><span>to you \u00b7 07:00</span></div></div>' +
+        '<div class="mail-subj">'+esc(d.when.split(',')[1] ? d.when.split(',')[1].trim() : d.when)+' with '+esc(d.client)+' \u00b7 '+esc(typeLabel())+'</div>' +
+        '<div class="post-txt" style="padding-top:2px">'+clipText(body, 420)+'</div>' +
+        '<div class="post-act"><span>\u21A9 Reply</span><span>\u21AA Forward</span></div>' +
+      '</div>';
+  } else if(k === 'teams'){
+    el('dvStage').innerHTML =
+      '<div class="teams">' +
+        '<div class="teams-top"><span class="av" style="width:28px;height:28px;font-size:10px">AP</span>' +
+          '<b>Pre-Meeting Intelligence</b><span class="tiny" style="margin-left:auto">07:00</span></div>' +
+        '<div class="teams-body"><div class="teams-card">' +
+          '<b>'+esc(d.when)+' \u00b7 '+esc(d.client)+'</b>' +
+          L.slice(0,3).map(function(l){
+            return '<div class="ln2"><span style="color:var(--mut-2);font-weight:800;font-size:9.5px;letter-spacing:.05em;min-width:96px">'+
+              esc(l[0])+'</span><span>'+esc(l[1].length > 96 ? l[1].slice(0,96).replace(/\s+\S*$/,'')+'\u2026' : l[1])+'</span></div>';
+          }).join('') +
+          '<div class="teams-acts"><span>Open full brief</span><span>'+esc(D().gaps.length)+' open items</span></div>' +
+        '</div></div>' +
+      '</div>';
+  } else {
+    el('dvStage').innerHTML =
+      '<div class="sheet">' +
+        '<span class="sh-k">PRE-MEETING BRIEF</span>' +
+        '<h5>'+esc(d.client)+'</h5>' +
+        '<div class="sh-m">'+esc(d.when)+' \u00b7 '+esc(d.kind)+' \u00b7 '+esc(tpl().name)+'</div>' +
+        L.slice(0,4).map(function(l){
+          return '<span class="sh-s">'+esc(l[0])+'</span><div class="sh-t">'+
+            esc(l[1].length > 190 ? l[1].slice(0,190).replace(/\s+\S*$/,'')+'\u2026' : l[1])+'</div>';
+        }).join('') +
+        '<span class="sh-s">STILL TO CONFIRM</span>' +
+        '<div class="sh-t">'+d.gaps.map(function(g){ return esc(g); }).join('<br>')+'</div>' +
+      '</div>';
+  }
+
+  el('timing').innerHTML =
+    '<div class="rail-row"><span style="color:var(--mut-2);min-width:78px">Sent</span><span>07:00, the morning of</span></div>' +
+    '<div class="rail-row"><span style="color:var(--mut-2);min-width:78px">Reread</span><span>30 minutes before</span></div>' +
+    '<div class="rail-row"><span style="color:var(--mut-2);min-width:78px">After</span><span>Your notes write back to '+esc(S.crm)+'</span></div>';
+  el('dvNote').textContent = DELIVER[S.dv].label + ' \u00b7 ' + L.length + ' sections';
+}
+function setDv(i){ S.dv = i; S.expand = false; S.engaged = true; renderDv(); track('delivery_viewed',{channel:DELIVER[i].k}); }
+
+/* ===================== 9 : NEXT ===================== */
+function send(){
+  var v = el('gateEmail').value.trim();
+  if(!/.+@.+\..+/.test(v)){ toast('Add a work email first'); el('gateEmail').focus(); return; }
+  track('email_captured',{intent: S.engaged ? 'high' : 'mid'});
+  el('doneMsg').textContent = 'On the way to ' + v + '. Usually lands within a minute.';
+  el('gateEmail').value = '';
+  toast('Sent');
+}
+function openCal(where){
+  track('book_clicked',{from: where || 'demo'});
+  el('calModal').style.display = 'flex';
+  var box = el('calBox');
+  if(!box.dataset.loaded){
+    box.dataset.loaded = '1';
+    box.innerHTML =
+      '<iframe title="Book a 20-minute strategy session" src="' + CAL_URL +
+      '?hide_gdpr_banner=1&primary_color=1b6bff" style="width:100%;height:620px;border:0" loading="lazy"></iframe>' +
+      '<p class="tiny" style="padding:0 18px 16px">Not loading? <a href="' + CAL_URL +
+      '" target="_blank" rel="noopener" style="text-decoration:underline">Open the booking page</a>.</p>';
+  }
+}
+function closeCal(){ el('calModal').style.display = 'none'; }
+
+function openVideo(){
+  track('video_opened');
+  el('vidModal').style.display = 'flex';
+  var box = el('vidBox');
+  if(!box.dataset.loaded){
+    box.dataset.loaded = '1';
+    box.innerHTML = VIDEO_URL
+      ? '<iframe src="'+VIDEO_URL+'" style="width:100%;aspect-ratio:16/9;border:0" allowfullscreen></iframe>'
+      : '<div class="vid-ph"><span>\u25B6</span><b>Sixty-second walkthrough</b>' +
+        '<span class="tiny">Drop the embed URL into VIDEO_URL at the top of the script.</span></div>';
+  }
+}
+function closeVideo(){ el('vidModal').style.display = 'none'; }
+
+/* ===================== FLOW ===================== */
+function go(n){
+  if(n === 2){ S.step = 2; paint(); runRead(); return; }
+  if(n === 6){ S.step = 6; paint(); runGen(); return; }
+  S.step = n; paint();
+  if(n === 1) renderMeeting();
+  if(n === 3) renderCtx();
+  if(n === 4) renderRs();
+  if(n === 5) renderTpl();
+  if(n === 7) renderBrief();
+  if(n === 8){ S.expand = false; renderDv(); }
+  if(n === 9) track('gate_view');
+}
+function paint(){
+  document.querySelectorAll('.pane').forEach(function(p){ p.classList.toggle('on', +p.dataset.p === S.step); });
+  renderSteps();
+}
+function reset(){
+  S.step=1; S.type='initial'; S.crm='HubSpot'; S.ctxTab=0; S.tplKey=null;
+  S.res=true; S.edited=false; S.engaged=false; S.started=false; S.dv=0; S.expand=false;
+  el('gateEmail').value=''; el('doneMsg').textContent='';
+  renderMeeting(); paint();
+}
+
+function jump(sel){ var t = document.querySelector(sel); if(t) t.scrollIntoView({behavior:'smooth',block:'start'}); }
+var tt;
+function toast(m){ var t = el('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(function(){ t.classList.remove('on'); },2000); }
+
+renderSteps(); renderMeeting(); paint();
+if(qs('type') && M[qs('type')]) setType(qs('type'));
+</script>
+</body>
+</html>
