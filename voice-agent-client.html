@@ -92,24 +92,29 @@
   .step-desc { font-size: 13px; color: var(--dim); margin-top: 3px; line-height: 1.45; }
   .step-meta { font-size: 12px; color: var(--dim); white-space: nowrap; padding-top: 3px; }
 
-  .card { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 18px 20px; margin-bottom: 14px; }
-  .card[data-state="approved"] { border-color: rgba(143,214,148,.35); }
-  .card[data-state="changes"] { border-color: rgba(232,112,90,.35); }
-  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
-  .card[data-open="false"] .card-head { margin-bottom: 0; }
+  .card { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); margin-bottom: 10px; overflow: hidden; transition: border-color .18s ease; }
+  .card[data-state="approved"] { border-color: rgba(143,214,148,.4); }
+  .card[data-state="changes"] { border-color: rgba(232,112,90,.4); }
+  .card[data-open="true"] { background: var(--panel-2); }
   .card[data-open="false"] .card-body { display: none; }
-  .card-toggle { background: none; border: 0; padding: 0; margin: 0; display: flex; align-items: flex-start; gap: 10px; cursor: pointer; color: inherit; font-family: inherit; text-align: left; flex: 1 1 240px; }
-  .card-toggle:focus-visible { outline: 2px solid var(--you); outline-offset: 4px; border-radius: 6px; }
-  .caret { color: var(--dim); font-size: 17px; line-height: 1.3; display: inline-block; transition: transform .18s ease; }
-  .card[data-open="true"] .caret { transform: rotate(90deg); }
-  .card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .card[data-open="false"] .card-sub { display: none; }
+  .card-toggle { width: 100%; background: none; border: 0; margin: 0; padding: 15px 18px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: inherit; font-family: inherit; font-size: inherit; text-align: left; }
+  .card[data-open="false"] .card-toggle:hover { background: rgba(255,255,255,.03); }
+  .card-toggle:focus-visible { outline: 2px solid var(--you); outline-offset: -2px; }
+  .caret { color: var(--dim); font-size: 17px; line-height: 1; display: inline-block; transition: transform .18s ease; flex-shrink: 0; }
+  .card[data-open="true"] .caret { transform: rotate(90deg); color: var(--you); }
+  .row-main { flex: 1 1 auto; min-width: 0; }
+  .row-meta { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+  .card-body { padding: 2px 18px 18px 44px; }
+  .card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
   .chip.act { padding: 5px 12px; font-size: 12px; }
   .chip[data-approve][aria-pressed="true"] { border-color: rgba(143,214,148,.6); color: var(--ok); }
   .chip[data-changes][aria-pressed="true"] { border-color: rgba(232,112,90,.6); color: #F4B6A8; }
   .review-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
   .review-count { font-size: 14px; color: var(--dim); }
-  .card-title { display: block; font-size: 16px; font-weight: 600; margin: 0; }
-  .card-sub { display: block; font-size: 12px; color: var(--dim); margin: 3px 0 0; }
+  .card-title { display: block; font-size: 15px; font-weight: 600; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card[data-open="true"] .card-title { white-space: normal; }
+  .card-sub { display: block; font-size: 12px; color: var(--dim); margin: 4px 0 0; }
   .tag { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); }
   .tag.external { border-color: rgba(255,179,0,.45); color: var(--you); }
   .tag.internal { border-color: rgba(116,198,181,.4); color: var(--agent); }
@@ -251,10 +256,6 @@
     <div class="gate">Nothing below has been sent, filed or written to any system. Approving marks an item ready for a person to act on, which is the only way it leaves this screen.</div>
     <div class="review-bar">
       <span class="review-count" id="reviewCount"></span>
-      <div class="controls" style="justify-content:flex-end">
-        <button class="chip" id="expandAll">Expand all</button>
-        <button class="chip" id="collapseAll">Collapse all</button>
-      </div>
     </div>
     <div id="results"></div>
   </section>
@@ -366,7 +367,7 @@
   const els = {};
   ["shell","status","statusText","orbFace","call","hint","mute","skip","sample","copy","clear","agentArc","youArc",
    "transcript","steps","error","results","resultsWrap","audit","auditWrap","runMission","autoRun",
-   "preset","persona","brief","sessionUrl","missionUrl","voice","mode","modeBadge","modeNote","testVoice","voiceNote","reviewCount","expandAll","collapseAll"].forEach((id) => { els[id] = document.getElementById(id); });
+   "preset","persona","brief","sessionUrl","missionUrl","voice","mode","modeBadge","modeNote","testVoice","voiceNote","reviewCount"].forEach((id) => { els[id] = document.getElementById(id); });
 
   const LEN_OUT = 2 * Math.PI * 86;
   const LEN_IN = 2 * Math.PI * 72;
@@ -511,7 +512,7 @@
   let stepState = {};
   let mission = { intake: null, research: null, draft: null, sources: [], log: [] };
   let approvals = {};
-  let expanded = {};
+  let openCard = null;
   let cardText = {};
   let approvableIds = [];
   let missionRunning = false;
@@ -1052,8 +1053,6 @@
     }
   }
 
-  const DEFAULT_OPEN = { intake: true };
-
   function actionChips(o) {
     const st = approvals[o.id] || "pending";
     let h = '<div class="card-actions">';
@@ -1069,25 +1068,27 @@
   }
 
   function card(o) {
-    if (expanded[o.id] === undefined) expanded[o.id] = !!DEFAULT_OPEN[o.id];
     cardText[o.id] = o.text || "";
     if (o.approvable && approvableIds.indexOf(o.id) === -1) approvableIds.push(o.id);
-    const open = !!expanded[o.id];
+    const open = openCard === o.id;
+    const st = approvals[o.id] || "pending";
     const el = document.createElement("div");
     el.className = "card";
     el.dataset.id = o.id;
     el.dataset.open = String(open);
-    el.dataset.state = approvals[o.id] || "pending";
+    el.dataset.state = st;
     el.innerHTML =
-      '<div class="card-head">' +
-        '<button class="card-toggle" data-toggle="' + o.id + '" aria-expanded="' + open + '">' +
-          '<span class="caret" aria-hidden="true">\u203A</span>' +
-          '<span><span class="card-title">' + esc(o.title) + "</span>" +
-          (o.sub ? '<span class="card-sub">' + esc(o.sub) + "</span>" : "") + "</span>" +
-        "</button>" +
-        actionChips(o) +
-      "</div>" +
-      '<div class="card-body">' + o.body + "</div>";
+      '<button class="card-toggle" data-toggle="' + o.id + '" aria-expanded="' + open + '">' +
+        '<span class="caret" aria-hidden="true">\u203A</span>' +
+        '<span class="row-main"><span class="card-title">' + esc(o.title) + "</span>" +
+        (o.sub ? '<span class="card-sub">' + esc(o.sub) + "</span>" : "") + "</span>" +
+        '<span class="row-meta">' +
+          (st === "approved" ? '<span class="tag approved">Approved</span>' : "") +
+          (st === "changes" ? '<span class="tag changes">Sent back</span>' : "") +
+          (o.tag ? '<span class="tag ' + o.tagClass + '">' + esc(o.tag) + "</span>" : "") +
+        "</span>" +
+      "</button>" +
+      '<div class="card-body">' + actionChips(o) + o.body + "</div>";
     return el;
   }
 
@@ -1213,15 +1214,6 @@
     els.auditWrap.hidden = false;
   }
 
-  function setAllExpanded(v) {
-    Object.keys(expanded).forEach((k) => { expanded[k] = v; });
-    Array.prototype.forEach.call(els.results.querySelectorAll(".card"), (c) => {
-      c.dataset.open = String(v);
-      const tg = c.querySelector("[data-toggle]");
-      if (tg) tg.setAttribute("aria-expanded", String(v));
-    });
-  }
-
   async function copyCard(id, btn) {
     try {
       await navigator.clipboard.writeText(cardText[id] || "");
@@ -1231,18 +1223,18 @@
     } catch (err) { showError("Copying was blocked by the browser."); }
   }
 
-  els.expandAll.addEventListener("click", () => setAllExpanded(true));
-  els.collapseAll.addEventListener("click", () => setAllExpanded(false));
-
   els.results.addEventListener("click", (e) => {
     const t = e.target.closest ? e.target.closest("[data-toggle],[data-approve],[data-changes],[data-copy]") : null;
     if (!t) return;
     if (t.hasAttribute("data-toggle")) {
       const id = t.getAttribute("data-toggle");
-      expanded[id] = !expanded[id];
-      const c = t.closest(".card");
-      if (c) c.dataset.open = String(expanded[id]);
-      t.setAttribute("aria-expanded", String(expanded[id]));
+      openCard = openCard === id ? null : id;
+      Array.prototype.forEach.call(els.results.querySelectorAll(".card"), (c) => {
+        const on = c.dataset.id === openCard;
+        c.dataset.open = String(on);
+        const tg = c.querySelector("[data-toggle]");
+        if (tg) tg.setAttribute("aria-expanded", String(on));
+      });
       return;
     }
     if (t.hasAttribute("data-copy")) { copyCard(t.getAttribute("data-copy"), t); return; }
@@ -1286,7 +1278,7 @@
     missionRunning = true;
     clearError();
     approvals = {};
-    expanded = {};
+    openCard = null;
     cardText = {};
     approvableIds = [];
     mission = { intake: null, research: null, draft: null, sources: [], log: [] };
@@ -1535,7 +1527,7 @@
     mission = { intake: null, research: null, draft: null, sources: [], log: [] };
     stepState = {};
     approvals = {};
-    expanded = {};
+    openCard = null;
     cardText = {};
     approvableIds = [];
     els.reviewCount.textContent = "";
