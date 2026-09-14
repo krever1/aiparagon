@@ -151,6 +151,10 @@ body.auto .stage{height:172vh}
 .stp .n{width:21px;height:21px;border-radius:50%;background:#F0F1F4;color:var(--mut-2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none}
 .stp.on{color:var(--ink)} .stp.on .n{background:var(--blue);color:#fff}
 .stp.done{color:var(--ink-2)} .stp.done .n{background:var(--green-soft);color:var(--green)}
+.stp{cursor:default}
+.stp.can{cursor:pointer}
+.stp.can:hover{color:var(--blue-d)}
+.stp.can:hover .n{background:#DCE8FF;color:var(--blue-d)}
 .sep{width:14px;height:1px;background:var(--line);flex:none}
 
 .pane{display:none} .pane.on{display:block}
@@ -453,6 +457,22 @@ body.auto .stage{height:172vh}
 .brf{display:grid;grid-template-columns:minmax(0,1fr) 244px;gap:22px}
 @media (max-width:900px){ .brf{grid-template-columns:1fr} }
 .pill.res{background:#F0EEF9;color:#5B4B9B}
+.livebox{border:1px solid var(--line);border-radius:14px;background:#FCFCFD;padding:18px 20px;margin-top:22px}
+.livebox .lh{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.livebox .lh b{font-size:13.5px;letter-spacing:-.02em}
+.livebox .lh .tiny{margin-left:auto}
+.livebox .slot{margin-bottom:14px}
+.livebox .slot:last-child{margin-bottom:0}
+.flash{animation:fl .5s ease}
+@keyframes fl{0%{background:var(--blue-soft)}100%{background:transparent}}
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.ba-c{border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:#fff}
+.ba-c.after{border-color:#CFEBDD;background:#F4FBF7}
+.ba-k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--mut-2);margin-bottom:8px}
+.ba-c.after .ba-k{color:#0B8A50}
+.ba-c .sl{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--blue);margin-bottom:8px}
+.ba-c .tx{font-size:12.5px;line-height:1.55;color:var(--ink-2)}
+@media (max-width:820px){ .ba{grid-template-columns:1fr} }
 .slot.resslot{border-left-color:#8E7CC8}
 
 .biz{max-width:900px;margin:0 auto}
@@ -640,26 +660,35 @@ body.auto .stage{height:172vh}
         </div>
 
         <div class="foot">
-          <button class="btn btn-line btn-sm" onclick="go(4)">Make it mine</button>
+          <button class="btn btn-line btn-sm" onclick="go(1)">Start over</button>
           <span class="tiny" id="bfNote"></span>
-          <button class="btn btn-pri btn-sm sp" onclick="go(5)">Something just changed</button>
+          <button class="btn btn-pri btn-sm sp" onclick="go(4)">Continue</button>
         </div>
       </div>
 
       <!-- 4 PERSONALIZE -->
       <div class="pane" data-p="4">
         <h3>Make it yours</h3>
-        <p class="s">Same engine. Different meeting, different systems, your own template.</p>
+        <p class="s">Change any of these and the brief below rewrites itself. Nothing to rerun.</p>
         <span class="lbl" style="margin-top:0">What kind of meeting?</span>
         <div class="mtypes" id="mtypes"></div>
-        <span class="lbl">Where does your account data live?</span>
-        <div class="chips" id="crmChips"></div>
-        <span class="lbl">Which template should it write into?</span>
-        <div class="chips" id="tplChips"></div>
+        <div class="sysgrid" style="margin-top:20px">
+          <div>
+            <span class="lbl" style="margin-top:0">Where does your account data live?</span>
+            <div class="chips" id="crmChips"></div>
+            <span class="lbl">Which template should it write into?</span>
+            <div class="chips" id="tplChips"></div>
+          </div>
+          <div class="rail-card gold">
+            <h4>Same engine, different inputs</h4>
+            <div class="rail-row">The sections stay the same. What fills them changes with the meeting, and so does which of your systems does the most work.</div>
+          </div>
+        </div>
+        <div class="livebox" id="liveBox"></div>
         <div class="foot">
-          <button class="btn btn-line btn-sm" onclick="go(3)">Back to the brief</button>
+          <button class="btn btn-line btn-sm" onclick="go(3)">Back</button>
           <span class="tiny" id="pzNote"></span>
-          <button class="btn btn-pri btn-sm sp" onclick="rebuild()">Rebuild the brief</button>
+          <button class="btn btn-pri btn-sm sp" onclick="go(5)">Continue</button>
         </div>
       </div>
 
@@ -680,10 +709,12 @@ body.auto .stage{height:172vh}
             </div>
           </div>
         </div>
+        <span class="lbl">What moved in the brief</span>
+        <div id="baBox"></div>
         <div class="foot">
-          <button class="btn btn-line btn-sm" onclick="go(3)">Back to the brief</button>
+          <button class="btn btn-line btn-sm" onclick="go(4)">Back</button>
           <span class="tiny" id="updNote"></span>
-          <button class="btn btn-pri btn-sm sp" id="updBtn" onclick="applyUpdate()">Update the brief</button>
+          <button class="btn btn-pri btn-sm sp" onclick="go(6)">Continue</button>
         </div>
       </div>
 
@@ -707,7 +738,7 @@ body.auto .stage{height:172vh}
           </div>
         </div>
         <div class="foot">
-          <button class="btn btn-line btn-sm" onclick="go(3)">Back to the brief</button>
+          <button class="btn btn-line btn-sm" onclick="go(5)">Back</button>
           <button class="btn btn-line btn-sm sp" onclick="reset()">Run another meeting</button>
         </div>
       </div>
@@ -1004,10 +1035,11 @@ var CAL_URL = 'https://calendly.com/erica-aiparagonconsulting/20-minute-strategy
 var VIDEO_URL = '';   /* drop the 60-second walkthrough embed URL here */
 
 var S = { step:1, type:'review', crm:'HubSpot', tplKey:null, src:true,
-          updated:false, edited:false, engaged:false, started:false };
+          updated:false, personalized:false, maxChip:1,
+          edited:false, engaged:false, started:false };
 
 var SAMPLE_CO = 'Summit Business Advisors';
-var STEPS = ['Meeting','Sources','Brief','Personalize','Updates','Next'];
+var STEPS = ['Meeting','Sources','Brief','Personalize','What changed','Next'];
 var STEP_CHIP = {1:1, 2:2, 3:3, 4:4, 5:5, 6:6};
 var CRMS = ['HubSpot','Salesforce','Dynamics','Pipedrive','Something else'];
 
@@ -1304,12 +1336,16 @@ function renderPreview(){
 /* ===================== STEP RAIL ===================== */
 function renderSteps(){
   var cur = STEP_CHIP[S.step] || 1;
+  if(cur > S.maxChip) S.maxChip = cur;
   el('steps').innerHTML = STEPS.map(function(s2,i){
     var n = i+1, cls = n===cur ? 'on' : (n<cur ? 'done' : '');
+    var open = n <= S.maxChip && n !== cur;
     return (i ? '<span class="sep"></span>' : '') +
-      '<span class="stp '+cls+'"><span class="n">'+(n<cur?'\u2713':n)+'</span>'+s2+'</span>';
+      '<button class="stp '+cls+(open?' can':'')+'"'+(open?' onclick="jumpStep('+n+')"':' disabled')+'>' +
+      '<span class="n">'+(n<cur?'\u2713':n)+'</span>'+s2+'</button>';
   }).join('');
 }
+function jumpStep(n){ track('step_jumped',{to:n}); go(n); }
 
 /* ===================== 1 : THE SAMPLE ===================== */
 function renderSample(){
@@ -1398,6 +1434,7 @@ function renderBrief(){
     (sl.items||[]).forEach(function(x){ if(x.st !== 'done') open++; });
   });
   el('bfNote').textContent = liveSlots().length + ' sections \u00b7 ' + open + ' open items \u00b7 ' + d.gaps.length + ' gaps';
+
 }
 function toggleSrc(){ S.src = !S.src; S.engaged = true; renderBrief(); track('sources_toggled',{shown:S.src}); }
 function edited(){ S.engaged = true; if(!S.edited){ S.edited = true; track('demo_edited',{type:S.type}); } }
@@ -1415,11 +1452,28 @@ function renderPz(){
     return '<button class="chip '+(tplKey()===k?'on':'')+'" onclick="setTpl(\''+k+'\')">'+TEMPLATES[k].name+'</button>';
   }).join('') + '<button class="chip" onclick="toast(\'Upload is enabled once it is connected to your systems\')">Upload your own</button>';
   el('pzNote').textContent = D().account + ' \u00b7 ' + typeLabel() + ' \u00b7 ' + tpl().name;
+  renderLive();
 }
-function setType(k){ S.type = k; S.tplKey = null; S.updated = false; S.engaged = true; renderPz(); renderSample(); track('meeting_type_selected',{type:k}); }
-function setCrm(c){ S.crm = c; S.engaged = true; renderPz(); track('crm_selected',{crm:c}); }
-function setTpl(k){ S.tplKey = k; S.engaged = true; renderPz(); track('template_selected',{template:k}); }
-function rebuild(){ S.updated = false; go(2); }
+function setType(k){ S.type = k; S.tplKey = null; S.updated = false; S.personalized = true; S.engaged = true; renderPz(); renderSample(); track('meeting_type_selected',{type:k}); }
+function setCrm(c){ S.crm = c; S.personalized = true; S.engaged = true; renderPz(); track('crm_selected',{crm:c}); }
+function setTpl(k){ S.tplKey = k; S.personalized = true; S.engaged = true; renderPz(); track('template_selected',{template:k}); }
+
+function renderLive(){
+  var d = D(), show = d.slots.slice(0,3);
+  el('liveBox').innerHTML =
+    '<div class="lh">'+logoHTML(S.type, 26)+'<b>'+esc(d.account)+', rewritten</b>' +
+    '<span class="tiny">'+esc(tpl().name)+' \u00b7 '+esc(S.crm)+' \u00b7 '+d.slots.length+' sections</span></div>' +
+    show.map(function(sl){
+      var body = sl.items
+        ? itemsHTML(sl.items.slice(0,3))
+        : '<div class="tx">'+esc(sl.tx)+'</div>';
+      return '<div class="slot'+(sl.res?' resslot':'')+'"><span class="sl">'+sl.sl+'</span>'+body+
+        '<span class="pill '+(sl.res?'res':'srcd')+'">'+esc(sl.from)+'</span></div>';
+    }).join('') +
+    '<p class="tiny" style="margin:0">Showing the first three of '+d.slots.length+' sections. The full brief is on the step before this one.</p>';
+  var b = el('liveBox');
+  b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash');
+}
 
 /* ===================== 5 : LIVE UPDATE ===================== */
 function renderUpd(){
@@ -1434,13 +1488,31 @@ function renderUpd(){
   }).join('');
   var hits = u.items.filter(function(i){ return i.hit; }).length;
   el('updNote').textContent = hits + ' of ' + u.items.length + ' changes affect the brief';
-  el('updBtn').textContent = S.updated ? 'Back to the updated brief' : 'Update the brief';
+
 }
 function applyUpdate(){
+  if(S.updated) return;
   S.updated = true; S.engaged = true;
-  go(3);
+  renderBrief();
   track('brief_updated',{type:S.type});
-  toast('Brief updated. Changed sections are marked.');
+}
+function slotText(sl){
+  return sl.items ? sl.items.map(function(x){ return x.t; }).join('. ') + '.' : sl.tx;
+}
+function renderBA(){
+  var d = D(), ch = d.update.changes || {};
+  var out = Object.keys(ch).map(function(label){
+    var before = d.slots.filter(function(x){ return x.sl === label; })[0];
+    var after = {sl:label, items:ch[label].items, tx:ch[label].tx};
+    return '<div class="ba">' +
+      '<div class="ba-c"><span class="ba-k">BEFORE, AT 07:00</span><span class="sl">'+label+'</span>' +
+        (before.items ? itemsHTML(before.items) : '<div class="tx">'+esc(before.tx)+'</div>') + '</div>' +
+      '<div class="ba-c after"><span class="ba-k">NOW</span><span class="sl">'+label+'</span>' +
+        (after.items ? itemsHTML(after.items) : '<div class="tx">'+esc(after.tx)+'</div>') + '</div>' +
+      '</div>';
+  }).join('');
+  el('baBox').innerHTML = out +
+    '<p class="tiny" style="margin:2px 0 0">Everything else was left exactly as it was. The brief on the step before now carries these changes.</p>';
 }
 
 /* ===================== 6 : NEXT ===================== */
@@ -1483,13 +1555,24 @@ function closeVideo(){ el('vidModal').style.display = 'none'; }
 
 /* ===================== FLOW ===================== */
 function go(n){
+  focusPanel();
   if(n === 2){ S.step = 2; paint(); runRead(); return; }
   S.step = n; paint();
   if(n === 1) renderSample();
   if(n === 3) renderBrief();
   if(n === 4) renderPz();
-  if(n === 5) renderUpd();
+  if(n === 5){ applyUpdate(); renderUpd(); renderBA(); }
   if(n === 6) track('gate_view');
+}
+function focusPanel(){
+  var box = document.querySelector('.panelbox');
+  if(!box || !box.getBoundingClientRect) return;
+  var r = box.getBoundingClientRect();
+  /* park the panel just under the nav on every step, so a tall pane followed
+     by a short one never leaves the visitor stranded below the content */
+  if(r.top < 8 || r.top > 118){
+    window.scrollTo({ top: window.scrollY + r.top - 78, behavior: REDUCED ? 'auto' : 'smooth' });
+  }
 }
 function paint(){
   document.querySelectorAll('.pane').forEach(function(p){ p.classList.toggle('on', +p.dataset.p === S.step); });
@@ -1497,7 +1580,8 @@ function paint(){
 }
 function reset(){
   S.step=1; S.type='review'; S.crm='HubSpot'; S.tplKey=null; S.src=true;
-  S.updated=false; S.edited=false; S.engaged=false; S.started=false;
+  S.updated=false; S.personalized=false; S.maxChip=1;
+  S.edited=false; S.engaged=false; S.started=false;
   el('gateEmail').value=''; el('doneMsg').textContent='';
   renderSample(); paint();
 }
