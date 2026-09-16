@@ -6,458 +6,226 @@
 <title>Pre-Meeting Intelligence | AI Paragon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#0B1220; --ink-2:#3A4353; --mut:#727B8A; --mut-2:#98A0AD;
-  --line:#E7EAEF; --line-2:#F0F2F5;
-  --navy:#111C33; --navy-2:#1B2A4A;
-  --blue:#1B6BFF; --blue-d:#0E4FD4; --blue-soft:#EDF3FF;
-  --gold:#D9A526; --gold-soft:#FDF6E4;
-  --green:#12B76A; --green-soft:#E7F8F0;
-  --panel:#F6F7F9; --cream:#FBF7EC;
-  --gut:clamp(20px,5vw,72px);
-  --sh-2:0 2px 6px rgba(11,18,32,.06), 0 30px 60px rgba(11,18,32,.13);
+  --navy:#0C1D38; --navy-2:#132B4F; --navy-3:#1B3A67;
+  --gold:#C9A227; --gold-2:#E3C05A; --gold-soft:#FBF4E2;
+  --cream:#FBF7EF; --panel:#F6F7F9; --line:#E4E8EF; --line-2:#EEF1F6;
+  --ink:#0C1420; --ink-2:#2E3846; --mut:#606C7D; --mut-2:#8A94A4;
+  --blue:#2D6BE4; --blue-d:#1B4FB8; --blue-soft:#EAF1FF;
+  --green:#12A05F; --green-soft:#E6F7EF;
+  --amber:#B8860B; --red-soft:#FBEAEA; --red:#A84343;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;background:#fff;color:var(--ink);font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{margin:0;background:#fff;color:var(--ink);
+  font-family:'Plus Jakarta Sans',system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
-input{font:inherit;color:inherit}
-a{color:inherit;text-decoration:none}
-:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:6px}
-h1,h2,h3{margin:0;letter-spacing:-.02em;font-weight:600;line-height:1.06}
-h1,h2,.serif{font-family:'Playfair Display',Georgia,serif;letter-spacing:-.015em}
-.cream{background:#FBF7EC}
-.wrap{max-width:1180px;margin:0 auto;padding:0 var(--gut)}
+input,select{font:inherit}
+h1,h2,h3,h4{margin:0;letter-spacing:-.025em;line-height:1.15}
+p{margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
 
-.btn{border-radius:999px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .16s ease,background .16s ease}
-.btn:active{transform:translateY(1px)}
-.btn-pri{background:var(--blue);color:#fff;padding:14px 28px;font-size:15.5px;box-shadow:0 2px 4px rgba(11,60,160,.22), 0 12px 26px rgba(11,60,160,.22)}
-.btn-pri:hover{background:var(--blue-d)}
-.btn-dark{background:var(--navy);color:#fff;padding:13px 26px;font-size:15px}
-.btn-dark:hover{background:#080F1E}
-.btn-line{border:1px solid var(--line);background:#fff;color:var(--ink);padding:12px 24px;font-size:15px}
-.btn-line:hover{border-color:#D3D8E0}
-.btn-sm{padding:9px 17px;font-size:13.5px}
-.ai-star{color:var(--gold)}
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border-radius:10px;font-weight:700;font-size:14.5px;padding:13px 22px;transition:.16s;white-space:nowrap}
+.btn-gold{background:linear-gradient(180deg,var(--gold-2),var(--gold));color:#2A1E00;
+  box-shadow:0 6px 18px rgba(201,162,39,.28)}
+.btn-gold:hover{filter:brightness(1.05);transform:translateY(-1px)}
+.btn-ghost{border:1.5px solid rgba(255,255,255,.34);color:#fff}
+.btn-ghost:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.5)}
+.btn-line{border:1.5px solid var(--line);color:var(--ink-2);background:#fff}
+.btn-line:hover{border-color:#C9D0DC}
+.btn-dark{background:var(--navy);color:#fff}
+.btn-dark:hover{background:var(--navy-2)}
+.btn-sm{padding:9px 15px;font-size:13px;border-radius:8px}
 
-/* ---------------- NAV ---------------- */
-.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;gap:20px;padding:16px var(--gut);background:rgba(255,255,255,.86);backdrop-filter:blur(14px);border-bottom:1px solid var(--line-2);transition:background .35s ease,border-color .35s ease,color .35s ease}
-.nav.dark{background:rgba(17,28,51,.72);border-bottom-color:rgba(255,255,255,.1);color:#fff}
-.nav.dark .nav-links a{color:rgba(255,255,255,.82)}
-.nav.dark .btn-line{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff}
-.nav.dark .mark{filter:brightness(0) invert(1)}
-.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17.5px;letter-spacing:-.02em}
-.mark{height:28px;width:auto;display:block;transition:filter .35s ease}
-.nav-links{display:flex;gap:28px;margin:0 auto;font-size:14px;font-weight:500;color:var(--ink-2)}
+/* ---------- nav ---------- */
+.nav{position:sticky;top:0;z-index:60;background:var(--navy);
+  display:flex;align-items:center;gap:26px;padding:14px 28px;border-bottom:1px solid rgba(255,255,255,.08)}
+.brand{display:flex;align-items:center;gap:11px;color:#fff;font-weight:800;font-size:14px;letter-spacing:.04em}
+.brand img{width:30px;height:30px;object-fit:contain}
+.brand span{display:block;font-size:9px;font-weight:600;letter-spacing:.18em;color:var(--gold-2);margin-top:1px}
+.nav-links{display:flex;gap:24px;margin-left:auto}
+.nav-links a{color:rgba(255,255,255,.82);text-decoration:none;font-size:14px;font-weight:500}
+.nav-links a:hover{color:#fff}
+@media (max-width:920px){ .nav-links{display:none} }
 
-/* ---------------- HERO ---------------- */
-.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:140px 0 60px;text-align:center;position:relative;background:radial-gradient(rgba(11,18,32,.05) 1px,transparent 1px);background-size:9px 9px}
-.eyebrow{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 16px;font-size:12.5px;font-weight:700;color:var(--ink-2);margin-bottom:26px}
-.eyebrow i{width:6px;height:6px;border-radius:50%;background:var(--blue);display:block}
-.hero h1{font-size:clamp(36px,6.4vw,76px);font-weight:600;line-height:1.05}
-.hero h1 span{color:#9AA2AF}
-.hero p.lede{color:var(--mut);font-size:17px;max-width:600px;margin:24px auto 0}
-.cta{display:flex;gap:12px;justify-content:center;margin-top:32px;flex-wrap:wrap}
-.scroll-cue{margin-top:56px;font-size:12px;color:var(--mut-2);font-weight:600;display:flex;flex-direction:column;align-items:center;gap:8px}
-.scroll-cue i{width:1px;height:34px;background:linear-gradient(var(--mut-2),transparent);display:block}
+/* ---------- hero ---------- */
+.hero{background:
+   radial-gradient(900px 420px at 88% 8%, rgba(201,162,39,.16), transparent 62%),
+   radial-gradient(700px 500px at 6% 96%, rgba(45,107,228,.18), transparent 60%),
+   linear-gradient(160deg,#0A1830 0%,#0C1D38 44%,#16345C 100%);
+  color:#fff;padding:64px 0 76px}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.02fr);gap:52px;align-items:center}
+@media (max-width:1000px){ .hero-grid{grid-template-columns:1fr;gap:38px} }
+.pill-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.pill{background:rgba(201,162,39,.16);border:1px solid rgba(227,192,90,.42);color:var(--gold-2);
+  border-radius:999px;padding:6px 14px;font-size:10.5px;font-weight:800;letter-spacing:.11em}
+.pill-sub{font-size:12.5px;color:rgba(255,255,255,.62);font-weight:500}
+.hero h1{font-size:clamp(34px,4.3vw,52px);font-weight:700;line-height:1.08}
+.hero h1 em{font-style:normal;color:var(--gold-2)}
+.hero .lede{margin-top:18px;font-size:16.5px;line-height:1.62;color:rgba(255,255,255,.76);max-width:520px}
+.vstrip{display:flex;gap:30px;flex-wrap:wrap;margin:30px 0 28px;padding-top:24px;border-top:1px solid rgba(255,255,255,.14)}
+.vstrip b{display:block;font-family:'Playfair Display',Georgia,serif;font-size:23px;font-weight:600;color:var(--gold-2);letter-spacing:-.01em}
+.vstrip span{display:block;font-size:12.5px;color:rgba(255,255,255,.66);margin-top:2px;max-width:150px}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap}
 
-/* ---------------- STAGE ---------------- */
-.stage{height:420vh;position:relative}
-body.auto .stage{height:172vh}
-.stage-pin{position:sticky;top:0;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff}
-.card{position:relative;z-index:2;width:330px;height:600px;border-radius:28px;overflow:hidden;background:linear-gradient(165deg,#22345C,#111C33 62%,#080F1E);box-shadow:var(--sh-2);display:flex;align-items:flex-end;will-change:width,height,border-radius}
-.card:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 68% 18%, rgba(27,107,255,.34), transparent 62%)}
-.wavebox{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;gap:9px;z-index:2;opacity:.5;padding:0 12%}
-.wavebox i{height:7px;border-radius:4px;background:rgba(255,255,255,.62);display:block}
-.wavebox .wv{display:flex;align-items:center;gap:3px;height:34px;margin-top:8px}
-.wavebox .wv i{width:3px;height:auto;border-radius:3px;background:rgba(217,165,38,.9)}
-.card-in{position:relative;z-index:3;width:100%;padding:34px;color:#fff}
-.hook{font-weight:600;letter-spacing:-.03em;line-height:1.1;max-width:17ch}
-.hook em{font-style:normal;color:#7FB0FF}
-.sub-hook{color:rgba(255,255,255,.68);margin-top:14px}
-.badge-live{position:absolute;top:26px;left:34px;z-index:4;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:rgba(255,255,255,.85)}
-.badge-live i{width:7px;height:7px;border-radius:50%;background:#FF4D4D;display:block;animation:pulse 1.6s infinite}
-@keyframes pulse{50%{opacity:.35}}
+/* hero product pane */
+.pane-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);
+  border-radius:18px;padding:8px;backdrop-filter:blur(6px);position:relative}
+.pane-in{background:#fff;border-radius:13px;padding:20px;color:var(--ink)}
+.pane-h{display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:700;letter-spacing:-.01em;
+  padding-bottom:14px;border-bottom:1px solid var(--line-2);margin-bottom:16px}
+.pane-h .x{margin-left:auto;color:var(--mut-2);font-size:15px}
+.srcs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.src-i{border:1px solid var(--line);border-radius:10px;padding:10px 4px;text-align:center}
+.src-i .g{display:block;font-size:16px;line-height:1.1;margin-bottom:5px}
+.src-i b{display:block;font-size:10px;font-weight:700;color:var(--ink-2)}
+.arrow-d{text-align:center;color:var(--mut-2);font-size:16px;padding:9px 0}
+.pane-out{display:grid;grid-template-columns:1.12fr 1fr;gap:12px}
+@media (max-width:520px){ .pane-out{grid-template-columns:1fr} .srcs{grid-template-columns:repeat(3,1fr)} }
+.pane-brief{border:1px solid var(--line);border-radius:11px;padding:14px}
+.pane-brief .k{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;letter-spacing:.06em;color:var(--blue-d);margin-bottom:9px}
+.pane-brief b{display:block;font-size:14px;letter-spacing:-.02em}
+.pane-brief span{display:block;font-size:11.5px;color:var(--mut);margin-top:3px;line-height:1.45}
+.pane-brief .when{display:inline-block;margin-top:10px;font-size:10.5px;font-weight:700;color:var(--ink-2);
+  background:var(--panel);border-radius:6px;padding:4px 8px}
+.pane-chips{display:flex;flex-direction:column;gap:7px}
+.pc{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:11.5px;font-weight:600}
+.pc i{width:16px;height:16px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;font-style:normal;flex:none}
+.pc.b i{background:var(--blue-soft);color:var(--blue-d)}
+.pc.g i{background:var(--gold-soft);color:var(--amber)}
+.pc.r i{background:var(--red-soft);color:var(--red)}
+.pc.e i{background:var(--green-soft);color:var(--green)}
+.playbtn{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:18px}
+.playbtn span{width:62px;height:62px;border-radius:50%;background:rgba(12,29,56,.86);border:2px solid rgba(255,255,255,.5);
+  color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;padding-left:4px;
+  box-shadow:0 12px 34px rgba(0,0,0,.34);transition:.16s}
+.playbtn:hover span{transform:scale(1.07);background:var(--navy)}
+.pane-cap{text-align:center;margin-top:14px;font-size:12.5px;color:rgba(255,255,255,.62)}
+.pane-cap button{color:rgba(255,255,255,.82);text-decoration:underline;font-size:12.5px}
 
-.board{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 var(--gut);z-index:4;pointer-events:none}
-.board-in{width:100%;max-width:1080px}
-.board-h{color:#fff;text-align:center;margin-bottom:26px}
-.board-h b{display:block;font-size:clamp(21px,3vw,34px);font-weight:600;letter-spacing:-.03em}
-.board-h span{display:block;color:rgba(255,255,255,.6);font-size:14px;margin-top:8px}
-.bits{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-.bit{background:#fff;border-radius:14px;padding:15px;box-shadow:0 18px 38px rgba(0,0,0,.3);will-change:transform,opacity}
-.bit .k{font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--blue);display:block;margin-bottom:8px}
-.bit b{display:block;font-size:13px;letter-spacing:-.02em;line-height:1.3}
-.bit .ts{display:block;font-size:10.5px;color:var(--mut-2);margin-top:8px;font-weight:700}
+/* ---------- section furniture ---------- */
+.sec{padding:74px 0}
+.sec.cream{background:var(--cream)}
+.sec.pale{background:var(--panel)}
+.kick{font-size:11px;font-weight:800;letter-spacing:.13em;color:var(--gold);margin-bottom:9px}
+.sec h2{font-size:clamp(25px,2.7vw,33px);font-weight:700}
+.sec .sub{margin-top:9px;font-size:15.5px;color:var(--mut);max-width:620px}
+.sec-head{margin-bottom:34px}
 
-/* ---------------- SECTIONS ---------------- */
-.sec{padding:120px 0}
-.sec-lead{max-width:740px;margin:0 auto 56px;text-align:center}
-.sec-lead h2{font-size:clamp(28px,4.2vw,48px)}
-.sec-lead p{color:var(--mut);font-size:16px;margin:18px 0 0}
-.kicker{font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--blue);margin-bottom:16px}
+/* ---------- workspace ---------- */
+.ws{display:grid;grid-template-columns:302px minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:1000px){ .ws{grid-template-columns:1fr} }
+.ws-side{background:#fff;border:1px solid var(--line);border-radius:15px;padding:20px;position:sticky;top:78px}
+@media (max-width:1000px){ .ws-side{position:static} }
+.num{width:22px;height:22px;border-radius:50%;background:var(--gold-soft);color:var(--amber);
+  font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.ws-lbl{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:700;margin:0 0 11px}
+.ws-lbl.mt{margin-top:22px}
+.radio{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;
+  padding:10px 12px;margin-bottom:7px;width:100%;text-align:left;font-size:13.5px;font-weight:600;background:#fff}
+.radio:hover{border-color:#C9D0DC}
+.radio.on{border-color:var(--blue);background:var(--blue-soft);color:var(--blue-d)}
+.radio i{width:15px;height:15px;border-radius:50%;border:1.5px solid #C4CCD8;flex:none;display:block}
+.radio.on i{border-color:var(--blue);border-width:4.5px}
+.sel{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:13.5px;
+  font-weight:600;background:#fff;color:var(--ink)}
+.side-note{font-size:11.5px;color:var(--mut-2);margin-top:9px;line-height:1.5}
 
-.stat{display:flex;align-items:center;gap:34px;padding:38px 0;border-top:1px solid var(--line)}
-.stat:last-child{border-bottom:1px solid var(--line)}
-.stat .art{width:104px;height:104px;border-radius:22px;flex:none;display:flex;align-items:center;justify-content:center;font-size:30px}
-.stat .num{font-size:clamp(40px,6.4vw,76px);font-weight:600;letter-spacing:-.05em;line-height:1;min-width:3.2ch}
-.stat .txt{flex:1}
-.stat .txt b{display:block;font-size:17px;letter-spacing:-.02em;margin-bottom:6px}
-.stat .txt p{margin:0;color:var(--mut);font-size:14px;max-width:46ch}
+/* sticky workflow progress */
+.prog{margin-top:22px;border-top:1px solid var(--line-2);padding-top:18px}
+.prog-k{font-size:10px;font-weight:800;letter-spacing:.09em;color:var(--mut-2);margin-bottom:12px}
+.pstep{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;padding:7px 0;font-size:12.5px;color:var(--mut)}
+.pstep .d{width:19px;height:19px;border-radius:50%;border:1.5px solid var(--line);flex:none;
+  display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;color:var(--mut-2);background:#fff}
+.pstep b{font-weight:600;color:var(--mut)}
+.pstep.done .d{background:var(--green-soft);border-color:#CBEBDC;color:var(--green)}
+.pstep.done b{color:var(--ink-2)}
+.pstep.on .d{background:var(--blue);border-color:var(--blue);color:#fff}
+.pstep.on b{color:var(--ink);font-weight:800}
+.pstep.can{cursor:pointer}
+.pstep.can:hover b{color:var(--blue-d)}
+.pstep:disabled{cursor:default}
 
-.bigword{padding:150px 0;text-align:center;overflow:hidden}
-.bigword h2{font-size:clamp(36px,8.6vw,116px);font-weight:600;letter-spacing:-.05em;line-height:.96;will-change:transform,opacity}
-.bigword .tile{display:inline-flex;align-items:center;justify-content:center;width:.84em;height:.84em;border-radius:.18em;background:var(--blue);vertical-align:-.06em;margin:0 .06em;font-size:.7em;color:#fff;box-shadow:0 10px 24px rgba(11,60,160,.3)}
-.bigword p{color:var(--mut);font-size:17px;max-width:540px;margin:30px auto 0}
-.checks{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:740px;margin:40px auto 0;text-align:left}
-.check{display:flex;gap:11px;align-items:flex-start;background:var(--panel);border-radius:14px;padding:15px 17px}
-.check .t{width:19px;height:19px;border-radius:50%;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex:none;margin-top:1px}
-.check b{display:block;font-size:14px}
-.check span{display:block;font-size:12.5px;color:var(--mut);margin-top:2px;line-height:1.45}
+/* work area */
+.ws-main{background:#fff;border:1px solid var(--line);border-radius:15px;overflow:hidden;min-height:520px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);padding:0 16px;overflow-x:auto}
+.tab{padding:14px 13px;font-size:13.5px;font-weight:600;color:var(--mut);border-bottom:2.5px solid transparent;white-space:nowrap}
+.tab:hover{color:var(--ink-2)}
+.tab.on{color:var(--ink);border-bottom-color:var(--gold);font-weight:700}
+.ws-body{padding:22px}
+.acct{display:flex;gap:13px;align-items:center;border-bottom:1px solid var(--line-2);padding-bottom:16px;margin-bottom:18px}
+.acct b{display:block;font-size:17px;letter-spacing:-.025em}
+.acct span{display:block;font-size:13px;color:var(--mut);margin-top:1px}
+.acct .meta{display:block;font-size:11.5px;color:var(--mut-2);margin-top:4px}
+.acct .rerun{margin-left:auto;flex:none}
 
-/* two engines */
-.engines{display:grid;grid-template-columns:1fr 92px 1fr;gap:0;align-items:stretch;max-width:960px;margin:0 auto}
-.eng{border:1px solid var(--line);border-radius:20px;padding:26px}
-.eng.e3{background:var(--panel)}
-.eng.pl{background:#fff;border-color:var(--blue);box-shadow:0 18px 40px rgba(11,60,160,.1)}
-.eng h3{font-size:19px;margin-bottom:6px}
-.eng .who{font-size:12px;font-weight:800;letter-spacing:.06em;margin-bottom:14px}
-.eng.e3 .who{color:var(--gold)}
-.eng.pl .who{color:var(--blue)}
-.eng p{margin:0 0 16px;font-size:13.5px;color:var(--mut);line-height:1.55}
-.eng ul{list-style:none;margin:0;padding:0}
-.eng li{font-size:13px;color:var(--ink-2);padding:5px 0;display:flex;gap:9px}
-.eng li:before{content:"";width:5px;height:5px;border-radius:50%;background:var(--mut-2);margin-top:8px;flex:none}
-.join{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--mut-2)}
-.join .ln{width:1px;flex:1;background:var(--line)}
-.join .bx{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 6px;font-size:9.5px;font-weight:800;writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:.08em;color:var(--ink-2)}
+/* summary cards (mockup 2x2) */
+.sumgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:700px){ .sumgrid{grid-template-columns:1fr} }
+.sum{border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;gap:11px;align-items:flex-start;
+  width:100%;text-align:left;background:#fff}
+.sum:hover{border-color:#C9D0DC}
+.sum i{width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-style:normal;flex:none}
+.sum.b i{background:var(--blue-soft);color:var(--blue-d)}
+.sum.g i{background:var(--gold-soft);color:var(--amber)}
+.sum.r i{background:var(--red-soft);color:var(--red)}
+.sum.e i{background:var(--green-soft);color:var(--green)}
+.sum b{display:block;font-size:13.5px;letter-spacing:-.015em}
+.sum p{margin:3px 0 0;font-size:12.5px;color:var(--mut);line-height:1.45}
 
-/* ---------------- DEMO ---------------- */
-.demo-sec{background:var(--navy);color:#fff;padding:120px 0;position:relative;overflow:hidden}
-.demo-sec:before{content:"";position:absolute;inset:0;background:radial-gradient(90% 60% at 78% 0%, rgba(27,107,255,.2), transparent 62%)}
-.demo-sec .sec-lead h2{color:#fff}
-.demo-sec .sec-lead p{color:rgba(255,255,255,.62)}
-.panelbox{position:relative;z-index:2;background:#fff;color:var(--ink);border-radius:22px;max-width:1040px;margin:0 auto;box-shadow:0 40px 90px rgba(0,0,0,.35);overflow:hidden}
-.pbar{display:flex;align-items:center;gap:12px;padding:13px 20px;border-bottom:1px solid var(--line-2);background:#FCFCFD}
-.pbar .dots{display:flex;gap:6px}
-.pbar .dots i{width:9px;height:9px;border-radius:50%;background:#E2E5EA;display:block}
-.pbar .url{flex:1;text-align:center;font-size:12px;color:var(--mut-2)}
-.pbody{padding:28px 32px 34px;min-height:440px}
-
-.steps{display:flex;align-items:center;gap:7px;margin-bottom:24px;flex-wrap:wrap}
-.stp{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--mut-2)}
-.stp .n{width:21px;height:21px;border-radius:50%;background:#F0F1F4;color:var(--mut-2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none}
-.stp.on{color:var(--ink)} .stp.on .n{background:var(--blue);color:#fff}
-.stp.done{color:var(--ink-2)} .stp.done .n{background:var(--green-soft);color:var(--green)}
-.stp{cursor:default}
-.stp.can{cursor:pointer}
-.stp.can:hover{color:var(--blue-d)}
-.stp.can:hover .n{background:#DCE8FF;color:var(--blue-d)}
-.sep{width:14px;height:1px;background:var(--line);flex:none}
-
-.pane{display:none} .pane.on{display:block}
-.pane h3{font-size:21px;margin-bottom:6px}
-.pane .s{color:var(--mut);font-size:14px;margin:0 0 20px}
-.row-in{display:flex;gap:10px;max-width:520px}
-.inp{width:100%;border:1px solid var(--line);border-radius:11px;padding:12px 14px;font-size:14.5px;background:#fff}
-.inp:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(27,107,255,.14)}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:1px solid var(--line);border-radius:999px;padding:8px 15px;font-size:13px;font-weight:600;color:var(--ink-2);background:#fff}
-.chip.on{background:var(--blue-soft);border-color:#C9DCFF;color:var(--blue-d)}
-.chip.on:after{content:" ✓";font-size:11px}
-.lbl{display:block;font-size:12.5px;font-weight:700;color:var(--ink-2);margin:20px 0 9px}
-.foot{display:flex;align-items:center;gap:12px;margin-top:24px;padding-top:20px;border-top:1px solid var(--line-2)}
+.lbl{display:block;font-size:10px;font-weight:800;letter-spacing:.09em;color:var(--mut-2);margin:22px 0 10px}
+.lbl:first-child{margin-top:0}
+.foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line-2);margin-top:22px;padding-top:16px}
 .foot .sp{margin-left:auto}
-.tiny{font-size:12.5px;color:var(--mut)}
+.tiny{font-size:12px;color:var(--mut-2);line-height:1.5}
+.rail-card{border:1px solid var(--line);border-radius:12px;padding:14px 15px;margin-bottom:11px;background:#fff}
+.rail-card.gold{border-color:#F0E4C6;background:var(--gold-soft)}
+.rail-card h4{font-size:11.5px;font-weight:800;letter-spacing:.05em;color:var(--mut-2);margin-bottom:9px}
+.rail-card.gold h4{color:var(--amber)}
+.rail-row{display:flex;gap:8px;font-size:12.5px;color:var(--ink-2);padding:3px 0;line-height:1.5}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) 248px;gap:20px}
+@media (max-width:900px){ .grid2{grid-template-columns:1fr} }
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:12.5px;font-weight:600;background:#fff}
+.chip.on{background:var(--blue-soft);border-color:var(--blue);color:var(--blue-d)}
+.inp{width:100%;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px}
+.sw{width:40px;height:22px;border-radius:999px;background:#D3D9E2;position:relative;flex:none;transition:.16s}
+.sw:after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.16s}
+.sw.on{background:var(--blue)} .sw.on:after{left:21px}
+.brief-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);
+  border-radius:12px;padding:12px 14px;margin-bottom:14px;background:var(--panel)}
+.brief-bar b{display:block;font-size:13px}
+.brief-bar span{display:block;font-size:12px;color:var(--mut)}
 
-.gen-row{display:flex;align-items:center;gap:11px;padding:9px 0;font-size:14px;color:var(--mut-2)}
-.gen-row.active{color:var(--ink);font-weight:600}
+/* running */
+.gen-row{display:flex;gap:11px;align-items:center;padding:9px 0;font-size:13.5px;color:var(--mut-2)}
+.gen-row .ic{width:17px;height:17px;border-radius:50%;border:1.5px solid var(--line);flex:none}
+.gen-row.active{color:var(--ink)}
+.gen-row.active .ic{border-color:var(--blue);border-right-color:transparent;animation:sp .7s linear infinite}
 .gen-row.done{color:var(--ink-2)}
-.ic{width:19px;height:19px;border-radius:50%;flex:none;border:2px solid #E4E7EC}
-.gen-row.done .ic{background:var(--green);border-color:var(--green);position:relative}
-.gen-row.done .ic:after{content:"";position:absolute;left:5px;top:2px;width:4px;height:8px;border:2px solid #fff;border-top:0;border-left:0;transform:rotate(42deg)}
-.gen-row.active .ic{border-color:var(--gold);border-top-color:transparent;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.gbar{height:8px;border-radius:99px;background:#EDEFF3;overflow:hidden;margin-top:16px}
-.gbar i{display:block;height:100%;width:0;background:var(--gold);border-radius:99px;transition:width .35s ease}
+.gen-row.done .ic{background:var(--green-soft);border-color:#CBEBDC}
+@keyframes sp{to{transform:rotate(360deg)}}
+.gbar{height:4px;border-radius:99px;background:var(--line-2);overflow:hidden;margin-top:16px}
+.gbar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--gold));width:0;transition:width .4s}
 
-/* extraction grid */
-.ex-tabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:16px}
-.ex-tab{font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:999px;background:var(--panel);color:var(--mut)}
-.ex-tab.on{background:var(--navy);color:#fff}
-.ex-tab b{color:inherit;opacity:.6;margin-left:5px}
-.ex-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.ex{
-  display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;
-  border:1.5px solid var(--line);border-radius:13px;padding:13px 15px;background:#fff;
-}
-.ex.on{border-color:var(--blue);background:var(--blue-soft)}
-.ex .bx{width:18px;height:18px;border-radius:5px;border:1.5px solid #D3D8E0;flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;background:#fff}
-.ex.on .bx{background:var(--blue);border-color:var(--blue)}
-.ex .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.05em;color:var(--mut-2);margin-bottom:5px}
-.ex b{display:block;font-size:13.5px;letter-spacing:-.015em;line-height:1.35}
-.ex .ts{display:inline-block;font-size:10.5px;font-weight:700;color:var(--blue-d);background:#fff;border:1px solid #D9E5FF;border-radius:99px;padding:2px 8px;margin-top:8px}
-
-/* build pane */
-.bd{display:grid;grid-template-columns:186px minmax(0,1fr) 230px;gap:20px}
-.hk-rail .hk-item{
-  display:block;width:100%;text-align:left;border:1.5px solid var(--line);border-radius:11px;
-  padding:11px 12px;margin-bottom:8px;background:#fff;font-size:12.5px;line-height:1.35;font-weight:600;
-}
-.hk-item.on{border-color:var(--blue);background:var(--blue-soft);color:var(--blue-d)}
-.hk-item .src{display:block;font-size:10px;font-weight:700;margin-top:6px;color:var(--mut-2)}
-.hk-item.inf .src{color:#8A6D1E}
-.slot{border-left:2px solid var(--line-2);padding:0 0 0 14px;margin-bottom:16px}
-.slot .sl{font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--mut-2);display:block;margin-bottom:6px}
-.slot .tx{font-size:14px;line-height:1.6;color:var(--ink-2)}
-.slot .tx:focus{outline:none;background:var(--blue-soft);border-radius:6px;box-shadow:0 0 0 4px var(--blue-soft)}
-.slot.hookslot{border-left-color:var(--blue)}
-.pill{display:inline-block;font-size:10px;font-weight:700;border-radius:99px;padding:2px 8px;margin-top:7px}
-.pill.srcd{background:var(--blue-soft);color:var(--blue-d)}
-.pill.inf{background:var(--gold-soft);color:#8A6D1E}
-.rail-card{border:1px solid var(--line);border-radius:13px;padding:14px 15px;margin-bottom:12px}
-.rail-card h4{margin:0 0 10px;font-size:12px;font-weight:800}
-.rail-row{display:flex;gap:8px;font-size:12px;color:var(--ink-2);padding:3px 0;line-height:1.4}
-.rail-card.gold{background:var(--gold-soft);border-color:#F0E2BE}
-.brief-bar{
-  display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--gold-soft);
-  border:1px solid #F0E2BE;border-radius:12px;padding:12px 15px;margin-bottom:18px;
-}
-.brief-bar b{font-size:13px}
-.brief-bar span{font-size:12px;color:#7A6836}
-.sw{width:38px;height:21px;border-radius:99px;background:#D8DCE3;position:relative;flex:none;transition:background .2s}
-.sw:after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;transition:transform .2s}
-.sw.on{background:var(--gold)} .sw.on:after{transform:translateX(17px)}
-.fmt-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;flex-wrap:wrap}
-.fmt{background:none;padding:8px 14px;font-size:13.5px;font-weight:600;color:var(--mut);border-bottom:2px solid transparent;margin-bottom:-1px;text-align:left}
-.fmt span{display:block;font-size:10.5px;font-weight:600;color:var(--mut-2);margin-top:1px}
-.fmt.on{color:var(--blue);border-bottom-color:var(--blue)}
-.fmt.on span{color:var(--blue-d);opacity:.7}
-
-.gate{max-width:430px;margin:0 auto;text-align:center;padding:12px 0}
-.gate .inp{text-align:center;margin-bottom:10px}
-.gate .btn{width:100%}
-.done-mark{width:52px;height:52px;border-radius:50%;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px}
-
-/* funnel path + pillars */
-.path{max-width:900px;margin:44px auto 0;background:var(--cream);border:1px solid #EEE3CC;border-radius:20px;padding:24px 26px;text-align:center}
-.lbl2{display:block;font-size:11px;font-weight:800;letter-spacing:.09em;color:#8A6D1E;margin-bottom:16px}
-.path-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-.pstep{background:#fff;border:1px solid #EEE3CC;border-radius:999px;padding:9px 18px;font-size:13px;font-weight:600;color:var(--ink-2)}
-.pstep.on{background:var(--navy);border-color:var(--navy);color:#fff}
-.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;max-width:960px;margin:48px auto 0}
-.pil h4{margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;font-size:19px;font-weight:600}
-.pil p{margin:0;font-size:13.5px;color:var(--mut);line-height:1.55}
-@media (max-width:820px){ .pillars{grid-template-columns:1fr;gap:20px} }
-
-/* ---------- engine 3 panes ---------- */
-.cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.cmp-c{border:1px solid var(--line);border-radius:14px;padding:16px 17px;background:#fff}
-.cmp-h{display:flex;align-items:center;gap:8px;margin-bottom:11px;flex-wrap:wrap}
-.tagm{font-size:9.5px;font-weight:800;letter-spacing:.05em;border-radius:99px;padding:3px 9px}
-.tagm.paid{background:var(--gold-soft);color:#8A6D1E}
-.tagm.org{background:var(--blue-soft);color:var(--blue-d)}
-.days{margin-left:auto;font-size:11px;font-weight:700;color:var(--mut)}
-.days.hot{color:#0B8A50}
-.cmp-c b{display:block;font-size:15px;letter-spacing:-.02em;line-height:1.3;margin-bottom:8px}
-.cmp-c p{margin:0}
-.ev{margin-top:12px;background:var(--green-soft);color:#0B8A50;border-radius:9px;padding:8px 10px;font-size:11.5px;font-weight:600}
-
-.bd2{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:22px}
-.op{border:1.5px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:10px;background:#fff}
-.op.off{opacity:.5}
-.op.blocked{border-color:#F3D7D7;background:#FDF4F4}
-.op b{display:block;font-size:14.5px;letter-spacing:-.02em;line-height:1.35;margin-bottom:5px}
-.op p{margin:0}
-.op-acts{display:flex;align-items:center;gap:10px;margin-top:11px}
-.flag{display:inline-block;margin-top:9px;font-size:11px;font-weight:700;color:#A84343;background:#FBE9E9;border-radius:99px;padding:4px 10px}
-
-.nx{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.nx-c{border:1px solid var(--line);border-radius:16px;padding:20px}
-.nx-c.gold{background:var(--gold-soft);border-color:#F0E2BE}
-.nx-c h4{margin:0 0 6px;font-family:'Playfair Display',Georgia,serif;font-size:18px;font-weight:600}
-.cal-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-.cal-head .tiny{margin-left:auto}
-
-.vid-modal{position:fixed;inset:0;z-index:300;background:rgba(11,18,32,.72);display:none;align-items:center;justify-content:center;padding:24px}
-.vid-card{background:#fff;border-radius:18px;max-width:760px;width:100%;overflow:hidden}
-.vid-head{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line-2)}
-.vid-head b{font-size:14px}
-.vid-ph{background:var(--navy);color:#fff;aspect-ratio:16/9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:24px}
-.vid-ph span:first-child{font-size:30px}
-.vid-ph b{font-family:'Playfair Display',Georgia,serif;font-size:20px}
-.vid-ph .tiny{color:rgba(255,255,255,.55)}
-
-@media (max-width:900px){ .cmp,.bd2,.nx{grid-template-columns:1fr} }
-
-/* ---------- post preview ---------- */
-.mail-top{display:flex;gap:10px;align-items:center;padding:12px 14px 8px}
-.mail-subj{padding:0 14px 6px;font-family:'Playfair Display',Georgia,serif;font-size:16px;font-weight:600;letter-spacing:-.01em}
-.ad-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#F7F8FA;border-top:1px solid var(--line)}
-.ad-bar b{display:block;font-size:12px}
-.ad-bar span{display:block;font-size:10.5px;color:var(--mut)}
-.ad-btn{margin-left:auto;background:#E4E6EB;border-radius:6px;padding:7px 12px;font-size:11.5px;font-weight:700;flex:none;color:var(--ink)}
-.pv-wrap{display:grid;grid-template-columns:minmax(0,400px) 232px;gap:26px;justify-content:center}
-.pv-tabs{display:flex;gap:5px;margin-bottom:16px}
-.pv-tab{font-size:11.5px;font-weight:700;padding:6px 13px;border-radius:999px;background:var(--panel);color:var(--mut)}
-.pv-tab.on{background:var(--navy);color:#fff}
-
-.post{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 10px 26px rgba(11,18,32,.07)}
-.post-top{display:flex;gap:10px;align-items:center;padding:12px 14px 10px}
-.av{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
-.post-who b{display:block;font-size:13px;font-weight:700;line-height:1.25}
-.post-who span{display:block;font-size:11px;color:var(--mut)}
-.post-more{margin-left:auto;color:var(--mut-2);font-size:15px}
-.post-txt{padding:0 14px 12px;font-size:13px;line-height:1.5;color:var(--ink-2);white-space:pre-wrap}
-.post-txt i{color:var(--mut-2);font-style:normal}
-.see-more{
-  display:inline;padding:0;margin:0;font:inherit;font-weight:700;
-  color:var(--mut-2);background:none;border:0;cursor:pointer;
-}
-.see-more:hover{color:var(--ink-2);text-decoration:underline}
-.see-more.less{display:block;margin-top:8px}
-.post-counts{display:flex;gap:6px;align-items:center;padding:8px 14px;font-size:11px;color:var(--mut);border-top:1px solid var(--line-2)}
-.post-act{display:flex;padding:4px 6px;border-top:1px solid var(--line-2)}
-.post-act span{flex:1;text-align:center;padding:8px 0;font-size:11.5px;font-weight:600;color:var(--mut)}
-
-/* generated creative */
-.cre{position:relative;overflow:hidden;background:var(--navy);color:#fff;font-size:14px;display:block}
-.cre.r45{aspect-ratio:4/5}
-.cre.r11{aspect-ratio:1/1}
-.cre.r169{aspect-ratio:1.91/1}
-.cre .bgw{position:absolute;inset:0;background:linear-gradient(165deg,#22345C,#111C33 64%,#080F1E)}
-.cre .glow{position:absolute;inset:0;background:radial-gradient(120% 80% at 70% 18%, rgba(27,107,255,.32), transparent 62%)}
-.cre .cnt{position:absolute;inset:0;padding:1.2em;display:flex;flex-direction:column;justify-content:center;z-index:3}
-.cre .qt{font-weight:600;letter-spacing:-.03em;line-height:1.14;font-size:1.42em}
-.cre .who{font-size:.6em;color:rgba(255,255,255,.6);margin-top:1em;font-weight:700;letter-spacing:.04em}
-.cre .stamp{position:absolute;bottom:1.1em;right:1.2em;z-index:4;font-size:.55em;font-weight:700;color:rgba(255,255,255,.42)}
-.cre.t-clip .cnt{justify-content:flex-end}
-.cre.t-clip .qt{font-size:1.2em}
-.cre.t-clip .pl{background:var(--blue);border-radius:.14em;padding:0 .22em;display:inline-block}
-.cre.t-clip .bars{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:.14em;z-index:2;opacity:.4;padding:0 12%}
-.cre.t-clip .bars i{width:.14em;border-radius:.1em;background:rgba(255,255,255,.85);display:block}
-
-.vars{display:grid;gap:9px}
-.var{border:1.5px solid var(--line);border-radius:11px;overflow:hidden;background:#fff;padding:0;display:block;text-align:left}
-.var.on{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
-.var .cre{font-size:4.6px}
-.var-lbl{font-size:11px;font-weight:700;padding:8px 10px;color:var(--ink-2)}
-.var-lbl span{display:block;font-size:10px;font-weight:600;color:var(--mut-2);margin-top:1px}
-.var.on .var-lbl{color:var(--blue-d)}
-.var-none{height:52px;background:repeating-linear-gradient(135deg,#F6F7F9,#F6F7F9 7px,#EFF1F4 7px,#EFF1F4 14px)}
-
-@media (max-width:820px){ .pv-wrap{grid-template-columns:1fr} }
-
-/* close */
-.close{padding:130px 0;text-align:center}
-.close h2{font-size:clamp(30px,5vw,58px)}
-.close p{color:var(--mut);font-size:17px;max-width:540px;margin:22px auto 0}
-.foot-b{background:var(--navy);color:rgba(255,255,255,.6);padding:40px var(--gut);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:13px}
-.foot-b .mark{filter:brightness(0) invert(1)}
-
-.replay{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:9;display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.62);background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:8px 16px;opacity:0;pointer-events:none;transition:opacity .4s ease}
-.replay.on{opacity:1;pointer-events:auto}
-.replay:hover{color:#fff;background:rgba(255,255,255,.16)}
-.rv{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}
-.rv.in{opacity:1;transform:none}
-.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,18px);background:var(--navy);color:#fff;padding:11px 20px;border-radius:999px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s ease;z-index:200}
-.toast.on{opacity:1;transform:translate(-50%,0)}
-
-@media (max-width:1000px){ .bd{grid-template-columns:1fr} }
-@media (max-width:900px){
-  .nav-links{display:none}
-  .stage{height:300vh} body.auto .stage{height:150vh}
-  .bits{grid-template-columns:1fr 1fr;gap:8px}
-  .bit:nth-child(5){display:none}
-  .board-in{max-width:440px}
-  .checks,.ex-grid{grid-template-columns:1fr}
-  .engines{grid-template-columns:1fr;gap:14px}
-  .join{flex-direction:row;padding:0} .join .ln{height:1px;width:auto;flex:1} .join .bx{writing-mode:horizontal-tb}
-  .stat{gap:18px;flex-wrap:wrap}
-  .stat .art{width:68px;height:68px;border-radius:16px;font-size:22px}
-  .pbody{padding:22px 18px 26px}
-}
-@media (prefers-reduced-motion:reduce){
-  html{scroll-behavior:auto}
-  .rv{opacity:1;transform:none;transition:none}
-  .stage{height:auto} .stage-pin{position:static;height:auto;padding:80px 0}
-}
-
-/* ---------- pre-meeting v2 additions ---------- */
-.conv{max-width:940px;margin:0 auto}
-.conv-lbl{display:block;text-align:center;font-size:11px;font-weight:800;letter-spacing:.09em;color:var(--mut-2);margin-bottom:14px}
-.conv-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-.sbox{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;text-align:center;min-width:132px;flex:1}
-.sbox b{display:block;font-size:13px;letter-spacing:-.02em}
-.sbox span{display:block;font-size:11px;color:var(--mut-2);margin-top:3px}
-.conv-arrow{display:flex;align-items:center;justify-content:center;color:var(--mut-2);font-size:20px;padding:12px 0}
-.conv-mid{background:var(--navy);color:#fff;border-radius:16px;padding:20px 24px;text-align:center}
-.conv-mid b{display:block;font-family:'Playfair Display',Georgia,serif;font-size:20px;font-weight:600;margin-bottom:12px}
-.conv-mid .cm-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-.conv-mid .cm-row span{font-size:11.5px;font-weight:600;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:6px 13px}
-.conv-out{background:var(--cream);border:1px solid #EEE3CC;border-radius:16px;padding:20px 24px;text-align:center}
-.conv-out b{display:block;font-family:'Playfair Display',Georgia,serif;font-size:20px;font-weight:600;margin-bottom:12px}
-.conv-out .cm-row{display:flex;gap:7px;justify-content:center;flex-wrap:wrap}
-.conv-out .cm-row span{font-size:11.5px;font-weight:600;background:#fff;border:1px solid #EEE3CC;border-radius:999px;padding:6px 13px;color:var(--ink-2)}
-@media (max-width:760px){ .sbox{min-width:calc(50% - 8px)} }
-
-.previewwrap{max-width:900px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 244px;gap:24px}
-@media (max-width:860px){ .previewwrap{grid-template-columns:1fr} }
-.sheet{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 20px 48px rgba(11,18,32,.1);padding:28px 30px}
-.sheet .sh-k{font-size:9.5px;font-weight:800;letter-spacing:.09em;color:var(--blue);display:block;margin-bottom:9px}
-.sheet h5{margin:0 0 4px;font-family:'Playfair Display',Georgia,serif;font-size:23px;font-weight:600;letter-spacing:-.02em}
-.sheet .sh-m{font-size:11.5px;color:var(--mut);border-bottom:1px solid var(--line-2);padding-bottom:13px;margin-bottom:15px}
-.sheet .sh-s{font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--mut-2);display:block;margin:16px 0 5px}
-.sheet .sh-s:first-of-type{margin-top:0}
-.sheet .sh-t{font-size:13px;line-height:1.6;color:var(--ink-2)}
-.sheet .sh-src{display:inline-block;font-size:10px;font-weight:700;border-radius:99px;padding:2px 8px;margin-top:7px;background:var(--blue-soft);color:var(--blue-d)}
-.sheet .sh-src.res{background:#F0EEF9;color:#5B4B9B}
-
-.cmt{display:flex;gap:10px;align-items:flex-start;padding:5px 0;font-size:13px;line-height:1.5;color:var(--ink-2)}
-.cmt .mk{width:17px;height:17px;border-radius:50%;flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800}
-.cmt.done .mk{background:var(--green-soft);color:var(--green)}
-.cmt.open .mk{background:var(--gold-soft);color:#8A6D1E}
-.cmt.risk .mk{background:#FBE9E9;color:#A84343}
-.cmt.opp .mk{background:var(--blue-soft);color:var(--blue-d)}
-.cmt em{font-style:normal;color:var(--mut);font-size:12px;display:block;margin-top:2px}
-
-.newflag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.05em;background:var(--green-soft);color:#0B8A50;border-radius:99px;padding:3px 8px;margin-left:7px;vertical-align:1px}
+/* slots */
+.slot{border-left:2.5px solid var(--line);padding:2px 0 2px 15px;margin-bottom:17px}
+.slot .sl{display:block;font-size:10px;font-weight:800;letter-spacing:.07em;color:var(--blue);margin-bottom:6px}
+.slot .tx{font-size:14px;line-height:1.62;color:var(--ink-2);outline:none;border-radius:6px}
+.slot .tx:focus{background:var(--blue-soft);box-shadow:0 0 0 5px var(--blue-soft)}
+.slot.resslot{border-left-color:#8E7CC8}
 .slot.moved{background:#F4FBF7;border-left-color:var(--green);border-radius:0 8px 8px 0}
-.upd{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:9px;background:#fff}
-.upd.hit{border-color:#CFEBDD;background:#F4FBF7}
-.upd .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.05em;color:var(--mut-2);margin-bottom:5px}
-.upd b{display:block;font-size:13.5px;letter-spacing:-.015em;line-height:1.35}
-.upd p{margin:5px 0 0;font-size:12.5px;color:var(--mut);line-height:1.5}
-
-.mtypes{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.mtype{border:1.5px solid var(--line);border-radius:14px;padding:15px 16px;background:#fff;text-align:left;display:block;width:100%}
-.mtype.on{border-color:var(--blue);background:var(--blue-soft)}
-.mtype .stg{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--mut-2);margin-bottom:8px}
-.mtype.on .stg{color:var(--blue-d)}
-.mtype b{display:block;font-size:14.5px;letter-spacing:-.02em;line-height:1.3;margin-bottom:5px}
-.mtype p{margin:0;font-size:12.5px;color:var(--mut);line-height:1.45}
-@media (max-width:1000px){ .mtypes{grid-template-columns:1fr 1fr} }
-@media (max-width:620px){ .mtypes{grid-template-columns:1fr} }
-
-.who-card{display:flex;gap:14px;align-items:center;border:1px solid var(--line);border-radius:13px;padding:15px 17px;background:#fff}
-.who-card .av{width:42px;height:42px;font-size:13px}
-.logo{border-radius:50%;flex:none;display:block}
-.sheet-head{display:flex;gap:14px;align-items:center;margin-bottom:4px}
-.sheet-head h5{margin:0}
-.snap-head{display:flex;gap:11px;align-items:center;margin-bottom:12px}
-.snap-head b{font-size:13.5px;letter-spacing:-.02em;line-height:1.25;display:block}
-.snap-head span{font-size:11px;color:var(--mut);display:block;margin-top:1px}
-.who-card b{display:block;font-size:15px;letter-spacing:-.02em}
-.who-card span{display:block;font-size:12.5px;color:var(--mut)}
-.who-card .when{margin-left:auto;text-align:right;font-size:11.5px;font-weight:700;color:var(--blue-d);background:var(--blue-soft);border-radius:99px;padding:6px 13px;flex:none}
-
-.sysgrid{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:20px}
-@media (max-width:900px){ .sysgrid{grid-template-columns:1fr} }
-.brf{display:grid;grid-template-columns:minmax(0,1fr) 244px;gap:22px}
-@media (max-width:900px){ .brf{grid-template-columns:1fr} }
-.pill.res{background:#F0EEF9;color:#5B4B9B}
+.pill-s{display:inline-block;margin-top:8px;font-size:10.5px;font-weight:700;border-radius:999px;padding:3px 9px;
+  background:var(--blue-soft);color:var(--blue-d)}
+.pill-s.res{background:#F0EEF9;color:#5B4B9B}
+.newflag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.05em;background:var(--green-soft);
+  color:var(--green);border-radius:99px;padding:3px 8px;margin-left:7px}
 
 /* findings */
 .find{border:1px solid var(--line);border-left:3px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:9px;background:#fff;cursor:pointer}
@@ -472,540 +240,412 @@ body.auto .stage{height:172vh}
 .find .fd-more{display:inline-block;margin-top:9px;font-size:11.5px;font-weight:700;color:var(--mut-2)}
 .find.open .fd-more{color:var(--blue-d)}
 .k-new{border-left-color:#5B8DEF} .k-new .fk{color:#2B5FBF}
-.k-open{border-left-color:#D9A62E} .k-open .fk{color:#8A6D1E}
-.k-q{border-left-color:#D98A8A} .k-q .fk{color:#A84343}
+.k-open{border-left-color:#D9A62E} .k-open .fk{color:var(--amber)}
+.k-q{border-left-color:#D98A8A} .k-q .fk{color:var(--red)}
 .k-miss{border-left-color:#9AA3B2} .k-miss .fk{color:var(--mut)}
-.k-opp{border-left-color:#2FA37A} .k-opp .fk{color:#0B8A50}
+.k-opp{border-left-color:#2FA37A} .k-opp .fk{color:var(--green)}
 
-/* human review */
-.apr{border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:10px;background:#fff}
-.apr.on{border-color:#CFEBDD;background:#F8FCFA}
+/* commitments */
+.cmt{display:flex;gap:10px;align-items:flex-start;padding:5px 0;font-size:13.5px;line-height:1.5;color:var(--ink-2)}
+.cmt .mk{width:17px;height:17px;border-radius:50%;flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800}
+.cmt.done .mk{background:var(--green-soft);color:var(--green)}
+.cmt.open .mk{background:var(--gold-soft);color:var(--amber)}
+.cmt.risk .mk{background:var(--red-soft);color:var(--red)}
+.cmt.opp .mk{background:var(--blue-soft);color:var(--blue-d)}
+.cmt em{font-style:normal;color:var(--mut);font-size:12px;display:block;margin-top:2px}
+
+/* approval */
+.apr{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:#fff}
+.apr.on{border-color:#CBEBDC;background:#F9FDFB}
 .apr.off{opacity:.55}
 .apr-top{display:flex;gap:11px;align-items:flex-start}
-.apr-top .human{width:20px;height:20px;border-radius:50%;background:var(--blue-soft);color:var(--blue-d);font-size:9px;display:flex;align-items:center;justify-content:center;flex:none;margin-top:2px}
+.apr-top .human{width:20px;height:20px;border-radius:50%;background:var(--blue-soft);color:var(--blue-d);
+  font-size:9px;display:flex;align-items:center;justify-content:center;flex:none;margin-top:2px}
 .apr.on .apr-top .human{background:var(--green-soft);color:var(--green)}
 .apr b{display:block;font-size:13.5px;letter-spacing:-.015em;line-height:1.35}
 .apr p{margin:4px 0 0;font-size:12px;color:var(--mut);line-height:1.5}
 .apr-st{margin-left:auto;font-size:9.5px;font-weight:800;letter-spacing:.05em;color:var(--mut-2);flex:none}
-.apr.on .apr-st{color:#0B8A50}
+.apr.on .apr-st{color:var(--green)}
 .apr-acts{display:flex;gap:7px;margin-top:11px;padding-left:31px}
 .ab{font-size:11.5px;font-weight:700;border:1px solid var(--line);border-radius:7px;padding:6px 13px;color:var(--ink-2);background:#fff}
-.ab:hover{border-color:#C8CFDA}
-.ab.sel{background:var(--green-soft);border-color:#CFEBDD;color:#0B8A50}
-.ab.sel.off{background:#FBE9E9;border-color:#F0D6D6;color:#A84343}
+.ab.sel{background:var(--green-soft);border-color:#CBEBDC;color:var(--green)}
+.ab.sel.off{background:var(--red-soft);border-color:#F0D6D6;color:var(--red)}
 
-/* after the meeting */
-.outc{border:1px solid #CFEBDD;background:#F4FBF7;border-radius:13px;padding:15px 17px;margin-bottom:6px}
-.outc .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:#0B8A50;margin-bottom:6px}
+/* after / tracking */
+.outc{border:1px solid #CBEBDC;background:var(--green-soft);border-radius:12px;padding:15px 17px;margin-bottom:6px}
+.outc .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--green);margin-bottom:6px}
 .outc b{display:block;font-size:14.5px;letter-spacing:-.02em;line-height:1.4}
 .task{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:12px 15px;margin-bottom:8px;background:#fff}
 .task .tk{width:19px;height:19px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--mut-2);flex:none;margin-top:1px}
-.task.done .tk{background:var(--green-soft);border-color:#CFEBDD;color:var(--green)}
+.task.done .tk{background:var(--green-soft);border-color:#CBEBDC;color:var(--green)}
 .task b{display:block;font-size:13.5px;letter-spacing:-.015em;line-height:1.3}
 .task p{margin:3px 0 0;font-size:12px;color:var(--mut)}
 .tst{margin-left:auto;font-size:9.5px;font-weight:800;letter-spacing:.05em;color:var(--mut-2);flex:none}
-.task.done .tst{color:#0B8A50}
-
-/* follow through */
-.outstand{border:1px solid #F0E2BE;background:var(--gold-soft);border-radius:13px;padding:15px 17px;margin-top:10px}
-.outstand .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:#8A6D1E;margin-bottom:6px}
+.task.done .tst{color:var(--green)}
+.post{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.mail-top{display:flex;gap:10px;align-items:center;padding:13px 15px;border-bottom:1px solid var(--line-2);background:var(--panel)}
+.av{width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;font-size:11px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;flex:none}
+.post-who b{display:block;font-size:13px}
+.post-who span{display:block;font-size:11.5px;color:var(--mut)}
+.post-txt{padding:15px;font-size:13.5px;line-height:1.62;color:var(--ink-2);outline:none}
+.post-txt:focus{background:var(--blue-soft)}
+.post-act{border-top:1px solid var(--line-2);padding:11px 15px;font-size:12px;font-weight:700;color:var(--mut)}
+.outstand{border:1px solid #F0E4C6;background:var(--gold-soft);border-radius:12px;padding:15px 17px;margin-top:10px}
+.outstand .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--amber);margin-bottom:6px}
 .outstand b{display:block;font-size:14.5px;letter-spacing:-.02em;line-height:1.35}
 .outstand p{margin:6px 0 0;font-size:12.5px;color:var(--mut);line-height:1.55}
-.carry{margin-top:20px}
-.carry-in{display:flex;gap:14px;align-items:flex-start;background:var(--navy);color:#fff;border-radius:16px;padding:20px 22px}
+.carry-in{display:flex;gap:14px;align-items:flex-start;background:var(--navy);color:#fff;border-radius:15px;padding:20px 22px;margin-top:20px}
 .carry-in .cyc{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:17px;flex:none}
-.carry-in .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--gold);margin-bottom:5px}
+.carry-in .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--gold-2);margin-bottom:5px}
 .carry-in b{display:block;font-size:16px;letter-spacing:-.02em;font-family:'Playfair Display',Georgia,serif;font-weight:600}
 .carry-in p{margin:7px 0 0;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,.72)}
 .carry-in .cst{margin-left:auto;font-size:9.5px;font-weight:800;letter-spacing:.05em;color:#8FE3BE;flex:none}
 @media (max-width:640px){ .carry-in .cst{display:none} }
 
-/* the loop line */
-.loopline{display:flex;flex-wrap:wrap;gap:7px;align-items:center;justify-content:center;margin-bottom:26px}
-.ll-s{font-size:11.5px;font-weight:700;background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 13px}
-.ll-a{color:var(--mut-2);font-size:12px}
-
-/* update strip + personalize bar on the brief */
-.updstrip{display:flex;gap:9px;align-items:center;flex-wrap:wrap;border:1px solid #F0E2BE;background:var(--gold-soft);border-radius:12px;padding:11px 14px;margin-bottom:12px;font-size:12.5px;color:var(--ink-2)}
-.updstrip b{font-weight:800}
-.us-k{font-size:9.5px;font-weight:800;letter-spacing:.06em;color:#8A6D1E;background:#fff;border-radius:99px;padding:4px 9px}
+/* update strip + before/after */
+.updstrip{display:flex;gap:9px;align-items:center;flex-wrap:wrap;border:1px solid #F0E4C6;background:var(--gold-soft);
+  border-radius:11px;padding:11px 14px;margin-bottom:12px;font-size:12.5px;color:var(--ink-2)}
+.us-k{font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--amber);background:#fff;border-radius:99px;padding:4px 9px}
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px}
+@media (max-width:820px){ .ba{grid-template-columns:1fr} }
+.ba-c{border:1px solid var(--line);border-radius:11px;padding:13px 15px;background:#fff}
+.ba-c.after{border-color:#CBEBDC;background:#F9FDFB}
+.ba-k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--mut-2);margin-bottom:8px}
+.ba-c.after .ba-k{color:var(--green)}
+.ba-c .sl{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--blue);margin-bottom:8px}
+.ba-c .tx{font-size:12.5px;line-height:1.55;color:var(--ink-2)}
 .ba-sig{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
 @media (max-width:820px){ .ba-sig{grid-template-columns:1fr} }
-.sig{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff}
+.sig{border:1px solid var(--line);border-radius:11px;padding:12px 14px;background:#fff}
 .sig .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.05em;color:var(--mut-2);margin-bottom:5px}
 .sig b{display:block;font-size:13px;letter-spacing:-.015em;line-height:1.35}
 .sig p{margin:4px 0 0;font-size:12px;color:var(--mut);line-height:1.5}
-.pzbar{border:1px solid var(--line);border-radius:13px;background:var(--panel);padding:14px 16px;margin-top:20px}
-.pz-k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--mut-2);margin-bottom:10px}
-.pz-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
-.pz-row:last-child{margin-bottom:0}
-.pz-l{font-size:11.5px;font-weight:700;color:var(--mut);min-width:96px}
-.pz-row .chips{margin:0}
-.livebox{border:1px solid var(--line);border-radius:14px;background:#FCFCFD;padding:18px 20px;margin-top:22px}
-.livebox .lh{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.livebox .lh b{font-size:13.5px;letter-spacing:-.02em}
-.livebox .lh .tiny{margin-left:auto}
-.livebox .slot{margin-bottom:14px}
-.livebox .slot:last-child{margin-bottom:0}
-.flash{animation:fl .5s ease}
-@keyframes fl{0%{background:var(--blue-soft)}100%{background:transparent}}
-.ba{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.ba-c{border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:#fff}
-.ba-c.after{border-color:#CFEBDD;background:#F4FBF7}
-.ba-k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--mut-2);margin-bottom:8px}
-.ba-c.after .ba-k{color:#0B8A50}
-.ba-c .sl{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--blue);margin-bottom:8px}
-.ba-c .tx{font-size:12.5px;line-height:1.55;color:var(--ink-2)}
-@media (max-width:820px){ .ba{grid-template-columns:1fr} }
-.slot.resslot{border-left-color:#8E7CC8}
 
-.biz{max-width:900px;margin:0 auto}
-.biz-row{display:flex;gap:7px;justify-content:center;flex-wrap:wrap}
-.biz-row span{font-size:12.5px;font-weight:600;background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 15px;color:var(--ink-2)}
-.biz-mid{background:var(--navy);color:#fff;border-radius:14px;padding:16px 22px;text-align:center;font-family:'Playfair Display',Georgia,serif;font-size:19px;font-weight:600}
+/* how it works */
+.steps6{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+@media (max-width:1000px){ .steps6{grid-template-columns:repeat(3,1fr)} }
+@media (max-width:600px){ .steps6{grid-template-columns:repeat(2,1fr)} }
+.s6{background:#fff;border:1px solid var(--line);border-radius:13px;padding:18px 14px;text-align:center}
+.s6 .n{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--gold);color:var(--amber);
+  font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 11px}
+.s6 b{display:block;font-size:14px;letter-spacing:-.02em}
+.s6 span{display:block;font-size:11.5px;color:var(--mut);margin-top:3px;line-height:1.4}
+
+/* impact */
+.impact{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media (max-width:900px){ .impact{grid-template-columns:1fr} }
+.imp{background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px}
+.imp .ig{width:38px;height:38px;border-radius:11px;background:var(--gold-soft);color:var(--amber);
+  display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:14px}
+.imp b{display:block;font-size:16px;letter-spacing:-.02em;margin-bottom:7px}
+.imp p{font-size:13.5px;color:var(--mut);line-height:1.6}
+
+/* trust */
+.trust{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media (max-width:900px){ .trust{grid-template-columns:1fr} }
+.tr{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;gap:15px;align-items:flex-start}
+.tr .tg{width:46px;height:46px;border-radius:50%;background:linear-gradient(180deg,var(--gold-2),var(--gold));
+  color:#2A1E00;display:flex;align-items:center;justify-content:center;font-size:19px;flex:none}
+.tr b{display:block;font-size:14.5px;letter-spacing:-.02em;margin-bottom:5px}
+.tr p{font-size:12.5px;color:var(--mut);line-height:1.55}
+
+/* use cases */
+.uses{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:900px){ .uses{grid-template-columns:1fr 1fr} }
+.uc{background:#fff;border:1px solid var(--line);border-radius:13px;padding:17px}
+.uc .k{display:block;font-size:9.5px;font-weight:800;letter-spacing:.07em;color:var(--gold);margin-bottom:8px}
+.uc b{display:block;font-size:14px;letter-spacing:-.02em;margin-bottom:6px}
+.uc p{font-size:12.5px;color:var(--mut);line-height:1.5}
+
+/* built around */
+.biz-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.biz-row span{font-size:12.5px;font-weight:600;background:#fff;border:1px solid var(--line);border-radius:999px;padding:9px 16px;color:var(--ink-2)}
+.biz-mid{background:var(--navy);color:#fff;border-radius:13px;padding:16px 22px;text-align:center;
+  font-family:'Playfair Display',Georgia,serif;font-size:19px;font-weight:600}
+.conv-lbl{display:block;text-align:center;font-size:10.5px;font-weight:800;letter-spacing:.1em;color:var(--mut-2);margin-bottom:13px}
+.arrow-c{text-align:center;color:var(--mut-2);font-size:18px;padding:13px 0}
+
+/* closing CTA */
+.close{background:linear-gradient(160deg,#0A1830,#16345C);color:#fff;padding:52px 0}
+.close-in{display:flex;gap:26px;align-items:center;flex-wrap:wrap;justify-content:center;text-align:center}
+.close h2{font-size:clamp(22px,2.4vw,28px);font-weight:700}
+.close p{font-size:14px;color:rgba(255,255,255,.7);margin-top:6px}
+.foot-b{background:#07111F;color:rgba(255,255,255,.5);padding:24px 28px;display:flex;gap:16px;
+  align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:12.5px}
+
+/* modals + toast */
+.modal{position:fixed;inset:0;background:rgba(8,14,26,.72);z-index:120;display:none;align-items:center;justify-content:center;padding:22px}
+.modal-card{background:#fff;border-radius:16px;overflow:hidden;width:100%;max-width:880px;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.modal-h{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line)}
+.vid{display:block;width:100%;aspect-ratio:16/9;background:#000;border:0}
+.vid-fb{padding:11px 18px;border-top:1px solid var(--line)}
+.vid-fb a{color:var(--blue-d);text-decoration:underline}
+.vid-ph{aspect-ratio:16/9;background:var(--navy);color:#fff;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:9px;text-align:center;padding:24px}
+.vid-ph span:first-child{font-size:34px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(16px);background:var(--navy);
+  color:#fff;padding:12px 20px;border-radius:11px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;
+  transition:.2s;z-index:130}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.see-more{font-size:12px;font-weight:700;text-decoration:underline}
+
+.rv{opacity:0;transform:translateY(16px);transition:opacity .6s,transform .6s}
+.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){ .rv{opacity:1;transform:none;transition:none} }
 </style>
 </head>
 <body>
 
-<nav class="nav" id="nav">
-  <div class="brand"><img class="mark" src="https://www.aiparagonconsulting.com/logo.png" alt="AI Paragon">AI Paragon</div>
+<nav class="nav">
+  <div class="brand">
+    <img src="https://www.aiparagonconsulting.com/logo.png" alt="">
+    <div>AI PARAGON<span>CONSULTING GROUP</span></div>
+  </div>
   <div class="nav-links">
-    <a href="#brief">The brief</a>
-    <a href="#demo">Try a sample</a>
-    <a href="#built">Built around you</a>
+    <a href="#workspace">Live demo</a>
+    <a href="#how">How it works</a>
+    <a href="#impact">Impact</a>
+    <a href="#trust">Trust</a>
+    <a href="#systems">Your systems</a>
   </div>
-  <div style="display:flex;gap:10px;align-items:center">
-    <button class="btn btn-line btn-sm" onclick="openCal('nav')">Book a call</button>
-    <button class="btn btn-pri btn-sm" onclick="jump('#demo')">Try a meeting</button>
-  </div>
+  <button class="btn btn-gold btn-sm" onclick="openCal('nav')">Get a demo</button>
 </nav>
 
+<!-- ============ 1. HERO + LIVE DEMO ============ -->
 <header class="hero">
-  <div class="wrap">
-    <span class="eyebrow"><i></i>Pre-Meeting Intelligence</span>
-    <h1>Everything your team already knew,<br><span>in one brief before the meeting.</span></h1>
-    <p class="lede">Your CRM, inbox, meeting notes, documents and what is happening publicly at the other company, brought together into one page that says what changed, what is still open and what to raise.</p>
-    <div class="cta">
-      <button class="btn btn-pri" onclick="jump('#demo')">Try a meeting</button>
-      <button class="btn btn-line" onclick="openVideo()">&#9654;&nbsp; Watch 60 seconds</button>
+  <div class="wrap hero-grid">
+    <div>
+      <div class="pill-row">
+        <span class="pill">PRE-MEETING INTELLIGENCE</span>
+        <span class="pill-sub">Stronger meetings. Greater momentum.</span>
+      </div>
+      <h1>Walk into every meeting<br><em>knowing what matters.</em></h1>
+      <p class="lede">Automatically prepare, capture and act on meeting intelligence, so nothing gets lost between conversations.</p>
+      <div class="vstrip">
+        <div><b>5 systems</b><span>Read before every meeting</span></div>
+        <div><b>Better outcomes</b><span>Nothing raised twice, nothing dropped</span></div>
+        <div><b>Accountability</b><span>Commitments tracked to done</span></div>
+      </div>
+      <div class="hero-cta">
+        <button class="btn btn-gold" onclick="jump('#workspace')">Try the interactive demo &nbsp;&rarr;</button>
+        <button class="btn btn-ghost" onclick="openVideo('hero')">&#9654;&nbsp; Watch 30-second video</button>
+      </div>
     </div>
-    <div class="scroll-cue"><i></i>Or scroll, the brief itself is just below</div>
+
+    <div>
+      <div class="pane-card">
+        <div class="pane-in">
+          <div class="pane-h">From your systems to an actionable brief<span class="x">&times;</span></div>
+          <div class="srcs">
+            <div class="src-i"><span class="g">&#128202;</span><b>CRM</b></div>
+            <div class="src-i"><span class="g">&#9993;</span><b>Email</b></div>
+            <div class="src-i"><span class="g">&#128221;</span><b>Notes</b></div>
+            <div class="src-i"><span class="g">&#128196;</span><b>Documents</b></div>
+            <div class="src-i"><span class="g">&#127760;</span><b>Web</b></div>
+          </div>
+          <div class="arrow-d">&darr;</div>
+          <div class="pane-out">
+            <div class="pane-brief">
+              <span class="k">&#9635; MEETING BRIEF</span>
+              <b>Meridian Manufacturing</b>
+              <span>Quarterly Strategy and Operations Review</span>
+              <span class="when">&#128336; Tomorrow &middot; 10:00 AM</span>
+            </div>
+            <div class="pane-chips">
+              <div class="pc b"><i>&#9679;</i>Key changes</div>
+              <div class="pc g"><i>&#9679;</i>Open commitments</div>
+              <div class="pc r"><i>&#9679;</i>Risks and opportunities</div>
+              <div class="pc e"><i>&#9679;</i>Suggested discussion areas</div>
+            </div>
+          </div>
+        </div>
+        <button class="playbtn" onclick="openVideo('pane')" aria-label="Watch the 30-second video"><span>&#9654;</span></button>
+      </div>
+      <p class="pane-cap">&#9654; <button onclick="openVideo('caption')">See Meeting Intelligence in action (30 sec)</button></p>
+    </div>
   </div>
 </header>
 
-<!-- =================== STAGE : THE PROBLEM =================== -->
-<section class="stage" id="stage">
-  <div class="stage-pin" id="pin">
-    <div class="card" id="card">
-      <div class="wavebox" id="wave"></div>
-      <div class="badge-live" id="live"><i></i>TOMORROW &middot; 10:00 &middot; QUARTERLY REVIEW</div>
-      <div class="card-in" id="cardIn">
-        <div class="hook" id="hook">Your team knows all of this. <em>Nobody has it in one place.</em></div>
-        <div class="sub-hook" id="subHook">And nobody has forty minutes to go and find it.</div>
-      </div>
-    </div>
-
-    <div class="board" id="board">
-      <div class="board-in">
-        <div class="board-h" id="boardH">
-          <b>Five systems. One meeting. Nothing connecting them.</b>
-          <span>The answer to what matters tomorrow is already written down somewhere in your organization.</span>
-        </div>
-        <div class="bits">
-          <div class="bit"><span class="k">CRM</span><b>Two open opportunities, four stakeholders</b><span class="ts">ACCOUNT</span></div>
-          <div class="bit"><span class="k">EMAIL</span><b>A question asked three weeks ago, never answered in writing</b><span class="ts">27 MAR</span></div>
-          <div class="bit"><span class="k">MEETING NOTES</span><b>Four things your team committed to</b><span class="ts">LAST REVIEW</span></div>
-          <div class="bit"><span class="k">DOCUMENTS</span><b>Scope change still waiting on approval</b><span class="ts">3 WEEKS</span></div>
-          <div class="bit"><span class="k">PUBLIC</span><b>They announced an expansion and a new VP of Operations</b><span class="ts">THIS MONTH</span></div>
-        </div>
-      </div>
-    </div>
-    <button class="replay" id="replay" onclick="playStage(true)">&#8635; Replay</button>
-  </div>
-</section>
-
-<!-- =================== THE OUTPUT, FIRST =================== -->
-<section class="sec" id="brief" style="background:var(--panel);padding-top:100px">
-  <div class="sec-lead rv">
-    <div class="kicker">THE OUTPUT</div>
-    <h2>This is what arrives at seven in the morning</h2>
-    <p>One page, for a quarterly review with a customer of two years. Every line carries where it came from.</p>
-  </div>
+<!-- ============ 2. INTERACTIVE WORKSPACE ============ -->
+<section class="sec cream" id="workspace">
   <div class="wrap">
-    <div class="previewwrap rv">
-      <div class="sheet" id="previewSheet"></div>
-      <div>
-        <div class="rail-card"><h4>Where each line came from</h4><div id="previewSrc"></div></div>
-        <div class="rail-card gold"><h4>Read in four minutes</h4>
-          <div class="rail-row">Not a summary of the last email. What changed, what is still open, what is missing, and what to raise.</div>
+    <div class="sec-head rv">
+      <div class="kick">TRY MEETING INTELLIGENCE YOURSELF</div>
+      <h2>See how we prepare you for a real meeting</h2>
+      <p class="sub">Already loaded with a sample. Change the meeting, follow the workflow, edit anything. Nothing is saved.</p>
+    </div>
+
+    <div class="ws rv">
+      <aside class="ws-side">
+        <div class="ws-lbl"><span class="num">1</span>Select a meeting type</div>
+        <div id="typeList"></div>
+
+        <div class="ws-lbl mt"><span class="num">2</span>Choose a sample account</div>
+        <select class="sel" id="acctSel" onchange="setAcct(this.value)"></select>
+        <p class="side-note">You are Summit Business Advisors, a consulting and advisory business.</p>
+
+        <button class="btn btn-gold btn-sm" style="width:100%;margin-top:16px" onclick="prepare()">Prepare my meeting &nbsp;&rarr;</button>
+
+        <div class="prog">
+          <div class="prog-k">WORKFLOW</div>
+          <div id="progList"></div>
         </div>
-        <button class="btn btn-pri btn-sm" style="width:100%;margin-top:4px" onclick="jump('#demo')">Try it on a sample meeting</button>
+      </aside>
+
+      <div class="ws-main">
+        <div class="tabs" id="tabs"></div>
+        <div class="ws-body" id="wsBody"></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- =================== HOW IT GETS THERE =================== -->
-<section class="sec">
-  <div class="sec-lead rv">
-    <div class="kicker">HOW IT GETS THERE</div>
-    <h2>Five sources in. One brief out.</h2>
-  </div>
+<!-- ============ 3. HOW IT WORKS ============ -->
+<section class="sec" id="how">
   <div class="wrap">
-    <div class="conv rv">
-      <span class="conv-lbl">WHAT YOUR ORGANIZATION ALREADY HOLDS</span>
-      <div class="conv-row">
-        <div class="sbox"><b>CRM</b><span>Relationship history, stakeholders, open opportunities, previous activity</span></div>
-        <div class="sbox"><b>Email</b><span>Recent questions, unanswered requests, new concerns, key correspondence</span></div>
-        <div class="sbox"><b>Meeting notes</b><span>Previous decisions, stated priorities, commitments made, follow-up items</span></div>
-        <div class="sbox"><b>Documents</b><span>Engagement scope, previous deliverables, project plans, proposals</span></div>
-        <div class="sbox"><b>Public information</b><span>Company announcements, leadership changes, expansion activity, industry news</span></div>
-      </div>
-      <div class="conv-arrow">&#8595;</div>
-      <div class="conv-mid">
-        <b>Meeting intelligence</b>
-        <div class="cm-row">
-          <span>Finds what changed</span><span>Identifies commitments</span><span>Connects related items</span>
-          <span>Flags gaps</span><span>Surfaces opportunities</span>
-        </div>
-      </div>
-      <div class="conv-arrow">&#8595;</div>
-      <div class="conv-out">
-        <b>One actionable brief</b>
-        <div class="cm-row">
-          <span>Snapshot</span><span>What changed</span><span>Open commitments</span><span>Unanswered questions</span>
-          <span>Risks</span><span>Opportunities</span><span>Discussion areas</span><span>What is missing</span><span>Next steps</span>
-        </div>
-      </div>
+    <div class="sec-head rv">
+      <div class="kick">HOW PRE-MEETING INTELLIGENCE WORKS</div>
+      <h2>Turn information into action</h2>
+      <p class="sub">Before, during and after every meeting.</p>
     </div>
-    <p class="tiny rv" style="text-align:center;margin-top:26px;max-width:640px;margin-inline:auto">It is not summarizing your inbox. It is reading the relationship, working out what matters for this particular conversation, and showing the gaps rather than filling them in.</p>
-  </div>
-</section>
-
-<!-- =================== DEMO =================== -->
-<section class="demo-sec" id="demo">
-  <div class="sec-lead rv">
-    <div class="kicker">LIVE DEMO</div>
-    <h2>Try a meeting</h2>
-    <p>Pick the meeting, watch the system work, then follow it past the meeting into what actually got done. No sign-up, nothing saved.</p>
-    <p style="margin-top:14px"><button class="btn btn-line btn-sm" onclick="openVideo()">&#9654;&nbsp; Watch the 60-second version instead</button></p>
-  </div>
-
-  <div class="panelbox rv">
-    <div class="pbar">
-      <div class="dots"><i></i><i></i><i></i></div>
-      <div class="url">demo.aiparagonconsulting.com/demo/meeting-intelligence</div>
-      <div style="width:40px"></div>
-    </div>
-    <div class="pbody">
-      <div class="steps" id="steps"></div>
-
-      <!-- 1 MEETING -->
-      <div class="pane on" data-p="1">
-        <h3>Which meeting?</h3>
-        <p class="s">One choice, then the system takes over. You are Summit Business Advisors, a consulting and advisory business.</p>
-        <div class="mtypes" id="mtypes"></div>
-        <div style="height:18px"></div>
-        <div id="whoBox"></div>
-        <div class="foot">
-          <span class="tiny" id="mtNote"></span>
-          <button class="btn btn-pri btn-sm sp" onclick="go(2)">Prepare meeting</button>
-        </div>
-      </div>
-
-      <!-- 2 GATHER -->
-      <div class="pane" data-p="2">
-        <h3>Working</h3>
-        <p class="s" id="resSub"></p>
-        <div id="resList"></div>
-        <div class="gbar"><i id="resBar"></i></div>
-      </div>
-
-      <!-- 3 FINDINGS -->
-      <div class="pane" data-p="3">
-        <h3 id="fdH">What matters for this meeting</h3>
-        <p class="s">Five systems read. These are the things that change how the conversation should go. Open one to see why it surfaced.</p>
-        <div class="sysgrid">
-          <div id="fdList"></div>
-          <div>
-            <div class="rail-card"><h4>Not summarizing</h4>
-              <div class="rail-row">A summary would tell you what the last email said. These are the items that need a decision, an answer or an apology.</div>
-            </div>
-            <div class="rail-card gold"><h4>Every finding carries a source</h4>
-              <div class="rail-row">Open any card and it names the record, thread, note, document or public announcement it came from.</div>
-            </div>
-          </div>
-        </div>
-        <div class="foot">
-          <button class="btn btn-line btn-sm" onclick="go(1)">Start over</button>
-          <span class="tiny" id="fdNote"></span>
-          <button class="btn btn-pri btn-sm sp" onclick="go(4)">Continue</button>
-        </div>
-      </div>
-
-      <!-- 4 THE BRIEF -->
-      <div class="pane" data-p="4">
-        <h3 id="bfH">The brief</h3>
-        <p class="s">Those findings, written into the template your team already uses. Every section is editable.</p>
-
-        <div class="updstrip" id="updStrip"></div>
-        <div id="baBox"></div>
-
-        <div class="brief-bar">
-          <button class="sw on" id="srcSw" onclick="toggleSrc()" aria-label="Toggle sources"></button>
-          <div style="flex:1;min-width:220px">
-            <b>Sources shown</b>
-            <span id="srcLine"></span>
-          </div>
-          <span class="tiny" id="srcMeta"></span>
-        </div>
-
-        <div class="brf">
-          <div id="bodyCol"></div>
-          <div>
-            <div class="rail-card" id="snapCard"></div>
-            <div class="rail-card"><h4>Source ledger</h4><div id="ledger"></div></div>
-            <div class="rail-card gold"><h4>Still missing</h4><div id="gaps"></div></div>
-          </div>
-        </div>
-
-        <div class="pzbar">
-          <span class="pz-k">MAKE IT YOURS</span>
-          <div class="pz-row">
-            <span class="pz-l">Account data in</span><div class="chips" id="crmChips"></div>
-          </div>
-          <div class="pz-row">
-            <span class="pz-l">Written into</span><div class="chips" id="tplChips"></div>
-          </div>
-        </div>
-
-        <div class="foot">
-          <button class="btn btn-line btn-sm" onclick="go(3)">Back</button>
-          <span class="tiny" id="bfNote"></span>
-          <button class="btn btn-pri btn-sm sp" onclick="go(5)">Continue</button>
-        </div>
-      </div>
-
-      <!-- 5 HUMAN REVIEW -->
-      <div class="pane" data-p="5">
-        <h3>You decide what reaches the meeting</h3>
-        <p class="s">The system recommends. Nothing goes into the room until someone on your team says so.</p>
-        <div class="sysgrid">
-          <div id="apList"></div>
-          <div>
-            <div class="rail-card" id="apRail"></div>
-            <div class="rail-card gold"><h4>Why this step exists</h4>
-              <div class="rail-row">The system can be wrong about what matters, and it does not know what you were told privately. Approval is where that judgment goes.</div>
-            </div>
-          </div>
-        </div>
-        <div class="foot">
-          <button class="btn btn-line btn-sm" onclick="go(4)">Back</button>
-          <span class="tiny" id="apNote"></span>
-          <button class="btn btn-pri btn-sm sp" onclick="go(6)">Continue</button>
-        </div>
-      </div>
-
-      <!-- 6 AFTER THE MEETING -->
-      <div class="pane" data-p="6">
-        <h3>After the meeting</h3>
-        <p class="s" id="afSub"></p>
-        <div id="afRun"></div>
-        <div class="sysgrid" id="afGrid" style="display:none">
-          <div id="afBody"></div>
-          <div>
-            <div class="rail-card" id="afRail"></div>
-            <div class="rail-card gold"><h4>Nothing sends itself</h4>
-              <div class="rail-row">Tasks are created. The follow-up is drafted and waits for approval, the same as the brief did.</div>
-            </div>
-          </div>
-        </div>
-        <div class="foot">
-          <button class="btn btn-line btn-sm" onclick="go(5)">Back</button>
-          <span class="tiny" id="afNote"></span>
-          <button class="btn btn-pri btn-sm sp" id="afBtn" onclick="afAdvance()">Approve and send</button>
-        </div>
-      </div>
-
-      <!-- 7 FOLLOW THROUGH -->
-      <div class="pane" data-p="7">
-        <h3>Seven days later</h3>
-        <p class="s">The system keeps checking. This is the part that decides whether the meeting was worth having.</p>
-        <div class="sysgrid">
-          <div id="trList"></div>
-          <div>
-            <div class="rail-card gold" id="trRail"></div>
-            <div class="rail-card"><h4>Nobody had to chase it</h4>
-              <div class="rail-row">No one reread the notes to notice this. The commitment was recorded when it was made and checked on its own.</div>
-            </div>
-          </div>
-        </div>
-        <div class="carry" id="carryBox"></div>
-        <div class="foot">
-          <button class="btn btn-line btn-sm" onclick="go(6)">Back</button>
-          <span class="tiny" id="trNote"></span>
-          <button class="btn btn-pri btn-sm sp" onclick="go(8)">Continue</button>
-        </div>
-      </div>
-
-      <!-- 8 NEXT -->
-      <div class="pane" data-p="8">
-        <h3>The loop, once through</h3>
-        <p class="s">That is one meeting, start to finish, and the next one already starts ahead.</p>
-        <div class="loopline" id="loopLine"></div>
-        <div class="nx">
-          <div class="nx-c">
-            <h4>Take this brief with you</h4>
-            <p class="tiny">The brief, the tasks, the follow-up and the source ledger behind all of it, as a PDF and editable text.</p>
-            <input class="inp" id="gateEmail" type="email" placeholder="you@yourcompany.com" style="margin:12px 0 10px">
-            <button class="btn btn-pri btn-sm" style="width:100%" onclick="send()">Email me the brief</button>
-            <p class="tiny" id="doneMsg" style="margin-top:10px"></p>
-          </div>
-          <div class="nx-c gold">
-            <h4>See how this could work with your systems</h4>
-            <p class="tiny">Twenty minutes with Erica on your CRM, your inbox and the meetings your team actually runs. We scope the connection, not the software.</p>
-            <button class="btn btn-dark btn-sm" style="width:100%;margin-top:12px" onclick="openCal('demo')">See it on your systems</button>
-            <p class="tiny" style="margin-top:10px">Or <button class="see-more" style="color:var(--blue-d)" onclick="openVideo()">watch the 60-second version</button> first.</p>
-          </div>
-        </div>
-        <div class="foot">
-          <button class="btn btn-line btn-sm" onclick="go(7)">Back</button>
-          <button class="btn btn-line btn-sm sp" onclick="reset()">Run another meeting</button>
-        </div>
-      </div>
-
+    <div class="steps6 rv">
+      <div class="s6"><div class="n">1</div><b>Detect</b><span>Upcoming meeting</span></div>
+      <div class="s6"><div class="n">2</div><b>Gather</b><span>Information</span></div>
+      <div class="s6"><div class="n">3</div><b>Identify</b><span>What matters</span></div>
+      <div class="s6"><div class="n">4</div><b>Create</b><span>Actionable brief</span></div>
+      <div class="s6"><div class="n">5</div><b>Capture and act</b><span>After the meeting</span></div>
+      <div class="s6"><div class="n">6</div><b>Track and carry forward</b><span>Next meeting smarter</span></div>
     </div>
   </div>
 </section>
 
-<!-- =================== BUSINESS VALUE =================== -->
-<section class="sec" id="value">
-  <div class="sec-lead rv">
-    <div class="kicker">BUSINESS VALUE</div>
-    <h2>What changes when everyone walks in prepared</h2>
-    <p>Preparation stops depending on who owns the account and how much time they had that morning.</p>
-  </div>
+<!-- ============ 4. BUSINESS IMPACT ============ -->
+<section class="sec pale" id="impact">
   <div class="wrap">
-    <div class="stat rv">
-      <div class="art" style="background:var(--blue-soft)">&#9635;</div>
-      <div class="num">5</div>
-      <div class="txt"><b>Systems read before every meeting</b>
-      <p>The same five sources every time, whether the meeting is with a prospect nobody has met or a customer of six years. Nothing depends on remembering to check.</p></div>
+    <div class="sec-head rv">
+      <div class="kick">BUSINESS IMPACT</div>
+      <h2>What changes when everyone walks in prepared</h2>
+      <p class="sub">Preparation stops depending on who owns the account and how much time they had that morning.</p>
     </div>
-    <div class="stat rv">
-      <div class="art" style="background:var(--gold-soft)">&#8644;</div>
-      <div class="num">1</div>
-      <div class="txt"><b>Page instead of four tabs and a guess</b>
-      <p>Commitments stop slipping between meetings, questions stop getting asked twice, and the person covering for a colleague walks in with the same picture the account owner would have had.</p></div>
-    </div>
-    <div class="stat rv">
-      <div class="art" style="background:var(--green-soft)">&#10003;</div>
-      <div class="num">0</div>
-      <div class="txt"><b>Facts without a source behind them</b>
-      <p>Every line points at a record, a thread, a note or a public announcement, so nothing raised in the room rests on somebody's recollection of a call in March.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- =================== TRUST =================== -->
-<section class="bigword">
-  <div class="wrap">
-      <h2 id="bw">What is missing <span class="tile">?</span><br>stays missing.</h2>
-    <p class="rv">The gap list is the part that saves the meeting. It is also the part a summarizer will quietly invent.</p>
-    <div class="checks">
-      <div class="check rv"><span class="t">&#10003;</span><div><b>Every line is traceable</b><span>Each fact carries the record, thread, note or document it came from.</span></div></div>
-      <div class="check rv"><span class="t">&#10003;</span><div><b>Nothing is assumed</b><span>If your systems never recorded it, the brief says so instead of guessing.</span></div></div>
-      <div class="check rv"><span class="t">&#10003;</span><div><b>Outside research stays labelled</b><span>Anything found in public sources is marked, so you know what you can safely raise.</span></div></div>
-      <div class="check rv"><span class="t">&#10003;</span><div><b>Your team reviews before the meeting</b><span>The brief is a draft you edit, not a script to read out in the room.</span></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- =================== WHERE IT APPLIES =================== -->
-<section class="sec" style="background:var(--panel)">
-  <div class="sec-lead rv">
-    <div class="kicker">WHERE IT APPLIES</div>
-    <h2>Any meeting where somebody should have read the file</h2>
-    <p>The brief takes the same shape every time. What changes is which sources matter and which template it writes into.</p>
-  </div>
-  <div class="wrap">
-    <div class="path rv">
-      <span class="lbl2">ONE ENGINE, ACROSS THE RELATIONSHIP</span>
-      <div class="path-row">
-        <span class="pstep on">Sales and prospect meetings</span>
-        <span class="pstep on">Kickoffs and onboarding</span>
-        <span class="pstep on">Client and account reviews</span>
-        <span class="pstep">Project reviews</span>
-        <span class="pstep">Partnership discussions</span>
-        <span class="pstep">Vendor meetings</span>
-        <span class="pstep">Executive reviews</span>
-        <span class="pstep">Renewals</span>
+    <div class="impact rv">
+      <div class="imp">
+        <div class="ig">&#9635;</div>
+        <b>Preparation stops being a person</b>
+        <p>The same five systems are read before every meeting, whether it is a first conversation or a customer of six years. Nobody has to remember, and cover is no longer a downgrade.</p>
       </div>
-      <p class="tiny" style="margin:14px 0 0">Every meeting writes back into the record, so the next brief starts from a fuller picture than the last one did.</p>
-    </div>
-
-    <div class="pillars rv">
-      <div class="pil"><h4>It knows where you left off</h4><p>Commitments and open questions carry forward on their own, so nothing gets asked twice and nothing gets quietly dropped.</p></div>
-      <div class="pil"><h4>It writes into your template</h4><p>Your agenda, your review structure, your account plan. The brief fills in the sections your team already uses.</p></div>
-      <div class="pil"><h4>It keeps reading</h4><p>A reply lands, a document is approved, the record changes, and the brief reruns and flags only what moved.</p></div>
+      <div class="imp">
+        <div class="ig">&#8644;</div>
+        <b>Commitments stop slipping</b>
+        <p>What was promised is recorded when it is made, checked on its own, and carried into the next brief if it is still open. Nothing depends on someone rereading the notes.</p>
+      </div>
+      <div class="imp">
+        <div class="ig">&#10003;</div>
+        <b>Nothing rests on recollection</b>
+        <p>Every line points at a record, a thread, a note or a public announcement. What is missing is shown as missing rather than filled in with something plausible.</p>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- =================== BUILT AROUND YOU =================== -->
-<section class="sec" id="built">
-  <div class="sec-lead rv">
-    <div class="kicker">THE WIDER POINT</div>
-    <h2>Built around how your business already works</h2>
-    <p>This page shows one workflow. The same approach connects your systems to whichever parts of your operation are worth automating.</p>
-  </div>
+<!-- ============ 5. TRUST + CONTROL ============ -->
+<section class="sec" id="trust">
   <div class="wrap">
-    <div class="biz rv">
+    <div class="sec-head rv">
+      <div class="kick">BUILT FOR REAL TEAMS. REAL WORKFLOWS.</div>
+      <h2>Automation does the work. Your team keeps the judgment.</h2>
+    </div>
+    <div class="trust rv">
+      <div class="tr">
+        <div class="tg">&#9707;</div>
+        <div><b>Easy to integrate</b><p>Works with the tools you already run. CRM, email, calendar, document storage and notes, connected rather than replaced.</p></div>
+      </div>
+      <div class="tr">
+        <div class="tg">&#9919;</div>
+        <div><b>Secure and compliant</b><p>Your data stays in your systems. Access follows the permissions you already set, and every read is logged.</p></div>
+      </div>
+      <div class="tr">
+        <div class="tg">&#9786;</div>
+        <div><b>Human in the loop</b><p>You control what is used, what is shared and what is sent. The brief and every follow-up wait for a person to approve them.</p></div>
+      </div>
+    </div>
+    <p class="tiny rv" style="margin-top:20px">Security and integration specifics are scoped per engagement. <button class="see-more" onclick="openCal('trust')">Ask us what applies to your stack</button>.</p>
+  </div>
+</section>
+
+<!-- ============ 6. USE CASES ============ -->
+<section class="sec cream" id="uses">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="kick">USE CASES</div>
+      <h2>Any meeting where somebody should have read the file</h2>
+      <p class="sub">The brief takes the same shape every time. What changes is which systems do the work and which template it writes into.</p>
+    </div>
+    <div class="uses rv">
+      <div class="uc"><span class="k">SALES</span><b>Prospect and pipeline meetings</b><p>No history to read, so public research and the referral trail carry the preparation.</p></div>
+      <div class="uc"><span class="k">CLIENT SERVICE</span><b>Account and project reviews</b><p>Every commitment from the last meeting arrives already checked against what was delivered.</p></div>
+      <div class="uc"><span class="k">DELIVERY</span><b>Kickoffs and checkpoints</b><p>What you have, what is missing and what the client has already asked twice.</p></div>
+      <div class="uc"><span class="k">PARTNERSHIPS</span><b>Partner and vendor reviews</b><p>Joint pipeline, terms that have fallen behind the relationship, and what they announced.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. BUILT AROUND YOUR SYSTEMS ============ -->
+<section class="sec" id="systems">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="kick">BUILT AROUND HOW YOUR BUSINESS ALREADY WORKS</div>
+      <h2>This is one workflow, not one product</h2>
+      <p class="sub">The same approach connects your systems to whichever parts of your operation are worth automating.</p>
+    </div>
+    <div class="rv" style="max-width:900px;margin:0 auto">
       <span class="conv-lbl">YOUR SYSTEMS</span>
       <div class="biz-row">
         <span>CRM</span><span>Email</span><span>Documents</span><span>Calendar</span><span>Content</span><span>Business data</span>
       </div>
-      <div class="conv-arrow">&#8595;</div>
+      <div class="arrow-c">&darr;</div>
       <div class="biz-mid">Customized intelligence and automation</div>
-      <div class="conv-arrow">&#8595;</div>
+      <div class="arrow-c">&darr;</div>
       <span class="conv-lbl">YOUR WORKFLOWS</span>
       <div class="biz-row">
         <span>Meetings</span><span>Marketing</span><span>Sales</span><span>Customer service</span><span>Operations</span>
       </div>
+      <p class="tiny" style="text-align:center;margin-top:26px;max-width:640px;margin-inline:auto">
+        This is one example of what the system can do. The workflows, data sources, outputs, approvals and integrations are configured around how your team already operates.</p>
     </div>
-    <p class="tiny rv" style="text-align:center;margin-top:28px;max-width:660px;margin-inline:auto">This is one example of what the system can do. The workflows, data sources, outputs, approvals and integrations are configured around how your team already operates.</p>
   </div>
 </section>
 
+<!-- ============ 8. HIGH-INTENT CTA ============ -->
 <section class="close">
-  <div class="wrap">
-    <h2 class="rv">See what your team could know<br>before every important meeting.</h2>
-    <p class="rv">Pick one meeting on this week's calendar. We will show you what the brief for it looks like.</p>
-    <div class="cta">
-      <button class="btn btn-pri rv" onclick="jump('#demo')">Try a meeting</button>
-      <button class="btn btn-line rv" onclick="openCal('close')">Book a 20-minute session</button>
+  <div class="wrap close-in">
+    <div>
+      <h2>Ready to see what is possible for your team?</h2>
+      <p>Try the interactive demo, or walk one of your own meetings through it with us.</p>
+    </div>
+    <div class="hero-cta">
+      <button class="btn btn-gold" onclick="jump('#workspace')">Try a demo</button>
+      <button class="btn btn-ghost" onclick="openCal('close')">Get a customized demo</button>
     </div>
   </div>
 </section>
 
 <footer class="foot-b">
-  <div class="brand" style="display:flex;align-items:center;gap:10px;font-weight:800;color:#fff">
-    <img class="mark" src="https://www.aiparagonconsulting.com/logo.png" alt="AI Paragon">AI Paragon
-  </div>
+  <div class="brand"><img src="https://www.aiparagonconsulting.com/logo.png" alt=""><div>AI PARAGON<span>CONSULTING GROUP</span></div></div>
   <span>&copy; 2026 AI Paragon Consulting Group &middot; Privacy &middot; Terms</span>
 </footer>
 
-<div class="vid-modal" id="calModal" onclick="if(event.target===this)closeCal()">
-  <div class="vid-card" style="max-width:840px">
-    <div class="vid-head"><b>Book a 20-minute strategy session</b>
+<div class="modal" id="calModal" onclick="if(event.target===this)closeCal()">
+  <div class="modal-card" style="max-width:840px">
+    <div class="modal-h"><b>Book a 20-minute strategy session</b>
       <button class="btn btn-line btn-sm" style="margin-left:auto" onclick="closeCal()">Close</button></div>
     <div id="calBox"></div>
   </div>
 </div>
 
-<div class="vid-modal" id="vidModal" onclick="if(event.target===this)closeVideo()">
-  <div class="vid-card">
-    <div class="vid-head"><b>See it in sixty seconds</b>
+<div class="modal" id="vidModal" onclick="if(event.target===this)closeVideo()">
+  <div class="modal-card">
+    <div class="modal-h"><b>Pre-Meeting Intelligence in thirty seconds</b>
       <button class="btn btn-line btn-sm" style="margin-left:auto" onclick="closeVideo()">Close</button></div>
     <div id="vidBox"></div>
   </div>
@@ -1030,147 +670,34 @@ function track(name, props){
   console.log('[funnel]', name, e);
 }
 
-/* ===================== MOTION ===================== */
-var REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
-function seg(p,a,b){ return clamp((p-a)/(b-a),0,1); }
-function lerp(a,b,t){ return a+(b-a)*t; }
-function ease(t){ return t<.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; }
-
-var stage=document.getElementById('stage'), pin=document.getElementById('pin'),
-    card=document.getElementById('card'), cardIn=document.getElementById('cardIn'),
-    hook=document.getElementById('hook'), subH=document.getElementById('subHook'),
-    live=document.getElementById('live'), board=document.getElementById('board'),
-    boardH=document.getElementById('boardH'), nav=document.getElementById('nav'),
-    bw=document.getElementById('bw'), waveBox=document.getElementById('wave');
-var bits = Array.prototype.slice.call(document.querySelectorAll('.bit'));
-
-(function buildWave(){
-  /* the meeting: agenda lines, then the row of pipeline stages underneath */
-  var h = '';
-  var widths = [92, 84, 90, 70, 88, 60];
-  widths.forEach(function(w){ h += '<i style="width:'+w+'%"></i>'; });
-  var bars = '';
-  for(var i=0;i<5;i++){ bars += '<i style="width:16px;border-radius:4px;height:'+(i===2?100:46)+'%"></i>'; }
-  h += '<span class="wv" style="gap:10px">'+bars+'</span>';
-  waveBox.innerHTML = h;
-})();
-
-var MODE = qs('scrub') ? 'scrub' : 'auto';
-var DUR = 3400;
-var A = { p:0, playing:false, done:false, t0:0, raf:0 };
-if(MODE === 'auto') document.body.classList.add('auto');
-
-function playStage(force){
-  if(REDUCED) return;
-  if(!force && (A.playing || A.done)) return;
-  cancelAnimationFrame(A.raf);
-  A.playing = true; A.done = false; A.t0 = 0; A.p = 0;
-  renderStage(0);
-  document.getElementById('replay').classList.remove('on');
-  A.raf = requestAnimationFrame(step);
-  if(force) track('stage_replayed');
-}
-function step(now){
-  if(!A.t0) A.t0 = now;
-  var t = clamp((now - A.t0)/DUR, 0, 1);
-  A.p = t; renderStage(t);
-  if(t < 1){ A.raf = requestAnimationFrame(step); }
-  else { A.playing = false; A.done = true; document.getElementById('replay').classList.add('on'); }
-}
-
-var pending = false;
-function onScroll(){ if(!pending){ pending = true; requestAnimationFrame(frame); } }
-function frame(){
-  pending = false;
-  var vh = window.innerHeight, r = stage.getBoundingClientRect();
-  if(MODE === 'auto'){
-    if(r.top < vh*0.28 && r.bottom > vh*0.2 && !A.playing && !A.done) playStage();
-    if(r.top > vh*0.92 && A.done && !A.playing){
-      A.done = false; A.p = 0; renderStage(0);
-      document.getElementById('replay').classList.remove('on');
-    }
-    renderStage(A.p);
-  } else {
-    var span = stage.offsetHeight - vh;
-    renderStage(span > 0 ? clamp(-r.top/span, 0, 1) : 0);
-  }
-  renderWord();
-}
-
-function renderStage(p){
-  var vw = window.innerWidth, vh = window.innerHeight;
-  var grow = ease(seg(p, 0, .42));
-  var swap = seg(p, .44, .56);
-
-  var w0 = Math.min(330, vw*.78), h0 = Math.min(600, vh*.74);
-  card.style.width = lerp(w0, vw+2, grow)+'px';
-  card.style.height = lerp(h0, vh+2, grow)+'px';
-  card.style.borderRadius = lerp(28, 0, grow)+'px';
-  card.style.boxShadow = grow > .96 ? 'none' : '0 2px 6px rgba(11,18,32,.06), 0 30px 60px rgba(11,18,32,.13)';
-
-  hook.style.fontSize = lerp(28, Math.min(78, vw*.068), grow)+'px';
-  subH.style.fontSize = lerp(14, 19, grow)+'px';
-  cardIn.style.padding = lerp(34, Math.max(34, vw*.06), grow)+'px';
-  live.style.opacity = 1 - seg(p, .34, .46);
-  waveBox.style.opacity = (1 - seg(p, .30, .52)) * .55;
-
-  hook.style.opacity = 1 - swap;
-  subH.style.opacity = 1 - swap;
-  cardIn.style.transform = 'translateY('+(-swap*40)+'px)';
-
-  board.style.opacity = seg(p, .56, .60) > 0 ? 1 : 0;
-  boardH.style.opacity = seg(p, .56, .70);
-  boardH.style.transform = 'translateY('+lerp(30,0,seg(p,.56,.72))+'px)';
-  bits.forEach(function(b,i){
-    var t = seg(p, .60 + i*.045, .82 + i*.045);
-    b.style.opacity = t;
-    b.style.transform = 'translateY('+lerp(110,0,ease(t))+'px)';
-  });
-
-  var covering = stage.getBoundingClientRect().top <= 1 && stage.getBoundingClientRect().bottom > vh*.5;
-  nav.classList.toggle('dark', covering && p > .30);
-}
-function renderWord(){
-  if(!bw) return;
-  var vh = window.innerHeight, r = bw.getBoundingClientRect();
-  var q = clamp(1 - (r.top - vh*.15)/(vh*.85), 0, 1);
-  bw.style.transform = 'scale('+lerp(.82,1,ease(q))+')';
-  bw.style.opacity = clamp(q*1.6, 0, 1);
-}
-
-if(!REDUCED){
-  window.addEventListener('scroll', onScroll, {passive:true});
-  window.addEventListener('resize', onScroll);
-  frame();
-} else {
-  card.style.width='100%'; card.style.height='420px'; card.style.borderRadius='20px';
-  board.style.position='static'; board.style.opacity=1; board.style.padding='40px 0';
-  bits.forEach(function(b){ b.style.opacity=1; });
-  pin.style.display='block';
-}
-
-if(!REDUCED && window.IntersectionObserver){
-  var io = new IntersectionObserver(function(es){
-    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
-  }, {threshold:.18});
-  document.querySelectorAll('.rv').forEach(function(n,i){ n.style.transitionDelay = (i%4)*70+'ms'; io.observe(n); });
-} else {
-  document.querySelectorAll('.rv').forEach(function(n){ n.classList.add('in'); });
-}
-
-
-/* ===================== DEMO STATE ===================== */
+/* ===================== DATA ===================== */
 var CAL_URL = 'https://calendly.com/erica-aiparagonconsulting/20-minute-strategy-session';
-var VIDEO_URL = '';   /* drop the 60-second walkthrough embed URL here */
+/* Paste any video link here: a Loom share link, YouTube, Vimeo, or a path to an mp4.
+   It is converted to the right player automatically. Leave it empty to use the hosted
+   file. VIDEO_FILE is the fallback whenever a link refuses to be framed. */
+var VIDEO_URL  = 'https://www.loom.com/embed/b7dc359e27464fdcbd6270c9e3bdfe06';
+/* Set this to an mp4 beside the page to offer a hosted copy when a link will not frame.
+   Left empty on purpose: the only local file is a different recording, and offering it
+   under a "not loading?" link would play the wrong video. */
+var VIDEO_FILE = '';
 
-var S = { step:1, type:'client', crm:'HubSpot', tplKey:null, src:true,
-          updated:false, personalized:false, maxChip:1, openFind:-1, foundOpened:0,
-          ap:null, sent:false, edited:false, engaged:false, started:false };
+/* Turns a share link into something that actually plays in a frame. */
+function videoTarget(url){
+  if(!url) return null;
+  var u = String(url).trim(), m;
+  if(/\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(u)) return {kind:'file', src:u};
+  m = u.match(/loom\.com\/(?:share|embed)\/([A-Za-z0-9]+)/);
+  if(m) return {kind:'frame', src:'https://www.loom.com/embed/' + m[1] + '?hideEmbedTopBar=true', known:true};
+  m = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{6,})/);
+  if(m) return {kind:'frame', src:'https://www.youtube.com/embed/' + m[1] + '?rel=0', known:true};
+  m = u.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if(m) return {kind:'frame', src:'https://player.vimeo.com/video/' + m[1], known:true};
+  return {kind:'frame', src:u, known:false};
+}
+var VIDEO_POSTER = 'data:image/jpeg;base64,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QAABACAUhSgAAKAABAAAAIBQUoliGxqBDU2NSDUxsyGNlHrxeQjKYsfkIynOWwAEAAAQAACkKAAAAAAAAUAAAABAALYCAAAUgAoIAAAAAAAAAAAApSFAAAAAAoAAgAAMmH8Xr/I9B58P4vX+R6DMtQgAIoAAAAAAAAAAAAAAAAAAKAAAAIAAKIAAAAAAAAAAAAAAAAAAAAAAACnFq3/E5PZ9Ryk4vW/4nJ7PqO/h+6XLPR5EZUY0ZEex52xtY1NyKpSG4VqUoAhQCAAABSgCFBSKGwKRQpCkAFAUKQpBnBQcmkKCgQhsQCAoAgKAICgCAoAoKAqFAIIam5qBqQ2NQjUxsymNlV68XkIyGPF5KMhzlpAAQCFIAAAEKQoFAAApABsalIAABQAKAKAQAABqC2FgIAAAAAAAAAAAAApQAAAAAAAAAAAAyYfxev8AI9B58P4vX+R6DMtQAEIoAAAAAAAAAAAAAgAINgAUAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAGxxas/xOT2fUcoOMVv8AiZ+z6jv4fucs9HmRuaIyHrcVNzU2A2KQ2IICggAoAgNrACFBQqGxCkFAKFACkUAAFANiDOADi0AAAACgQoAhQAAACgAAFICCgguBSAAQ0NzUDU0ZuasqM2N9LGY8cZbXc9KnGXiZlpuB07yXRKVQOneh070SgAuu9e8XXeveKAEuu9Fuu9CpAC670LrvQqQBeneveS6717xQoJuXehuXeveKlFILrvXvG5d694qRSmu5d6943LvXvFSrYGu5d694uu9e8VI2Brdd694uu9e8VKNga7l3r3jcu9e8VI2IS6717xdd694pQC6717xdd694qRSDcu9e8l13r3ipFKa3XeveXcu9e8VIpTXcu9e8bl3r3ipGwNNy7170Ny7170Kkbg13LvXvG5d694qRsDW6717xdd696FSNga3Xevehdd696FDYGt13r3obl3r3ihnxfi9f5Gc8+Jrr1XHvM913r3oxMNQAXXevehePevegoBePevehePevegAF49696F13r3ogAXXeveN0e9e9AANy7170N0e9e9AALrvXvRLrvXvQFKTcu9e9C67170BQS67170LrvXvQoUEuu9e9C67170KFBNy7170TdHvXvRaGwNd0e9e9DdHvXvQoUGu6Pevehuj5y96FSltga7o+cvehuj50fehUltga7o+dH3obo9696FSW2Bruj5y96G6PnL3oVJbYGm+PnL3ou6PnL3oVJbYGu6PnL3obo+cvehUlw2Bruj5y96Luj5y96FFwoJuj5y96LePnL3oUXACXXeveRziuMkvahUlw3OLVEt+aclwvZew7GorYtOGPr4OXh7DqD0+LGY6y45zwVG5Ebnocw3IbAUpDYioUoIICgAAUCFBSCFKAAKCKAAKFAA2ABBnABxaAAAABQAKBAAAAAUABAAAAAFAAEAjKRgaGpsalRqzRoyGrCsLRrYymrAxWNNpmIBg2k2mYhRg2E2GcAYNg2mZkAx2JYyAise0m0yg0yw7CbDMAMOxDYjMA2w7BsMxAjDsGwygV0ZYdhdhkBaGPYNhlBlti2DYZQUYdg2GYBJYdg2GYAYdg2GYBWDYNhmAZYtg2mYBph2k2GYBGHYNpmARh2jaZjULDHtJsRmIBg2IctGYBGHloctGYAYeWi8tdxlKBi2I15ce4zkIMPLj3Dlx7jMAMPLj3F2IygDDy49w5ce4zADFy13DlruMwKMPLXcOWu4zADDsXcXZHuRlBRi2R7kTYu5GYgGHYu5E2LuRnIaRh2LuQ2LuRmBUYNi7kXYu5GUAYti7kRwXcjORgYNi7kbbF3IyGwGHYu5E2LuRnIVJYdi7kOWu5GYG4Rh5a7kXlruRmAGPajZRKbIg2SMhqjcMiN0ao3ApQUCmxqbAACkUBQAAAAoBFCgAAARQAAUpCogoAA//Z';
+
 
 var SAMPLE_CO = 'Summit Business Advisors';
-var STEPS = ['Meeting','Working','Findings','Brief','Approval','After','Follow-through','Next'];
-var STEP_CHIP = {1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 7:7, 8:8};
 var CRMS = ['HubSpot','Salesforce','Dynamics','Pipedrive','Something else'];
 
 var TYPES = [
@@ -1685,426 +1212,616 @@ function itemsHTML(items){
   }).join('');
 }
 
-/* ===================== ON-PAGE PREVIEW ===================== */
-function renderPreview(){
-  var d = M.client;
-  var show = d.slots;
-  el('previewSheet').innerHTML =
-    '<span class="sh-k">PRE-MEETING BRIEF</span>' +
-    '<div class="sheet-head">'+logoHTML('client', 40)+'<h5>'+esc(d.account)+'</h5></div>' +
-    '<div class="sh-m">Prepared for '+esc(SAMPLE_CO)+' \u00b7 '+esc(d.when)+' \u00b7 '+esc(d.sub)+'</div>' +
-    '<span class="sh-s">SNAPSHOT</span><div class="sh-t">Customer since March 2024 \u00b7 2 active engagements \u00b7 4 key stakeholders</div>' +
-    show.map(function(sl){
-      var body = sl.items ? itemsHTML(sl.items) : '<div class="sh-t">'+esc(sl.tx)+'</div>';
-      return '<span class="sh-s">'+sl.sl+'</span>' + body +
-        '<span class="sh-src'+(sl.res?' res':'')+'">'+esc(sl.from)+'</span>';
-    }).join('') +
-    '<span class="sh-s">STILL MISSING</span>' +
-    '<div class="sh-t">'+d.gaps.map(esc).join('<br>')+'</div>' +
-    '<span class="sh-s">SOURCES</span>' +
-    '<div class="sh-t">CRM &nbsp;|&nbsp; Email &nbsp;|&nbsp; Meeting notes &nbsp;|&nbsp; Project documents &nbsp;|&nbsp; Public research</div>';
-  el('previewSrc').innerHTML = d.ledger.map(function(l){
-    return '<div class="rail-row">\u2022&nbsp; '+esc(l)+'</div>';
+
+/* ===================== STATE ===================== */
+var REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+var S = { type:'client', crm:'HubSpot', tplKey:null, src:true,
+          stage:4, tab:'brief', maxStage:4, openFind:-1,
+          updated:false, ap:null, sent:false, afterDone:false,
+          edited:false, engaged:false, started:false };
+
+var STAGES = [
+  {n:1, k:'Detect',                 s:'Upcoming meeting'},
+  {n:2, k:'Gather',                 s:'Information'},
+  {n:3, k:'Identify',               s:'What matters'},
+  {n:4, k:'Create',                 s:'Actionable brief'},
+  {n:5, k:'Capture and act',        s:'After the meeting'},
+  {n:6, k:'Track and carry forward',s:'Next meeting smarter'}
+];
+var TABS = [
+  {k:'brief',  label:'Meeting Brief'},
+  {k:'find',   label:'Key Findings'},
+  {k:'open',   label:'Open Items'},
+  {k:'agenda', label:'Suggested Agenda'}
+];
+
+/* ===================== LEFT RAIL ===================== */
+function renderTypes(){
+  el('typeList').innerHTML = TYPES.map(function(t){
+    return '<button class="radio '+(S.type===t.k?'on':'')+'" onclick="setType(\'' + t.k + '\')">' +
+      '<i></i>'+t.label+'</button>';
+  }).join('');
+  el('acctSel').innerHTML = TYPES.map(function(t){
+    return '<option value="'+t.k+'"'+(S.type===t.k?' selected':'')+'>'+
+      esc(M[t.k].account)+' \u2014 sample</option>';
+  }).join('').replace(/\u2014/g,'\u00b7');
+}
+function setType(k){
+  S.type = k; S.tplKey = null; S.openFind = -1; S.updated = false;
+  S.ap = null; S.sent = false; S.afterDone = false; S.engaged = true;
+  renderTypes(); prepare();
+  track('meeting_type_selected',{type:k});
+}
+function setAcct(k){ setType(k); }
+
+function renderProg(){
+  el('progList').innerHTML = STAGES.map(function(st){
+    var cls = st.n === S.stage ? 'on' : (st.n < S.stage || st.n <= S.maxStage ? 'done' : '');
+    var can = st.n <= S.maxStage && st.n !== S.stage && S.stage !== 2;
+    return '<button class="pstep '+cls+(can?' can':'')+'"'+(can?' onclick="setStage('+st.n+')"':' disabled')+'>' +
+      '<span class="d">'+(st.n < S.stage ? '\u2713' : st.n)+'</span>' +
+      '<span><b>'+st.k+'</b><br><span style="font-size:11px;color:var(--mut-2)">'+st.s+'</span></span></button>';
   }).join('');
 }
 
-/* ===================== STEP RAIL ===================== */
-function renderSteps(){
-  var cur = STEP_CHIP[S.step] || 1;
-  if(cur > S.maxChip) S.maxChip = cur;
-  el('steps').innerHTML = STEPS.map(function(s2,i){
-    var n = i+1, cls = n===cur ? 'on' : (n<cur ? 'done' : '');
-    var open = n <= S.maxChip && n !== cur;
-    return (i ? '<span class="sep"></span>' : '') +
-      '<button class="stp '+cls+(open?' can':'')+'"'+(open?' onclick="jumpStep('+n+')"':' disabled')+'>' +
-      '<span class="n">'+(n<cur?'\u2713':n)+'</span>'+s2+'</button>';
+/* ===================== STAGE + TABS ===================== */
+/* The workspace swaps a tall pane for a short one. Scrolling after the swap makes the
+   page bounce: the document shrinks, the browser clamps the scroll position, and an
+   animated correction then drags the visitor back. So measure the panel before the swap
+   and restore the same on-screen position immediately after, with no animation. */
+var _anchor = null;
+function anchorStart(){
+  var main = document.querySelector('.ws-main');
+  _anchor = (main && main.getBoundingClientRect) ? main.getBoundingClientRect().top : null;
+}
+function anchorEnd(){
+  if(_anchor === null) return;
+  var before = _anchor; _anchor = null;
+  var main = document.querySelector('.ws-main');
+  if(!main || !main.getBoundingClientRect) return;
+  var after = main.getBoundingClientRect().top;
+  /* stranded above the panel: bring its top under the nav. otherwise hold it still. */
+  var target = (before < 8) ? window.scrollY + after - 74
+                            : window.scrollY + (after - before);
+  target = Math.max(0, Math.round(target));
+  if(Math.abs(target - window.scrollY) < 2) return;
+  var root = document.documentElement, prev = root.style.scrollBehavior;
+  root.style.scrollBehavior = 'auto';       /* html{scroll-behavior:smooth} would animate this */
+  window.scrollTo(0, target);
+  root.style.scrollBehavior = prev;
+}
+function setStage(n){
+  anchorStart();
+  S.stage = n;
+  if(n > S.maxStage) S.maxStage = n;
+  if(n === 3) S.tab = 'find';
+  if(n === 4) S.tab = 'brief';
+  renderProg(); renderTabs(); renderBody();
+  track('stage_viewed',{stage:n});
+}
+function setTab(k){
+  anchorStart();
+  S.tab = k; S.engaged = true;
+  S.stage = (k === 'find') ? 3 : 4;
+  if(S.stage > S.maxStage) S.maxStage = S.stage;
+  renderProg(); renderTabs(); renderBody();
+  track('tab_viewed',{tab:k});
+}
+function renderTabs(){
+  if(S.stage >= 5 || S.stage <= 2){ el('tabs').innerHTML = ''; el('tabs').style.display = 'none'; return; }
+  el('tabs').style.display = '';
+  el('tabs').innerHTML = TABS.map(function(t){
+    return '<button class="tab '+(S.tab===t.k?'on':'')+'" onclick="setTab(\''+t.k+'\')">'+t.label+'</button>';
   }).join('');
 }
-function jumpStep(n){ track('step_jumped',{to:n}); go(n); }
 
-/* ===================== 1 : THE SAMPLE ===================== */
-function renderSample(){
+/* ===================== SHARED BITS ===================== */
+function acctHead(extra){
   var d = D();
-  el('mtypes').innerHTML = TYPES.map(function(t){
-    return '<button class="mtype '+(S.type===t.k?'on':'')+'" onclick="setType(\''+t.k+'\')">' +
-      '<span class="stg">'+t.stg+'</span><b>'+t.label+'</b><p>'+t.sub+'</p></button>';
-  }).join('');
-  el('whoBox').innerHTML =
-    '<div class="who-card">'+logoHTML(S.type, 42) +
-    '<div><b>'+esc(d.account)+'</b><span>'+esc(d.sub)+'</span></div>' +
-    '<span class="when">'+esc(d.when)+'</span></div>';
-  el('mtNote').textContent = SAMPLE_CO + ' \u00b7 ' + typeLabel() + ' \u00b7 ' + d.kind;
+  return '<div class="acct">'+logoHTML(S.type, 42) +
+    '<div><b>'+esc(d.account)+'</b><span>'+esc(d.sub)+'</span>' +
+    '<span class="meta">'+esc(d.when)+' \u00b7 '+esc(d.kind)+'</span></div>' +
+    (extra || '') + '</div>';
+}
+function rerunBtn(){
+  return '<button class="btn btn-line btn-sm rerun" onclick="prepare()">Re-run</button>';
+}
+function nextBtn(n, label){
+  return '<button class="btn btn-gold btn-sm sp" onclick="setStage('+n+')">'+label+' &nbsp;&rarr;</button>';
 }
 
-/* ===================== 2 : WATCH IT WORK ===================== */
-function runRead(){
+/* ===================== 1 : DETECT ===================== */
+function viewDetect(){
+  var d = D();
+  return acctHead() +
+    '<div class="sum b" style="cursor:default"><i>&#9679;</i><div><b>Meeting detected on the calendar</b>' +
+      '<p>Nobody started this. The calendar entry was matched to an account record in ' + esc(S.crm) +
+      ', and preparation began on its own.</p></div></div>' +
+    '<span class="lbl">What it will read</span>' +
+    '<div class="sumgrid">' +
+      ['CRM record and history','Email threads','Notes from prior meetings','Documents on file'].map(function(x,i){
+        return '<div class="sum '+['b','g','e','r'][i]+'" style="cursor:default"><i>&#9679;</i><div><b>'+x+'</b></div></div>';
+      }).join('') +
+    '</div>' +
+    '<p class="tiny" style="margin-top:12px">Public information about the other company is read last, and labelled separately wherever it is used.</p>' +
+    '<div class="foot"><span class="tiny">Step 1 of 6</span>' + nextBtn(2,'Gather information') + '</div>';
+}
+
+/* ===================== 2 : GATHER ===================== */
+function prepare(){
+  anchorStart();
   if(!S.started){ S.started = true; track('demo_start'); }
+  S.stage = 2; S.maxStage = Math.max(S.maxStage, 2);
+  S.updated = false; S.openFind = -1;
+  renderProg(); renderTabs();
   var d = D(), R = d.read;
-  el('resSub').textContent = 'Connecting, reading and verifying \u00b7 ' + d.account + ' \u00b7 ' + S.crm + ', email, notes, documents and public sources';
-  el('resList').innerHTML = R.map(function(r,i){
-    return '<div class="gen-row" id="rr'+i+'"><span class="ic"></span><span>'+r[0]+'</span></div>';
-  }).join('');
-  el('resBar').style.width = '0%';
+  el('wsBody').innerHTML = acctHead() +
+    '<p class="tiny" style="margin-bottom:14px">Connecting, reading and verifying across ' + esc(S.crm) +
+    ', email, notes, documents and public sources.</p>' +
+    '<div id="runList">' + R.map(function(r,i){
+      return '<div class="gen-row" id="rr'+i+'"><span class="ic"></span><span>'+r[0]+'</span></div>';
+    }).join('') + '</div><div class="gbar"><i id="runBar"></i></div>';
+  anchorEnd();
   var i = 0;
   (function next(){
     if(i > 0){
       var prev = el('rr'+(i-1));
-      prev.className = 'gen-row done';
-      prev.innerHTML = '<span class="ic"></span><span>'+R[i-1][0]+
-        ' <span class="tiny" style="font-weight:600">\u00b7 '+esc(R[i-1][2])+'</span></span>';
+      if(prev){
+        prev.className = 'gen-row done';
+        prev.innerHTML = '<span class="ic"></span><span>'+R[i-1][0]+
+          ' <span class="tiny" style="font-weight:600">\u00b7 '+esc(R[i-1][2])+'</span></span>';
+      }
     }
     if(i >= R.length){
-      el('resBar').style.width = '100%';
-      setTimeout(function(){ S.step = 3; paint(); renderFind(); track('artifact_rendered',{stage:'findings'}); }, 420);
+      if(el('runBar')) el('runBar').style.width = '100%';
+      setTimeout(function(){
+        S.stage = 3; S.maxStage = Math.max(S.maxStage, 4); S.tab = 'find';
+        renderProg(); renderTabs(); renderBody();
+        track('artifact_rendered',{stage:'findings'});
+      }, 400);
       return;
     }
-    el('rr'+i).className = 'gen-row active';
-    el('resBar').style.width = Math.round(((i+1)/R.length)*100)+'%';
+    if(el('rr'+i)) el('rr'+i).className = 'gen-row active';
+    if(el('runBar')) el('runBar').style.width = Math.round(((i+1)/R.length)*100)+'%';
     i++;
-    setTimeout(next, 560 + Math.random()*240);
+    setTimeout(next, 520 + Math.random()*220);
   })();
 }
 
-/* ===================== 3 : THE BRIEF ===================== */
+/* ===================== 3 : KEY FINDINGS ===================== */
+function viewFind(){
+  var f = L().findings;
+  return acctHead(rerunBtn()) +
+    '<div class="grid2"><div>' +
+      f.map(function(x,i){
+        var k = FIND_KIND[x.k], open = S.openFind === i;
+        return '<div class="find '+k.cls+(open?' open':'')+'" onclick="toggleFind('+i+')">' +
+          '<span class="fk">'+k.label+'</span><b>'+esc(x.t)+'</b>' +
+          '<div class="fd-body">' +
+            '<span class="fd-l">WHY IT MATTERS FOR THIS MEETING</span><p>'+esc(x.why)+'</p>' +
+            '<span class="fd-l">WHERE IT CAME FROM</span><p class="fd-src">'+esc(x.src)+'</p></div>' +
+          '<span class="fd-more">'+(open?'Close':'Why this surfaced')+'</span></div>';
+      }).join('') +
+    '</div><div>' +
+      '<div class="rail-card"><h4>Not a summary</h4><div class="rail-row">A summary tells you what the last email said. These are the items that need a decision, an answer or an apology.</div></div>' +
+      '<div class="rail-card gold"><h4>Open any card</h4><div class="rail-row">Each one names the record, thread, note, document or announcement it came from.</div></div>' +
+    '</div></div>' +
+    '<div class="foot"><span class="tiny">'+f.length+' findings \u00b7 step 3 of 6</span>' + nextBtn(4,'Build the brief') + '</div>';
+}
+function toggleFind(i){
+  S.openFind = (S.openFind === i) ? -1 : i;
+  if(S.openFind === i){ S.engaged = true; track('finding_opened',{kind:L().findings[i].k}); }
+  renderBody();
+}
+
+/* ===================== 4 : THE BRIEF ===================== */
 function liveSlots(){
   var d = D(), ch = (S.updated && d.update.changes) || {};
   return d.slots.map(function(sl){
     var c = ch[sl.sl];
     if(!c) return sl;
-    var copy = {sl:sl.sl, from:sl.from, res:sl.res, tx:c.tx || sl.tx, items:c.items || sl.items, moved:true};
-    return copy;
+    return {sl:sl.sl, from:sl.from, res:sl.res, tx:c.tx || sl.tx, items:c.items || sl.items, moved:true};
   });
 }
-function renderBrief(){
+function findByLabel(frag){
+  var hit = liveSlots().filter(function(s2){ return s2.sl.indexOf(frag) > -1; })[0];
+  return hit || null;
+}
+function summaryCards(){
   var d = D();
-  el('bfH').textContent = 'Brief for ' + d.account;
-  el('srcSw').classList.toggle('on', S.src);
-  el('srcLine').textContent = S.src
-    ? 'Each section shows the system it was drawn from. Public information is labelled separately.'
-    : 'Sources hidden. This is what a summarizer gives you.';
-  el('srcMeta').textContent = S.src ? d.ledger.length + ' systems read' : 'Hidden';
-
-  el('bodyCol').innerHTML = liveSlots().map(function(sl){
-    var body = sl.items
-      ? itemsHTML(sl.items)
-      : '<div class="tx" contenteditable="true" spellcheck="false" oninput="edited()">'+esc(sl.tx)+'</div>';
-    return '<div class="slot'+(sl.res?' resslot':'')+(sl.moved?' moved':'')+'">' +
-      '<span class="sl">'+sl.sl+(sl.moved?'<span class="newflag">UPDATED</span>':'')+'</span>' + body +
-      (S.src ? '<span class="pill '+(sl.res?'res':'srcd')+'">'+esc(sl.from)+'</span>' : '') +
-      '</div>';
-  }).join('');
-
-  el('snapCard').innerHTML =
-    '<div class="snap-head">'+logoHTML(S.type, 34)+
-    '<div><b>'+esc(d.account)+'</b><span>'+esc(d.sub)+'</span></div></div>' +
-    d.snap.map(function(r){
-    return '<div class="rail-row"><span style="color:var(--mut-2);min-width:88px">'+r[0]+'</span><span>'+esc(r[1])+'</span></div>';
-  }).join('') + '<div class="rail-row" style="margin-top:8px;color:var(--mut)">Written into '+esc(tpl().name)+'.</div>';
-
-  el('ledger').innerHTML = d.ledger.map(function(l){
-    return '<div class="rail-row">\u2022&nbsp; '+esc(l)+'</div>';
-  }).join('');
-  el('gaps').innerHTML = d.gaps.map(function(g){
-    return '<div class="rail-row">\u2022&nbsp; '+esc(g)+'</div>';
-  }).join('');
-
-  var open = 0;
-  liveSlots().forEach(function(sl){
-    (sl.items||[]).forEach(function(x){ if(x.st !== 'done') open++; });
-  });
-  el('bfNote').textContent = liveSlots().length + ' sections \u00b7 ' + open + ' open items \u00b7 ' + d.gaps.length + ' gaps';
-  renderPz();
-  renderUpdStrip();
-
+  var changed = liveSlots()[0];
+  var comm = findByLabel('COMMITMENT') || findByLabel('OUTSTANDING') || findByLabel('PROMISED');
+  var q = findByLabel('QUESTION');
+  var opp = findByLabel('OPPORTUNIT');
+  function oneLine(sl){
+    if(!sl) return '';
+    if(sl.items){
+      var openItem = sl.items.filter(function(x){ return x.st !== 'done'; })[0] || sl.items[0];
+      return openItem.t;
+    }
+    return sl.tx.split(/\.\s/)[0] + '.';
+  }
+  var cards = [
+    ['b','What\u2019s changed', oneLine(changed)],
+    ['g','Open commitments', oneLine(comm)],
+    ['r','Key questions', oneLine(q)],
+    ['e','Opportunities', oneLine(opp)]
+  ];
+  return '<div class="sumgrid">' + cards.map(function(c){
+    return '<button class="sum '+c[0]+'" onclick="setTab(\'open\')"><i>&#9679;</i>' +
+      '<div><b>'+c[1]+'</b><p>'+esc(c[2])+'</p></div></button>';
+  }).join('') + '</div>';
 }
-function renderUpdStrip(){
+function updStrip(){
   var u = D().update, hits = u.items.filter(function(i){ return i.hit; }).length;
-  el('updStrip').innerHTML = S.updated
-    ? '<span class="us-k">08:40</span><b>Brief updated.</b> <span>'+hits+
-      ' change'+(hits>1?'s':'')+' landed after this was sent at seven. The affected sections are marked below.</span>'
-    : '<span class="us-k">08:40</span><b>'+hits+' update'+(hits>1?'s':'')+' since this was sent.</b> ' +
-      '<span>The system kept reading after seven this morning.</span>' +
-      '<button class="btn btn-line btn-sm" style="margin-left:auto" onclick="applyUpdate()">Show what moved</button>';
+  if(S.updated){
+    return '<div class="updstrip"><span class="us-k">08:40</span><b>Brief updated.</b>' +
+      '<span>'+hits+' change'+(hits>1?'s':'')+' landed after this was sent at seven. Affected sections are marked.</span></div>' + baHTML();
+  }
+  return '<div class="updstrip"><span class="us-k">08:40</span><b>'+hits+' update'+(hits>1?'s':'')+' since this was sent.</b>' +
+    '<span>It kept reading after seven this morning.</span>' +
+    '<button class="btn btn-line btn-sm" style="margin-left:auto" onclick="applyUpdate()">Show what moved</button></div>';
 }
-function toggleSrc(){ S.src = !S.src; S.engaged = true; renderBrief(); track('sources_toggled',{shown:S.src}); }
-function edited(){ S.engaged = true; if(!S.edited){ S.edited = true; track('demo_edited',{type:S.type}); } }
-
-/* ===================== 4 : PERSONALIZE ===================== */
-function renderPz(){
-  el('crmChips').innerHTML = CRMS.map(function(c){
-    return '<button class="chip '+(S.crm===c?'on':'')+'" onclick="setCrm(\''+c+'\')">'+c+'</button>';
-  }).join('');
-  el('tplChips').innerHTML = TPL_ORDER.map(function(k){
-    return '<button class="chip '+(tplKey()===k?'on':'')+'" onclick="setTpl(\''+k+'\')">'+TEMPLATES[k].name+'</button>';
-  }).join('') + '<button class="chip" onclick="toast(\'Upload is enabled once it is connected to your systems\')">Upload your own</button>';
+function baHTML(){
+  var d = D(), ch = d.update.changes || {};
+  return '<div class="ba-sig">' + d.update.items.filter(function(i){ return i.hit; }).map(function(i){
+      return '<div class="sig"><span class="k">'+i.k+'</span><b>'+esc(i.t)+'</b><p>'+esc(i.d)+'</p></div>';
+    }).join('') + '</div>' +
+    Object.keys(ch).map(function(label){
+      var before = d.slots.filter(function(x){ return x.sl === label; })[0];
+      var after = ch[label];
+      return '<div class="ba">' +
+        '<div class="ba-c"><span class="ba-k">BEFORE, AT 07:00</span><span class="sl">'+label+'</span>' +
+          (before.items ? itemsHTML(before.items) : '<div class="tx">'+esc(before.tx)+'</div>') + '</div>' +
+        '<div class="ba-c after"><span class="ba-k">NOW</span><span class="sl">'+label+'</span>' +
+          (after.items ? itemsHTML(after.items) : '<div class="tx">'+esc(after.tx)+'</div>') + '</div></div>';
+    }).join('');
 }
-function setType(k){
-  S.type = k; S.tplKey = null; S.updated = false; S.openFind = -1;
-  S.ap = null; S.sent = false; S.engaged = true;
-  renderSample(); track('meeting_type_selected',{type:k});
-}
-function setCrm(c){ S.crm = c; S.personalized = true; S.engaged = true; renderBrief(); track('crm_selected',{crm:c}); }
-function setTpl(k){ S.tplKey = k; S.personalized = true; S.engaged = true; renderBrief(); track('template_selected',{template:k}); }
-
-
-/* ===================== 5 : LIVE UPDATE ===================== */
 function applyUpdate(){
   if(S.updated) return;
   S.updated = true; S.engaged = true;
-  renderBrief(); renderBA();
+  renderBody();
   track('brief_updated',{type:S.type});
   toast('Brief updated. Changed sections are marked.');
 }
-function slotText(sl){
-  return sl.items ? sl.items.map(function(x){ return x.t; }).join('. ') + '.' : sl.tx;
-}
-function renderBA(){
-  var d = D(), ch = d.update.changes || {};
-  var out = Object.keys(ch).map(function(label){
-    var before = d.slots.filter(function(x){ return x.sl === label; })[0];
-    var after = {sl:label, items:ch[label].items, tx:ch[label].tx};
-    return '<div class="ba">' +
-      '<div class="ba-c"><span class="ba-k">BEFORE, AT 07:00</span><span class="sl">'+label+'</span>' +
-        (before.items ? itemsHTML(before.items) : '<div class="tx">'+esc(before.tx)+'</div>') + '</div>' +
-      '<div class="ba-c after"><span class="ba-k">NOW</span><span class="sl">'+label+'</span>' +
-        (after.items ? itemsHTML(after.items) : '<div class="tx">'+esc(after.tx)+'</div>') + '</div>' +
-      '</div>';
-  }).join('');
-  el('baBox').innerHTML =
-    '<div class="ba-sig">' + d.update.items.filter(function(i){ return i.hit; }).map(function(i){
-      return '<div class="sig"><span class="k">'+i.k+'</span><b>'+esc(i.t)+'</b><p>'+esc(i.d)+'</p></div>';
-    }).join('') + '</div>' + out +
-    '<p class="tiny" style="margin:2px 0 0">Everything else was left exactly as it was.</p>';
-}
-
-
-/* ===================== 3 : FINDINGS ===================== */
-function renderFind(){
-  var d = D(), f = L().findings;
-  el('fdH').textContent = 'What matters for ' + d.account;
-  el('fdList').innerHTML = f.map(function(x,i){
-    var k = FIND_KIND[x.k], open = S.openFind === i;
-    return '<div class="find '+k.cls+(open?' open':'')+'" onclick="toggleFind('+i+')">' +
-      '<span class="fk">'+k.label+'</span>' +
-      '<b>'+esc(x.t)+'</b>' +
-      '<div class="fd-body">' +
-        '<span class="fd-l">WHY IT MATTERS FOR THIS MEETING</span><p>'+esc(x.why)+'</p>' +
-        '<span class="fd-l">WHERE IT CAME FROM</span><p class="fd-src">'+esc(x.src)+'</p>' +
+function viewBrief(){
+  var d = D(), sl = liveSlots();
+  var openCount = 0;
+  sl.forEach(function(x){ (x.items||[]).forEach(function(y){ if(y.st !== 'done') openCount++; }); });
+  return acctHead(rerunBtn()) +
+    summaryCards() +
+    '<span class="lbl">The brief</span>' +
+    updStrip() +
+    '<div class="brief-bar"><button class="sw '+(S.src?'on':'')+'" onclick="toggleSrc()" aria-label="Toggle sources"></button>' +
+      '<div style="flex:1;min-width:210px"><b>Sources shown</b><span>' +
+      (S.src ? 'Each section names the system it came from. Public information is labelled separately.'
+             : 'Sources hidden. This is what a summarizer gives you.') + '</span></div></div>' +
+    '<div class="grid2"><div>' +
+      sl.map(function(x){
+        var body = x.items ? itemsHTML(x.items)
+          : '<div class="tx" contenteditable="true" spellcheck="false" oninput="edited()">'+esc(x.tx)+'</div>';
+        return '<div class="slot'+(x.res?' resslot':'')+(x.moved?' moved':'')+'">' +
+          '<span class="sl">'+x.sl+(x.moved?'<span class="newflag">UPDATED</span>':'')+'</span>' + body +
+          (S.src ? '<span class="pill-s '+(x.res?'res':'')+'">'+esc(x.from)+'</span>' : '') + '</div>';
+      }).join('') +
+    '</div><div>' +
+      '<div class="rail-card"><h4>Snapshot</h4>' + d.snap.map(function(r){
+        return '<div class="rail-row"><span style="color:var(--mut-2);min-width:86px">'+r[0]+'</span><span>'+esc(r[1])+'</span></div>';
+      }).join('') + '<div class="rail-row" style="margin-top:6px;color:var(--mut)">Written into '+esc(tpl().name)+'.</div></div>' +
+      '<div class="rail-card"><h4>Source ledger</h4>' + d.ledger.map(function(x){
+        return '<div class="rail-row">\u2022&nbsp; '+esc(x)+'</div>'; }).join('') + '</div>' +
+      '<div class="rail-card gold"><h4>Still missing</h4>' + d.gaps.map(function(g){
+        return '<div class="rail-row">\u2022&nbsp; '+esc(g)+'</div>'; }).join('') + '</div>' +
+      '<div class="rail-card"><h4>Make it yours</h4>' +
+        '<div class="rail-row" style="display:block"><span class="tiny">Account data in</span><div class="chips" style="margin-top:6px">' +
+          CRMS.map(function(c){ return '<button class="chip '+(S.crm===c?'on':'')+'" onclick="setCrm(\''+c+'\')">'+c+'</button>'; }).join('') +
+        '</div></div>' +
+        '<div class="rail-row" style="display:block;margin-top:8px"><span class="tiny">Written into</span><div class="chips" style="margin-top:6px">' +
+          TPL_ORDER.map(function(k){ return '<button class="chip '+(tplKey()===k?'on':'')+'" onclick="setTpl(\''+k+'\')">'+TEMPLATES[k].name+'</button>'; }).join('') +
+        '</div></div>' +
       '</div>' +
-      '<span class="fd-more">'+(open?'Close':'Why this surfaced')+'</span>' +
-      '</div>';
-  }).join('');
-  el('fdNote').textContent = f.length + ' findings \u00b7 ' + (S.foundOpened ? 'opened ' + S.foundOpened : 'open one to see the source');
+    '</div></div>' +
+    '<div class="foot"><span class="tiny">'+sl.length+' sections \u00b7 '+openCount+' open items \u00b7 '+d.gaps.length+' gaps</span>' +
+      nextBtn(5,'Review and approve') + '</div>';
 }
-function toggleFind(i){
-  S.openFind = (S.openFind === i) ? -1 : i;
-  if(S.openFind === i){ S.foundOpened = (S.foundOpened || 0) + 1; S.engaged = true; track('finding_opened',{kind:L().findings[i].k}); }
-  renderFind();
+function toggleSrc(){ S.src = !S.src; S.engaged = true; renderBody(); track('sources_toggled',{shown:S.src}); }
+function edited(){ S.engaged = true; if(!S.edited){ S.edited = true; track('demo_edited',{type:S.type}); } }
+function setCrm(c){ S.crm = c; S.engaged = true; renderBody(); track('crm_selected',{crm:c}); }
+function setTpl(k){ S.tplKey = k; S.engaged = true; renderBody(); track('template_selected',{template:k}); }
+
+/* ---- open items tab ---- */
+function viewOpen(){
+  var d = D(), rows = [];
+  liveSlots().forEach(function(sl){
+    (sl.items || []).forEach(function(x){
+      if(x.st !== 'done' && x.st !== 'opp') rows.push([x, sl.sl, sl.from]);
+    });
+  });
+  var q = findByLabel('QUESTION');
+  return acctHead(rerunBtn()) +
+    '<div class="grid2"><div>' +
+      '<span class="lbl">Unanswered</span>' +
+      (q ? '<div class="slot"><span class="sl">'+q.sl+'</span><div class="tx">'+esc(q.tx)+'</div>' +
+           '<span class="pill-s">'+esc(q.from)+'</span></div>' : '') +
+      '<span class="lbl">Open commitments and risks</span>' +
+      rows.map(function(r){
+        return '<div class="cmt '+r[0].st+'"><span class="mk">'+MK[r[0].st]+'</span><span>'+esc(r[0].t) +
+          (r[0].e ? '<em>'+esc(r[0].e)+'</em>' : '') +
+          '<em style="color:var(--mut-2)">'+esc(r[1])+' \u00b7 '+esc(r[2])+'</em></span></div>';
+      }).join('') +
+      '<span class="lbl">Missing before the meeting</span>' +
+      d.gaps.map(function(g){
+        return '<div class="cmt open"><span class="mk">!</span><span>'+esc(g)+'</span></div>';
+      }).join('') +
+    '</div><div>' +
+      '<div class="rail-card gold"><h4>Why this tab exists</h4><div class="rail-row">This is the list people build by hand at 9:55, from four tabs and a memory of the last call.</div></div>' +
+    '</div></div>' +
+    '<div class="foot"><span class="tiny">'+rows.length+' open \u00b7 '+d.gaps.length+' missing</span>' +
+      nextBtn(5,'Review and approve') + '</div>';
 }
 
-/* ===================== 5 : HUMAN REVIEW ===================== */
-function renderAp(){
+/* ---- suggested agenda tab ---- */
+function viewAgenda(){
+  if(!S.ap) S.ap = L().approve.map(function(x){ return x.on ? 'on' : 'pending'; });
+  var disc = findByLabel('DISCUSSION');
+  var approved = L().approve.filter(function(x,i){ return S.ap[i] === 'on'; });
+  var removed = L().approve.filter(function(x,i){ return S.ap[i] === 'off'; }).length;
+  return acctHead(rerunBtn()) +
+    '<span class="lbl">Suggested agenda</span>' +
+    '<div class="grid2"><div>' +
+      (disc && disc.items ? disc.items.map(function(x,i){
+        return '<div class="task"><span class="tk">'+(i+1)+'</span><div><b>'+esc(x.t)+'</b>' +
+          (x.e ? '<p>'+esc(x.e)+'</p>' : '') + '</div></div>';
+      }).join('') : '') +
+      '<span class="lbl">Recommendations you approved</span>' +
+      (approved.length ? approved.map(function(x){
+        return '<div class="cmt done"><span class="mk">\u2713</span><span>'+esc(x.t)+'</span></div>';
+      }).join('') : '<p class="tiny">Nothing approved yet. The approval step is next.</p>') +
+      (removed ? '<p class="tiny" style="margin-top:10px">'+removed+' recommendation'+(removed>1?'s':'')+' removed by you. Removed items stay in the record with a reason.</p>' : '') +
+    '</div><div>' +
+      '<div class="rail-card"><h4>Timing</h4>' +
+        '<div class="rail-row"><span style="color:var(--mut-2);min-width:86px">Sent</span><span>07:00, morning of</span></div>' +
+        '<div class="rail-row"><span style="color:var(--mut-2);min-width:86px">Rechecked</span><span>30 minutes before</span></div>' +
+        '<div class="rail-row"><span style="color:var(--mut-2);min-width:86px">After</span><span>Your notes write back to '+esc(S.crm)+'</span></div>' +
+      '</div>' +
+    '</div></div>' +
+    '<div class="foot"><span class="tiny">Agenda follows what you approve</span>' + nextBtn(5,'Review and approve') + '</div>';
+}
+
+/* ===================== 5 : APPROVE + AFTER ===================== */
+function viewApprove(){
   if(!S.ap) S.ap = L().approve.map(function(x){ return x.on ? 'on' : 'pending'; });
   var a = L().approve;
-  el('apList').innerHTML = a.map(function(x,i){
-    var st = S.ap[i];
-    return '<div class="apr '+st+'">' +
-      '<div class="apr-top"><span class="human">\u25CF</span>' +
-        '<div><b>'+esc(x.t)+'</b><p>'+esc(x.why)+'</p></div>' +
-        '<span class="apr-st">'+(st==='on'?'APPROVED':(st==='off'?'REMOVED':'AWAITING YOU'))+'</span></div>' +
-      '<div class="apr-acts">' +
-        '<button class="ab '+(st==='on'?'sel':'')+'" onclick="setAp('+i+',\'on\')">Approve</button>' +
-        '<button class="ab" onclick="editAp('+i+')">Edit</button>' +
-        '<button class="ab '+(st==='off'?'sel off':'')+'" onclick="setAp('+i+',\'off\')">Remove</button>' +
-      '</div></div>';
-  }).join('');
   var on = S.ap.filter(function(x){ return x === 'on'; }).length;
   var pending = S.ap.filter(function(x){ return x === 'pending'; }).length;
-  el('apRail').innerHTML = '<h4>What reaches the meeting</h4>' +
-    '<div class="rail-row"><span style="color:var(--mut-2);min-width:88px">Approved</span><span>'+on+'</span></div>' +
-    '<div class="rail-row"><span style="color:var(--mut-2);min-width:88px">Removed</span><span>'+S.ap.filter(function(x){return x==='off';}).length+'</span></div>' +
-    '<div class="rail-row"><span style="color:var(--mut-2);min-width:88px">Awaiting</span><span>'+pending+'</span></div>' +
-    '<div class="rail-row" style="margin-top:8px;color:var(--mut)">Removed items stay in the record with a reason. They do not quietly disappear.</div>';
-  el('apNote').textContent = on + ' of ' + a.length + ' approved' + (pending ? ', ' + pending + ' still waiting on you' : '');
+  return '<h3 style="font-size:19px;margin-bottom:5px">You decide what reaches the meeting</h3>' +
+    '<p class="tiny" style="margin-bottom:18px">The system recommends. Nothing goes into the room until someone on your team says so.</p>' +
+    '<div class="grid2"><div>' +
+      a.map(function(x,i){
+        var st = S.ap[i];
+        return '<div class="apr '+st+'"><div class="apr-top"><span class="human">&#9679;</span>' +
+          '<div><b>'+esc(x.t)+'</b><p>'+esc(x.why)+'</p></div>' +
+          '<span class="apr-st">'+(st==='on'?'APPROVED':(st==='off'?'REMOVED':'AWAITING YOU'))+'</span></div>' +
+          '<div class="apr-acts">' +
+            '<button class="ab '+(st==='on'?'sel':'')+'" onclick="setAp('+i+',\'on\')">Approve</button>' +
+            '<button class="ab" onclick="editAp('+i+')">Edit</button>' +
+            '<button class="ab '+(st==='off'?'sel off':'')+'" onclick="setAp('+i+',\'off\')">Remove</button>' +
+          '</div></div>';
+      }).join('') +
+    '</div><div>' +
+      '<div class="rail-card"><h4>What reaches the meeting</h4>' +
+        '<div class="rail-row"><span style="color:var(--mut-2);min-width:82px">Approved</span><span>'+on+'</span></div>' +
+        '<div class="rail-row"><span style="color:var(--mut-2);min-width:82px">Removed</span><span>'+S.ap.filter(function(x){return x==='off';}).length+'</span></div>' +
+        '<div class="rail-row"><span style="color:var(--mut-2);min-width:82px">Awaiting</span><span>'+pending+'</span></div>' +
+      '</div>' +
+      '<div class="rail-card gold"><h4>Why this step exists</h4><div class="rail-row">The system does not know what you were told privately. Approval is where that judgment goes.</div></div>' +
+    '</div></div>' +
+    '<div class="foot"><span class="tiny">'+on+' of '+a.length+' approved'+(pending?', '+pending+' waiting on you':'')+'</span>' +
+      '<button class="btn btn-gold btn-sm sp" onclick="runAfter()">The meeting happened &nbsp;&rarr;</button></div>';
 }
-function setAp(i, v){
-  S.ap[i] = v; S.engaged = true; renderAp();
-  track('recommendation_reviewed',{action:v});
-}
+function setAp(i, v){ S.ap[i] = v; S.engaged = true; renderBody(); track('recommendation_reviewed',{action:v}); }
 function editAp(i){
-  var node = el('apList').children[i].querySelector('b');
+  var node = el('wsBody').querySelectorAll('.apr b')[i];
   node.setAttribute('contenteditable','true'); node.focus();
   node.onblur = function(){ node.removeAttribute('contenteditable'); };
-  S.engaged = true; edited();
+  edited();
 }
 
-/* ===================== 6 : AFTER THE MEETING ===================== */
-function renderAfter(){
-  var a = L().after, d = D();
-  el('afSub').textContent = 'The meeting happened. Your notes were approved and went back into ' + S.crm + '.';
-  el('afGrid').style.display = 'none';
-  el('afBtn').textContent = 'Approve and send';
-  el('afBtn').disabled = true;
-  el('afNote').textContent = '';
-  el('afRun').innerHTML = a.run.map(function(g,i){
-    return '<div class="gen-row" id="af'+i+'"><span class="ic"></span><span>'+g+'</span></div>';
-  }).join('');
+function runAfter(){
+  anchorStart();
+  S.stage = 5; S.maxStage = Math.max(S.maxStage, 5);
+  renderProg(); renderTabs();
+  var a = L().after;
+  el('wsBody').innerHTML =
+    '<h3 style="font-size:19px;margin-bottom:5px">After the meeting</h3>' +
+    '<p class="tiny" style="margin-bottom:18px">Your notes were approved and went back into ' + esc(S.crm) + '.</p>' +
+    a.run.map(function(g,i){
+      return '<div class="gen-row" id="af'+i+'"><span class="ic"></span><span>'+g+'</span></div>';
+    }).join('');
+  anchorEnd();
   var i = 0;
   (function next(){
-    if(i > 0) el('af'+(i-1)).className = 'gen-row done';
-    if(i >= a.run.length){
-      el('afGrid').style.display = '';
-      el('afBtn').disabled = false;
-      showAfter();
-      return;
-    }
-    el('af'+i).className = 'gen-row active';
+    if(i > 0 && el('af'+(i-1))) el('af'+(i-1)).className = 'gen-row done';
+    if(i >= a.run.length){ S.afterDone = true; renderBody(); return; }
+    if(el('af'+i)) el('af'+i).className = 'gen-row active';
     i++;
-    setTimeout(next, 480 + Math.random()*200);
+    setTimeout(next, 460 + Math.random()*180);
   })();
 }
-function showAfter(){
+function viewAfter(){
   var a = L().after;
-  el('afBody').innerHTML =
-    '<div class="outc"><span class="k">DECISION RECORDED</span><b>'+esc(a.decision)+'</b></div>' +
-    '<span class="lbl">Actions, turned into tasks</span>' +
-    a.actions.map(function(t){
-      return '<div class="task'+(S.sent?' done':'')+'"><span class="tk">'+(S.sent?'\u2713':'\u25CB')+'</span>' +
-        '<div><b>'+esc(t.t)+'</b><p>'+esc(t.owner)+' \u00b7 due '+esc(t.due)+'</p></div>' +
-        '<span class="tst">'+(S.sent?'CREATED':'READY')+'</span></div>';
-    }).join('') +
-    '<span class="lbl">Follow-up, drafted and waiting</span>' +
-    '<div class="post">' +
-      '<div class="mail-top"><span class="av">'+initials(D().account)+'</span>' +
+  return '<h3 style="font-size:19px;margin-bottom:5px">After the meeting</h3>' +
+    '<p class="tiny" style="margin-bottom:18px">One decision and '+a.actions.length+' actions were extracted from the approved notes. Nothing sends itself.</p>' +
+    '<div class="grid2"><div>' +
+      '<div class="outc"><span class="k">DECISION RECORDED</span><b>'+esc(a.decision)+'</b></div>' +
+      '<span class="lbl">Actions, turned into tasks</span>' +
+      a.actions.map(function(t){
+        return '<div class="task'+(S.sent?' done':'')+'"><span class="tk">'+(S.sent?'\u2713':'\u25CB')+'</span>' +
+          '<div><b>'+esc(t.t)+'</b><p>'+esc(t.owner)+' \u00b7 due '+esc(t.due)+'</p></div>' +
+          '<span class="tst">'+(S.sent?'CREATED':'READY')+'</span></div>';
+      }).join('') +
+      '<span class="lbl">Follow-up, drafted and waiting</span>' +
+      '<div class="post"><div class="mail-top"><span class="av">'+initials(D().account)+'</span>' +
         '<div class="post-who"><b>'+esc(a.email.subj)+'</b><span>to '+esc(D().account)+' \u00b7 '+(S.sent?'sent':'draft')+'</span></div></div>' +
-      '<div class="post-txt" contenteditable="true" spellcheck="false" oninput="edited()">'+esc(a.email.body)+'</div>' +
-      '<div class="post-act"><span>'+(S.sent?'\u2713 Approved and sent':'Waiting for approval')+'</span></div>' +
+        '<div class="post-txt" contenteditable="true" spellcheck="false" oninput="edited()">'+esc(a.email.body)+'</div>' +
+        '<div class="post-act">'+(S.sent?'\u2713 Approved and sent':'Waiting for approval')+'</div></div>' +
+    '</div><div>' +
+      '<div class="rail-card"><h4>What was extracted</h4>' +
+        '<div class="rail-row"><span style="color:var(--mut-2);min-width:82px">Decisions</span><span>1</span></div>' +
+        '<div class="rail-row"><span style="color:var(--mut-2);min-width:82px">Actions</span><span>'+a.actions.length+'</span></div>' +
+        '<div class="rail-row"><span style="color:var(--mut-2);min-width:82px">Owners set</span><span>'+a.actions.length+'</span></div>' +
+        '<div class="rail-row" style="margin-top:6px;color:var(--mut)">Each traces back to a line in the approved notes.</div></div>' +
+      '<div class="rail-card gold"><h4>Nothing sends itself</h4><div class="rail-row">Tasks are prepared and the follow-up is drafted. Both wait for approval, the same as the brief did.</div></div>' +
+    '</div></div>' +
+    '<div class="foot"><span class="tiny">'+(S.sent?'Tasks created, follow-up sent':'1 decision \u00b7 '+a.actions.length+' actions \u00b7 1 draft waiting')+'</span>' +
+      (S.sent
+        ? nextBtn(6,'Seven days later')
+        : '<button class="btn btn-gold btn-sm sp" onclick="approveSend()">Approve and send</button>') +
     '</div>';
-  el('afRail').innerHTML = '<h4>What was extracted</h4>' +
-    '<div class="rail-row"><span style="color:var(--mut-2);min-width:88px">Decisions</span><span>1</span></div>' +
-    '<div class="rail-row"><span style="color:var(--mut-2);min-width:88px">Actions</span><span>'+a.actions.length+'</span></div>' +
-    '<div class="rail-row"><span style="color:var(--mut-2);min-width:88px">Owners set</span><span>'+a.actions.length+'</span></div>' +
-    '<div class="rail-row" style="margin-top:8px;color:var(--mut)">Each one traces back to a line in the approved notes.</div>';
-  el('afNote').textContent = S.sent ? 'Tasks created, follow-up sent' : '1 decision \u00b7 ' + a.actions.length + ' actions \u00b7 1 draft waiting';
-  el('afBtn').textContent = S.sent ? 'Continue' : 'Approve and send';
 }
-function afAdvance(){
-  if(S.sent) return go(7);
+function approveSend(){
+  anchorStart();
   S.sent = true; S.engaged = true;
-  showAfter();
+  renderBody();
   track('followup_approved',{type:S.type});
   toast('Tasks created. Follow-up sent.');
 }
 
-/* ===================== 7 : FOLLOW THROUGH ===================== */
-function renderTrack(){
+/* ===================== 6 : TRACK + CARRY FORWARD ===================== */
+function viewTrack(){
   var t = L().track, c = L().carry;
-  el('trList').innerHTML =
-    t.delivered.map(function(x){
-      return '<div class="cmt done" style="padding:10px 0"><span class="mk">\u2713</span><span>'+esc(x)+'</span></div>';
-    }).join('') +
-    '<div class="outstand"><span class="k">1 UNRESOLVED COMMITMENT</span><b>'+esc(t.outstanding.t)+'</b>' +
-      '<p>'+esc(t.outstanding.why)+'</p></div>';
-  el('trRail').innerHTML = '<h4>What it did about it</h4>' +
-    '<div class="rail-row">'+esc(t.reminder)+'</div>' +
-    '<div class="rail-row" style="margin-top:6px">And it carried the item forward, which is the part below.</div>';
-  el('carryBox').innerHTML =
-    '<div class="carry-in">' +
-      '<span class="cyc">\u21BB</span>' +
-      '<div><span class="k">CARRIED FORWARD</span>' +
-      '<b>'+esc(c.item)+'</b>' +
-      '<p>It is already the first open commitment in the brief for '+esc(c.when)+', before anyone has opened it. Nobody reread the notes to put it there.</p></div>' +
-      '<span class="cst">NEXT BRIEF UPDATED \u2713</span>' +
-    '</div>';
-  el('trNote').textContent = t.delivered.length + ' delivered \u00b7 1 outstanding \u00b7 1 carried forward';
+  return '<h3 style="font-size:19px;margin-bottom:5px">Seven days later</h3>' +
+    '<p class="tiny" style="margin-bottom:18px">The system kept checking. This is the part that decides whether the meeting was worth having.</p>' +
+    '<div class="grid2"><div>' +
+      t.delivered.map(function(x){
+        return '<div class="cmt done" style="padding:9px 0"><span class="mk">\u2713</span><span>'+esc(x)+'</span></div>';
+      }).join('') +
+      '<div class="outstand"><span class="k">1 UNRESOLVED COMMITMENT</span><b>'+esc(t.outstanding.t)+'</b>' +
+        '<p>'+esc(t.outstanding.why)+'</p></div>' +
+    '</div><div>' +
+      '<div class="rail-card gold"><h4>What it did about it</h4><div class="rail-row">'+esc(t.reminder)+'</div>' +
+        '<div class="rail-row" style="margin-top:6px">And it carried the item forward, which is the part below.</div></div>' +
+      '<div class="rail-card"><h4>Nobody had to chase it</h4><div class="rail-row">No one reread the notes to notice. The commitment was recorded when it was made and checked on its own.</div></div>' +
+    '</div></div>' +
+    '<div class="carry-in"><span class="cyc">&#8635;</span>' +
+      '<div><span class="k">CARRIED FORWARD</span><b>'+esc(c.item)+'</b>' +
+      '<p>It is already the first open commitment in the brief for '+esc(c.when)+', before anyone has opened it.</p></div>' +
+      '<span class="cst">NEXT BRIEF UPDATED \u2713</span></div>' +
+    '<div class="foot"><span class="tiny">'+t.delivered.length+' delivered \u00b7 1 outstanding \u00b7 1 carried forward</span>' +
+      '<button class="btn btn-gold btn-sm sp" onclick="openCal(\'workspace\')">See this on your systems &nbsp;&rarr;</button></div>';
 }
 
-/* ===================== 8 : THE LOOP ===================== */
-function renderLoop(){
-  var steps = ['Meeting','Brief','Approval','Decisions','Tasks','Follow-up','Tracking','Next meeting'];
-  el('loopLine').innerHTML = steps.map(function(s2,i){
-    return (i ? '<span class="ll-a">\u2192</span>' : '') + '<span class="ll-s">'+s2+'</span>';
-  }).join('') + '<span class="ll-a">\u21BB</span>';
+/* ===================== DISPATCH ===================== */
+function renderBody(){
+  var h;
+  if(S.stage === 1) h = viewDetect();
+  else if(S.stage === 5) h = S.afterDone ? viewAfter() : viewApprove();
+  else if(S.stage === 6) h = viewTrack();
+  else if(S.tab === 'find') h = viewFind();
+  else if(S.tab === 'open') h = viewOpen();
+  else if(S.tab === 'agenda') h = viewAgenda();
+  else h = viewBrief();
+  el('wsBody').innerHTML = h;
+  anchorEnd();
 }
 
-/* ===================== 6 : NEXT ===================== */
-function send(){
-  var v = el('gateEmail').value.trim();
-  if(!/.+@.+\..+/.test(v)){ toast('Add a work email first'); el('gateEmail').focus(); return; }
-  track('email_captured',{intent: S.engaged ? 'high' : 'mid'});
-  el('doneMsg').textContent = 'On the way to ' + v + '. Usually lands within a minute.';
-  el('gateEmail').value = '';
-  toast('Sent');
-}
+/* ===================== CHROME ===================== */
+function jump(sel){ var t = document.querySelector(sel); if(t) t.scrollIntoView({behavior:'smooth',block:'start'}); }
+var tt;
+function toast(m){ var t = el('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(tt);
+  tt = setTimeout(function(){ t.classList.remove('on'); }, 2400); }
+
 function openCal(where){
-  track('book_clicked',{from: where || 'demo'});
+  track('book_clicked',{from: where || 'page'});
   el('calModal').style.display = 'flex';
   var box = el('calBox');
   if(!box.dataset.loaded){
     box.dataset.loaded = '1';
-    box.innerHTML =
-      '<iframe title="Book a 20-minute strategy session" src="' + CAL_URL +
-      '?hide_gdpr_banner=1&primary_color=1b6bff" style="width:100%;height:620px;border:0" loading="lazy"></iframe>' +
+    box.innerHTML = '<iframe title="Book a 20-minute strategy session" src="' + CAL_URL +
+      '?hide_gdpr_banner=1&primary_color=C9A227" style="width:100%;height:620px;border:0" loading="lazy"></iframe>' +
       '<p class="tiny" style="padding:0 18px 16px">Not loading? <a href="' + CAL_URL +
       '" target="_blank" rel="noopener" style="text-decoration:underline">Open the booking page</a>.</p>';
   }
 }
 function closeCal(){ el('calModal').style.display = 'none'; }
-
-function openVideo(){
-  track('video_opened',{step:S.step});
+var _embedTimer = null;
+function playFile(reason, src){
+  var box = el('vidBox'), file = src || VIDEO_FILE;
+  if(_embedTimer){ clearTimeout(_embedTimer); _embedTimer = null; }
+  box.innerHTML = '<video id="vidEl" class="vid" controls playsinline preload="metadata" ' +
+    'poster="'+VIDEO_POSTER+'" src="'+file+'"></video>' +
+    '<p class="vid-fb tiny">Video not playing? <a href="'+file+'" download>Download it</a>' +
+    (VIDEO_URL ? ', or <a href="'+VIDEO_URL+'" target="_blank" rel="noopener">open the original</a>' : '') +
+    '.</p>';
+  if(reason) track('video_fallback',{reason:reason});
+  var v = el('vidEl');
+  if(v){ var pr = v.play(); if(pr && pr.catch) pr.catch(function(){}); }
+}
+function playEmbed(t){
+  var box = el('vidBox');
+  box.innerHTML = '<iframe id="vidFrame" class="vid" src="'+t.src+'" allow="autoplay; fullscreen; encrypted-media" ' +
+      'allowfullscreen onload="embedLoaded()"></iframe>' +
+    '<p class="vid-fb tiny">Not loading? <a href="'+VIDEO_URL+'" target="_blank" rel="noopener">Open it in a new tab</a>' +
+    (VIDEO_FILE ? ', or <button class="see-more" style="color:var(--blue-d)" onclick="playFile(\'manual\')">play the hosted copy</button>' : '') +
+    '.</p>';
+  /* Loom, YouTube and Vimeo are known to allow framing, so only guard the unknown ones */
+  if(!t.known && VIDEO_FILE){
+    _embedTimer = setTimeout(function(){ playFile('embed_blocked'); }, 2600);
+  }
+}
+/* A refused embed still fires load in most browsers, so load alone proves nothing.
+   The tell is the frame staying same-origin and empty: a real cross-origin page makes
+   contentDocument throw. */
+function embedLoaded(){
+  if(_embedTimer){ clearTimeout(_embedTimer); _embedTimer = null; }
+  var f = el('vidFrame');
+  if(!f || !VIDEO_FILE || f.dataset.known === '1') return;
+  var blocked = false;
+  try {
+    var doc = f.contentDocument;
+    if(doc && (!doc.body || doc.body.childElementCount === 0)) blocked = true;
+  } catch(e){ blocked = false; }
+  if(blocked) playFile('embed_blocked');
+}
+function openVideo(where){
+  track('video_opened',{from: where || 'page'});
   el('vidModal').style.display = 'flex';
   var box = el('vidBox');
   if(!box.dataset.loaded){
     box.dataset.loaded = '1';
-    box.innerHTML = VIDEO_URL
-      ? '<iframe src="'+VIDEO_URL+'" style="width:100%;aspect-ratio:16/9;border:0" allowfullscreen></iframe>'
-      : '<div class="vid-ph"><span>\u25B6</span><b>Sixty-second walkthrough</b>' +
-        '<span class="tiny">Drop the embed URL into VIDEO_URL at the top of the script.</span></div>';
+    var t = videoTarget(VIDEO_URL);
+    if(t && t.kind === 'frame'){ playEmbed(t); if(t.known && el('vidFrame')) el('vidFrame').dataset.known = '1'; }
+    else if(t && t.kind === 'file') playFile(null, t.src);
+    else if(VIDEO_FILE) playFile();
+    else box.innerHTML = '<div class="vid-ph"><span>\u25B6</span><b>Walkthrough</b>' +
+      '<span class="tiny" style="color:rgba(255,255,255,.6)">Set VIDEO_URL at the top of the script.</span></div>';
+    return;
   }
+  var v = el('vidEl');
+  if(v){ var pr = v.play(); if(pr && pr.catch) pr.catch(function(){}); }
 }
-function closeVideo(){ el('vidModal').style.display = 'none'; }
+function closeVideo(){
+  var v = el('vidEl');
+  if(v){ v.pause(); try { v.currentTime = 0; } catch(e){} }
+  if(_embedTimer){ clearTimeout(_embedTimer); _embedTimer = null; }
+  el('vidModal').style.display = 'none';
+}
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ closeCal(); closeVideo(); } });
 
-/* ===================== FLOW ===================== */
-function go(n){
-  focusPanel();
-  if(n === 2){ S.step = 2; paint(); runRead(); return; }
-  S.step = n; paint();
-  if(n === 1) renderSample();
-  if(n === 3) renderFind();
-  if(n === 4) renderBrief();
-  if(n === 5) renderAp();
-  if(n === 6) renderAfter();
-  if(n === 7) renderTrack();
-  if(n === 8){ renderLoop(); track('gate_view'); }
-}
-function focusPanel(){
-  var box = document.querySelector('.panelbox');
-  if(!box || !box.getBoundingClientRect) return;
-  var r = box.getBoundingClientRect();
-  /* park the panel just under the nav on every step, so a tall pane followed
-     by a short one never leaves the visitor stranded below the content */
-  if(r.top < 8 || r.top > 118){
-    window.scrollTo({ top: window.scrollY + r.top - 78, behavior: REDUCED ? 'auto' : 'smooth' });
-  }
-}
-function paint(){
-  document.querySelectorAll('.pane').forEach(function(p){ p.classList.toggle('on', +p.dataset.p === S.step); });
-  renderSteps();
-}
-function reset(){
-  S.step=1; S.type='client'; S.crm='HubSpot'; S.tplKey=null; S.src=true;
-  S.updated=false; S.personalized=false; S.maxChip=1; S.openFind=-1; S.foundOpened=0;
-  S.ap=null; S.sent=false; S.edited=false; S.engaged=false; S.started=false;
-  el('gateEmail').value=''; el('doneMsg').textContent='';
-  renderSample(); paint();
-}
+(function reveal(){
+  var els = Array.prototype.slice.call(document.querySelectorAll('.rv'));
+  if(REDUCED || !window.IntersectionObserver){ els.forEach(function(e){ e.classList.add('in'); }); return; }
+  var io = new IntersectionObserver(function(en){
+    en.forEach(function(x){ if(x.isIntersecting){ x.target.classList.add('in'); io.unobserve(x.target); } });
+  }, {rootMargin:'0px 0px -12% 0px'});
+  els.forEach(function(e){ io.observe(e); });
+})();
 
-function jump(sel){ var t = document.querySelector(sel); if(t) t.scrollIntoView({behavior:'smooth',block:'start'}); }
-var tt;
-function toast(m){ var t = el('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(function(){ t.classList.remove('on'); },2400); }
-
-renderPreview(); renderSteps(); renderSample(); paint();
+/* ===================== BOOT ===================== */
+renderTypes();
+renderProg();
+renderTabs();
+renderBody();
 if(qs('type') && M[qs('type')]) setType(qs('type'));
 </script>
 </body>
