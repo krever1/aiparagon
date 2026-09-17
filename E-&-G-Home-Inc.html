@@ -11757,8 +11757,12 @@ function loadAuth(){
 }
 function saveAuth(){ lsSet('np_auth',JSON.stringify({email:AUTH.email,session:AUTH.session,mode:AUTH.mode})); }
 async function accountTouch(evt){                                    // signup / login / agreement, tracked properly
-  if(!sbOn()) return false;
-  orgEnsure();
+  if(!sbOn()||!sbAuthed()) return false;
+  /* v9.91: the membership has to be known before this row is written. Sending a null
+     org_id hit a NOT NULL column, and the row is only accepted for an organization you
+     actually belong to. */
+  if(!ORG_ID) await orgResolve();
+  if(!ORG_ID) return false;
   const row={
     email:(AUTH.email||ONB.email||'').toLowerCase(),
     workspace:NP_WS,
@@ -11784,8 +11788,7 @@ async function accountTouch(evt){                                    // signup /
   return okRes;
 }
 function profileSave(){                                              // who signed up: name, role, title, email
-  if(!sbOn()) return;
-  orgEnsure();
+  if(!sbOn()||!sbAuthed()||!ORG_ID) return;
   sbUpsert('np_demo_program',{key:'profile',value:{
     name:ONB.name||'', role:ONB.role||'', roleTitle:ONB.roleTitle||'', email:ONB.email||AUTH.email||'',
     auth_mode:AUTH.mode||'', org_id:ORG_ID, registered_at:ONB.registeredAt||new Date().toISOString()
@@ -12955,7 +12958,7 @@ function emailAgreement(){
   toast('Compose opened — add any recipients and send.');
 }
 async function pilotPersist(nm){
-  orgEnsure();
+  if(!ORG_ID) await orgResolve();
   const okKey=await sbUpsert('np_demo_program',{key:'pilot',value:{signatures:PILOT_SIGNED},updated_by:nm||auditActor()});
   const okRow=await sbPush('np_demo_agreements',{
     signed_by:nm||auditActor(), role:state.role, org_id:ORG_ID, workspace:NP_WS,
