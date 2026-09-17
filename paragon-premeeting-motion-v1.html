@@ -675,7 +675,10 @@ var CAL_URL = 'https://calendly.com/erica-aiparagonconsulting/20-minute-strategy
 /* Paste any video link here: a Loom share link, YouTube, Vimeo, or a path to an mp4.
    It is converted to the right player automatically. Leave it empty to use the hosted
    file. VIDEO_FILE is the fallback whenever a link refuses to be framed. */
-var VIDEO_URL  = 'https://www.loom.com/embed/b7dc359e27464fdcbd6270c9e3bdfe06';
+var VIDEO_URL  = 'https://www.loom.com/embed/ff82d264627e4e408cf3ed253840a4cd';
+/* Loom's embed code carries the recording's shape as a padding-bottom percentage.
+   This is 100 divided by that number, so the frame matches the video with no bars. */
+var VIDEO_RATIO = 1.906;
 /* Set this to an mp4 beside the page to offer a hosted copy when a link will not frame.
    Left empty on purpose: the only local file is a different recording, and offering it
    under a "not loading?" link would play the wrong video. */
@@ -1749,7 +1752,7 @@ function playFile(reason, src){
   var box = el('vidBox'), file = src || VIDEO_FILE;
   if(_embedTimer){ clearTimeout(_embedTimer); _embedTimer = null; }
   box.innerHTML = '<video id="vidEl" class="vid" controls playsinline preload="metadata" ' +
-    'poster="'+VIDEO_POSTER+'" src="'+file+'"></video>' +
+    'style="aspect-ratio:'+VIDEO_RATIO+'" poster="'+VIDEO_POSTER+'" src="'+file+'"></video>' +
     '<p class="vid-fb tiny">Video not playing? <a href="'+file+'" download>Download it</a>' +
     (VIDEO_URL ? ', or <a href="'+VIDEO_URL+'" target="_blank" rel="noopener">open the original</a>' : '') +
     '.</p>';
@@ -1760,7 +1763,7 @@ function playFile(reason, src){
 function playEmbed(t){
   var box = el('vidBox');
   box.innerHTML = '<iframe id="vidFrame" class="vid" src="'+t.src+'" allow="autoplay; fullscreen; encrypted-media" ' +
-      'allowfullscreen onload="embedLoaded()"></iframe>' +
+      'style="aspect-ratio:'+VIDEO_RATIO+'" allowfullscreen onload="embedLoaded()"></iframe>' +
     '<p class="vid-fb tiny">Not loading? <a href="'+VIDEO_URL+'" target="_blank" rel="noopener">Open it in a new tab</a>' +
     (VIDEO_FILE ? ', or <button class="see-more" style="color:var(--blue-d)" onclick="playFile(\'manual\')">play the hosted copy</button>' : '') +
     '.</p>';
