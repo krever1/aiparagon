@@ -230,11 +230,42 @@ a{color:inherit}
 .tl-bar{position:absolute;height:30px;top:50%;transform:translateY(-50%);border-radius:6px;display:flex;align-items:center;gap:4px;
   padding:0 8px;font-size:11.3px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   cursor:pointer;transition:.13s;border:none;z-index:3}
+/* v9.83: the client's appointments \u2014 list on the left, the one you pick beside it */
+.ap-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,340px);gap:0;align-items:start}
+.ap-list{border-right:1px solid var(--line);min-width:0}
+.ap-side{padding:14px;min-width:0}
+.ap-row{display:flex;align-items:center;gap:11px;padding:11px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:.12s}
+.ap-row:hover{background:var(--surface-2)}
+.ap-row.is-on{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--navy-deep,#2A5245)}
+.ap-when{flex:none;width:104px}
+.ap-what{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ap-what strong{font-size:13.2px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ap-what span{font-size:11.6px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ap-empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:7px;padding:34px 12px;color:var(--muted)}
+.ap-empty b{font-size:14px;color:var(--ink)}
+.ap-empty span{font-size:12.2px;line-height:1.5;max-width:250px}
+.ap-cal{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:var(--surface-2);color:var(--muted)}
+.ap-cal.sm{width:36px;height:36px;border-radius:11px}
+.ap-det-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ap-det-h b{font-size:14.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ap-when-box{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface-2);
+  border:1px solid var(--line);border-radius:11px;padding:10px 12px;font-size:13px;margin-bottom:10px}
+.ap-f{padding:7px 0;border-top:1px solid var(--line)}
+.ap-f>span{font-size:10.4px;font-weight:800;letter-spacing:.06em;color:var(--muted)}
+.ap-f>div{font-size:13px;margin-top:2px;line-height:1.5}
+@media(max-width:900px){.ap-split{grid-template-columns:1fr}.ap-list{border-right:none;border-bottom:1px solid var(--line)}}
+/* v9.84: the summary table is a summary — the actions live in the opened log */
+.log-hint{padding:11px 16px;font-size:12.2px;color:var(--muted);border-top:1px solid var(--line);cursor:pointer}
+.log-hint:hover{background:var(--surface-2);color:var(--ink)}
+.tl-bar.b-shift{max-width:none}                    /* a shift bar's width IS its hours — never clip it */
+.tl-bar.dragging,.tl-bar.sizing{max-width:none;transition:none}
 .tl-bar:hover{filter:brightness(1.07);z-index:4;box-shadow:var(--shadow-sm)}
 .tl-bar[data-shift]{cursor:grab;touch-action:none;user-select:none}
 .tl-bar[data-shift]:active{cursor:grabbing}
 .tl-bar[data-shift]:before{content:"⋮⋮";font-size:9px;letter-spacing:-1px;opacity:.7;margin-right:2px}
-.tl-bar[data-shift]:after{content:"";position:absolute;right:0;top:0;bottom:0;width:10px;cursor:ew-resize;border-radius:0 6px 6px 0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35))}
+.tl-bar[data-shift]:after{content:"⋮";position:absolute;right:0;top:0;bottom:0;width:18px;cursor:ew-resize;border-radius:0 6px 6px 0;
+  background:rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,.9)}
+.tl-bar[data-shift]:hover:after{background:rgba(255,255,255,.45)}
 .tl-bar[data-shift].sizing{opacity:.9;box-shadow:0 0 0 2px var(--gold)}
 .tl-bar.dragging{opacity:.85;box-shadow:0 6px 18px rgba(21,43,71,.3);z-index:8}
 .b-med{background:#3A6EA5;color:#fff}
@@ -1991,7 +2022,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · v9.78 beta</span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · v9.84 beta</span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -2321,58 +2352,84 @@ let ORG_ID = null;                                                    // the acc
 function orgScope(q){                                                 // read only this organization's rows
   if(!ORG_ID) return q||'select=*';
   const base=q||'select=*';
-  return base+`&or=(org_id.eq.${encodeURIComponent(ORG_ID)},org_id.is.null)`;
+  /* v9.90: this used to also match org_id.is.null, which handed every pre-tenancy row
+     to every agency. Nothing is unowned any more, and the database enforces the same
+     rule underneath, so the filter is now exact. */
+  return base+`&org_id=eq.${encodeURIComponent(ORG_ID)}`;
 }
-function orgEnsure(){
-  if(ORG_ID) return ORG_ID;
-  let v=lsGet('np_org_id');
-  if(!v){
-    v='org_'+(Date.now().toString(36))+'_'+Math.random().toString(36).slice(2,8);
-    lsSet('np_org_id',v);
-  }
-  ORG_ID=v;
-  return ORG_ID;
-}
+/* v9.90: this used to mint an organization id in the browser when it could not find one.
+   A client-made id is not a boundary — the database issues one per account at sign-up and
+   that is the only one that resolves. When we don't have it, writes leave org_id off and
+   the column default fills it in server side. */
+function orgEnsure(){ return ORG_ID; }
 /* Signing in on a new browser must land in the SAME workspace, so the organization
    is looked up from the account first. Minting a new id is the last resort — doing
    it eagerly is what used to make a returning user look like a brand new one. */
 let ORG_READY=false;
-async function orgResolve(email){
+/* v9.90: which agency am I? The account's membership answers it, and only the database
+   can say — the old version read it out of a table by email address, which meant an
+   unauthenticated caller could name any email and pick up that agency's id. */
+async function orgResolve(){
   if(ORG_READY) return ORG_ID;
-  if(!sbOn()){ ORG_READY=true; return orgEnsure(); }
-  const mail=String(email||AUTH.email||ONB.email||'').toLowerCase();
-  if(mail){
+  if(!sbOn()||!sbAuthed()){ ORG_READY=true; ORG_ID=null; return null; }
+  for(let attempt=0; attempt<2; attempt++){
     try{
-      const r=await fetch(`${BACKEND.url}/rest/v1/np_demo_accounts?email=eq.${encodeURIComponent(mail)}&select=org_id,workspace,last_seen_at&order=last_seen_at.desc`,{headers:sbH()});
+      const r=await fetch(`${BACKEND.url}/rest/v1/rpc/np_my_org`,{method:'POST',headers:sbH(),body:'{}'});
+      if(r.status===401&&attempt===0){ if(await sbRefresh()) continue; }
       if(r.ok){
-        const rows=await r.json();
-        const hit=(Array.isArray(rows)?rows:[]).find(x=>x&&x.org_id&&x.workspace===NP_WS)
-               || (Array.isArray(rows)?rows:[]).find(x=>x&&x.org_id);
-        if(hit){ ORG_ID=hit.org_id; lsSet('np_org_id',ORG_ID); ORG_READY=true; return ORG_ID; }
+        const v=await r.json().catch(()=>null);
+        if(v&&typeof v==='string'){ ORG_ID=v; lsSet('np_org_id',ORG_ID); ORG_READY=true; return ORG_ID; }
       }
     }catch(e){}
+    break;
   }
-  try{                                                               // fall back to the workspace's own record
-    const r=await fetch(`${BACKEND.url}/rest/v1/np_demo_program?key=eq.orgid&select=value`,{headers:sbH()});
-    if(r.ok){
-      const rows=await r.json();
-      const v=Array.isArray(rows)&&rows[0]&&rows[0].value&&rows[0].value.v;
-      if(v){ ORG_ID=v; lsSet('np_org_id',ORG_ID); ORG_READY=true; return ORG_ID; }
-    }
-  }catch(e){}
-  ORG_READY=true;
-  return orgEnsure();
+  ORG_READY=true; ORG_ID=null;                                       // no membership, no rows — never guess one
+  return null;
 }
+function orgForget(){ ORG_ID=null; ORG_READY=false; }
 const DEMO_VIEW = (()=>{ try{ return new URLSearchParams(location.search).get('demo')==='1'; }catch(e){ return false; } })();
 const sbOn = () => !!(BACKEND.url && BACKEND.anon && !DEMO_VIEW);      // demo view is a sandbox: nothing it does is saved
-const sbH  = () => ({apikey:BACKEND.anon, Authorization:'Bearer '+BACKEND.anon, 'Content-Type':'application/json', Prefer:'return=minimal'});
+/* v9.90: the database now decides what you can see, not the app. Row level security
+   matches the row's organization against the caller's membership, which means the
+   request has to carry the signed-in user's token — the anon key on its own returns
+   nothing. Tokens last an hour, so a 401 refreshes once and retries. */
+const sbTok = () => (AUTH && AUTH.mode==='supabase' && AUTH.session && AUTH.session.t) || '';
+const sbH  = () => ({apikey:BACKEND.anon, Authorization:'Bearer '+(sbTok()||BACKEND.anon),
+                     'Content-Type':'application/json', Prefer:'return=minimal'});
+const sbAuthed = () => !!sbTok();
+let SB_REFRESHING=null;
+async function sbRefresh(){
+  if(!AUTH||AUTH.mode!=='supabase'||!AUTH.session||!AUTH.session.r) return false;
+  if(SB_REFRESHING) return SB_REFRESHING;
+  SB_REFRESHING=(async()=>{
+    try{
+      const r=await fetch(BACKEND.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',
+        headers:{'Content-Type':'application/json',apikey:BACKEND.anon},
+        body:JSON.stringify({refresh_token:AUTH.session.r})});
+      const d=await r.json().catch(()=>({}));
+      if(r.ok&&d.access_token){
+        AUTH.session={t:d.access_token,r:d.refresh_token||AUTH.session.r,at:Date.now()};
+        saveAuth(); return true;
+      }
+    }catch(e){}
+    return false;
+  })().finally(()=>{ SB_REFRESHING=null; });
+  return SB_REFRESHING;
+}
 async function sbGet(t,q){ if(!sbOn()) return []; try{
     let r=await fetch(`${BACKEND.url}/rest/v1/${t}?${ORG_UNSUPPORTED[t]?(q||'select=*'):orgScope(q)}`,{headers:sbH()});
     if(!r.ok){
       let b=''; try{ b=await r.text(); }catch(e){}
-      if(isOrgColErr(b)&&!ORG_UNSUPPORTED[t]){                          // no org_id column yet — read unscoped
+      /* v9.90: the old fallback here re-read the table with no organization filter when
+         the column was missing. That is exactly the case where scoping matters most, so
+         it now reports and returns nothing rather than handing over another agency's rows. */
+      if(isOrgColErr(b)&&!ORG_UNSUPPORTED[t]){
         ORG_UNSUPPORTED[t]=true;
-        r=await fetch(`${BACKEND.url}/rest/v1/${t}?${q||'select=*'}`,{headers:sbH()});
+        console.warn('[np-demo] '+t+' has no org_id column — refusing to read it unscoped');
+        sbDown('read',t,'no org_id column'); return [];
+      }
+      if(r.status===401&&await sbRefresh()){
+        r=await fetch(`${BACKEND.url}/rest/v1/${t}?${orgScope(q)}`,{headers:sbH()});
       }
       if(!r.ok&&isTransient(r.status)){
         for(let i=0;i<2&&!r.ok;i++){ await sleep(600*(i+1));
@@ -2475,6 +2532,7 @@ function sbFailsShow(){
 function orgStamp(row){                                               // everything belongs to an organization
   if(!row||typeof row!=='object'||Array.isArray(row)) return row;
   if(ORG_ID && row.org_id===undefined) row.org_id=ORG_ID;
+  if(!ORG_ID && 'org_id' in row) delete row.org_id;                  // let the column default decide
   return row;
 }
 const ORG_UNSUPPORTED={};                                             // tables whose org_id column is not there yet
@@ -3202,7 +3260,37 @@ function openDemoView(){
   toast('Demo dashboard opened in a new tab.');
 }
 function setNameMode(v){ NAME_MODE=v; lsSet('np_name_mode',v); sbUpsert('np_demo_program',{key:'namemode',value:{v},updated_by:auditActor()}); render(); renderNav(); toast(v==='initials'?'Staff now shown by initials.':'Staff now shown by full name.'); }
-const visShifts = () => SHIFTS.filter(s=>staff(s.sid)&&!hid('shift',shiftKey(s))&&!hid('staff',s.sid));
+/* v9.80: one shift is one bar. Times arrive from Postgres as "14:00:00" and from the app
+   as "14:00", so the old dedupe compared unlike strings and let copies through — every
+   re-hydrate or edit stacked another identical lane on the timeline. */
+const hhmm = t => String(t==null?'':t).slice(0,5);
+const shiftIdent = s => [s.sid, s.date||T, hhmm(s.start), hhmm(s.end), s.home||''].join('|');
+function shiftsUnique(list){
+  const seen={}, out=[];
+  list.forEach(s=>{ const k=shiftIdent(s); if(seen[k]) return; seen[k]=1; out.push(s); });
+  return out;
+}
+function shiftsPrune(){                                              // collapse copies already in memory
+  SHIFTS.forEach(s=>{ s.start=hhmm(s.start); s.end=hhmm(s.end); });
+  const seen={};
+  for(let i=SHIFTS.length-1;i>=0;i--){ const k=shiftIdent(SHIFTS[i]); if(seen[k]) SHIFTS.splice(i,1); else seen[k]=1; }
+  /* v9.81: exact copies were only half of it. A drag that rewrote the wrong row left
+     near-copies — same person, same house, hours a few minutes apart — and each one
+     took its own lane. Nobody works two overlapping shifts in one house, so an
+     overlap is one shift: keep the earliest start and the latest end. */
+  for(let i=SHIFTS.length-1;i>=0;i--){
+    const a=SHIFTS[i];
+    for(let j=0;j<i;j++){
+      const b=SHIFTS[j];
+      if(b.sid!==a.sid||(b.date||T)!==(a.date||T)||(b.home||'')!==(a.home||'')) continue;
+      if(toMin(a.start)>toMin(b.end)||toMin(a.end)<toMin(b.start)) continue;   // genuinely separate blocks stay
+      if(toMin(a.start)<toMin(b.start)) b.start=a.start;
+      if(toMin(a.end)>toMin(b.end)) b.end=a.end;
+      SHIFTS.splice(i,1); break;
+    }
+  }
+}
+const visShifts = () => shiftsUnique(SHIFTS.filter(s=>staff(s.sid)&&!hid('shift',shiftKey(s))&&!hid('staff',s.sid)));
 const visIncidents = () => INCIDENTS.filter(i=>client(i.cid)&&visibleClients().some(c=>c.id===i.cid));
 const visAppts = () => APPTS.filter(a=>!hid('appt',a.id)&&client(a.cid)&&visibleClients().some(c=>c.id===a.cid)&&calMine(a));
 const visThreads = () => THREADS.filter(t=>!t.cid||(client(t.cid)&&visibleClients().some(c=>c.id===t.cid))).filter(t=>!hid('thread',t.id))                                       // sample threads hide; real conversations never do
@@ -3555,7 +3643,7 @@ function captureSamples(){
     appt:APPTS.map(x=>x.id), incident:INCIDENTS.map(x=>x.id), thread:THREADS.map(x=>x.id),
     doc:DOCS.map(docKey), shift:SHIFTS.map(shiftKey), drill:FIREDRILLS.map(drillKey), temp:WATERTEMP.map(tempKey),
     lists:{homes:HOMES.slice(),ctypes:CLIENT_TYPES.slice(),taskcats:TASK_CATS.slice(),
-           taskpris:TASK_PRIS.slice(),apptcats:Object.keys(APPT_CATS),chgcats:Object.keys(CHG_CATS)},
+           taskpris:TASK_PRIS.slice(),chgcats:Object.keys(CHG_CATS)},   // v9.82: appointment types are structure, like templates — they survive Hide sample
     _:(AUDIT.forEach(a=>a._seed=1),MY_QUALS.director.forEach(q=>q._seed=1),THREADS.forEach(t=>t._user=0),SYS_NOTIFS.forEach(nn=>nn._seed=1),TASKS.forEach(t=>t._seed=1),APPTS.forEach(a=>a._seed=1),INCIDENTS.forEach(i=>i._seed=1),(typeof ATTEND!=='undefined'&&ATTEND.forEach(a=>a._seed=1)),Object.keys(CREDS).forEach(k=>(CREDS[k]||[]).forEach(cx=>cx._seed=1)),0),
     course:TRAINING.map(t=>t.id), guide:GUIDES.map(g=>g.t), dir:DIRECTORY.map(d=>String(d.id||d.n)),
     insp:INSP_TEMPLATES.map(t=>String(t.id||t.name)),
@@ -3578,14 +3666,22 @@ function clearSampleLists(){
   sbUpsert('np_demo_program',{key:'taskcats',value:{list:TASK_CATS},updated_by:auditActor()});
   TASK_PRIS=drop(TASK_PRIS,L.taskpris);
   sbUpsert('np_demo_program',{key:'taskpris',value:{list:TASK_PRIS},updated_by:auditActor()});
-  (L.apptcats||[]).forEach(k=>{ delete APPT_CATS[k]; }); catSave&&catSave();
+  /* v9.82: appointment types are NOT sample data. Wiping them left the Type dropdown
+     with only "＋ New type…", which is then already selected — choosing it fires no
+     change event, so the category form never opened. Keep them. */
   (L.chgcats||[]).forEach(k=>{ delete CHG_CATS[k]; }); chgCatsSave&&chgCatsSave();
 }
 const JOIN_TOKEN=(()=>{ try{ return new URLSearchParams(location.search).get('join')||''; }catch(e){ return ''; } })();
 async function joinBoot(){
   try{
-    const rows=await sbGet('np_demo_invites','token=eq.'+encodeURIComponent(JOIN_TOKEN)+'&select=*');
-    const inv=rows&&rows[0];
+    /* v9.90: invites live behind the same organization boundary as everything else, so the
+       link is opened through a function that returns only what the sign-up page needs. */
+    const pr=await fetch(`${BACKEND.url}/rest/v1/rpc/np_invite_peek`,{method:'POST',
+      headers:{apikey:BACKEND.anon,Authorization:'Bearer '+BACKEND.anon,'Content-Type':'application/json'},
+      body:JSON.stringify({p_token:JOIN_TOKEN})});
+    const peek=pr.ok?((await pr.json().catch(()=>[]))||[])[0]:null;
+    const inv=peek?{email:peek.email,org:peek.org_name,role_title:peek.role_title,sid:peek.staff_id||'',
+      name:peek.staff_name||'staff',token:JOIN_TOKEN,used_at:peek.used?1:null}:null;
     if(!inv){ showLoginPage(); toast('That invite link is not valid — ask your director for a new one.'); return; }
     if(inv.used_at){ showLoginPage(); const e0=el('liEmail'); if(e0&&inv.email) e0.value=inv.email; toast('That invite was already used — just sign in.'); return; }
     window._joinInvite=inv;
@@ -3637,8 +3733,7 @@ function bootPortal(){
     hideWelcome(); hideOnboarding();
     if(authReady() && AUTH.session && lsGet('np_resume')){ signIn(ONB.role); return; }   // active session resumes
     el('login').style.display='flex';
-    if(authReady()){ showLoginForm(); return; }                     // registered → the login page, always
-    showRolePicker(); return;                                       // legacy workspaces without an account
+    showLoginForm(); return;                                        // always the sign-in page, never the quick-access picker
   }
   try{ const w=lsGet('np_welcome'); if(w){ const d=JSON.parse(w)||{}; Object.assign(ONB,d); window.__welcome=d; } }catch(e){}
   if(ONB.name){                                                                                // welcome done, setup unfinished
@@ -3695,6 +3790,7 @@ function idleReset(){
 function setIdle(v){ IDLE_MIN=+v||0; lsSet('np_idle_min',String(IDLE_MIN)); userSetSave({idle:IDLE_MIN}); idleReset(); toast(IDLE_MIN?('Auto sign-out after '+IDLE_MIN+' minutes idle — just for your account.'):'Auto sign-out is off for your account.'); }
 ['click','keydown','mousemove','scroll','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{ if(AUTH.signedIn) idleReset(); },{passive:true}));
 function signOut(){
+  orgForget(); AUTH.session=null; saveAuth();
   if(typeof tourEnd==='function') tourEnd();
   const f=el('tlFull'); if(f) f.remove();
   const i=el('inspFull'); if(i){ i.remove(); inspRun=null; }
@@ -3748,7 +3844,10 @@ function renderNav(){
   el('nav').innerHTML = items.map(n=>{
     if(n.g) return `<div class="nav-label">${esc(n.g)}</div>`;
     let badge='';
-    if(n.id==='tasks'){ const c=myTasks().filter(t=>t.stage!=='Done' && t.due<=T).length; if(c) badge=`<span class="badge">${c}</span>`; }
+    /* v9.80: the badge is the same number the Tasks page leads with ("N open"), and renderNav
+       now runs on every render so finishing or deleting a task updates it straight away. */
+    if(n.id==='tasks'){ const o=myTasks().filter(t=>t.stage!=='Done');
+      if(o.length) badge=`<span class="badge" title="${o.length} open · ${o.filter(t=>t.due<=T).length} due today or earlier">${o.length}</span>`; }
     if(n.id==='incidents'){ const c=visIncidents().filter(i=>i.status!=='Closed').length; if(c) badge=`<span class="badge">${c}</span>`; }
     if(n.id==='messages'){ const c=THREADS.reduce((a,t)=>a+t.unread,0); if(c) badge=`<span class="badge">${c}</span>`; }
     const gl=ICON_PATHS[NAV_ICON[n.id]]?ico(NAV_ICON[n.id]):`<span style="font-size:15px">${n.i}</span>`;
@@ -3905,7 +4004,9 @@ function backBar(){
 function render(){
   const v = el('view');
   navRemember();
-  if(state.client){ v.innerHTML = backBar()+viewClient(state.client); if(typeof layoutApply==='function') layoutApply(); if(typeof mobileTables==='function') mobileTables(); return; }
+  try{ docEditSync(); }catch(e){}                                    // template dragging follows page edit mode
+  try{ renderNav(); }catch(e){}                                      // nav counts never go stale behind the page
+  if(state.client){ v.innerHTML = backBar()+viewClient(state.client); if(typeof layoutApply==='function') layoutApply(); if(typeof clientEditGate==='function') clientEditGate(); if(typeof mobileTables==='function') mobileTables(); return; }
 
   const map = {
     home:()=>viewHome()+staffDocsCard()+staffGuidesCard(), clients:viewClients, meds:viewMeds, calendar:viewCalendar, tasks:viewTasks, billing:viewBilling,
@@ -3915,6 +4016,7 @@ function render(){
   };
   v.innerHTML = (state.view==='home'?'':backBar()) + (map[state.view]||viewHome)();
   if(typeof layoutApply==='function') layoutApply();
+  if(typeof clientEditGate==='function') clientEditGate();
   if(typeof mobileTables==='function') mobileTables();
   if(typeof tlAutoScroll==='function') requestAnimationFrame(()=>tlAutoScroll());
 }
@@ -3926,7 +4028,9 @@ function render(){
    Everything is stored under the signed-in account in 'usersettings', so
    the layout is tied to credentials and comes back on every login, on any
    device. Nobody else's view changes. */
-const LAYOUT_PAGES={home:1,clients:1,team:1,safety:1};
+/* v9.86: the same edit mode everywhere — rearrange the sections, rename a table and its
+   description, hide what you don't use, add your own. Entered from the cog on each page. */
+const LAYOUT_PAGES={home:1,clients:1,team:1,safety:1,trainhub:1,staffpage:1,templates:1,forms:1};
 function layPage(){
   if(state.client) return ((state.tab||'overview')==='overview')?'client':null;
   return LAYOUT_PAGES[state.view]?state.view:null;
@@ -4013,6 +4117,24 @@ function mtabOpen(i){
   openModal(esc(title),body||'<div class="empty">Nothing else recorded.</div>',
     `<button class="btn ghost" onclick="closeAll()">Close</button>${act?`<button class="btn navy" onclick="closeAll();${esc(act).replace(/&quot;/g,'"')}">Open</button>`:''}`);
 }
+/* v9.83: on a client page nothing is editable until the director chooses to edit the
+   page from the cog. The pencils, the ✕ deletes, the reorder arrows and the add-item
+   rows all stay out of sight until then, so the record reads as a record. */
+const ED_LABELS=['✎','✕','↑','↓','Edit','✎ Edit','✕ Delete','✎ Rename','＋ Add','＋ Add goal'];
+const ED_PAGES={trainhub:1,safety:1,team:1,staffpage:1,templates:1,forms:1};   // read first, edit when you ask for it
+function clientEditGate(){
+  if(!state.client && !ED_PAGES[state.view]) return;
+  const v=el('view'); if(!v) return;
+  const on=!!state.layoutEdit;
+  v.querySelectorAll('.ed-only').forEach(n=>{ n.style.display=on?'':'none'; });
+  v.querySelectorAll('button').forEach(b=>{
+    if(b.closest('.lay-bar')||b.dataset.keep) return;
+    const t=(b.textContent||'').trim();
+    if(!ED_LABELS.includes(t)) return;
+    b.style.display=on?'':'none';
+  });
+  if(on) v.classList.add('client-editing'); else v.classList.remove('client-editing');
+}
 function layoutApply(){
   const page=layPage();
   layoutFab(page);
@@ -4036,6 +4158,9 @@ function layoutApply(){
   // 3) apply the saved arrangement
   const titles=layTitles(page);
   cards.forEach(sec=>{ const t=titles[sec.dataset.lid]; const h=sec.querySelector('h2'); if(t&&h) h.textContent=t; });
+  const subs=laySubs(page);                                          // v9.83: the line under the title is editable too
+  cards.forEach(sec=>{ const t=subs[sec.dataset.lid]; if(t==null) return;
+    const d=sec.querySelector('.card-h .sub, .sec-head p, .card-h p'); if(d) d.textContent=t; });
   const cfg=layCfg(page);
   (cfg.order||[]).forEach(lid=>{
     const sec=cards.find(x=>x.dataset.lid===lid); if(!sec) return;
@@ -4062,7 +4187,8 @@ function layoutChrome(page,cols,cards,cfg){
       ${cols.length>1?`<button title="Move to the other column" onclick="laySwap('${lid}')">⇄</button>`:''}
       <button onclick="layHide('${lid}')">${hid2?'👁 Show':'Hide'}</button>
       ${isCs?`<button onclick="csEdit('${page}','${lid.slice(3)}')">✎ Edit</button><button onclick="csDel('${page}','${lid.slice(3)}')">✕</button>`
-            :`<button title="Rename this section" onclick="layRename('${lid}')">✎ Rename</button>`}`;
+            :`<button title="Rename this section" onclick="layRename('${lid}')">✎ Rename</button>
+               <button title="Change the line under the title" onclick="layRenameSub('${lid}')">✎ Description</button>`}`;
     sec.prepend(bar);
     const h=bar.querySelector('.lay-h');
     h.addEventListener('dragstart',()=>{ window._layDrag=lid; });
@@ -4114,6 +4240,21 @@ function layRename(lid){
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="layRenameGo('${lid}')">Save</button>`);
 }
 function layTitles(page){ const T2=((USER_SET[userKey()]||{}).secTitles)||{}; return T2[page]||{}; }
+function laySubs(page){ const S2=((USER_SET[userKey()]||{}).secSubs)||{}; return S2[page]||{}; }
+function layRenameSub(lid){
+  const cur=laySubs(layPage())[lid]||'';
+  openModal('Section description',`
+    <div class="tiny muted" style="margin-bottom:10px">The line under the title. Leave it blank to go back to the built-in wording.</div>
+    <div class="field"><label>Description</label><input class="inp" id="lrSub" value="${esc(cur)}" placeholder="What this section is for"></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="layRenameSubGo('${lid}')">Save</button>`);
+}
+function layRenameSubGo(lid){
+  const page=layPage(), v=(el('lrSub').value||'').trim();
+  const all=Object.assign({},((USER_SET[userKey()]||{}).secSubs)||{});
+  all[page]=Object.assign({},all[page]||{}); if(v) all[page][lid]=v; else delete all[page][lid];
+  userSetSave({secSubs:all});
+  closeAll(); render(); toast('Description saved.');
+}
 function layRenameGo(lid){
   const page=layPage(); const v=(el('lrName').value||'').trim();
   const all=Object.assign({},((USER_SET[userKey()]||{}).secTitles)||{});
@@ -4132,26 +4273,45 @@ function layReset(){
   laySaveCfg(layPage(),{order:[],hidden:[],col:{}});
   render(); toast('Layout back to the default. Your added sections are kept — remove them with ✕.');
 }
+/* v9.86: Templates used to have its own ✎ that only reordered rows. It is one edit
+   mode now — the cog turns on dragging, renaming and the layout handles together. */
+function docEditSync(){ state.docEdit = !!state.layoutEdit && state.role==='director' && (state.view==='forms'||state.view==='templates'); }
 function pageEdit(on){
   state.layoutEdit=on===undefined?!state.layoutEdit:!!on;
+  docEditSync();
   render();
   if(state.layoutEdit) toast('Editing this page — drag ⠿ to reorder, ✎ renames, ✕ hides, ＋ adds a section. Done when you are happy.');
 }
-function editBtn(){
+function editBtn(sz){
   if(state.role!=='director') return '';
-  return `<button class="btn ${state.layoutEdit?'gold':'ghost'} sm" onclick="pageEdit()">${state.layoutEdit?'✓ Done':'✎ Edit page'}</button>`;
+  const c=sz===undefined?' sm':(sz?' '+sz:'');                       // match whatever sits beside it
+  return `<button class="btn ${state.layoutEdit?'gold':'ghost'}${c}" onclick="pageEdit()">${state.layoutEdit?'✓ Done':'✎ Edit page'}</button>`;
 }
 function pageSettings(page){
-  const lbl=page==='client'?'this client page':page==='clients'?'the clients page':'this page';
+  const lbl=page==='client'?'this client page':page==='clients'?'the clients page':page==='trainhub'?'the training page':page==='safety'?'the safety log':'this page';
   openModal('Settings',`
     <div class="tiny muted" style="margin-bottom:10px">How ${lbl} looks. Layout choices are yours alone; colours and names are shared with the team.</div>
-    ${[['⠿','Customize layout','Rearrange, rename, hide or add sections',"closeAll();state.layoutEdit=true;render();toast('Drag the handles to rearrange. ✎ renames a section. Tap Done when you are happy.')"],
+    ${[['✎','Edit this page','Rename titles and descriptions, rearrange or hide sections, and show every edit control',"closeAll();state.layoutEdit=true;render();toast('Editing this page. Rename titles and descriptions, drag to rearrange, and every ✎ and ✕ is now showing. Tap Done when you are happy.')"],
        ['🏠','Houses and colours','Names and the colour each house shows in',"displaySettings('homes')"],
        ['🗓','Appointment types','Icon and colour for each type',"displaySettings('cats')"],
        ['🎨','Task colours','Due dates, categories, priorities and stages',"manageTasksConfig('due')"],
        ['✎','Rename menus and binders','Call things what your team calls them','labelsForm()']]
       .map(([ic,t,d,fn])=>`<button class="checkrow" style="width:100%;cursor:pointer;text-align:left;border-color:var(--line);margin-bottom:6px" onclick="${fn}">
         <div class="cb">${ic}</div><div class="ct"><b>${t}</b><div class="tiny muted">${d}</div></div></button>`).join('')}`,
+    `<button class="btn ghost" onclick="closeAll()">Close</button>`);
+}
+function calendarSettings(){
+  const rows=[['🗓','Calendars and filters','Which calendars show and what the list is filtered to','closeAll();calControls()']];
+  if(state.role==='director') rows.push(
+    ['🗓','Appointment types','Icon and colour for each type',"displaySettings('cats')"],
+    ['📚','Calendars','Names, colours, icons and privacy',"displaySettings('cals')"],
+    ['🏠','Houses and colours','Names and the colour each house shows in',"displaySettings('homes')"],
+    ['⚠','Attention icons','Icons and colours for items needing attention',"displaySettings('attn')"],
+    ['✎','Rename menus and binders','Call things what your team calls them','labelsForm()']);
+  openModal('Settings',`
+    <div class="tiny muted" style="margin-bottom:10px">Everything that changes how the calendar looks. Colours and names are shared with the team.</div>
+    ${rows.map(([ic,t,d,fn])=>`<button class="checkrow" style="width:100%;cursor:pointer;text-align:left;border-color:var(--line);margin-bottom:6px" onclick="${fn}">
+      <div class="cb">${ic}</div><div class="ct"><b>${t}</b><div class="tiny muted">${d}</div></div></button>`).join('')}`,
     `<button class="btn ghost" onclick="closeAll()">Close</button>`);
 }
 function homeSettings(){
@@ -4284,7 +4444,12 @@ function packBars(bars,gutter,ownLine){               // assigns .top so nothing
     let r=0; while(ends[r]!=null && ends[r]>b.l-g) r++;
     ends[r]=b.l+w; b.top=r*21;
   });
-  return ends.length||1;
+  const lanes=ends.length||1;
+  /* v9.80: a row only gets the .tl-lane class when it needs more than one lane. Without that
+     class a bar is still centred by transform:translateY(-50%), so an inline top:0 pushed it
+     half a bar above its own row and onto the hour ruler. Single-lane rows drop the offset. */
+  if(!ownLine && lanes<=1) bars.forEach(b=>{ b.lane0=b.top; delete b.top; });
+  return lanes;
 }
 const tlBar=(b)=>{
   let extra='';
@@ -4330,7 +4495,7 @@ function tlCard(full){
          tip:`${o.title} — your Google Calendar at ${hm12(o.time)}${o.cid?' · '+client(o.cid).uci:''}`,on:`openAppt('${o.id}')`};
   });
   const _lanes=packBars(_bars);
-  _bars.forEach(b=>{ b._o._lane=b.top/21; if(b.top) b.tip+=' · stacked below an overlapping item'; });
+  _bars.forEach(b=>{ b._o._lane=(b.top!=null?b.top:(b.lane0||0))/21; if(b.top) b.tip+=' · stacked below an overlapping item'; });
   const apptBars=_bars.map(tlBar).join('');
 
   let rows=[
@@ -4346,7 +4511,7 @@ function tlCard(full){
       const canEdit=state.role==='director';
       return tlBar({l:L,w:Math.max(R-L,60),top:5+ln*23,cls:'b-shift',txt:`${esc(staff(s.sid).init)} ${esc(s.home.replace(' House',''))}`,
         tip:canEdit?`${staff(s.sid).name} · ${hm12(s.start)} to ${hm12(s.end)} — drag to move, click to edit`:`${staff(s.sid).name} · ${hm12(s.start)} to ${hm12(s.end)}`,
-        attrs:(canEdit?`data-shift="${s.sid}" `:'')+`style="background:${homeColor(s.home)};border-color:${homeColor(s.home)};color:#fff"`,
+        attrs:(canEdit?`data-shift="${s.sid}" data-sk="${esc(shiftIdent(s))}" `:'')+`style="background:${homeColor(s.home)};border-color:${homeColor(s.home)};color:#fff"`,
         on:canEdit?`shiftMenu(${visShifts().indexOf(s)})`:"go('team')"});
     }).join('');
     rows.push({dot:'#9AA3B2',lab:'Staff on shift',bars:shiftBars,h:10+lanes.length*23,lane:1,
@@ -4392,7 +4557,7 @@ function tlCard(full){
         bars:tlBar({l:tlPx(s.start),w:Math.max(tlPx(s.end)-tlPx(s.start),60),cls:'b-shift',
           txt:`${hm12(s.start)} – ${hm12(s.end)} · ${esc(s.home)}`,
           tip:canEdit?`${staff(s.sid).name} — drag to move, click to edit`:staff(s.sid).name,
-          attrs:(canEdit?`data-shift="${s.sid}" `:'')+`style="background:${homeColor(s.home)};border-color:${homeColor(s.home)};color:#fff"`,on:canEdit?'':"go('team')"}),
+          attrs:(canEdit?`data-shift="${s.sid}" data-sk="${esc(shiftIdent(s))}" `:'')+`style="background:${homeColor(s.home)};border-color:${homeColor(s.home)};color:#fff"`,on:canEdit?'':"go('team')"}),
         on:`openStaffPage('${s.sid}')`});});
     }
   }
@@ -4620,21 +4785,23 @@ function viewHome(){
       <section class="card">
         <div class="sec-head soft-sage"><h2>Who's working today</h2><p>Shifts and cover</p></div>
         <div class="card-b flush">
-          <table class="tb"><tbody>${visShifts().map(s=>{
+          <table class="tb"><tbody>${pageOf((()=>{const seen={};return visShifts().filter(x=>{const k=x.sid+'|'+(x.home||'');if(seen[k])return false;seen[k]=1;return true;});})(),'work').map(s=>{
             const on = s.start<=nowHM()&&s.end>=nowHM();
             return `<tr><td><div class="tb-name">${stAv(staff(s.sid),on?'gr':'')}<div><div style="font-weight:600">${esc(stName(staff(s.sid)))}</div><div class="tiny muted" style="display:flex;align-items:center;gap:5px">${homeDot(s.home,7)}${esc(s.home)}</div></div></div></td>
             <td style="text-align:right"><div>${hm12(s.start)} – ${hm12(s.end)}</div>${on?'<span class="pill ok"><i></i>On shift</span>':'<span class="tiny muted">Scheduled</span>'}</td></tr>`;
           }).join('')}</tbody></table>
         </div>
+        ${(()=>{const seen={};const rows=visShifts().filter(x=>{const k=x.sid+'|'+(x.home||'');if(seen[k])return false;seen[k]=1;return true;});return pager(rows.length,'work');})()}
       </section>`:''}
 
       <section class="card">
         <div class="card-h"><h2>Coming up</h2></div>
         <div class="card-b flush">
           ${upcoming.map(a=>`
-          <div class="attn" onclick="openAppt('${a.id}')">
-            <div class="ai info" style="background:${catOf(a.type).color}22;color:${catOf(a.type).color}">${catOf(a.type).emoji}</div>
-            <div class="at"><b>${esc(a.title)}</b><span>${esc((client(a.cid)||{}).uci||'')} · ${relDay(a.date)} ${hm12(a.time)}</span></div>
+          <div class="lrow" onclick="openAppt('${a.id}')">
+            <span class="row-ic" style="background:${apptColor(a)}1A;color:${apptColor(a)}">${apptIcon(a)}</span>
+            <span class="row-copy"><strong>${esc(a.title)}</strong><span>${esc((client(a.cid)||{}).uci||'')} · ${relDay(a.date)} ${hm12(a.time)}</span></span>
+            <span class="go-sq">${ico('arrow-up-right',15)}</span>
           </div>`).join('') || `<div class="empty">Nothing scheduled this week.</div>`}
         </div>
       </section>
@@ -4713,7 +4880,7 @@ function viewClients(){
   <div class="page-h">
     <div><h1>Clients${aiTag('clients')}</h1><div class="sub">${cl.length} people in service · click any column to sort</div>
       <div style="margin-top:8px">${tblFilter('clients','Filter clients…')}</div></div>
-    <div class="right">${editBtn()}${state.role==='director'?`<button class="gear" title="Settings" onclick="pageSettings('clients')" style="margin-right:6px">${ico('settings',17)}</button>`:''}${state.role==='director'?`<button class="btn navy" onclick="openClientForm()">＋ Add client</button>`:''}</div>
+    <div class="right">${editBtn('')}${state.role==='director'?`<button class="gear" title="Settings" onclick="pageSettings('clients')" style="margin-right:6px">${ico('settings',17)}</button>`:''}${state.role==='director'?`<button class="btn navy" onclick="openClientForm()">＋ Add client</button>`:''}</div>
   </div>
   <section class="card">
     <div class="card-b flush">
@@ -4727,7 +4894,7 @@ function viewClients(){
             <td>${esc(c.home)}</td>
             <td class="muted">${esc(c.dx)}</td>
             <td>${meds}</td>
-            <td>${nx?`${relDay(nx.date)} ${hm12(nx.time)}`:'<span class="muted">—</span>'}</td>
+            <td>${nx?`${duePill(nx.date)}<div class="tiny muted">${hm12(nx.time)}</div>`:'<span class="muted">—</span>'}</td>
             <td>${c.alerts.length?c.alerts.map(a=>`<span class="pill bad">${esc(a)}</span>`).join(' '):'<span class="muted">—</span>'}</td>
             ${state.role==='director'?`<td style="text-align:right" class="tiny muted">›</td>`:''}
           </tr>`;
@@ -4748,11 +4915,11 @@ function viewClient(id){
   <div class="page-h">
     
     <div>
-      <h1>${esc(c.uci)}${state.role!=='family'?` <button class="btn ghost sm" title="Edit this client" onclick="editClient('${c.id}')">✎</button>`:''}</h1>
-      <div class="sub">${esc(c.home)} · ${esc(c.dx)}${state.role!=='family'?` <button class="btn ghost sm" onclick="editDx('${c.id}')">✎</button>`:''} · guardian ${esc(c.guardian)}</div>
+      <h1>${esc(c.uci)}${state.role!=='family'?` <button class="btn ghost sm ed-only" title="Edit this client" onclick="editClient('${c.id}')">✎</button>`:''}</h1>
+      <div class="sub">${esc(c.home)} · ${esc(c.dx)}${state.role!=='family'?` <button class="btn ghost sm ed-only" onclick="editDx('${c.id}')">✎</button>`:''} · guardian ${esc(c.guardian)}</div>
     </div>
     <div class="right">
-      ${editBtn()}
+      ${state.layoutEdit?`<button class="btn gold" onclick="pageEdit()">✓ Done editing</button>`:''}
       ${state.role==='director'?`<button class="gear" title="Settings" onclick="pageSettings('client')">${ico('settings',17)}</button>`:''}
       <button class="btn ghost" onclick="openIncidentForm('${c.id}')">Report incident</button>
       <button class="btn navy" onclick="exportOne('${c.id}')">Export record</button>
@@ -5045,25 +5212,69 @@ function clientAppts(c){
       const n=APPTS.filter(a=>a.cid===c.id&&a.date===d&&!a.cancelled&&calMine(a)).length; const dt=new Date(d+'T12:00:00');
       return `<button class="cal-day ${d===T?'is-today':''} ${state.apptDay===d?'is-on':''}" onclick="state.apptDay=(state.apptDay==='${d}'?'':'${d}');state.pgappt=0;render()"
         title="${fmtLong(d)}"><span>${dt.toLocaleDateString(undefined,{weekday:'short'})}</span><strong>${dt.getDate()}</strong>${n?'<i class="cal-dot"></i>':''}</button>`;}).join('')}</div>`;})();
+  const sel=list.find(a=>a.id===state.apptSel)||null;
+  const row=a=>{
+    const on=sel&&sel.id===a.id;
+    return `<div class="ap-row ${on?'is-on':''}" onclick="state.apptSel='${a.id}';render()">
+      <div class="ap-when">${duePill(a.date)}<div class="tiny muted">${hm12(a.time)}</div></div>
+      <div class="ap-what"><strong>${catOf(a.type).emoji} ${esc(a.title)}</strong>
+        <span>${esc(a.type)}${a.provider?' \u00b7 '+esc(a.provider):''}${a.loc?' \u00b7 '+esc(a.loc):''}</span></div>
+      <span class="go-sq">${on?'\u25b8':'\u203a'}</span></div>`;
+  };
+  const detail=()=>{
+    if(!sel) return `<div class="ap-empty">
+      <div class="ap-cal">${ico('calendar-range',26)}</div>
+      <b>Select an appointment</b>
+      <span>Its provider, location, preparation note and history show here, without leaving the list.</span></div>`;
+    const cal=(typeof calDefs==='function')?(calDefs().find(x=>x.key===(sel.cal||'company'))||null):null;
+    const fld=(l,v)=>v?`<div class="ap-f"><span>${l}</span><div>${v}</div></div>`:'';
+    return `<div class="ap-det">
+      <div class="ap-det-h">
+        <div class="ap-cal sm" style="${tint(catOf(sel.type).color)}">${ico('calendar-range',18)}</div>
+        <div style="flex:1;min-width:0"><b>${esc(sel.title)}</b>
+          <div class="tiny muted">${catOf(sel.type).emoji} ${esc(sel.type)}</div></div>
+        <button class="btn ghost sm" title="Close" onclick="state.apptSel='';render()">\u2715</button>
+      </div>
+      <div class="ap-when-box">
+        <div><span class="tiny muted">WHEN</span><div><b>${fmtLong(sel.date)}</b> \u00b7 ${hm12(sel.time)}</div>
+          <div class="tiny muted">${sel.dur||60} min${sel.cancelled?' \u00b7 cancelled':''}</div></div>
+        <div>${duePill(sel.date)}</div>
+      </div>
+      ${fld('PROVIDER',esc(sel.provider||''))}
+      ${fld('LOCATION',esc(sel.loc||''))}
+      ${cal?fld('CALENDAR',`<span class="spill" style="${tint(cal.color)}">${esc(cal.name)}</span>`):''}
+      ${fld('PREPARATION',esc(sel.note||sel.prep||''))}
+      ${sel.flag?`<div class="sec-note" style="margin:10px 0 0"><span>\u2691</span><div><b>Flagged</b>${esc(sel.flag)}</div></div>`:''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
+        <button class="btn navy sm" onclick="openAppt('${sel.id}')">Open full record</button>
+        ${state.role!=='family'?`<button class="btn ghost sm" onclick="openApptForm('${c.id}')">\uff0b Another appointment</button>`:''}
+      </div></div>`;
+  };
   return `<section class="card"><div class="sec-head soft-blue"><h2>Appointments</h2><span class="hd-n blue">${list.length}</span>
-    <div class="right head-act" style="display:flex;gap:6px"><button class="btn navy sm" onclick="openApptForm('${c.id}')">＋ Add appointment</button></div></div>
+    <div class="right head-act" style="display:flex;gap:6px"><button class="btn navy sm" onclick="openApptForm('${c.id}')">\uff0b Add appointment</button></div></div>
   ${strip}
   <div class="d-toolbar" style="padding:10px 14px 0">
-    <div class="seg">${[['','All'],['week','Past week'],['month','Past month']].map(([v,l])=>`<button class="${(state.apptPer||'')===v?'active':''}" onclick="state.apptPer='${v}';state.pgappt=0;render()">${l}</button>`).join('')}</div>
-    <input class="inp" style="flex:1;min-width:160px;height:34px" placeholder="Search appointments…" value="${esc(state.apptQ||'')}" oninput="state.apptQ=this.value;state.pgappt=0;render()">
+    <div class="seg">${[['','All'],['week','Past week'],['month','Past month']].map(([v,l])=>`<button class="${(state.apptPer||'')===v?'active':''}" onclick="state.apptPer='${v}';state.pgcappt=0;render()">${l}</button>`).join('')}</div>
+    <input class="inp" style="flex:1;min-width:160px;height:34px" placeholder="Search appointments\u2026" value="${esc(state.apptQ||'')}" oninput="state.apptQ=this.value;state.pgcappt=0;render()">
     ${state.apptDay?`<button class="btn ghost sm" onclick="state.apptDay='';render()">Clear ${fmtDate(state.apptDay)}</button>`:''}
   </div>
-  <div class="card-b flush"><table class="tb"><thead><tr><th>Date</th><th>Appointment</th><th>Provider</th><th>Location</th><th>Status</th></tr></thead>
-  <tbody>${pageOf(list,'appt').map(a=>`<tr class="click" onclick="openAppt('${a.id}')"><td><span class="spill" style="${tint(dueColor(dueKey(a.date)))}">${fmtDate(a.date)}</span><div class="tiny muted">${hm12(a.time)}</div></td>
-  <td>${esc(a.title)}<div class="tiny muted">${esc(a.type)}</div></td><td>${esc(a.provider)}</td><td class="muted">${esc(a.loc)}</td>
-  <td>${a.cancelled?'<span class="pill neutral">✕ Cancelled</span>':a.flag?'<span class="pill warn">⚑ Review</span>':a.date<T?'<span class="pill neutral">Completed</span>':'<span class="pill info">Scheduled</span>'}</td></tr>`).join('')}</tbody></table></div>${pager(list.length,'appt')}</section>`;
+  <div class="ap-split">
+    <div class="ap-list">
+      ${pageOf(list,'cappt').map(row).join('')||'<div class="empty">No appointments match.</div>'}
+      ${pager(list.length,'cappt')}
+    </div>
+    <div class="ap-side">${detail()}</div>
+  </div></section>`;
 }
 
 function clientDocs(c){
   const list=DOCS.filter(d=>d.cid===c.id);
   const groups={};
   list.forEach(d=>{ const b=docBinderOf(d); (groups[b]=groups[b]||[]).push(d); });
-  const keys=binderKeys().filter(k=>groups[k]);
+  /* v9.83: every client folder shows all three binders and every tab divider inside
+     them, empty or not — the same structure as the binders on the shelf, so an empty
+     tab reads as "nothing filed here yet" instead of vanishing. */
+  const keys=binderKeys();
   const loose=groups['']||[];
   const gHead=t=>`<div class="tiny muted" style="padding:11px 18px 2px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">🗀 ${t}</div>`;
   return `<section class="card"><div class="card-h"><h2>Files</h2><div class="sub">${list.length} file${list.length===1?'':'s'} · organized by binder — a file filed to a binder shows in both places</div>
@@ -5073,9 +5284,27 @@ function clientDocs(c){
       <button class="btn ghost sm" onclick="subBinderForm()">＋ Sub-folder</button>`:''}
     <button class="btn ghost sm" onclick="exportOne('${c.id}')">Export folder</button></div></div>
   <div class="card-b flush">
-  ${keys.map(k=>gHead(esc(FOLDER_NAMES[k]||k))+groups[k].map(d=>docRow(d)).join('')).join('')}
+  ${keys.map(k=>{
+    /* v9.83: the binder, then every tab divider inside it, exactly as the physical
+       binder is laid out. A tab with nothing in it still shows, so staff can see what
+       is missing instead of wondering whether the folder exists. */
+    const inB=groups[k]||[];
+    const subs=subsOf(k);
+    const bySub={}; inB.forEach(d=>{ const sb=(d.sub_binder||d.sb||''); (bySub[sb]=bySub[sb]||[]).push(d); });
+    const extra=Object.keys(bySub).filter(x=>x&&!subs.includes(x));
+    const openB=state.cbOpen===k;
+    return gHead(`${esc(FOLDER_NAMES[k]||k)} <span class="tiny muted" style="font-weight:600;text-transform:none;letter-spacing:0">· ${inB.length} file${inB.length===1?'':'s'} · ${subs.length} tab${subs.length===1?'':'s'}</span>
+      <button class="btn ghost sm" style="float:right;padding:0 8px" onclick="state.cbOpen=state.cbOpen==='${k}'?'':'${k}';render()">${openB?'▼ Hide tabs':'▸ Show tabs'}</button>`)
+      +(bySub['']||[]).map(d=>docRow(d)).join('')
+      +(openB?[...subs,...extra].map(sb=>{
+          const rows=bySub[sb]||[];
+          return `<div class="docrow lvl-sub" style="border-bottom:none;cursor:default"><div class="di">🗀</div>
+            <div class="dt"><b><span class="lvl-tag">Tab</span>${esc(sb)}</b><span>${rows.length?`${rows.length} document${rows.length===1?'':'s'}`:'Nothing filed under this tab yet'}</span></div></div>`
+            +rows.map(d=>docRow(d)).join('');
+        }).join(''):'');
+  }).join('')}
   ${loose.length?gHead('Client folder')+loose.map(d=>docRow(d)).join(''):''}
-  ${list.length?'':'<div class="empty">No files yet.</div>'}
+  ${list.length?'':'<div class="empty"><b>Nothing filed yet</b>The binders above match the paper binders — open a binder to see its tabs.</div>'}
   <div style="padding:14px 18px"><div class="drop" onclick="uploadDoc('${c.id}','General')"><b>Upload files</b><span>Pick a binder during upload and the file shows there too</span></div></div></div></section>`;
 }
 
@@ -5221,6 +5450,27 @@ function noteDel(cid,i){
   },'Delete note');
 }
 
+function protoCard(){
+  /* v9.83: incidents moved into the client folders, which left the protocol library
+     reachable only from Settings. It belongs beside the reports it governs. */
+  if(state.role==='family') return '';
+  const keys=Object.keys(PROTOCOLS).filter(k=>!hid('protocol',k));
+  return `<section class="card" style="margin-top:14px">
+    <div class="card-h"><h2>Incident protocols</h2><div class="sub">One per kind of incident — the first steps, who to call and which report form staff get. Behaves like a template.</div>
+      ${state.role==='director'?`<div class="right" style="display:flex;gap:6px">
+        <button class="btn ghost sm" onclick="protoHub()">All protocols</button>
+        <button class="btn navy sm" onclick="protoForm('')">＋ New protocol</button></div>`:''}</div>
+    <div class="card-b flush">
+      ${keys.map(k=>{const p=PROTOCOLS[k]||{},t=(typeof incidentTplOf==='function')?incidentTplOf(k):null;
+        return `<div class="lrow" onclick="${state.role==='director'?`protoForm('${esc(k)}')`:`openProtocol('${esc(k)}')`}">
+          <span class="row-ic" style="${tint(attnColor('incident'))}">⚠</span>
+          <span class="row-copy"><strong>${esc(k)}</strong>
+            <span>${protoStepsOf(p).length} steps · ${(p.call||[]).length} calls · report within ${p.hours||24}h${t?` · form: ${esc(t.name)}`:' · no report form linked'}</span></span>
+          <span class="go-sq">›</span></div>`;}).join('')
+        ||'<div class="empty"><b>No protocols yet</b>Add one for falls, behaviour, injury — whatever your team reports.</div>'}
+    </div>
+  </section>`;
+}
 function clientIncidents(c){
   const list=visIncidents().filter(i=>i.cid===c.id);
   return `<section class="card">
@@ -5232,7 +5482,8 @@ function clientIncidents(c){
         <div class="dt"><b>${esc(i.type)}</b><span>${esc(fmtDate(i.date))}${i.time?' · '+esc(hm12(i.time)):''} · ${esc(i.status)}${(i.protoAck||[]).length?` · protocol ${(i.protoAck||[]).length} step${(i.protoAck||[]).length===1?'':'s'} signed`:''}</span></div>
         <span class="pill ${i.status==='Closed'?'ok':'warn'}">${esc(i.sev||'')}</span></div>`).join('')
         :'<div class="empty">No incidents filed for this person.</div>'}
-    </div></section>`;
+    </div></section>
+    ${protoCard()}`;
 }
 
 /* ══════════════ MEDICATIONS (agency view) ══════════════ */
@@ -5352,7 +5603,7 @@ function viewCalendar(){
       <div class="seg"><button class="${state.calMode==='today'?'active':''}" onclick="state.calMode='today';render()">Today</button>
       <button class="${state.calMode==='week'?'active':''}" onclick="state.calMode='week';render()">Week</button>
       <button class="${state.calMode==='month'?'active':''}" onclick="state.calMode='month';render()">Month</button></div>
-      <button class="gear" title="Calendars, categories and filters" onclick="calControls()">${ico('settings',17)}</button>
+      <button class="gear" title="Settings — calendars, categories, colours and names" onclick="calendarSettings()">${ico('settings',17)}</button>
       ${state.role==='director'?`<button class="btn navy" onclick="openShiftForm()">＋ Add shift</button>`:''}
       ${state.role!=='family'?'<button class="btn navy" onclick="openApptForm()">＋ Add appointment</button>':''}
     </div>
@@ -5378,8 +5629,7 @@ function listView(list){
     const rows=list.filter(a=>a.date===d);
     return `
     <div class="sec-head soft-blue">
-      <h2>${relDay(d)}</h2><p>${fmtLong(d)}</p>
-      <span class="hd-n blue">${rows.length}</span><p>appointment${rows.length===1?'':'s'}</p>
+      <h2>${relDay(d)}</h2><span class="hd-n blue">${rows.length}</span><p>${fmtLong(d)} · ${rows.length} appointment${rows.length===1?'':'s'}</p>
     </div>
     ${rows.map(a=>{
       const c=client(a.cid)||{}, tone=toneOf(a.type), col=apptColor(a);
@@ -5456,13 +5706,16 @@ function duePill(d){
   return `<span class="spill" style="${tint(c)}">${fmtDate(d)}</span>`;   // always the date, never "yesterday"
 }
 const PAGE_N=10;
-function pageOf(list,key){ const p=state['pg'+key]||0; return list.slice(p*PAGE_N,(p+1)*PAGE_N); }
+const PAGE_SIZES={note:5,cappt:6};                                   // v9.83: shorter pages where the list sits in a column
+const pageSize=key=>PAGE_SIZES[key]||PAGE_N;
+function pageOf(list,key){ const n=pageSize(key), p=state['pg'+key]||0; return list.slice(p*n,(p+1)*n); }
 function pager(total,key){
-  if(total<=PAGE_N) return '';
-  const p=state['pg'+key]||0, pages=Math.ceil(total/PAGE_N);
+  const n=pageSize(key);
+  if(total<=n) return '';
+  const p=state['pg'+key]||0, pages=Math.ceil(total/n);
   return `<div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;padding:10px 14px;border-top:1px solid var(--line)">
-    <span class="tiny muted">${p*PAGE_N+1}\u2013${Math.min(total,(p+1)*PAGE_N)} of ${total}</span>
-    <button class="btn ghost sm" ${p===0?'disabled':''} onclick="state.pg${key}=${p-1};render()">\u2039</button>
+    <span class="tiny muted">${p*n+1}\u2013${Math.min(total,(p+1)*n)} of ${total}</span>
+    <button class="btn ghost sm" ${p===0?'disabled':''} onclick="state.pg${key}=${Math.max(0,p-1)};render()">\u2039</button>
     <span class="tiny muted">${p+1} / ${pages}</span>
     <button class="btn ghost sm" ${p>=pages-1?'disabled':''} onclick="state.pg${key}=${p+1};render()">\u203a</button></div>`;
 }
@@ -5729,6 +5982,9 @@ function viewTrainHub(){
   <div class="page-hd">
     <div class="title-ic lilac">${ico('graduation-cap',20)}</div>
     <div class="title-copy"><h1>Training &amp; onboarding</h1><p>Courses, readiness guides and onboarding checklists — open one to see everything about it</p></div>
+    ${state.role==='director'?`<div class="page-acts">
+      ${state.layoutEdit?`<button class="btn gold sm" onclick="pageEdit()">✓ Done editing</button>`:''}
+      <button class="gear" title="Settings" onclick="pageSettings('trainhub')">${ico('settings',17)}</button></div>`:''}
   </div>
   <section class="card">
     <div class="sec-head soft-lilac"><h2>Training library</h2><span class="hd-n">${TRAINING.filter(t=>!hid('course',t.id)).length}</span><p>courses with links, documents and notes</p>
@@ -5740,7 +5996,7 @@ function viewTrainHub(){
         return `<div class="lrow" data-train="${t.id}" onclick="state.openTrain='${t.id}';render()">
           <span class="row-ic lilac">${ico('graduation-cap',16)}</span>
           <span class="row-copy"><strong>${esc(t.n)}</strong>
-            <span>${t.mins} min · ${done} of ${appl.length} complete${t.req?' · required for everyone':''}${t.link?' · link':''}</span></span>
+            <span>${t.desc?esc(t.desc)+' · ':''}${t.mins} min · ${done} of ${appl.length} complete${t.req?' · required for everyone':''}${t.link?' · link':''}</span></span>
           <span class="spill" style="${tint(done>=appl.length&&appl.length?'#426B5C':'#9B7936')}">${appl.length?`${done}/${appl.length}`:'unassigned'}</span>
           <span class="go-sq">${ico('arrow-up-right',15)}</span></div>`;
       }).join('')||'<div class="empty">No courses yet.</div>'}
@@ -5864,7 +6120,9 @@ function trainDetail(tid){
   <button class="btn ghost sm" style="margin-bottom:10px" onclick="state.openTrain='';render()">← All training</button>
   <div class="page-hd">
     <div class="title-ic lilac">${ico('graduation-cap',20)}</div>
-    <div class="title-copy"><h1>${esc(t.n)}</h1><p>${t.mins} min${t.req?' · required for everyone':''}${t.due?' · due '+esc(t.due):''} · ${done.length} of ${appl.length} complete</p></div>
+    <div class="title-copy"><h1>${esc(t.n)}</h1>
+      <p>${t.desc?esc(t.desc):`${t.mins} min${t.req?' · required for everyone':''}${t.due?' · due '+esc(t.due):''} · ${done.length} of ${appl.length} complete`}${state.role==='director'?` <button class="btn ghost sm ed-only" title="Edit this description" onclick="courseForm('${t.id}')">✎</button>`:''}</p>
+      ${t.desc?`<p class="tiny muted" style="margin-top:2px">${t.mins} min${t.req?' · required for everyone':''}${t.due?' · due '+esc(t.due):''} · ${done.length} of ${appl.length} complete</p>`:''}</div>
     ${state.role==='director'?`<div class="page-acts">
       <button class="btn ghost sm" onclick="assignTraining('${t.id}')">Assign</button>
       <button class="btn ghost sm" onclick="courseRemind('${t.id}')">Remind outstanding</button>
@@ -5951,7 +6209,10 @@ function viewTeam(){
   return `
   <div class="page-h">
     <div><h1>Team</h1><div class="sub">${visibleStaff().length} staff · training status and onboarding</div></div>
-    <div class="right"><button class="btn ghost" onclick="openShiftForm()">＋ Add shift</button>
+    <div class="right">
+      ${(state.role==='director'&&state.layoutEdit)?`<button class="btn gold" onclick="pageEdit()">✓ Done editing</button>`:''}
+      ${state.role==='director'?`<button class="gear" title="Settings" onclick="pageSettings('team')" style="margin-right:6px">${ico('settings',17)}</button>`:''}
+      <button class="btn ghost" onclick="openShiftForm()">＋ Add shift</button>
       <button class="btn navy" onclick="openStaffForm()">＋ Add staff</button></div>
   </div>
 
@@ -6152,6 +6413,8 @@ function viewStaffPage(){
       ${state.role==='director'?`<button class="btn ghost" onclick="openShiftForm(null,'${sid}')">＋ Shift</button>`:''}
       ${state.role==='director'?`<button class="btn ghost" onclick="openStaffForm('${sid}')">✎ Edit details</button>`:''}
       ${state.role==='director'?`<button class="btn ghost" onclick="accessForm('${sid}')">Client access</button>`:''}
+      ${(state.role==='director'&&state.layoutEdit)?`<button class="btn gold" onclick="pageEdit()">✓ Done editing</button>`:''}
+      ${state.role==='director'?`<button class="gear" title="Settings" onclick="pageSettings('staffpage')">${ico('settings',17)}</button>`:''}
       <button class="btn navy" onclick="reminderForm('${sid}')">Send reminder</button></div></div>
   ${staffPageBody(sid)}`;
 }
@@ -6252,7 +6515,10 @@ async function uploadStaffDocGo(sid){
   const cat=el('sdCat').value||'Certification';
   const name=/\.[a-z0-9]{2,5}$/i.test(title)?title:title+(f?('.'+(f.name.split('.').pop()||'pdf')):'.pdf');
   let url='',path='';
-  if(f){ try{ const up=await sbUpload(`creds/${sid}/${Date.now()}_${f.name}`,f)||{}; url=up.url||''; path=up.path||''; }catch(e){} }
+  if(f){ try{                                                        // sbUpload returns the url; the path is what we file
+    path=`creds/${sid}/${Date.now()}_${f.name.replace(/[^A-Za-z0-9._-]/g,'_')}`;
+    url=await sbUpload(path,f)||''; if(!url) path='';
+  }catch(e){ url=''; path=''; } }
   const rec={id:'sd'+Date.now(),cid:sid,n:name,cat,by:meInit(),at:T,s:f?Math.max(1,Math.round(f.size/1024))+' KB':'—',url,path};
   DOCS.unshift(rec);
   sbPush('np_demo_documents',{cid:sid,n:name,cat,uploaded_by:rec.by,doc_date:T,size:rec.s,url,storage_path:path});
@@ -6424,6 +6690,8 @@ function courseForm(tid){
   const t=TRAINING.find(x=>x.id===tid); if(!t) return;
   openModal('Edit course',`
     <div class="field"><label>Course name</label><input class="inp" id="ceN" value="${esc(t.n)}"></div>
+    <div class="field"><label>Description <span class="tiny muted">— replaces the line under the title</span></label>
+      <input class="inp" id="ceD" value="${esc(t.desc||'')}" placeholder="e.g. Annual refresher — required before handling medications"></div>
     <div class="row2">
       <div class="field"><label>Length (minutes)</label><input class="inp" type="number" id="ceM" value="${t.mins}"></div>
       <div class="field"><label>External link (optional)</label><input class="inp" id="ceL" value="${esc(t.link||'')}" placeholder="https://…"></div>
@@ -6435,6 +6703,7 @@ function saveCourseEdit(tid){
   const t=TRAINING.find(x=>x.id===tid); if(!t) return;
   const n=(el('ceN').value||'').trim(); if(!n) return toast('Name the course.');
   t.n=n; t.mins=+el('ceM').value||t.mins; t.link=(el('ceL').value||'').trim(); t.req=el('ceR').checked;
+  if(el('ceD')) t.desc=(el('ceD').value||'').trim();
   trainSave(); logAudit('Edited training course',n);
   closeAll(); render(); toast('Course updated.');
 }
@@ -6530,7 +6799,7 @@ function removeCred(sid,i){
   const c=(CREDS[sid]||[])[i]; if(!c) return;
   CREDS[sid].splice(i,1);
   if(c.dbId!=null) sbDel('np_demo_credentials','id=eq.'+encodeURIComponent(c.dbId));
-  if(c.doc&&c.doc.path&&sbOn()) fetch(`${BACKEND.url}/storage/v1/object/np-demo-docs/${c.doc.path}`,{method:'DELETE',headers:sbH()}).catch(()=>{});
+  if(c.doc&&c.doc.path&&sbOn()) fetch(`${BACKEND.url}/storage/v1/object/np-demo-docs/${orgPath(c.doc.path)}`,{method:'DELETE',headers:sbH()}).catch(()=>{});
   logAudit('Removed certification',`${staff(sid).init} · ${c.c}`);
   openStaff(sid); render(); toast('Certification removed.');
 }
@@ -6683,6 +6952,17 @@ function delDoc(cid,name){
     logAudit('Deleted document',`${name}${cid?' · '+client(cid).uci:''}`);
     render(); toast('Document deleted.');
   },'Delete document');
+}
+function tplRename(tid){
+  const t=TEMPLATES5.find(x=>x.id===tid); if(!t) return;
+  const v=prompt('Rename this template:',t.name);
+  if(v===null) return;
+  const n=v.trim(); if(!n) return toast('The template needs a name.');
+  if(n===t.name) return;
+  const old=t.name; t.name=n;
+  sbUpsert('np_demo_templates',{id:t.id,name:n,fields:t.fields,dest:t.dest||null,sub:t.sub||null,descr:t.desc||null,updated_at:new Date().toISOString()});
+  logAudit('Renamed template',`${old} → ${n}`);
+  render(); toast('Template renamed everywhere it is used.');
 }
 function delTemplate(tid){
   const t=TEMPLATES5.find(x=>x.id===tid); if(!t) return;
@@ -7085,7 +7365,7 @@ function delSignedLog(id){
   askDelete('Delete this signed log?',`${r.name} · ${fmtDate(r.from)}–${fmtDate(r.to)}`,()=>{
     SIGNED_LOGS=SIGNED_LOGS.filter(x=>x.id!==id);
     sbDel('np_demo_signed_logs','id=eq.'+encodeURIComponent(id));
-    if(r.path&&sbOn()) fetch(`${BACKEND.url}/storage/v1/object/np-demo-docs/${r.path}`,{method:'DELETE',headers:sbH()}).catch(()=>{});
+    if(r.path&&sbOn()) fetch(`${BACKEND.url}/storage/v1/object/np-demo-docs/${orgPath(r.path)}`,{method:'DELETE',headers:sbH()}).catch(()=>{});
     logAudit('Deleted a signed log',`${r.name} · ${fmtDate(r.from)}–${fmtDate(r.to)}`);
     render(); toast('Signed log removed.');
   },'Delete');
@@ -7191,6 +7471,37 @@ function binderRenameInline(key,v){
   const n=(v||'').trim(); if(!n) return;
   FOLDER_NAMES[key]=n; bindersSave(); logAudit('Renamed binder',n); renderNav();
 }
+let tplDrag=null;
+document.addEventListener('dragstart',e=>{ const r=e.target.closest&&e.target.closest('[data-tpl]'); if(r){ tplDrag=r.getAttribute('data-tpl'); r.style.opacity='.5'; } });
+document.addEventListener('dragend',e=>{ const r=e.target.closest&&e.target.closest('[data-tpl]'); if(r) r.style.opacity=''; });
+document.addEventListener('dragover',e=>{ if(tplDrag&&e.target.closest&&e.target.closest('[data-tpl]')) e.preventDefault(); });
+document.addEventListener('drop',e=>{
+  const r=e.target.closest&&e.target.closest('[data-tpl]'); if(!tplDrag||!r) return;
+  e.preventDefault();
+  const to=r.getAttribute('data-tpl'), from=tplDrag; tplDrag=null; if(from===to) return;
+  const fi=TEMPLATES5.findIndex(t=>t.id===from), ti=TEMPLATES5.findIndex(t=>t.id===to);
+  if(fi<0||ti<0) return;
+  TEMPLATES5.splice(ti,0,TEMPLATES5.splice(fi,1)[0]);
+  sbUpsert('np_demo_program',{key:'tplorder',value:{ids:TEMPLATES5.map(t=>t.id)},updated_by:auditActor()});
+  logAudit('Reordered templates','');
+  render();
+});
+let subDrag=null;
+document.addEventListener('dragstart',e=>{ const r=e.target.closest&&e.target.closest('[data-sub]'); if(r){ subDrag=r.getAttribute('data-sub'); r.style.opacity='.5'; } });
+document.addEventListener('dragend',e=>{ const r=e.target.closest&&e.target.closest('[data-sub]'); if(r) r.style.opacity=''; });
+document.addEventListener('dragover',e=>{ if(subDrag&&e.target.closest&&e.target.closest('[data-sub]')) e.preventDefault(); });
+document.addEventListener('drop',e=>{
+  const r=e.target.closest&&e.target.closest('[data-sub]'); if(!subDrag||!r) return;
+  e.preventDefault();
+  const [bk,to]=r.getAttribute('data-sub').split('::'); const from=subDrag.split('::')[1]; subDrag=null;
+  if(from===to) return;
+  const list=(SUB_BINDERS[bk]&&SUB_BINDERS[bk].length)?SUB_BINDERS[bk].slice():subsOf(bk).slice();
+  const fi=list.indexOf(from), ti=list.indexOf(to); if(fi<0||ti<0) return;
+  list.splice(ti,0,list.splice(fi,1)[0]);
+  SUB_BINDERS[bk]=list; subBindersSave();
+  logAudit('Reordered sub-folders',(FOLDER_NAMES[bk]||bk)+' · '+list.join(' · '));
+  render();
+});
 let binderDrag=null;
 document.addEventListener('dragstart',e=>{
   const row=e.target.closest&&e.target.closest('[data-bkey]');
@@ -7301,7 +7612,10 @@ function viewForms(){
   <div class="page-hd">
     <div class="title-ic honey">${ico('file-text',20)}</div>
     <div class="title-copy"><h1>Templates</h1><p>The blank forms the agency works from — open one to fill it in, assign it or print it</p></div>
-    ${state.role==='director'?`<div class="page-acts"><button class="btn navy" onclick="openTplEditor()">＋ Add new template</button></div>`:''}
+    ${state.role==='director'?`<div class="page-acts">
+      ${state.layoutEdit?`<button class="btn gold sm" onclick="pageEdit()">✓ Done editing</button>`:''}
+      <button class="gear" title="Settings" onclick="pageSettings('forms')">${ico('settings',17)}</button>
+      <button class="btn navy" onclick="openTplEditor()">＋ Add new template</button></div>`:''}
   </div>
   ${binderKeys().concat(['']).map(bk=>{
     const blanks=bk?binderBlankForms(bk):[];
@@ -7311,7 +7625,7 @@ function viewForms(){
     const title=bk?(FOLDER_NAMES[bk]||bk)+' templates':'Other templates';
     return `<section class="card">
     <div class="sec-head ${bk==='Agency'?'soft-sage':bk==='Medical'?'soft-blue':bk==='Daily'?'soft-honey':'soft-lilac'}">
-      <h2>${esc(title)}</h2><span class="hd-n ${bk==='Medical'?'blue':bk==='Daily'?'honey':'sage'}">${list.length+blanks.length}</span>
+      <h2>${esc(title)}${state.role==='director'&&bk?` <button class="btn ghost sm ed-only" title="Rename this binder — the title changes everywhere" onclick="renameBinder('${bk}')" style="vertical-align:middle">✎</button>`:''}</h2><span class="hd-n ${bk==='Medical'?'blue':bk==='Daily'?'honey':'sage'}">${list.length+blanks.length}</span>
       <p>${subs.length?esc(subs.join(', ')):'blank forms and fillable templates'}</p>
       ${state.role==='director'&&bk?`<button class="btn ghost sm head-act" onclick="libUpload('${bk}','forms')">＋ Upload form</button>`:''}
     </div>
@@ -7319,8 +7633,8 @@ function viewForms(){
       ${list.map(t=>{
         const asg=(TPL_ASSIGN[t.id]||[]), open=state.openTpl===t.id;
         const lk=Object.keys(PROTOCOLS).filter(pk=>PROTOCOLS[pk]&&PROTOCOLS[pk].tpl===t.id);
-        return `<div class="lrow" onclick="state.openTpl=state.openTpl==='${t.id}'?'':'${t.id}';render()">
-          <span class="row-ic honey">❏</span>
+        return `<div class="lrow" ${state.docEdit?`draggable="true" data-tpl="${t.id}"`:''} onclick="${state.docEdit?'':`state.openTpl=state.openTpl==='${t.id}'?'':'${t.id}';render()`}">
+          <span class="row-ic honey">${state.docEdit?'⠿':'❏'}</span>
           <span class="row-copy"><strong>${esc(t.name)}</strong>
             <span>${t.fields.length} fields · files to ${esc(FOLDER_NAMES[normBinder(t.dest||'Agency').b]||'Agency binder')}${t.sub?' / '+esc(t.sub):''}${asg.length?` · assigned to ${asg.map(id=>(staff(id)||{}).init||'').join(', ')}`:''}${lk.length?` · ⚠ ${lk.map(esc).join(', ')} report form`:''}</span></span>
           <span class="go-sq">${open?'▾':ico('arrow-up-right',15)}</span></div>
@@ -7328,6 +7642,7 @@ function viewForms(){
           <button class="btn navy sm" onclick="tplOpenDoc('${t.id}')">Open &amp; fill</button>
           ${state.role==='director'?`<button class="btn ghost sm" onclick="tplGenerate('${t.id}')">Fill &amp; send to…</button>
           <button class="btn gold sm" onclick="openTplEditor('${t.id}')">Edit template</button>
+          <button class="btn ghost sm" onclick="tplRename('${t.id}')">✎ Rename</button>
           <button class="btn ghost sm" onclick="tplAssign('${t.id}')">Assign to staff</button>`:''}
           <button class="btn ghost sm" onclick="logAudit('Printed template',tplById('${t.id}').name);docAct('printed',tplById('${t.id}').name,'Templates');printSheet(tplPrintHtml('${t.id}'))">Print blank</button>
           ${state.role==='director'?`<button class="btn ghost sm" onclick="delTemplate('${t.id}')" title="Delete">✕ Delete</button>`:''}
@@ -7336,6 +7651,7 @@ function viewForms(){
       ${blanks.map(fl=>libRowHtml(fl,bk)).join('')}
     </div>
   </section>`; }).join('')}
+  ${protoCard()}
   ${docActCard()}`;
 }
 function staffPacket(sid){
@@ -7998,7 +8314,13 @@ let inspRun=null;         // active runner: {tid,preview,resp:{qid:{v,score,note
 function inspTpl(id){ return INSP_TEMPLATES.find(t=>t.id===id); }
 function inspScore(run){
   const t=inspTpl(run.tid); let num=0,den=0;
-  t.questions.forEach(q=>{ if(FREE_TYPES[q.type]) return; den++; const r=run.resp[q.id]; if(r&&r.v!=null) num+=r.score; });
+  /* v9.84: a scale answer restored from an older run, or set without its score, used to
+     poison the whole total with NaN — fall back to the scale's own value for that label. */
+  t.questions.forEach(q=>{ if(FREE_TYPES[q.type]) return; den++;
+    const r=run.resp[q.id]; if(!r||r.v==null||r.v==='') return;
+    let sc=+r.score;
+    if(!isFinite(sc)){ const hit=(INSP_SCALES[q.type]||[]).find(([lb])=>lb===r.v); sc=hit?+hit[1]:0; }
+    num+=isFinite(sc)?sc:0; });
   return {num, den, pct: den?Math.round(num/den*100):0};
 }
 function startInspection(tid,preview){
@@ -8075,14 +8397,17 @@ function renderInspRunner(){
         value="${esc(r.v!=null?String(r.v):'')}" placeholder="${q.type==='num'?'e.g. 116':''}" oninput="inspSetVal('${q.id}',this.value)">
         ${rng===false?'<span class="spill rose" style="margin-left:8px">Out of range</span>':rng===true?'<span class="spill" style="margin-left:8px">In range</span>':''}`;
     } else if(q.type==='choice'){
-      control=(q.opts||['Yes','No']).map(o=>`<button class="btn ${r.v===o?'navy':'ghost'} sm" onclick="inspSetVal('${q.id}','${esc(o)}')">${esc(o)}</button>`).join(' ');
+      control=(q.opts||['Yes','No']).map(o=>`<button class="btn ${r.v===o?(inspFlagged(q,o)?'danger':'navy'):'ghost'} sm" onclick="inspSetVal('${q.id}','${esc(o)}')">${esc(o)}</button>`).join(' ')
+        +(inspFlagged(q,r.v)?'<span class="spill rose" style="margin-left:8px">Out of range</span>':(r.v?'<span class="spill" style="margin-left:8px">In range</span>':''));
     } else if(q.type==='drop'){
-      control=`<select class="inp" style="max-width:260px" onchange="inspSetVal('${q.id}',this.value)">
-        <option value="">— pick one —</option>${(q.opts||[]).map(o=>`<option ${r.v===o?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+      control=`<select class="inp" style="max-width:260px;${inspFlagged(q,r.v)?'border-color:var(--bad);color:var(--bad)':''}" onchange="inspSetVal('${q.id}',this.value)">
+        <option value="">— pick one —</option>${(q.opts||[]).map(o=>`<option ${r.v===o?'selected':''}>${esc(o)}</option>`).join('')}</select>
+        ${inspFlagged(q,r.v)?'<span class="spill rose" style="margin-left:8px">Out of range</span>':''}`;
     } else if(q.type==='check'){
       const on=(r.v||'').split('|').filter(Boolean);
-      control=(q.opts||[]).map(o=>`<label class="checkrow" style="cursor:pointer;display:inline-flex;margin:0 6px 6px 0;padding:5px 9px">
-        <input type="checkbox" ${on.includes(o)?'checked':''} onchange="inspToggleOpt('${q.id}','${esc(o)}')" style="margin-right:6px">${esc(o)}</label>`).join('');
+      control=(q.opts||[]).map(o=>`<label class="checkrow" style="cursor:pointer;display:inline-flex;margin:0 6px 6px 0;padding:5px 9px;${on.includes(o)&&inspFlagged(q,o)?'border-color:var(--bad);color:var(--bad)':''}">
+        <input type="checkbox" ${on.includes(o)?'checked':''} onchange="inspToggleOpt('${q.id}','${esc(o)}')" style="margin-right:6px">${esc(o)}</label>`).join('')
+        +(on.some(o=>inspFlagged(q,o))?'<span class="spill rose" style="margin-left:8px">Out of range</span>':'');
     } else {
       const scale=INSP_SCALES[q.type]||INSP_SCALES.yn;               // unknown type must not blank the page
       control=`<div style="display:flex;gap:10px;flex-wrap:wrap">${scale.map(([lb,val])=>{
@@ -8135,12 +8460,40 @@ function completeInspection(){
   const id='insp-done-'+Date.now();
   const title=`${t.name} — ${fmtDate(T)}`;
   INSP_DONE.unshift(Object.assign({id,filed:title+'.pdf'},snap));
+  if(t.builtin) builtinLogRecord(t,snap);                            // v9.84: keeps the drill and temperature history filling
   autoFileLog(t.folder, title, `Inspection · score ${snap.num}/${snap.den} (${snap.pct}%) · by ${meInit()}`, null);
   sbPush('np_demo_inspections',{id, kind:'completed', template_id:t.id, title, folder:t.folder, score_num:snap.num, score_den:snap.den, responses:snap.responses, created_by:ME[state.role].name});
   docAct('generated',title,FOLDER_NAMES[t.folder]||t.folder);
   logAudit('Completed inspection',`${t.name} · ${snap.num}/${snap.den}`);
   closeInspRunner(); go('safety');
   toast(`Inspection filed to ${FOLDER_NAMES[t.folder]||t.folder} — ${snap.num}/${snap.den} (${snap.pct}%).`);
+}
+/* v9.84: the drill and temperature logs are ordinary forms now, but their history tables
+   and the weekly counters still read FIREDRILLS and WATERTEMP. Completing one writes a row
+   there as well, matched on the line labels, so nothing on the Safety page goes quiet. */
+function builtinLogRecord(t,snap){
+  const find=(...words)=>{
+    const r=snap.responses.find(x=>words.some(w=>String(x.label||'').toLowerCase().includes(w)));
+    return r?String(r.v||'').trim():'';
+  };
+  const num=v=>{ const n=parseFloat(String(v).replace(/[^\d.\-]/g,'')); return isFinite(n)?n:null; };
+  const home=find('home')||HOMES[0]||'';
+  if(t.builtin==='temps'){
+    const water=num(find('fixture','kitchen','water','sink'));
+    if(water==null) return;
+    const w={date:T,home,temp:water,fridge:num(find('refrigerator','fridge')),freezer:num(find('freezer')),by:meInit(),wet:0};
+    WATERTEMP.unshift(w);
+    sbPush('np_demo_water_temps',{reading_date:w.date,home:w.home,temp:w.temp,fridge:w.fridge,freezer:w.freezer,recorded_by:w.by,wet:0});
+    notifyRule('temp','Water temperature logged',`${w.home} · ${w.temp}°F${w.temp<=TEMP_LIMIT?' · in range':' · OVER LIMIT'}`);
+    const it=CHECKLIST[2].items.find(i=>i.t.includes('Water temperature')); if(it){ it.s='ok'; it.d='Current'; }
+    logAudit('Logged water temperature',`${w.home} · ${w.temp}°F`);
+  } else if(t.builtin==='drills'){
+    const d={date:T,time:find('time')||nowHM(),home,shift:find('shift')||'Day',evac:find('evacuation')||'—',by:meInit(),wet:0};
+    FIREDRILLS.unshift(d);
+    sbPush('np_demo_fire_drills',{drill_date:d.date,drill_time:d.time,home:d.home,shift:d.shift,evac:d.evac,conducted_by:d.by,wet:0});
+    const it=CHECKLIST[2].items.find(i=>i.t.includes('fire drill')); if(it){ it.s='ok'; it.d='Logged '+fmtDate(d.date); }
+    logAudit('Logged fire drill',d.home);
+  }
 }
 function inspObsBlock(sn){ return sn&&sn.obs?`<p><b>General observation.</b> ${esc(sn.obs)}</p>`:''; }
 function inspSheet(snap){
@@ -8159,24 +8512,6 @@ const BUILTIN_LOG_SEED={
   drills:{name:'Fire drill log',folder:'Daily',desc:'Monthly drill record per home',perWeek:1,
     lines:[['Home','text'],['Shift','text'],['Time started','time'],['Evacuation time (minutes)','num'],['All residents accounted for','yn'],['Issues observed','text']]}
 };
-function builtinLogConvert(kind){
-  const seed=BUILTIN_LOG_SEED[kind]; if(!seed) return;
-  const existing=INSP_TEMPLATES.find(t=>t.builtin===kind);
-  if(existing){ editLogType(existing.id); return; }
-  askDelete(`Make the ${seed.name.toLowerCase()} configurable?`,
-    'It becomes an ordinary log: add, remove and reorder its lines, set each line\u2019s answer type and how many times a week it is required. Existing readings stay on this page as history.',
-    ()=>{
-      const t={id:'insp-'+kind+'-'+Date.now(), name:seed.name, folder:seed.folder, desc:seed.desc,
-        perWeek:seed.perWeek, obs:true, builtin:kind,
-        questions:seed.lines.map(([l,ty],i)=>({id:'q'+i,label:l,type:ty,req:false,perWeek:i===0?0:seed.perWeek}))};
-      INSP_TEMPLATES.push(t); unhide('insp',String(t.id));
-      sbUpsert('np_demo_inspections',{id:t.id,kind:'template',template_id:t.id,title:t.name,folder:t.folder,
-        questions:t.questions,per_week:t.perWeek,has_obs:true,created_by:ME[state.role].name});
-      logAudit('Converted a built-in log',seed.name);
-      closeAll(); render(); toast(`${seed.name} is now configurable — edit its lines any time.`);
-      setTimeout(()=>editLogType(t.id),200);
-    },'Convert');
-}
 function logOpen(kind){ state.logPane=kind; state.logPick=[]; render(); setTimeout(()=>{ const n=el('logPane'); if(n) n.scrollIntoView({block:'start',behavior:'smooth'}); },60); }
 function logPickToggle(k){ state.logPick=state.logPick||[]; const i=state.logPick.indexOf(k); if(i>-1) state.logPick.splice(i,1); else state.logPick.push(k); render(); }
 function logPickAll(rows,on){ state.logPick=on?rows.map(r=>r.k):[]; render(); }
@@ -8198,8 +8533,11 @@ function logPaneCard(){
         <button class="btn ghost sm" onclick="logPickAll(${JSON.stringify(rows.map(r=>({k:r.k}))).replace(/"/g,'&quot;')},true)">Select all</button>
         <button class="btn ghost sm" onclick="logPickAll([],false)">Clear</button>
         <button class="btn navy sm" onclick="logPrintPicked('${kind}')">🖨 Print ${picked.length||'all'}</button>
+        <button class="btn ghost sm" onclick="${kind==='drills'?"logAudit('Printed fire drill log','All homes');printSheet(drillSheet())":"logAudit('Printed water temp log','All homes');printSheet(tempSheet())"}">Print for wet signatures</button>
+        ${(state.role==='director'&&kind==='temps')?`<button class="btn ghost sm" onclick="setTempLimit()">⚙ Edit limit</button>`:''}
+        ${state.role==='director'?`<button class="btn ghost sm" onclick="fileSafetyReport('${kind==='drills'?'drill':'temp'}')">File week to binder</button>`:''}
         ${state.role==='director'?`<button class="btn ghost sm" onclick="logToBinder('${kind==='signed'?'temps':kind}')">⇩ File to binder</button>
-        <button class="gear sm" title="Edit this log's lines" onclick="builtinLogConvert('${kind==='signed'?'temps':kind}')">${ico('settings',14)}</button>`:''}
+        <button class="gear sm" title="Edit this log's lines" onclick="editBuiltinLog('${kind==='signed'?'temps':kind}')">${ico('settings',14)}</button>`:''}
         <button class="btn ghost sm" onclick="state.logPane='';render()">✕ Close</button></div></div>
     <div class="card-b flush">${rows.map(r=>`
       <div class="lrow" style="align-items:flex-start">
@@ -8319,10 +8657,11 @@ function drawInspTemplateForm(){
   <div id="formFull" style="position:fixed;inset:0;background:rgba(20,32,28,.45);z-index:220;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:4vh 16px">
     <div style="background:var(--white);border-radius:18px;max-width:940px;width:100%;padding:28px 30px;box-shadow:0 24px 70px rgba(0,0,0,.25)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <h2 style="margin:0">${window._inspEditing?'Edit form':'New form'}</h2>
+        <h2 style="margin:0">${window._inspEditing?'Edit form':'New log or inspection'}</h2>
         <button class="icon-btn" onclick="el('formFull').remove()">✕</button>
       </div>
-      <div class="field"><label>Form title</label><input class="inp" id="itName" value="${esc(d.name)}" placeholder="e.g. Kitchen hygiene walkthrough" oninput="window._inspDraft.name=this.value" style="font-size:17px;font-weight:700"></div>
+      <div class="tiny muted" style="margin-bottom:10px">Build it line by line. Every line picks its own type — a scale, a number with an in-range band, multiple choice, a dropdown, a checklist, a date, a time, free text or a section heading — and names the answers that should flag red. Set times per week to turn it into a weekly log with its own tracker.</div>
+      <div class="field"><label>Title</label><input class="inp" id="itName" value="${esc(d.name)}" placeholder="e.g. Kitchen hygiene walkthrough" oninput="window._inspDraft.name=this.value" style="font-size:17px;font-weight:700"></div>
       <div class="row2">
         <div class="field"><label>Files completed reports to</label><select class="inp" onchange="window._inspDraft.folder=this.value">${binderKeys().map(k=>`<option value="${k}" ${d.folder===k?'selected':''}>${esc(FOLDER_NAMES[k])}</option>`).join('')}</select></div>
         <div class="field"><label>Short description</label><input class="inp" value="${esc(d.desc||'')}" oninput="window._inspDraft.desc=this.value" placeholder="What this form checks"></div>
@@ -8356,7 +8695,12 @@ function inspQRows(){
   </div>
   ${['choice','drop','check'].includes(q.type)?`<div style="display:flex;gap:6px;margin:-2px 0 8px 0">
     <input class="inp" style="flex:1;height:32px" placeholder="Options, comma separated — e.g. Pass, Needs work, Not applicable"
-      value="${esc((q.opts||[]).join(', '))}" oninput="window._inspDraft.questions[${i}].opts=this.value.split(',').map(x=>x.trim()).filter(Boolean)"></div>`:''}
+      value="${esc((q.opts||[]).join(', '))}" oninput="window._inspDraft.questions[${i}].opts=this.value.split(',').map(x=>x.trim()).filter(Boolean);inspQRefresh()"></div>
+    ${(q.opts||[]).length?`<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:-2px 0 8px 0">
+      <span class="tiny muted" style="width:96px">Flag in red</span>
+      ${(q.opts||[]).map(o=>`<button class="btn ${(q.flag||[]).includes(o)?'danger':'ghost'} sm" title="Tick the answers that should show as out of range"
+        onclick="inspFlagToggle(${i},'${esc(o)}')">${esc(o)}</button>`).join('')}
+      <span class="tiny muted">picked answers show red on the filled form</span></div>`:''}`:''}
   ${q.type==='num'?`<div style="display:flex;gap:6px;align-items:center;margin:-2px 0 8px 0">
     <span class="tiny muted" style="width:96px">In range if</span>
     <input class="inp" type="number" style="width:92px;height:32px" placeholder="min" value="${q.min!=null?q.min:''}"
@@ -8370,6 +8714,14 @@ function inspQRows(){
       value="${esc(q.note||'')}" oninput="window._inspDraft.questions[${i}].note=this.value"></div>`:''}`).join('');
 }
 function inspQRefresh(){ el('itQs').innerHTML=inspQRows(); }
+/* v9.84: colour criteria aren't only for numbers. Any choice, dropdown or checklist
+   line can name the answers that mean "out of range", and they render red when picked. */
+function inspFlagToggle(i,opt){
+  const q=window._inspDraft.questions[i]; q.flag=q.flag||[];
+  const j=q.flag.indexOf(opt); if(j>-1) q.flag.splice(j,1); else q.flag.push(opt);
+  inspQRefresh();
+}
+const inspFlagged=(q,v)=>!!(q&&(q.flag||[]).length&&v&&(q.flag||[]).includes(v));
 function inspQAdd(){ window._inspDraft.questions.push({id:'q'+(Date.now()%100000),label:'',type:'cnc',perWeek:0}); inspQRefresh(); }
 function inspQDel(i){ window._inspDraft.questions.splice(i,1); inspQRefresh(); }
 function inspQMove(i,dir){ const qs=window._inspDraft.questions; const j=i+dir; if(j<0||j>=qs.length) return; const t=qs[i]; qs[i]=qs[j]; qs[j]=t; inspQRefresh(); }
@@ -8401,7 +8753,9 @@ function viewSafety(){
     <div class="title-copy"><h1>Safety log</h1><p>Inspections, drills, temperatures and certification expiries — open any log to work in it</p></div>
     <div class="page-acts">
       <div class="seg">${[['','This week'],['hist','History (3 months)']].map(([v,l])=>`<button class="${(state.safeRange||'')===v?'active':''}" onclick="state.safeRange='${v}';render()">${l}</button>`).join('')}</div>
-      ${state.role==='director'?`<button class="gear" title="Safety log settings" onclick="safetySettings()">${ico('settings',17)}</button>`:''}
+      ${(state.role==='director'&&state.layoutEdit)?`<button class="btn gold sm" onclick="pageEdit()">✓ Done editing</button>`:''}
+      ${state.role==='director'?`<button class="btn ghost sm" onclick="openInspTemplateForm()">＋ New log or inspection</button>`:''}
+      ${state.role==='director'?`<button class="gear" title="Settings" onclick="pageSettings('safety')">${ico('settings',17)}</button>`:''}
     </div>
   </div>
 
@@ -8447,9 +8801,8 @@ function viewSafety(){
         ${FIREDRILLS.every(d=>new Date(d.date).getMonth()!==TODAY.getMonth())?`<div class="sec-note" style="background:var(--bad-soft);border-color:#F0CBC7;color:#8C312B;margin:12px 14px"><span>⚠</span><div><b>No drill logged this month</b>A monthly drill is required per home.</div></div>`:''}
         <table class="tb"><thead><tr><th>Date</th><th>Home</th><th>Shift</th><th>Evacuation</th><th>By</th><th></th></tr></thead>
         <tbody>${FIREDRILLS.map((d,i)=>({d,i})).filter(x=>!hid('drill',drillKey(x.d))&&(state.safeRange==='hist'?x.d.date>=iso(addDays(TODAY,-90)):inWeek(x.d.date))).map(({d,i})=>`<tr><td>${fmtDate(d.date)}<div class="tiny muted">${hm12(d.time)}</div></td><td>${esc(d.home)}</td><td>${esc(d.shift)}</td><td>${esc(d.evac)}</td><td>${esc(d.by)}</td>
-        <td style="text-align:right"><button class="btn ghost sm" onclick="editDrill(${i})">Edit</button>${state.role==='director'?`<button class="btn ghost sm" onclick="delDrill(${i})" title="Delete">✕</button>`:''}</td></tr>`).join('')}</tbody></table>
-        <div style="padding:12px 16px"><button class="btn ghost sm" onclick="logAudit('Printed fire drill log','All homes');printSheet(drillSheet())">Print for wet signatures</button>
-        ${state.role==='director'?`<button class="btn ghost sm" onclick="fileSafetyReport('drill')">File week to binder</button>`:''}</div>
+        <td style="text-align:right" class="tiny muted">›</td></tr>`).join('')}</tbody></table>
+        <div class="log-hint" onclick="logOpen('drills')">Open the log to edit an entry, comment on it, print or file the week.</div>
       </div>
     </section>`}
     ${(()=>{const wl=INSP_TEMPLATES.filter(t=>!hid('insp',String(t.id||t.name))&&(t.perWeek||0)>0);
@@ -8472,11 +8825,8 @@ function viewSafety(){
       <div class="card-b flush">
         <table class="tb"><thead><tr><th>Date</th><th>Home</th><th>Temp</th><th>By</th><th></th></tr></thead>
         <tbody>${WATERTEMP.map((w,i)=>({w,i})).filter(x=>!hid('temp',tempKey(x.w))&&(state.safeRange==='hist'?x.w.date>=iso(addDays(TODAY,-90)):inWeek(x.w.date))).slice(0,30).map(({w,i})=>`<tr><td>${relDay(w.date)}</td><td>${esc(w.home)}</td><td><b>${w.temp}°F</b></td><td>${w.by}</td>
-        <td style="text-align:right"><span class="pill ${w.temp<=TEMP_LIMIT?'ok':'bad'}">${w.temp<=TEMP_LIMIT?'In range':'Over '+TEMP_LIMIT+'°F'}</span> <button class="btn ghost sm" onclick="editTemp(${i})">Edit</button>${state.role==='director'?`<button class="btn ghost sm" onclick="delTemp(${i})" title="Delete">✕</button>`:''}</td></tr>`).join('')}</tbody></table>
-        <div style="padding:12px 16px;display:flex;gap:8px;align-items:center"><button class="btn ghost sm" onclick="logAudit('Printed water temp log','All homes');printSheet(tempSheet())">Print for wet signatures</button>
-        <span class="tiny muted">Limit ${TEMP_LIMIT}°F at fixtures</span>
-        ${state.role==='director'?`<button class="btn ghost sm" onclick="setTempLimit()">⚙ Edit limit</button>
-        <button class="btn ghost sm" onclick="fileSafetyReport('temp')">File week to binder</button>`:''}</div>
+        <td style="text-align:right"><span class="pill ${w.temp<=TEMP_LIMIT?'ok':'bad'}">${w.temp<=TEMP_LIMIT?'In range':'Over '+TEMP_LIMIT+'°F'}</span></td></tr>`).join('')}</tbody></table>
+        <div class="log-hint" onclick="logOpen('temps')">Limit ${TEMP_LIMIT}°F at fixtures · open the log to edit a reading, change the limit, print or file the week.</div>
       </div>
     </section>`}
   </div>
@@ -8539,45 +8889,33 @@ function saveTempEdit(i){
   sbPush('np_demo_water_temps',{reading_date:w.date,home:w.home,location:w.loc||'',temp:w.temp,recorded_by:w.by||meInit()});
   logAudit('Edited water temp entry',w.home+' · '+w.temp+'°F'); closeAll(); render(); toast('Reading updated.');
 }
-function openDrillForm(){ openModal('Log a fire drill',`
-  <div class="row2">
-    <div class="field"><label>Home</label>${homeField('fdHome','')}</div>
-    <div class="field"><label>Shift</label>${fillSelect('fdShift','shift',['Day','Evening','Overnight'],'Day')}</div>
-  </div>
-  <div class="row2">
-    <div class="field"><label>Date</label><input class="inp" type="date" id="fdDate" value="${T}"></div>
-    <div class="field"><label>Time</label><input class="inp" type="time" id="fdTime" value="${nowHM()}"></div>
-  </div>
-  <div class="field"><label>Evacuation time</label><input class="inp" id="fdEvac" placeholder="e.g. 2 min 45 s"></div>
-  <div class="tiny muted">After saving, print the log and collect ink signatures — the portal tracks that the signed sheet was filed.</div>`,
-  `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveDrill()">Save drill</button>`); }
-function saveDrill(){ const d={date:el('fdDate').value,time:el('fdTime').value,home:homeVal('fdHome'),shift:el('fdShift').value,evac:el('fdEvac').value||'—',by:meInit(),wet:0};
-  FIREDRILLS.unshift(d);
-  sbPush('np_demo_fire_drills',{drill_date:d.date,drill_time:d.time,home:d.home,shift:d.shift,evac:d.evac,conducted_by:d.by,wet:0});
-  const it=CHECKLIST[2].items.find(i=>i.t.includes('fire drill')); if(it){it.s='ok';it.d='Logged '+fmtDate(el('fdDate').value);}
-  logAudit('Logged fire drill',el('fdHome').value);
-  autoFileLog('Safety', `Fire drill — ${d.home} — ${d.date} ${hm12(d.time)}`, `Evac ${d.evac} · ${d.shift} shift · by ${d.by}`, null);
-  closeAll(); render(); toast('Drill logged and filed to Health and safety — print it for ink signatures.'); }
-function openTempForm(){ openModal('Add water temperature reading',`
-  <div class="row2">
-    <div class="field"><label>Home</label>${homeField('wtHome','')}</div>
-    <div class="field"><label>Water at fixtures (°F)</label><input class="inp" type="number" id="wtTemp" value="116"></div>
-  </div>
-  <div class="row2">
-    <div class="field"><label>Refrigerator (°F) <span class="tiny muted">optional</span></label><input class="inp" type="number" id="wtFridge" placeholder="34–40"></div>
-    <div class="field"><label>Freezer (°F) <span class="tiny muted">optional</span></label><input class="inp" type="number" id="wtFreezer" placeholder="0 or below"></div>
-  </div>
-  <div class="field"><label>Date</label><input class="inp" type="date" id="wtDate" value="${T}"></div>`,
-  `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveTemp()">Save reading</button>`); }
-function saveTemp(){ const fr=el('wtFridge')&&el('wtFridge').value!==''?+el('wtFridge').value:null, fz=el('wtFreezer')&&el('wtFreezer').value!==''?+el('wtFreezer').value:null;
-  const w={date:el('wtDate').value,home:el('wtHome').value,temp:+el('wtTemp').value,fridge:fr,freezer:fz,by:meInit(),wet:0};
-  WATERTEMP.unshift(w);
-  sbPush('np_demo_water_temps',{reading_date:w.date,home:w.home,temp:w.temp,fridge:fr,freezer:fz,recorded_by:w.by,wet:0});
-  const it=CHECKLIST[2].items.find(i=>i.t.includes('Water temperature')); if(it){it.s='ok';it.d='Current';}
-  logAudit('Logged water temperature',el('wtHome').value+' · '+el('wtTemp').value+'°F');
-  notifyRule('temp','Water temperature logged',el('wtHome').value+' · '+el('wtTemp').value+'°F'+(+el('wtTemp').value<=TEMP_LIMIT?' · in range':' · OVER LIMIT'));
-  autoFileLog('Water', `Water temp — ${w.home} — ${w.date}`, `${w.temp}°F ${w.temp<=TEMP_LIMIT?'· in range':'· OVER LIMIT'} · by ${w.by}`, null);
-  closeAll(); render(); toast('Reading saved and filed to Water temp logs.'); }
+/* v9.84: logging a drill or a reading used to be a fixed narrative form. Both now run
+   the same line-by-line form everything else is built with, so the lines, their answer
+   types and their in-range colouring are the agency's to change. The first time one is
+   opened its lines are seeded from the old form, so nothing is lost. */
+function builtinLogEnsure(kind){
+  const seed=BUILTIN_LOG_SEED[kind]; if(!seed) return null;
+  const ex=INSP_TEMPLATES.find(t=>t.builtin===kind);
+  if(ex) return ex;
+  const t={id:'insp-'+kind+'-'+Date.now(), name:seed.name, folder:seed.folder, desc:seed.desc,
+    perWeek:seed.perWeek, obs:true, builtin:kind,
+    questions:seed.lines.map(([l,ty],i)=>({id:'q'+i,label:l,type:ty,req:false,perWeek:i===0?0:seed.perWeek}))};
+  INSP_TEMPLATES.push(t); unhide('insp',String(t.id));
+  sbUpsert('np_demo_inspections',{id:t.id,kind:'template',template_id:t.id,title:t.name,folder:t.folder,
+    questions:t.questions,per_week:t.perWeek,has_obs:true,created_by:ME[state.role].name});
+  logAudit('Opened a built-in log as a form',seed.name);
+  return t;
+}
+function builtinLogRun(kind){
+  const t=builtinLogEnsure(kind);
+  if(!t) return toast('That log is not set up yet.');
+  closeAll(); startInspection(t.id);
+}
+function openDrillForm(){ builtinLogRun('drills'); }
+function openTempForm(){ builtinLogRun('temps'); }
+function editBuiltinLog(kind){ const t=builtinLogEnsure(kind); if(t) editLogType(t.id); }
+/* The old single-screen drill and temperature forms were removed in v9.84 — both now
+   run the same line-by-line form as every other log, seeded from these fields. */
 function drillSheet(){ return `<h2>Fire Drill Log</h2><div class="p-sub">Spectrum Care · Title 22 § 80023 · printed ${fmtLong(T)}</div>
   <table><tr><th>Date</th><th>Time</th><th>Home</th><th>Shift</th><th>Evacuation time</th><th>Conducted by</th><th>Ink signature</th></tr>
   ${FIREDRILLS.map(d=>`<tr><td>${fmtDate(d.date)}</td><td>${hm12(d.time)}</td><td>${d.home}</td><td>${d.shift}</td><td>${d.evac}</td><td>${d.by}</td><td style="min-width:120px"></td></tr>`).join('')}</table>
@@ -8609,7 +8947,10 @@ function viewTemplates(){
   return `
   <div class="page-h">
     <div><h1>Documents${aiTag('templates')}</h1><div class="sub">Your binders — completed and filed paperwork, organized the way licensing expects</div></div>
-    <div class="right">${state.role==='director'?`<button class="btn ghost" onclick="binderForm()">＋ New binder</button>`:''}<button class="btn navy" onclick="libUpload('Agency','forms')">＋ Upload document</button></div>
+    <div class="right">
+      ${(state.role==='director'&&state.layoutEdit)?`<button class="btn gold" onclick="pageEdit()">✓ Done editing</button>`:''}
+      ${state.role==='director'?`<button class="gear" title="Settings" onclick="pageSettings('templates')" style="margin-right:6px">${ico('settings',17)}</button>`:''}
+      ${state.role==='director'?`<button class="btn ghost" onclick="binderForm()">＋ New binder</button>`:''}<button class="btn navy" onclick="libUpload('Agency','forms')">＋ Upload document</button></div>
   </div>
 
   ${docActCard()}
@@ -8621,7 +8962,7 @@ function viewTemplates(){
   <section class="card">
     <div class="card-h"><h2>Agency binders</h2><div class="sub">Workspace paperwork — licensing, policies and anything not filed under one client. Blank forms live on the Templates page.</div>
       <div class="right" style="display:flex;gap:6px">
-        ${state.role==='director'?`<button class="btn ${state.docEdit?'gold':'ghost'} sm" onclick="state.docEdit=!state.docEdit;state.openBinder='';render();if(state.docEdit)toast('Drag ⠿ to reorder, type to rename, ＋ adds a sub-folder. Done when you are happy.')">${state.docEdit?'✓ Done':'✎ Edit binders'}</button>
+        ${state.role==='director'?`<button class="btn ${state.docEdit?'gold':'ghost'} sm" onclick="state.docEdit=!state.docEdit;render();if(state.docEdit)toast('Open a binder and drag ⠿ to reorder it or its folders. Type to rename, ＋ adds a sub-folder.')">${state.docEdit?'✓ Done':'✎ Edit binders'}</button>
         <button class="btn ghost sm" onclick="binderForm()">＋ New binder</button>`:''}</div></div>
     <div class="card-b flush">
       ${folders.map(([t,su,key],fi)=>{
@@ -8630,8 +8971,8 @@ function viewTemplates(){
         const compVis=(COMPLETED[key]||[]).filter(d=>!hid('completed',key+'|'+d.n));
         const nAll=bf.forms.length+bf.resources.length+compVis.length;
         const ed=state.docEdit&&state.role==='director';
-        return `<div class="docrow lvl-main" style="cursor:pointer" ${ed?`draggable="true" data-bkey="${key}"`:''} onclick="${ed?'':`state.openBinder=state.openBinder==='${key}'?'':'${key}';render()`}">
-          <div class="di">${ed?'⠿':(open?'▼':'▸')} 🗀</div>
+        return `<div class="docrow lvl-main" style="cursor:pointer" ${ed?`draggable="true" data-bkey="${key}"`:''} onclick="state.openBinder=state.openBinder==='${key}'?'':'${key}';render()">
+          <div class="di">${ed?(open?'⠿ ▼':'⠿ ▸'):(open?'▼':'▸')} 🗀</div>
           <div class="dt">${ed?`<input class="inp" style="height:32px;font-weight:600" value="${esc(t)}" onclick="event.stopPropagation()" onchange="binderRenameInline('${key}',this.value)">`
                              :`<b>${t}</b><span>${su}</span>`}</div>
           <span class="tiny muted">${nAll} file${nAll===1?'':'s'}</span>
@@ -8643,16 +8984,33 @@ function viewTemplates(){
         ${open?`<div style="background:#FAF8F3;border-bottom:1px solid var(--line);padding:4px 0 4px 34px">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px 2px"><div class="tiny muted" style="font-weight:800;text-transform:uppercase;letter-spacing:.06em">Resources & guidelines</div><button class="btn ghost sm" onclick="event.stopPropagation();libUpload('${key}','res')">＋ Upload</button></div>
           ${bf.resources.map(fl=>libRowHtml(fl,key)).join('')||'<div class="empty">No resource documents yet.</div>'}
+          ${(()=>{
+            /* v9.82: a binder holds completed paperwork only, which made Documents look
+               almost empty next to 21 templates. This strip shows which blank forms file
+               into this binder, so the two pages line up and you can fill one in place. */
+            const tpls=TEMPLATES5.filter(t=>!hid('template',t.id)&&normBinder(t.dest||'Agency').b===key);
+            if(!tpls.length) return '';
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px 2px">
+              <div class="tiny muted" style="font-weight:800;text-transform:uppercase;letter-spacing:.06em">Forms that file here · ${tpls.length}</div>
+              <button class="btn ghost sm" onclick="event.stopPropagation();go('forms')">All templates</button></div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;padding:4px 18px 10px">
+              ${tpls.map(t=>`<button class="pill" style="cursor:pointer;border:1px solid var(--line);background:var(--white)"
+                title="Fill in ${esc(t.name)}${t.sub?' — files to '+esc(t.sub):''}"
+                onclick="event.stopPropagation();tplOpenDoc('${t.id}')">❏ ${esc(t.name)}${t.sub?` <span class="tiny muted">/ ${esc(t.sub)}</span>`:''}</button>`).join('')}
+            </div>`;
+          })()}
           <div class="tiny muted" style="padding:10px 18px 2px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">Completed forms</div>
           ${(()=>{
             const all=(COMPLETED[key]||[]).map((fl,ci)=>({fl,ci}));
-            if(!all.length) return '<div class="empty">Nothing filed here yet — file a report, log or completed form into this binder.</div>';
+            /* v9.80: while editing, every sub-folder lists even when it holds nothing yet — an
+               empty folder used to render no row at all, so there was nothing to drag. */
+            if(!all.length && !ed) return '<div class="empty">Nothing filed here yet — file a report, log or completed form into this binder.</div>';
             const groups={};
             all.forEach(x=>{ const g=x.fl.sb||''; (groups[g]=groups[g]||[]).push(x); });
-            const order=[...subsOf(key).filter(sname=>groups[sname]),...Object.keys(groups).filter(g=>g&&!subsOf(key).includes(g)),...(groups['']?['']:[])];
+            const order=[...subsOf(key).filter(sname=>ed||groups[sname]),...Object.keys(groups).filter(g=>g&&!subsOf(key).includes(g)),...(groups['']?['']:[])];
             return order.map(g=>`
-              ${g?`<div class="docrow lvl-sub" style="cursor:pointer;border-bottom:none" onclick="event.stopPropagation();subOpen('${key}','${esc(g)}')">
-                <div class="di">${subIsOpen(key,g)?'▼':'▸'} 🗀</div>
+              ${g?`<div class="docrow lvl-sub" style="cursor:pointer;border-bottom:none" ${state.docEdit?`draggable="true" data-sub="${key}::${esc(g)}"`:''} onclick="event.stopPropagation();${state.docEdit?'':`subOpen('${key}','${esc(g)}')`}">
+                <div class="di">${state.docEdit?'⠿':(subIsOpen(key,g)?'▼':'▸')} 🗀</div>
                 <div class="dt"><b><span class="lvl-tag">Folder</span>${esc(g)}</b><span>${(groups[g]||[]).length} document${(groups[g]||[]).length===1?'':'s'} · full history</span></div>
                 <button class="btn ghost sm" onclick="event.stopPropagation();exportBinder('${key}','${esc(g)}')">⇩ Export</button></div>`:''}
               ${(g&&!subIsOpen(key,g))?'':(groups[g]||[]).map(({fl,ci})=>{const sg=DOC_SIGS[fl.n];return `<div class="docrow" style="border-bottom:none;padding:8px 18px${g?';padding-left:30px':''}"><div class="di">PDF</div>
@@ -8838,10 +9196,24 @@ const DOC_LIBRARY={
   ['ACRC Personal and Incidental Funds Instruction Manual','acrc_personal_and_incidental_funds_instruction_manual_1.pdf?1742308642']]}
 };
 const DOC_BASE='https://www.altaregional.org/sites/main/files/file-attachments/';
+/* v9.82: built-in library documents can be renamed too. The stock title is the key,
+   the chosen title is stored per workspace, so a rename sticks across reloads. */
+let LIB_NAMES={};
+function libNamesSave(){ sbUpsert('np_demo_program',{key:'libnames',value:{map:LIB_NAMES},updated_by:auditActor()}); }
+const libName=n=>LIB_NAMES[n]||n;
+function libRenameStock(orig){
+  const cur=libName(orig);
+  const v=prompt('Rename this document:',cur);
+  if(v===null) return;
+  const n=v.trim(); if(!n) return toast('The document needs a name.');
+  if(n===orig) delete LIB_NAMES[orig]; else LIB_NAMES[orig]=n;
+  libNamesSave(); logAudit('Renamed document',`${cur} → ${n}`);
+  render(); toast('Document renamed.');
+}
 function libRow(n,u){
   const slug=String(u).split('?')[0];
   const ex=EXAMPLE_BY_SLUG[slug];
-  return {n, sub:'ACRC / Alta Regional', url:DOC_BASE+u, docId:ex?ex.id:undefined, editable:!!ex};
+  return {n:libName(n), orig:n, sub:'ACRC / Alta Regional', url:DOC_BASE+u, docId:ex?ex.id:undefined, editable:!!ex};
 }
 
 /* ── v4.8: editable example documents living inside the binder subfolders ──
@@ -9157,8 +9529,9 @@ function chkGroupAdd(){
   closeAll(); render(); toast('Category added.');
 }
 function libManageBtns(fl){
-  if(!fl.dbId || state.role!=='director') return '';
-  return `<button class="btn ghost sm" onclick="event.stopPropagation();libRename(${fl.dbId})">✎</button>`+
+  if(state.role!=='director') return '';
+  if(!fl.dbId) return fl.orig?`<button class="btn ghost sm" title="Rename" onclick="event.stopPropagation();libRenameStock('${esc(fl.orig)}')">✎ Rename</button>`:'';
+  return `<button class="btn ghost sm" title="Rename" onclick="event.stopPropagation();libRename(${fl.dbId})">✎</button>`+
          `<button class="btn ghost sm" onclick="event.stopPropagation();libRemove(${fl.dbId})">✕</button>`;
 }
 function libFind(dbId){ for(const k in USER_LIB){ for(const sec of ['forms','res']){ const i=(USER_LIB[k][sec]||[]).findIndex(x=>x.dbId===dbId); if(i>-1) return {k,sec,i,row:USER_LIB[k][sec][i]}; } } return null; }
@@ -9670,7 +10043,7 @@ async function openStoredDoc(id,name){
 async function sbSignedUrl(path,secs){
   if(!sbOn()||!path) return null;
   try{
-    const r=await fetch(`${BACKEND.url}/storage/v1/object/sign/np-demo-docs/${path}`,{
+    const r=await fetch(`${BACKEND.url}/storage/v1/object/sign/np-demo-docs/${orgPath(path)}`,{
       method:'POST',headers:Object.assign({},sbH(),{'Content-Type':'application/json'}),
       body:JSON.stringify({expiresIn:secs||3600})});
     if(!r.ok) return null;
@@ -9678,10 +10051,28 @@ async function sbSignedUrl(path,secs){
     return j&&j.signedURL?(BACKEND.url+'/storage/v1'+j.signedURL.replace(/^\/?(storage\/v1)?/,'/')):null;
   }catch(e){ return null; }
 }
-async function sbUpload(path,file){
-  if(!sbOn()) return null;
+/* v9.90: an invited account is created with its own empty organization like any other.
+   This hands back the invite token so the database moves them into the inviting agency. */
+async function orgJoinByToken(token){
+  if(!sbOn()||!sbAuthed()||!token) return null;
   try{
-    const r=await fetch(`${BACKEND.url}/storage/v1/object/np-demo-docs/${path}`,{method:'POST',headers:{apikey:BACKEND.anon,Authorization:'Bearer '+BACKEND.anon,'Content-Type':file.type||'application/octet-stream','x-upsert':'true'},body:file});
+    const r=await fetch(`${BACKEND.url}/rest/v1/rpc/np_join_org`,{method:'POST',headers:sbH(),
+      body:JSON.stringify({p_token:token})});
+    if(!r.ok) return null;
+    const v=await r.json().catch(()=>null);
+    if(v&&typeof v==='string'){ ORG_ID=v; ORG_READY=true; lsSet('np_org_id',v); return v; }
+  }catch(e){}
+  return null;
+}
+/* Uploaded files sit in a folder named for the organization, which is what the storage
+   policy matches on. A file cannot be read from another agency's session. */
+const orgPath = p => { const v=String(p||'').replace(/^\/+/,'');
+  return (/^org_[A-Za-z0-9_]+\//.test(v)||!ORG_ID) ? v : ORG_ID+'/'+v; };
+async function sbUpload(p0,file){
+  if(!sbOn()||!sbAuthed()) return null;
+  const path=orgPath(p0);
+  try{
+    const r=await fetch(`${BACKEND.url}/storage/v1/object/np-demo-docs/${path}`,{method:'POST',headers:{apikey:BACKEND.anon,Authorization:'Bearer '+(sbTok()||BACKEND.anon),'Content-Type':file.type||'application/octet-stream','x-upsert':'true'},body:file});
     if(!r.ok){ console.warn('[np-demo] storage upload failed',r.status,await r.text().catch(()=>'')); return null; }
     return `${BACKEND.url}/storage/v1/object/np-demo-docs/${path}`;   // private bucket: opened through a signed link
   }catch(e){ console.warn('[np-demo] storage upload failed',e); return null; }
@@ -10171,11 +10562,16 @@ function saveApptTime(id){
   } else toast(`Moved to ${relDay(d).toLowerCase()} at ${hm12(t)}.`);
 }
 function openApptForm(cid,presetDate,presetTime){
+  catsAudit();                                                       // the picker is never empty
   window._apPreset={d:presetDate||'',t:presetTime||''};
   openModal('Add appointment',`
     <div class="row2">
       <div class="field"><label>Client</label><select class="inp" id="apClient">${visibleClients().map(c=>`<option value="${c.id}" ${cid===c.id?'selected':''}>${esc(c.uci)} — ${esc(c.name)}</option>`).join('')}</select></div>
-      <div class="field"><label>Type</label><select class="inp" id="apType" onchange="apTypeNew(this)">${Object.keys(APPT_CATS).map(k=>`<option>${catOf(k).emoji} ${esc(k)}</option>`).join('')}<option value="__newtype__">＋ New type…</option></select></div>
+      <div class="field"><label>Type</label>
+        <div style="display:flex;gap:6px">
+          <select class="inp" id="apType" style="flex:1;min-width:0" onchange="apTypeNew(this)">${Object.keys(APPT_CATS).map(k=>`<option>${catOf(k).emoji} ${esc(k)}</option>`).join('')}<option value="__newtype__">＋ New type…</option></select>
+          <button class="btn ghost sm" type="button" style="flex:none" title="Add a new appointment type" onclick="apTypeAdd()">＋</button>
+        </div></div>
     </div>
     <div class="field"><label>Title</label><input class="inp" id="apTitle" placeholder="Leave blank to keep it anonymous"></div>
     <div class="field"><label>Calendar</label>${calSelect('apCal')}
@@ -11411,10 +11807,14 @@ async function authRegister(email,pw){
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return {ok:false,msg:'Enter a valid email address.'};
   if(String(pw||'').length<8) return {ok:false,msg:'Use at least 8 characters for the password.'};
   if(sbOn()){
-    const r=await sbAuth('signup',{email,password:pw});
+    /* v9.90: the project is shared with another Anthropic-side app whose signup gate only
+       admits one email domain. Tagging the account marks it as a care portal sign-up so that
+       gate lets agencies register. */
+    const r=await sbAuth('signup',{email,password:pw,data:{app:'spectrum'}});
     if(r.ok){
-      AUTH={email, session:r.d.access_token?{t:r.d.access_token,at:Date.now()}:null, mode:'supabase'};
-      saveAuth(); logAudit('Set up sign-in credentials',email);
+      AUTH={email, session:r.d.access_token?{t:r.d.access_token,r:r.d.refresh_token||'',at:Date.now()}:null, mode:'supabase'};
+      saveAuth(); orgForget(); if(r.d.access_token) await orgResolve();
+      logAudit('Set up sign-in credentials',email);
       return {ok:true,msg:r.d.access_token?'Credentials saved. Use this email and password to sign in.'
         :'Check your inbox to confirm the address, then sign in with this email and password.'};
     }
@@ -11424,8 +11824,10 @@ async function authRegister(email,pw){
     console.warn('[np-demo] supabase signup failed',r.status,m);
   }
   AUTH={email, session:{h:locHash(pw)}, mode:'local'};
-  saveAuth(); logAudit('Set up sign-in credentials',email);
-  return {ok:true,msg:'Credentials saved on this device for the pilot.'};
+  saveAuth(); orgForget(); logAudit('Set up sign-in credentials',email);
+  /* v9.90: a device-only credential has no database identity, so it gets a device-only
+     workspace. Nothing it records leaves this browser. Said plainly rather than failing quietly. */
+  return {ok:true,msg:'Saved on this device only — this browser keeps its own copy and nothing syncs. Set up an email sign-in to work across devices.'};
 }
 async function authLogin(email,pw){
   email=String(email||'').trim().toLowerCase();
@@ -11437,7 +11839,9 @@ async function authLogin(email,pw){
   if(sbOn()){
     const r=await sbAuth('token?grant_type=password',{email,password:pw});
     if(r.ok&&r.d.access_token){
-      AUTH={email,session:{t:r.d.access_token,at:Date.now()},mode:'supabase'}; saveAuth();
+      AUTH={email,session:{t:r.d.access_token,r:r.d.refresh_token||'',at:Date.now()},mode:'supabase'}; saveAuth();
+      orgForget(); await orgResolve();                                // pick up which agency this account belongs to
+      if(!ORG_ID) return {ok:false,msg:'This account is not attached to an agency yet — ask your director to re-send the invite.'};
       return {ok:true};
     }
     const m=(r.d&&(r.d.error_description||r.d.msg||r.d.message))||'';
@@ -11518,7 +11922,10 @@ async function finishRegister(){
     lsSet('np_onboarding',JSON.stringify(ONB));
     USERS[(AUTH.email||em).toLowerCase()]={sid:inv.sid,role:'staff',name:inv.name||''};
     usersSave();
-    if(sbOn()) fetch(`${BACKEND.url}/rest/v1/np_demo_invites?token=eq.${encodeURIComponent(inv.token)}`,{method:'PATCH',headers:sbH(),body:JSON.stringify({used_at:new Date().toISOString()})}).catch(()=>{});
+    /* v9.90: the new account starts in its own empty organization. Redeeming the token is
+       what moves it into the inviting agency, and the database marks the invite used. */
+    const joined=await orgJoinByToken(inv.token);
+    if(!joined){ toast('That invite could not be redeemed \u2014 ask your director to send a new one.'); return; }
     profileSave(); accountTouch('signup');
     logAudit('Staff joined from an invite',`${inv.name||em} · ${em}`);
     window._joinInvite=null; window._regMode=false;
@@ -12041,7 +12448,12 @@ function openShiftForm(idx,preSid){
 function saveShift(idx){
   const rec={sid:el('shWho').value,start:el('shStart').value,end:el('shEnd').value,home:homeVal('shHome')};
   if(rec.end<=rec.start) return toast('The end time needs to be after the start time.');
-  if(idx!=null&&idx>-1){ Object.assign(SHIFTS[idx],rec); logAudit('Edited shift',`${staff(rec.sid).init} · ${rec.home}`); }
+  if(SHIFTS.some((x,i)=>i!==idx&&shiftIdent(x)===shiftIdent(rec)))
+    return toast(`${staff(rec.sid).init} is already on that shift at ${rec.home}.`);
+  if(idx!=null&&idx>-1){
+    const was=SHIFTS[idx];                                            // clear the old row so an edit replaces, never stacks
+    sbDel('np_demo_shifts',`staff_id=eq.${encodeURIComponent(was.sid)}&shift_date=eq.${encodeURIComponent(was.date||T)}&start_time=eq.${encodeURIComponent(was.start)}`);
+    Object.assign(SHIFTS[idx],rec); logAudit('Edited shift',`${staff(rec.sid).init} · ${rec.home}`); }
   else { SHIFTS.push(rec); logAudit('Added shift',`${staff(rec.sid).init} · ${rec.home}`); }
   sbPush('np_demo_shifts',{staff_id:rec.sid,start_time:rec.start,end_time:rec.end,home:rec.home,shift_date:T});
   pingStaff(rec.sid,'You were scheduled',`${rec.home} · ${hm12(rec.start)}–${hm12(rec.end)}`);
@@ -12146,9 +12558,14 @@ function catPick(){
 function APPS_COUNT(t){ return APPTS.filter(a=>a.type===t).length; }
 function apTypeVal(id){ const v=((el(id)||{}).value||'').trim(); return v.replace(/^[^\w(]+\s*/,''); }
 const AP_FIELDS=['apClient','apTitle','apCal','apDate','apTime','apDur','apProv','apLoc','apFlag'];
+function apTypeAdd(){                                                // the ＋ button beside the picker
+  const sel=el('apType'); if(!sel) return;
+  sel.value='__newtype__'; apTypeNew(sel);
+}
 function apTypeNew(sel){
   if(sel.value!=='__newtype__') return;
-  sel.value=sel._last||Object.keys(APPT_CATS)[0]||'';
+  const first=Object.keys(APPT_CATS)[0];
+  sel.value=sel._last||(first?`${catOf(first).emoji} ${first}`:'');   // option values carry the emoji prefix
   const snap={};                                                     // keep what they already typed
   AP_FIELDS.forEach(f=>{ const e=el(f); if(e) snap[f]=e.value; });
   window._apReturn=snap;
@@ -12370,7 +12787,39 @@ let APPT_CATS={
   'Transport':{color:'#B08A2E', emoji:'🚐'}
 };
 function catSave(){ sbUpsert('np_demo_program',{key:'apptcats',value:{map:APPT_CATS},updated_by:auditActor()}); }
-function catOf(t){ return APPT_CATS[t]||{color:'#6B7A74',emoji:'▤'}; }
+const CAT_DEFAULTS={'Dental':{color:'#3E7BC4',emoji:'🦷'},'Medical':{color:'#D97B29',emoji:'🩺'},
+  'Day program':{color:'#3E8E5A',emoji:'🌿'},'Family':{color:'#8A62C9',emoji:'☎'},'Transport':{color:'#B08A2E',emoji:'🚐'}};
+/* v9.82: every appointment gets a real category with its own icon and colour. Types
+   that arrived without one (older records, Google imports, typed-in names) are matched
+   on a keyword and registered, instead of all falling back to the same grey square. */
+const CAT_GUESS=[[/dent/i,'🦷','#3E7BC4'],[/neuro|brain|seizure/i,'🧠','#7A4FB5'],
+  [/physio|pt\b|rehab|exercise/i,'🏃','#2F8F6B'],[/therap|counsel|psych|behav/i,'🌿','#3E8E5A'],
+  [/optom|vision|eye/i,'👁','#2E7FA8'],[/audio|hearing|ear/i,'👂','#8A62C9'],
+  [/podiat|foot/i,'👟','#B0662E'],[/lab|blood|inr|draw/i,'🧪','#C05050'],
+  [/transport|ride|pickup|drive/i,'🚐','#B08A2E'],[/family|guardian|call|visit/i,'☎','#8A62C9'],
+  [/day program|activit|outing|communit/i,'🌿','#3E8E5A'],[/nurse|nursing|clinic|physician|doctor|medical|follow.?up/i,'🩺','#D97B29'],
+  [/meeting|review|ipp|plan/i,'📋','#5A6E8C'],[/hair|salon|barber/i,'✂','#A05C7B'],
+  [/meal|food|dietit|nutrit/i,'🍽','#B07A2E']];
+const CAT_FALLBACK_COLORS=['#3E7BC4','#D97B29','#3E8E5A','#8A62C9','#B08A2E','#C05050','#2E7FA8','#7A4FB5'];
+function catGuess(t){
+  const hit=CAT_GUESS.find(g=>g[0].test(String(t||'')));
+  if(hit) return {emoji:hit[1],color:hit[2]};
+  let h=0; String(t||'').split('').forEach(ch=>{ h=(h*31+ch.charCodeAt(0))>>>0; });
+  return {emoji:'📌',color:CAT_FALLBACK_COLORS[h%CAT_FALLBACK_COLORS.length]};
+}
+function catEnsure(t){                                               // register a type the moment it is seen
+  const n=String(t||'').trim(); if(!n) return null;
+  if(!APPT_CATS[n]){ APPT_CATS[n]=catGuess(n); return n; }
+  return null;
+}
+function catsAudit(){                                                // never leave the picker empty
+  let added=false;
+  if(!Object.keys(APPT_CATS).length){ Object.keys(CAT_DEFAULTS).forEach(k=>{ APPT_CATS[k]=Object.assign({},CAT_DEFAULTS[k]); }); added=true; }
+  try{ APPTS.forEach(a=>{ if(catEnsure(a.type)) added=true; }); }catch(e){}
+  if(added&&typeof catSave==='function') catSave();
+  return added;
+}
+function catOf(t){ const n=String(t||'').trim(); return APPT_CATS[n]||(n?catGuess(n):{color:'#6B7A74',emoji:'▤'}); }
 function catChip(t){ const c=catOf(t); return `<span class="pill" style="background:${c.color}1A;color:${c.color};border:1px solid ${c.color}55">${c.emoji} ${esc(t)}</span>`; }
 function catForm(name){
   const isNew=name==null; const c=isNew?{color:'#3E7BC4',emoji:'📌'}:catOf(name);
@@ -12968,8 +13417,8 @@ document.addEventListener('pointerdown',e=>{
   const b=e.target.closest('.tl-bar[data-shift]');
   if(!b||state.role!=='director') return;
   e.preventDefault();
-  const r=b.getBoundingClientRect(), onEdge=(r.right-e.clientX)<=12;   // the right edge stretches the shift
-  shiftDrag={sid:b.dataset.shift,el:b,x0:e.clientX,left0:parseFloat(b.style.left)||0,
+  const r=b.getBoundingClientRect(), onEdge=(r.right-e.clientX)<=20;   // the grip on the right stretches the shift
+  shiftDrag={sid:b.dataset.shift,sk:b.dataset.sk||'',el:b,x0:e.clientX,left0:parseFloat(b.style.left)||0,
     w0:parseFloat(b.style.width)||r.width,mode:onEdge?'size':'move'};
   b.classList.add(onEdge?'sizing':'dragging');
   b.classList.add('dragging');
@@ -12985,39 +13434,55 @@ document.addEventListener('pointerup',e=>{
   if(!shiftDrag) return;
   const d=shiftDrag; shiftDrag=null; d.el.classList.remove('dragging'); d.el.classList.remove('sizing');
   const dx=e.clientX-d.x0;
-  if(Math.abs(dx)<5){ openShiftEdit(d.sid); return; }
-  if(d.mode==='size') commitShiftResize(d.sid,dx); else commitShiftMove(d.sid,dx);
+  if(Math.abs(dx)<5){ openShiftEdit(d.sid,d.sk); return; }
+  if(d.mode==='size') commitShiftResize(d.sid,dx,d.sk); else commitShiftMove(d.sid,dx,d.sk);
 });
-function commitShiftResize(sid,dx){
-  const s=SHIFTS.find(x=>x.sid===sid); if(!s) return;
+/* v9.81: resolve the exact bar that was grabbed. Every handler used to take the first
+   shift belonging to that person, so with more than one row on the board a drag
+   silently rewrote a different shift and left the one you dragged behind. */
+function shiftAt(sid,sk){
+  return (sk&&SHIFTS.find(x=>shiftIdent(x)===sk))||SHIFTS.find(x=>x.sid===sid);
+}
+function shiftReplace(s,was){                                        // one row per shift — never a new row on every drag
+  const d=s.date||T;
+  sbDel('np_demo_shifts',`staff_id=eq.${encodeURIComponent(s.sid)}&shift_date=eq.${encodeURIComponent(d)}&start_time=eq.${encodeURIComponent(was.start)}`);
+  sbPush('np_demo_shifts',{staff_id:s.sid,start_time:s.start,end_time:s.end,home:s.home,shift_date:d});
+}
+function commitShiftResize(sid,dx,sk){
+  const s=shiftAt(sid,sk); if(!s) return;
   let ne=toMin(s.end)+Math.round(dx/TL.hw*60/30)*30;
   ne=Math.max(toMin(s.start)+30,Math.min(TL.e,ne));
   if(mmhh(ne)===s.end){ refreshTL(); return; }
+  const was={start:s.start,end:s.end};
   s.end=mmhh(ne);
-  sbUpsert('np_demo_shifts',{id:s.id,staff_id:s.sid,start_time:s.start,end_time:s.end,home:s.home,shift_date:s.date||T});
+  shiftReplace(s,was);
   logAudit('Changed shift length',`${staff(sid).name} → ${hm12(s.start)} – ${hm12(s.end)}`);
   refreshTL();
   toast(`${staff(sid).init} now works until ${hm12(s.end)}.`);
 }
-function commitShiftMove(sid,dx){
-  const s=SHIFTS.find(x=>x.sid===sid);
+function commitShiftMove(sid,dx,sk){
+  const s=shiftAt(sid,sk); if(!s) return;
   const dur=toMin(s.end)-toMin(s.start);
   let ns=toMin(s.start)+Math.round(dx/TL.hw*60/30)*30;
   ns=Math.max(TL.s,Math.min(TL.e-dur,ns));
   if(mmhh(ns)===s.start){ refreshTL(); return; }
+  const was={start:s.start,end:s.end};
   s.start=mmhh(ns); s.end=mmhh(ns+dur);
-  sbUpsert('np_demo_shifts',{id:s.id,staff_id:s.sid,start_time:s.start,end_time:s.end,home:s.home,shift_date:s.date||T});
+  shiftReplace(s,was);
   logAudit('Changed shift',`${staff(sid).name} → ${hm12(s.start)} – ${hm12(s.end)}`);
   refreshTL();
   toast(`${staff(sid).init} moved to ${hm12(s.start)} – ${hm12(s.end)}. Every staff view is updated.`);
 }
 function refreshTL(){
+  shiftsPrune();
   render(); renderNav();
   const f=el('tlFull'); if(f) f.querySelector('.tlf-b').innerHTML=tlCard(true);
 }
 const timeOpts=sel=>{let o='';for(let m=TL.s;m<=TL.e;m+=30){const v=mmhh(m);o+=`<option value="${v}" ${v===sel?'selected':''}>${hm12(v)}</option>`;}return o;};
-function openShiftEdit(sid){
-  const s=SHIFTS.find(x=>x.sid===sid), st=staff(sid);
+function openShiftEdit(sid,sk){
+  const s=shiftAt(sid,sk), st=staff(sid);
+  if(!s||!st) return;
+  state.shiftEditKey=shiftIdent(s);
   openModal(`Edit shift — ${esc(st.name)}`,`
     <div style="display:flex;gap:11px;align-items:center;margin-bottom:16px">
       <span class="av-sm" style="width:42px;height:42px;border-radius:12px;font-size:${st.icon?'20px':'13px'};${st.color?`background:${st.color};color:#fff`:''}">${st.photo?`<img src="${st.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:12px">`:(st.icon||st.init.replace(/\./g,''))}</span>
@@ -13056,7 +13521,7 @@ function shSlide(which){
 function saveShiftTL(sid){
   const st=mmhh(+el('shStart').value), en=mmhh(+el('shEnd').value);
   if(toMin(en)<=toMin(st)) return toast('The shift has to end after it starts.');
-  const s=SHIFTS.find(x=>x.sid===sid);
+  const s=shiftAt(sid,state.shiftEditKey); if(!s) return;
   const wasKey=shiftKey(s);
   s.start=st; s.end=en; s.home=el('shHome').value;
   delMark('shift',wasKey);
@@ -13190,7 +13655,20 @@ let HYDRATED=false, HYDRATING=null, HYDRATE_OK=false;
 async function sbHydrate(){
   delLoad();
   if(!sbOn()){ applyDeletions(); HYDRATED=true; return; }
-  await orgResolve();                                                // which workspace am I? ask the account
+  await orgResolve();                                                // which agency am I? the membership answers
+  if(!ORG_ID){                                                       // signed out, or a device-only credential
+    applyDeletions(); HYDRATED=true; return;
+  }
+  /* v9.90: a workspace nobody has written to yet is a new agency. It opens empty rather
+     than showing the built-in example clients and staff as if they were real records. */
+  try{
+    const seen=await sbGet('np_demo_program','key=eq.hidesample&select=value');
+    if(!seen.length && lsGet('np_hide_sample')===null){
+      state.hideSample=true; lsSet('np_hide_sample','1');
+      sbUpsert('np_demo_program',{key:'hidesample',value:{v:true},updated_by:'signup'});
+      try{ clearSampleLists(); }catch(e){}
+    }
+  }catch(e){}
   const [tasks,inc,fd,wt,logs,docs,creds,appts,tpls,cnotes,notifs]=await Promise.all([
     sbGet('np_demo_tasks'), sbGet('np_demo_incidents','select=*&order=inc_date.desc'),
     sbGet('np_demo_fire_drills','select=*&order=drill_date.desc'),
@@ -13242,12 +13720,15 @@ async function sbHydrate(){
     const rec={id:r.id,name:r.name,init:r.init,role:r.role||'Direct Support Professional',home:r.home||'',hired:r.hired||'',email:r.email||'',color:r.color||undefined,photo:r.photo||undefined,icon:r.icon||undefined};
     if(ex) Object.assign(ex,rec); else { STAFF.push(Object.assign({trainings:{},hrs:0},rec)); CREDS[r.id]=CREDS[r.id]||[]; }
   });
+  shiftsPrune();                                                     // drop any duplicates already in memory
   dbShifts.forEach(r=>{
     if(r.shift_date!==T) return;
-    if(SHIFTS.some(x=>x.sid===r.staff_id&&x.start===r.start_time&&x.end===r.end_time)) return;
     if(!staff(r.staff_id)) return;
-    SHIFTS.push({sid:r.staff_id,start:r.start_time,end:r.end_time,home:r.home||''});
+    const rec={sid:r.staff_id,start:hhmm(r.start_time),end:hhmm(r.end_time),home:r.home||''};
+    if(SHIFTS.some(x=>shiftIdent(x)===shiftIdent(rec))) return;       // same person, same hours, same house
+    SHIFTS.push(rec);
   });
+  shiftsPrune();
   if(dbAudit.length && !DEL.auditClearedAt){
     AUDIT.length=0;
     dbAudit.forEach(r=>AUDIT.push({at:r.created_at?new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'',who:r.who||'',act:r.act||'',obj:r.obj||'',role:r.role||'',ts:r.created_at?Date.parse(r.created_at):null}));
@@ -13303,7 +13784,7 @@ async function sbHydrate(){
       if(r.key==='idle'&&r.value&&r.value.min!=null){ IDLE_MIN=+r.value.min||0; lsSet('np_idle_min',String(IDLE_MIN)); idleReset(); }
       if(r.key==='tz'&&r.value&&r.value.v){ lsSet('np_tz',r.value.v); }
       if(r.key==='hidesample'&&!DEMO_VIEW&&r.value&&typeof r.value.v==='boolean'){ state.hideSample=r.value.v; lsSet('np_hide_sample',r.value.v?'1':'0'); }
-      if(r.key==='apptcats'&&r.value&&r.value.map){ APPT_CATS=r.value.map; }
+      if(r.key==='apptcats'&&r.value&&r.value.map){ APPT_CATS=Object.assign({},Object.keys(r.value.map).length?{}:CAT_DEFAULTS,r.value.map); }
       if(r.key==='binders'&&r.value){
         if(r.value.names&&typeof r.value.names==='object') Object.assign(FOLDER_NAMES,r.value.names);
         if(Array.isArray(r.value.items)){ CUSTOM_BINDERS=r.value.items; CUSTOM_BINDERS.forEach(b=>FOLDER_NAMES[b.key]=b.name); }
@@ -13325,6 +13806,9 @@ async function sbHydrate(){
       if(r.key==='diricons'&&r.value&&r.value.map){ DIR_ICONS=r.value.map; }
       if(r.key==='notecats'&&r.value&&Array.isArray(r.value.list)){ NOTE_CATS=r.value.list; NOTE_CAT_COLORS=r.value.colors||{}; }
       if(r.key==='oblists'&&r.value&&Array.isArray(r.value.items)){ OB_LISTS=r.value.items; }
+      if(r.key==='libnames'&&r.value&&r.value.map&&typeof r.value.map==='object'){ LIB_NAMES=r.value.map; }
+      if(r.key==='tplorder'&&r.value&&Array.isArray(r.value.ids)){ const o=r.value.ids;
+        TEMPLATES5.sort((a,b)=>{ const ia=o.indexOf(a.id), ib=o.indexOf(b.id); return (ia<0?999:ia)-(ib<0?999:ib); }); }
       if(r.key==='taskcolors'&&r.value&&(r.value.due||r.value.cat||r.value.pri||r.value.stage)){ TASK_COLORS=r.value; }
       if(r.key==='calcolorby'&&r.value&&r.value.v){ CAL_COLOR_BY=r.value.v; }
       if(r.key==='certremind'&&r.value&&r.value.days){ CERT_REMIND=r.value; }
@@ -13436,6 +13920,7 @@ async function sbHydrate(){
   applyDeletions();
   if(el('app').classList.contains('on')){ renderNav(); render(); }
   HYDRATED=true; HYDRATE_OK=!(NET_BLOCKED||SB_DOWN);
+  try{ catsAudit(); }catch(e){}                                      // v9.82: every appointment type has a category
   console.log('[np-demo] hydrated from Supabase');
 }
 HYDRATING=sbHydrate();
