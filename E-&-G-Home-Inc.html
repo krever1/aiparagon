@@ -192,7 +192,14 @@ a{color:inherit}
 .hero > *{position:relative}
 .hero .eyebrow{font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
 .hero h1{margin:7px 0 2px;font-size:25px;letter-spacing:-.03em;font-weight:700}
-.hero .hsub{color:var(--muted);margin:0;font-size:14px}
+/* v9.95: the line under the greeting carries the date and the count of what needs
+   attention — the part people actually read — so it is no longer the smallest text there. */
+/* v10.3: the date and the count of what needs attention. It is the line people actually
+   read on this page, so it carries real weight rather than sitting at caption size. */
+.hero .title-copy p.hsub{color:var(--ink);margin:6px 0 0;font-size:22px;font-weight:650;letter-spacing:-.02em;line-height:1.3}
+.hero .title-copy p.hsub #heroClock{font-variant-numeric:tabular-nums}
+@media(max-width:900px){.hero .title-copy p.hsub{font-size:18px}}
+@media(max-width:600px){.hero .title-copy p.hsub{font-size:16px}}
 
 /* ══ SIGNATURE: TIMELINE BOARD ══ */
 .rail-card{background:var(--white);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-sm);margin-bottom:14px;overflow:hidden}
@@ -230,8 +237,64 @@ a{color:inherit}
 .tl-bar{position:absolute;height:30px;top:50%;transform:translateY(-50%);border-radius:6px;display:flex;align-items:center;gap:4px;
   padding:0 8px;font-size:11.3px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   cursor:pointer;transition:.13s;border:none;z-index:3}
+/* v9.92: an appointment bar drags to a new time and stretches from its right edge. */
+.tl-bar[data-appt]{cursor:grab}
+.tl-bar[data-appt]:active{cursor:grabbing}
+.tl-bar[data-appt]:after{content:"";position:absolute;right:0;top:0;bottom:0;width:14px;cursor:ew-resize}
+.tl-bar.dragging,.tl-bar.sizing{max-width:none;transition:none;z-index:9;box-shadow:0 6px 18px rgba(20,25,35,.22)}
+/* The row grows and shrinks by dragging the strip under the labels. */
+.tl-grip{height:9px;cursor:ns-resize;background:var(--surface-2);border-top:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center}
+.tl-grip:hover{background:var(--navy-soft)}
+.tl-grip i{width:34px;height:3px;border-radius:3px;background:var(--line)}
+.tl-grip:hover i{background:var(--navy-deep)}
+/* Calendar chips above the board. */
+/* v9.95: the accountability month grid */
+.ac-wrap{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--white)}
+.ac-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.ac-head b{flex:1;font-size:14px}
+.ac-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.ac-dow{font-size:10px;font-weight:800;letter-spacing:.06em;color:var(--muted);text-align:center;padding:7px 0;
+  border-bottom:1px solid var(--line);text-transform:uppercase}
+.ac-cell{min-height:84px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px 7px;
+  cursor:pointer;position:relative;transition:.12s;display:flex;flex-direction:column;gap:4px}
+.ac-cell:nth-child(7n+7){border-right:none}
+.ac-cell:hover{background:var(--surface-2)}
+.ac-cell.is-out{background:var(--surface-2);cursor:default;opacity:.45}
+.ac-cell.is-today .ac-d{background:var(--navy-deep);color:#fff}
+.ac-cell.is-on{box-shadow:inset 0 0 0 2px var(--navy-deep)}
+.ac-d{font-size:12px;font-weight:700;width:22px;height:22px;border-radius:50%;display:grid;place-items:center}
+.ac-n{position:absolute;top:7px;right:7px;font-size:9.6px;font-weight:800;color:var(--muted);
+  background:var(--surface-2);border-radius:999px;padding:2px 6px}
+.ac-n.ok{background:#E6F2EA;color:#2F7A5B}
+.ac-mini{display:flex;gap:3px;align-items:center;flex-wrap:wrap;margin-top:auto}
+.ac-mini i{width:8px;height:8px;border-radius:50%;display:block}
+.ac-mini b{font-size:9.4px;color:var(--muted);font-weight:700}
+@media(max-width:700px){.ac-cell{min-height:58px}.ac-mini{display:none}}
+/* v9.97: the month view opened from the date button */
+.cal-month{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--white)}
+.cal-month .ac-cell{min-height:98px}
+.cal-mo-items{display:flex;flex-direction:column;gap:2px;margin-top:auto;min-width:0}
+.cal-mo-i{font-size:9.8px;font-weight:700;border-radius:4px;padding:2px 5px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.cal-jump.is-on{border-color:var(--navy-deep);background:var(--surface-2)}
+.cal-date{all:unset;cursor:pointer;font:inherit;color:inherit;border-radius:8px;padding:2px 9px;
+  border:1px solid transparent;transition:.12s;white-space:nowrap}
+.cal-date:hover{border-color:var(--navy-deep);background:var(--white)}
+.cal-date.is-on{border-color:var(--navy-deep);background:var(--white)}
+@media(max-width:820px){.cal-month .ac-cell{min-height:64px}.cal-mo-items{display:none}}
+.cal-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:10px 14px 2px}
+.cal-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--white);
+  border-radius:999px;padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:.13s;color:var(--muted)}
+.cal-chip:hover{border-color:var(--navy-deep)}
+.cal-chip.on{color:var(--ink)}
+.cal-chip i{width:9px;height:9px;border-radius:50%;flex:none}
+.cal-chip.off{opacity:.5;text-decoration:line-through}
 /* v9.83: the client's appointments \u2014 list on the left, the one you pick beside it */
 .ap-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,340px);gap:0;align-items:start}
+/* v9.94: the care record — the day's entries on the left, the month picker on the right */
+.care-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,330px);gap:14px;align-items:start}
+@media(max-width:1000px){.care-split{grid-template-columns:1fr}}
 .ap-list{border-right:1px solid var(--line);min-width:0}
 .ap-side{padding:14px;min-width:0}
 .ap-row{display:flex;align-items:center;gap:11px;padding:11px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:.12s}
@@ -276,7 +339,8 @@ a{color:inherit}
 .b-gcal{background:#E8F0FE;color:#1B4FA0;box-shadow:inset 0 0 0 1px #C6DBFA;min-width:74px;padding-right:10px}
 .tl-lane .tl-bar{height:19px;font-size:10.6px;padding:0 6px;top:auto;transform:none;border-radius:5px}
 .tl-bar.b-appt,.tl-bar.b-flag,.tl-bar.b-lite{min-width:74px;padding-right:10px}
-.tl-bar{max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}  /* show the whole appointment name (Erica's Loom) */
+/* v9.92: names were clipping at 340px. A bar now grows to fit its label. */
+.tl-bar{max-width:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 .tl-full{position:fixed;inset:0;z-index:110;background:var(--bg);display:flex;flex-direction:column}
 .tlf-h{display:flex;gap:11px;align-items:center;padding:13px 18px;background:var(--white);border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -668,9 +732,45 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xm
 .card-b.flush{overflow-x:auto}                                        /* a wide table scrolls inside its card, never the page */
 .count-dot{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 8px;
   border-radius:999px;background:var(--navy-soft);color:var(--navy-deep);font-size:13px;font-weight:700;letter-spacing:0}
-.cal-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:10px 14px 2px}
-.cal-day{border:1px solid transparent;border-radius:10px;padding:8px 6px;text-align:center;background:var(--surface-2);
-  color:var(--muted);font-size:11px;cursor:pointer;position:relative;transition:.13s;min-height:52px}
+/* v9.92: the day cells were cramped. They are wider now and sit beside a date button that
+   opens a month picker, so jumping to any date does not mean paging the strip. */
+/* v9.93: the strip wrapped, which dropped one day onto its own full-width row. It is a
+   single line now — arrows, seven days that share the space, then the date button. */
+.cal-strip{display:flex;gap:8px;padding:10px 16px 14px;align-items:stretch;flex-wrap:nowrap;
+  border-bottom:1px solid var(--line)}
+.cal-days{display:flex;gap:8px;flex:1;min-width:0}
+/* v9.96: the day cells were narrow strips. They fill the row now, the way the client
+   appointment strip does, so the weekday and date sit comfortably. */
+.cal-day{border:1px solid transparent;border-radius:12px;padding:13px 8px;text-align:center;background:var(--surface-2);
+  color:var(--muted);font-size:12.5px;cursor:pointer;position:relative;transition:.13s;min-height:72px;
+  flex:1 1 0;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px}
+.cal-day strong{font-size:19px;font-weight:700;letter-spacing:-.02em}
+@media(max-width:820px){.cal-day{min-height:58px;padding:9px 5px}.cal-day strong{font-size:16px}}
+.cal-nav{all:unset;cursor:pointer;flex:none;width:32px;display:grid;place-items:center;border-radius:9px;
+  color:var(--muted);font-size:16px;border:1px solid var(--line);background:var(--white)}
+.cal-nav:hover{border-color:var(--navy-deep);color:var(--ink)}
+.cal-range{display:flex;gap:4px;align-items:center;padding:14px 16px 0;flex-wrap:wrap}
+.cal-range button{all:unset;cursor:pointer;padding:6px 13px;border-radius:9px;font-size:12.5px;font-weight:650;
+  border:1px solid var(--line);color:var(--muted);background:var(--white)}
+.cal-range button:hover{border-color:var(--navy-deep);color:var(--ink)}
+.cal-range button.on{background:var(--navy-deep);color:#fff;border-color:var(--navy-deep)}
+@media(max-width:760px){.cal-strip{flex-wrap:wrap}.cal-jump{order:-1;width:100%;justify-content:center;padding:9px}}
+.cal-jump{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--white);
+  border-radius:10px;padding:0 13px;font-size:13px;font-weight:650;cursor:pointer;flex:none;white-space:nowrap}
+.cal-jump:hover{border-color:var(--navy-deep)}
+.cal-pop{position:absolute;z-index:60;background:var(--white);border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 18px 44px rgba(20,25,35,.18);padding:14px;width:300px}
+.cal-pop-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-weight:700;font-size:13.5px}
+.cal-pop-h button{all:unset;cursor:pointer;padding:2px 9px;border-radius:7px;color:var(--muted)}
+.cal-pop-h button:hover{background:var(--surface-2);color:var(--ink)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-grid span.dow{font-size:9.6px;font-weight:800;color:var(--muted);text-align:center;padding:4px 0;letter-spacing:.05em}
+.cal-grid button{all:unset;cursor:pointer;text-align:center;padding:7px 0;border-radius:8px;font-size:12.5px;position:relative}
+.cal-grid button:hover{background:var(--surface-2)}
+.cal-grid button.is-today{color:var(--navy-deep);font-weight:800}
+.cal-grid button.is-on{background:var(--navy-deep);color:#fff;font-weight:700}
+.cal-grid button i{position:absolute;left:50%;transform:translateX(-50%);bottom:2px;width:4px;height:4px;
+  border-radius:50%;background:currentColor;opacity:.7}
 .cal-day strong{display:block;margin-top:3px;color:var(--ink);font-size:13px;font-weight:600}
 .cal-day:hover{border-color:var(--line)}
 .cal-day.is-today{background:var(--navy-soft);color:var(--navy-deep)}
@@ -713,6 +813,37 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xm
 .docrow.lvl-doc .dt .lvl-tag{background:#5C6B66;color:#fff}
 
 /* ── v9.30: per-user layout editor ── */
+/* v9.95: a heading you can type into, marked so it reads as editable */
+/* v9.95: rows you can pick up while the page is in edit mode */
+/* v9.96: a binder heading you click to open */
+.binder-head{display:flex;align-items:center;gap:7px;padding:11px 18px;cursor:pointer;font-size:11.5px;
+  font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);transition:.12s;
+  border-bottom:1px solid var(--line)}
+.binder-head:hover{background:var(--surface-2);color:var(--ink)}
+.binder-head.is-open{color:var(--ink);background:var(--surface-2)}
+.bh-c{font-size:10px;width:10px}
+.bh-n{margin-left:auto;font-weight:600;text-transform:none;letter-spacing:0;font-size:11.5px}
+.row-drag{cursor:grab}
+.row-drag:active{cursor:grabbing}
+.row-over{box-shadow:inset 0 2px 0 var(--navy-deep)}
+/* v10.1: the add-a-section tile, sitting where the section will land */
+.add-sec-tile{all:unset;display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;
+  cursor:pointer;margin-top:14px;padding:16px 18px;border-radius:14px;
+  border:2px dashed var(--line);background:var(--surface-2);transition:.14s;color:var(--muted)}
+.add-sec-tile:hover{border-color:var(--navy-deep);background:var(--white);color:var(--ink)}
+.add-sec-tile .as-plus{font-size:20px;width:38px;height:38px;border-radius:11px;flex:none;
+  display:grid;place-items:center;background:var(--white);border:1px solid var(--line)}
+.add-sec-tile:hover .as-plus{border-color:var(--navy-deep)}
+.add-sec-tile b{display:block;font-size:13.6px;font-weight:700;color:var(--ink)}
+.add-sec-tile em{display:block;font-style:normal;font-size:11.8px;margin-top:2px}
+.inline-ed{outline:none;border-radius:6px;padding:1px 5px;margin:0 -5px;cursor:text;
+  box-shadow:inset 0 0 0 1px var(--line);transition:.12s}
+.inline-ed:hover{box-shadow:inset 0 0 0 1px var(--navy-deep);background:var(--white)}
+.inline-ed:focus{box-shadow:inset 0 0 0 2px var(--navy-deep);background:var(--white)}
+.lay-t[contenteditable]{outline:none;cursor:text;border-radius:5px;padding:0 5px}
+.lay-t[contenteditable]:focus{background:rgba(255,255,255,.85);color:var(--ink)}
+.lay-bar{cursor:grab}
+.lay-bar:active{cursor:grabbing}
 .lay-bar{display:flex;align-items:center;gap:6px;background:var(--gold-soft);border-bottom:1px dashed #E8D9A8;padding:6px 10px;font-size:12px;border-radius:var(--r) var(--r) 0 0}
 .lay-bar .lay-h{cursor:grab;font-size:14px;color:#7A5E12;user-select:none}
 .lay-bar .lay-t{flex:1;font-weight:800;color:#7A5E12;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -3049,13 +3180,13 @@ const AUDIT = [
 const NAV = {
   director:[
     {g:'Today'},   {id:'home',t:'Home',i:'🏠'}, {id:'tasks',t:'Tasks',i:'✅'}, {id:'calendar',t:'Calendar',i:'📅'},
-    {g:'Care'},    {id:'clients',t:'Clients',i:'😊'}, {id:'team',t:'Staff',i:'🤝'}, {id:'trainhub',t:'Training & onboarding',i:'🎓'}, {id:'safety',t:'Safety log',i:'🛡️'},
+    {g:'Care'},    {id:'clients',t:'Clients',i:'😊'}, {id:'team',t:'Staff',i:'🤝'}, {id:'trainhub',t:'Training & onboarding',i:'🎓'}, {id:'safety',t:'Safety log',i:'🛡️'}, {id:'acct',t:'Accountability',i:'📍'},
     {g:'Records'}, {id:'templates',t:'Documents',i:'📁'}, {id:'forms',t:'Templates',i:'📑'},
     {g:'Setup'},   {id:'directory',t:'Directory',i:'📇'}, {id:'changelog',t:'Change log',i:'🕘'}
   ],
   staff:[
     {g:'Today'},   {id:'home',t:'My shift',i:'🏠'}, {id:'tasks',t:'My tasks',i:'✅'}, {id:'calendar',t:'Calendar',i:'📅'},
-    {g:'Care'},    {id:'clients',t:'Clients',i:'😊'}, {id:'safety',t:'Safety log',i:'🛡️'}
+    {g:'Care'},    {id:'clients',t:'Clients',i:'😊'}, {id:'safety',t:'Safety log',i:'🛡️'}, {id:'acct',t:'Accountability',i:'📍'}
   ],
   family:[
     {g:'Client 4023180'},
@@ -3487,6 +3618,7 @@ const ICON_PATHS={
   users:'M18 21a8 8 0 0 0-12 0M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
   'graduation-cap':'M21.4 9 12 5 2.6 9l9.4 4zM6 12v5c3 2 9 2 12 0v-5',
   shield:'M20 13c0 5-3.5 7.5-7.7 8.9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1 1 0 0 1 1.5 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1zM9 12l2 2 4-4',
+  'map-pin':'M20 10c0 4.4-5.6 10.6-7.4 12.4a.9.9 0 0 1-1.2 0C9.6 20.6 4 14.4 4 10a8 8 0 0 1 16 0zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
   folder:'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9L9.6 3.9A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z',
   'file-text':'M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7zM14 2v4a2 2 0 0 0 2 2h4M10 9H8M16 13H8M16 17H8',
   'book-user':'M15 13a3 3 0 1 0-6 0M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2zM12 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
@@ -3532,7 +3664,7 @@ function ico(name,size){
 }
 const NAV_ICON={home:'house',tasks:'circle-check',calendar:'calendar',clients:'heart',team:'users',trainhub:'graduation-cap',
   safety:'shield',templates:'folder',forms:'file-text',directory:'book-user',changelog:'history',compliance:'chart',
-  messages:'clipboard',weekly:'circle-check',profile:'id-card'};
+  messages:'clipboard',weekly:'circle-check',profile:'id-card',acct:'map-pin'};
 const PAGE_ICON={home:['house','sage'],tasks:['circle-check','honey'],calendar:['calendar-range','blue'],clients:['heart','peach'],
   team:['users','sage'],trainhub:['graduation-cap','lilac'],safety:['shield','sage'],templates:['folder','honey'],
   forms:['file-text','blue'],directory:['book-user','lilac'],changelog:['history','sage'],messages:['clipboard','blue'],
@@ -4006,17 +4138,19 @@ function render(){
   navRemember();
   try{ docEditSync(); }catch(e){}                                    // template dragging follows page edit mode
   try{ renderNav(); }catch(e){}                                      // nav counts never go stale behind the page
-  if(state.client){ v.innerHTML = backBar()+viewClient(state.client); if(typeof layoutApply==='function') layoutApply(); if(typeof clientEditGate==='function') clientEditGate(); if(typeof mobileTables==='function') mobileTables(); return; }
+  if(state.client){ v.innerHTML = backBar()+viewClient(state.client); if(typeof layoutApply==='function') layoutApply(); if(typeof clientEditGate==='function') clientEditGate(); if(typeof rowDragWire==='function') rowDragWire(); if(typeof mobileTables==='function') mobileTables(); return; }
 
   const map = {
     home:()=>viewHome()+staffDocsCard()+staffGuidesCard(), clients:viewClients, meds:viewMeds, calendar:viewCalendar, tasks:viewTasks, billing:viewBilling,
     incidents:viewIncidents, team:viewTeam, messages:viewMessages, compliance:viewCompliance,trainhub:viewTrainHub,newclient:viewNewClient, changelog:viewChangeLog,
     forms:viewForms, stafffiles:viewStaffFiles, directory:viewDirectory, weekly:viewWeekly, staffpage:viewStaffPage,
-    templates:viewTemplates, integrations:viewIntegrations, training:viewTraining, docs:viewDocs, safety:viewSafety, profile:viewProfile
+    templates:viewTemplates, integrations:viewIntegrations, training:viewTraining, docs:viewDocs, safety:viewSafety,
+    acct:viewAccountability, profile:viewProfile
   };
   v.innerHTML = (state.view==='home'?'':backBar()) + (map[state.view]||viewHome)();
   if(typeof layoutApply==='function') layoutApply();
   if(typeof clientEditGate==='function') clientEditGate();
+  if(typeof rowDragWire==='function') rowDragWire();
   if(typeof mobileTables==='function') mobileTables();
   if(typeof tlAutoScroll==='function') requestAnimationFrame(()=>tlAutoScroll());
 }
@@ -4030,9 +4164,12 @@ function render(){
    device. Nobody else's view changes. */
 /* v9.86: the same edit mode everywhere — rearrange the sections, rename a table and its
    description, hide what you don't use, add your own. Entered from the cog on each page. */
-const LAYOUT_PAGES={home:1,clients:1,team:1,safety:1,trainhub:1,staffpage:1,templates:1,forms:1};
+const LAYOUT_PAGES={home:1,clients:1,team:1,safety:1,trainhub:1,staffpage:1,templates:1,forms:1,acct:1,tasks:1};
 function layPage(){
-  if(state.client) return ((state.tab||'overview')==='overview')?'client':null;
+  /* v9.95: edit mode used to exist only on the client's Overview tab, so opening Files or
+     Care while editing silently switched it off. Every tab is editable now, each keeping
+     its own arrangement under its own key. */
+  if(state.client){ const t=state.tab||'overview'; return t==='overview'?'client':('client-'+t); }
   return LAYOUT_PAGES[state.view]?state.view:null;
 }
 function layCfg(page){ const L=((USER_SET[userKey()]||{}).layouts)||{}; return JSON.parse(JSON.stringify(L[page]||{order:[],hidden:[],col:{}})); }
@@ -4042,11 +4179,22 @@ function laySaveSections(page,list){ const S=Object.assign({},((USER_SET[userKey
 function laySlug(t){ return String(t||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'section'; }
 function layCols(){
   const root=el('view'); if(!root) return [];
-  const gs=root.querySelector(':scope > .grid-side');
+  const gs=root.querySelector(':scope > .grid-side')
+        || root.querySelector(':scope > .care-split')
+        || root.querySelector(':scope > .two-col')
+        || root.querySelector(':scope > .grid2');
   return gs?[...gs.children]:[root];
 }
 function layCards(cols){
-  const out=[]; cols.forEach((c,ci)=>[...c.querySelectorAll(':scope > section.card')].forEach(sec=>{ sec.dataset.col=ci; out.push(sec); }));
+  const root=el('view'); if(!root) return [];
+  const out=[];
+  root.querySelectorAll('section.card').forEach(sec=>{
+    if(sec.parentElement && sec.parentElement.closest('section.card')) return;   // a card inside a card is not a section
+    let ci=cols.findIndex(c=>c===sec.parentElement);
+    if(ci<0) ci=cols.findIndex(c=>c.contains(sec));
+    sec.dataset.col=Math.max(0,ci);
+    out.push(sec);
+  });
   return out;
 }
 /* On a phone a wide table is unreadable however you scroll it, so each row becomes a
@@ -4120,8 +4268,116 @@ function mtabOpen(i){
 /* v9.83: on a client page nothing is editable until the director chooses to edit the
    page from the cog. The pencils, the ✕ deletes, the reorder arrows and the add-item
    rows all stay out of sight until then, so the record reads as a record. */
-const ED_LABELS=['✎','✕','↑','↓','Edit','✎ Edit','✕ Delete','✎ Rename','＋ Add','＋ Add goal'];
-const ED_PAGES={trainhub:1,safety:1,team:1,staffpage:1,templates:1,forms:1};   // read first, edit when you ask for it
+/* v9.97: adding a goal or a weekly item is ordinary work, not editing the page. Only the
+   controls that change the page's shape are hidden until you ask to edit it. */
+const ED_LABELS=['✎','✕','Edit','✎ Edit','✕ Delete','✎ Rename'];
+const ED_PAGES={trainhub:1,safety:1,team:1,staffpage:1,templates:1,forms:1,acct:1,tasks:1,clients:1};   // read first, edit when you ask for it
+/* v9.95: entries inside a section reorder by dragging while the page is being edited.
+   The list keeps its own order per account, so one director's arrangement is theirs. */
+/* Moves a row to where it was dropped. Weekly checklist items and IPP goals both carry a
+   real order the agency set, so the drop writes it back to the record, not to a view. */
+function rowReorder(listKey,fromId,toId){
+  const [kind,cid]=String(listKey).split(':');
+  const move=(arr)=>{
+    const a=arr.findIndex((x,i)=>String(i)===fromId), b=arr.findIndex((x,i)=>String(i)===toId);
+    if(a<0||b<0||a===b) return false;
+    const [it]=arr.splice(a,1); arr.splice(b,0,it); return true;
+  };
+  if(kind==='weekly'){
+    if(!move(WEEKLY[cid]||[])) return;
+    logAudit('Reordered weekly checklist',(client(cid)||{}).uci||'');
+  } else if(kind==='goals'){
+    const c=client(cid); if(!c||!move(c.goals||[])) return;
+    sbPatch('np_demo_clients',cid,{goals:c.goals});
+    logAudit('Reordered IPP goals',c.uci||'');
+  } else return;
+  render(); toast('Order saved.');
+}
+/* ── v10.2: rows drag on every list, not only the two that were wired by hand ──────────
+   Reordering a weekly item or a goal writes back to the record, because those orders mean
+   something to the agency. Everywhere else the order is a reading preference, so it is
+   stored per person per section and replayed onto the list after each render. That is what
+   lets readiness guides, onboarding checklists, safety logs, binders and templates all
+   reorder without teaching this code about any of them. */
+function rowOrders(){ return ((USER_SET[userKey()]||{}).rowOrders)||{}; }
+function rowOrderKey(sec){ return (layPage()||state.view||'')+'|'+(sec?sec.dataset.lid:'')+'|'; }
+const rowLabel=n=>String((n.textContent||'').replace(/\s+/g,' ').trim()).slice(0,80);
+function rowListsIn(v){
+  const out=[];
+  v.querySelectorAll('section.card .card-b, section.card [data-rowlist]').forEach(box=>{
+    const kids=[...box.children].filter(k=>k.matches&&k.matches('.lrow,.checkrow,.docrow,.trow'));
+    if(kids.length>1) out.push([box,kids]);
+  });
+  return out;
+}
+function rowOrderApply(){
+  const v=el('view'); if(!v) return;
+  const all=rowOrders();
+  rowListsIn(v).forEach(([box,kids],li)=>{
+    const sec=box.closest('section.card');
+    const saved=all[rowOrderKey(sec)+li];
+    if(!saved||!saved.length) return;
+    const byLabel={}; kids.forEach(k=>{ const l=rowLabel(k); if(!(l in byLabel)) byLabel[l]=k; });
+    saved.forEach(l=>{ const n=byLabel[l]; if(n) box.appendChild(n); });
+    kids.forEach(k=>{ if(saved.indexOf(rowLabel(k))<0) box.appendChild(k); });
+  });
+}
+function rowOrderSave(box,li){
+  const sec=box.closest('section.card');
+  const kids=[...box.children].filter(k=>k.matches&&k.matches('.lrow,.checkrow,.docrow,.trow'));
+  const all=Object.assign({},rowOrders());
+  all[rowOrderKey(sec)+li]=kids.map(rowLabel);
+  userSetSave({rowOrders:all});
+}
+function rowDragGeneric(){
+  if(!state.layoutEdit) return;
+  const v=el('view'); if(!v) return;
+  rowListsIn(v).forEach(([box,kids],li)=>{
+    if(box.dataset.rowlist) return;                                  // hand-wired lists keep their own handling
+    if(box.dataset.genWired) return;
+    box.dataset.genWired='1';
+    kids.forEach(row=>{
+      row.setAttribute('draggable','true');
+      row.classList.add('row-drag');
+      row.addEventListener('dragstart',e=>{ window._genDrag={box,row}; e.stopPropagation(); });
+      row.addEventListener('dragover',e=>{ const d=window._genDrag;
+        if(d&&d.box===box&&d.row!==row){ e.preventDefault(); row.classList.add('row-over'); } });
+      row.addEventListener('dragleave',()=>row.classList.remove('row-over'));
+      row.addEventListener('drop',e=>{
+        e.preventDefault(); e.stopPropagation(); row.classList.remove('row-over');
+        const d=window._genDrag; if(!d||d.box!==box) return;
+        box.insertBefore(d.row,row);
+        rowOrderSave(box,li);
+        window._genDrag=null;
+        toast('Order saved.');
+      });
+    });
+  });
+}
+function rowDragWire(){
+  rowOrderApply();
+  rowDragGeneric();
+  if(!state.layoutEdit) return;
+  const v=el('view'); if(!v) return;
+  v.querySelectorAll('[data-rowlist]').forEach(list=>{
+    if(list.dataset.rowWired) return;
+    list.dataset.rowWired='1';
+    [...list.children].forEach(row=>{
+      if(!row.dataset.rowid) return;
+      row.setAttribute('draggable','true');
+      row.classList.add('row-drag');
+      row.addEventListener('dragstart',e=>{ window._rowDrag={list:list.dataset.rowlist,id:row.dataset.rowid}; e.stopPropagation(); });
+      row.addEventListener('dragover',e=>{ const d=window._rowDrag;
+        if(d&&d.list===list.dataset.rowlist&&d.id!==row.dataset.rowid){ e.preventDefault(); row.classList.add('row-over'); } });
+      row.addEventListener('dragleave',()=>row.classList.remove('row-over'));
+      row.addEventListener('drop',e=>{
+        e.preventDefault(); e.stopPropagation(); row.classList.remove('row-over');
+        const d=window._rowDrag; if(!d) return;
+        rowReorder(list.dataset.rowlist,d.id,row.dataset.rowid);
+      });
+    });
+  });
+}
 function clientEditGate(){
   if(!state.client && !ED_PAGES[state.view]) return;
   const v=el('view'); if(!v) return;
@@ -4157,10 +4413,39 @@ function layoutApply(){
   });
   // 3) apply the saved arrangement
   const titles=layTitles(page);
-  cards.forEach(sec=>{ const t=titles[sec.dataset.lid]; const h=sec.querySelector('h2'); if(t&&h) h.textContent=t; });
+  cards.forEach(sec=>{
+    sec.querySelectorAll('h2').forEach((h,i)=>{
+      const t=titles[sec.dataset.lid+(i===0?'':':title-'+i)]; if(t) h.textContent=t; });
+  });
   const subs=laySubs(page);                                          // v9.83: the line under the title is editable too
-  cards.forEach(sec=>{ const t=subs[sec.dataset.lid]; if(t==null) return;
-    const d=sec.querySelector('.card-h .sub, .sec-head p, .card-h p'); if(d) d.textContent=t; });
+  cards.forEach(sec=>{
+    sec.querySelectorAll('.card-h .sub, .sec-head p, .card-h p').forEach((d,i)=>{
+      const t=subs[sec.dataset.lid+(i===0?'':':sub-'+i)]; if(t!=null) d.textContent=t; });
+  });
+  /* v9.95: in edit mode the heading and the line under it are typed on the page itself.
+     No dialog, no pencil — click the words and change them. */
+  if(state.layoutEdit) cards.forEach(sec=>{
+    const lid=sec.dataset.lid;
+    const pairs=[];
+    sec.querySelectorAll('h2').forEach((h,i)=>pairs.push([h,i===0?'title':'title-'+i]));
+    sec.querySelectorAll('.card-h .sub, .sec-head p, .card-h p').forEach((d,i)=>pairs.push([d,i===0?'sub':'sub-'+i]));
+    pairs.forEach(([node,kind])=>{
+      if(!node||node.dataset.inlineEd) return;
+      node.dataset.inlineEd='1';
+      node.setAttribute('contenteditable','true');
+      node.setAttribute('spellcheck','false');
+      node.classList.add('inline-ed');
+      node.title=kind.indexOf('title')===0?'Click to rename':'Click to change this description';
+      node.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); node.blur(); } });
+      node.addEventListener('click',e=>e.stopPropagation());
+      node.addEventListener('blur',()=>{
+        const bk=sec.dataset.binder;
+        if(kind==='title'&&bk) return binderTitleSet(bk,node.textContent);
+        if(kind.indexOf('title')===0) layTitleSet(lid+(kind==='title'?'':':'+kind),node.textContent);
+        else laySubSet(lid+(kind==='sub'?'':':'+kind),node.textContent);
+      });
+    });
+  });
   const cfg=layCfg(page);
   (cfg.order||[]).forEach(lid=>{
     const sec=cards.find(x=>x.dataset.lid===lid); if(!sec) return;
@@ -4174,6 +4459,19 @@ function layoutApply(){
   });
   if(state.layoutEdit) layoutChrome(page,cols,cards,cfg);
 }
+function addSectionTiles(page){
+  const cols=layCols(); if(!cols.length) return;
+  document.querySelectorAll('#view .add-sec-tile').forEach(n=>n.remove());
+  if(!state.layoutEdit) return;
+  cols.forEach((col,i)=>{
+    const t=document.createElement('button');
+    t.className='add-sec-tile';
+    t.type='button';
+    t.innerHTML=`<span class="as-plus">＋</span><span><b>Add a section</b><em>${cols.length>1?(i===0?'to this column':'to this column'):'to this page'} — notes, a table or quick links</em></span>`;
+    t.onclick=()=>csAddMenu(page,i);
+    col.appendChild(t);
+  });
+}
 function layoutChrome(page,cols,cards,cfg){
   cards.forEach(sec=>{
     if(sec.querySelector(':scope > .lay-bar')) return;
@@ -4181,17 +4479,24 @@ function layoutChrome(page,cols,cards,cfg){
     const hid2=(cfg.hidden||[]).includes(lid);
     const bar=document.createElement('div');
     bar.className='lay-bar';
-    bar.innerHTML=`<span class="lay-h" draggable="true" title="Drag anywhere">⠿</span><span class="lay-t">${esc(((sec.querySelector('h2')||{}).textContent||'Section').trim())}</span>
-      <button title="Move up" onclick="layMove('${lid}',-1)">↑</button>
-      <button title="Move down" onclick="layMove('${lid}',1)">↓</button>
-      ${cols.length>1?`<button title="Move to the other column" onclick="laySwap('${lid}')">⇄</button>`:''}
+    /* v9.95: the whole bar is the handle now, not the six dots at its left edge, and the
+       title is typed straight into the bar instead of through a rename dialog. */
+    bar.setAttribute('draggable','true');
+    bar.innerHTML=`<span class="lay-h" title="Drag this bar to move the section">⠿</span><span class="lay-t" contenteditable="true" spellcheck="false"
+        data-lid="${lid}" title="Click to rename this section">${esc(((sec.querySelector('h2')||{}).textContent||'Section').trim())}</span>
+      ${/* v9.96: the arrows did what dragging the bar already does. Dragging is the way now. */''}
+      ${/* v9.97: dragging a bar already moves a section between columns, so the swap button
+            was a second way to do the same thing. */''}
       <button onclick="layHide('${lid}')">${hid2?'👁 Show':'Hide'}</button>
-      ${isCs?`<button onclick="csEdit('${page}','${lid.slice(3)}')">✎ Edit</button><button onclick="csDel('${page}','${lid.slice(3)}')">✕</button>`
-            :`<button title="Rename this section" onclick="layRename('${lid}')">✎ Rename</button>
-               <button title="Change the line under the title" onclick="layRenameSub('${lid}')">✎ Description</button>`}`;
+      ${isCs?`<button onclick="csEdit('${page}','${lid.slice(3)}')">✎ Edit</button>`:''}
+      <button title="${isCs?'Delete this section':'Remove this section from the page'}" onclick="laySectionDel('${page}','${lid}',${isCs})">✕</button>`;
     sec.prepend(bar);
-    const h=bar.querySelector('.lay-h');
-    h.addEventListener('dragstart',()=>{ window._layDrag=lid; });
+    const t=bar.querySelector('.lay-t');
+    t.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); t.blur(); } });
+    t.addEventListener('blur',()=>layTitleSet(lid,t.textContent));
+    t.addEventListener('pointerdown',e=>e.stopPropagation());
+    t.addEventListener('dragstart',e=>{ e.preventDefault(); e.stopPropagation(); });
+    bar.addEventListener('dragstart',()=>{ window._layDrag=lid; });
     sec.addEventListener('dragover',e=>{ if(window._layDrag&&window._layDrag!==lid) e.preventDefault(); });
     sec.addEventListener('drop',e=>{
       e.preventDefault(); e.stopPropagation();
@@ -4241,6 +4546,47 @@ function layRename(lid){
 }
 function layTitles(page){ const T2=((USER_SET[userKey()]||{}).secTitles)||{}; return T2[page]||{}; }
 function laySubs(page){ const S2=((USER_SET[userKey()]||{}).secSubs)||{}; return S2[page]||{}; }
+/* One place that writes a section title, whichever way it was typed. */
+/* A binder's name is a fact about the agency, not a personal layout choice, so typing over
+   it writes the shared name. The " templates" suffix the page adds is stripped back off. */
+function binderTitleSet(bk,v){
+  const val=String(v||'').replace(/\s*templates$/i,'').trim();
+  const cur=FOLDER_NAMES[bk]||bk;
+  if(!val||val===cur) return;
+  FOLDER_NAMES[bk]=val;
+  const cb=(typeof CUSTOM_BINDERS!=='undefined')&&CUSTOM_BINDERS.find(b=>b.key===bk); if(cb) cb.name=val;
+  if(typeof bindersSave==='function') bindersSave();
+  logAudit('Renamed binder',`${cur} \u2192 ${val}`);
+  render(); toast('Binder renamed for everyone.');
+}
+function layTitleSet(lid,v){
+  const page=layPage(); if(!page) return;
+  const val=String(v||'').trim();
+  const cur=layTitles(page)[lid]||'';
+  if(val===cur) return;
+  const all=Object.assign({},((USER_SET[userKey()]||{}).secTitles)||{});
+  all[page]=Object.assign({},all[page]||{});
+  if(val) all[page][lid]=val; else delete all[page][lid];
+  userSetSave({secTitles:all}); toast('Renamed.');
+}
+function laySubSet(lid,v){
+  const page=layPage(); if(!page) return;
+  const val=String(v||'').trim();
+  const cur=laySubs(page)[lid]||'';
+  if(val===cur) return;
+  const all=Object.assign({},((USER_SET[userKey()]||{}).secSubs)||{});
+  all[page]=Object.assign({},all[page]||{});
+  if(val) all[page][lid]=val; else delete all[page][lid];
+  userSetSave({secSubs:all}); toast('Description saved.');
+}
+/* v9.95: ✕ on a section. A section you added is deleted outright; a built-in one is
+   taken off the page and can be brought back from the same bar. */
+function laySectionDel(page,lid,isCustom){
+  if(isCustom) return csDel(page,lid.slice(3));
+  askDelete('Remove this section?','It comes off this page. You can put it back from the same bar.',()=>{
+    layHide(lid);
+  },'Remove section');
+}
 function layRenameSub(lid){
   const cur=laySubs(layPage())[lid]||'';
   openModal('Section description',`
@@ -4288,7 +4634,8 @@ function editBtn(sz){
   return `<button class="btn ${state.layoutEdit?'gold':'ghost'}${c}" onclick="pageEdit()">${state.layoutEdit?'✓ Done':'✎ Edit page'}</button>`;
 }
 function pageSettings(page){
-  const lbl=page==='client'?'this client page':page==='clients'?'the clients page':page==='trainhub'?'the training page':page==='safety'?'the safety log':'this page';
+  const lbl=page==='client'?'this client page':page==='clients'?'the clients page':page==='trainhub'?'the training page'
+    :page==='safety'?'the safety log':page==='tasks'?'the tasks page':page==='acct'?'the accountability page':'this page';
   openModal('Settings',`
     <div class="tiny muted" style="margin-bottom:10px">How ${lbl} looks. Layout choices are yours alone; colours and names are shared with the team.</div>
     ${[['✎','Edit this page','Rename titles and descriptions, rearrange or hide sections, and show every edit control',"closeAll();state.layoutEdit=true;render();toast('Editing this page. Rename titles and descriptions, drag to rearrange, and every ✎ and ✕ is now showing. Tap Done when you are happy.')"],
@@ -4300,12 +4647,46 @@ function pageSettings(page){
         <div class="cb">${ic}</div><div class="ct"><b>${t}</b><div class="tiny muted">${d}</div></div></button>`).join('')}`,
     `<button class="btn ghost" onclick="closeAll()">Close</button>`);
 }
+/* v9.92: one place for how the board reads — what drives the colour, how soft the bars are
+   painted, and whether the label is light or dark. Lightening a house used to leave white
+   text on a near-white bar; automatic follows the softened colour instead. */
+function calLookForm(){
+  const opt=(v,l,d)=>`<button class="checkrow" style="width:100%;cursor:pointer;text-align:left;border-color:${CAL_COLOR_BY===v?'var(--navy-deep)':'var(--line)'};margin-bottom:6px"
+    onclick="CAL_COLOR_BY='${v}';calColorBySave();calLookForm();render()">
+    <div class="cb">${CAL_COLOR_BY===v?'◉':'○'}</div><div class="ct"><b>${l}</b><div class="tiny muted">${d}</div></div></button>`;
+  openModal('Colours and text',`
+    <div class="tiny muted" style="margin-bottom:8px">What decides an appointment's colour</div>
+    ${opt('type','Appointment type','Dental, medical, day program and so on')}
+    ${opt('client','Client','Each person keeps their own colour across the board')}
+    ${opt('house','House','Maple, Cedar, Birch — matches the shift colours')}
+    ${opt('calendar','Calendar','Company, personal or a contractor calendar')}
+    <div class="tiny muted" style="margin:14px 0 6px">How soft the bars look</div>
+    <input type="range" min="0" max="80" value="${CAL_SOFT}" style="width:100%"
+      oninput="CAL_SOFT=+this.value;el('clkPrev').innerHTML=calLookPreview()">
+    <div class="tiny muted" style="margin:12px 0 6px">Label colour</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${[['auto','Automatic'],['dark','Always dark'],['light','Always light']]
+        .map(([v,l])=>`<button class="btn ${CAL_TEXT===v?'navy':'ghost'} sm" onclick="CAL_TEXT='${v}';calLookForm()">${l}</button>`).join('')}
+    </div>
+    <div class="tiny muted" style="margin:14px 0 6px">Preview</div>
+    <div id="clkPrev" style="display:flex;gap:8px;flex-wrap:wrap">${calLookPreview()}</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button>
+     <button class="btn navy" onclick="calLookSave();closeAll();render();toast('Calendar colours saved.')">Save</button>`);
+}
+function calLookPreview(){
+  const c=visibleClients()[0];
+  const bits=[[homeColor(HOMES[0]||'Maple House'),'Staff on shift'],
+              [catOf(Object.keys(APPT_CATS)[0]||'Dental').color,'Appointment'],
+              [clientColor(c&&c.id),'By client']];
+  return bits.map(([hex,l])=>`<span class="tl-bar" style="position:static;transform:none;height:28px;${barPaint(hex)}">${esc(l)}</span>`).join('');
+}
 function calendarSettings(){
   const rows=[['🗓','Calendars and filters','Which calendars show and what the list is filtered to','closeAll();calControls()']];
   if(state.role==='director') rows.push(
     ['🗓','Appointment types','Icon and colour for each type',"displaySettings('cats')"],
     ['📚','Calendars','Names, colours, icons and privacy',"displaySettings('cals')"],
     ['🏠','Houses and colours','Names and the colour each house shows in',"displaySettings('homes')"],
+    ['🎨','Colours and text','What drives the colour, how soft the bars look, light or dark labels','calLookForm()'],
     ['⚠','Attention icons','Icons and colours for items needing attention',"displaySettings('attn')"],
     ['✎','Rename menus and binders','Call things what your team calls them','labelsForm()']);
   openModal('Settings',`
@@ -4317,7 +4698,7 @@ function calendarSettings(){
 function homeSettings(){
   openModal('Settings',`
     <div class="tiny muted" style="margin-bottom:10px">Everything that changes how this dashboard looks.</div>
-    ${[['⠿','Customize layout','Rearrange, hide or add sections on this page',"closeAll();state.layoutEdit=true;render();toast('Drag the handles to rearrange. Tap Done when you are happy.')"],
+    ${[['✎','Edit this page','Rename titles and descriptions, drag to rearrange, hide or add sections',"closeAll();state.layoutEdit=true;render();toast('Editing this page. Click a title or description to rename it, drag a bar to rearrange. Tap Done when you are happy.')"],
        ['🏠','Houses and colours','Names and the colour each house shows in',"displaySettings('homes')"],
        ['🗓','Appointment types','Icon and colour for each type',"displaySettings('cats')"],
        ['📚','Calendars','Names, colours, icons and privacy',"displaySettings('cals')"],
@@ -4340,9 +4721,11 @@ function layoutFab(page){
   f.onclick=()=>{ state.layoutEdit=!state.layoutEdit; render(); if(!state.layoutEdit) toast('Saved to your account — this layout follows your login on every device.'); };
   if(state.layoutEdit){
     if(!f2){ f2=document.createElement('div'); f2.id='layFab2'; document.body.appendChild(f2); }
-    f2.innerHTML=`<button class="btn navy sm" title="Add section" onclick="csAddMenu('${page}')"><span class="fab-ic">＋</span><span class="fab-lbl">Add section</span></button>
-      <button class="btn ghost sm" title="Reset layout" onclick="layReset()"><span class="fab-ic">↺</span><span class="fab-lbl">Reset layout</span></button>`;
+    f2.innerHTML=`<button class="btn ghost sm" title="Reset layout" onclick="layReset()"><span class="fab-ic">↺</span><span class="fab-lbl">Reset layout</span></button>`;
   } else if(f2) f2.remove();
+  /* v10.1: Add section used to hide in the bottom corner, far from the sections it adds to.
+     It sits at the end of each column now, where the new section will actually appear. */
+  addSectionTiles(page);
 }
 /* ── my own sections: notes, custom tables, quick links ── */
 function customSectionHtml(page,cs){
@@ -4357,7 +4740,8 @@ function customSectionHtml(page,cs){
   return `<section class="card" data-lid="${lid}" data-cs="1"><div class="card-h"><h2>${esc(cs.title)}</h2><div class="sub">Your section — only you see it</div>
     ${!state.layoutEdit?`<div class="right"><button class="btn ghost sm" onclick="csEdit('${page}','${cs.id}')">✎</button></div>`:''}</div>${body}</section>`;
 }
-function csAddMenu(page){
+function csAddMenu(page,col){
+  window._csCol=(col==null?null:col);
   openModal('Add a section to your layout',`
     <div class="tiny muted" style="margin-bottom:10px">Sections you add belong to your account — they show only to you, on every device you sign in from.</div>
     ${[['notes','✎ Notes','A free-text card for anything you want in front of you'],
@@ -4459,6 +4843,35 @@ const tlBar=(b)=>{
   return `<button class="tl-bar ${b.cls}" style="left:${b.l}px;width:${b.w}px${b.top!=null?';top:'+b.top+'px':''}${extra}" title="${esc(b.tip||b.txt)}" ${attrs} onclick="${b.on}">${b.txt}</button>`;
 };
 
+/* v9.92: every calendar the agency has linked, as a row of chips over the board. Click one
+   to take it off the board and back on, the way the earlier build had it. */
+function calChips(){
+  const defs=calDefs();
+  if(!defs.length) return '';
+  return `<div class="cal-chips">
+    ${defs.map(c=>{ const on=calVisible(c.key);
+      return `<button class="cal-chip ${on?'on':'off'}" onclick="calToggle('${esc(c.key)}')"
+        title="${on?'Hide':'Show'} ${esc(c.name)}">
+        <i style="background:${c.color}"></i>${c.icon||''} ${esc(c.name)}</button>`; }).join('')}
+    ${state.role==='director'?`<button class="cal-chip" onclick="calControls()" title="Add or edit a calendar">＋ Calendar</button>`:''}
+  </div>`;
+}
+/* v9.93: the board opened at a height that showed a sliver of the day. It starts taller now,
+   and whatever height you drag it to is what it opens at next time. */
+function tlRowH(){ const v=+(lsGet('np_tl_rowh')||0); return Math.max(34,Math.min(260,v||96)); }
+function tlRowSet(px){ lsSet('np_tl_rowh',String(Math.max(34,Math.min(260,Math.round(px))))); }
+let tlGrip=null;
+document.addEventListener('pointerdown',e=>{
+  const g=e.target.closest('.tl-grip'); if(!g) return;
+  tlGrip={y:e.clientY,h:tlRowH()}; e.preventDefault();
+});
+document.addEventListener('pointermove',e=>{
+  if(!tlGrip) return;
+  tlRowSet(tlGrip.h+(e.clientY-tlGrip.y));
+  document.querySelectorAll('.tl-row:not(.tl-hrow):not(.tl-group) .tl-cells')
+    .forEach(c=>{ if(!c.dataset.lane) c.style.height=tlRowH()+'px'; });
+});
+document.addEventListener('pointerup',()=>{ if(tlGrip){ tlGrip=null; render(); } });
 function tlCard(full){
   const D=full?tlState.date:T;
   const fClients=full&&tlState.home?visibleClients().filter(c=>c.home===tlState.home):visibleClients();
@@ -4486,16 +4899,19 @@ function tlCard(full){
     .sort((x,y)=>String(x.o.time).localeCompare(String(y.o.time)));
   const _bars=_all.map(e=>{ const o=e.o;
     return e.k==='p'
-      ? {l:tlPx(o.time),w:Math.max(74,o.dur/60*TL.hw),cls:o.flag?'b-flag':'b-appt',_o:o,
-         attrs:o.flag?'':`data-cat style="background:${catOf(o.type).color};border-color:${catOf(o.type).color}"`,
+      ? {l:tlPx(o.time),w:Math.max(74,o.dur/60*TL.hw,tlTextW(`${o.flag?'⚑ ':''}${catOf(o.type).emoji} ${o.title}`)),cls:o.flag?'b-flag':'b-appt',_o:o,
+         attrs:`data-appt="${o.id}" style="${barPaint(apptColor(o))}"`,
          txt:`${o.flag?'⚑ ':''}${catOf(o.type).emoji} ${esc(o.title)}`,
          tip:`${o.title} — ${(client(o.cid)||{}).uci||''} at ${hm12(o.time)}`,on:`openAppt('${o.id}')`}
-      : {l:tlPx(o.time),w:Math.max(74,o.dur/60*TL.hw),cls:'b-gcal',_o:o,
+      : {l:tlPx(o.time),w:Math.max(74,o.dur/60*TL.hw,tlTextW('🗓 '+o.title)),cls:'b-gcal',_o:o,
+         attrs:`style="${barPaint(calDef('google').color)}"`,
          txt:`🗓 ${esc(o.title)}`,
          tip:`${o.title} — your Google Calendar at ${hm12(o.time)}${o.cid?' · '+client(o.cid).uci:''}`,on:`openAppt('${o.id}')`};
   });
   const _lanes=packBars(_bars);
-  _bars.forEach(b=>{ b._o._lane=(b.top!=null?b.top:(b.lane0||0))/21; if(b.top) b.tip+=' · stacked below an overlapping item'; });
+  /* v9.92: the hover text used to name the stacking, which said nothing useful and showed
+     on most bars. Where a bar sits already tells you it overlaps something. */
+  _bars.forEach(b=>{ b._o._lane=(b.top!=null?b.top:(b.lane0||0))/21; });
   const apptBars=_bars.map(tlBar).join('');
 
   let rows=[
@@ -4511,7 +4927,7 @@ function tlCard(full){
       const canEdit=state.role==='director';
       return tlBar({l:L,w:Math.max(R-L,60),top:5+ln*23,cls:'b-shift',txt:`${esc(staff(s.sid).init)} ${esc(s.home.replace(' House',''))}`,
         tip:canEdit?`${staff(s.sid).name} · ${hm12(s.start)} to ${hm12(s.end)} — drag to move, click to edit`:`${staff(s.sid).name} · ${hm12(s.start)} to ${hm12(s.end)}`,
-        attrs:(canEdit?`data-shift="${s.sid}" data-sk="${esc(shiftIdent(s))}" `:'')+`style="background:${homeColor(s.home)};border-color:${homeColor(s.home)};color:#fff"`,
+        attrs:(canEdit?`data-shift="${s.sid}" data-sk="${esc(shiftIdent(s))}" `:'')+`style="${barPaint(homeColor(s.home))}"`,
         on:canEdit?`shiftMenu(${visShifts().indexOf(s)})`:"go('team')"});
     }).join('');
     rows.push({dot:'#9AA3B2',lab:'Staff on shift',bars:shiftBars,h:10+lanes.length*23,lane:1,
@@ -4557,7 +4973,7 @@ function tlCard(full){
         bars:tlBar({l:tlPx(s.start),w:Math.max(tlPx(s.end)-tlPx(s.start),60),cls:'b-shift',
           txt:`${hm12(s.start)} – ${hm12(s.end)} · ${esc(s.home)}`,
           tip:canEdit?`${staff(s.sid).name} — drag to move, click to edit`:staff(s.sid).name,
-          attrs:(canEdit?`data-shift="${s.sid}" data-sk="${esc(shiftIdent(s))}" `:'')+`style="background:${homeColor(s.home)};border-color:${homeColor(s.home)};color:#fff"`,on:canEdit?'':"go('team')"}),
+          attrs:(canEdit?`data-shift="${s.sid}" data-sk="${esc(shiftIdent(s))}" `:'')+`style="${barPaint(homeColor(s.home))}"`,on:canEdit?'':"go('team')"}),
         on:`openStaffPage('${s.sid}')`});});
     }
   }
@@ -4576,7 +4992,7 @@ function tlCard(full){
         <div class="tl-row ${r.lane?'tl-lane':''}">
           <div class="tl-lab ${r.on?'click':''}" ${r.on?`onclick="${r.on}"`:''}><span class="gd" style="background:${r.dot}"></span>
             <span>${r.lab}${r.sub?`<small>${r.sub}</small>`:''}</span></div>
-          <div class="tl-cells" style="width:${trackW}px;height:${r.h||46}px">${r.bars}</div>
+          <div class="tl-cells" ${r.h?'data-lane="1"':''} style="width:${trackW}px;height:${r.h||tlRowH()}px">${r.bars}</div>
         </div>`).join('')}
       ${D===T?`<div class="tl-nowline" style="left:${TL.lab+now}px"></div>`:''}
     </div></div>`;
@@ -4585,7 +5001,20 @@ function tlCard(full){
   <section class="rail-card">
     <div class="rail-head ${full?'':'sec-head soft-sage'}">
       ${full?`<h2>${state.role==='family'?"4023180's day":'The floor'}</h2>`
-        :`<h2>Today at a glance</h2><p>Appointments and active shifts</p>`}
+        : state.view==='calendar'
+        ? `<h2 style="display:flex;align-items:center;gap:8px">
+             <button class="cal-nav" title="Previous day" onclick="calShift(-1)">‹</button>
+             ${/* v9.98: the date read like a label but people click it, so it is a button
+                   that opens the month. */''}
+             <span style="position:relative;display:inline-block">
+               <button class="cal-date ${(state.calPop&&state.calPopAt==='head')?'is-on':''}" title="Pick any date" onclick="calPopToggle('head')">
+                 ${fmtLong(state.calDay||T)} ▾</button>
+               ${(state.calPop&&state.calPopAt==='head')?calPopHtml(state.calDay||T,'head'):''}
+             </span>
+             <button class="cal-nav" title="Next day" onclick="calShift(1)">›</button>
+             ${(state.calDay&&state.calDay!==T)?`<button class="btn ghost sm" onclick="state.calDay='';render()">Today</button>`:''}
+           </h2>`
+        : `<h2 style="font-weight:800">Today's calendar</h2><p>${fmtLong(T)} · appointments and active shifts</p>`}
       ${full?`
         <button class="btn ghost sm" onclick="tlNav(-1)" title="Previous day">‹</button>
         <span class="pill ${D===T?'gold':'neutral'}" style="min-width:150px;justify-content:center">${relDay(D)} · ${fmtDate(D)}</span>
@@ -4605,13 +5034,11 @@ function tlCard(full){
           <button class="btn ghost sm" onclick="tlExpand()" title="Expand timeline">⛶ Expand</button>
           <button class="btn ghost sm" onclick="go('calendar')">Open calendar</button></span>`}
     </div>
+    ${full?'':calChips()}
+
     ${body}
-    <div class="rail-legend">
-      <span><i style="background:#E8EEF6;box-shadow:inset 0 0 0 1px #CFDDEE"></i>Due later</span>
-      <span><i style="background:#C9A84C"></i>Appointment</span>
-      ${state.role!=='family'?'<span><i style="background:#2F7A5B"></i>Staff on shift</span>':''}
-      <span><i style="background:#A83F38"></i>Needs attention</span>
-    </div>
+    ${state.role!=='family'?`<div class="tl-grip" title="Drag to make the rows taller or shorter"><i></i></div>`:''}
+
   </section>`;
 }
 
@@ -4730,13 +5157,14 @@ function viewHome(){
       <div class="title-ic">${ico('sun',20)}</div>
       <div class="hero-main title-copy" style="flex:1;min-width:0">
         <h1>${greeting()}, ${esc(m.name.split(' ')[0])}.</h1>
-        <p>${fmtLong(T)} <span id="heroClock">${hm12(nowHM())}</span> · ${homeSub(attn.length).replace(/\.$/,'')}</p>
+        <p class="hsub">${fmtLong(T)} <span id="heroClock">${hm12(nowHM())}</span> · ${homeSub(attn.length).replace(/\.$/,'')}</p>
       </div>
       <div class="hero-acts" style="display:flex;gap:8px;flex:none;align-items:center">
         ${state.role==='director'?`<button class="btn navy sm" onclick="openShiftForm()">＋ Add shift</button>`:''}
         ${state.role!=='family'?`<button class="btn navy sm" onclick="openApptForm()">＋ Add appointment</button>`:''}
         <button class="btn ghost sm ${state.tourSeen[state.role]?'':'pulse'}" onclick="tourStart()">◉ Show me around</button>
-        ${editBtn()}
+        ${/* v9.96: editing the home page is reached from the cog like every other page */''}
+        ${(state.role==='director'&&state.layoutEdit)?`<button class="btn gold sm" onclick="pageEdit()">✓ Done editing</button>`:''}
         ${state.role==='director'?`<button class="gear" title="Settings" onclick="homeSettings()">${ico('settings',17)}</button>`:''}
       </div>
     </div>
@@ -4840,7 +5268,9 @@ function actionStrip(){
       <span><b>Report an incident</b><small>Guided, under two minutes</small></span></button>
   </div>`;
 }
-function courseOpen(tid){ closeAll(); state.view='trainhub'; state.openTrain=tid; render();
+/* v9.96: opening a course from a staff file used to leave the staff page underneath, so you
+   landed on that person's progress rather than the course itself. It goes to the course. */
+function courseOpen(tid){ closeAll(); state.client=null; state.staffPage=null; state.view='trainhub'; state.openTrain=tid; render();
   setTimeout(()=>{ const n=document.querySelector(`[data-train="${tid}"]`); if(n) n.scrollIntoView({block:'center'}); },60); }
 function trainCard(sid){
   const p=trainPending(sid);
@@ -4880,7 +5310,7 @@ function viewClients(){
   <div class="page-h">
     <div><h1>Clients${aiTag('clients')}</h1><div class="sub">${cl.length} people in service · click any column to sort</div>
       <div style="margin-top:8px">${tblFilter('clients','Filter clients…')}</div></div>
-    <div class="right">${editBtn('')}${state.role==='director'?`<button class="gear" title="Settings" onclick="pageSettings('clients')" style="margin-right:6px">${ico('settings',17)}</button>`:''}${state.role==='director'?`<button class="btn navy" onclick="openClientForm()">＋ Add client</button>`:''}</div>
+    <div class="right">${(state.role==='director'&&state.layoutEdit)?`<button class="btn gold" onclick="pageEdit()" style="margin-right:6px">✓ Done editing</button>`:''}${state.role==='director'?`<button class="gear" title="Settings" onclick="pageSettings('clients')" style="margin-right:6px">${ico('settings',17)}</button>`:''}${state.role==='director'?`<button class="btn navy" onclick="openClientForm()">＋ Add client</button>`:''}</div>
   </div>
   <section class="card">
     <div class="card-b flush">
@@ -4908,8 +5338,10 @@ function openClient(id,tab){ state.client=id; state.tab=tab||'overview'; render(
 
 function viewClient(id){
   const c=client(id);
-  const tabs=['overview','appointments','documents','notes','incidents'];
-  const labels={overview:'Overview',meds:'Medications',appointments:'Appointments',documents:'Files',notes:'Progress notes',incidents:'Incidents'};
+  /* v9.94: progress notes live on Overview, under the goals they are written against.
+     Care is the daily record — pick a day, see that day's vital signs and daily living. */
+  const tabs=['overview','care','appointments','documents','incidents','directory'];
+  const labels={overview:'Overview',care:'Care',meds:'Medications',appointments:'Appointments',documents:'Files',incidents:'Incidents',directory:'Directory'};
   return `
   <div class="crumb"><button onclick="go('clients')">Clients</button> <span>/</span> <span>${esc(c.name)}</span></div>
   <div class="page-h">
@@ -4930,12 +5362,30 @@ function viewClient(id){
   <div class="tabs" style="margin-bottom:14px">${tabs.map(t=>`<button class="${state.tab===t?'active':''}" onclick="state.tab='${t}';render()">${labels[t]}</button>`).join('')}</div>
   ${ state.tab==='appointments' ? clientAppts(c)
    : state.tab==='documents' ? clientDocs(c)+clientDirCard(c)
-   : state.tab==='notes' ? clientNotes(c)
+   : state.tab==='care' ? clientCare(c)
+   : state.tab==='notes' ? clientCare(c)
    : state.tab==='incidents' ? clientIncidents(c)
+   : state.tab==='directory' ? clientDirectory(c)
    : clientOverview(c) }`;
 }
 
 function wkMonday(){ return fmtDate(addDays(TODAY,-((TODAY.getDay()+6)%7))); }
+function wkRename(cid,i,v){
+  const list=WEEKLY[cid]||[], w=list[i]; if(!w) return;
+  const val=String(v||'').trim(); if(!val||val===w.t) return;
+  const was=w.t; w.t=val;
+  logAudit('Renamed weekly item',`${was} \u2192 ${val}`);
+  toast('Renamed.');
+}
+function goalRename(cid,gi,v){
+  const c=client(cid); if(!c) return;
+  const g=(c.goals||[])[gi]; if(!g) return;
+  const val=String(v||'').trim(); if(!val||val===g.g) return;
+  const was=g.g; g.g=val;
+  sbPatch('np_demo_clients',cid,{goals:c.goals});
+  logAudit('Renamed IPP goal',`${was} \u2192 ${val}`);
+  toast('Renamed.');
+}
 function wkToggle(cid,i){
   const w=WEEKLY[cid][i]; w.d=w.d?0:1;
   if(w.d){ w.by=ME[state.role].name; w.at=nowStamp(); } else { w.by=''; w.at=''; }
@@ -4987,13 +5437,18 @@ function weeklyCard(c){
   return `<section class="card">
     <div class="card-h"><h2>Weekly checklist</h2><div class="sub">${esc(c.uci)} · week of ${wkMonday()} · each sign-off records name, date and time</div>
       <div class="right"><span class="pill ${done===list.length&&list.length?'ok':'neutral'}">${done}/${list.length} done</span></div></div>
-    <div class="card-b flush">
-      ${list.map((w,i)=>`<div class="checkrow">
+    ${/* v9.95: while the page is being edited the text itself is the rename — click it and
+          type. Rows drag to reorder. The only button left on a row is the cross. */''}
+    <div class="card-b flush" data-rowlist="weekly:${c.id}">
+      ${list.map((w,i)=>`<div class="checkrow" data-rowid="${i}">
         <div class="cb ${w.d?'on':''}" style="cursor:pointer" onclick="wkToggle('${c.id}',${i})">✓</div>
-        <div class="ct ${w.d?'done':''}" style="cursor:pointer" onclick="wkToggle('${c.id}',${i})">${esc(w.t)}</div>
+        ${state.layoutEdit&&state.role!=='family'
+          ? `<div class="ct inline-ed" contenteditable="true" spellcheck="false" title="Click to rename"
+               onclick="event.stopPropagation()" onblur="wkRename('${c.id}',${i},this.textContent)"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${esc(w.t)}</div>`
+          : `<div class="ct ${w.d?'done':''}" style="cursor:pointer" onclick="wkToggle('${c.id}',${i})">${esc(w.t)}</div>`}
         <span class="tiny muted">${w.d?`${esc(w.by)} · ${esc(w.at)}`:''}</span>
-        ${state.role!=='family'?`<button class="btn ghost sm" style="padding:0 5px" title="Rename" onclick="event.stopPropagation();wkEdit('${c.id}',${i})">✎</button>
-        <button class="btn ghost sm" style="padding:0 5px" title="Remove" onclick="event.stopPropagation();wkDel('${c.id}',${i})">✕</button>`:''}</div>`).join('')||'<div class="empty">No weekly items yet.</div>'}
+        ${state.role!=='family'?`<button class="btn ghost sm" style="padding:0 5px" title="Remove" onclick="event.stopPropagation();wkDel('${c.id}',${i})">✕</button>`:''}</div>`).join('')||'<div class="empty">No weekly items yet.</div>'}
       ${state.role!=='family'?`<div style="display:flex;gap:8px;padding:12px 18px">
         <input class="inp" id="wkNew" placeholder="Add a weekly item…" style="height:34px" onkeydown="if(event.key==='Enter')wkAdd('${c.id}')">
         <button class="btn ghost sm" onclick="wkAdd('${c.id}')">Add</button>
@@ -5042,23 +5497,199 @@ function clientOverview(c){
     <div>
       <section class="card">
         <div class="card-h"><h2>How to support ${esc(c.uci)}</h2>
-          ${state.role!=='family'?`<div class="right"><button class="btn ghost sm" onclick="editSupport('${c.id}')">${c.support?'✎ Edit':'＋ Add'}</button></div>`:''}</div>
-        <div class="card-b"><p style="margin:0;font-size:13.4px;color:#4A4F60;line-height:1.6">${esc(c.support||'No support profile written yet — add what staff should know.')}</p></div>
+          ${/* v9.96: one button toggled between adding and editing, so you could never do the
+                other. Both are here now while the page is being edited. */''}
+          ${state.role!=='family'?`<div class="right" style="display:flex;gap:6px">
+            ${c.support?`<button class="btn ghost sm" onclick="editSupport('${c.id}')">✎ Edit</button>`:''}
+            <button class="btn ghost sm" onclick="addSupport('${c.id}')">＋ Add a note</button></div>`:''}</div>
+        <div class="card-b">${(c.support||'').trim()
+          ? `<p style="margin:0;font-size:13.4px;color:#4A4F60;line-height:1.6;white-space:pre-line">${esc(c.support)}</p>`
+          : `<p style="margin:0;font-size:13.4px;color:var(--muted);line-height:1.6">No support profile written yet — add what staff should know.</p>`}</div>
       </section>
       <section class="card">
         <div class="card-h"><h2>IPP goals & notes</h2><div class="right">${state.role!=='family'?`<button class="btn ghost sm" onclick="goalForm('${c.id}')">＋ Add goal</button>`:''}</div></div>
         <div class="card-b">
-          ${(c.goals||[]).map((g,gi)=>`<div style="margin-bottom:13px">
-            <div style="display:flex;justify-content:space-between;gap:6px;margin-bottom:5px;align-items:center"><span style="font-size:13.2px;font-weight:600">${esc(g.g)}</span>
+          <div data-rowlist="goals:${c.id}">
+          ${(c.goals||[]).map((g,gi)=>`<div style="margin-bottom:13px" data-rowid="${gi}">
+            <div style="display:flex;justify-content:space-between;gap:6px;margin-bottom:5px;align-items:center">
+              ${state.layoutEdit&&state.role!=='family'
+                ? `<span class="inline-ed" style="font-size:13.2px;font-weight:600;flex:1" contenteditable="true" spellcheck="false" title="Click to rename"
+                     onclick="event.stopPropagation()" onblur="goalRename('${c.id}',${gi},this.textContent)"
+                     onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${esc(g.g)}</span>`
+                : `<span style="font-size:13.2px;font-weight:600">${esc(g.g)}</span>`}
               <span style="display:flex;gap:2px;align-items:center;flex:none"><span class="tiny muted" style="margin-right:4px">${(g.notes||[]).length?(g.notes.length+' note'+(g.notes.length>1?'s':'')):'no notes yet'}</span>
-              ${state.role!=='family'?`${gi>0?`<button class="btn ghost sm" style="padding:0 5px" onclick="goalMove('${c.id}',${gi},-1)">↑</button>`:''}${gi<(c.goals.length-1)?`<button class="btn ghost sm" style="padding:0 5px" onclick="goalMove('${c.id}',${gi},1)">↓</button>`:''}<button class="btn ghost sm" style="padding:0 5px" onclick="goalForm('${c.id}',${gi})">✎</button><button class="btn ghost sm" style="padding:0 5px" onclick="goalDel('${c.id}',${gi})">✕</button>`:''}</span></div>
-            ${(g.notes||[]).length?`<div class="tiny" style="color:#4A4F60;line-height:1.5">${esc(g.notes[0].t)} <span class="muted">· ${esc(g.notes[0].by)} · ${esc(g.notes[0].at)}</span></div>`:`<div class="tiny muted">No notes yet — ✎ to add one.</div>`}</div>`).join('')||'<div class="muted tiny">No goals recorded.</div>'}
+              ${state.role!=='family'?`<button class="btn ghost sm" style="padding:0 5px" onclick="goalDel('${c.id}',${gi})">✕</button>`:''}</span></div>
+            ${(g.notes||[]).length?`<div class="tiny" style="color:#4A4F60;line-height:1.5">${esc(g.notes[0].t)} <span class="muted">· ${esc(g.notes[0].by)} · ${esc(g.notes[0].at)}</span></div>`:`<div class="tiny muted">No notes yet.</div>`}
+            ${state.role!=='family'?`<div style="margin-top:4px"><button class="btn ghost sm" onclick="goalForm('${c.id}',${gi})">Open goal &amp; notes</button></div>`:''}</div>`).join('')||'<div class="muted tiny">No goals recorded.</div>'}
+          </div>
           <div class="tiny muted" style="margin-top:4px">Progress notes against these goals are what the regional center audits.</div>
         </div>
       </section>
+      ${clientNotes(c)}
     </div>
   </div>`;
 }
+
+/* ── v9.94: the care record ───────────────────────────────────────────────────
+   One tab, one day at a time. The month picker on the left drives everything on the
+   right, so "what were her vitals the day she saw the doctor" is two clicks: find the
+   date, read the day. Nothing here is a diagnosis — it is what staff observed. */
+let VITALS=[], ADLS=[];
+const VITAL_FIELDS=[['bp','Blood pressure','120/80'],['hr','Heart rate','72'],['temp','Temperature','98.6'],
+  ['resp','Respiration','16'],['o2','Oxygen saturation','98'],['weight','Weight','154'],
+  ['glucose','Blood glucose',''],['pain','Pain (0-10)','']];
+const ADL_KINDS=['Meal','Fluids','Bathing','Toileting','Dressing','Mobility','Sleep','Activity','Other'];
+const ADL_ASSIST=['Independent','Prompting','Partial assist','Full assist'];
+const careDay=()=>state.careDay||T;
+const vitalsFor=(cid,d)=>VITALS.filter(v=>v.cid===cid&&(!d||v.date===d)).sort((a,b)=>String(b.time).localeCompare(String(a.time)));
+const adlsFor=(cid,d)=>ADLS.filter(a=>a.cid===cid&&(!d||a.date===d)).sort((a,b)=>String(b.time).localeCompare(String(a.time)));
+
+function careMonth(c){
+  const anchor=careDay();
+  const base=state.careMonth?new Date(state.careMonth+'-01T12:00:00'):new Date(anchor+'T12:00:00');
+  const y=base.getFullYear(), m=base.getMonth();
+  const lead=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate();
+  const key=(yy,mm)=>`${yy}-${String(mm+1).padStart(2,'0')}`;
+  const cells=[];
+  for(let i=0;i<lead;i++) cells.push('<span></span>');
+  for(let d=1;d<=days;d++){
+    const ds=iso(new Date(y,m,d,12));
+    const n=vitalsFor(c.id,ds).length+adlsFor(c.id,ds).length;
+    cells.push(`<button class="${ds===T?'is-today':''} ${ds===anchor?'is-on':''}"
+      title="${fmtLong(ds)}${n?` · ${n} entr${n===1?'y':'ies'}`:''}"
+      onclick="state.careDay='${ds}';render()">${d}${n?'<i></i>':''}</button>`);
+  }
+  const prev=key(m===0?y-1:y, m===0?11:m-1), next=key(m===11?y+1:y, m===11?0:m+1);
+  return `<section class="card">
+    <div class="card-h"><h2>Pick a day</h2><div class="sub">Dots mark days with a reading or a log</div></div>
+    <div class="card-b">
+      <div class="cal-pop-h" style="margin-bottom:10px">
+        <b>${base.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</b>
+        <span><button onclick="state.careMonth='${prev}';render()">‹</button><button onclick="state.careMonth='${next}';render()">›</button></span>
+      </div>
+      <div class="cal-grid">${['S','M','T','W','T','F','S'].map(d=>`<span class="dow">${d}</span>`).join('')}${cells.join('')}</div>
+      <div style="display:flex;gap:6px;margin-top:10px">
+        <button class="btn ghost sm" onclick="state.careDay='';state.careMonth=null;render()">Today</button>
+        <button class="btn ghost sm" onclick="state.careAll=!state.careAll;render()">${state.careAll?'Showing everything':'Show the full history'}</button>
+      </div>
+    </div>
+  </section>`;
+}
+
+function clientCare(c){
+  const d=careDay(), all=!!state.careAll;
+  const vs=vitalsFor(c.id, all?null:d), ad=adlsFor(c.id, all?null:d);
+  const canEdit=state.role!=='family';
+  const vRow=v=>`<div class="lrow" onclick="${canEdit?`vitalForm('${c.id}',${v.i})`:''}">
+    <span class="row-ic" style="${tint('#C05050')}">♥</span>
+    <span class="row-copy"><strong>${VITAL_FIELDS.filter(([k])=>v[k]).map(([k,l])=>`${l} ${esc(v[k])}`).join(' · ')||'Reading'}</strong>
+      <span>${all?fmtDate(v.date)+' · ':''}${hm12(v.time||'')}${v.context?' · '+esc(v.context):''} · ${esc(v.by||'')}${v.notes?' · '+esc(v.notes):''}</span></span>
+    ${canEdit?`<span class="go-sq">${ico('arrow-up-right',15)}</span>`:''}</div>`;
+  const aRow=a=>`<div class="lrow" onclick="${canEdit?`adlForm('${c.id}',${a.i})`:''}">
+    <span class="row-ic" style="${tint('#3E8E5A')}">◉</span>
+    <span class="row-copy"><strong>${esc(a.kind||'Log')}${a.detail?' — '+esc(a.detail):''}</strong>
+      <span>${all?fmtDate(a.date)+' · ':''}${hm12(a.time||'')}${a.amount?' · '+esc(a.amount):''}${a.assist?' · '+esc(a.assist):''} · ${esc(a.by||'')}${a.notes?' · '+esc(a.notes):''}</span></span>
+    ${canEdit?`<span class="go-sq">${ico('arrow-up-right',15)}</span>`:''}</div>`;
+  return `
+  <div class="care-split">
+    <div>
+      <section class="card">
+        <div class="sec-head soft-blue"><h2>Vital signs</h2><span class="hd-n blue">${vs.length}</span>
+          <p>${all?'Every reading on file':fmtLong(d)}</p>
+          ${canEdit?`<div class="right head-act"><button class="btn navy sm" onclick="vitalForm('${c.id}')">＋ Record vitals</button></div>`:''}</div>
+        <div class="card-b flush">${vs.map(vRow).join('')
+          ||`<div class="empty"><b>Nothing recorded${all?'':' on this day'}</b>Readings taken at home or at an appointment go here.</div>`}</div>
+      </section>
+      <section class="card" style="margin-top:14px">
+        <div class="sec-head"><h2>Activities of daily living</h2><span class="hd-n">${ad.length}</span>
+          <p>${all?'Every log on file':fmtLong(d)} · meals, fluids, personal care, mobility</p>
+          ${canEdit?`<div class="right head-act"><button class="btn navy sm" onclick="adlForm('${c.id}')">＋ Log an activity</button></div>`:''}</div>
+        <div class="card-b flush">${ad.map(aRow).join('')
+          ||`<div class="empty"><b>Nothing logged${all?'':' on this day'}</b>Meals, fluids, bathing, toileting and mobility are recorded here.</div>`}</div>
+      </section>
+    </div>
+    <div>${careMonth(c)}</div>
+  </div>`;
+}
+
+function vitalForm(cid,i){
+  const v=(i==null)?{date:careDay(),time:nowHM(),context:''}:VITALS[i];
+  openModal(i==null?'Record vital signs':'Edit vital signs',`
+    <div class="row2">
+      <div class="field"><label>Date</label><input class="inp" type="date" id="vtD" value="${v.date||careDay()}"></div>
+      <div class="field"><label>Time</label><input class="inp" type="time" id="vtT" value="${v.time||nowHM()}"></div>
+    </div>
+    <div class="row2">
+      ${VITAL_FIELDS.map(([k,l,ph])=>`<div class="field"><label>${l}</label>
+        <input class="inp" id="vt_${k}" value="${esc(v[k]||'')}" placeholder="${ph}"></div>`).join('')}
+    </div>
+    <div class="field"><label>Where it was taken</label>
+      <input class="inp" id="vtC" value="${esc(v.context||'')}" placeholder="e.g. at home, or at the physician visit"></div>
+    <div class="field"><label>Notes</label><input class="inp" id="vtN" value="${esc(v.notes||'')}" placeholder="Anything the next person should know"></div>`,
+    `${i==null?'':`<button class="btn ghost" onclick="vitalDel(${i})">✕ Delete</button>`}
+     <button class="btn ghost" onclick="closeAll()">Cancel</button>
+     <button class="btn navy" onclick="vitalSave(${i==null?'null':i},'${cid}')">${i==null?'Record':'Save changes'}</button>`);
+}
+function vitalSave(i,cid){
+  const rec={cid, date:el('vtD').value||careDay(), time:el('vtT').value||nowHM(),
+    context:(el('vtC').value||'').trim(), notes:(el('vtN').value||'').trim(), by:meInit()};
+  VITAL_FIELDS.forEach(([k])=>{ rec[k]=(el('vt_'+k).value||'').trim(); });
+  if(!VITAL_FIELDS.some(([k])=>rec[k])) return toast('Fill in at least one reading.');
+  if(i==null){ VITALS.push(rec); logAudit('Recorded vital signs',`${(client(cid)||{}).uci||''} · ${fmtDate(rec.date)}`); }
+  else { Object.assign(VITALS[i],rec); logAudit('Edited vital signs',`${(client(cid)||{}).uci||''} · ${fmtDate(rec.date)}`); }
+  sbPush('np_demo_vitals',{cid:rec.cid,reading_date:rec.date,reading_time:rec.time,context:rec.context,notes:rec.notes,
+    recorded_by:rec.by,hr:rec.hr,bp:rec.bp,temp:rec.temp,resp:rec.resp,o2:rec.o2,weight:rec.weight,glucose:rec.glucose,pain:rec.pain});
+  state.careDay=rec.date; vitalsIndex(); closeAll(); render(); toast('Vitals recorded.');
+}
+function vitalDel(i){
+  const v=VITALS[i]; if(!v) return;
+  askDelete('Delete this reading?','It comes off the care record for that day.',()=>{
+    VITALS.splice(i,1); vitalsIndex();
+    logAudit('Deleted vital signs',fmtDate(v.date));
+    closeAll(); render(); toast('Reading deleted.');
+  },'Delete reading');
+}
+function adlForm(cid,i){
+  const a=(i==null)?{date:careDay(),time:nowHM(),kind:'Meal',assist:''}:ADLS[i];
+  openModal(i==null?'Log an activity':'Edit the log',`
+    <div class="row2">
+      <div class="field"><label>Date</label><input class="inp" type="date" id="adD" value="${a.date||careDay()}"></div>
+      <div class="field"><label>Time</label><input class="inp" type="time" id="adT" value="${a.time||nowHM()}"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>What</label><select class="inp" id="adK">${ADL_KINDS.map(k=>`<option ${a.kind===k?'selected':''}>${k}</option>`).join('')}</select></div>
+      <div class="field"><label>How much support</label><select class="inp" id="adA">
+        <option value="">— not recorded —</option>${ADL_ASSIST.map(k=>`<option ${a.assist===k?'selected':''}>${k}</option>`).join('')}</select></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Detail</label><input class="inp" id="adX" value="${esc(a.detail||'')}" placeholder="e.g. lunch, shower, walk to the park"></div>
+      <div class="field"><label>Amount</label><input class="inp" id="adM" value="${esc(a.amount||'')}" placeholder="e.g. ate all, 250ml, 20 min"></div>
+    </div>
+    <div class="field"><label>Notes</label><input class="inp" id="adN" value="${esc(a.notes||'')}" placeholder="Anything worth passing on"></div>`,
+    `${i==null?'':`<button class="btn ghost" onclick="adlDel(${i})">✕ Delete</button>`}
+     <button class="btn ghost" onclick="closeAll()">Cancel</button>
+     <button class="btn navy" onclick="adlSave(${i==null?'null':i},'${cid}')">${i==null?'Log it':'Save changes'}</button>`);
+}
+function adlSave(i,cid){
+  const rec={cid, date:el('adD').value||careDay(), time:el('adT').value||nowHM(),
+    kind:el('adK').value, assist:el('adA').value, detail:(el('adX').value||'').trim(),
+    amount:(el('adM').value||'').trim(), notes:(el('adN').value||'').trim(), by:meInit()};
+  if(i==null){ ADLS.push(rec); logAudit('Logged daily living',`${(client(cid)||{}).uci||''} · ${rec.kind}`); }
+  else { Object.assign(ADLS[i],rec); logAudit('Edited daily living log',`${(client(cid)||{}).uci||''} · ${rec.kind}`); }
+  sbPush('np_demo_adls',{cid:rec.cid,log_date:rec.date,log_time:rec.time,kind:rec.kind,detail:rec.detail,
+    amount:rec.amount,assist:rec.assist,notes:rec.notes,recorded_by:rec.by});
+  state.careDay=rec.date; adlsIndex(); closeAll(); render(); toast('Logged.');
+}
+function adlDel(i){
+  const a=ADLS[i]; if(!a) return;
+  askDelete('Delete this log?','It comes off the care record for that day.',()=>{
+    ADLS.splice(i,1); adlsIndex();
+    logAudit('Deleted daily living log',fmtDate(a.date));
+    closeAll(); render(); toast('Log deleted.');
+  },'Delete log');
+}
+function vitalsIndex(){ VITALS.forEach((v,i)=>{ v.i=i; }); }
+function adlsIndex(){ ADLS.forEach((a,i)=>{ a.i=i; }); }
 
 function clientMeds(c){
   const active=MEDS.filter(m=>m.cid===c.id&&m.status==='active');
@@ -5200,18 +5831,60 @@ function saveDocMeta(cid,oldName){
   closeAll(); render(); toast('Document updated.');
 }
 
+function apptShift(cid,days){
+  const base=state.apptDay?new Date(state.apptDay+'T12:00:00'):new Date(TODAY);
+  state.apptDay=iso(addDays(base,days)); state.pgcappt=0; render();
+}
+function apptPopHtml(c,anchor){
+  const base=state.apptPopM?new Date(state.apptPopM+'-01T12:00:00'):new Date(anchor+'T12:00:00');
+  const y=base.getFullYear(), m=base.getMonth();
+  const lead=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate();
+  const key=(yy,mm)=>`${yy}-${String(mm+1).padStart(2,'0')}`;
+  const cells=[];
+  for(let i=0;i<lead;i++) cells.push('<span></span>');
+  for(let d=1;d<=days;d++){
+    const ds=iso(new Date(y,m,d,12));
+    const n=APPTS.filter(a=>a.cid===c.id&&a.date===ds&&!a.cancelled&&calMine(a)).length;
+    cells.push(`<button class="${ds===T?'is-today':''} ${ds===anchor?'is-on':''}"
+      onclick="state.apptDay='${ds}';state.apptPop=false;state.pgcappt=0;render()">${d}${n?'<i></i>':''}</button>`);
+  }
+  const prev=key(m===0?y-1:y, m===0?11:m-1), next=key(m===11?y+1:y, m===11?0:m+1);
+  return `<div class="cal-pop" style="top:70px;right:14px" onclick="event.stopPropagation()">
+    <div class="cal-pop-h"><b>${base.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</b>
+      <span><button onclick="state.apptPopM='${prev}';render()">‹</button><button onclick="state.apptPopM='${next}';render()">›</button></span></div>
+    <div class="cal-grid">${['S','M','T','W','T','F','S'].map(d=>`<span class="dow">${d}</span>`).join('')}${cells.join('')}</div>
+    <div style="text-align:right;margin-top:8px">
+      <button class="btn ghost sm" onclick="state.apptDay='';state.apptPop=false;render()">Clear</button></div>
+  </div>`;
+}
+document.addEventListener('click',e=>{
+  if(!state.apptPop) return;
+  if(e.target.closest('.cal-pop,.cal-jump')) return;
+  state.apptPop=false; render();
+});
 function clientAppts(c){
   let list=APPTS.filter(a=>a.cid===c.id&&calMine(a)).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
   const q=(state.apptQ||'').trim().toLowerCase();
   if(q) list=list.filter(a=>[a.title,a.type,a.provider,a.loc,fmtDate(a.date)].some(f=>String(f||'').toLowerCase().includes(q)));
-  if(state.apptPer==='week') list=list.filter(a=>Math.abs(Math.round((new Date(a.date+'T12:00:00')-TODAY)/86400000))<=7);
+  if(state.apptPer==='up') list=list.filter(a=>a.date>=T);
+  else if(state.apptPer==='week') list=list.filter(a=>Math.abs(Math.round((new Date(a.date+'T12:00:00')-TODAY)/86400000))<=7);
   else if(state.apptPer==='month') list=list.filter(a=>Math.abs(Math.round((new Date(a.date+'T12:00:00')-TODAY)/86400000))<=31);
   if(state.apptDay) list=list.filter(a=>a.date===state.apptDay);
+  /* v9.93: the same navigation the main calendar has — arrows to page the week, a date
+     button that opens the month, and a range filter that includes Upcoming. */
+  const anchor=state.apptDay||T;
   const strip=(()=>{ const start=addDays(state.apptDay?new Date(state.apptDay+'T12:00:00'):TODAY,-3);
-    return `<div class="cal-strip">${Array.from({length:7}).map((_,i)=>{ const d=iso(addDays(start,i));
-      const n=APPTS.filter(a=>a.cid===c.id&&a.date===d&&!a.cancelled&&calMine(a)).length; const dt=new Date(d+'T12:00:00');
-      return `<button class="cal-day ${d===T?'is-today':''} ${state.apptDay===d?'is-on':''}" onclick="state.apptDay=(state.apptDay==='${d}'?'':'${d}');state.pgappt=0;render()"
-        title="${fmtLong(d)}"><span>${dt.toLocaleDateString(undefined,{weekday:'short'})}</span><strong>${dt.getDate()}</strong>${n?'<i class="cal-dot"></i>':''}</button>`;}).join('')}</div>`;})();
+    return `<div class="cal-strip" style="position:relative">
+      <button class="cal-nav" title="Previous week" onclick="apptShift('${c.id}',-7)">‹</button>
+      <div class="cal-days">${Array.from({length:7}).map((_,i)=>{ const d=iso(addDays(start,i));
+        const n=APPTS.filter(a=>a.cid===c.id&&a.date===d&&!a.cancelled&&calMine(a)).length; const dt=new Date(d+'T12:00:00');
+        return `<button class="cal-day ${d===T?'is-today':''} ${state.apptDay===d?'is-on':''}" onclick="state.apptDay=(state.apptDay==='${d}'?'':'${d}');state.pgcappt=0;render()"
+          title="${fmtLong(d)}"><span>${dt.toLocaleDateString(undefined,{weekday:'short'})}</span><strong>${dt.getDate()}</strong>${n?'<i class="cal-dot"></i>':''}</button>`;}).join('')}</div>
+      <button class="cal-nav" title="Next week" onclick="apptShift('${c.id}',7)">›</button>
+      <button class="cal-jump" onclick="state.apptPop=!state.apptPop;state.apptPopM=null;render()" title="Pick any date">
+        ${ico('calendar-range',15)} ${fmtLong(anchor)} ▾</button>
+      ${state.apptPop?apptPopHtml(c,anchor):''}
+    </div>`;})();
   const sel=list.find(a=>a.id===state.apptSel)||null;
   const row=a=>{
     const on=sel&&sel.id===a.id;
@@ -5254,7 +5927,7 @@ function clientAppts(c){
     <div class="right head-act" style="display:flex;gap:6px"><button class="btn navy sm" onclick="openApptForm('${c.id}')">\uff0b Add appointment</button></div></div>
   ${strip}
   <div class="d-toolbar" style="padding:10px 14px 0">
-    <div class="seg">${[['','All'],['week','Past week'],['month','Past month']].map(([v,l])=>`<button class="${(state.apptPer||'')===v?'active':''}" onclick="state.apptPer='${v}';state.pgcappt=0;render()">${l}</button>`).join('')}</div>
+    <div class="seg">${[['','All'],['up','Upcoming'],['week','Past week'],['month','Past month']].map(([v,l])=>`<button class="${(state.apptPer||'')===v?'active':''}" onclick="state.apptPer='${v}';state.pgcappt=0;render()">${l}</button>`).join('')}</div>
     <input class="inp" style="flex:1;min-width:160px;height:34px" placeholder="Search appointments\u2026" value="${esc(state.apptQ||'')}" oninput="state.apptQ=this.value;state.pgcappt=0;render()">
     ${state.apptDay?`<button class="btn ghost sm" onclick="state.apptDay='';render()">Clear ${fmtDate(state.apptDay)}</button>`:''}
   </div>
@@ -5278,10 +5951,14 @@ function clientDocs(c){
   const loose=groups['']||[];
   const gHead=t=>`<div class="tiny muted" style="padding:11px 18px 2px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">🗀 ${t}</div>`;
   return `<section class="card"><div class="card-h"><h2>Files</h2><div class="sub">${list.length} file${list.length===1?'':'s'} · organized by binder — a file filed to a binder shows in both places</div>
+  ${/* v9.95: the file shelf reads as a shelf. Linking, binders and sub-folders are
+        structural, so they surface with the rest of the edit controls. */''}
   <div class="right">
-    <button class="btn ghost sm" onclick="linkDocForm('${c.id}')">🔗 Link a document</button>
-    ${state.role==='director'?`<button class="btn ghost sm" onclick="binderForm()">＋ New binder</button>
-      <button class="btn ghost sm" onclick="subBinderForm()">＋ Sub-folder</button>`:''}
+    <span class="ed-only" style="display:contents">
+      <button class="btn ghost sm" onclick="linkDocForm('${c.id}')">🔗 Link a document</button>
+      ${state.role==='director'?`<button class="btn ghost sm" onclick="binderForm()">＋ New binder</button>
+        <button class="btn ghost sm" onclick="subBinderForm()">＋ Sub-folder</button>`:''}
+    </span>
     <button class="btn ghost sm" onclick="exportOne('${c.id}')">Export folder</button></div></div>
   <div class="card-b flush">
   ${keys.map(k=>{
@@ -5293,8 +5970,10 @@ function clientDocs(c){
     const bySub={}; inB.forEach(d=>{ const sb=(d.sub_binder||d.sb||''); (bySub[sb]=bySub[sb]||[]).push(d); });
     const extra=Object.keys(bySub).filter(x=>x&&!subs.includes(x));
     const openB=state.cbOpen===k;
-    return gHead(`${esc(FOLDER_NAMES[k]||k)} <span class="tiny muted" style="font-weight:600;text-transform:none;letter-spacing:0">· ${inB.length} file${inB.length===1?'':'s'} · ${subs.length} tab${subs.length===1?'':'s'}</span>
-      <button class="btn ghost sm" style="float:right;padding:0 8px" onclick="state.cbOpen=state.cbOpen==='${k}'?'':'${k}';render()">${openB?'▼ Hide tabs':'▸ Show tabs'}</button>`)
+    /* v9.96: the binder line is the control. Click the binder, its tabs open. */
+    return `<div class="binder-head ${openB?'is-open':''}" onclick="state.cbOpen=state.cbOpen==='${k}'?'':'${k}';render()">
+      <span class="bh-c">${openB?'▾':'▸'}</span>🗀 ${esc(FOLDER_NAMES[k]||k)}
+      <span class="bh-n">${inB.length} file${inB.length===1?'':'s'} · ${subs.length} tab${subs.length===1?'':'s'}</span></div>`
       +(bySub['']||[]).map(d=>docRow(d)).join('')
       +(openB?[...subs,...extra].map(sb=>{
           const rows=bySub[sb]||[];
@@ -5388,7 +6067,9 @@ function clientNotes(c){
   return `<section class="card">
   <div class="sec-head soft-lilac"><h2>Progress notes</h2><span class="hd-n">${notes.length}</span><p>${state.noteCat?esc(state.noteCat):'newest first'}</p>
     <div class="head-act" style="display:flex;gap:6px">
-      ${state.role==='director'?`<button class="gear sm" title="Note categories" onclick="noteCatsForm()">${ico('settings',14)}</button>`:''}
+      ${/* v9.96: the cog came off the card. Note categories are edited from the page's own
+            settings alongside everything else that shapes the page. */''}
+      ${state.role==='director'&&state.layoutEdit?`<button class="btn ghost sm" onclick="noteCatsForm()">✎ Categories</button>`:''}
       <button class="btn navy sm" onclick="openNoteForm('${c.id}')">＋ Write note</button></div></div>
   <div class="d-toolbar" style="padding:10px 14px 0">
     <span class="spill" style="cursor:pointer;${state.noteCat?'background:var(--surface-2);color:var(--muted)':''}" onclick="state.noteCat='';state.pgnote=0;render()">All</span>
@@ -5469,6 +6150,31 @@ function protoCard(){
           <span class="go-sq">›</span></div>`;}).join('')
         ||'<div class="empty"><b>No protocols yet</b>Add one for falls, behaviour, injury — whatever your team reports.</div>'}
     </div>
+  </section>`;
+}
+/* v9.93: the providers this person actually sees. A directory entry ticked for them shows
+   here, so staff do not go hunting the agency-wide list for the right physician. */
+function clientDirectory(c){
+  const mine=dirFor(c.id);
+  const rest=DIRECTORY.filter(d=>!(d.clients||[]).length);
+  const row=(d,tag)=>{ const i=DIRECTORY.indexOf(d);
+    return `<div class="lrow" onclick="dirForm(${i})">
+      <span class="row-ic" style="${tint(dirColor(d.cat))}">${dirIcon(d.cat)}</span>
+      <span class="row-copy"><strong>${esc(d.name)}${d.org?` · <span style="font-weight:500">${esc(d.org)}</span>`:''}</strong>
+        <span>${esc(d.cat)}${d.phone?` · ☏ ${esc(d.phone)}`:''}${d.email?` · ✉ ${esc(d.email)}`:''}${d.notes?` · ${esc(d.notes)}`:''}</span></span>
+      ${tag?`<span class="spill neutral">${tag}</span>`:''}
+      <span class="go-sq">${ico('arrow-up-right',15)}</span></div>`; };
+  return `<section class="card">
+    <div class="sec-head soft-blue"><h2>Directory</h2><span class="hd-n blue">${mine.length}</span>
+      <p>Providers, programs and resources assigned to ${esc(c.uci)} — open one to edit it or call</p>
+      ${state.role!=='family'?`<div class="right head-act"><button class="btn navy sm" onclick="dirForm(null)">＋ Add entry</button></div>`:''}</div>
+    <div class="card-b flush">
+      ${mine.map(d=>row(d,'')).join('')
+        ||`<div class="empty"><b>Nobody assigned yet</b>Open any directory entry and tick ${esc(c.uci)} under "Who sees this provider".</div>`}
+    </div>
+    ${rest.length?`<div class="sec-head"><h2>Agency wide</h2><span class="hd-n">${rest.length}</span>
+      <p>Not tied to one person — everyone uses these</p></div>
+    <div class="card-b flush">${rest.map(d=>row(d,'All clients')).join('')}</div>`:''}
   </section>`;
 }
 function clientIncidents(c){
@@ -5565,11 +6271,30 @@ function viewCalendar(){
   if(state.calFilter.client) list=list.filter(a=>a.cid===state.calFilter.client);
   if(GCAL.connected && !state.calFilter.type && !state.calFilter.client) list=list.concat(GCAL.events);
   list=list.filter(a=>calShow(a));
+  /* v9.93: the same range buttons the meeting view uses — all, today, upcoming, this week
+     and last week — sitting above the day strip. */
+  const _q=(state.calQ||'').trim().toLowerCase();
+  if(_q) list=list.filter(a=>[a.title,a.type,a.provider,a.loc,(client(a.cid)||{}).uci]
+    .some(v=>String(v||'').toLowerCase().includes(_q)));
+  const _r=state.calRange||'';
+  if(_r==='today') list=list.filter(a=>a.date===T);
+  else if(_r==='up') list=list.filter(a=>a.date>=T);
+  else if(_r==='week'){ const w=new Date(weekStart()+'T12:00:00'), a0=iso(w), a1=iso(addDays(w,6));
+    list=list.filter(a=>a.date>=a0&&a.date<=a1); }
+  else if(_r==='last'){ const w=new Date(weekStart()+'T12:00:00'), a0=iso(addDays(w,-7)), a1=iso(addDays(w,-1));
+    list=list.filter(a=>a.date>=a0&&a.date<=a1); }
   list.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
   const types=[...new Set([...Object.keys(APPT_CATS),...APPTS.map(a=>a.type)])];
   const someOff=calDefs().some(c=>!calVisible(c.key));
   const stripStart=addDays(state.calDay?new Date(state.calDay+'T12:00:00'):TODAY,-3);
-  const dayStrip=`<div class="cal-strip">
+  const anchor=state.calDay||T;
+  /* v9.97: the filters and the day cells were sharing a row, which squeezed the dates. The
+     filters sit on their own line now and the days get the full width, the same shape the
+     client appointment strip uses. */
+  const dayStrip=`
+  <div class="cal-strip" style="position:relative">
+    <button class="cal-nav" title="Previous week" onclick="calShift(-7)">‹</button>
+    <div class="cal-days">
     ${Array.from({length:7}).map((_,i)=>{ const d=iso(addDays(stripStart,i));
       const n=APPTS.filter(a=>a.date===d&&!a.cancelled&&cl.includes(a.cid)&&calShow(a)&&(!state.hideSample||!isSampleAppt(a))).length;
       const dt=new Date(d+'T12:00:00');
@@ -5577,6 +6302,18 @@ function viewCalendar(){
         title="${fmtLong(d)}${n?` · ${n} appointment${n===1?'':'s'}`:''}">
         <span>${dt.toLocaleDateString(undefined,{weekday:'short'})}</span><strong>${dt.getDate()}</strong>
         ${n?`<i class="cal-dot"></i>`:''}</button>`; }).join('')}
+    </div>
+    <button class="cal-nav" title="Next week" onclick="calShift(7)">›</button>
+    <button class="cal-jump ${(state.calPop&&state.calPopAt!=='head')?'is-on':''}" onclick="calPopToggle('strip')" title="Pick any date">
+      ${ico('calendar-range',15)} ${fmtLong(anchor)} ▾</button>
+    ${(state.calPop&&state.calPopAt!=='head')?calPopHtml(anchor,'strip'):''}
+  </div>
+  <div class="d-toolbar" style="padding:10px 16px 14px;border-bottom:1px solid var(--line)">
+    <div class="seg">${[['','All'],['today','Today'],['up','Upcoming'],['week','This week'],['last','Last week']]
+      .map(([v,l])=>`<button class="${(state.calRange||'')===v?'active':''}" onclick="state.calRange='${v}';render()">${l}</button>`).join('')}</div>
+    <input class="inp" style="flex:1;min-width:160px;height:34px" placeholder="Search appointments…"
+      value="${esc(state.calQ||'')}" oninput="state.calQ=this.value;render()">
+    ${state.calDay?`<button class="btn ghost sm" onclick="state.calDay='';render()">Clear ${fmtDate(state.calDay)}</button>`:''}
   </div>`;
   const catLegend=`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0 2px">
     ${types.map(t=>`<button style="all:unset;cursor:pointer;${state.calFilter.type===t?'outline:2px solid var(--gold);outline-offset:2px;border-radius:20px':''}"
@@ -5599,7 +6336,7 @@ function viewCalendar(){
         ?`<button class="btn ghost sm" onclick="gcalFetch()" title="Pull the latest events from Google">${GCAL.loading?'Refreshing…':'⟳ Refresh Google'}</button>
            <button class="btn ghost sm" onclick="gcalDisconnect()">Google ✓ · Disconnect</button>`
         :`<button class="btn gold sm" onclick="gcalConnect()">${GCAL.loading?'Connecting…':'Connect Google Calendar'}</button>`):''}
-      ${state.role==='director'?`<button class="btn ghost sm" onclick="toggleSample()" title="Shows or hides all seeded sample records, across every page">${state.hideSample?'Show sample data':'Hide sample data'}</button>`:''}
+      ${/* v9.96: sample data is a workspace setting, not a calendar one — it lives in Settings */''}
       <div class="seg"><button class="${state.calMode==='today'?'active':''}" onclick="state.calMode='today';render()">Today</button>
       <button class="${state.calMode==='week'?'active':''}" onclick="state.calMode='week';render()">Week</button>
       <button class="${state.calMode==='month'?'active':''}" onclick="state.calMode='month';render()">Month</button></div>
@@ -5612,14 +6349,59 @@ function viewCalendar(){
   ${state.calMode==='today'?tlCard(false):''}
 
   <section class="card">
-    <div class="card-h">
-      ${dayStrip}
-
-    </div>
+    ${/* v9.98: this sat inside a flex card-h, which squeezed the day cells into a corner.
+          It is its own block now, so the dates get the full width the client appointment
+          strip already had. */''}
+    ${dayStrip}
     <div class="card-b flush">${state.calMode==='month'?monthGrid(list):state.calMode==='week'?weekGrid(list):listView(list.filter(a=>a.date===T))}</div>
   </section>`;
 }
 
+/* The month picker behind the date button. */
+function calPopToggle(where){
+  const at=where||'strip';
+  if(state.calPop&&state.calPopAt===at){ state.calPop=false; }
+  else { state.calPop=true; state.calPopAt=at; state.calPopM=null; }
+  render();
+}
+function calShift(days){                                             // page the week without opening the picker
+  const base=state.calDay?new Date(state.calDay+'T12:00:00'):new Date(TODAY);
+  state.calDay=iso(addDays(base,days)); render();
+}
+/* v9.98: a small month popover hanging off the date button, the same one the client
+   appointments strip uses. The wall-calendar grid belongs on the accountability page,
+   not in the middle of this one. */
+function calPopHtml(anchor,at){
+  const base=state.calPopM?new Date(state.calPopM+'-01T12:00:00'):new Date(anchor+'T12:00:00');
+  const y=base.getFullYear(), m=base.getMonth();
+  const lead=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate();
+  const key=(yy,mm)=>`${yy}-${String(mm+1).padStart(2,'0')}`;
+  const cl=visibleClients().map(c=>c.id);
+  const dayAppts=ds=>APPTS.filter(a=>a.date===ds&&!a.cancelled&&cl.includes(a.cid)&&calShow(a)&&(!state.hideSample||!isSampleAppt(a)))
+    .sort((a,b)=>String(a.time).localeCompare(String(b.time)));
+  const cells=[];
+  for(let i=0;i<lead;i++) cells.push('<span></span>');
+  for(let d=1;d<=days;d++){
+    const ds=iso(new Date(y,m,d,12));
+    const n=dayAppts(ds).length;
+    cells.push(`<button class="${ds===T?'is-today':''} ${ds===anchor?'is-on':''}" title="${fmtLong(ds)}${n?` · ${n} appointment${n===1?'':'s'}`:''}"
+      onclick="state.calDay='${ds}';state.calPop=false;render()">${d}${n?'<i></i>':''}</button>`);
+  }
+  const prev=key(m===0?y-1:y, m===0?11:m-1), next=key(m===11?y+1:y, m===11?0:m+1);
+  const pos=at==='head'?'top:34px;left:0':'top:78px;right:16px';
+  return `<div class="cal-pop" style="${pos}" onclick="event.stopPropagation()">
+    <div class="cal-pop-h"><b>${base.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</b>
+      <span><button onclick="state.calPopM='${prev}';render()">‹</button><button onclick="state.calPopM='${next}';render()">›</button></span></div>
+    <div class="cal-grid">${['S','M','T','W','T','F','S'].map(d=>`<span class="dow">${d}</span>`).join('')}${cells.join('')}</div>
+    <div style="text-align:right;margin-top:8px">
+      <button class="btn ghost sm" onclick="state.calDay='';state.calPopM=null;state.calPop=false;render()">Clear</button></div>
+  </div>`;
+}
+document.addEventListener('click',e=>{                                // click away closes the picker
+  if(!state.calPop) return;
+  if(e.target.closest('.cal-pop,.cal-jump,.cal-date')) return;
+  state.calPop=false; render();
+});
 function listView(list){
   const days=[...new Set(list.map(a=>a.date))];
   if(!days.length) return `<div class="empty"><b>No appointments match</b>Try clearing the filters.</div>`;
@@ -5752,7 +6534,10 @@ function viewTasks(){
   <div class="page-h">
     <div><h1>${state.role==='staff'?'My tasks':'Tasks'}${aiTag('tasks')}</h1><div class="sub">${open.length} open · ${open.filter(t=>t.due<=T).length} due today or earlier</div></div>
     <div class="right">
-      ${state.role==='director'?`<button class="btn ghost sm" onclick="manageTasksConfig()" style="margin-right:6px">⚙ Configure</button>`:''}
+      ${/* v10.1: Configure sat on the page as its own button. It is one of the things the
+            cog is for, so that is where it lives now. */''}
+      ${(state.role==='director'&&state.layoutEdit)?`<button class="btn gold sm" onclick="pageEdit()" style="margin-right:6px">✓ Done editing</button>`:''}
+      ${state.role==='director'?`<button class="gear" title="Settings" onclick="pageSettings('tasks')" style="margin-right:6px">${ico('settings',17)}</button>`:''}
       <button class="btn navy" onclick="openAssign()">＋ ${state.role==='director'?'Assign task':'Add task'}</button></div>
   </div>
 
@@ -6123,11 +6908,15 @@ function trainDetail(tid){
     <div class="title-copy"><h1>${esc(t.n)}</h1>
       <p>${t.desc?esc(t.desc):`${t.mins} min${t.req?' · required for everyone':''}${t.due?' · due '+esc(t.due):''} · ${done.length} of ${appl.length} complete`}${state.role==='director'?` <button class="btn ghost sm ed-only" title="Edit this description" onclick="courseForm('${t.id}')">✎</button>`:''}</p>
       ${t.desc?`<p class="tiny muted" style="margin-top:2px">${t.mins} min${t.req?' · required for everyone':''}${t.due?' · due '+esc(t.due):''} · ${done.length} of ${appl.length} complete</p>`:''}</div>
+    ${/* v9.97: a course is a page like any other — the cog opens its editing, and Edit and
+          Delete surface with the rest of the edit controls instead of sitting on the record. */''}
     ${state.role==='director'?`<div class="page-acts">
       <button class="btn ghost sm" onclick="assignTraining('${t.id}')">Assign</button>
       <button class="btn ghost sm" onclick="courseRemind('${t.id}')">Remind outstanding</button>
-      <button class="btn gold sm" onclick="courseForm('${t.id}')">✎ Edit</button>
-      <button class="btn ghost sm" onclick="delCourse('${t.id}')">✕ Delete</button></div>`:''}
+      <button class="btn gold sm ed-only" onclick="courseForm('${t.id}')">✎ Edit</button>
+      <button class="btn ghost sm ed-only" onclick="delCourse('${t.id}')">✕ Delete</button>
+      ${state.layoutEdit?`<button class="btn gold sm" onclick="pageEdit()">✓ Done editing</button>`:''}
+      <button class="gear" title="Settings" onclick="pageSettings('trainhub')">${ico('settings',17)}</button></div>`:''}
   </div>
   <div class="grid2">
     <section class="card">
@@ -6313,6 +7102,8 @@ function obToggle(sid,i){
   obSave(); logAudit(it.d?'Completed onboarding item':'Unchecked onboarding item',`${staff(sid).init} · ${it.t}`);
   openStaffPage(sid);
 }
+function obStepOpen(){ closeAll(); state.client=null; state.staffPage=null; state.view='trainhub'; state.openOb=true; render();
+  setTimeout(()=>{ const n=el('obMaster'); if(n) n.scrollIntoView({block:'center'}); },60); }
 function obCard(sid){
   const list=OB_ASSIGN[sid]; if(!list||!list.length) return '';
   const done=list.filter(x=>x.d).length;
@@ -6411,7 +7202,7 @@ function viewStaffPage(){
     <div class="right">
       ${state.role==='director'?`<button class="btn ghost" onclick="openAssign('${sid}')">＋ Task</button>`:''}
       ${state.role==='director'?`<button class="btn ghost" onclick="openShiftForm(null,'${sid}')">＋ Shift</button>`:''}
-      ${state.role==='director'?`<button class="btn ghost" onclick="openStaffForm('${sid}')">✎ Edit details</button>`:''}
+      ${state.role==='director'?`<button class="btn ghost ed-only" onclick="openStaffForm('${sid}')">✎ Edit details</button>`:''}
       ${state.role==='director'?`<button class="btn ghost" onclick="accessForm('${sid}')">Client access</button>`:''}
       ${(state.role==='director'&&state.layoutEdit)?`<button class="btn gold" onclick="pageEdit()">✓ Done editing</button>`:''}
       ${state.role==='director'?`<button class="gear" title="Settings" onclick="pageSettings('staffpage')">${ico('settings',17)}</button>`:''}
@@ -6438,11 +7229,13 @@ function staffPageBody(sid){
   const shifts=visShifts().filter(x=>x.sid===sid&&(!x.date||Math.round((new Date((x.date||T)+'T12:00:00')-TODAY)/86400000)>=0)&&Math.round((new Date((x.date||T)+'T12:00:00')-TODAY)/86400000)<=7)
     .sort((a,b)=>String(a.date||T).localeCompare(String(b.date||T))||a.start.localeCompare(b.start));
   return `
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 12px">
+    ${/* v9.95: the row of jump chips was doing the job the page already does by scrolling.
+          It only appears while the page is being edited, with the icon and invite controls. */''}
+    ${state.layoutEdit?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 12px">
       ${canColor?`<button class="btn ghost sm" onclick="staffColorForm('${sid}')">🎨 ${state.role==='director'&&sid!==meSid()?'Set their icon & colour':'My icon & colour'}</button>`:''}
       ${state.role==='director'?`<button class="btn ghost sm" onclick="inviteStaff('${sid}')">✉ Invite to the portal</button>`:''}
       ${[['sfCerts','Certifications'],['sfTrain','Training'],['sfOb','Onboarding'],['sfShifts','Shifts'],['sfTasks','Tasks']].map(([a,l])=>`<button class="btn ghost sm" onclick="const t=el('${a}');if(t)t.scrollIntoView({behavior:'smooth',block:'start'})">${l} ↓</button>`).join('')}
-    </div>
+    </div>`:''}
     <div id="sfOb"></div>${obCard(sid)}
     ${sdocs.length?`<section class="card"><div class="card-h"><h2>Documents on file</h2></div><div class="card-b flush">
       ${sdocs.map(d=>docRow(d)).join('')}</div></section>`:''}
@@ -7623,9 +8416,12 @@ function viewForms(){
     if(!list.length&&!blanks.length) return '';
     const subs=[...new Set(list.map(t=>t.sub||''))].filter(Boolean);
     const title=bk?(FOLDER_NAMES[bk]||bk)+' templates':'Other templates';
-    return `<section class="card">
+    /* v10.1: the pen beside the title is gone. In edit mode the heading is typed in place,
+       and because this heading is a binder name the change is shared with the team rather
+       than kept to one login. */
+    return `<section class="card" ${bk?`data-binder="${bk}"`:''}>
     <div class="sec-head ${bk==='Agency'?'soft-sage':bk==='Medical'?'soft-blue':bk==='Daily'?'soft-honey':'soft-lilac'}">
-      <h2>${esc(title)}${state.role==='director'&&bk?` <button class="btn ghost sm ed-only" title="Rename this binder — the title changes everywhere" onclick="renameBinder('${bk}')" style="vertical-align:middle">✎</button>`:''}</h2><span class="hd-n ${bk==='Medical'?'blue':bk==='Daily'?'honey':'sage'}">${list.length+blanks.length}</span>
+      <h2>${esc(title)}</h2><span class="hd-n ${bk==='Medical'?'blue':bk==='Daily'?'honey':'sage'}">${list.length+blanks.length}</span>
       <p>${subs.length?esc(subs.join(', ')):'blank forms and fillable templates'}</p>
       ${state.role==='director'&&bk?`<button class="btn ghost sm head-act" onclick="libUpload('${bk}','forms')">＋ Upload form</button>`:''}
     </div>
@@ -7764,17 +8560,16 @@ function viewDirectory(){
     </select>
     <input class="inp" id="dirSearch" style="max-width:280px" placeholder="Search the directory…" value="${esc(state.dirQ||'')}"
         oninput="state.dirQ=this.value;const v=this.value;render();const s2=el('dirSearch');if(s2){s2.focus();s2.setSelectionRange(v.length,v.length)}"></div>
-      ${list.map(d=>{const i=DIRECTORY.indexOf(d); const open=state.openDir===i;
-        return `<div class="lrow" onclick="state.openDir=state.openDir===${i}?null:${i};render()">
+      ${/* v9.93: a row used to expand into a strip of buttons. Clicking it now opens the
+            entry itself, and call, email, delete and the client links all live inside. */''}
+      ${list.map(d=>{const i=DIRECTORY.indexOf(d);
+        const who=(d.clients||[]).map(id=>client(id)).filter(Boolean);
+        return `<div class="lrow" onclick="dirForm(${i})">
         <span class="row-ic" style="${tint(dirColor(d.cat))}">${dirIcon(d.cat)}</span>
         <span class="row-copy"><strong>${esc(d.name)}${d.org?` · <span style="font-weight:500">${esc(d.org)}</span>`:''}</strong>
           <span>${esc(d.cat)}${d.phone?` · ☏ ${esc(d.phone)}`:''}${d.email?` · ✉ ${esc(d.email)}`:''}${d.notes?` · ${esc(d.notes)}`:''}</span></span>
-        <span class="go-sq">${open?'▾':ico('arrow-up-right',15)}</span></div>
-        ${open?`<div style="background:var(--surface-2);border-bottom:1px solid var(--line);padding:11px 14px;display:flex;gap:7px;flex-wrap:wrap" onclick="event.stopPropagation()">
-          <button class="btn navy sm" onclick="dirForm(${i})">✎ Edit entry</button>
-          ${d.phone?`<a class="btn ghost sm" style="text-decoration:none" href="tel:${esc(d.phone)}">☏ Call</a>`:''}
-          ${d.email?`<a class="btn ghost sm" style="text-decoration:none" href="mailto:${esc(d.email)}">✉ Email</a>`:''}
-          <button class="btn ghost sm" onclick="dirDel(${i})">✕ Delete</button></div>`:''}`;}).join('')||'<div class="empty">Nothing in this view yet.</div>'}
+        ${who.length?`<span class="spill sage" title="${esc(who.map(c=>c.uci).join(', '))}">${who.length} client${who.length===1?'':'s'}</span>`:''}
+        <span class="go-sq">${ico('arrow-up-right',15)}</span></div>`;}).join('')||'<div class="empty">Nothing in this view yet.</div>'}
     </div>
   </section>`;
 }
@@ -7802,7 +8597,8 @@ function dirIconApply(){
   closeAll(); render(); toast('Icons saved.');
 }
 function dirForm(i){
-  const d=i==null?{cat:'',name:'',org:'',phone:'',fax:'',email:'',notes:''}:DIRECTORY[i];
+  const d=i==null?{cat:'',name:'',org:'',phone:'',fax:'',email:'',notes:'',clients:[]}:DIRECTORY[i];
+  window._dirPick=(d.clients||[]).slice();
   openModal(i==null?'Add directory entry':'Edit directory entry',`
     <div class="row2">
       <div class="field"><label>Category</label><input class="inp" id="drCat" list="drCats" value="${esc(d.cat)}" placeholder="e.g. Primary care physician"><datalist id="drCats">${dirCats().map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
@@ -7817,13 +8613,35 @@ function dirForm(i){
       <div class="field"><label>Email</label><input class="inp" id="drEmail" value="${esc(d.email)}"></div>
       <div class="field"><label>Notes</label><input class="inp" id="drNotes" value="${esc(d.notes)}"></div>
     </div>
-    <div class="tiny muted">Type a new category name to create it — it becomes a tab automatically.</div>`,
-    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="dirSaveEntry(${i==null?'null':i})">${i==null?'Add entry':'Save changes'}</button>`);
+    <div class="tiny muted">Type a new category name to create it — it becomes a tab automatically.</div>
+    ${/* v9.93: a provider belongs to the people who actually see them. Tick them here and the
+          entry shows on each of those clients' Directory tab. */''}
+    <div class="field" style="margin-top:12px"><label>Who sees this provider</label>
+      <div id="drWho" style="display:flex;gap:6px;flex-wrap:wrap">${dirWhoChips()}</div>
+      <div class="tiny muted" style="margin-top:6px">Leave every one unticked if it applies to the whole agency.</div></div>`,
+    `${i==null?'':`<button class="btn ghost" onclick="dirDel(${i})">✕ Delete</button>
+      ${d.phone?`<a class="btn ghost" style="text-decoration:none" href="tel:${esc(d.phone)}">☏ Call</a>`:''}
+      ${d.email?`<a class="btn ghost" style="text-decoration:none" href="mailto:${esc(d.email)}">✉ Email</a>`:''}`}
+     <button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="dirSaveEntry(${i==null?'null':i})">${i==null?'Add entry':'Save changes'}</button>`);
 }
+function dirWhoChips(){
+  const on=window._dirPick||[];
+  return visibleClients().map(c=>`<button class="cal-chip ${on.includes(c.id)?'on':'off'}" type="button"
+    onclick="dirWhoToggle('${c.id}')"><i style="background:${clientColor(c.id)}"></i>${esc(c.uci)}</button>`).join('')
+    ||'<span class="tiny muted">No clients on file yet.</span>';
+}
+function dirWhoToggle(cid){
+  window._dirPick=window._dirPick||[];
+  const j=window._dirPick.indexOf(cid);
+  if(j>-1) window._dirPick.splice(j,1); else window._dirPick.push(cid);
+  if(el('drWho')) el('drWho').innerHTML=dirWhoChips();
+}
+function dirFor(cid){ return DIRECTORY.filter(d=>(d.clients||[]).includes(cid)); }
 function dirSaveEntry(i){
   const e={cat:(el('drCat').value||'').trim()||'Other', name:(el('drName').value||'').trim(),
     org:(el('drOrg').value||'').trim(), phone:(el('drPhone').value||'').trim(), fax:(el('drFax').value||'').trim(),
-    email:(el('drEmail').value||'').trim(), notes:(el('drNotes').value||'').trim()};
+    email:(el('drEmail').value||'').trim(), notes:(el('drNotes').value||'').trim(),
+    clients:(window._dirPick||[]).slice()};
   if(!e.name) return toast('Give the entry a name.');
   if(i==null){ DIRECTORY.unshift(e); logAudit('Added directory entry',`${e.cat} · ${e.name}`); }
   else { DIRECTORY[i]=e; logAudit('Edited directory entry',`${e.cat} · ${e.name}`); }
@@ -8745,6 +9563,165 @@ function inspTemplateRemove(tid){
   logAudit('Removed inspection template',nm); render(); toast('Inspection template removed.');
 }
 
+/* ── v9.94: accountability log ───────────────────────────────────────
+   Where each person was through the day and who they were with. One day at a time,
+   because that is how it gets asked for: "where was she on the fourteenth". */
+let WHEREABOUTS=[];
+const acctDay=()=>state.acctDay||T;
+const acctFor=d=>WHEREABOUTS.filter(w=>!d||w.date===d)
+  .sort((a,b)=>String(a.start||'').localeCompare(String(b.start||'')));
+function acctIndex(){ WHEREABOUTS.forEach((w,i)=>{ w.i=i; }); }
+
+/* v9.95: a full month grid, the way a wall calendar reads. Click a day to open it, add
+   where each person was and who they were with. Erica called it the accountability calendar. */
+function acctGrid(){
+  const anchor=acctDay();
+  const base=state.acctMonth?new Date(state.acctMonth+'-01T12:00:00'):new Date(anchor+'T12:00:00');
+  const y=base.getFullYear(), m=base.getMonth();
+  const lead=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate();
+  const key=(yy,mm)=>`${yy}-${String(mm+1).padStart(2,'0')}`;
+  const nClients=visibleClients().length;
+  const cells=[];
+  for(let i=0;i<lead;i++) cells.push('<div class="ac-cell is-out"></div>');
+  for(let dd=1;dd<=days;dd++){
+    const ds=iso(new Date(y,m,dd,12));
+    const rows=acctFor(ds);
+    const people=new Set(rows.map(r=>r.cid)).size;
+    const full=nClients&&people>=nClients;
+    cells.push(`<div class="ac-cell ${ds===T?'is-today':''} ${ds===anchor?'is-on':''}" onclick="state.acctDay='${ds}';render()">
+      <span class="ac-d">${dd}</span>
+      ${rows.length?`<span class="ac-n ${full?'ok':''}">${people}/${nClients}</span>`:''}
+      <div class="ac-mini">${rows.slice(0,3).map(r=>`<i style="background:${clientColor(r.cid)}" title="${esc((client(r.cid)||{}).uci||'')} — ${esc(r.place||'')}"></i>`).join('')}${rows.length>3?`<b>+${rows.length-3}</b>`:''}</div>
+    </div>`);
+  }
+  const prev=key(m===0?y-1:y, m===0?11:m-1), next=key(m===11?y+1:y, m===11?0:m+1);
+  return `<div class="ac-wrap">
+    <div class="ac-head">
+      <button class="cal-nav" onclick="state.acctMonth='${prev}';render()">‹</button>
+      <b>${base.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</b>
+      <button class="cal-nav" onclick="state.acctMonth='${next}';render()">›</button>
+      <button class="btn ghost sm" onclick="state.acctDay='';state.acctMonth=null;render()">Today</button>
+    </div>
+    <div class="ac-grid">
+      ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<span class="ac-dow">${d}</span>`).join('')}
+      ${cells.join('')}
+    </div>
+  </div>`;
+}
+/* v9.96: the accountability calendar is its own section in the menu rather than one more
+   card buried in the safety log. Same store, its own page. */
+function viewAccountability(){
+  return `
+  <div class="page-hd">
+    <div class="title-ic">${ico('map-pin',20)}</div>
+    <div class="title-copy"><h1>Accountability</h1><p>Where each person was, who they were with, and why — click a day to fill it in</p></div>
+    ${state.role!=='family'?`<div class="page-acts">
+      ${state.layoutEdit?`<button class="btn gold sm" onclick="pageEdit()">✓ Done editing</button>`:''}
+      ${state.role==='director'?`<button class="gear" title="Settings" onclick="pageSettings('acct')">${ico('settings',17)}</button>`:''}
+      <button class="btn navy" onclick="acctForm()">＋ Add entry</button></div>`:''}
+  </div>
+  ${acctCard()}`;
+}
+function acctCard(){
+  if(state.role==='family') return '';
+  const d=acctDay(), rows=acctFor(d);
+  const cl=visibleClients();
+  const covered=new Set(rows.map(r=>r.cid));
+  const missing=cl.filter(c=>!covered.has(c.id));
+  return `<section class="card">
+    <div class="sec-head"><h2>Accountability calendar</h2><span class="hd-n">${rows.length}</span>
+      <p>Where each person was, who they were with, and why · click a day to fill it in</p>
+      <div class="right head-act" style="display:flex;gap:6px;align-items:center">
+        <button class="cal-nav" title="Previous day" onclick="acctShift(-1)">‹</button>
+        <button class="cal-nav" title="Next day" onclick="acctShift(1)">›</button>
+        <button class="btn navy sm" onclick="acctForm()">＋ Add entry</button></div></div>
+    <div class="card-b">${acctGrid()}</div>
+    <div class="sec-head"><h2>${fmtLong(d)}</h2><span class="hd-n">${rows.length}</span>
+      <p>Everything logged for this day</p></div>
+    <div class="card-b flush">
+      ${rows.map(w=>{ const c=client(w.cid)||{};
+        return `<div class="lrow" onclick="acctForm(${w.i})">
+          <span class="row-ic" style="${tint(clientColor(w.cid))}">◉</span>
+          <span class="row-copy"><strong>${esc(c.uci||'Unknown')} — ${esc(w.place||'Not stated')}</strong>
+            <span>${w.start?hm12(w.start):''}${w.end?' to '+hm12(w.end):''}${w.with?' · with '+esc(w.with):''}${w.purpose?' · '+esc(w.purpose):''} · logged by ${esc(w.by||'')}${w.notes?' · '+esc(w.notes):''}</span></span>
+          <span class="go-sq">${ico('arrow-up-right',15)}</span></div>`; }).join('')
+        ||`<div class="empty"><b>Nothing logged for this day</b>Add where each person was and who they were with.</div>`}
+      ${missing.length?`<div class="sec-note" style="margin:12px 14px"><span>⚠</span><div><b>No entry yet for ${missing.length} ${missing.length===1?'person':'people'}</b>${missing.map(c=>esc(c.uci)).join(' · ')}</div></div>`:''}
+    </div>
+  </section>`;
+}
+function acctShift(days){
+  const base=new Date(acctDay()+'T12:00:00');
+  state.acctDay=iso(addDays(base,days)); render();
+}
+function acctPopHtml(anchor){
+  const base=state.acctMonth?new Date(state.acctMonth+'-01T12:00:00'):new Date(anchor+'T12:00:00');
+  const y=base.getFullYear(), m=base.getMonth();
+  const lead=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate();
+  const key=(yy,mm)=>`${yy}-${String(mm+1).padStart(2,'0')}`;
+  const cells=[];
+  for(let i=0;i<lead;i++) cells.push('<span></span>');
+  for(let dd=1;dd<=days;dd++){
+    const ds=iso(new Date(y,m,dd,12)); const n=acctFor(ds).length;
+    cells.push(`<button class="${ds===T?'is-today':''} ${ds===anchor?'is-on':''}"
+      onclick="state.acctDay='${ds}';state.acctPop=false;render()">${dd}${n?'<i></i>':''}</button>`);
+  }
+  const prev=key(m===0?y-1:y, m===0?11:m-1), next=key(m===11?y+1:y, m===11?0:m+1);
+  return `<div class="cal-pop" style="top:4px;right:14px" onclick="event.stopPropagation()">
+    <div class="cal-pop-h"><b>${base.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</b>
+      <span><button onclick="state.acctMonth='${prev}';render()">‹</button><button onclick="state.acctMonth='${next}';render()">›</button></span></div>
+    <div class="cal-grid">${['S','M','T','W','T','F','S'].map(x=>`<span class="dow">${x}</span>`).join('')}${cells.join('')}</div>
+    <div style="text-align:right;margin-top:8px"><button class="btn ghost sm" onclick="state.acctDay='';state.acctPop=false;render()">Today</button></div>
+  </div>`;
+}
+document.addEventListener('click',e=>{
+  if(!state.acctPop) return;
+  if(e.target.closest('.cal-pop,.cal-jump')) return;
+  state.acctPop=false; render();
+});
+function acctForm(i){
+  const w=(i==null)?{date:acctDay(),start:nowHM(),cid:(visibleClients()[0]||{}).id}:WHEREABOUTS[i];
+  openModal(i==null?'Where were they?':'Edit the entry',`
+    <div class="row2">
+      <div class="field"><label>Person</label><select class="inp" id="acC">
+        ${visibleClients().map(c=>`<option value="${c.id}" ${w.cid===c.id?'selected':''}>${esc(c.uci)} — ${esc(c.home)}</option>`).join('')}</select></div>
+      <div class="field"><label>Date</label><input class="inp" type="date" id="acD" value="${w.date||acctDay()}"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>From</label><input class="inp" type="time" id="acS" value="${w.start||''}"></div>
+      <div class="field"><label>To</label><input class="inp" type="time" id="acE" value="${w.end||''}"></div>
+    </div>
+    <div class="field"><label>Where</label><input class="inp" id="acP" value="${esc(w.place||'')}" placeholder="e.g. Maple House, Horizons day program, Bay Dental"></div>
+    <div class="field"><label>Who they were with</label><input class="inp" id="acW" value="${esc(w.with||'')}" list="acStaff" placeholder="Staff member, family, provider">
+      <datalist id="acStaff">${visibleStaff().map(st=>`<option value="${esc(st.name)}">`).join('')}</datalist></div>
+    <div class="field"><label>Why</label><input class="inp" id="acR" value="${esc(w.purpose||'')}" placeholder="e.g. scheduled appointment, community outing, at home"></div>
+    <div class="field"><label>Notes</label><input class="inp" id="acN" value="${esc(w.notes||'')}"></div>`,
+    `${i==null?'':`<button class="btn ghost" onclick="acctDel(${i})">✕ Delete</button>`}
+     <button class="btn ghost" onclick="closeAll()">Cancel</button>
+     <button class="btn navy" onclick="acctSave(${i==null?'null':i})">${i==null?'Log it':'Save changes'}</button>`);
+}
+function acctSave(i){
+  const rec={cid:el('acC').value, date:el('acD').value||acctDay(),
+    start:el('acS').value, end:el('acE').value,
+    place:(el('acP').value||'').trim(), with:(el('acW').value||'').trim(),
+    purpose:(el('acR').value||'').trim(), notes:(el('acN').value||'').trim(), by:meInit()};
+  if(!rec.place) return toast('Say where they were.');
+  if(rec.end&&rec.start&&rec.end<=rec.start) return toast('The end time needs to be after the start.');
+  const who=(client(rec.cid)||{}).uci||'';
+  if(i==null){ WHEREABOUTS.push(rec); logAudit('Logged whereabouts',`${who} · ${rec.place} · ${fmtDate(rec.date)}`); }
+  else { Object.assign(WHEREABOUTS[i],rec); logAudit('Edited whereabouts',`${who} · ${rec.place}`); }
+  sbPush('np_demo_whereabouts',{cid:rec.cid,log_date:rec.date,start_time:rec.start||null,end_time:rec.end||null,
+    place:rec.place,with_whom:rec.with,purpose:rec.purpose,notes:rec.notes,recorded_by:rec.by});
+  state.acctDay=rec.date; acctIndex(); closeAll(); render(); toast('Logged.');
+}
+function acctDel(i){
+  const w=WHEREABOUTS[i]; if(!w) return;
+  askDelete('Delete this entry?','It comes off the accountability log for that day.',()=>{
+    WHEREABOUTS.splice(i,1); acctIndex();
+    logAudit('Deleted whereabouts entry',fmtDate(w.date));
+    closeAll(); render(); toast('Entry deleted.');
+  },'Delete entry');
+}
 function viewSafety(){
   const dated=[]; Object.entries(CREDS).forEach(([sid,cs])=>{ if(hid('staff',sid)) return; cs.filter(x=>x.s==='bad'||x.s==='warn').forEach(x=>dated.push({sid,...x})); });
   return `
@@ -12099,6 +13076,25 @@ function ctypeVal(id){
   if(v&&!CLIENT_TYPES.includes(v)){ CLIENT_TYPES.push(v); ctypesSave(); logAudit('Added client program type',v); }
   return v;
 }
+/* Adds a line to the support profile without rewriting what is already there. */
+function addSupport(cid){
+  const c=client(cid); if(!c) return;
+  openModal('Add to how to support '+esc(c.uci),`
+    <div class="tiny muted" style="margin-bottom:10px">This is added under what is already written. Use Edit to change the existing text.</div>
+    <div class="field"><label>What should staff know</label>
+      <textarea class="inp" id="supAdd" rows="4" placeholder="e.g. Give processing time before repeating a question."></textarea></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button>
+     <button class="btn navy" onclick="addSupportSave('${cid}')">Add</button>`);
+}
+function addSupportSave(cid){
+  const c=client(cid); if(!c) return;
+  const v=(el('supAdd').value||'').trim();
+  if(!v) return toast('Write something first.');
+  c.support=((c.support||'').trim()? c.support.trim()+'\n'+v : v);
+  sbPatch('np_demo_clients',cid,{support:c.support});
+  logAudit('Added to support profile',c.uci);
+  closeAll(); render(); toast('Added.');
+}
 function editSupport(cid){
   const c=client(cid); if(!c) return;
   openModal('How to support '+esc(c.uci),`
@@ -12481,11 +13477,49 @@ const CAL_COLORS=['#B0602F','#3E7BC4','#C25276','#2F8FA5','#B08A2E','#8A62C9','#
 function contractorsSave(){ sbUpsert('np_demo_program',{key:'contractors',value:{list:CONTRACTORS},updated_by:auditActor()}); }
 let CAL_META={};                                                     // calKey -> {name,color,icon,private}
 function calMetaSave(){ sbUpsert('np_demo_program',{key:'calmeta',value:{map:CAL_META},updated_by:auditActor()}); }
-let CAL_COLOR_BY='type';                                             // what drives appointment color: type | calendar | house
+let CAL_COLOR_BY='type';                                 // type | calendar | house | client
+/* v9.92: the bars were painted at full strength, which reads as a wall of dark blocks on a
+   busy day. CAL_SOFT mixes each colour toward white before it is drawn, and the text colour
+   follows the result so a pale house colour never leaves white text on white. */
+let CAL_SOFT=42;                                         // 0 = the raw colour, 100 = nearly white
+let CAL_TEXT='auto';                                     // auto | light | dark
 function calColorBySave(){ sbUpsert('np_demo_program',{key:'calcolorby',value:{v:CAL_COLOR_BY},updated_by:auditActor()}); }
+function calLookSave(){ sbUpsert('np_demo_program',{key:'callook',value:{soft:CAL_SOFT,text:CAL_TEXT},updated_by:auditActor()}); }
+function hex2rgb(h){ const v=String(h||'').replace('#','');
+  const t=v.length===3?v.split('').map(x=>x+x).join(''):v.padEnd(6,'0');
+  return [parseInt(t.slice(0,2),16)||0,parseInt(t.slice(2,4),16)||0,parseInt(t.slice(4,6),16)||0]; }
+const rgb2hex=r=>'#'+r.map(x=>Math.max(0,Math.min(255,Math.round(x))).toString(16).padStart(2,'0')).join('');
+function calSoften(hex,amt){ const a=(amt==null?CAL_SOFT:amt)/100;
+  const c=hex2rgb(hex); return rgb2hex(c.map(x=>x+(255-x)*a)); }
+function lumaOf(hex){ const [r,g,b]=hex2rgb(hex).map(x=>{ const v=x/255;
+  return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4); });
+  return 0.2126*r+0.7152*g+0.0722*b; }
+/* Contrast against the softened background, not the original, which is the bug Kser hit:
+   lighten a house colour and the white label disappears into it. */
+function calInk(bgHex){
+  if(CAL_TEXT==='light') return '#FFFFFF';
+  if(CAL_TEXT==='dark')  return '#20242E';
+  return lumaOf(bgHex)>0.45 ? '#20242E' : '#FFFFFF';
+}
+function barPaint(hex,soft){
+  const bg=calSoften(hex,soft), ink=calInk(bg);
+  return `background:${bg};border-color:${bg};color:${ink}`;
+}
+/* Appointments can be coloured by the person they belong to. The colour is stable per
+   client, so the same person keeps the same bar every day. */
+let CLIENT_COLORS={};
+function clientColorsSave(){ sbUpsert('np_demo_program',{key:'clientcolors',value:{map:CLIENT_COLORS},updated_by:auditActor()}); }
+const CLIENT_PALETTE=['#3E7BC4','#D97B29','#3E8E5A','#8A62C9','#B08A2E','#C05050','#2E7FA8','#A05C7B','#5A8F3C','#7A4FB5'];
+function clientColor(cid){
+  if(!cid) return '#6B7A74';
+  if(CLIENT_COLORS[cid]) return CLIENT_COLORS[cid];
+  const ids=visibleClients().map(c=>c.id); const i=ids.indexOf(cid);
+  return CLIENT_PALETTE[(i>-1?i:String(cid).length)%CLIENT_PALETTE.length];
+}
 function apptColor(a){
   if(CAL_COLOR_BY==='calendar') return calDef(apptCalKey(a)).color;
   if(CAL_COLOR_BY==='house'){ const c=client(a.cid); return homeColor(c&&c.home); }
+  if(CAL_COLOR_BY==='client') return clientColor(a.cid);
   return catOf(a.type).color;
 }
 function apptIcon(a){ return catOf(a.type).emoji||'▤'; }
@@ -13446,6 +14480,48 @@ document.addEventListener('pointerup',e=>{
 function shiftAt(sid,sk){
   return (sk&&SHIFTS.find(x=>shiftIdent(x)===sk))||SHIFTS.find(x=>x.sid===sid);
 }
+/* v9.92: appointments move and stretch on the timeline the way shifts already did. Drag the
+   body to change the time, drag the right edge to change how long it runs. */
+let apptDrag=null;
+document.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='touch'||e.button!==0) return;
+  const b=e.target.closest('.tl-bar[data-appt]'); if(!b) return;
+  if(state.role==='family') return;
+  const r=b.getBoundingClientRect();
+  const onEdge=(r.right-e.clientX)<=16;
+  apptDrag={id:b.dataset.appt,el:b,x0:e.clientX,left0:parseFloat(b.style.left)||0,
+    w0:parseFloat(b.style.width)||r.width,mode:onEdge?'size':'move',moved:false};
+  b.classList.add(onEdge?'sizing':'dragging');
+  b.setPointerCapture&&b.setPointerCapture(e.pointerId);
+  e.preventDefault(); e.stopPropagation();
+},true);
+document.addEventListener('pointermove',e=>{
+  if(!apptDrag) return;
+  const dx=e.clientX-apptDrag.x0;
+  if(Math.abs(dx)>3) apptDrag.moved=true;
+  if(apptDrag.mode==='size') apptDrag.el.style.width=Math.max(34,apptDrag.w0+dx)+'px';
+  else apptDrag.el.style.left=Math.max(0,apptDrag.left0+dx)+'px';
+});
+document.addEventListener('pointerup',e=>{
+  if(!apptDrag) return;
+  const d=apptDrag; apptDrag=null;
+  d.el.classList.remove('dragging','sizing');
+  const dx=e.clientX-d.x0;
+  if(Math.abs(dx)<5){ openAppt(d.id); return; }                      // a click, not a drag
+  const a=APPTS.find(x=>x.id===d.id); if(!a) return;
+  const mins=Math.round(dx/TL.hw*60/15)*15;                          // snap to the quarter hour
+  if(d.mode==='size'){
+    a.dur=Math.max(15,(+a.dur||60)+mins);
+    sbPatch('np_demo_appointments',a.id,{dur:a.dur});
+    logAudit('Changed appointment length',`${a.title} · ${a.dur} min`);
+  } else {
+    const t=toMin(a.time)+mins;
+    a.time=mmhh(Math.max(0,Math.min(23*60+45,t)));
+    sbPatch('np_demo_appointments',a.id,{time:a.time});
+    logAudit('Moved appointment',`${a.title} → ${hm12(a.time)}`);
+  }
+  render(); toast(d.mode==='size'?`Now ${a.dur} minutes.`:`Moved to ${hm12(a.time)}.`);
+});
 function shiftReplace(s,was){                                        // one row per shift — never a new row on every drag
   const d=s.date||T;
   sbDel('np_demo_shifts',`staff_id=eq.${encodeURIComponent(s.sid)}&shift_date=eq.${encodeURIComponent(d)}&start_time=eq.${encodeURIComponent(was.start)}`);
@@ -13705,13 +14781,27 @@ async function sbHydrate(){
   if(slogs&&slogs.length){ SIGNED_LOGS=slogs.map(r=>({id:r.id,kind:r.log_kind,name:r.log_name,home:r.home||'',from:r.period_start,to:r.period_end,
     by:r.uploaded_by||'',at:r.uploaded_at?fmtDate(String(r.uploaded_at).slice(0,10)):'',signed:r.signed_off!==false,
     file:r.file_name||'',url:r.url||'',path:r.storage_path||'',binder:r.binder||'Daily',sb:r.sub_binder||'',note:r.note||''})); }
-  const [dbClients,dbStaff,dbShifts,dbAudit,dbDocAct,dbChecks]=await Promise.all([
+  const [dbClients,dbStaff,dbShifts,dbAudit,dbDocAct,dbChecks,dbVitals,dbAdls,dbWhere]=await Promise.all([
     sbGet('np_demo_clients','select=*'),
     sbGet('np_demo_staff','select=*'),
     sbGet('np_demo_shifts','select=*&order=created_at.desc&limit=200'),
     sbGet('np_demo_audit_log','select=*&order=at.desc&limit=120'),
     sbGet('np_demo_doc_activity','select=*&order=created_at.desc&limit=5'),
-    sbGet('np_demo_checklist_logs','select=*&order=created_at.asc&limit=500')]);
+    sbGet('np_demo_checklist_logs','select=*&order=created_at.asc&limit=500'),
+    sbGet('np_demo_vitals','select=*&order=reading_date.desc&limit=800'),
+    sbGet('np_demo_adls','select=*&order=log_date.desc&limit=800'),
+    sbGet('np_demo_whereabouts','select=*&order=log_date.desc&limit=800')]);
+  /* v9.94: the care record and the accountability log. Nothing is seeded — these tables
+     start empty for every agency and fill from what staff actually record. */
+  VITALS=(dbVitals||[]).map(r=>({dbId:r.id,cid:r.cid,date:String(r.reading_date).slice(0,10),time:r.reading_time||'',
+    hr:r.hr||'',bp:r.bp||'',temp:r.temp||'',resp:r.resp||'',o2:r.o2||'',weight:r.weight||'',glucose:r.glucose||'',pain:r.pain||'',
+    context:r.context||'',notes:r.notes||'',by:r.recorded_by||''}));
+  ADLS=(dbAdls||[]).map(r=>({dbId:r.id,cid:r.cid,date:String(r.log_date).slice(0,10),time:r.log_time||'',
+    kind:r.kind||'',detail:r.detail||'',amount:r.amount||'',assist:r.assist||'',notes:r.notes||'',by:r.recorded_by||''}));
+  WHEREABOUTS=(dbWhere||[]).map(r=>({dbId:r.id,cid:r.cid,date:String(r.log_date).slice(0,10),
+    start:r.start_time||'',end:r.end_time||'',place:r.place||'',with:r.with_whom||'',
+    purpose:r.purpose||'',notes:r.notes||'',by:r.recorded_by||''}));
+  vitalsIndex(); adlsIndex(); acctIndex();
   dbClients.forEach(r=>{
     const ex=CLIENTS.find(c=>c.id===r.id);
     const rec={id:r.id,uci:r.uci,name:r.name||('Client '+(r.init||'')),init:r.init||'',home:r.home||'Maple House',age:r.age,since:r.since||'',guardian:r.guardian||'None on file',tag:r.tag||'',dx:r.dx||'',alerts:Array.isArray(r.alerts)?r.alerts:[],support:r.support||'',goals:Array.isArray(r.goals)?r.goals:[]};
@@ -13814,6 +14904,8 @@ async function sbHydrate(){
         TEMPLATES5.sort((a,b)=>{ const ia=o.indexOf(a.id), ib=o.indexOf(b.id); return (ia<0?999:ia)-(ib<0?999:ib); }); }
       if(r.key==='taskcolors'&&r.value&&(r.value.due||r.value.cat||r.value.pri||r.value.stage)){ TASK_COLORS=r.value; }
       if(r.key==='calcolorby'&&r.value&&r.value.v){ CAL_COLOR_BY=r.value.v; }
+      if(r.key==='callook'&&r.value){ if(r.value.soft!=null) CAL_SOFT=+r.value.soft; if(r.value.text) CAL_TEXT=r.value.text; }
+      if(r.key==='clientcolors'&&r.value&&r.value.map){ CLIENT_COLORS=r.value.map; }
       if(r.key==='certremind'&&r.value&&r.value.days){ CERT_REMIND=r.value; }
       if(r.key==='certnotified'&&r.value&&r.value.map){ CERT_NOTIFIED=r.value.map; }
       if(r.key==='doccats'&&r.value&&Array.isArray(r.value.list)&&r.value.list.length){ DOC_CATS=r.value.list; }
