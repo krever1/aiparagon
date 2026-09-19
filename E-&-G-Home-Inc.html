@@ -4872,8 +4872,14 @@ document.addEventListener('pointermove',e=>{
     .forEach(c=>{ if(!c.dataset.lane) c.style.height=tlRowH()+'px'; });
 });
 document.addEventListener('pointerup',()=>{ if(tlGrip){ tlGrip=null; render(); } });
+const boardDay=()=>state.boardDay||T;
+function boardShift(days){
+  const base=new Date(boardDay()+'T12:00:00');
+  const d=iso(addDays(base,days));
+  state.boardDay=(d===T?'':d); render();
+}
 function tlCard(full){
-  const D=full?tlState.date:T;
+  const D=full?tlState.date:(state.view==='calendar'?boardDay():T);
   const fClients=full&&tlState.home?visibleClients().filter(c=>c.home===tlState.home):visibleClients();
   const cl=visibleClients().map(c=>c.id);
   tlFit(D);
@@ -4995,6 +5001,7 @@ function tlCard(full){
           <div class="tl-cells" ${r.h?'data-lane="1"':''} style="width:${trackW}px;height:${r.h||tlRowH()}px">${r.bars}</div>
         </div>`).join('')}
       ${D===T?`<div class="tl-nowline" style="left:${TL.lab+now}px"></div>`:''}
+      ${/* v10.4: the board can sit on another day now, so it says so rather than implying today */''}
     </div></div>`;
 
   return `
@@ -5003,16 +5010,14 @@ function tlCard(full){
       ${full?`<h2>${state.role==='family'?"4023180's day":'The floor'}</h2>`
         : state.view==='calendar'
         ? `<h2 style="display:flex;align-items:center;gap:8px">
-             <button class="cal-nav" title="Previous day" onclick="calShift(-1)">‹</button>
-             ${/* v9.98: the date read like a label but people click it, so it is a button
-                   that opens the month. */''}
+             <button class="cal-nav" title="Previous day on the board" onclick="boardShift(-1)">‹</button>
              <span style="position:relative;display:inline-block">
-               <button class="cal-date ${(state.calPop&&state.calPopAt==='head')?'is-on':''}" title="Pick any date" onclick="calPopToggle('head')">
-                 ${fmtLong(state.calDay||T)} ▾</button>
-               ${(state.calPop&&state.calPopAt==='head')?calPopHtml(state.calDay||T,'head'):''}
+               <button class="cal-date ${(state.calPop&&state.calPopAt==='head')?'is-on':''}" title="Pick the day this board shows" onclick="calPopToggle('head')">
+                 ${fmtLong(boardDay())} ▾</button>
+               ${(state.calPop&&state.calPopAt==='head')?calPopHtml(boardDay(),'head'):''}
              </span>
-             <button class="cal-nav" title="Next day" onclick="calShift(1)">›</button>
-             ${(state.calDay&&state.calDay!==T)?`<button class="btn ghost sm" onclick="state.calDay='';render()">Today</button>`:''}
+             <button class="cal-nav" title="Next day on the board" onclick="boardShift(1)">›</button>
+             ${state.boardDay?`<button class="btn ghost sm" onclick="state.boardDay='';render()">Today</button>`:''}
            </h2>`
         : `<h2 style="font-weight:800">Today's calendar</h2><p>${fmtLong(T)} · appointments and active shifts</p>`}
       ${full?`
@@ -6384,8 +6389,9 @@ function calPopHtml(anchor,at){
   for(let d=1;d<=days;d++){
     const ds=iso(new Date(y,m,d,12));
     const n=dayAppts(ds).length;
+    const tgt=at==='head'?'boardDay':'calDay';
     cells.push(`<button class="${ds===T?'is-today':''} ${ds===anchor?'is-on':''}" title="${fmtLong(ds)}${n?` · ${n} appointment${n===1?'':'s'}`:''}"
-      onclick="state.calDay='${ds}';state.calPop=false;render()">${d}${n?'<i></i>':''}</button>`);
+      onclick="state.${tgt}='${ds}';state.calPop=false;render()">${d}${n?'<i></i>':''}</button>`);
   }
   const prev=key(m===0?y-1:y, m===0?11:m-1), next=key(m===11?y+1:y, m===11?0:m+1);
   const pos=at==='head'?'top:34px;left:0':'top:78px;right:16px';
@@ -6394,7 +6400,7 @@ function calPopHtml(anchor,at){
       <span><button onclick="state.calPopM='${prev}';render()">‹</button><button onclick="state.calPopM='${next}';render()">›</button></span></div>
     <div class="cal-grid">${['S','M','T','W','T','F','S'].map(d=>`<span class="dow">${d}</span>`).join('')}${cells.join('')}</div>
     <div style="text-align:right;margin-top:8px">
-      <button class="btn ghost sm" onclick="state.calDay='';state.calPopM=null;state.calPop=false;render()">Clear</button></div>
+      <button class="btn ghost sm" onclick="state.${at==='head'?'boardDay':'calDay'}='';state.calPopM=null;state.calPop=false;render()">${at==='head'?'Today':'Clear'}</button></div>
   </div>`;
 }
 document.addEventListener('click',e=>{                                // click away closes the picker
