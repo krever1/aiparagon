@@ -475,6 +475,34 @@ button.tpe-box.on:after{content:'✓';color:#fff;font-size:10px;line-height:1}
   border:1px solid var(--line);background:#fff;font:600 11.5px system-ui,sans-serif;white-space:nowrap;flex:none}
 .tpe-tools{flex-wrap:nowrap}
 .tpe-kind:hover{border-color:var(--navy-deep)}
+/* v12.8: row menus and names typed over in place */
+.rm-dot{all:unset;cursor:pointer;flex:none;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font:700 17px/1 system-ui,sans-serif;color:var(--muted);opacity:.6;margin-left:4px}
+.lrow:hover .rm-dot,.docrow:hover .rm-dot,.binder-head:hover .rm-dot,.card-h:hover .rm-dot,.rm-dot:focus-visible{opacity:1}
+.rm-dot:hover{background:rgba(0,0,0,.06);color:var(--ink)}
+.rm-pop{position:fixed;z-index:2000;min-width:220px;max-width:290px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 44px rgba(20,32,28,.2);padding:6px}
+.rm-pop button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:8px;font:500 13px/1.25 system-ui,sans-serif;cursor:pointer;color:var(--ink)}
+.rm-pop button:hover,.rm-pop button:focus-visible{background:var(--surface-2,#F3F1EC)}
+.rm-pop button.danger{color:#A33A30}
+.rm-ic{width:16px;text-align:center;opacity:.7;flex:none}
+.rm-sep{height:1px;background:var(--line);margin:5px 4px}
+.rn{border-radius:4px;padding:0 2px;margin:0 -2px}
+.rn-live{cursor:text;box-shadow:inset 0 -1.5px 0 var(--line)}
+.rn-live:hover{background:rgba(0,0,0,.04);box-shadow:inset 0 -1.5px 0 var(--navy-deep)}
+.rn-inp{height:30px!important;font:inherit;font-weight:600;text-transform:none;letter-spacing:0;min-width:160px;width:min(380px,100%);padding:0 8px;color:var(--ink)}
+.binder-head .rn-inp{font-size:13px}
+.tab-add{all:unset;cursor:pointer;display:block;margin:6px 18px 12px 30px;padding:8px 12px;border:1px dashed var(--line);border-radius:8px;font:600 12px system-ui,sans-serif;color:var(--navy-deep)}
+.tab-add:hover{border-color:var(--navy-deep);background:#fff}
+.tab-row .tab-plus{opacity:0;transition:opacity .12s}
+.tab-row:hover .tab-plus,.tab-row:focus-within .tab-plus{opacity:1}
+.tpe-foot-l{display:flex;gap:8px;margin-right:auto;flex-wrap:wrap}
+.tpe-del{color:#A33A30!important}
+@media(hover:none){.rm-dot{opacity:1}.tab-row .tab-plus{opacity:1}}
+.tpe-more{display:none}
+@media(max-width:700px){.tab-row .tab-plus{display:none}
+  .tpe-foot-l{display:none!important}
+  .tpe-more{display:flex;flex:none;order:1}
+  .md-f:has(.tpe-more) > .btn.ghost{flex:1 1 0}
+  .tpe-more .rm-dot{width:48px;height:auto;min-height:44px;border:1px solid var(--line);border-radius:12px;background:#fff;opacity:1;margin:0}}
 /* v12.7: '.tpe-tools button' (a 26px square for the icon buttons) outranked '.tpe-kind', so the
    type label was squeezed into 26px and spilled over the Insert select. */
 .tpe-tools .tpe-kind{width:auto;display:inline-flex;white-space:nowrap;flex:none;padding:0 8px}
@@ -2490,7 +2518,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.7 beta</span></span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.8 beta</span></span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -6454,25 +6482,264 @@ function manageDocCats(){
     (n)=>{ if(!DOC_CATS.includes(n)) DOC_CATS.push(n); docCatsSave(); logAudit('Added document category',n); render(); });
 }
 function catToBinder(cat){ return ({Medication:'Medical','Medication reason for use':'Medical',Lab:'Medical','Lab work':'Medical',Vaccines:'Medical','Physician visit':'Medical','Dental visit':'Medical',Consent:'Medical',Medical:'Medical','Care plan':'Medical',Incident:'Agency',Report:'Daily',Note:'Daily',Policy:'Agency'})[cat]||''; }
-function docBinderOf(d){ const t=DOCTAG[d.n]; if(t&&t.b){ const b=normBinder(t.b).b; if(FOLDER_NAMES[b]) return b; } const b=normBinder(catToBinder(d.cat)).b; return b&&FOLDER_NAMES[b]?b:''; }
+function docBinderOf(d){ const t=(typeof docTagOf==='function')?docTagOf(d):DOCTAG[d.n]; if(t&&t.b){ const b=normBinder(t.b).b; if(FOLDER_NAMES[b]) return b; } const b=normBinder(catToBinder(d.cat)).b; return b&&FOLDER_NAMES[b]?b:''; }
 function catToSub(cat){ return ({'Lab work':'Lab Works',Lab:'Lab Works',Vaccines:'Vaccines',Immunizations:'Vaccines','Physician visit':'Physician Visit','Dental visit':'Dental',Dental:'Dental','Medication reason for use':'Medication Reason For Use',Medication:'Medication Reason For Use',Weight:'Weight',POLST:'POLST',Audiology:'Audiologist'})[cat]||''; }
+/* ── v12.8: every binder, tab, document and template can be renamed, added to, moved and
+   deleted where it sits. One ⋯ menu per row holds the actions, and the name itself is typed
+   over in place (double-click it, or pick Rename). Tabs are shared by every folder, so a tab
+   renamed on the Documents page is renamed in every client and staff folder too, and the
+   documents filed under it go with it. ─────────────────────────────────────────────────── */
+let ACT_FN={}, ACT_N=0;
+function fx(fn){ const id='a'+(++ACT_N); ACT_FN[id]=fn; delete ACT_FN['a'+(ACT_N-9000)]; return `actRun('${id}')`; }
+function actRun(id){ const f=ACT_FN[id]; if(f) f(); }
+let RM_ITEMS={}, RM_N=0;
+function rmBtn(items,label){
+  let live=(items||[]).filter(Boolean);
+  live=live.filter((it,i)=>it!=='-'||(i>0&&i<live.length-1&&live[i-1]!=='-'));
+  if(!live.filter(x=>x!=='-').length) return '';
+  const id='rm'+(++RM_N); RM_ITEMS[id]=live; delete RM_ITEMS['rm'+(RM_N-9000)];
+  return `<button type="button" class="rm-dot" title="${esc(label||'More actions')}" aria-label="${esc(label||'More actions')}" aria-haspopup="menu" onclick="event.stopPropagation();rmOpen('${id}',this)">⋯</button>`;
+}
+function rmOpen(id,btn){
+  const wasOpen=el('rmPop')&&el('rmPop').dataset.for===id; rmClose(); if(wasOpen) return;
+  const items=RM_ITEMS[id]; if(!items) return;
+  const p=document.createElement('div'); p.id='rmPop'; p.className='rm-pop'; p.dataset.for=id; p.setAttribute('role','menu');
+  p.innerHTML=items.map((it,i)=>it==='-'?'<div class="rm-sep"></div>'
+    :`<button type="button" role="menuitem" class="${it.danger?'danger':''}" data-i="${i}"><span class="rm-ic">${it.ic||''}</span>${esc(it.l)}</button>`).join('');
+  p.addEventListener('click',e=>{ const b=e.target.closest('button[data-i]'); if(!b) return; e.stopPropagation();
+    const it=items[+b.dataset.i]; rmClose(); try{ it.fn(); }catch(err){ console.error(err); } });
+  p.addEventListener('keydown',e=>{ const bs=[...p.querySelectorAll('button')]; const i=bs.indexOf(document.activeElement);
+    if(e.key==='ArrowDown'){ e.preventDefault(); (bs[i+1]||bs[0]).focus(); } if(e.key==='ArrowUp'){ e.preventDefault(); (bs[i-1]||bs[bs.length-1]).focus(); } });
+  document.body.appendChild(p);
+  const r=btn.getBoundingClientRect(), pw=p.offsetWidth||220, ph=p.offsetHeight||200;
+  const vw=document.documentElement.clientWidth||window.innerWidth, vh=window.innerHeight;
+  const left=Math.min(Math.max(8,r.right-pw),Math.max(8,vw-pw-8));
+  let top=r.bottom+4; if(top+ph>vh-8) top=Math.max(8,r.top-ph-4);
+  p.style.left=left+'px'; p.style.top=top+'px';
+  setTimeout(()=>{ const b0=p.querySelector('button'); if(b0&&b0.focus) b0.focus(); },0);
+}
+function rmClose(){ const p=el('rmPop'); if(p) p.remove(); }
+document.addEventListener('click',e=>{ if(!(e.target.closest&&(e.target.closest('#rmPop')||e.target.closest('.rm-dot')))) rmClose(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') rmClose(); });
+window.addEventListener('resize',rmClose);
+
+/* the name, typed over where it is */
+let RN_SAVE={}, RN_N=0;
+function rnName(text,save,key){
+  const id='rn'+(++RN_N); RN_SAVE[id]={v:String(text==null?'':text),save}; delete RN_SAVE['rn'+(RN_N-9000)];
+  /* In edit mode a click on the name types over it. Otherwise a click opens the row, and
+     Rename is in the row's ⋯ menu. */
+  const live=!!(state.layoutEdit||state.docEdit);
+  return `<span class="rn${live?' rn-live':''}" data-rn="${id}"${key?` data-rnk="${esc(key)}"`:''}${live?` title="Click to rename" onclick="event.stopPropagation();rnStart('${id}')"`:''}>${esc(text)}</span>`;
+}
+function rnStart(id){
+  const sp=document.querySelector(`[data-rn="${id}"]`), r=RN_SAVE[id]; if(!sp||!r) return;
+  const inp=document.createElement('input'); inp.className='inp rn-inp'; inp.value=r.v; inp.setAttribute('aria-label','New name');
+  let done=false;
+  const commit=ok=>{ if(done) return; done=true; const nv=inp.value.trim();
+    if(!ok||!nv||nv===r.v){ render(); return; } r.save(nv); };
+  inp.addEventListener('keydown',e=>{ e.stopPropagation();
+    if(e.key==='Enter'){ e.preventDefault(); commit(true); } else if(e.key==='Escape'){ e.preventDefault(); commit(false); } });
+  inp.addEventListener('blur',()=>commit(true));
+  ['click','mousedown','dblclick','pointerdown'].forEach(t=>inp.addEventListener(t,e=>e.stopPropagation()));
+  sp.replaceWith(inp); inp.focus();
+  const m=r.v.match(/^(.*?)(\.[a-z0-9]{2,5})$/i); try{ inp.setSelectionRange(0,m?m[1].length:r.v.length); }catch(e){}
+}
+function rnStartKey(k){ const sp=[...document.querySelectorAll('[data-rnk]')].find(x=>x.dataset.rnk===k); if(sp) rnStart(sp.dataset.rn); }
+function keepExt(old,nv){ const m=String(old).match(/(\.[a-z0-9]{2,5})$/i); return (m&&!/\.[a-z0-9]{2,5}$/i.test(nv))?nv+m[1]:nv; }
+const encQ=v=>encodeURIComponent(v);
+
+/* ── binders ── */
+function binderRenameTo(key,nv){
+  nv=String(nv||'').trim(); if(!nv) return render();
+  const old=FOLDER_NAMES[key]||key; if(nv===old) return render();
+  FOLDER_NAMES[key]=nv; const cb=CUSTOM_BINDERS.find(b=>b.key===key); if(cb) cb.name=nv;
+  bindersSave(); logAudit('Renamed binder',`${old} → ${nv}`);
+  try{ renderNav(); }catch(e){}
+  render(); toast('Binder renamed everywhere it shows.');
+}
+
+/* ── tabs: dividers inside a binder, shared by every folder ── */
+let SUB_ALIAS={};                                                    // binder -> {old tab name: new name}, so older records land under the new name
+function subAlias(b,sb){ let s=sb||'', n=0; const m=SUB_ALIAS[b];
+  while(s&&m&&Object.prototype.hasOwnProperty.call(m,s)&&n++<12) s=m[s]; return s; }
+function tabCount(key,name){
+  let n=(COMPLETED[key]||[]).filter(x=>subAlias(key,x.sb||'')===name).length;
+  n+=DOCS.filter(d=>d.cid&&docBinderOf(d)===key&&docSubOf(d,key)===name).length;
+  return n;
+}
+function tabRepoint(key,old,nv){
+  const m=SUB_ALIAS[key]=SUB_ALIAS[key]||{};
+  Object.keys(m).forEach(k=>{ if(m[k]===old) m[k]=nv; });
+  m[old]=nv; if(nv) delete m[nv];
+  (COMPLETED[key]||[]).forEach(x=>{ if((x.sb||'')===old) x.sb=nv; });
+  let fch=false; Object.values(FILED_DOCS).forEach(f=>{ if(normBinder(f.binder||'').b===key&&(f.sb||'')===old){ f.sb=nv; fch=true; } });
+  Object.keys(DOCTAG).forEach(n=>{ const t=DOCTAG[n]; if(t&&t.b&&normBinder(t.b).b===key&&(t.sb||'')===old) t.sb=nv; });
+  DOCS.forEach(d=>{ if(docBinderOf(d)!==key) return; if(d.sub_binder===old) d.sub_binder=nv; if(d.sb===old) d.sb=nv; });
+  TEMPLATES5.forEach(t=>{ if(normBinder(t.dest||'').b===key&&(t.sub||'')===old){ t.sub=nv;
+    sbUpsert('np_demo_templates',{id:t.id,name:t.name,fields:t.fields,dest:t.dest||null,sub:t.sub||null,descr:t.desc||null}); } });
+  if(fch) filedSave(); doctagSave();
+  if(sbOn()) fetch(`${BACKEND.url}/rest/v1/np_demo_documents?cat=eq.${encQ('Completed — '+key)}&sub_binder=eq.${encQ(old)}`,
+    {method:'PATCH',headers:sbH(),body:JSON.stringify({sub_binder:nv||null})}).catch(()=>{});
+}
+function tabRename(key,old,nv){
+  nv=String(nv||'').trim(); if(!nv||nv===old) return render();
+  const list=subsOf(key); if(list.includes(nv)) return toast(`${FOLDER_NAMES[key]||key} already has a tab called ${nv}.`);
+  const i=list.indexOf(old); if(i>-1) list[i]=nv; else list.push(nv);
+  SUB_BINDERS[key]=list; tabRepoint(key,old,nv);
+  subBindersSave(); logAudit('Renamed tab',`${FOLDER_NAMES[key]||key} · ${old} → ${nv}`);
+  render(); toast('Tab renamed in every folder, and everything filed under it moved with it.');
+}
+function tabAdd(key){
+  const list=subsOf(key); let n='New tab', k=2; while(list.includes(n)) n='New tab '+(k++);
+  list.push(n); SUB_BINDERS[key]=list; if(SUB_ALIAS[key]) delete SUB_ALIAS[key][n];
+  subBindersSave(); logAudit('Created tab',(FOLDER_NAMES[key]||key)+' · '+n);
+  render(); setTimeout(()=>rnStartKey('tab:'+key+':'+n),40);
+}
+function tabDelete(key,name){
+  const n=tabCount(key,name);
+  askDelete(`Delete the ${esc(name)} tab?`,
+    `It comes out of ${esc(FOLDER_NAMES[key]||key)} in every client and staff folder. `+(n?`The ${n} document${n===1?'':'s'} filed under it are kept, in the binder’s main section.`:'Nothing is filed under it.'),()=>{
+    SUB_BINDERS[key]=subsOf(key).filter(x=>x!==name);
+    tabRepoint(key,name,'');
+    subBindersSave(); logAudit('Deleted tab',`${FOLDER_NAMES[key]||key} · ${name}`);
+    render(); toast('Tab deleted.');
+  },'Delete tab');
+}
+/* one tab row, the same in the binders on the Documents page and in every folder */
+function tabHead(key,sb,n,o){
+  o=o||{};
+  return `<div class="docrow lvl-sub tab-row" ${o.drag?`draggable="true" data-sub="${key}::${esc(sb)}"`:''} ${o.toggle?`style="cursor:pointer" onclick="${fx(o.toggle)}"`:''}>
+    <div class="di">${o.drag?'⠿ ':''}${o.toggle?(o.open?'▾':'▸'):''} 🗀</div>
+    <div class="dt"><b><span class="lvl-tag">Tab</span>${o.dir?rnName(sb,nv=>tabRename(key,sb,nv),'tab:'+key+':'+sb):esc(sb)}</b>
+      <span>${n?`${n} document${n===1?'':'s'}`:'Nothing filed under this tab yet'}</span></div>
+    ${o.add?`<button type="button" class="btn ghost sm tab-plus" onclick="event.stopPropagation();${fx(o.add)}">＋ Add document</button>`:''}
+    ${rmBtn([o.add&&{l:'Add a document to this tab',ic:'＋',fn:o.add},...(o.more||[]),
+      o.dir&&{l:'Rename tab',ic:'✎',fn:()=>rnStartKey('tab:'+key+':'+sb)},
+      o.dir&&'-',o.dir&&{l:'Delete tab',ic:'✕',danger:true,fn:()=>tabDelete(key,sb)}],'Tab actions')}
+  </div>`;
+}
+
+/* ── documents in a client or staff folder ── */
+function docTagOf(d){ return DOCTAG[(d.cid||'')+'|'+d.n]||DOCTAG[d.n]||null; }
+function docSubOf(d,b){
+  const t=docTagOf(d); let sb;
+  if(t&&t.b&&normBinder(t.b).b===b) sb=t.sb||'';
+  else sb=d.sb||d.sub_binder||((t&&t.b)?'':catToSub(d.cat))||'';
+  return subAlias(b,sb);
+}
+function docFind(id,cid,n){ return DOCS.find(x=>id&&String(x.id)===String(id))||DOCS.find(x=>(x.cid||'')===(cid||'')&&x.n===n)||null; }
+function docOwnerName(cid){ const c=client(cid), s=staff(cid); return c?c.uci:s?s.name:''; }
+function docRenameTo(id,cid,old,nv){
+  const d=docFind(id,cid,old); if(!d) return render();
+  nv=keepExt(old,String(nv||'').trim()); if(!nv||nv===old) return render();
+  if(DOCS.some(x=>x!==d&&(x.cid||'')===(d.cid||'')&&x.n===nv)) return toast('This folder already has a document called '+nv+'.');
+  const sk=(d.cid||'')+'|';
+  const tag=DOCTAG[sk+old]||DOCTAG[old];
+  if(tag){ DOCTAG[sk+nv]=Object.assign({},tag); delete DOCTAG[sk+old]; doctagSave(); }
+  const b=docBinderOf(d);
+  d.n=nv;
+  let fch=false;
+  Object.values(FILED_DOCS).forEach(f=>(f.refs||[]).forEach(r=>{ if((r.cid||'')===(d.cid||'')&&r.cid&&r.n===old){ r.n=nv; fch=true; } }));
+  if(d.fid&&FILED_DOCS[d.fid]){ const f=FILED_DOCS[d.fid]; if(f.file===old) f.file=nv;
+    (f.refs||[]).forEach(r=>{ if(r.b&&r.n===old){ r.n=nv; const c=(COMPLETED[r.b]||[]).find(x=>x.n===old&&(!x.fid||x.fid===d.fid)); if(c) c.n=nv; } }); fch=true; }
+  else if(b){                                                                // the copy the upload also put in the agency binder
+    const same=(COMPLETED[b]||[]).filter(x=>x.n===old);
+    if(same.length===1&&!DOCS.some(x=>x!==d&&x.n===old)) same[0].n=nv;
+  }
+  if(fch) filedSave();
+  if(FILLED[old]&&!DOCS.some(x=>x!==d&&x.n===old)){ FILLED[nv]=FILLED[old]; delete FILLED[old]; filledSave(); }
+  if(sbOn()){
+    fetch(`${BACKEND.url}/rest/v1/np_demo_documents?n=eq.${encQ(old)}&${d.cid?'cid=eq.'+encQ(d.cid):'cid=is.null'}`,{method:'PATCH',headers:sbH(),body:JSON.stringify({n:nv})}).catch(()=>{});
+    if(b&&d.cid&&(COMPLETED[b]||[]).some(x=>x.n===nv)) fetch(`${BACKEND.url}/rest/v1/np_demo_documents?n=eq.${encQ(old)}&cat=eq.${encQ('Completed — '+b)}`,{method:'PATCH',headers:sbH(),body:JSON.stringify({n:nv})}).catch(()=>{});
+  }
+  docAct('renamed',nv,docOwnerName(d.cid)||'',d.fid||null);
+  logAudit('Renamed document',`${old} → ${nv}${d.cid?' · '+docOwnerName(d.cid):''}`);
+  render(); toast('Renamed.');
+}
+function dmSubSel(b,cur){
+  return `<select class="inp" id="dmS"><option value="">— the binder itself, no tab —</option>${subsOf(b).map(x=>`<option ${x===cur?'selected':''}>${esc(x)}</option>`).join('')}</select>`;
+}
+function docMoveForm(id,cid,n){
+  const d=docFind(id,cid,n); if(!d) return;
+  const b=docBinderOf(d)||binderKeys()[0], sb=docSubOf(d,b);
+  openModal('Move '+esc(d.n),`
+    <div class="row2">
+      <div class="field"><label>Binder</label><select class="inp" id="dmB" onchange="el('dmSubW').innerHTML=dmSubSel(this.value,'')">
+        ${binderKeys().map(k=>`<option value="${k}" ${k===b?'selected':''}>${esc(FOLDER_NAMES[k]||k)}</option>`).join('')}</select></div>
+      <div class="field"><label>Tab</label><span id="dmSubW">${dmSubSel(b,sb)}</span></div></div>
+    <div class="tiny muted">It stays in ${esc(docOwnerName(d.cid)||'this')}’s folder — only the binder and tab change.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="${fx(()=>docMoveGo(d))}">Move</button>`);
+}
+function docMoveGo(d){
+  const b=el('dmB').value, sb=el('dmS').value;
+  DOCTAG[(d.cid||'')+'|'+d.n]={b,sb}; d.sb=sb; delete d.sub_binder; doctagSave();
+  if(sbOn()) fetch(`${BACKEND.url}/rest/v1/np_demo_documents?n=eq.${encQ(d.n)}&${d.cid?'cid=eq.'+encQ(d.cid):'cid=is.null'}`,{method:'PATCH',headers:sbH(),body:JSON.stringify({sub_binder:sb||null})}).catch(()=>{});
+  logAudit('Moved document',`${d.n} → ${FOLDER_NAMES[b]||b}${sb?' / '+sb:''}`);
+  closeAll(); render(); toast(`Moved to ${FOLDER_NAMES[b]||b}${sb?' / '+sb:''}.`);
+}
+
+/* ── a document filed straight into an agency binder ── */
+function renameFiledTo(key,old,nv){
+  const list=COMPLETED[key]||[]; const item=list.find(x=>x.n===old); if(!item) return render();
+  nv=keepExt(old,String(nv||'').trim()); if(!nv||nv===old) return render();
+  if(list.some(x=>x!==item&&x.n===nv)) return toast('This binder already has a document called '+nv+'.');
+  item.n=nv;
+  filedRefMove(r=>r.b===key&&r.n===old,{b:key,n:nv});
+  const f=item.fid&&FILED_DOCS[item.fid]; if(f&&f.file===old){ f.file=nv; filedSave(); }
+  if(sbOn()) fetch(`${BACKEND.url}/rest/v1/np_demo_documents?n=eq.${encQ(old)}&cat=eq.${encQ('Completed — '+key)}`,{method:'PATCH',headers:sbH(),body:JSON.stringify({n:nv})}).catch(()=>{});
+  if(FILLED[old]){ FILLED[nv]=FILLED[old]; delete FILLED[old]; filledSave(); }
+  if(DOC_SIGS[old]){ DOC_SIGS[nv]=DOC_SIGS[old]; delete DOC_SIGS[old]; }
+  docAct('renamed',nv,FOLDER_NAMES[key]||key,item.fid||null);
+  logAudit('Renamed document',`${old} → ${nv}`);
+  render(); toast('Renamed.');
+}
+
+/* ── templates ── */
+function tplRenameTo(tid,nv){
+  const t=TEMPLATES5.find(x=>x.id===tid); if(!t) return render();
+  nv=String(nv||'').trim(); if(!nv||nv===t.name) return render();
+  const old=t.name; t.name=nv;
+  sbUpsert('np_demo_templates',{id:t.id,name:nv,fields:t.fields,dest:t.dest||null,sub:t.sub||null,descr:t.desc||null,updated_at:new Date().toISOString()});
+  logAudit('Renamed template',`${old} → ${nv}`);
+  render(); toast('Template renamed everywhere it is used.');
+}
+function tplPersist(t){
+  sbUpsert('np_demo_templates',{id:t.id,name:t.name,fields:t.fields,dest:t.dest||null,sub:t.sub||null,descr:t.desc||null});
+  TPL_EXTRAS[t.id]={subtitle:t.subtitle,foot:t.foot,sysNote:t.sysNote};
+  sbUpsert('np_demo_program',{key:'tplextras',value:{map:TPL_EXTRAS},updated_by:auditActor()});
+}
+/* the editor is the template's page: fill it in, assign it or delete it from there */
+function tpeThen(a){
+  const t=tpeT(); if(!t) return;
+  if(a==='delete'){
+    try{ const o=JSON.parse(window._tplSnap||'{}'); if(o.fields){ t.name=o.name; t.fields=o.fields; t.subtitle=o.subtitle; t.foot=o.foot; t.sysNote=o.sysNote; if(o.dest) t.dest=o.dest; } }catch(e){}
+    window._tplEd=null; closeAll(); return delTemplate(t.id);
+  }
+  if(!String(t.name||'').trim()) return toast('Name the form first — click the title at the top of the page.');
+  tplPersist(t); docAct(window._tplNew?'template added':'template changed',t.name,FOLDER_NAMES[t.dest]||t.dest||'',null);
+  logAudit('Edited template',t.name);
+  window._tplEd=null; window._tplNew=null; closeAll(); render();
+  if(a==='fill') tplOpenDoc(t.id); else if(a==='assign') tplAssign(t.id);
+}
+
 function docRow(d){
-  const _f=d.fid?FILED_DOCS[d.fid]:null;
-  if(_f) d=Object.assign({},d,{n:d.n,_pill:filedPill(_f)});
+  const f=d.fid?FILED_DOCS[d.fid]:null;
   const bl=(()=>{const b=docBinderOf(d); return b?(FOLDER_NAMES[b]||b):'';})();
-  const rid='dr'+String(d.id||d.n).replace(/[^A-Za-z0-9]/g,'').slice(0,26);
-  const op=state.openDoc===rid;
-  return `<div class="lrow" onclick="state.openDoc=state.openDoc==='${rid}'?'':'${rid}';render()">
-    <span class="row-ic">${d.n.split('.').pop().toUpperCase().slice(0,4)}</span>
-    <span class="row-copy"><strong>${esc(d.n)}</strong>
-      <span>${esc(d.cat)}${bl?` · 🗀 ${esc(bl)}`:''} · uploaded by ${esc(d.by)} · ${fmtDate(d.at)} · ${d.s}</span></span>
-    <span class="go-sq">${op?'▾':'›'}</span></div>
-  ${op?`<div style="background:var(--surface-2);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;gap:7px;flex-wrap:wrap" onclick="event.stopPropagation()">
-    <button class="btn navy sm" onclick="openStoredDoc('${esc(d.id||'')}','${esc(d.n)}')">Open</button>
-    ${state.role==='director'?`<button class="btn ghost sm" onclick="editDocMeta('${d.cid||''}',${JSON.stringify(d.n)})">✎ Edit name, category, binder</button>
-    <button class="btn ghost sm" onclick="docToTemplate(${JSON.stringify(d.n)})">❏ Make a template</button>
-    <button class="btn ghost sm" onclick="delDoc('${d.cid||''}',${JSON.stringify(d.n)})">✕ Delete</button>`:''}
-  </div>`:''}`;
+  const canEd=state.role==='director'||(!!d.cid&&d.cid===meSid()&&state.role!=='family');
+  const rk='doc:'+(d.cid||'')+':'+d.n;
+  const ext=(String(d.n).split('.').pop()||'').toUpperCase().slice(0,4);
+  return `<div class="lrow doc-line" onclick="${fx(()=>openStoredDoc(d.id||'',d.n))}">
+    <span class="row-ic">${esc(ext)}</span>
+    <span class="row-copy"><strong>${canEd?rnName(d.n,nv=>docRenameTo(d.id,d.cid,d.n,nv),rk):esc(d.n)}${f?' '+filedPill(f):''}</strong>
+      <span>${esc(d.cat||'')}${bl?` \u00b7 \ud83d\uddc0 ${esc(bl)}${(()=>{ const b=docBinderOf(d), sb=b?docSubOf(d,b):''; return sb?' / '+esc(sb):''; })()}`:''} \u00b7 uploaded by ${esc(d.by||'')} \u00b7 ${fmtDate(d.at)}${d.s?' \u00b7 '+esc(d.s):''}</span></span>
+    ${canEd?rmBtn([{l:'Open',ic:'\u2197',fn:()=>openStoredDoc(d.id||'',d.n)},
+      {l:'Rename',ic:'\u270e',fn:()=>rnStartKey(rk)},
+      {l:'Move to another binder or tab',ic:'\u21c4',fn:()=>docMoveForm(d.id,d.cid,d.n)},
+      {l:'Edit category and date',ic:'\u270e',fn:()=>editDocMeta(d.cid||'',d.n)},
+      state.role==='director'&&{l:'Make a template from it',ic:'\u274f',fn:()=>docToTemplate(d.n)},
+      '-',{l:'Delete',ic:'\u2715',danger:true,fn:()=>delDoc(d.cid||'',d.n)}],'Document actions'):'<span class="go-sq">\u203a</span>'}
+  </div>`;
 }
 function docToTemplate(name){
   const base=String(name).replace(/\.[a-z0-9]+$/i,'');
@@ -6525,7 +6792,7 @@ function saveDocMeta(cid,oldName){
   const nn=(el('edN').value||'').trim(); if(!nn) return toast('Give the document a title.');
   const patch={n:nn,cat:el('edC').value,doc_date:el('edD').value};
   d.n=nn; d.cat=el('edC').value; d.at=el('edD').value||d.at;
-  if(sbOn()) fetch(`${BACKEND.url}/rest/v1/np_demo_documents?n=eq.${encodeURIComponent(oldName)}`,{method:'PATCH',headers:sbH(),body:JSON.stringify(patch)}).catch(()=>{});
+  if(sbOn()) fetch(`${BACKEND.url}/rest/v1/np_demo_documents?n=eq.${encodeURIComponent(oldName)}&${cid?'cid=eq.'+encodeURIComponent(cid):'cid=is.null'}`,{method:'PATCH',headers:sbH(),body:JSON.stringify(patch)}).catch(()=>{});   // v12.8: only this folder's copy
   logAudit('Edited document details',`${nn}${cid&&client(cid)?' · '+client(cid).uci:''}`);
   closeAll(); render(); toast('Document updated.');
 }
@@ -6639,53 +6906,54 @@ function clientAppts(c){
   </div></section>`;
 }
 
-function clientDocs(c){
-  const list=DOCS.filter(d=>d.cid===c.id);
-  const groups={};
-  list.forEach(d=>{ const b=docBinderOf(d); (groups[b]=groups[b]||[]).push(d); });
-  /* v9.83: every client folder shows all three binders and every tab divider inside
-     them, empty or not — the same structure as the binders on the shelf, so an empty
-     tab reads as "nothing filed here yet" instead of vanishing. */
-  const keys=binderKeys();
-  const loose=groups['']||[];
-  const gHead=t=>`<div class="tiny muted" style="padding:11px 18px 2px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">🗀 ${t}</div>`;
-  return `<section class="card"><div class="card-h"><h2>Files</h2><div class="sub">${list.length} file${list.length===1?'':'s'} · organized by binder — a file filed to a binder shows in both places</div>
-  ${/* v9.95: the file shelf reads as a shelf. Linking, binders and sub-folders are
-        structural, so they surface with the rest of the edit controls. */''}
-  <div class="right">
-    <button class="btn navy sm" onclick="tplPickFor('client','${c.id}')">＋ New from template</button>
-    <span class="ed-only" style="display:contents">
-      <button class="btn ghost sm" onclick="linkDocForm('${c.id}')">🔗 Link a document</button>
-      ${state.role==='director'?`<button class="btn ghost sm" onclick="binderForm()">＋ New binder</button>
-        <button class="btn ghost sm" onclick="subBinderForm()">＋ Sub-folder</button>`:''}
-    </span>
-    <button class="btn ghost sm" onclick="exportOne('${c.id}')">Export folder</button></div></div>
+function clientDocs(c){ return folderCard(c,'client'); }
+/* v12.8: one folder, the same for a client and a staff member — binders, the tabs inside
+   them, the documents under each tab — and the same one on the person's page and on the
+   Documents page, so a change in either shows in both. */
+function folderCard(o,who){
+  const oid=o.id, isStaff=who==='staff';
+  const list=DOCS.filter(d=>d.cid===oid&&!hid('doc',docKey(d)));
+  const dir=state.role==='director';
+  const canDoc=state.role!=='family'&&(dir||!isStaff||oid===meSid());
+  const cat=isStaff?'Certification':'General';
+  const groups={}; list.forEach(d=>{ const b=docBinderOf(d); (groups[b]=groups[b]||[]).push(d); });
+  const keys=binderKeys(), loose=groups['']||[];
+  const ok=k=>oid+'|'+k;
+  const up=(b,sb)=>()=>uploadDoc(oid,cat,{b,sb,who});
+  const first=isStaff?String(o.name||'').split(' ')[0]:o.uci;
+  return `<section class="card" ${isStaff?'id="sfDocs"':''} data-folder="${who}:${oid}">
+  <div class="card-h"><h2>${isStaff?'Staff folder':'Files'}</h2>
+    <div class="sub">${list.length} file${list.length===1?'':'s'} · binders hold tabs, tabs hold documents${isStaff?` · the same folder as ${esc(first)}’s binders on the Documents page`:' · a file filed to a binder shows in both places'}</div>
+    <div class="right">
+      ${canDoc?`<button class="btn navy sm" onclick="${fx(()=>tplPickFor(who,oid))}">＋ New from template</button>
+      <button class="btn ghost sm" onclick="${fx(up('',''))}">⇧ Upload</button>`:''}
+      ${!isStaff&&canDoc?`<span class="ed-only" style="display:contents"><button class="btn ghost sm" onclick="linkDocForm('${oid}')">🔗 Link a document</button></span>`:''}
+      ${dir?`<span class="ed-only" style="display:contents"><button class="btn ghost sm" onclick="binderForm()">＋ New binder</button></span>`:''}
+      <button class="btn ghost sm" onclick="${fx(()=>isStaff?(printSheet(staffPacket(oid)),docAct('printed','Staff file — '+(o.init||o.name),'Staff folder')):exportOne(oid))}">Export folder</button></div></div>
   <div class="card-b flush">
   ${keys.map(k=>{
-    /* v9.83: the binder, then every tab divider inside it, exactly as the physical
-       binder is laid out. A tab with nothing in it still shows, so staff can see what
-       is missing instead of wondering whether the folder exists. */
-    const inB=groups[k]||[];
-    const subs=subsOf(k);
-    const bySub={}; inB.forEach(d=>{ const sb=(d.sub_binder||d.sb||''); (bySub[sb]=bySub[sb]||[]).push(d); });
+    const inB=groups[k]||[], subs=subsOf(k);
+    const bySub={}; inB.forEach(d=>{ const sb=docSubOf(d,k); (bySub[sb]=bySub[sb]||[]).push(d); });
     const extra=Object.keys(bySub).filter(x=>x&&!subs.includes(x));
-    const openB=state.cbOpen===k;
-    /* v9.96: the binder line is the control. Click the binder, its tabs open. */
-    return `<div class="binder-head ${openB?'is-open':''}" onclick="state.cbOpen=state.cbOpen==='${k}'?'':'${k}';render()">
-      <span class="bh-c">${openB?'▾':'▸'}</span>🗀 ${esc(FOLDER_NAMES[k]||k)}
-      <span class="bh-n">${inB.length} file${inB.length===1?'':'s'} · ${subs.length} tab${subs.length===1?'':'s'}</span></div>`
+    const openB=state.cbOpen===ok(k)||state.cbOpen===k;
+    return `<div class="binder-head ${openB?'is-open':''}" onclick="${fx(()=>{ state.cbOpen=openB?'':ok(k); render(); })}">
+      <span class="bh-c">${openB?'▾':'▸'}</span>🗀 ${dir?rnName(FOLDER_NAMES[k]||k,nv=>binderRenameTo(k,nv),'binder:'+k):esc(FOLDER_NAMES[k]||k)}
+      <span class="bh-n">${inB.length} file${inB.length===1?'':'s'} · ${subs.length} tab${subs.length===1?'':'s'}</span>
+      ${rmBtn([canDoc&&{l:'Add a document to this binder',ic:'＋',fn:up(k,'')},
+        dir&&{l:'Add a tab',ic:'＋',fn:()=>{ state.cbOpen=ok(k); tabAdd(k); }},
+        dir&&{l:'Rename binder',ic:'✎',fn:()=>rnStartKey('binder:'+k)}],'Binder actions')}</div>`
       +(bySub['']||[]).map(d=>docRow(d)).join('')
       +(openB?[...subs,...extra].map(sb=>{
           const rows=bySub[sb]||[];
-          return `<div class="docrow lvl-sub" style="border-bottom:none;cursor:default"><div class="di">🗀</div>
-            <div class="dt"><b><span class="lvl-tag">Tab</span>${esc(sb)}</b><span>${rows.length?`${rows.length} document${rows.length===1?'':'s'}`:'Nothing filed under this tab yet'}</span></div></div>`
-            +rows.map(d=>docRow(d)).join('');
-        }).join(''):'');
+          return tabHead(k,sb,rows.length,{dir,add:canDoc?up(k,sb):null})+rows.map(d=>docRow(d)).join('');
+        }).join('')+(dir?`<button type="button" class="tab-add" onclick="${fx(()=>{ state.cbOpen=ok(k); tabAdd(k); })}">＋ Add a tab to ${esc(FOLDER_NAMES[k]||k)}</button>`:''):'');
   }).join('')}
-  ${loose.length?gHead('Client folder')+loose.map(d=>docRow(d)).join(''):''}
-  ${list.length?'':'<div class="empty"><b>Nothing filed yet</b>The binders above match the paper binders — open a binder to see its tabs.</div>'}
-  <div style="padding:14px 18px"><div class="drop" onclick="uploadDoc('${c.id}','General')"><b>Upload files</b><span>Pick a binder during upload and the file shows there too</span></div></div></div></section>`;
+  ${loose.length?`<div class="tiny muted" style="padding:11px 18px 2px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">🗀 ${isStaff?'Not in a binder':'Client folder'}</div>`+loose.map(d=>docRow(d)).join(''):''}
+  ${list.length?'':`<div class="empty"><b>Nothing filed yet</b>Open a binder to see its tabs, then add a document straight into the tab it belongs in.</div>`}
+  ${canDoc?`<div style="padding:14px 18px"><div class="drop" onclick="${fx(up('',''))}"><b>Upload files</b><span>Pick the binder and tab during upload and the file shows there</span></div></div>`:''}
+  </div></section>`;
 }
+
 
 let TASK_CATS=['Client','Agency','Documentation','Training'];
 function tcatAdd(){
@@ -7972,8 +8240,6 @@ function staffPageBody(sid){
       ${[['sfCerts','Certifications'],['sfTrain','Training'],['sfOb','Onboarding'],['sfShifts','Shifts'],['sfTasks','Tasks']].map(([a,l])=>`<button class="btn ghost sm" onclick="const t=el('${a}');if(t)t.scrollIntoView({behavior:'smooth',block:'start'})">${l} ↓</button>`).join('')}
     </div>`:''}
     <div id="sfOb"></div>${obCard(sid)}
-    ${sdocs.length?`<section class="card"><div class="card-h"><h2>Documents on file</h2></div><div class="card-b flush">
-      ${sdocs.map(d=>docRow(d)).join('')}</div></section>`:''}
     <section class="card" id="sfCerts"><div class="card-h acc-gold"><h2>Certifications</h2>
       <div class="right"><button class="btn ghost sm" onclick="addCredential('${sid}')">＋ Add credential</button></div></div>
       <div class="card-b flush"><table class="tb"><tbody>
@@ -7993,11 +8259,7 @@ function staffPageBody(sid){
         <td style="text-align:right">${state.role==='director'?`<button class="btn ghost sm" onclick="openShiftForm(${idx})">✎ Edit</button>
         <button class="btn ghost sm" title="Remove" onclick="removeShift(${idx})">✕</button>`:''}</td></tr>`;}).join('')||'<tr><td class="empty">No shifts in the next seven days.</td></tr>'}
       </tbody></table></div></section>
-    <section class="card" id="sfDocs" data-staff-docs="${sid}">
-      <div class="sec-head soft-honey"><h2>Documents</h2><span class="hd-n honey">${sdocs.length}</span><p>certificates, training records, anything else on file</p>
-        ${state.role==='director'||sid===meSid()?`<button class="btn navy sm head-act" onclick="uploadStaffDoc('${sid}')">＋ Upload document</button>`:''}</div>
-      <div class="card-b flush">${sdocs.map(d=>docRow(d)).join('')||'<div class="empty">Nothing uploaded yet — certificates, course certificates and signed forms all live here.</div>'}</div>
-    </section>
+    ${folderCard(st,'staff')}
     <section class="card" id="sfTrain"><div class="card-h"><h2>Training & onboarding</h2><div class="sub">Assign a course or onboarding step — it lands on ${esc(st.name.split(' ')[0])}'s task list, due in 2 weeks</div></div>
       <div class="card-b">
         <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -8479,7 +8741,7 @@ function delDoc(cid,name){
     filedRefDrop(r=>r.cid===cid&&r.n===name);
     docAct('removed',name,(client(cid)||staff(cid)||{}).uci||((staff(cid)||{}).name)||'',null);
     delMark('doc',docKey(d));
-    logAudit('Deleted document',`${name}${cid?' · '+client(cid).uci:''}`);
+    logAudit('Deleted document',`${name}${cid?' · '+docOwnerName(cid):''}`);
     render(); toast('Document deleted.');
   },'Delete document');
 }
@@ -9070,7 +9332,8 @@ function renameBinderSave(key){
   bindersSave(); logAudit('Renamed binder',`${old} → ${v}`);
   closeAll(); render(); toast('Binder renamed.');
 }
-function addSubBinder(key){
+function addSubBinder(key){ return tabAdd(key); }
+function addSubBinderPrompt(key){
   const n=prompt('Name the new sub-binder:'); if(!n||!n.trim()) return;
   SUB_BINDERS[key]=(SUB_BINDERS[key]&&SUB_BINDERS[key].length)?SUB_BINDERS[key]:subsOf(key);  // keep the physical tabs when customizing
   
@@ -9172,20 +9435,17 @@ function viewForms(){
       ${list.map(t=>{
         const asg=(TPL_ASSIGN[t.id]||[]), open=state.openTpl===t.id;
         const lk=Object.keys(PROTOCOLS).filter(pk=>PROTOCOLS[pk]&&PROTOCOLS[pk].tpl===t.id);
-        return `<div class="lrow" ${state.docEdit?`draggable="true" data-tpl="${t.id}"`:''} onclick="${state.docEdit?'':`state.openTpl=state.openTpl==='${t.id}'?'':'${t.id}';render()`}">
-          <span class="row-ic honey">${state.docEdit?'⠿':'❏'}</span>
-          <span class="row-copy"><strong>${esc(t.name)}</strong>
-            <span>${t.fields.length} fields · files to ${esc(FOLDER_NAMES[normBinder(t.dest||'Agency').b]||'Agency binder')}${t.sub?' / '+esc(t.sub):''}${asg.length?` · assigned to ${asg.map(id=>(staff(id)||{}).init||'').join(', ')}`:''}${lk.length?` · ⚠ ${lk.map(esc).join(', ')} report form`:''}</span></span>
-          <span class="go-sq">${open?'▾':ico('arrow-up-right',15)}</span></div>
-        ${open?`<div style="background:var(--surface-2);border-bottom:1px solid var(--line);padding:11px 14px;display:flex;gap:7px;flex-wrap:wrap" onclick="event.stopPropagation()">
-          <button class="btn navy sm" onclick="tplOpenDoc('${t.id}')">Open &amp; fill</button>
-          ${state.role==='director'?`
-          <button class="btn gold sm" onclick="openTplEditor('${t.id}')">Edit template</button>
-          <button class="btn ghost sm" onclick="tplRename('${t.id}')">✎ Rename</button>
-          <button class="btn ghost sm" onclick="tplAssign('${t.id}')">Assign to staff</button>`:''}
-          <button class="btn ghost sm" onclick="logAudit('Printed template',tplById('${t.id}').name);docAct('printed',tplById('${t.id}').name,'Templates');printSheet(tplPrintHtml('${t.id}'))">Print blank</button>
-          ${state.role==='director'?`<button class="btn ghost sm" onclick="delTemplate('${t.id}')" title="Delete">✕ Delete</button>`:''}
-        </div>`:''}`;
+        const dirT=state.role==='director';
+        return `<div class="lrow tpl-line" ${state.docEdit?`draggable="true" data-tpl="${t.id}"`:''} ${state.docEdit?'':`onclick="${fx(()=>dirT?openTplEditor(t.id):tplOpenDoc(t.id))}"`} title="${dirT?'Open this template':'Fill it in'}">
+          <span class="row-ic honey">${state.docEdit?'\u283f':'\u274f'}</span>
+          <span class="row-copy"><strong>${dirT?rnName(t.name,nv=>tplRenameTo(t.id,nv),'tpl:'+t.id):esc(t.name)}</strong>
+            <span>${t.fields.length} fields \u00b7 files to ${esc(FOLDER_NAMES[normBinder(t.dest||'Agency').b]||'Agency binder')}${t.sub?' / '+esc(t.sub):''}${asg.length?` \u00b7 assigned to ${asg.map(id=>(staff(id)||{}).init||'').join(', ')}`:''}${lk.length?` \u00b7 \u26a0 ${lk.map(esc).join(', ')} report form`:''}</span></span>
+          ${rmBtn([{l:'Fill it in',ic:'\u270d',fn:()=>tplOpenDoc(t.id)},
+            dirT&&{l:'Open the template',ic:'\u2197',fn:()=>openTplEditor(t.id)},
+            dirT&&{l:'Rename',ic:'\u270e',fn:()=>rnStartKey('tpl:'+t.id)},
+            dirT&&{l:'Assign to staff',ic:'\u263a',fn:()=>tplAssign(t.id)},
+            {l:'Print blank',ic:'\u2399',fn:()=>{ logAudit('Printed template',t.name); docAct('printed',t.name,'Templates'); printSheet(tplPrintHtml(t.id)); }},
+            dirT&&'-',dirT&&{l:'Delete template',ic:'\u2715',danger:true,fn:()=>delTemplate(t.id)}],'Template actions')}</div>`;
       }).join('')}
       ${blanks.map(fl=>libRowHtml(fl,bk)).join('')}
     </div>
@@ -10718,78 +10978,87 @@ function viewTemplates(){
     </div>${pager(folders.length,'binlist')}
   </section>
   ${secFolders.map(([t,su,key])=>`<section class="card" data-binder-sec="${key}">
-    <div class="card-h"><h2>${esc(t)}</h2><div class="sub">${esc(su)}</div>
+    <div class="card-h"><h2>${state.role==='director'?rnName(t,nv=>binderRenameTo(key,nv),'binder:'+key):esc(t)}</h2><div class="sub">${esc(su)}</div>
       ${state.role==='director'?`<div class="right" style="display:flex;gap:6px">
-        <button class="btn navy sm" onclick="libUpload('${key}','forms')">\uff0b Add document</button>
-        <button class="btn ghost sm" onclick="addSubBinder('${key}')">\uff0b Sub-folder</button>
-        <button class="btn ghost sm" onclick="exportBinder('${key}')">\u21e9 Export</button>
-        <button class="btn ghost sm" onclick="renameBinder('${key}')">\u270e Rename</button>
-        <button class="btn ghost sm" title="Delete this binder" onclick="delBinder('${key}')">\u2715</button></div>`:''}</div>
+        <button class="btn navy sm" onclick="${fx(()=>uploadDoc('','General',{b:key,sb:''}))}">\uff0b Add document</button>
+        ${binderMenu(key,true,true)}</div>`:''}</div>
     <div class="card-b flush">${binderRowHtml(t,su,key,true)}</div></section>`).join('')}
   ${docActCard()}`;
 }
-/* one binder: its row in the list, or the whole of it when it is a section of its own */
-function binderRowHtml(t,su,key,asSection){
-        const open=asSection||state.openBinder===key;
-        const bf=binderFiles(key);
-        const compVis=(COMPLETED[key]||[]).filter(d=>!hid('completed',key+'|'+d.n));
-        const nAll=bf.forms.length+bf.resources.length+compVis.length;
-        const ed=state.docEdit&&state.role==='director';
-        return `${asSection?'':`<div class="docrow lvl-main" style="cursor:pointer" ${ed?`draggable="true" data-bkey="${key}"`:''} onclick="state.openBinder=state.openBinder==='${key}'?'':'${key}';render()">
-          <div class="di">${ed?(open?'⠿ ▼':'⠿ ▸'):(open?'▼':'▸')} 🗀</div>
-          <div class="dt">${ed?`<input class="inp" style="height:32px;font-weight:600" value="${esc(t)}" onclick="event.stopPropagation()" onchange="binderRenameInline('${key}',this.value)">`
-                             :`<b>${t}</b><span>${su}</span>`}</div>
-          <span class="tiny muted">${nAll} file${nAll===1?'':'s'}</span>
-          ${ed?`<button class="btn ghost sm" onclick="event.stopPropagation();addSubBinder('${key}')">＋ Sub-folder</button>
-                <button class="btn ghost sm" title="Delete binder" onclick="event.stopPropagation();delBinder('${key}')">✕</button>`
-             :(open?`<button class="btn ghost sm" onclick="event.stopPropagation();exportBinder('${key}')">⇩ Export</button>
-                <button class="btn ghost sm" onclick="event.stopPropagation();renameBinder('${key}')">✎ Rename</button>
-                <button class="btn ghost sm" onclick="event.stopPropagation();addSubBinder('${key}')">＋ Sub-folder</button>`:'')}</div>`}
-        ${open?`<div style="background:#FAF8F3;border-bottom:1px solid var(--line);padding:${asSection?"4px 0":"4px 0 4px 34px"}">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px 2px"><div class="tiny muted" style="font-weight:800;text-transform:uppercase;letter-spacing:.06em">Resources & guidelines</div><button class="btn ghost sm" onclick="event.stopPropagation();libUpload('${key}','res')">＋ Upload</button></div>
-          ${bf.resources.map(fl=>libRowHtml(fl,key)).join('')||'<div class="empty">No resource documents yet.</div>'}
-          ${(()=>{
-            /* v9.82: a binder holds completed paperwork only, which made Documents look
-               almost empty next to 21 templates. This strip shows which blank forms file
-               into this binder, so the two pages line up and you can fill one in place. */
-            const tpls=TEMPLATES5.filter(t=>!hid('template',t.id)&&normBinder(t.dest||'Agency').b===key);
-            if(!tpls.length) return '';
-            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px 2px">
-              <div class="tiny muted" style="font-weight:800;text-transform:uppercase;letter-spacing:.06em">Forms that file here · ${tpls.length}</div>
-              <button class="btn ghost sm" onclick="event.stopPropagation();go('forms')">All templates</button></div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;padding:4px 18px 10px">
-              ${tpls.map(t=>`<button class="pill" style="cursor:pointer;border:1px solid var(--line);background:var(--white)"
-                title="Fill in ${esc(t.name)}${t.sub?' — files to '+esc(t.sub):''}"
-                onclick="event.stopPropagation();tplOpenDoc('${t.id}')">❏ ${esc(t.name)}${t.sub?` <span class="tiny muted">/ ${esc(t.sub)}</span>`:''}</button>`).join('')}
-            </div>`;
-          })()}
-          <div class="tiny muted" style="padding:10px 18px 2px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">Completed forms</div>
-          ${(()=>{
-            const allFull=(COMPLETED[key]||[]).map((fl,ci)=>({fl,ci}));
-            const pk='comp'+String(key).replace(/[^A-Za-z0-9]/g,'');
-            const all=pageOf(allFull,pk); window._compPager=window._compPager||{}; window._compPager[key]=pager(allFull.length,pk);
-            /* v9.80: while editing, every sub-folder lists even when it holds nothing yet — an
-               empty folder used to render no row at all, so there was nothing to drag. */
-            if(!all.length && !ed) return '<div class="empty">Nothing filed here yet — file a report, log or completed form into this binder.</div>';
-            const groups={};
-            all.forEach(x=>{ const g=x.fl.sb||''; (groups[g]=groups[g]||[]).push(x); });
-            const order=[...subsOf(key).filter(sname=>ed||groups[sname]),...Object.keys(groups).filter(g=>g&&!subsOf(key).includes(g)),...(groups['']?['']:[])];
-            return order.map(g=>`
-              ${g?`<div class="docrow lvl-sub" style="cursor:pointer;border-bottom:none" ${state.docEdit?`draggable="true" data-sub="${key}::${esc(g)}"`:''} onclick="event.stopPropagation();${state.docEdit?'':`subOpen('${key}','${esc(g)}')`}">
-                <div class="di">${state.docEdit?'⠿':(subIsOpen(key,g)?'▼':'▸')} 🗀</div>
-                <div class="dt"><b><span class="lvl-tag">Folder</span>${esc(g)}</b><span>${(groups[g]||[]).length} document${(groups[g]||[]).length===1?'':'s'} · full history</span></div>
-                <button class="btn ghost sm" onclick="event.stopPropagation();exportBinder('${key}','${esc(g)}')">⇩ Export</button></div>`:''}
-              ${(g&&!subIsOpen(key,g))?'':(groups[g]||[]).map(({fl,ci})=>{const sg=DOC_SIGS[fl.n];return `<div class="docrow" style="border-bottom:none;padding:8px 18px${g?';padding-left:30px':''}"><div class="di">PDF</div>
-                <div class="dt"><b>${esc(fl.n)}</b><span>${esc(fl.sub||'')}${sg?` · <span style="color:var(--ok,#2e7d32);font-weight:700">✓ Signed — ${esc(sg.by)} · ${esc(sg.at)}</span>`:''}</span></div>
-                ${sg?'':`<button class="btn gold sm" onclick="event.stopPropagation();signDoc('${key}','${esc(fl.n)}')">✍ Sign</button>`}
-                <button class="btn ghost sm" onclick="event.stopPropagation();openStoredDoc('','${esc(fl.n)}')">Open</button>
-                <button class="btn ghost sm" title="Export this document" onclick="event.stopPropagation();exportDoc('${esc(fl.n)}','${key}','${esc(fl.sb||'')}')">⇩</button>
-                ${state.role==='director'?`<button class="btn ghost sm" title="Rename" onclick="event.stopPropagation();renameFiled('${key}',${ci})">✎</button>
-                <button class="btn ghost sm" title="Move to another binder" onclick="event.stopPropagation();moveFiled('${key}',${ci})">⇄</button>
-                <button class="btn ghost sm" title="Remove from binder" onclick="event.stopPropagation();completedRemove('${key}',${ci})">✕</button>`:''}</div>`}).join('')}`).join('')+((window._compPager||{})[key]||'');
-          })()}
-        </div>`:''}`;
+/* one binder: its row in the list, or the whole of it when it is a section of its own.
+   v12.8: every tab shows, empty or not, so there is always somewhere to add a document;
+   every name is typed over in place; each row's actions sit in its ⋯ menu. */
+function binderMenu(key,open,asSection){
+  const dir=state.role==='director'; if(!dir) return '';
+  return rmBtn([!asSection&&{l:open?'Close binder':'Open binder',ic:open?'▴':'▾',fn:()=>{ state.openBinder=open?'':key; render(); }},
+    {l:'Add a document',ic:'＋',fn:()=>uploadDoc('','General',{b:key,sb:''})},
+    {l:'Add a tab',ic:'＋',fn:()=>{ if(!asSection) state.openBinder=key; tabAdd(key); }},
+    {l:'Rename binder',ic:'✎',fn:()=>{ if(!asSection&&!open){ state.openBinder=key; render(); } rnStartKey('binder:'+key); }},
+    {l:'Export binder',ic:'⇩',fn:()=>exportBinder(key)},
+    '-',{l:'Delete binder',ic:'✕',danger:true,fn:()=>delBinder(key)}],'Binder actions');
 }
+function compRowHtml(key,fl,ci){
+  const dir=state.role==='director', sg=DOC_SIGS[fl.n], f=fl.fid&&FILED_DOCS[fl.fid];
+  const ext=(String(fl.n).split('.').pop()||'').toUpperCase().slice(0,4)||'PDF';
+  return `<div class="docrow comp-line" style="border-bottom:none;padding:8px 18px 8px 30px;cursor:pointer" onclick="${fx(()=>openStoredDoc('',fl.n))}">
+    <div class="di">${esc(ext)}</div>
+    <div class="dt"><b>${dir?rnName(fl.n,nv=>renameFiledTo(key,fl.n,nv),'comp:'+key+':'+fl.n):esc(fl.n)}${f?' '+filedPill(f):''}</b>
+      <span>${esc(fl.sub||'')}${sg?` · <span style="color:var(--ok,#2e7d32);font-weight:700">✓ Signed — ${esc(sg.by)} · ${esc(sg.at)}</span>`:''}</span></div>
+    ${(!sg&&!f&&state.role!=='family')?`<button class="btn gold sm" onclick="event.stopPropagation();${fx(()=>signDoc(key,fl.n))}">✍ Sign</button>`:''}
+    ${rmBtn([{l:'Open',ic:'↗',fn:()=>openStoredDoc('',fl.n)},
+      dir&&{l:'Rename',ic:'✎',fn:()=>rnStartKey('comp:'+key+':'+fl.n)},
+      dir&&{l:'Move to another binder or tab',ic:'⇄',fn:()=>{ const i=(COMPLETED[key]||[]).indexOf(fl); if(i>-1) moveFiled(key,i); }},
+      {l:'Export',ic:'⇩',fn:()=>exportDoc(fl.n,key,fl.sb||'')},
+      dir&&'-',dir&&{l:'Delete',ic:'✕',danger:true,fn:()=>{ const i=(COMPLETED[key]||[]).indexOf(fl); if(i>-1) completedRemove(key,i); }}],'Document actions')}</div>`;
+}
+function binderRowHtml(t,su,key,asSection){
+  const open=asSection||state.openBinder===key;
+  const bf=binderFiles(key);
+  const dir=state.role==='director', ed=state.docEdit&&dir;
+  const comp=(COMPLETED[key]||[]).filter(d=>!hid('completed',key+'|'+d.n));
+  const nAll=bf.resources.length+comp.length;
+  const subs=subsOf(key);
+  const bySub={}; comp.forEach(fl=>{ const g=subAlias(key,fl.sb||''); (bySub[g]=bySub[g]||[]).push(fl); });
+  const extra=Object.keys(bySub).filter(g=>g&&!subs.includes(g));
+  const hd=l=>`<div class="tiny muted" style="padding:10px 18px 2px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">${l}</div>`;
+  const tabRows=g=>{
+    const rows=bySub[g]||[], op=subIsOpen(key,g);
+    const pk='tb'+String(key+g).replace(/[^A-Za-z0-9]/g,'').slice(0,40);
+    return tabHead(key,g,rows.length,{dir,drag:ed,open:op,toggle:()=>subOpen(key,g),
+        add:dir?()=>uploadDoc('','General',{b:key,sb:g}):null,
+        more:[rows.length&&{l:'Export this tab',ic:'⇩',fn:()=>exportBinder(key,g)}]})
+      +(op?(pageOf(rows,pk).map(fl=>compRowHtml(key,fl)).join('')+pager(rows.length,pk)):'');
+  };
+  return `${asSection?'':`<div class="docrow lvl-main binder-row" style="cursor:pointer" ${ed?`draggable="true" data-bkey="${key}"`:''} onclick="${fx(()=>{ state.openBinder=state.openBinder===key?'':key; render(); })}">
+      <div class="di">${ed?'⠿ ':''}${open?'▼':'▸'} 🗀</div>
+      <div class="dt"><b>${dir?rnName(t,nv=>binderRenameTo(key,nv),'binder:'+key):esc(t)}</b><span>${esc(su)}</span></div>
+      <span class="tiny muted" style="white-space:nowrap">${nAll} file${nAll===1?'':'s'} · ${subs.length} tab${subs.length===1?'':'s'}</span>
+      ${binderMenu(key,open,false)}</div>`}
+    ${open?`<div style="background:#FAF8F3;border-bottom:1px solid var(--line);padding:${asSection?'4px 0':'4px 0 4px 34px'}">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px 2px"><div class="tiny muted" style="font-weight:800;text-transform:uppercase;letter-spacing:.06em">Resources & guidelines</div>
+        ${dir?`<button class="btn ghost sm" onclick="event.stopPropagation();libUpload('${key}','res')">＋ Upload</button>`:''}</div>
+      ${bf.resources.map(fl=>libRowHtml(fl,key)).join('')||'<div class="empty">No resource documents yet.</div>'}
+      ${(()=>{
+        const tpls=TEMPLATES5.filter(x=>!hid('template',x.id)&&normBinder(x.dest||'Agency').b===key);
+        if(!tpls.length) return '';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px 2px">
+          <div class="tiny muted" style="font-weight:800;text-transform:uppercase;letter-spacing:.06em">Forms that file here · ${tpls.length}</div>
+          <button class="btn ghost sm" onclick="event.stopPropagation();go('forms')">All templates</button></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;padding:4px 18px 10px">
+          ${tpls.map(x=>`<button class="pill" style="cursor:pointer;border:1px solid var(--line);background:var(--white)"
+            title="Fill in ${esc(x.name)}${x.sub?' — files to '+esc(x.sub):''}"
+            onclick="event.stopPropagation();tplOpenDoc('${x.id}')">❏ ${esc(x.name)}${x.sub?` <span class="tiny muted">/ ${esc(x.sub)}</span>`:''}</button>`).join('')}
+        </div>`;
+      })()}
+      ${hd(`Tabs and documents <span style="text-transform:none;letter-spacing:0;font-weight:500"> · a tab is a divider inside the binder; documents file under a tab</span>`)}
+      ${[...subs,...extra].map(tabRows).join('')}
+      ${dir?`<button type="button" class="tab-add" onclick="${fx(()=>{ if(!asSection) state.openBinder=key; tabAdd(key); })}">＋ Add a tab</button>`:''}
+      ${(bySub['']||[]).length?hd('In the binder, not under a tab')+(()=>{ const pk='tb'+String(key).replace(/[^A-Za-z0-9]/g,'')+'root';
+          return pageOf(bySub[''],pk).map(fl=>compRowHtml(key,fl)).join('')+pager(bySub[''].length,pk); })():''}
+      ${!comp.length&&!subs.length?'<div class="empty">Nothing filed here yet — add a tab, then add documents to it.</div>':''}
+    </div>`:''}`;
+}
+
 /* ── client binders: name → binder → sub-binder → documents ── */
 function clientDocsFor(cid){ return DOCS.filter(d=>d.cid===cid&&!hid('doc',docKey(d))); }
 function clientBinderGroups(cid){
@@ -10917,10 +11186,7 @@ function docFocusStaff(st){
         <button class="btn ghost sm" onclick="tplOpenDoc('${r.tid}')">Open</button>
         ${state.role==='director'?`<button class="btn ghost sm" title="Take this template off ${esc(st.name.split(' ')[0])}'s list" onclick="staffUnassignTpl('${r.tid}','${st.id}')">\u2715</button>`:''}
       </div>`).join('')||'<div class="empty">Nothing assigned yet \u2014 assign a template from the Templates page.</div>'}</div>${pager(rows.length,'focA')}</section>
-    <section class="card"><div class="sec-head soft-honey"><h2>Documents on file</h2><span class="hd-n honey">${docs.length}</span><p>certificates, training records, signed forms</p>
-      ${canEdit?`<button class="btn navy sm head-act" onclick="tplPickFor('staff','${st.id}')">\uff0b New from template</button>
-        <button class="btn ghost sm head-act" onclick="uploadStaffDoc('${st.id}')">\u21e7 Upload document</button>`:''}</div>
-      <div class="card-b flush">${pageOf(docs,'focB').map(d=>docRow(d)).join('')||'<div class="empty">Nothing uploaded yet.</div>'}</div>${pager(docs.length,'focB')}</section>`;
+    <div class="doc-focus">${folderCard(st,'staff')}</div>`;
 }
 function staffUnassignTpl(tid,sid){ /* v12.0: reported in Recent activity below */
   const t=tplById(tid), st=staff(sid);
@@ -10934,7 +11200,7 @@ function staffUnassignTpl(tid,sid){ /* v12.0: reported in Recent activity below 
 }
 function binderFiles(key){
   const map={Medical:['Medication','Lab','Consent'],Agency:['Incident','Policy'],Daily:['Report','Note']};
-  const fromDocs=DOCS.filter(d=>!hid('doc',docKey(d))&&(map[key]||[]).includes(d.cat)&&(!d.cid||client(d.cid))).map(d=>({n:d.n,sub:`${d.cat} · ${client(d.cid)?client(d.cid).uci:'Agency'} · ${fmtDate(d.at)}`}));
+  const fromDocs=DOCS.filter(d=>!hid('doc',docKey(d))&&(map[key]||[]).includes(d.cat)&&(!d.cid||client(d.cid))&&!(!d.cid&&docTagOf(d))).map(d=>({n:d.n,sub:`${d.cat} · ${client(d.cid)?client(d.cid).uci:'Agency'} · ${fmtDate(d.at)}`}));
   // sample-only rows disappear with Hide sample data / Erase; real libraries and everything the user uploaded always stay
   const stock=state.hideSample?{}:{
     Agency:[{n:'Facility license 2026.pdf',sub:'Licensing · renewed Jan 2026'},{n:'Disaster & evacuation plan.pdf',sub:'Policy · reviewed May 2026'},{n:'Admission agreement (blank).docx',sub:'Template'}],
@@ -11123,15 +11389,15 @@ const FOLDER_NAMES={Agency:'Agency binder',Medical:'Medical binder',Daily:'Daily
   /* legacy keys — kept so older filed documents still show a label; folded into the three binders */
   Water:'Water temp logs',Attendance:'Attendance',Safety:'Health and safety',Compliance:'Compliance'};
 const LEGACY_BINDERS={Water:{b:'Daily',sb:'Water Temp Logs'},Safety:{b:'Daily',sb:'Fire Drills & Safety'},Attendance:{b:'Daily',sb:'Attendance'},Compliance:{b:'Agency',sb:'SIR'}};
-function normBinder(key,sb){ const lg=LEGACY_BINDERS[key]; return lg?{b:lg.b,sb:sb||lg.sb}:{b:key,sb:sb||''}; }
+function normBinder(key,sb){ const lg=LEGACY_BINDERS[key]; const b=lg?lg.b:key; return {b,sb:(typeof subAlias==='function'?subAlias(b,sb||(lg?lg.sb:'')):(sb||(lg?lg.sb:'')))}; }
 /* sub-binders mirror the physical binders' tab dividers */
 const DEFAULT_SUBS={
   Agency:['Face Sheet','Emergency Information','Insurance','Physical Report Community Care Facilities','IPP','Quarterly','SIR','Placement Packet','Grievance / Grievance Acknowledgement','Acknowledgement of Personal Rights / Exit Criteria / House Rules','HCBS Survey / Acknowledgement','Release of Information','Personal Property','Quality of Life Questionnaire','Rights of Individuals with Developmental Disabilities'],
   Medical:['Medication Reason For Use','Medical Professional Consult','Lab Works','Vaccines','Dental','Audiologist','Appointment Summary','Physician Visit','Medication Transfer Sheet','CDER','Weight','POLST'],
   Daily:['MAR','Vital Signs','ADL','Daily Activity Log','Staff Notes','Central Storage','Medication Destruction Record']};
 let SUB_BINDERS={};                                                 // binderKey -> [sub-binder names]
-function subBindersSave(){ sbUpsert('np_demo_program',{key:'subbinders',value:{map:SUB_BINDERS},updated_by:auditActor()}); }
-function subsOf(key){ const own=SUB_BINDERS[key]; return ((own&&own.length)?own:(typeof DEFAULT_SUBS!=='undefined'&&DEFAULT_SUBS[key])||[]).slice(); }
+function subBindersSave(){ sbUpsert('np_demo_program',{key:'subbinders',value:{map:SUB_BINDERS,alias:SUB_ALIAS},updated_by:auditActor()}); }
+function subsOf(key){ const own=SUB_BINDERS[key]; return (Array.isArray(own)?own:(typeof DEFAULT_SUBS!=='undefined'&&DEFAULT_SUBS[key])||[]).slice(); }
 function binderNames(){ const o={}; Object.keys(FOLDER_NAMES).forEach(k=>o[k]=FOLDER_NAMES[k]); return o; }
 
 /* filePicker — the "save as" dialog: pick a binder, a sub-binder, or make either
@@ -11414,13 +11680,15 @@ function libRowHtml(fl,key){
     const ico=fl.url?(fl.n.split('.').pop()||'').toUpperCase().slice(0,4):'◫';
     const rid='lb'+String(fl.n).replace(/[^A-Za-z0-9]/g,'').slice(0,24);
     const op=state.openLib===rid;
-    return `<div class="lrow" onclick="state.openLib=state.openLib==='${rid}'?'':'${rid}';render()">
+    const dirL=state.role==='director';
+    const lk=fl.dbId?'lib:'+fl.dbId:(fl.orig?'libs:'+fl.orig:'');
+    const openL=()=>{ if(fl.url) window.open(fl.url,'_blank'); else toast('Opening '+fl.n); };
+    const canRn=dirL&&!!lk;
+    return `<div class="lrow" onclick="${fx(openL)}">
       <span class="row-ic">${ico}</span>
-      <span class="row-copy"><strong>${esc(fl.n)}</strong><span>${esc(fl.sub||'')}</span></span>
-      <span class="go-sq">${op?'▾':'›'}</span></div>
-      ${op?`<div style="background:var(--surface-2);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;gap:7px;flex-wrap:wrap" onclick="event.stopPropagation()">
-        <button class="btn navy sm" onclick="${fl.url?`window.open('${fl.url}','_blank')`:`toast('Opening ${esc(fl.n)}')`}">Open</button>
-        ${libManageBtns(fl)}</div>`:''}`;
+      <span class="row-copy"><strong>${canRn?rnName(fl.n,nv=>fl.dbId?libRenameTo(fl.dbId,nv):libRenameStockTo(fl.orig,nv),lk):esc(fl.n)}</strong><span>${esc(fl.sub||'')}</span></span>
+      ${dirL?rmBtn([{l:'Open',ic:'\u2197',fn:openL},canRn&&{l:'Rename',ic:'\u270e',fn:()=>rnStartKey(lk)},
+        fl.dbId&&'-',fl.dbId&&{l:'Remove',ic:'\u2715',danger:true,fn:()=>libRemove(fl.dbId)}],'Document actions'):'<span class="go-sq">\u203a</span>'}</div>`;
   }
   const sg=DOC_SIGS[fl.n];
   const isUser=!!USER_DOCS[fl.docId];
@@ -12307,12 +12575,19 @@ function libRename(dbId){
   if(typeof dbId==='number') sbPatch('np_demo_library',dbId,{title:hit.row.n});
   logAudit('Renamed document',hit.row.n); render(); toast('Document renamed.');
 }
+function libRenameTo(dbId,nv){ const hit=libFind(dbId); if(!hit) return render(); nv=String(nv||'').trim(); if(!nv||nv===hit.row.n) return render();
+  const old=hit.row.n; hit.row.n=nv; if(typeof dbId==='number') sbPatch('np_demo_library',dbId,{title:nv});
+  logAudit('Renamed document',`${old} \u2192 ${nv}`); render(); toast('Renamed.'); }
+function libRenameStockTo(orig,nv){ nv=String(nv||'').trim(); if(!nv) return render();
+  const cur=libName(orig); if(nv===orig) delete LIB_NAMES[orig]; else LIB_NAMES[orig]=nv;
+  libNamesSave(); logAudit('Renamed document',`${cur} \u2192 ${nv}`); render(); toast('Renamed.'); }
 function libRemove(dbId){
   const hit=libFind(dbId); if(!hit) return;
-  if(!confirm('Remove "'+hit.row.n+'" from this folder?')) return;
-  USER_LIB[hit.k][hit.sec].splice(hit.i,1);
-  if(typeof dbId==='number') sbDel('np_demo_library','id=eq.'+dbId);
-  logAudit('Removed document',hit.row.n); render(); toast('Document removed.');
+  askDelete('Remove '+esc(hit.row.n)+'?','It comes out of this binder.',()=>{
+    const h=libFind(dbId); if(!h) return; USER_LIB[h.k][h.sec].splice(h.i,1);
+    if(typeof dbId==='number') sbDel('np_demo_library','id=eq.'+dbId);
+    logAudit('Removed document',h.row.n); render(); toast('Document removed.');
+  },'Remove');
 }
 function signDoc(key,name){
   openModal('Sign — '+esc(name),`
@@ -12667,7 +12942,13 @@ function tpeDraw(){
         </div>
       </div>
     </div>`,
-    `<button class="btn ghost" onclick="tpeCancel()">Cancel</button>
+    `${(!isDoc&&state.role==='director')?`<span class="tpe-foot-l">
+       <button class="btn ghost" onclick="tpeThen('fill')" title="Saves your changes, then opens it to fill in">\u270d Fill it in</button>
+       <button class="btn ghost" onclick="tpeThen('assign')" title="Saves your changes, then assigns it">Assign to staff</button>
+       ${window._tplNew?'':`<button class="btn ghost tpe-del" onclick="tpeThen('delete')">\u2715 Delete</button>`}</span>
+     <span class="tpe-more">${rmBtn([{l:'Fill it in',ic:'\u270d',fn:()=>tpeThen('fill')},{l:'Assign to staff',ic:'\u263a',fn:()=>tpeThen('assign')},
+       !window._tplNew&&'-',!window._tplNew&&{l:'Delete template',ic:'\u2715',danger:true,fn:()=>tpeThen('delete')}],'More')}</span>`:''}
+     <button class="btn ghost" onclick="tpeCancel()">Cancel</button>
      <button class="btn ghost" onclick="printSheet(tplPrintHtml('${t.id}',1))">Print preview</button>
      <button class="btn navy" onclick="tpeSave()">${isDoc?'Save layout':'Save template'}</button>`);
   el('modal').classList.add('tpe-wide');
@@ -13993,8 +14274,10 @@ function saveProgNote(cid){
   closeAll(); render(); toast('Progress note saved.');
 }
 
-function uploadDoc(cid,cat){
-  openModal('Upload a document',`
+function uploadDoc(cid,cat,opts){
+  opts=opts||{}; window._udPreset=opts.b?{b:opts.b,sb:opts.sb||''}:null;
+  const owner=cid?docOwnerName(cid):'';
+  openModal(opts.b?`Add a document to ${esc(FOLDER_NAMES[opts.b]||opts.b)}${opts.sb?' / '+esc(opts.sb):''}${owner?' \u00b7 '+esc(owner):''}`:'Upload a document',`
     <div class="field"><label>File</label>
       <input class="inp" type="file" id="udFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt,.csv"
         onchange="const f=this.files&&this.files[0]; if(f&&!el('udTitle').value) el('udTitle').value=f.name.replace(/\\.[^.]+$/,'');">
@@ -14020,6 +14303,11 @@ function uploadDoc(cid,cat){
     </div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>
      <button class="btn navy" id="udGo" onclick="uploadDocSave('${cid||''}')">Upload</button>`);
+  if(opts.b&&el('udBinderKey')){
+    el('udBinderKey').value=opts.b; if(el('udSubWrap')) el('udSubWrap').innerHTML=udSubSelect(opts.b,opts.sb||'');
+    if(el('udBinder')){ el('udBinder').checked=true; }
+    if(!cid){ const bx=el('udBinder'); if(bx&&bx.closest('label')) bx.closest('label').style.display='none'; }
+  }
 }
 function udSubSelect(key,cur){
   const subs=subsOf(key);
@@ -14045,14 +14333,19 @@ async function uploadDocSave(cid){
     cat, by:meInit(), at:when, s:kb>1024?(kb/1024).toFixed(1)+' MB':kb+' KB', url, path, note};
   DOCS.unshift(rec);
   sbPush('np_demo_documents',{id:rec.id, cid:rec.cid, n:rec.n, cat:rec.cat, uploaded_by:rec.by, doc_date:rec.at, size:rec.s, url:rec.url, storage_path:path, note});
-  if(el('udBinder')&&el('udBinder').checked){
+  /* v12.8: the binder and tab picked are where it sits in this folder; the tick adds the
+     agency binder's copy as before. Picking from a tab puts it in that tab either way. */
+  const place=!!window._udPreset||(el('udBinder')&&el('udBinder').checked);
+  if(place&&el('udBinderKey')){
     const bk=el('udBinderKey').value, bsub=(el('udSub')&&el('udSub').value)||'';
-    DOCTAG[rec.n]={b:bk,sb:bsub}; doctagSave();
-    autoFileLog(bk, rec.n, `${(client(cid)||{}).uci||'Agency'} · uploaded by ${auditActor()}`, null, bsub, {exact:true});   // same name as the uploaded file, so it opens
+    DOCTAG[(rec.cid||'')+'|'+rec.n]={b:bk,sb:bsub}; rec.sb=bsub; doctagSave();
+    if(!cid||(el('udBinder')&&el('udBinder').checked))
+      autoFileLog(bk, rec.n, `${docOwnerName(cid)||'Agency'} · uploaded by ${auditActor()}`, null, bsub, {exact:true});   // same name as the uploaded file, so it opens
     logAudit('Filed uploaded document',`${title} → ${FOLDER_NAMES[bk]||bk}${bsub?' / '+bsub:''}`);
   }
-  docAct('generated',rec.n,cid?((client(cid)||{}).uci||'Client folder'):'Agency');
-  notifyRule('doc','Document uploaded',`${rec.n}${cid?' · '+((client(cid)||{}).uci||''):''}`);
+  window._udPreset=null;
+  docAct('generated',rec.n,cid?(docOwnerName(cid)||'Client folder'):'Agency');
+  notifyRule('doc','Document uploaded',`${rec.n}${cid?' · '+docOwnerName(cid):''}`);
   logAudit('Uploaded document',rec.n);
   closeAll(); render();
   toast(url?'Uploaded — the file is stored and can be opened from the folder.':'Saved to this workspace.');
@@ -15971,7 +16264,7 @@ const ASK_PAGES={documents:'Documents',safety:'Safety log',calendar:'Calendar',t
 function askOpenDoc(id){
   const d=docById(id); if(!d) return toast('That document is no longer in the portal.');
   const p={Medical:'Medical',Agency:'Agency'}[d.key]||d.key;
-  go('documents'); state.openBinder=d.key; render();
+  go(state.role==='family'?'docs':'templates'); state.openBinder=normBinder(d.key||'').b; render();   // v12.8: 'documents' is not a page, so this landed on Home
   setTimeout(()=>openDocEditor(id),120);
 }
 function askLink(html){
@@ -16680,7 +16973,7 @@ async function sbHydrate(){
       if(r.key==='taskpris'&&r.value&&Array.isArray(r.value.list)&&r.value.list.length){ TASK_PRIS=r.value.list; }
       if(r.key==='customopts'&&r.value&&r.value.map&&typeof r.value.map==='object'){ CUSTOM_OPTS=r.value.map; }
       if(r.key==='logshidden'&&r.value&&Array.isArray(r.value.list)){ LOGS_HIDDEN=r.value.list; }
-      if(r.key==='subbinders'&&r.value&&r.value.map&&typeof r.value.map==='object'){ SUB_BINDERS=r.value.map; }
+      if(r.key==='subbinders'&&r.value&&r.value.map&&typeof r.value.map==='object'){ SUB_BINDERS=r.value.map; if(r.value.alias&&typeof r.value.alias==='object') SUB_ALIAS=r.value.alias; }
       if(r.key==='tplassign'&&r.value){ if(r.value.map) TPL_ASSIGN=r.value.map; if(r.value.ack) TPL_ACK=r.value.ack; }
       if(r.key==='prefs'&&r.value&&typeof r.value==='object'){ PREFS=Object.assign(PREFS,r.value); }
       if(r.key==='askchats'&&r.value){
