@@ -434,6 +434,7 @@ a{color:inherit}
 .filed-sheet .p-sub,.filed-sheet .p-note{font-size:10.5px;color:#666;margin:2px 0 10px}
 .filed-sheet table{width:100%;border-collapse:collapse}
 .filed-sheet th,.filed-sheet td{border:1px solid #999;padding:6px 8px;font-size:12px;text-align:left;vertical-align:top}
+@media(max-width:700px){.filed-sheet{padding:14px 10px}.filed-sheet h2{font-size:17px}.filed-sheet th,.filed-sheet td{padding:5px 5px;font-size:10.5px}}
 .filed-sheet th{background:#f6f6f6;width:34%}
 .filed-sheet .siglines{display:flex;gap:28px;flex-wrap:wrap;margin-top:34px}
 .filed-sheet .sig{border-top:1px solid #333;min-width:200px;padding-top:4px;font-size:11px;font-weight:700}
@@ -474,6 +475,10 @@ button.tpe-box.on:after{content:'✓';color:#fff;font-size:10px;line-height:1}
   border:1px solid var(--line);background:#fff;font:600 11.5px system-ui,sans-serif;white-space:nowrap;flex:none}
 .tpe-tools{flex-wrap:nowrap}
 .tpe-kind:hover{border-color:var(--navy-deep)}
+/* v12.7: '.tpe-tools button' (a 26px square for the icon buttons) outranked '.tpe-kind', so the
+   type label was squeezed into 26px and spilled over the Insert select. */
+.tpe-tools .tpe-kind{width:auto;display:inline-flex;white-space:nowrap;flex:none;padding:0 8px}
+.tpe-tools .tpe-ins{flex:none}
 .tpe-kinds{position:absolute;right:6px;top:18px;z-index:12;width:268px;max-height:340px;overflow:auto;background:var(--white);
   border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 44px rgba(20,25,35,.18);padding:8px;font-family:system-ui,sans-serif}
 .tpe-kinds-h{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 8px;font-size:12.5px}
@@ -540,7 +545,7 @@ button.tpe-box.on:after{content:'✓';color:#fff;font-size:10px;line-height:1}
   .tpe-paper{padding:20px 14px}
   .tpe-row{grid-template-columns:1fr}
   .tpe-lab{border-right:none;border-bottom:1px solid #999}
-  .tpe-tools{display:flex;position:static;margin:6px 0;width:max-content}
+  .tpe-tools{display:flex;position:static;margin:6px 0;width:auto;max-width:100%;flex-wrap:wrap;row-gap:4px}
 }
 .md-back{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:3px;margin-right:10px;padding:4px 10px 4px 7px;
   border-radius:9px;border:1px solid var(--line);font-size:12.5px;font-weight:650;color:var(--ink);background:var(--white);vertical-align:middle}
@@ -2485,7 +2490,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.5 beta</span></span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.7 beta</span></span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -3016,7 +3021,9 @@ function isOrgColErr(d){ return /org_id/i.test(String(d))&&/(column|schema cache
 async function sbSend(kind,t,url,init,row){
   if(row===undefined) return sbCheck(kind,t,fetch(url,init),()=>fetch(url,init));
   let payload=stripCols(orgStampFor(t,row),COL_UNSUPPORTED[t]||[]);
-  const send=()=>fetch(url,Object.assign({},init,{body:JSON.stringify(payload)}));
+  const onRow=init.onRow; if(onRow){ init=Object.assign({},init); delete init.onRow; }
+  const hand=r=>{ if(onRow&&r&&r.ok){ try{ (r.clone?r.clone():r).json().then(j=>{ const x=Array.isArray(j)?j[0]:j; if(x) onRow(x); }).catch(()=>{}); }catch(e){} } return r; };
+  const send=()=>fetch(url,Object.assign({},init,{body:JSON.stringify(payload)})).then(hand);
   let okRes=await sbCheck(kind,t,send(),send);
   // a column the table does not have loses the whole row — drop it and keep the rest
   for(let i=0;i<4 && !okRes;i++){
@@ -3027,13 +3034,18 @@ async function sbSend(kind,t,url,init,row){
     COL_UNSUPPORTED[t]=(COL_UNSUPPORTED[t]||[]).concat(col);
     console.warn(`[np-demo] ${t} has no "${col}" column — saving the record without it. Run the latest SQL to store it.`);
     payload=stripCols(payload,[col]);
-    const send2=()=>fetch(url,Object.assign({},init,{body:JSON.stringify(payload)}));
+    const send2=()=>fetch(url,Object.assign({},init,{body:JSON.stringify(payload)})).then(hand);
     okRes=await sbCheck(kind,t,send2(),send2);
   }
   return okRes;
 }
 function sbPush(t,row){ if(!sbOn()) return Promise.resolve(false);
   return sbSend('write',t,`${BACKEND.url}/rest/v1/${t}`,{method:'POST',headers:sbH()},row); }
+/* v12.6: the same insert, but the database hands back the new row so its id can be kept.
+   Later edits and deletes then go to exactly that row and nothing else. */
+function sbPushKeep(t,row,rec){ if(!sbOn()) return Promise.resolve(false);
+  return sbSend('write',t,`${BACKEND.url}/rest/v1/${t}`,{method:'POST',headers:Object.assign(sbH(),{Prefer:'return=representation'}),
+    onRow:x=>{ if(rec&&x&&x.id!=null) rec.dbId=x.id; }},row); }
 function sbUpsert(t,row){ if(!sbOn()) return Promise.resolve(false);
   return sbSend('upsert',t,`${BACKEND.url}/rest/v1/${t}`,{method:'POST',headers:{...sbH(),Prefer:'return=minimal,resolution=merge-duplicates'}},row); }
 function sbPatch(t,id,patch){ if(!sbOn()) return Promise.resolve(false);
@@ -3661,9 +3673,11 @@ function manageClientTypes(){
 }
 function manageTasksConfig(tab){
   const t=tab||'due';
-  const tb=(k,l)=>`<button class="${t===k?'active':''}" onclick="manageTasksConfig('${k}')">${l}</button>`;
+  if(!tab) window._tcPend={};                                          // v12.6: changes on one tab survive switching to another
+  const P=window._tcPend=window._tcPend||{};
+  const tb=(k,l)=>`<button class="${t===k?'active':''}" onclick="taskCfgPull('${t}');manageTasksConfig('${k}')">${l}</button>`;
   const row=(id,label,val)=>`<div class="field" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-    <input type="color" id="${id}" value="${val||'#68756F'}" style="width:44px;height:34px;border:none;background:none;padding:0">
+    <input type="color" id="${id}" value="${P[id]||val||'#68756F'}" style="width:44px;height:34px;border:none;background:none;padding:0">
     <label style="margin:0;flex:1">${esc(label)}</label></div>`;
   let body='';
   if(t==='due') body=`<div class="tiny muted" style="margin-bottom:10px">The colour a due date shows in, by how close it is.</div>
@@ -3680,8 +3694,16 @@ function manageTasksConfig(tab){
     ${body}`,
     `<button class="btn ghost" onclick="closeAll()">Close</button><button class="btn navy" onclick="taskCfgApply('${t}')">Save colours</button>`);
 }
+function taskCfgPull(t){ const P=window._tcPend=window._tcPend||{};
+  document.querySelectorAll('#mdBody input[type=color][id^="tc_"]').forEach(x=>{ P[x.id]=x.value; }); }
 function taskCfgApply(t){
   TASK_COLORS.due=TASK_COLORS.due||{}; TASK_COLORS.cat=TASK_COLORS.cat||{}; TASK_COLORS.pri=TASK_COLORS.pri||{}; TASK_COLORS.stage=TASK_COLORS.stage||{};
+  const P=window._tcPend||{};                                           // changes made on the other tabs first
+  ['overdue','today','soon','week'].forEach(k=>{ if(P['tc_due_'+k]) TASK_COLORS.due[k]=P['tc_due_'+k]; });
+  TASK_CATS.forEach((c,i)=>{ if(P['tc_cat_'+i]) TASK_COLORS.cat[c]=P['tc_cat_'+i]; });
+  TASK_PRIS.forEach((c,i)=>{ if(P['tc_pri_'+i]) TASK_COLORS.pri[c]=P['tc_pri_'+i]; });
+  ['Not started','To do','In progress','Overdue','Done'].forEach((c,i)=>{ if(P['tc_stage_'+i]) TASK_COLORS.stage[c]=P['tc_stage_'+i]; });
+  window._tcPend={};
   if(t==='due') ['overdue','today','soon','week'].forEach(k=>{ const i=el('tc_due_'+k); if(i) TASK_COLORS.due[k]=i.value; });
   else if(t==='cat') TASK_CATS.forEach((c,i)=>{ const x=el('tc_cat_'+i); if(x) TASK_COLORS.cat[c]=x.value; });
   else if(t==='pri') TASK_PRIS.forEach((c,i)=>{ const x=el('tc_pri_'+i); if(x) TASK_COLORS.pri[c]=x.value; });
@@ -6017,22 +6039,44 @@ function goalRename(cid,gi,v){
   logAudit('Renamed IPP goal',`${was} \u2192 ${val}`);
   toast('Renamed.');
 }
+function weeklySheet(cid){
+  const c=client(cid)||{};
+  return `<h2>Weekly checklist \u2014 ${esc(c.uci||cid)}</h2><div class="p-sub">${esc(c.home||'')} \u00b7 week of ${esc(fmtDate(weekStart()))} \u00b7 filed ${esc(nowStamp())}</div>
+    <table><thead><tr><th>Item</th><th>Done</th><th>Signed by</th><th>When</th></tr></thead><tbody>
+    ${(WEEKLY[cid]||[]).map(x=>`<tr><td>${esc(x.t)}</td><td>${x.d?'\u2713':''}</td><td>${esc(x.by||'')}</td><td>${esc(x.at||'')}</td></tr>`).join('')}
+    </tbody></table>`;
+}
 function wkToggle(cid,i){
   const w=WEEKLY[cid][i]; w.d=w.d?0:1;
   if(w.d){ w.by=ME[state.role].name; w.at=nowStamp(); } else { w.by=''; w.at=''; }
   sbPush('np_demo_checklist_logs',{cid, item:w.t, done:w.d, signed_by:w.d?w.by:null, signed_at:w.d?new Date().toISOString():null});
   chkSave();                                                            // the tick itself now survives a reload
   logAudit(w.d?'Completed weekly checklist item':'Unchecked weekly checklist item',`${client(cid).uci} · ${w.t}`);
-  if(w.d && WEEKLY[cid].every(x=>x.d)) autoFileLog('Daily', `Weekly checklist — ${client(cid).uci} — ${T} ${nowStamp().split(', ')[1]||''}`.trim(), `All ${WEEKLY[cid].length} items signed · completed by ${w.by}`, 'Checklist complete — log filed to Daily logs with date and time.');
+  if(w.d && WEEKLY[cid].every(x=>x.d)) autoFileLog('Daily', `Weekly checklist — ${client(cid).uci} — ${T} ${nowStamp().split(', ')[1]||''}`.trim(), `All ${WEEKLY[cid].length} items signed · completed by ${w.by}`, 'Checklist complete — log filed to Daily logs with date and time.',null,{html:weeklySheet(cid)});
   render();
 }
-function autoFileLog(folderKey, name, sub, msg, subBinder){ /* v11.6: completed forms carry a snapshot id; see docSave */
+/* v12.6: filing used to record only a file name. A safety log, drill log, water temperature
+   log, inspection, protocol or weekly checklist filed into a binder then opened to "No file
+   attached to this record", because nothing of what was filed had been kept. Now the page
+   exactly as it stood when it was filed is kept with it, and that is what opens and prints.
+   opts.html is that page; opts.exact keeps a name that already has its own extension. */
+function autoFileLog(folderKey, name, sub, msg, subBinder, opts){ /* v11.6: completed forms carry a snapshot id; see docSave */
+  opts=opts||{};
   const nb=normBinder(folderKey,subBinder);
   folderKey=nb.b; subBinder=nb.sb;
-  (COMPLETED[folderKey]=COMPLETED[folderKey]||[]).unshift({n:name+'.pdf', sub, sb:subBinder||'', at:T});
-  sbPush('np_demo_documents',{cid:null, n:name+'.pdf', cat:'Completed — '+folderKey, uploaded_by:meInit(), doc_date:T, size:'8 KB', sub_binder:subBinder||null});
+  const file=opts.exact?name:(/\.pdf$/i.test(name)?name:name+'.pdf');
+  const item={n:file, sub, sb:subBinder||'', at:T};
+  if(opts.html){
+    const fid='f'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    FILED_DOCS[fid]={id:fid,kind:'sheet',name:file.replace(/\.pdf$/i,''),file,binder:folderKey,sb:subBinder||'',refs:[{b:folderKey,n:file}],
+      html:String(opts.html),status:'final',signedBy:auditActor(),signedAt:nowStamp(),by:auditActor(),at:nowStamp(),date:T,fields:[],values:{}};
+    item.fid=fid; filedSave();
+  }
+  (COMPLETED[folderKey]=COMPLETED[folderKey]||[]).unshift(item);
+  sbPush('np_demo_documents',{cid:null, n:file, cat:'Completed — '+folderKey, uploaded_by:meInit(), doc_date:T, size:'8 KB', sub_binder:subBinder||null});
   logAudit('Auto-filed log', name);
   if(msg) toast(msg);
+  return item.fid||null;
 }
 function chkSave(){ sbUpsert('np_demo_program',{key:'weekly',value:{map:WEEKLY},updated_by:auditActor()}); }
 function wkEdit(cid,i){
@@ -6261,20 +6305,38 @@ function vitalForm(cid,i){
      <button class="btn ghost" onclick="closeAll()">Cancel</button>
      <button class="btn navy" onclick="vitalSave(${i==null?'null':i},'${cid}')">${i==null?'Record':'Save changes'}</button>`);
 }
+/* v12.6: the care record tables are written one row per entry. Editing an entry used to add a
+   second row, so after a refresh the old and the corrected reading both showed, and deleting
+   only took it off the screen, so it came back. A row read from the database is found by its
+   id; one recorded in this session is found by who, when and what. */
+function careRowQ(r,keys){
+  if(r&&r.dbId!=null) return 'id=eq.'+encodeURIComponent(r.dbId);
+  return keys.map(([col,v])=>v==null?`${col}=is.null`:`${col}=eq.${encodeURIComponent(v)}`).join('&');
+}
+const vitalKey=v=>[['cid',v.cid],['reading_date',v.date],['reading_time',v.time],['recorded_by',v.by],['notes',v.notes||''],['context',v.context||''],...VITAL_FIELDS.map(([k])=>[k,v[k]||''])];
+const adlKey=a=>[['cid',a.cid],['log_date',a.date],['log_time',a.time],['kind',a.kind],['recorded_by',a.by],['detail',a.detail||''],['amount',a.amount||''],['assist',a.assist||''],['notes',a.notes||'']];
+const acctKey=w=>[['cid',w.cid],['log_date',w.date],['start_time',w.start||null],['end_time',w.end||null],['place',w.place],['with_whom',w.with||''],['purpose',w.purpose||''],['notes',w.notes||''],['recorded_by',w.by]];
+let CARE_WAIT=Promise.resolve();                                        // the old row goes before the corrected one is written
+function careDrop(table,r,keyFn){ if(r) CARE_WAIT=Promise.resolve(sbDel(table,careRowQ(r,keyFn(r)))).catch(()=>{}); }
+function careWrite(fn){ const w=CARE_WAIT; CARE_WAIT=Promise.resolve(); return w.then(fn); }
 function vitalSave(i,cid){
   const rec={cid, date:el('vtD').value||careDay(), time:el('vtT').value||nowHM(),
     context:(el('vtC').value||'').trim(), notes:(el('vtN').value||'').trim(), by:meInit()};
   VITAL_FIELDS.forEach(([k])=>{ rec[k]=(el('vt_'+k).value||'').trim(); });
   if(!VITAL_FIELDS.some(([k])=>rec[k])) return toast('Fill in at least one reading.');
   if(i==null){ VITALS.push(rec); logAudit('Recorded vital signs',`${(client(cid)||{}).uci||''} · ${fmtDate(rec.date)}`); }
-  else { Object.assign(VITALS[i],rec); logAudit('Edited vital signs',`${(client(cid)||{}).uci||''} · ${fmtDate(rec.date)}`); }
-  sbPush('np_demo_vitals',{cid:rec.cid,reading_date:rec.date,reading_time:rec.time,context:rec.context,notes:rec.notes,
-    recorded_by:rec.by,hr:rec.hr,bp:rec.bp,temp:rec.temp,resp:rec.resp,o2:rec.o2,weight:rec.weight,glucose:rec.glucose,pain:rec.pain});
+  else { const old=Object.assign({},VITALS[i]); careDrop('np_demo_vitals',old,vitalKey);
+    rec.by=old.by||rec.by; rec.editedBy=meInit(); delete VITALS[i].dbId;
+    Object.assign(VITALS[i],rec); logAudit('Edited vital signs',`${(client(cid)||{}).uci||''} · ${fmtDate(rec.date)}`); }
+  const keep=(i==null?rec:VITALS[i]);
+  careWrite(()=>sbPushKeep('np_demo_vitals',{cid:rec.cid,reading_date:rec.date,reading_time:rec.time,context:rec.context,notes:rec.notes,
+    recorded_by:rec.by,hr:rec.hr,bp:rec.bp,temp:rec.temp,resp:rec.resp,o2:rec.o2,weight:rec.weight,glucose:rec.glucose,pain:rec.pain},keep));
   state.careDay=rec.date; vitalsIndex(); closeAll(); render(); toast('Vitals recorded.');
 }
 function vitalDel(i){
   const v=VITALS[i]; if(!v) return;
   askDelete('Delete this reading?','It comes off the care record for that day.',()=>{
+    careDrop('np_demo_vitals',v,vitalKey);
     VITALS.splice(i,1); vitalsIndex();
     logAudit('Deleted vital signs',fmtDate(v.date));
     closeAll(); render(); toast('Reading deleted.');
@@ -6306,14 +6368,18 @@ function adlSave(i,cid){
     kind:el('adK').value, assist:el('adA').value, detail:(el('adX').value||'').trim(),
     amount:(el('adM').value||'').trim(), notes:(el('adN').value||'').trim(), by:meInit()};
   if(i==null){ ADLS.push(rec); logAudit('Logged daily living',`${(client(cid)||{}).uci||''} · ${rec.kind}`); }
-  else { Object.assign(ADLS[i],rec); logAudit('Edited daily living log',`${(client(cid)||{}).uci||''} · ${rec.kind}`); }
-  sbPush('np_demo_adls',{cid:rec.cid,log_date:rec.date,log_time:rec.time,kind:rec.kind,detail:rec.detail,
-    amount:rec.amount,assist:rec.assist,notes:rec.notes,recorded_by:rec.by});
+  else { const old=Object.assign({},ADLS[i]); careDrop('np_demo_adls',old,adlKey);
+    rec.by=old.by||rec.by; delete ADLS[i].dbId;
+    Object.assign(ADLS[i],rec); logAudit('Edited daily living log',`${(client(cid)||{}).uci||''} · ${rec.kind}`); }
+  const keep=(i==null?rec:ADLS[i]);
+  careWrite(()=>sbPushKeep('np_demo_adls',{cid:rec.cid,log_date:rec.date,log_time:rec.time,kind:rec.kind,detail:rec.detail,
+    amount:rec.amount,assist:rec.assist,notes:rec.notes,recorded_by:rec.by},keep));
   state.careDay=rec.date; adlsIndex(); closeAll(); render(); toast('Logged.');
 }
 function adlDel(i){
   const a=ADLS[i]; if(!a) return;
   askDelete('Delete this log?','It comes off the care record for that day.',()=>{
+    careDrop('np_demo_adls',a,adlKey);
     ADLS.splice(i,1); adlsIndex();
     logAudit('Deleted daily living log',fmtDate(a.date));
     closeAll(); render(); toast('Log deleted.');
@@ -6681,9 +6747,16 @@ function noteCatsForm(){
     ${NOTE_CATS.map((c,i)=>`<div class="field" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
       <input type="color" id="nc_c_${i}" value="${noteCatColor(c)}" style="width:44px;height:34px;border:none;background:none;padding:0">
       <input class="inp" id="nc_n_${i}" value="${esc(c)}" style="flex:1">
-      <button class="btn ghost sm" onclick="NOTE_CATS.splice(${i},1);noteCatsSave();noteCatsForm()">✕</button></div>`).join('')}
-    <button class="btn ghost sm" onclick="NOTE_CATS.push('New category');noteCatsSave();noteCatsForm()">＋ Add category</button>`,
+      <button class="btn ghost sm" onclick="noteCatsPull();NOTE_CATS.splice(${i},1);noteCatsSave();noteCatsForm()">✕</button></div>`).join('')}
+    <button class="btn ghost sm" onclick="noteCatsPull();NOTE_CATS.push('New category');noteCatsSave();noteCatsForm()">＋ Add category</button>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="noteCatsApply()">Save</button>`);
+}
+/* v12.6: adding or removing a category redraws the list; take what has been typed first */
+function noteCatsPull(){
+  const next=[],cols=Object.assign({},NOTE_CAT_COLORS||{});
+  NOTE_CATS.forEach((c,i)=>{ const n=el('nc_n_'+i), col=el('nc_c_'+i);
+    const nm=(n&&n.value.trim())||c; next.push(nm); if(col) cols[nm]=col.value; });
+  NOTE_CATS=next; NOTE_CAT_COLORS=cols;
 }
 function noteCatsApply(){
   const next=[],cols={};
@@ -8903,8 +8976,9 @@ function printLogsGo(){
 function logToBinder(kind){
   const map={drills:{n:'Fire drill log',h:()=>drillSheet()},temps:{n:'Water temperature log',h:()=>tempSheet()}};
   const m=map[kind]; if(!m) return;
+  const html=m.h();                                                   // the log as it stands now is what gets filed
   filePicker('File the '+m.n.toLowerCase(),`${m.n} — ${fmtDate(T)}`,({name,binder,sub})=>{
-    autoFileLog(binder,name,`Filed by ${auditActor()} · ${nowStamp()}`,null,sub);
+    autoFileLog(binder,name,`Filed by ${auditActor()} · ${nowStamp()}`,null,sub,{html});
     docAct('exported',name,FOLDER_NAMES[binder]||binder);
     logAudit('Filed safety log',`${name} → ${FOLDER_NAMES[binder]||binder}${sub?' / '+sub:''}`);
     render(); toast('Filed.');
@@ -8913,11 +8987,12 @@ function logToBinder(kind){
 function fileToBinder(kind){
   const map={incidents:{f:'Compliance',n:'Incident register',h:incidentSheet},
              safety:{f:'Safety',n:'Safety log',h:safetySheet},
-             onboarding:{f:'Agency',n:'Onboarding record',h:()=>obSheet?obSheet():'<h2>Onboarding record</h2>'},
+             onboarding:{f:'Agency',n:'Onboarding record',h:()=>typeof obSheet==='function'?obSheet():'<h2>Onboarding record</h2>'},
              training:{f:'Agency',n:'Training record',h:()=>'<h2>Training record</h2>'}};
   const m=map[kind]; if(!m) return;
+  const html=m.h();
   filePicker('File into a binder',`${m.n} — ${fmtDate(T)}`,({name,binder,sub})=>{
-    autoFileLog(binder,name,`Filed by ${auditActor()} · ${nowStamp()}`,null,sub);
+    autoFileLog(binder,name,`Filed by ${auditActor()} · ${nowStamp()}`,null,sub,{html});
     docAct('exported',name,FOLDER_NAMES[binder]||binder);
     logAudit('Filed to binder',`${name} → ${FOLDER_NAMES[binder]||binder}${sub?' / '+sub:''}`);
     render(); toast(`Filed into ${FOLDER_NAMES[binder]||binder}${sub?' / '+sub:''}.`);
@@ -9459,20 +9534,18 @@ function reportsSave(){ sbUpsert('np_demo_program',{key:'reports',value:{items:R
 function fileSafetyReport(kind){
   const label=kind==='drill'?'Fire drill log report':'Water temperature log report';
   const binder=kind==='drill'?'Safety':'Water';
-  const name=`${label} — week of ${fmtDate(weekStart())}.pdf`;
-  (COMPLETED[binder]=COMPLETED[binder]||[]).unshift({n:name,sub:'Generated from the safety log · '+meInit()});
-  sbPush('np_demo_documents',{cid:null,n:name,cat:'Completed — '+binder,uploaded_by:meInit(),doc_date:T,size:'8 KB'});
-  REPORTS.unshift({n:name,type:label,at:fmtDate(T),binder});
+  const name=`${label} — week of ${fmtDate(weekStart())}`;
+  const fid=autoFileLog(binder,name,'Generated from the safety log · '+meInit(),null,null,{html:kind==='drill'?drillSheet():tempSheet()});
+  REPORTS.unshift({n:name+'.pdf',type:label,at:fmtDate(T),binder,fid});
   reportsSave();
   logAudit('Filed safety report to binder',name);
   render(); toast('Filed to the '+(FOLDER_NAMES[binder]||binder)+' binder.');
 }
 function genReport(){ fileSafetyReport(el('rpKind').value); closeAll(); }
 function makeStandardReport(t){
-  const name=`${t} — ${fmtDate(T)}.pdf`;
-  (COMPLETED['Compliance']=COMPLETED['Compliance']||[]).unshift({n:name,sub:'Generated report · '+meInit()});
-  sbPush('np_demo_documents',{cid:null,n:name,cat:'Completed — Compliance',uploaded_by:meInit(),doc_date:T,size:'12 KB'});
-  REPORTS.unshift({n:name,type:t,at:fmtDate(T),binder:'Compliance'});
+  const name=`${t} — ${fmtDate(T)}`;
+  const fid=autoFileLog('Compliance',name,'Generated report · '+meInit(),null,null,{html:reportSheet(esc(name+'.pdf'),esc(t),esc(fmtDate(T)))});
+  REPORTS.unshift({n:name+'.pdf',type:t,at:fmtDate(T),binder:'Compliance',fid});
   reportsSave();
   logAudit('Generated report',t);
   render(); toast(t+' generated — filed to the Compliance binder and listed above.');
@@ -9497,8 +9570,8 @@ function viewCompliance(){
     <div class="card-h"><h2>Compliance reports</h2><div class="sub">Each one is also filed in its binder on the Documents page</div></div>
     <div class="card-b flush">
       ${REPORTS.map(r=>`<div class="docrow"><div class="di">▤</div>
-        <div class="dt"><b>${esc(r.n)}</b><span>${esc(r.type)} · generated ${esc(r.at)} · filed to ${esc(FOLDER_NAMES[r.binder]||r.binder)}</span></div>
-        <button class="btn ghost sm" onclick="printSheet(${r.binder==='Safety'?'drillSheet()':r.binder==='Water'?'tempSheet()':`reportSheet(${JSON.stringify(esc(r.n))},${JSON.stringify(esc(r.type))},${JSON.stringify(esc(r.at))})`})">Print</button></div>`).join('')||'<div class="empty">No reports generated yet — use ＋ Generate report, or file a week from the Safety log.</div>'}
+        <div class="dt"><b>${esc(r.n)}</b><span>${esc(r.type)} · generated ${esc(r.at)} · filed to ${esc(FOLDER_NAMES[normBinder(r.binder).b]||r.binder)}</span></div>
+        <button class="btn ghost sm" onclick="printSheet(${r.fid?`filedSheet(FILED_DOCS['${r.fid}']||{kind:'sheet',html:''})`:r.binder==='Safety'?'drillSheet()':r.binder==='Water'?'tempSheet()':`reportSheet(${JSON.stringify(esc(r.n))},${JSON.stringify(esc(r.type))},${JSON.stringify(esc(r.at))})`})">Print</button></div>`).join('')||'<div class="empty">No reports generated yet — use ＋ Generate report, or file a week from the Safety log.</div>'}
     </div>
   </section>
 
@@ -9970,7 +10043,7 @@ function completeInspection(){
   const title=`${t.name} — ${fmtDate(T)}`;
   INSP_DONE.unshift(Object.assign({id,filed:title+'.pdf'},snap));
   if(t.builtin) builtinLogRecord(t,snap);                            // v9.84: keeps the drill and temperature history filling
-  autoFileLog(t.folder, title, `Inspection · score ${snap.num}/${snap.den} (${snap.pct}%) · by ${meInit()}`, null);
+  autoFileLog(t.folder, title, `Inspection · score ${snap.num}/${snap.den} (${snap.pct}%) · by ${meInit()}`, null, null, {html:inspSheet(Object.assign({title},snap))});
   sbPush('np_demo_inspections',{id, kind:'completed', template_id:t.id, title, folder:t.folder, score_num:snap.num, score_den:snap.den, responses:snap.responses, created_by:ME[state.role].name});
   docAct('generated',title,FOLDER_NAMES[t.folder]||t.folder);
   logAudit('Completed inspection',`${t.name} · ${snap.num}/${snap.den}`);
@@ -10149,7 +10222,7 @@ function delInspDone(id){
 function inspToBinder(id){
   const snap=INSP_DONE.find(x=>x.id===id); if(!snap) return;
   filePicker('File this inspection',`${snap.title} — ${fmtDate(snap.date||T)}`,({name,binder,sub})=>{
-    autoFileLog(binder,name,`Inspection · score ${snap.num}/${snap.den} · by ${esc(snap.by)}`,null,sub);
+    autoFileLog(binder,name,`Inspection · score ${snap.num}/${snap.den} · by ${esc(snap.by)}`,null,sub,{html:inspSheet(snap)});
     logAudit('Filed inspection',`${name} → ${FOLDER_NAMES[binder]||binder}`);
     render(); toast('Filed.');
   },{binder:snap.folder||'Safety'});
@@ -10399,14 +10472,18 @@ function acctSave(i){
   if(rec.end&&rec.start&&rec.end<=rec.start) return toast('The end time needs to be after the start.');
   const who=(client(rec.cid)||{}).uci||'';
   if(i==null){ WHEREABOUTS.push(rec); logAudit('Logged whereabouts',`${who} · ${rec.place} · ${fmtDate(rec.date)}`); }
-  else { Object.assign(WHEREABOUTS[i],rec); logAudit('Edited whereabouts',`${who} · ${rec.place}`); }
-  sbPush('np_demo_whereabouts',{cid:rec.cid,log_date:rec.date,start_time:rec.start||null,end_time:rec.end||null,
-    place:rec.place,with_whom:rec.with,purpose:rec.purpose,notes:rec.notes,recorded_by:rec.by});
+  else { const old=Object.assign({},WHEREABOUTS[i]); careDrop('np_demo_whereabouts',old,acctKey);
+    rec.by=old.by||rec.by; delete WHEREABOUTS[i].dbId;
+    Object.assign(WHEREABOUTS[i],rec); logAudit('Edited whereabouts',`${who} · ${rec.place}`); }
+  const keep=(i==null?rec:WHEREABOUTS[i]);
+  careWrite(()=>sbPushKeep('np_demo_whereabouts',{cid:rec.cid,log_date:rec.date,start_time:rec.start||null,end_time:rec.end||null,
+    place:rec.place,with_whom:rec.with,purpose:rec.purpose,notes:rec.notes,recorded_by:rec.by},keep));
   state.acctDay=rec.date; acctIndex(); closeAll(); render(); toast('Logged.');
 }
 function acctDel(i){
   const w=WHEREABOUTS[i]; if(!w) return;
   askDelete('Delete this entry?','It comes off the accountability log for that day.',()=>{
+    careDrop('np_demo_whereabouts',w,acctKey);
     WHEREABOUTS.splice(i,1); acctIndex();
     logAudit('Deleted whereabouts entry',fmtDate(w.date));
     closeAll(); render(); toast('Entry deleted.');
@@ -11062,7 +11139,11 @@ function binderNames(){ const o={}; Object.keys(FOLDER_NAMES).forEach(k=>o[k]=FO
 function filePicker(title,defaultName,onFile,opts){
   opts=opts||{};
   const keys=binderKeys();
-  const firstKey=opts.binder&&FOLDER_NAMES[opts.binder]?opts.binder:keys[0];
+  /* v12.6: old binder names (Safety, Water, Compliance\u2026) are not in the list any more, so
+     asking for one selected nothing and everything filed into the Agency binder. */
+  const nbw=normBinder(opts.binder||'',opts.sub||'');
+  const firstKey=keys.includes(nbw.b)?nbw.b:keys[0];
+  if(!opts.sub&&nbw.sb&&firstKey===nbw.b) opts.sub=nbw.sb;
   openModal(title,`
     <div class="field"><label>Name</label><input class="inp" id="fpName" value="${esc(defaultName||'')}"></div>
     <div class="row2">
@@ -11573,6 +11654,7 @@ function filedRefMove(pred,to){ const f=filedFind(pred); if(!f) return; const r=
 function filedRefDrop(pred){ const f=filedFind(pred); if(!f) return;
   f.refs=filedRefs(f).filter(r=>!pred(r)); if(!f.refs.length) delete FILED_DOCS[f.id]; filedSave(); }
 function filedSheet(f){
+  if(f&&f.kind==='sheet') return f.html||'';
   const shell={id:f.id,name:f.name,key:f.binder,fields:f.fields,subtitle:f.subtitle,foot:f.foot,sysNote:f.sysNote};
   return docSheet(shell,f.values||{})
     +`<div class="p-note">Completed by ${esc(f.by)} \u00b7 ${esc(f.at)}${f.amended?` \u00b7 last changed by ${esc(f.amended.by)} \u00b7 ${esc(f.amended.at)}`:''}</div>`;
@@ -11584,9 +11666,11 @@ function filedSheet(f){
    does not lock anything, because people sign and then keep typing. */
 const filedIsFinal=f=>!!f&&f.status==='final';
 const filedStatus=f=>filedIsFinal(f)?'Signed':'Draft';
-function filedPill(f){ return f?`<span class="pill ${filedIsFinal(f)?'ok':'warn'}">${filedIsFinal(f)?'\u2713 Signed':'Draft'}</span>`:''; }
+function filedPill(f){ if(f&&f.kind==='sheet') return `<span class="pill ok">\u2713 Filed</span>`;
+  return f?`<span class="pill ${filedIsFinal(f)?'ok':'warn'}">${filedIsFinal(f)?'\u2713 Signed':'Draft'}</span>`:''; }
 function filedCopyAsDraft(fid){
   const f=FILED_DOCS[fid]; if(!f) return;
+  if(f.kind==='sheet') return toast('This is a filed log \u2014 print it, or file a new one from its page.');
   const nid='f'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   const file=String(f.file||f.name).replace(/\.pdf$/,'')+' \u2014 new draft.pdf';
   FILED_DOCS[nid]=Object.assign({},JSON.parse(JSON.stringify(f)),{id:nid,file,status:'draft',copiedFrom:f.id,
@@ -11606,10 +11690,10 @@ function openFiledDoc(fid){
   const f=FILED_DOCS[fid]; if(!f) return toast('That completed document could not be found.');
   openModal(esc(f.file||f.name),`
     <div class="tiny muted" style="margin-bottom:10px">${filedPill(f)} Filed in ${esc(FOLDER_NAMES[f.binder]||f.binder)}${f.sb?' / '+esc(f.sb):''}${f.cid&&client(f.cid)?' \u00b7 '+esc(client(f.cid).uci)+'\u2019s file':''}
-      \u00b7 ${filedIsFinal(f)?`signed by ${esc(f.signedBy||f.by)} \u00b7 ${esc(f.signedAt||f.at)} \u00b7 this copy is the record and cannot be changed`:'a draft \u2014 open it to carry on filling it in'}</div>
+      \u00b7 ${f.kind==='sheet'?`filed by ${esc(f.by)} \u00b7 ${esc(f.at)} \u00b7 kept exactly as it stood when it was filed`:filedIsFinal(f)?`signed by ${esc(f.signedBy||f.by)} \u00b7 ${esc(f.signedAt||f.at)} \u00b7 this copy is the record and cannot be changed`:'a draft \u2014 open it to carry on filling it in'}</div>
     <div class="filed-sheet">${filedSheet(f)}</div>`,
     `<button class="btn ghost" onclick="closeAll()">Close</button>
-     ${state.role!=='family'?(filedIsFinal(f)
+     ${state.role!=='family'&&f.kind!=='sheet'?(filedIsFinal(f)
         ?`<button class="btn ghost" onclick="filedCopyAsDraft('${fid}')">\u29c9 Copy as a new draft</button>`
         :`<button class="btn navy" onclick="filedEdit('${fid}')">\u270e Carry on filling it in</button>`):''}
      <button class="btn navy" onclick="docAct('exported','${esc(f.file||f.name).replace(/'/g,'&#39;')}','');printSheet(filedSheet(FILED_DOCS['${fid}']))">\u21e9 Print or save as PDF</button>`);
@@ -11663,6 +11747,7 @@ function docSave(id,asDraft,finalise){
     const f=FILED_DOCS[d0.filedId];
     if(filedIsFinal(f)){ toast('That copy is signed and cannot be changed.'); return openFiledDoc(f.id); }
     f.values=Object.assign({},f.values||{},docTakeVals(id));
+    if(d0.fields){ f.fields=JSON.parse(JSON.stringify(d0.fields)); f.subtitle=d0.subtitle; f.foot=d0.foot; f.sysNote=d0.sysNote; }   // layout changes made on the draft go with it
     f.amended={by:auditActor(),at:nowStamp()};
     if(finalise){ f.status='final'; f.signedBy=auditActor(); f.signedAt=nowStamp();
       (f.refs||[]).forEach(r=>{ if(r.cid){ const x=DOCS.find(y=>y.cid===r.cid&&y.n===r.n); if(x) x.cat='Completed form'; } }); }
@@ -11759,6 +11844,10 @@ function docSheet(id,vals){
 
 /* ── v4.8b: user-created editable docs (structure editor + delete) ── */
 function openDocFieldsEditor(id){
+  /* v12.6: the layout editor replaces the fill-in form, and anything typed but not yet saved
+     went with it. Keep the answers, and come back to the form afterwards. */
+  if(docFormAlive(id)) EXAMPLE_VALUES[id]=Object.assign({},EXAMPLE_VALUES[id]||{},docReadForm(id));
+  window._tpeReturnDoc=id;
   const u=USER_DOCS[id]; if(u&&u.tpl&&tplById(u.tpl)){ closeAll(); return openTplEditor(u.tpl); }
   if(u){ closeAll(); return openDocStructEditor(id); }
   const d=docById(id); if(!d||!USER_DOCS[id]) return;
@@ -12518,8 +12607,15 @@ function tpeSave(){
   const t=tpeT(); if(!t) return;
   if(!String(t.name||'').trim()) return toast('Name the form first \u2014 click the title at the top of the page.');
   if(tpeIsDoc()){
-    const id=window._tplEd; window._tplEd=null;
-    docPersist(id); logAudit('Edited document layout',t.name);
+    const id=window._tplEd; window._tplEd=null; window._tpeReturnDoc=null;
+    const d=USER_DOCS[id], f=d&&d.filedId&&FILED_DOCS[d.filedId];
+    if(f&&!filedIsFinal(f)){                                           // a draft already in its folder: the copy there takes the new layout
+      f.fields=JSON.parse(JSON.stringify(d.fields||[])); f.name=d.name||f.name;
+      f.subtitle=d.subtitle; f.foot=d.foot; f.sysNote=d.sysNote;
+      f.values=Object.assign({},f.values||{},EXAMPLE_VALUES[id]||{});
+      f.amended={by:auditActor(),at:nowStamp()}; filedSave();
+    } else docPersist(id);
+    logAudit('Edited document layout',t.name);
     closeAll(); render(); toast('Layout saved.'); openDocEditor(id); return;
   }
   tplSave(t.id);
@@ -12842,7 +12938,9 @@ function tpeCancel(){
     if(window._tplNew){ const ix=TEMPLATES5.indexOf(t); if(ix>-1) TEMPLATES5.splice(ix,1); }
     else { try{ const o=JSON.parse(window._tplSnap||'{}'); if(o.fields){ t.name=o.name; t.fields=o.fields; t.subtitle=o.subtitle; t.foot=o.foot; t.sysNote=o.sysNote; if(o.dest) t.dest=o.dest; } }catch(e){} }
   }
+  const back=window._tpeReturnDoc; window._tpeReturnDoc=null;
   window._tplEd=null; closeAll(); render();
+  if(back&&docById(back)) openDocEditor(back);                         // back to the form you were filling in
 }
 function tplFieldRowsLegacy(t){
   return t.fields.map((fd,i)=>`
@@ -12906,6 +13004,8 @@ function tplSave(id){
   TPL_EXTRAS[t.id]={subtitle:t.subtitle,foot:t.foot,sysNote:t.sysNote};                // layout that has no column of its own
   sbUpsert('np_demo_program',{key:'tplextras',value:{map:TPL_EXTRAS},updated_by:auditActor()});
   logAudit('Edited template',t.name); closeAll(); render(); toast('Template saved.');
+  const back=window._tpeReturnDoc; window._tpeReturnDoc=null;
+  if(back&&USER_DOCS[back]&&USER_DOCS[back].tpl===t.id){ USER_DOCS[back].fields=t.fields; openDocEditor(back); }
 }
 function tplPrintHtml(id,preview){
   const t=tplById(id)||USER_DOCS[id]; if(!t) return '';
@@ -13506,6 +13606,7 @@ function openIncidentsList(){
     `<button class="btn ghost" onclick="closeAll()">Close</button>`);
 }
 function openIncidentForm(cid){
+  window._icTpl=null; window._icStoryAt=null;
   openModal('Report an incident',`
     <div class="sec-note" style="background:var(--bad-soft);border-color:#F0CBC7;color:#8C312B;margin-bottom:14px">
       <span>⚠</span><div><b>Make the person safe first</b>If anyone needs medical attention, call emergency services and the shift lead before filling this in.</div></div>
@@ -13551,7 +13652,7 @@ function protoHub(){
 }
 function protoForm(k){
   const p=k?(PROTOCOLS[k]||{}):{first:[],call:[],hours:24};
-  window._proto={k:k||'',first:(protoStepsOf(p)||[]).slice(),call:(p.call||[]).slice(),hours:p.hours||24,tpl:p.tpl||''};
+  window._proto={k:k||'',name:k||'',first:(protoStepsOf(p)||[]).slice(),call:(p.call||[]).slice(),hours:p.hours||24,tpl:p.tpl||''};
   protoFormDraw();
 }
 function protoFormDraw(){
@@ -13562,11 +13663,11 @@ function protoFormDraw(){
       <button class="btn ghost sm" onclick="window._proto.${fn}.splice(${i},1);protoFormDraw()">✕</button></div>`).join('');
   openModal(d.k?('Protocol — '+esc(d.k)):'New incident protocol',`
     <div class="row2">
-      <div class="field"><label>Incident type</label><input class="inp" id="prName" value="${esc(d.k)}" placeholder="e.g. Elopement"></div>
-      <div class="field"><label>Report within (hours)</label><input class="inp" type="number" id="prHours" value="${d.hours}"></div>
+      <div class="field"><label>Incident type</label><input class="inp" id="prName" value="${esc(d.name!=null?d.name:d.k)}" oninput="window._proto.name=this.value" placeholder="e.g. Elopement"></div>
+      <div class="field"><label>Report within (hours)</label><input class="inp" type="number" id="prHours" value="${d.hours}" oninput="window._proto.hours=this.value"></div>
     </div>
     <div class="field"><label>Report form <span class="tiny muted">pulled from Templates</span></label>
-      <select class="inp" id="prTpl"><option value="">— the standard SIR form —</option>
+      <select class="inp" id="prTpl" onchange="window._proto.tpl=this.value"><option value="">— the standard SIR form —</option>
         ${TEMPLATES5.filter(t=>!hid('template',t.id)).map(t=>`<option value="${t.id}" ${d.tpl===t.id?'selected':''}>${esc(t.name)}</option>`).join('')}</select></div>
     <div class="field"><label>Steps to take, in order</label><div>${list(d.first,'first','What to do first…')}</div>
       <button class="btn ghost sm" onclick="window._proto.first.push('');protoFormDraw()">＋ Add step</button></div>
@@ -13701,8 +13802,9 @@ function protoSheet(k){
     <div class="siglines"><div class="sig">Reviewed by / date</div></div>`;
 }
 function protoToBinder(k){
+  const html=protoSheet(k);
   filePicker('Save protocol to a binder',`${k} protocol — ${fmtDate(T)}`,({name,binder,sub})=>{
-    autoFileLog(binder,name,`Protocol · filed by ${auditActor()}`,null,sub);
+    autoFileLog(binder,name,`Protocol · filed by ${auditActor()}`,null,sub,{html});
     logAudit('Filed protocol',`${name} → ${FOLDER_NAMES[binder]||binder}`);
     render(); toast('Protocol filed.');
   },{binder:'Compliance'});
@@ -13785,6 +13887,16 @@ function icProtoShow(){
   const fb=el('icFields');
   if(fb){
     const t=incidentTplOf(k);
+    /* v12.6: switching the incident type swaps the report form, and everything already typed
+       went with it. Carry each answer across to the field of the same name, and the account
+       of what happened across to the new form's description whatever it is called. */
+    const keep={}; let story='';
+    const prev=window._icTpl;
+    if(prev) prev.fields.forEach((fd,i)=>{ const x=el('tg'+i); if(!x||fd.ty==='signature') return;
+      const v=String(x.value||''); if(!v.trim()) return; keep[fd.l]=v;
+      if(!story&&(fd.l===window._icStoryAt||/description|what happened/i.test(fd.l))) story=v; });
+    if(el('icSum')&&el('icSum').value.trim()) story=story||el('icSum').value;
+    window._icTpl=t||null;
     fb.innerHTML = t ? `
       <div class="tiny muted" style="margin:2px 0 8px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">Report form — ${esc(t.name)}</div>
       ${t.fields.map((fd,i)=>{
@@ -13796,12 +13908,17 @@ function icProtoShow(){
       <div class="tiny muted" style="margin-bottom:8px">The completed form files to the Agency binder (SIR tab) and the client's Files, identified by UCI only.</div>`
     : `<div class="field"><label>What happened</label>
       <textarea class="inp" id="icSum" placeholder="Facts and times only. What you saw and did, in order."></textarea></div>`;
+    if(t){ t.fields.forEach((fd,i)=>{ const x=el('tg'+i); if(x&&fd.ty!=='signature'&&keep[fd.l]!=null) x.value=keep[fd.l]; });
+      if(story){ const di=t.fields.findIndex(f=>/description|what happened/i.test(f.l)); const j=di>-1?di:t.fields.findIndex(f=>f.ty==='long text');
+        if(j>-1&&el('tg'+j)&&!el('tg'+j).value.trim()) el('tg'+j).value=story;
+        window._icStoryAt=j>-1?t.fields[j].l:null; } }
+    else if(story&&el('icSum')) el('icSum').value=story;
     const uf=t&&t.fields.findIndex(f=>/client id/i.test(f.l));
-    if(t&&uf>-1&&el('tg'+uf)&&el('icClient')){ const c=client(el('icClient').value); if(c) el('tg'+uf).value=c.uci; }
+    if(t&&uf>-1&&el('tg'+uf)&&el('icClient')&&!el('tg'+uf).value){ const c=client(el('icClient').value); if(c) el('tg'+uf).value=c.uci; }
     const df=t&&t.fields.findIndex(f=>f.ty==='date'&&/date of incident/i.test(f.l));
-    if(t&&df>-1&&el('tg'+df)) el('tg'+df).value=T;
+    if(t&&df>-1&&el('tg'+df)&&!el('tg'+df).value) el('tg'+df).value=T;
     const tf=t&&t.fields.findIndex(f=>f.ty==='time');
-    if(t&&tf>-1&&el('tg'+tf)) el('tg'+tf).value=nowHM();
+    if(t&&tf>-1&&el('tg'+tf)&&!el('tg'+tf).value) el('tg'+tf).value=nowHM();
   }
   box.innerHTML = (steps.length||calls.length) ? `
     <div class="sec-note" style="margin-bottom:12px;display:block">
@@ -13931,7 +14048,7 @@ async function uploadDocSave(cid){
   if(el('udBinder')&&el('udBinder').checked){
     const bk=el('udBinderKey').value, bsub=(el('udSub')&&el('udSub').value)||'';
     DOCTAG[rec.n]={b:bk,sb:bsub}; doctagSave();
-    autoFileLog(bk, title, `${(client(cid)||{}).uci||'Agency'} · uploaded by ${auditActor()}`, null, bsub);
+    autoFileLog(bk, rec.n, `${(client(cid)||{}).uci||'Agency'} · uploaded by ${auditActor()}`, null, bsub, {exact:true});   // same name as the uploaded file, so it opens
     logAudit('Filed uploaded document',`${title} → ${FOLDER_NAMES[bk]||bk}${bsub?' / '+bsub:''}`);
   }
   docAct('generated',rec.n,cid?((client(cid)||{}).uci||'Client folder'):'Agency');
