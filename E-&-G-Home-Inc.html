@@ -2470,7 +2470,7 @@ body{font-size:15px}
       <div class="field"><label>Email</label><input class="inp" id="liEmail" type="email" placeholder="you@example.org" onkeydown="if(event.key==='Enter')el('liPw').focus()"></div>
       <div class="field"><label>Password</label><input class="inp" id="liPw" type="password" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <div id="liErr" class="tiny" style="display:none;color:var(--bad);margin:-4px 0 10px"></div>
-      <button class="btn navy" style="width:100%;justify-content:center" onclick="doLogin()">Sign in</button>
+      <button class="btn navy" id="liGo" style="width:100%;justify-content:center" onclick="doLogin()">Sign in</button>
       <div class="tiny muted" style="margin-top:10px;text-align:center">
         </div>
     </div>
@@ -2518,7 +2518,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.8 beta</span></span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.11 beta</span></span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -2623,12 +2623,9 @@ const T = iso(TODAY);
    these defaults and the portal runs in local mode. */
 const BACKEND = Object.assign({
   url: '', anon: '',
-  incidentWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-incident',
-  emailWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-email',
-  emailToken: 'npd-em-7k2m9x41',
-  calendarWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-calendar',
-  notifyWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-reminders',
-  askWebhook: 'https://n8n.aiparagonconsulting.com/webhook/np-demo-ask',
+  /* v12.9: no n8n address or token is written into the page any more. Every workflow call
+     goes through the np-relay function on the Supabase project, which checks the caller's
+     sign-in and agency and holds the addresses and secrets on the server. */
   googleClientId: '665621800801-pbruv525a3kcrq5oa64p9rvh1mg7pt6c.apps.googleusercontent.com'
 }, (typeof window!=='undefined' && window.NP_CONFIG) || {});
 let SYS_NOTIFS=[];
@@ -2862,11 +2859,25 @@ function orgEnsure(){ return ORG_ID; }
    is looked up from the account first. Minting a new id is the last resort — doing
    it eagerly is what used to make a returning user look like a brand new one. */
 let ORG_READY=false;
+/* v12.11: the account's role in its agency as the database records it ('director' for whoever
+   created the agency, the invite's role for everyone who joined). Used when this device has
+   no saved role for the account, so a staff member never falls through to the director view. */
+let MEMBER_ROLE=null;
+async function memberRoleFetch(){
+  if(!sbOn()||!sbAuthed()) return null;
+  try{
+    const r=await fetch(`${BACKEND.url}/rest/v1/rpc/np_my_role`,{method:'POST',headers:sbH(),body:'{}'});
+    if(!r.ok) return null;
+    const v=await r.json().catch(()=>null);
+    if(typeof v!=='string'||!v) return null;
+    return /^director$/i.test(v)?'director':'staff';
+  }catch(e){ return null; }
+}
 /* v9.90: which agency am I? The account's membership answers it, and only the database
    can say — the old version read it out of a table by email address, which meant an
    unauthenticated caller could name any email and pick up that agency's id. */
 async function orgResolve(){
-  if(ORG_READY) return ORG_ID;
+  if(ORG_READY&&(ORG_ID||!sbAuthed())) return ORG_ID;                 // v12.9: no agency yet but signed in now \u2014 ask again
   if(!sbOn()||!sbAuthed()){ ORG_READY=true; ORG_ID=null; return null; }
   for(let attempt=0; attempt<2; attempt++){
     try{
@@ -2874,7 +2885,7 @@ async function orgResolve(){
       if(r.status===401&&attempt===0){ if(await sbRefresh()) continue; }
       if(r.ok){
         const v=await r.json().catch(()=>null);
-        if(v&&typeof v==='string'){ ORG_ID=v; lsSet('np_org_id',ORG_ID); ORG_READY=true; return ORG_ID; }
+        if(v&&typeof v==='string'){ ORG_ID=v; lsSet('np_org_id',ORG_ID); ORG_READY=true; MEMBER_ROLE=await memberRoleFetch(); return ORG_ID; }
       }
     }catch(e){}
     break;
@@ -2882,7 +2893,7 @@ async function orgResolve(){
   ORG_READY=true; ORG_ID=null;                                       // no membership, no rows — never guess one
   return null;
 }
-function orgForget(){ ORG_ID=null; ORG_READY=false; }
+function orgForget(){ ORG_ID=null; ORG_READY=false; MEMBER_ROLE=null; }
 const DEMO_VIEW = (()=>{ try{ return new URLSearchParams(location.search).get('demo')==='1'; }catch(e){ return false; } })();
 const sbOn = () => !!(BACKEND.url && BACKEND.anon && !DEMO_VIEW);      // demo view is a sandbox: nothing it does is saved
 /* v9.90: the database now decides what you can see, not the app. Row level security
@@ -3077,24 +3088,28 @@ function sbPushKeep(t,row,rec){ if(!sbOn()) return Promise.resolve(false);
 function sbUpsert(t,row){ if(!sbOn()) return Promise.resolve(false);
   return sbSend('upsert',t,`${BACKEND.url}/rest/v1/${t}`,{method:'POST',headers:{...sbH(),Prefer:'return=minimal,resolution=merge-duplicates'}},row); }
 function sbPatch(t,id,patch){ if(!sbOn()) return Promise.resolve(false);
-  return sbSend('patch',t,`${BACKEND.url}/rest/v1/${t}?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:sbH()},patch); }
-function n8nPost(payload){ n8nHook(BACKEND.incidentWebhook,payload); }
+  const scope=(ORG_ID&&!ORG_UNSUPPORTED[t])?`&org_id=eq.${encodeURIComponent(ORG_ID)}`:'';     // v12.11: this agency only
+  return sbSend('patch',t,`${BACKEND.url}/rest/v1/${t}?id=eq.${encodeURIComponent(id)}${scope}`,{method:'PATCH',headers:sbH()},patch); }
+const relayOn=()=>!!(BACKEND.url&&BACKEND.anon);
+const relayUrl=()=>String(BACKEND.url).replace(/\/+$/,'')+'/functions/v1/np-relay';
+const relayHeaders=()=>({'Content-Type':'application/json',apikey:BACKEND.anon,Authorization:'Bearer '+(sbTok()||BACKEND.anon)});
+/* one call to a workflow, through the relay; a session that has run out is refreshed once */
+async function relayCall(action,payload){
+  if(!relayOn()) throw new Error('relay off');
+  const send=()=>fetch(relayUrl(),{method:'POST',headers:relayHeaders(),body:JSON.stringify({action,payload})});
+  let r=await send();
+  if(r.status===401&&sbTok()&&await sbRefresh()) r=await send();
+  return r;
+}
+function relayFire(action,payload){ relayCall(action,payload).catch(()=>{}); }   // a notification: nothing waits on it
+function n8nPost(payload){ relayFire('incident',payload); }
 function apptInvitees(a){                                             // staff listed on the appointment, by their sign-in email
   if(!a||!a.acl||a.acl.mode!=='listed') return [];
   return (a.acl.sids||[]).map(sid=>{ const st=staff(sid); if(!st) return ''; if(st.email) return st.email;
     const u=Object.entries(USERS).find(([em,b])=>b&&b.sid===sid); return u?u[0]:''; }).filter(Boolean);
 }
-function n8nCal(payload){ n8nHook(BACKEND.calendarWebhook,payload); }
-function n8nHook(url,payload){
-  if(!url) return;
-  // one-way notification: no-cors + a simple content type avoids the preflight that
-  // an unpublished or CORS-unaware workflow would fail. We never read the response.
-  try{
-    fetch(url,{method:'POST',mode:'no-cors',keepalive:true,
-      headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify(payload)})
-      .catch(()=>{});
-  }catch(e){}
-}
+function n8nCal(payload){ relayFire('calendar',payload); }
+function n8nHook(action,payload){ if(action) relayFire(action,payload); }
 
 const CLIENTS = [
   {id:'c1', uci:'4023180', name:'Client 4023180',  init:'18', home:'Maple House',   age:34, since:'2021-03-14', guardian:'Guardian on file', tag:'gr',
@@ -3581,7 +3596,15 @@ const NP_WS=(()=>{                                                   // one name
     return slug+((()=>{ try{ return new URLSearchParams(location.search).get('demo')==='1'?'-demo':''; }catch(e){ return ''; } })());
   }catch(e){ return 'default'; }
 })();
-const LSK=k=>'np__'+NP_WS+'__'+String(k).replace(/^np_/,'');
+/* v12.9: what this browser remembers is kept per account. It used to be kept per
+   dashboard, so a second agency signing up on a browser that had been used for another
+   one inherited that agency's name, its owner's name, its deletions and its layout.
+   The sign-in itself stays at dashboard level, because it is how we know whose it is. */
+var NP_ACCT='';
+const NP_DEVICE_KEYS={auth:1};
+const acctSlug=e=>String(e||'').trim().toLowerCase().replace(/[^a-z0-9@._+-]/g,'');
+const LSK=k=>{ const kk=String(k).replace(/^np_/,'');
+  return 'np__'+NP_WS+'__'+((NP_ACCT&&!NP_DEVICE_KEYS[kk])?NP_ACCT+'__':'')+kk; };
 const lsGet=k=>{try{return localStorage.getItem(LSK(k));}catch(e){return null;}};
 const lsSet=(k,v)=>{try{localStorage.setItem(LSK(k),v);}catch(e){}};
 const lsDel=k=>{try{localStorage.removeItem(LSK(k));}catch(e){}};
@@ -3596,6 +3619,23 @@ const lsDel=k=>{try{localStorage.removeItem(LSK(k));}catch(e){}};
     });
   }catch(e){}
 })();
+(function acctScopeInit(){
+  try{
+    const r=localStorage.getItem('np__'+NP_WS+'__auth'); const a=r&&JSON.parse(r);
+    NP_ACCT=acctSlug(a&&a.email);
+    if(!NP_ACCT) return;
+    /* everything saved before this version belongs to whoever last signed in here */
+    const pre='np__'+NP_WS+'__';
+    Object.keys(localStorage).forEach(k=>{
+      if(k.indexOf(pre)!==0) return; const rest=k.slice(pre.length);
+      if(rest.indexOf('__')>-1||NP_DEVICE_KEYS[rest]) return;
+      const to=pre+NP_ACCT+'__'+rest;
+      if(localStorage.getItem(to)===null) localStorage.setItem(to,localStorage.getItem(k));
+      localStorage.removeItem(k);
+    });
+  }catch(e){}
+})();
+const BOOT_ACCT=NP_ACCT;                                              // whose data this page loaded
 state.hideSample = lsGet('np_hide_sample')==='1';
 function isSampleAppt(a){ return String(a.id).length<=4; }   // seeds a1..a99; user appts a<timestamp>
 function toggleSample(){
@@ -4268,11 +4308,14 @@ function applySetup(){
 }
 /* called by the onboarding script when the last step is confirmed */
 window.onboardingDone=function(setup){
-  const carried={name:ONB.name||'',domain:ONB.domain||'',email:ONB.email||''};
+  lsDel('np_setup_pending');
+  const carried={name:ONB.name||'',domain:ONB.domain||'',email:ONB.email||'',org:ONB.org||'',roleTitle:ONB.roleTitle||''};
+  if(setup&&(!setup.org||setup.org==='Spectrum')&&carried.org) setup.org=carried.org;
   ONB=Object.assign({},carried,setup||{});
   if(!ONB.name) ONB.name=carried.name;
   if(!ONB.email) ONB.email=carried.email;
   if(!ONB.domain) ONB.domain=carried.domain;
+  if(!ONB.roleTitle&&carried.roleTitle) ONB.roleTitle=carried.roleTitle;
   hideWelcome();
   lsSet('np_onboarding',JSON.stringify(ONB));
   const r=(ONB.role&&ME[ONB.role])?ONB.role:'director';
@@ -4419,22 +4462,29 @@ function bootPortal(){
   setInterval(()=>{ if(iso(new Date())!==T) location.reload(); },60000);   // roll to the new day live
   TEMP_LIMIT=+(lsGet('np_temp_limit')||120);
   loadSetup(); loadAuth(); applySetup();
+  if(lsGet('np_setup_pending')&&authReady()&&AUTH.session){ hideOnboarding(); newAgencyContinue(); return; }   // v12.9: a new agency's setup
   if(!(ONB.role&&ME[ONB.role]) && (authReady()||lsGet('np_reg_done'))){
     // this browser knows the account but not the workspace — ask the backend before
     // offering setup, so an outage can never make a returning user look brand new
     hideWelcome(); hideOnboarding();
     el('login').style.display='flex';
     if(authReady()) showLoginForm(); else showLoginPage();
+    /* v12.9: the first load ran before the saved sign-in was read, so it had no account to
+       load for. With the session known now, load this account's workspace. */
+    if(AUTH.session&&sbOn()){ ORG_READY=false; HYDRATING=sbHydrate(); }
     whenHydrated(()=>{
-      if(ONB.role&&ME[ONB.role]&&authReady()&&AUTH.session&&lsGet('np_resume')) signIn(ONB.role);
+      if(roleFor()&&authReady()&&AUTH.session&&lsGet('np_resume')) signIn(roleFor());
     },5000);
     return;
   }
   if(ONB.role && ME[ONB.role]){                                    // returning user
     hideWelcome(); hideOnboarding();
-    if(authReady() && AUTH.session && lsGet('np_resume')){ signIn(ONB.role); return; }   // active session resumes
+    if(authReady() && AUTH.session && lsGet('np_resume')){ const pre=USERS[(AUTH.email||'').toLowerCase()];   // active session resumes
+      signIn(pre&&ME[pre.role]?pre.role:ONB.role);
+      whenHydrated(()=>{ const r=roleFor(); if(r==='staff'&&state.role!=='staff') signIn('staff'); },5000);   // a staff account never opens the director view
+      return; }
     el('login').style.display='flex';
-    showLoginForm(); return;                                        // always the sign-in page, never the quick-access picker
+    showLoginPage(); return;                                        // v12.11: the full sign-in page, with "use a different account" and "create an agency" 
   }
   try{ const w=lsGet('np_welcome'); if(w){ const d=JSON.parse(w)||{}; Object.assign(ONB,d); window.__welcome=d; } }catch(e){}
   if(ONB.name){                                                                                // welcome done, setup unfinished
@@ -4491,6 +4541,10 @@ function idleReset(){
 function setIdle(v){ IDLE_MIN=+v||0; lsSet('np_idle_min',String(IDLE_MIN)); userSetSave({idle:IDLE_MIN}); idleReset(); toast(IDLE_MIN?('Auto sign-out after '+IDLE_MIN+' minutes idle — just for your account.'):'Auto sign-out is off for your account.'); }
 ['click','keydown','mousemove','scroll','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{ if(AUTH.signedIn) idleReset(); },{passive:true}));
 function signOut(){
+  /* v12.11: end the session on the server as well, and reload afterwards so nothing the
+     last account loaded stays in this tab's memory for whoever signs in next. */
+  try{ const tk=sbTok(); if(tk&&BACKEND.url) fetch(BACKEND.url+'/auth/v1/logout',{method:'POST',keepalive:true,
+    headers:{apikey:BACKEND.anon,Authorization:'Bearer '+tk}}).catch(()=>{}); }catch(e){}
   orgForget(); AUTH.session=null; saveAuth();
   if(typeof tourEnd==='function') tourEnd();
   const f=el('tlFull'); if(f) f.remove();
@@ -4503,6 +4557,7 @@ function signOut(){
     lsDel('np_resume');
     el('login').style.display='flex';
     showLoginPage();
+    if(sbOn()) setTimeout(()=>{ try{ location.replace(location.pathname); }catch(e){} },150);
     return;
   }
   if(!showWelcome() && !showOnboarding()) el('login').style.display='flex';
@@ -11212,7 +11267,7 @@ function binderFiles(key){
   const ud={forms:[],res:[]};
   for(const id in USER_DOCS){ const d=USER_DOCS[id]; if(normBinder(d.key).b===key){ (d.sec==='res'?ud.res:ud.forms).push({n:d.name, docId:id, editable:true, url:d.url||'', desc:'Uploaded · editable in‑app', sub:''}); } }
   // v9.41: blank fillable forms live on the Templates page now — binders keep completed paperwork
-  return { forms:[], resources:[...libs.flatMap(L=>(L.res||[]).map(x=>libRow(x[0],x[1]))), ...ud.res, ...userLibs.flatMap(U=>U.res||[]), ...(stock[key]||[]), ...fromDocs] };
+  return { forms:[], resources:[...libs.flatMap(L=>(L.res||[]).map(x=>libRow(x[0],x[1]))), ...ud.res, ...userLibs.flatMap(U=>U.res||[]), ...(stock[key]||[]), ...fromDocs].filter(libVisible(key)) };
 }
 function binderBlankForms(key){
   const legacyKeys=Object.keys(LEGACY_BINDERS).filter(k=>LEGACY_BINDERS[k].b===key);
@@ -11220,7 +11275,7 @@ function binderBlankForms(key){
   const userLibs=[USER_LIB[key],...legacyKeys.map(k=>USER_LIB[k])].filter(Boolean);
   const ud=[];
   for(const id in USER_DOCS){ const d=USER_DOCS[id]; if(normBinder(d.key).b===key&&d.sec!=='res') ud.push({n:d.name, docId:id, editable:true, url:d.url||'', desc:'Uploaded · editable in‑app', sub:''}); }
-  return [...libs.flatMap(L=>(L.forms||[]).map(x=>libRow(x[0],x[1]))), ...ud, ...userLibs.flatMap(U=>U.forms||[])];
+  return [...libs.flatMap(L=>(L.forms||[]).map(x=>libRow(x[0],x[1]))), ...ud, ...userLibs.flatMap(U=>U.forms||[])].filter(libVisible(key));
 }
 let COMPLETED={};
 const DOC_LIBRARY={
@@ -11688,7 +11743,7 @@ function libRowHtml(fl,key){
       <span class="row-ic">${ico}</span>
       <span class="row-copy"><strong>${canRn?rnName(fl.n,nv=>fl.dbId?libRenameTo(fl.dbId,nv):libRenameStockTo(fl.orig,nv),lk):esc(fl.n)}</strong><span>${esc(fl.sub||'')}</span></span>
       ${dirL?rmBtn([{l:'Open',ic:'\u2197',fn:openL},canRn&&{l:'Rename',ic:'\u270e',fn:()=>rnStartKey(lk)},
-        fl.dbId&&'-',fl.dbId&&{l:'Remove',ic:'\u2715',danger:true,fn:()=>libRemove(fl.dbId)}],'Document actions'):'<span class="go-sq">\u203a</span>'}</div>`;
+        '-',{l:'Delete',ic:'\u2715',danger:true,fn:()=>libDelete(key,fl)}],'Document actions'):'<span class="go-sq">\u203a</span>'}</div>`;
   }
   const sg=DOC_SIGS[fl.n];
   const isUser=!!USER_DOCS[fl.docId];
@@ -11696,19 +11751,17 @@ function libRowHtml(fl,key){
   const tag=` · <span style="color:#a9822f;font-weight:700">${isUser?'Uploaded · editable in‑app':'Editable in‑app'}</span>`;
   const edited=meta?` · Edited by ${esc(meta.by)} · ${esc(meta.at)}`:'';
   const signed=sg?` · <span style="color:#2e7d32;font-weight:700">✓ Signed — ${esc(sg.by)} · ${esc(sg.at)}</span>`:'';
-  let btns='';
-  if(!sg){ btns+=`<button class="btn gold sm" onclick="event.stopPropagation();openDocEditor('${fl.docId}')">Edit</button>`;
-           btns+=`<button class="btn ghost sm" onclick="event.stopPropagation();signDoc('${key}','${esc(fl.n)}')">✍ Sign</button>`; }
-  btns+=`<button class="btn ghost sm" onclick="event.stopPropagation();printSheet(docFilledHtml('${fl.docId}'))">Print</button>`;
-  if(fl.url) btns+=`<button class="btn ghost sm" onclick="event.stopPropagation();window.open('${fl.url}','_blank')">Original</button>`;
-  if(isUser && state.role==='director') btns+=`<button class="btn ghost sm" onclick="event.stopPropagation();docRemove('${fl.docId}')">✕</button>`;
-  const rid2='le'+String(fl.docId||fl.n).replace(/[^A-Za-z0-9]/g,'').slice(0,24);
-  const op2=state.openLib===rid2;
-  return `<div class="lrow" onclick="state.openLib=state.openLib==='${rid2}'?'':'${rid2}';render()">
-    <span class="row-ic honey">❏</span>
-    <span class="row-copy"><strong>${esc(fl.n)}</strong><span>${esc(fl.desc||fl.sub||'')}${tag}${edited}${signed}</span></span>
-    <span class="go-sq">${op2?'▾':'›'}</span></div>
-    ${op2?`<div style="background:var(--surface-2);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;gap:7px;flex-wrap:wrap" onclick="event.stopPropagation()">${btns}</div>`:''}`;
+  const dirE=state.role==='director';
+  const lk=fl.orig?'libs:'+fl.orig:'';
+  return `<div class="lrow" onclick="${fx(()=>sg?printSheet(docFilledHtml(fl.docId)):openDocEditor(fl.docId))}">
+    <span class="row-ic honey">\u274f</span>
+    <span class="row-copy"><strong>${dirE&&lk?rnName(fl.n,nv=>libRenameStockTo(fl.orig,nv),lk):esc(fl.n)}</strong><span>${esc(fl.desc||fl.sub||'')}${tag}${edited}${signed}</span></span>
+    ${rmBtn([!sg&&{l:'Fill it in',ic:'\u270d',fn:()=>openDocEditor(fl.docId)},
+      !sg&&state.role!=='family'&&{l:'Sign',ic:'\u270d',fn:()=>signDoc(key,fl.n)},
+      {l:'Print',ic:'\u2399',fn:()=>printSheet(docFilledHtml(fl.docId))},
+      fl.url&&{l:'Open the original',ic:'\u2197',fn:()=>window.open(fl.url,'_blank')},
+      dirE&&lk&&{l:'Rename',ic:'\u270e',fn:()=>rnStartKey(lk)},
+      dirE&&'-',dirE&&{l:'Delete',ic:'\u2715',danger:true,fn:()=>libDelete(key,fl)}],'Document actions')}</div>`;
 }
 function docFieldInput(fd,i,v){
   const val=v==null?(fd.def||''):v;
@@ -12166,10 +12219,11 @@ function udSaveFields(id){
 }
 function docRemove(id){
   const d=docById(id); if(!d||!USER_DOCS[id]) return;
-  if(!confirm('Remove "'+d.name+'" from this folder? This cannot be undone.')) return;
-  delete USER_DOCS[id]; delete EXAMPLE_VALUES[id];
-  sbDel('np_demo_example_docs','doc_id=eq.'+encodeURIComponent(id));
-  logAudit('Removed document',d.name); render(); toast('Document removed.');
+  askDelete('Remove '+esc(d.name)+'?','It comes out of this binder. This cannot be undone.',()=>{
+    delete USER_DOCS[id]; delete EXAMPLE_VALUES[id];
+    sbDel('np_demo_example_docs','doc_id=eq.'+encodeURIComponent(id));
+    logAudit('Removed document',d.name); render(); toast('Document removed.');
+  },'Remove');
 }
 
 /* ── v4.8b: turn an uploaded file into an editable in-app document ── */
@@ -12581,6 +12635,22 @@ function libRenameTo(dbId,nv){ const hit=libFind(dbId); if(!hit) return render()
 function libRenameStockTo(orig,nv){ nv=String(nv||'').trim(); if(!nv) return render();
   const cur=libName(orig); if(nv===orig) delete LIB_NAMES[orig]; else LIB_NAMES[orig]=nv;
   libNamesSave(); logAudit('Renamed document',`${cur} \u2192 ${nv}`); render(); toast('Renamed.'); }
+/* v12.9: every row under Resources & guidelines can be deleted. An uploaded file is removed;
+   a linked document (the ACRC and Alta Regional links, the sample files, a client document
+   the binder lists by category) comes off this binder, and the deletion is saved with the
+   rest so it stays gone after a reload and for everyone in the agency. */
+function libHideKey(key,fl){ return String(key)+'|'+(fl.orig||fl.n); }
+function libVisible(key){ return fl=>!isDeleted('libdoc',libHideKey(key,fl)); }
+function libDelete(key,fl){
+  if(fl.dbId) return libRemove(fl.dbId);
+  if(fl.docId&&USER_DOCS[fl.docId]) return docRemove(fl.docId);
+  askDelete('Remove '+esc(fl.n)+'?',`It comes off ${esc(FOLDER_NAMES[key]||key)} for everyone in the agency.${fl.url?' The linked page itself is not affected.':''}`,()=>{
+    delMark('libdoc',libHideKey(key,fl));
+    logAudit('Removed document',`${fl.n} \u00b7 ${FOLDER_NAMES[key]||key}`);
+    docAct('removed',fl.n,FOLDER_NAMES[key]||key,null);
+    render(); toast('Removed from the binder.');
+  },'Remove');
+}
 function libRemove(dbId){
   const hit=libFind(dbId); if(!hit) return;
   askDelete('Remove '+esc(hit.row.n)+'?','It comes out of this binder.',()=>{
@@ -12786,7 +12856,8 @@ function askDelete(title,body,fn,label){
      <button class="btn danger" onclick="const f=window._delFn;closeAll();if(f)f()">${label||'Delete'}</button>`);
 }
 function sbDel(t,q){ if(!sbOn()) return Promise.resolve(false);
-  return sbCheck('delete',t,fetch(`${BACKEND.url}/rest/v1/${t}?${q}`,{method:'DELETE',headers:sbH()})); }
+  const qq=(ORG_ID&&!ORG_UNSUPPORTED[t]&&!/(^|&)org_id=/.test(q||''))?(q+`&org_id=eq.${encodeURIComponent(ORG_ID)}`):q;   // v12.11: this agency only
+  return sbCheck('delete',t,fetch(`${BACKEND.url}/rest/v1/${t}?${qq}`,{method:'DELETE',headers:sbH()})); }
 
 function tplGenerate(id){
   const t=tplById(id);
@@ -14365,7 +14436,7 @@ function saveNotifPrefs(){
   userSetSave({notifprefs:NOTIF_PREFS});
   // hand the schedule to the automation backend so email/SMS can go out server-side
   // counts only — the appointment titles and client IDs never leave the portal
-  n8nHook(BACKEND.notifyWebhook,{event:'reminder.prefs',prefs:{lead:NOTIF_PREFS.lead,inapp:NOTIF_PREFS.inapp,
+  n8nHook('reminders',{event:'reminder.prefs',prefs:{lead:NOTIF_PREFS.lead,inapp:NOTIF_PREFS.inapp,
     email:NOTIF_PREFS.email,sms:NOTIF_PREFS.sms,emailTo:NOTIF_PREFS.emailTo,smsTo:NOTIF_PREFS.smsTo},
     user:ME[state.role].name, upcoming_count:upcomingReminders().length, phi:false});
   logAudit('Updated reminder settings',`${NOTIF_PREFS.lead}h · ${['in-app'].concat(NOTIF_PREFS.email?['email']:[],NOTIF_PREFS.sms?['text']:[]).join(', ')}`);
@@ -14688,6 +14759,17 @@ let USERS={};                                                        // email ->
 let USER_SET={};                                                     // email -> {prefs, tz, idle, notifprefs}
 function userKey(){ return ((AUTH.email||ONB.email||'').toLowerCase())||('role:'+state.role); }
 function usersSave(){ sbUpsert('np_demo_program',{key:'users',value:{map:USERS},updated_by:auditActor()}); }
+/* v12.11: add one person to the agency's team list without ever replacing it. The list is read
+   fresh from the agency first, so a slow load can never shrink it to just this person. */
+async function usersAddSelf(email,entry){
+  let rows=null;
+  try{ rows=await sbGet('np_demo_program','key=eq.users&select=value'); }catch(e){ rows=null; }
+  USERS[email]=entry;
+  if(!Array.isArray(rows)) return false;                            // could not read the list: better not to write it at all
+  const latest=rows[0]&&rows[0].value&&rows[0].value.map;
+  if(latest&&typeof latest==='object') Object.keys(latest).forEach(k=>{ if(!USERS[k]) USERS[k]=latest[k]; });
+  return usersSave();
+}
 function userSetSave(patch){
   const k=userKey();
   USER_SET[k]=Object.assign({},USER_SET[k]||{},patch);
@@ -14755,9 +14837,10 @@ function bindIdentity(role){
 }
 function loadAuth(){
   try{ const r=lsGet('np_auth'); if(r) AUTH=Object.assign(AUTH,JSON.parse(r)||{}); }catch(e){}
+  NP_ACCT=acctSlug(AUTH.email);
   return AUTH;
 }
-function saveAuth(){ lsSet('np_auth',JSON.stringify({email:AUTH.email,session:AUTH.session,mode:AUTH.mode})); }
+function saveAuth(){ lsSet('np_auth',JSON.stringify({email:AUTH.email,session:AUTH.session,mode:AUTH.mode})); NP_ACCT=acctSlug(AUTH.email); }
 async function accountTouch(evt){                                    // signup / login / agreement, tracked properly
   if(!sbOn()||!sbAuthed()) return false;
   /* v9.91: the membership has to be known before this row is written. Sending a null
@@ -14780,13 +14863,12 @@ async function accountTouch(evt){                                    // signup /
   };
   if(evt==='signup') row.registered_at=new Date().toISOString();
   const okRes=await sbCheck('account',` np_demo_accounts (${evt})`,
-    fetch(`${BACKEND.url}/rest/v1/np_demo_accounts?on_conflict=email,workspace`,{
+    fetch(`${BACKEND.url}/rest/v1/np_demo_accounts?on_conflict=org_id,email,workspace`,{
       method:'POST',
       headers:Object.assign({},sbH(),{Prefer:'resolution=merge-duplicates'}),
       body:JSON.stringify(row)
     }));
-  if(!okRes && evt==='signup')
-    toast('Account created, but the accounts table did not accept it — check the console.');
+  if(!okRes) console.warn('[np-demo] sign-in log line not saved ('+evt+')');
   return okRes;
 }
 function profileSave(){                                              // who signed up: name, role, title, email
@@ -14798,6 +14880,11 @@ function profileSave(){                                              // who sign
   sbUpsert('np_demo_program',{key:'orgid',value:{v:ORG_ID,org:ONB.org||''},updated_by:ONB.name||'signup'});
 }
 function authReady(){ return !!AUTH.email && AUTH.mode!=='none'; }
+/* which view this account opens: its entry on the team list first, then its own setup */
+function roleFor(){ const em=(AUTH.email||'').toLowerCase(); const b=USERS[em]; if(b&&ME[b.role]) return b.role;
+  if(MEMBER_ROLE&&ME[MEMBER_ROLE]) return MEMBER_ROLE;
+  const mine=!ONB.email||String(ONB.email).toLowerCase()===em;       // another account's setup on this browser never decides
+  return (mine&&ONB.role&&ME[ONB.role])?ONB.role:null; }
 async function sbAuth(path,body){
   const r=await fetch(BACKEND.url+'/auth/v1/'+path,{method:'POST',
     headers:{'Content-Type':'application/json',apikey:BACKEND.anon},
@@ -14880,7 +14967,7 @@ async function saveCredentials(){
 }
 /* the sign-in screen shown after sign-out once credentials exist */
 function showLoginForm(){
-  el('login').classList.add('credmode');
+  el('login').classList.add('credmode'); loginGoLabel('Sign in');
   el('loginTitle').textContent=ONB.name?('Welcome back, '+String(ONB.name).split(' ')[0]+'.'):'Sign in';
   el('loginSub').innerHTML='Sign in to the '+esc(ONB.org&&ONB.org!=='Spectrum'?ONB.org:'Delta Day Program')+' dashboard portal.';
   const cb0=el('credBox');
@@ -14889,16 +14976,30 @@ function showLoginForm(){
   el('credBox').style.display='block';
   const e=el('liEmail'); if(e){ e.value=AUTH.email||''; setTimeout(()=>el('liPw').focus(),60); }
 }
+function loginMark(t){ const lm=document.querySelector('#login .login-mark span:last-child'); if(lm) lm.textContent=t; }
+function loginGoLabel(t){ const b=el('liGo'); if(b) b.textContent=t; }
 function showRegisterGate(){
   hideOnboarding(); const wr=el('welRoot'); if(wr) wr.classList.remove('on');
   el('app').classList.remove('on'); el('login').style.display='flex';
   el('login').classList.add('credmode');
-  el('loginTitle').textContent='Create your account';
-  el('loginSub').innerHTML='Your role decides which view opens first. Powered by Spectrum Care Advisory OS · Beta.';
+  /* v12.9: this screen starts a new agency, with its own private workspace. It no longer
+     wears the name of whichever agency last used this browser. */
+  loginMark('Spectrum Care Advisory OS');
+  el('loginTitle').textContent='Set up a new agency';
+  el('loginSub').innerHTML='Your agency gets its own private workspace \u2014 its own clients, staff, documents and settings. Nobody outside it can see any of it.';
   el('roleGrid').style.display='none';
   const cb=el('credBox'); cb.style.display='block';
-  if(!el('regRole')) cb.insertAdjacentHTML('afterbegin',`<div class="field" id="regRoleWrap"><label>Your role</label><input class="inp" id="regRole" placeholder="e.g. Executive Director"></div>`);
-  if(!el('regSwap')) cb.insertAdjacentHTML('beforeend','<div id="regSwap" class="tiny" style="text-align:center;margin-top:12px">Already have an account? <a href="#" onclick="event.preventDefault();showLoginPage()" style="color:var(--navy);font-weight:800">Log in</a></div>');
+  const fe=el('liFresh'); if(fe) fe.remove();
+  const lf=el('loginFresh'); if(lf) lf.remove();
+  if(!el('regRole')) cb.insertAdjacentHTML('afterbegin',`<div id="regRoleWrap">
+    <div class="field"><label>Agency name</label><input class="inp" id="regOrg" placeholder="e.g. AI Paragon Care" autocomplete="organization"></div>
+    <div class="field"><label>Your name</label><input class="inp" id="regName" placeholder="e.g. Jordan Lee" autocomplete="name"></div>
+    <div class="field"><label>Your role</label><input class="inp" id="regRole" placeholder="e.g. Executive Director"></div></div>`);
+  const em=el('liEmail'); if(em){ em.value=''; em.placeholder='you@youragency.org'; }
+  const pw=el('liPw'); if(pw){ pw.value=''; pw.placeholder='At least 8 characters'; }
+  loginGoLabel('Create agency account');
+  setTimeout(()=>{ const o=el('regOrg'); if(o) o.focus(); },60);
+  if(!el('regSwap')) cb.insertAdjacentHTML('beforeend','<div id="regSwap" class="tiny" style="text-align:center;margin-top:12px"><div class="muted" style="margin-bottom:6px">Joining an agency that already uses this? Open the invite link your director sent you.</div>Already have an account? <a href="#" onclick="event.preventDefault();showLoginPage()" style="color:var(--navy);font-weight:800">Log in</a></div>');
   const ls=el('loginSwap'); if(ls) ls.remove();
   window._regMode=true;
 }
@@ -14910,7 +15011,10 @@ function showLoginPage(){
   const rs=el('regSwap'); if(rs) rs.remove();
   showLoginForm();
   const cb=el('credBox');
-  if(!el('loginFresh')) cb.insertAdjacentHTML('beforeend','<div id="loginFresh" class="tiny muted" style="text-align:center;margin-top:10px">Not you, or setting up a new agency? <a href="#" onclick="event.preventDefault();startFresh()">Start over on this dashboard</a></div>');
+  const lf0=el('loginFresh'); if(lf0) lf0.remove();
+  if(!el('loginFresh')) cb.insertAdjacentHTML('beforeend','<div id="loginFresh" class="tiny muted" style="text-align:center;margin-top:10px">'
+    +(AUTH.email?'Not '+esc(AUTH.email)+'? <a href="#" onclick="event.preventDefault();loginOtherAccount()">Use a different account</a><br>':'')
+    +'Setting up a new agency? <a href="#" onclick="event.preventDefault();showRegisterGate()">Create an agency account</a></div>');
   if(!el('loginSwap')) cb.insertAdjacentHTML('beforeend','<div id="loginSwap" class="tiny" style="text-align:center;margin-top:12px">Don\'t have an account? <a href="#" onclick="event.preventDefault();showRegisterGate()" style="color:var(--navy);font-weight:800">Sign up</a></div>');
 }
 async function finishRegister(){
@@ -14918,20 +15022,28 @@ async function finishRegister(){
   const inv=window._joinInvite;
   const roleTxt=inv?(inv.role_title||'Staff'):(((el('regRole')&&el('regRole').value)||'').trim());
   const role=inv?'staff':(/\b(staff|dsp|support professional|aide|caregiver|nurse)\b/i.test(roleTxt)?'staff':'director');
+  if(!inv&&el('regOrg')&&!String(el('regOrg').value||'').trim()){ el('regOrg').focus(); return toast('Give your agency a name.'); }
   const r=await authRegister(em,pw);                                // Supabase Auth when the backend is configured
   if(!r.ok) return toast(r.msg);
   try{ lsSet('np_reg_done','1'); lsSet('np_resume','1'); }catch(e){}
   if(inv){                                                          // invited staff: the workspace already exists — no setup flow
+    /* v9.90: the new account starts in its own empty organization. Redeeming the token is
+       what moves it into the inviting agency, and the database marks the invite used.
+       v12.11: the invite only works for the address it was sent to, and nothing of the
+       inviting agency (not even its name) is kept on this account until the join succeeds. */
+    const joined=await orgJoinByToken(inv.token);
+    if(!joined){
+      ONB={email:AUTH.email||em}; lsSet('np_onboarding',JSON.stringify(ONB));
+      const sent=String(inv.email||'').toLowerCase(), used=String(AUTH.email||em).toLowerCase();
+      toast(sent&&sent!==used
+        ? 'This invite was sent to '+inv.email+'. Open it again and sign up with that address.'
+        : 'That invite could not be redeemed \u2014 ask your director to send a new one.');
+      return;
+    }
     ONB.org=inv.org||ONB.org; ONB.name=inv.name||''; ONB.role='staff'; ONB.roleTitle=inv.role_title||'';
     ONB.email=AUTH.email||em; ONB.registeredAt=new Date().toISOString();
     lsSet('np_onboarding',JSON.stringify(ONB));
-    USERS[(AUTH.email||em).toLowerCase()]={sid:inv.sid,role:'staff',name:inv.name||''};
-    usersSave();
-    /* v9.90: the new account starts in its own empty organization. Redeeming the token is
-       what moves it into the inviting agency, and the database marks the invite used. */
-    const joined=await orgJoinByToken(inv.token);
-    if(!joined){ toast('That invite could not be redeemed \u2014 ask your director to send a new one.'); return; }
-    profileSave(); accountTouch('signup');
+    accountTouch('signup');                                          // v12.11: the agency's profile is its owner's; a new staff member never overwrites it
     logAudit('Staff joined from an invite',`${inv.name||em} · ${em}`);
     window._joinInvite=null; window._regMode=false;
     const rw2=el('regRoleWrap'); if(rw2) rw2.remove();
@@ -14940,28 +15052,61 @@ async function finishRegister(){
     try{ history.replaceState(null,'',location.pathname); }catch(e){}
     toast('Welcome aboard'+(inv.name?', '+String(inv.name).split(' ')[0]:'')+'.'+(/confirm/i.test(r.msg||'')?' Confirm your email when you get a minute — you\u2019ll need it to sign in next time.':''));
     HYDRATING=sbHydrate();
-    await Promise.race([HYDRATING, new Promise(r2=>setTimeout(r2,4000))]);
+    await Promise.race([HYDRATING, new Promise(r2=>setTimeout(r2,15000))]);   // v12.11: the team list must be in before it is added to
+    /* v12.11: only now, inside the agency and with its team list loaded, add this account to it.
+       Written earlier it landed in the throwaway sign-up agency and the real list never knew
+       this person was staff, so on another device they opened as a director. */
+    MEMBER_ROLE='staff';
+    await usersAddSelf((AUTH.email||em).toLowerCase(),{sid:inv.sid,role:'staff',name:inv.name||''});
     signIn('staff');
     return;
   }
-  ONB.email=ONB.email||AUTH.email; ONB.role=role; if(roleTxt) ONB.roleTitle=roleTxt;
-  ONB.registeredAt=ONB.registeredAt||new Date().toISOString();
-  orgEnsure();
+  /* v12.9: a new agency starts from nothing. Nothing is carried over from whichever agency
+     last used this browser: not its name, not its owner, not anything it had loaded. */
+  const orgName=((el('regOrg')&&el('regOrg').value)||'').trim(), myName=((el('regName')&&el('regName').value)||'').trim();
+  ONB={org:orgName||'', name:myName, email:AUTH.email||em, role, roleTitle:roleTxt||'', registeredAt:new Date().toISOString()};
   lsSet('np_onboarding',JSON.stringify(ONB));
-  profileSave(); await accountTouch('signup');
-  if(ONB.email) sbUpsert('np_demo_program',{key:'email',value:{v:ONB.email},updated_by:ONB.name||'signup'});
+  lsSet('np_welcome',JSON.stringify({name:myName,domain:'',email:ONB.email}));
+  lsSet('np_setup_pending','1'); lsSet('np_reg_done','1');
+  if(sbAuthed()&&ORG_ID){ await newAgencySave(); await accountTouch('signup'); }
   window._regMode=false;
-  const rw=el('regRoleWrap'); if(rw) rw.remove();
-  const rs=el('regSwap'); if(rs) rs.remove();
-  el('login').style.display='none';
-  toast('Account created — let\'s set up your workspace.');
-  showWelcome();
+  if(!sbAuthed()&&sbOn()){                                            // the backend wants the email confirmed first
+    el('liErr').style.display='none';
+    showLoginPage(); loginMark('Spectrum Care Advisory OS');
+    el('loginTitle').textContent='Check your email';
+    el('loginSub').innerHTML='Confirm your email address, then sign in here to finish setting up <b>'+esc(orgName||'your agency')+'</b>.';
+    const e2=el('liEmail'); if(e2) e2.value=AUTH.email||em;
+    return;
+  }
+  location.replace(location.pathname+location.search);               // a clean page for the new agency
+}
+async function newAgencySave(){
+  if(!sbOn()||!sbAuthed()||!ORG_ID) return;
+  if(ONB.org) sbUpsert('np_demo_program',{key:'org',value:{name:ONB.org,site:ONB.domain||''},updated_by:ONB.name||'signup'});
+  if(ONB.email) sbUpsert('np_demo_program',{key:'email',value:{v:ONB.email},updated_by:ONB.name||'signup'});
+  sbUpsert('np_demo_program',{key:'hidesample',value:{v:true},updated_by:'signup'});
+  lsSet('np_hide_sample','1'); state.hideSample=true;
+  profileSave();
+}
+/* the new agency's setup: the same questions as before, with what was given at sign-up filled in */
+async function newAgencyContinue(){
+  hideWelcome(); el('login').style.display='none'; el('app').classList.remove('on');
+  if(sbOn()&&sbAuthed()){ try{ await orgResolve(); }catch(e){} if(ORG_ID) await newAgencySave(); }
+  window.__welcome={name:ONB.name||'',domain:ONB.domain||'',email:ONB.email||'',org:ONB.org||''};
+  if(typeof window.onboardingSetIdentity==='function') window.onboardingSetIdentity(window.__welcome);
+  if(!showOnboarding()){ lsDel('np_setup_pending'); signIn(ONB.role&&ME[ONB.role]?ONB.role:'director'); }
+}
+function loginOtherAccount(){
+  const e=el('liEmail'); if(e){ e.value=''; e.focus(); } const p=el('liPw'); if(p) p.value='';
+  el('loginTitle').textContent='Sign in'; el('loginSub').textContent='Sign in to your agency\u2019s workspace.';
+  loginMark('Spectrum Care Advisory OS');
 }
 function startFresh(){
   askDelete('Start over on this dashboard?','Signs you out and clears this browser\'s saved setup for this dashboard only. Nothing stored in the workspace is deleted.',()=>{
     try{
-      const pre='np__'+NP_WS+'__';
+      const pre='np__'+NP_WS+'__'+(NP_ACCT?NP_ACCT+'__':'');           // v12.9: this account only
       Object.keys(localStorage).filter(k=>k.indexOf(pre)===0).forEach(k=>localStorage.removeItem(k));
+      localStorage.removeItem('np__'+NP_WS+'__auth');
     }catch(e){}
     location.replace(location.pathname);
   },'Start over');
@@ -14979,14 +15124,17 @@ async function doLogin(){
   if(!r.ok){ el('liErr').textContent=r.msg; el('liErr').style.display='block'; return; }
   el('liErr').style.display='none';
   try{ lsSet('np_resume','1'); }catch(e){}
+  /* v12.9: this page still holds whatever the last account loaded. Another account starts
+     from a clean page, so nothing of one agency can show in, or be saved into, another. */
+  if(NP_ACCT!==BOOT_ACCT){ location.replace(location.pathname+location.search); return; }
+  if(lsGet('np_setup_pending')) return newAgencyContinue();
   logAudit('Signed in',AUTH.email);
   // this account may already have a workspace on another device — load it before anything else
   ORG_READY=false;
   await orgResolve(AUTH.email);
   HYDRATING=sbHydrate();
   await Promise.race([HYDRATING, new Promise(r2=>setTimeout(r2,4000))]);
-  const b=USERS[(AUTH.email||'').toLowerCase()];
-  signIn(b&&ME[b.role]?b.role:((ONB.role&&ME[ONB.role])?ONB.role:'director'));
+  signIn(roleFor()||'director');
 }
 
 /* ══════════════ v6.3: RECENT DOCUMENT ACTIVITY ══════════════
@@ -15064,7 +15212,7 @@ function extAlert(kind,count){
 function extNotify(kind,count,opts){
   opts=opts||{};
   const body=extAlert(kind,count);
-  n8nHook(BACKEND.notifyWebhook,{
+  n8nHook('reminders',{
     event:'alert.external', kind, count:count||1,
     subject:'Spectrum Care Advisory OS', body, phi:false,
     channel:{email:!!NOTIF_PREFS.email, sms:!!NOTIF_PREFS.sms},
@@ -15273,9 +15421,8 @@ function inviteStaff(sid){
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="inviteCreate('${sid}')">Create invite link</button>`);
 }
 function sendPortalEmail(to,subject,html){
-  if(!BACKEND.emailWebhook) return Promise.reject(new Error('no webhook'));
-  return fetch(BACKEND.emailWebhook,{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({token:BACKEND.emailToken,to,subject,html})});
+  if(!relayOn()) return Promise.reject(new Error('no relay'));
+  return relayCall('email',{to,subject,html});                         // the email token is added on the server
 }
 function inviteSendNow(sid,email,link){
   const st=staff(sid); if(!st) return;
@@ -15288,7 +15435,9 @@ function inviteSendNow(sid,email,link){
     <p style="font-size:12px;color:#666">Or paste this link into your browser:<br>${esc(link)}</p>
     <p style="font-size:12px;color:#666">The link signs you up in the staff view and works once.</p></div>`;
   sendPortalEmail(email,'You\u2019re invited to the '+org+' dashboard',html)
-    .then(()=>{ logAudit('Emailed portal invite',`${st.name} · ${email}`); toast('Invite emailed to '+email+'.'); })
+    .then(async r=>{
+      if(r&&r.ok===false){ const d=await r.json().catch(()=>({})); return toast((d&&d.error?d.error+' ':'')+'The invite was not sent \u2014 use Copy link or Gmail instead.'); }
+      logAudit('Emailed portal invite',`${st.name} · ${email}`); toast('Invite emailed to '+email+'.'); })
     .catch(()=>toast('Could not reach the email service — use Copy link or Gmail instead.'));
 }
 function inviteCreate(sid){
@@ -15296,7 +15445,7 @@ function inviteCreate(sid){
   const email=(el('ivEmail').value||'').trim().toLowerCase();
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Enter a valid email address.');
   if(st.email!==email){ st.email=email; sbPatch('np_demo_staff',sid,{email}); }
-  const token='iv'+Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+  const token='iv'+Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');   // v12.11: unguessable
   sbPush('np_demo_invites',{token,workspace:NP_WS,org:ONB.org||'',email,sid,name:st.name,role_title:st.role||'',invited_by:auditActor()});
   const link=location.origin+location.pathname+'?join='+token;
   logAudit('Invited staff to the portal',`${st.name} · ${email}`);
@@ -16034,7 +16183,7 @@ function pilotGateSign(){
   lsSet('np_pilot_agreed',JSON.stringify(PILOT_SIGNED));
   pilotRecordSigned();
   pilotPersist(nm);
-  n8nHook(BACKEND.notifyWebhook,{event:'pilot.signed',by:nm,agency,at:new Date().toISOString()});
+  n8nHook('reminders',{event:'pilot.signed',by:nm,agency,at:new Date().toISOString()});
   logAudit('Signed pilot agreement',`${agency} · ${nm}`);
   window._gateLock=false;
   closeAll(); render(); toast('Agreement signed — welcome aboard.');
@@ -16082,7 +16231,7 @@ function signPilot(){
   lsSet('np_pilot_agreed',JSON.stringify(PILOT_SIGNED));
   pilotRecordSigned();
   pilotPersist(nm);
-  n8nHook(BACKEND.notifyWebhook,{event:'pilot.signed',by:nm,role:state.role,at:new Date().toISOString()});
+  n8nHook('reminders',{event:'pilot.signed',by:nm,role:state.role,at:new Date().toISOString()});
   logAudit('Signed pilot agreement',nm);
   closeAll(); render(); toast('Agreement signed — a copy has been sent to AI Paragon Consulting.');
 }
@@ -16378,9 +16527,9 @@ function askTour(){
 }
 async function askViaBackend(q){
   try{
-    const r=await fetch(BACKEND.askWebhook,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({question:q, role:state.role, user:ME[state.role].name,
-        context:askContext(), history:ASK_HIST.slice(-6)})});
+    const r=await relayCall('ask',{question:q, role:state.role, user:ME[state.role].name,
+        context:askContext(), history:ASK_HIST.slice(-6)});
+    if(!r.ok) return null;
     const d=await r.json();
     return d.reply||d.answer||null;
   }catch(e){ console.warn('[np-demo] ask backend failed',e); return null; }
@@ -16450,7 +16599,7 @@ function askSend(preset){
   log.insertAdjacentHTML('beforeend',`<div class="msg me">${esc(q)}</div>`);
   askRecord('me',q);
   log.scrollTop=log.scrollHeight;
-  if(BACKEND.askWebhook){
+  if(relayOn()){
     log.insertAdjacentHTML('beforeend',`<div class="msg bot" id="askWait">Thinking…</div>`);
     log.scrollTop=log.scrollHeight;
     askViaBackend(q).then(reply=>{
@@ -16841,6 +16990,9 @@ function credRowFromDb(r){
 }
 let HYDRATED=false, HYDRATING=null, HYDRATE_OK=false;
 async function sbHydrate(){
+  if(!sbAuthed()&&!JOIN_TOKEN){ try{ loadAuth(); }catch(e){} }        // v12.9: the saved sign-in first, or there is no one to load for
+  /* v12.11: an invite link is always a new person joining. Loading the previous account's
+     agency here would put its records in memory, where the join could save them onward. */
   delLoad();
   if(!sbOn()){ applyDeletions(); HYDRATED=true; return; }
   await orgResolve();                                                // which agency am I? the membership answers
@@ -17036,14 +17188,19 @@ async function sbHydrate(){
       if(r.key==='clientnotes'&&r.value&&r.value.map){ Object.assign(CLIENT_NOTES,r.value.map); }
       if(r.key==='prognotes'&&r.value&&r.value.map){ Object.entries(r.value.map).forEach(([cid,ns])=>{ PROG_NOTES[cid]=ns; }); }
       if(r.key==='email'&&r.value&&typeof r.value.v==='string'){ ONB.email=r.value.v; lsSet('np_onboarding',JSON.stringify(ONB)); }
-      if(r.key==='orgid'&&r.value&&r.value.v){ ORG_ID=r.value.v; lsSet('np_org_id',ORG_ID); }
+      /* v12.11: which agency this is comes only from the membership (np_my_org). Stored
+         settings used to be able to overwrite it, so a bad value broke every save. */
       if(r.key==='profile'&&r.value&&typeof r.value==='object'){
-        if(r.value.org_id){ ORG_ID=r.value.org_id; lsSet('np_org_id',ORG_ID); }
-        if(r.value.name) ONB.name=r.value.name;
-        if(r.value.role&&ME[r.value.role]) ONB.role=r.value.role;
-        if(r.value.roleTitle) ONB.roleTitle=r.value.roleTitle;
-        if(r.value.email) ONB.email=ONB.email||r.value.email;
-        if(r.value.registered_at) ONB.registeredAt=r.value.registered_at;
+        /* v12.9: this is the person who set the agency up. It describes someone else when a
+           staff member signs in, so it only fills in who you are when it is you. */
+        const mine=!r.value.email||!AUTH.email||String(r.value.email).toLowerCase()===String(AUTH.email).toLowerCase();
+        if(mine){
+          if(r.value.name) ONB.name=r.value.name;
+          if(r.value.role&&ME[r.value.role]) ONB.role=r.value.role;
+          if(r.value.roleTitle) ONB.roleTitle=r.value.roleTitle;
+          if(r.value.email) ONB.email=ONB.email||r.value.email;
+          if(r.value.registered_at) ONB.registeredAt=r.value.registered_at;
+        }
         lsSet('np_onboarding',JSON.stringify(ONB)); applySetup();
       }
       if(r.key==='org'&&r.value&&r.value.name){ ONB.org=r.value.name; if(typeof r.value.site==='string'&&r.value.site) ONB.domain=r.value.site; lsSet('np_onboarding',JSON.stringify(ONB)); applySetup(); }
@@ -17413,6 +17570,8 @@ captureSamples();   // end of script, every seed declared — still guaranteed b
     firstName = incoming ? incoming.split(' ')[0] : '';
     siteUrl   = ((info && info.domain) || '').trim();
     applyIdentity();
+    var og=((info && info.org) || '').trim();
+    if(og){ var oe=$('#org'); if(oe) oe.value=og; state.org=og; syncPreview(); syncNext(); }
   };
   applyIdentity();
 
