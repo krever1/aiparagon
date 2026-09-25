@@ -3125,6 +3125,8 @@ body.ai-hi .rd-cta .ai-mark,body.ai-hi .rd-btn.pri .ai-mark{box-shadow:0 0 0 3px
 
     <div class="rd-sb-sec ap-eng">Engine 3 <em>Marketing</em></div>
     <button class="sb-item sb-sub" data-view="e3overview" onclick="apGo('e3overview')"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span>Overview</span></button>
+    <button class="sb-item sb-sub" data-view="e3create" onclick="apGo('e3create')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Create content</span></button>
+    <button class="sb-item sb-sub" data-view="e3briefs" onclick="apGo('e3briefs')"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/></svg><span>Intelligence briefs</span><span class="bdg" id="e3BriefBdg" style="display:none"></span></button>
     <button class="sb-item sb-sub" data-view="e3intel" onclick="apGo('e3intel')"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span title="Competitor Intelligence Tracker">Competitor Intel Tracker</span><span class="bdg" id="e3Bdg">0</span></button>
     <button class="sb-item sb-sub" data-view="e3ads" onclick="apGo('e3ads')"><svg viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6L7 10z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg><span>Ad Strategist</span></button>
     <button class="sb-item sb-sub" data-view="e3funnel" onclick="apGo('e3funnel')"><svg viewBox="0 0 24 24"><path d="M3 4h18l-7 8v7l-4 2v-9z"/></svg><span>Content Generation</span></button>
@@ -22054,7 +22056,7 @@ const AP_SUITE=[
    reads:'The newest brief, your offer and your brand voice',
    makes:'Ad hooks and body, survey, landing and booking pages, three ad images, and a test plan',
    feeds:'You. Nothing goes live until it is approved',
-   runs:'On demand, or sent from Uploads & runs'}
+   runs:'On demand, from Uploads & runs, or from your own content in Create content'}
 ];
 function apSuiteHtml(){
   const card=function(a){
@@ -22379,7 +22381,8 @@ function apDemo(o){
   RD.aptab[o.page]=active;
   chrome.innerHTML=
     '<div class="rd-head"><div><div class="rd-eyebrow">'+esc(o.eyebrow)+'</div><h1>'+esc(o.title)+'</h1><p>'+esc(o.sub)+'</p></div>'+
-      (o.cta?'<button class="rd-cta" onclick="'+o.cta.go+'">'+RD_ICON.spark+esc(o.cta.label)+'</button>':'')+'</div>'+
+      (o.cta2?'<div class="rd-ctas"><button class="rd-cta" onclick="'+o.cta.go+'">'+esc(o.cta.label)+'</button><button class="rd-cta sec" onclick="'+o.cta2.go+'">'+esc(o.cta2.label)+'</button></div>'
+        :(o.cta?'<button class="rd-cta" onclick="'+o.cta.go+'">'+RD_ICON.spark+esc(o.cta.label)+'</button>':''))+'</div>'+
     '<div class="rd-purpose catalyst"><span class="tag e3">'+esc(o.purpose.tag)+'</span>'+
       '<span class="txt"><b>'+esc(o.purpose.bold)+'</b><small>'+esc(o.purpose.small)+'</small></span>'+
       '<span class="alt" id="apPurposeAlt">'+(o.purpose.alt||'')+'</span></div>'+
@@ -22493,6 +22496,7 @@ function apDemoFunnel(){
     tabs:[
       {key:'creatives',label:'Ad creatives',count:vcount,nodes:function(){return [document.getElementById('adImgBlock')];}},
       {key:'package',label:'Funnel package',nodes:function(){return pkg;}},
+      {key:'drafts',label:'Drafts from your content',count:function(){return apCfDraftCount();},render:function(h){apCfDraftsRender(h);}},
       {key:'takeaways',label:'Key takeaways',render:function(h){apRenderTakeaways(h,'funnel');}}
     ]});
 }
@@ -22517,7 +22521,7 @@ function apA3Html(){
           '<button class="rd-btn sm" onclick="apGo(\''+a.view+'\')">Open</button></div></div>';}).join('')+'</div></div>'+
     '<div class="ap-ways2" style="padding:14px 0 0">'+
       '<div class="w"><b>Start from the market</b><span>Competitor Intelligence Tracker \u2192 Ad Strategist \u2192 Content Generation</span></div>'+
-      '<div class="w"><b>Start from your content</b><span>Your content + Competitor Intelligence Tracker \u2192 Content Generation</span><em>Next build</em></div>'+
+      '<div class="w"><b>Start from your content</b><span>Your content + Competitor Intelligence Tracker \u2192 Content Generation</span><em style=\'background:#E6F4EC;border-color:#CDE9D8;color:#1F8A4C\'>Live</em></div>'+
     '</div></section>';
 }
 function apDemoOverview(){
@@ -22528,15 +22532,17 @@ function apDemoOverview(){
   const pend=apPendingDrafts().length;
   apDemo({page:'overview',eyebrow:'ENGINE 3 \u00b7 MARKETING',title:'Overview',
     sub:'Three agents that feed each other: read the market, find what works in ads, write from the newest brief.',
-    cta:pend?{label:'Review '+pend+' drafts',go:"apGo('e3intel');setTimeout(function(){apTab('queue')},900)"}:{label:'Build ad strategy',go:'apOpenBuildBrief()'},
+    cta:{label:'Repurpose content \u2192',go:"apCfStart('source')"},cta2:{label:'Start from an idea',go:"apCfStart('idea')"},
     purpose:{tag:'Engine 3',bold:'Market intelligence into content',small:'Two ways in: start from the market, or start from your own content.',
-      alt:'<span>Uploads and custom runs live in Uploads &amp; runs.</span><button class="rd-btn sm" onclick="apGo(\'e3history\')">Open</button>'},
+      alt:pend?'<span>'+pend+' reply draft'+(pend===1?'':'s')+' waiting in the engagement queue.</span><button class="rd-btn sm" onclick="apTab(\'queue\')">Review</button>'
+        :'<span>Uploads and custom runs live in Uploads &amp; runs.</span><button class="rd-btn sm" onclick="apGo(\'e3history\')">Open</button>'},
     strip:function(){return [
       {n:AP_INTEL.length,l:'Posts tracked',s:'latest intel',tab:'intel'},
       {n:apPendingDrafts().length,l:'Drafts to approve',s:'engagement queue',tab:'queue'},
       {n:AP_ADS.length,l:'Ads tracked',s:'Ad Strategist',tab:'agents'},
       {n:AP_RUNS.filter(function(r){return r.agent==='low_ticket_content';}).length,l:'Content runs',s:'funnel packages',tab:'agents'}];},
     tabs:[
+      {key:'flow',label:'Pipeline',render:function(h){apCfFlowRender(h);}},
       {key:'agents',label:'Agents',nodes:function(){return [main.querySelector('section[data-tp="agents"]')];}},
       {key:'intel',label:'Latest intel',nodes:function(){return [cols];},onShow:function(){if(cols)cols.dataset.show='intel';}},
       {key:'queue',label:'Engagement queue',count:pend||'',nodes:function(){return [cols];},onShow:function(){if(cols)cols.dataset.show='queue';}},
@@ -23093,6 +23099,839 @@ document.addEventListener('click',function(e){
     return f.apply(this,arguments);
   };
 })();
+</script>
+
+<style id="cf79css">
+/* ===== Engine 3 content pipeline (v79) ===== */
+.ap-cf{display:flex;flex-direction:column;gap:0;min-width:0}
+.ap-cf .lbl,.ap-cf-card .lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--rd-muted)}
+.ap-cf-card{background:#fff;border:1px solid var(--rd-line);border-radius:12px;box-shadow:var(--rd-shadow);min-width:0}
+.ap-cf-health{display:flex;flex-wrap:wrap;background:#fff;border:1px solid var(--rd-line);border-radius:10px;margin:0 0 22px}
+.ap-cf-health > div{display:flex;align-items:center;gap:8px;padding:11px 17px;font-size:13px;color:var(--rd-muted);border-right:1px solid var(--rd-line-soft)}
+.ap-cf-health > div:last-child{border-right:0}
+.ap-cf-health b{color:var(--rd-ink);font-weight:700}
+.ap-cf-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--rd-green);flex:none}
+.ap-cf-dot.gold{background:var(--rd-gold)}.ap-cf-dot.grey{background:#98A2B3}.ap-cf-dot.red{background:var(--rd-red)}
+.ap-cf-h{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin:0 2px 12px;flex-wrap:wrap}
+.ap-cf-h h3{margin:0;font-family:'Libre Caslon Text',serif;font-weight:400;font-size:21px;color:var(--rd-ink)}
+.ap-cf-h span{font-size:12.5px;color:var(--rd-muted)}
+.ap-cf-in{display:grid;grid-template-columns:.9fr 1.1fr;gap:18px}
+.ap-cf-in > .ap-cf-card,.ap-cf-out > .ap-cf-card{padding:20px 22px;display:flex;flex-direction:column;gap:8px}
+.ap-cf-hr{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.ap-cf-card h4{margin:4px 0 2px;font-family:'Libre Caslon Text',serif;font-weight:400;font-size:19px;color:var(--rd-ink);line-height:1.25}
+.ap-cf-card p{margin:0;font-size:13.5px;line-height:1.55;color:var(--rd-text)}
+.ap-cf-ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none;background:var(--rd-gold-soft);color:#8A6D1F;font-size:17px}
+.ap-cf-ic.g{background:var(--rd-green-soft);color:var(--rd-green)}
+.ap-cf-src{background:#FCFAF4;border:1px solid #EFE3C6;border-radius:10px;padding:12px 14px;margin:8px 0 4px}
+.ap-cf-src span{display:block;font-size:11px;color:#8A6D1F;letter-spacing:.06em}
+.ap-cf-src b{display:block;font-size:14px;color:var(--rd-ink);margin:3px 0}
+.ap-cf-src.empty{background:var(--rd-bg);border-color:var(--rd-line)}
+.ap-cf-src.empty span{color:var(--rd-muted);letter-spacing:0}
+.ap-cf-foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--rd-muted);padding-top:6px}
+.ap-cf-link{border:0;background:none;padding:0;font:inherit;font-size:13px;font-weight:700;color:var(--rd-blue);cursor:pointer;text-align:left}
+.ap-cf-link:hover{text-decoration:underline}
+.ap-cf-mini{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+.ap-cf-mini > div{border:1px solid var(--rd-line);background:#FBFCFD;border-radius:10px;padding:13px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.ap-cf-mini .t{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--rd-green)}
+.ap-cf-mini .t.paid{color:var(--rd-blue-ink)}
+.ap-cf-mini b{font-size:14px;color:var(--rd-ink)}
+.ap-cf-mini small{font-size:12px;color:var(--rd-muted);line-height:1.45}
+.ap-cf-mini .when{display:flex;align-items:center;gap:6px;margin-top:4px}
+.ap-cf-join{height:34px;position:relative;display:grid;place-items:center}
+.ap-cf-join:before{content:"";position:absolute;left:18%;right:18%;top:15px;height:1px;background:var(--rd-line)}
+.ap-cf-join:after{content:"";position:absolute;left:50%;top:15px;width:1px;height:19px;background:var(--rd-line)}
+.ap-cf-join span{position:relative;z-index:1;background:var(--rd-bg);padding:3px 12px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--rd-muted)}
+.ap-cf-bridge{background:var(--rd-navy);color:#fff;border-radius:14px;padding:22px 24px;display:grid;grid-template-columns:1fr 1.55fr auto;gap:22px;align-items:center}
+.ap-cf-bridge .k{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:#E6C77E;margin-bottom:6px}
+.ap-cf-bridge h4{margin:0 0 4px;font-family:'Libre Caslon Text',serif;font-weight:400;font-size:21px;color:#fff}
+.ap-cf-bridge p{margin:0;font-size:12.5px;color:#B8C2D6;line-height:1.5}
+.ap-cf-bridge .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.ap-cf-bridge .cols div{border-left:1px solid rgba(255,255,255,.18);padding-left:12px;font-size:12.5px;color:#C8D0E0;line-height:1.45;min-width:0}
+.ap-cf-bridge .cols b{display:block;color:#F4EAD2;font-size:12.5px;margin-bottom:4px}
+.ap-cf-bridge .act{display:flex;flex-direction:column;gap:7px;align-items:flex-end}
+.ap-cf-bridge small{font-size:11.5px;color:#B8C2D6}
+.ap-cf-gold{border:0;border-radius:9px;background:#F4EAD2;color:#5E4715;font:inherit;font-size:13.5px;font-weight:700;padding:10px 16px;cursor:pointer;white-space:nowrap}
+.ap-cf-gold:hover{background:#EFDDB2}
+.ap-cf-out{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.ap-cf-h.out{margin-top:26px}
+.ap-cf-chip{display:inline-block;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:700;white-space:nowrap;background:var(--rd-bg);color:var(--rd-text);border:1px solid var(--rd-line)}
+.ap-cf-chip.blue{background:var(--rd-blue-soft);color:var(--rd-blue-ink);border-color:#D6E2FB}
+.ap-cf-chip.gold{background:var(--rd-gold-soft);color:#8A6D1F;border-color:#EFE3C6}
+.ap-cf-chip.green{background:var(--rd-green-soft);color:var(--rd-green);border-color:#CDE9D8}
+.ap-cf-chip.red{background:var(--rd-red-soft);color:var(--rd-red);border-color:#F2D4CF}
+.ap-cf-latest{font-size:12.5px;color:var(--rd-muted);border-top:1px solid var(--rd-line-soft);padding-top:8px;margin-top:4px}
+.ap-cf-latest b{color:var(--rd-ink);font-weight:600}
+.ap-cf-loop{background:#fff;border:1px solid var(--rd-line);border-radius:12px;padding:13px 18px;margin-top:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--rd-muted)}
+.ap-cf-loop b{color:var(--rd-ink)}
+.ap-cf-loop i{font-style:normal;color:var(--rd-gold)}
+.ap-cf-loop span{margin-left:auto;font-size:12px}
+/* brief pages */
+.ap-cf-bl{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(270px,.72fr);gap:18px;align-items:start}
+.ap-cf-main,.ap-cf-side{padding:22px 24px}
+.ap-cf-bh{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border-bottom:1px solid var(--rd-line-soft);padding-bottom:15px;margin-bottom:16px}
+.ap-cf-bh h2{margin:4px 0 4px;font-family:'Libre Caslon Text',serif;font-weight:400;font-size:24px;color:var(--rd-ink)}
+.ap-cf-bh p{font-size:12.5px;color:var(--rd-muted)}
+.ap-cf-tags{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 16px}
+.ap-cf-tags span{border:1px solid var(--rd-line);border-radius:999px;background:#FBFCFD;color:var(--rd-text);padding:4px 10px;font-size:12px}
+.ap-cf-sum{font-size:14px!important;line-height:1.6!important;margin:0 0 16px!important}
+.ap-cf-sec{border-top:1px solid var(--rd-line-soft);padding-top:16px;margin-top:16px}
+.ap-cf-sec h3,.ap-cf-side h3,.ap-cf-rev h3{margin:0 0 10px;font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif!important;font-size:15px!important;font-weight:700!important;color:var(--rd-ink)}
+.ap-cf-sig{display:grid;gap:9px}
+.ap-cf-sig > div{border:1px solid var(--rd-line);border-radius:10px;padding:11px 13px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
+.ap-cf-sig b{font-size:13.5px;color:var(--rd-ink)}
+.ap-cf-sig p{font-size:13px!important;color:var(--rd-muted)!important;margin:3px 0 0!important}
+.ap-cf-note{font-size:12.5px!important;color:var(--rd-muted)!important;border-left:3px solid var(--rd-line);padding-left:10px;margin:12px 0 0!important}
+.ap-cf-appr{border-top:1px solid var(--rd-line-soft);margin-top:16px;padding-top:15px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ap-cf-appr .rd-btn{margin:0}
+.ap-cf-appr .m{font-size:12.5px;color:var(--rd-muted);max-width:420px}
+.ap-cf-side{position:sticky;top:12px}
+.ap-cf-side p{font-size:12.5px!important;color:var(--rd-muted)!important}
+.ap-cf-ev{padding:11px 0;border-bottom:1px solid var(--rd-line-soft);font-size:12.5px}
+.ap-cf-ev b{display:block;color:var(--rd-ink);margin-bottom:2px}
+.ap-cf-ev span{color:var(--rd-muted)}
+.ap-cf-call{background:var(--rd-bg);border-radius:9px;padding:11px 12px;margin:14px 0;font-size:12.5px;color:var(--rd-text);line-height:1.5}
+.ap-cf-side .rd-btn{margin:0}
+.ap-cf-pick{display:flex;align-items:center;gap:10px;margin:0 0 14px;flex-wrap:wrap}
+.ap-cf-pick label{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--rd-muted)}
+.ap-cf-pick select{font:inherit;font-size:13.5px;padding:7px 10px;border:1px solid var(--rd-line);border-radius:8px;background:#fff;max-width:420px}
+.ap-cf-pick span{font-size:12.5px;color:var(--rd-muted)}
+.ap-cf-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ap-cf-box{border:1px solid var(--rd-line);border-radius:10px;padding:14px 15px;background:#FBFCFD;min-width:0}
+.ap-cf-box h4{font-family:inherit!important;font-size:13px!important;font-weight:700!important;margin:0 0 8px!important;color:var(--rd-ink)}
+.ap-cf-box ul{margin:0;padding-left:17px}
+.ap-cf-box li{font-size:13px;line-height:1.5;color:var(--rd-text);margin:0 0 4px}
+.ap-cf-box.wide{grid-column:1/-1}
+.ap-cf-steps{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:12px 0;font-size:12px;color:var(--rd-text)}
+.ap-cf-steps span{background:var(--rd-bg);border-radius:6px;padding:4px 8px}
+.ap-cf-steps i{font-style:normal;color:var(--rd-gold)}
+.ap-cf-empty{padding:34px 26px;text-align:center}
+.ap-cf-empty h4{margin:0 0 6px}
+.ap-cf-empty p{max-width:520px;margin:0 auto 14px!important;color:var(--rd-muted)!important}
+.ap-cf-empty .rd-btn{margin:0 auto}
+/* create */
+.ap-cf-create{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(290px,.88fr);gap:18px;align-items:start}
+.ap-cf-form,.ap-cf-plan{padding:22px 24px}
+.ap-cf-form h3,.ap-cf-plan h3{margin:4px 0 4px;font-family:'Libre Caslon Text',serif;font-weight:400;font-size:21px;color:var(--rd-ink)}
+.ap-cf-form .help{font-size:13px!important;color:var(--rd-muted)!important;margin:0 0 16px!important}
+.ap-cf-path{display:flex;gap:10px;margin-bottom:16px}
+.ap-cf-path button{flex:1;border:1px solid var(--rd-line);background:#fff;border-radius:10px;padding:12px 13px;text-align:left;font:inherit;font-size:13.5px;font-weight:700;color:var(--rd-text);cursor:pointer}
+.ap-cf-path button small{display:block;font-weight:500;font-size:12px;color:var(--rd-muted);margin-top:2px}
+.ap-cf-path button.on{border-color:var(--rd-blue);background:var(--rd-blue-soft);color:var(--rd-blue-ink);box-shadow:0 0 0 1px var(--rd-blue) inset}
+.ap-cf-form label.f{display:block;font-size:12.5px;font-weight:700;color:var(--rd-text);margin:12px 0 0}
+.ap-cf-form label.f input,.ap-cf-form label.f textarea,.ap-cf-form label.f select{display:block;width:100%;box-sizing:border-box;margin-top:5px;font:inherit;font-size:13.5px;font-weight:400;padding:9px 11px;border:1px solid var(--rd-line);border-radius:8px;background:#fff;color:var(--rd-ink)}
+.ap-cf-form label.f textarea{resize:vertical;line-height:1.5}
+.ap-cf-form label.f input:focus,.ap-cf-form label.f textarea:focus,.ap-cf-form label.f select:focus{outline:none;border-color:var(--rd-blue);box-shadow:0 0 0 3px rgba(47,95,227,.12)}
+.ap-cf-form .cnt{float:right;font-weight:500;color:var(--rd-muted)}
+.ap-cf-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ap-cf-drop{margin-top:12px;border:1.5px dashed #CDD5E1;border-radius:10px;padding:14px;text-align:center;font-size:13px;color:var(--rd-text);background:#FBFCFD;cursor:pointer;position:relative}
+.ap-cf-drop.over{border-color:var(--rd-blue);background:var(--rd-blue-soft)}
+.ap-cf-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.ap-cf-drop small{display:block;color:var(--rd-muted);font-size:12px;margin-top:3px}
+.ap-cf-drop .msg{display:block;margin-top:6px;font-size:12.5px;font-weight:600;color:var(--rd-green)}
+.ap-cf-drop .msg.err{color:var(--rd-red)}
+.ap-cf-sep{border:0;border-top:1px solid var(--rd-line-soft);margin:20px 0 14px}
+.ap-cf-fmt{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0 2px}
+.ap-cf-fmt button{border:1px solid var(--rd-line);background:#fff;border-radius:8px;padding:8px 12px;font:inherit;font-size:13px;font-weight:600;color:var(--rd-text);cursor:pointer}
+.ap-cf-fmt button.on{background:var(--rd-navy);border-color:var(--rd-navy);color:#fff}
+.ap-cf-err{display:none;margin-top:12px;background:var(--rd-red-soft);color:var(--rd-red);border-radius:8px;padding:9px 12px;font-size:13px}
+.ap-cf-err.on{display:block}
+.ap-cf-go{margin:16px 0 0!important}
+.ap-cf-plan{position:sticky;top:12px}
+.ap-cf-plan p{font-size:13px!important;color:var(--rd-muted)!important}
+.ap-cf-mix{display:grid;gap:9px;margin:16px 0}
+.ap-cf-mix div{display:flex;gap:12px;align-items:flex-start;background:var(--rd-bg);border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--rd-text);line-height:1.45}
+.ap-cf-mix b{min-width:96px;color:var(--rd-ink)}
+.ap-cf-res{border-left:3px solid var(--rd-gold);padding:10px 14px;background:var(--rd-gold-soft);font-size:12.5px;color:#5E4715;border-radius:0 8px 8px 0}
+.ap-cf-stepsline{color:var(--rd-muted);font-size:12px;margin-top:14px}
+/* requests */
+.ap-cf-reqs{display:flex;flex-direction:column}
+.ap-cf-req{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;align-items:center;padding:14px 20px;border-top:1px solid var(--rd-line-soft)}
+.ap-cf-req:first-child{border-top:0}
+.ap-cf-req b{display:block;font-size:14px;color:var(--rd-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ap-cf-req small{font-size:12.5px;color:var(--rd-muted)}
+.ap-cf-req .errm{grid-column:1/-1;font-size:12.5px;color:var(--rd-red);margin-top:-6px}
+.ap-cf-req .rd-btn{margin:0}
+.ap-cf-prog{display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--rd-muted)}
+.ap-cf-prog i{width:22px;height:4px;border-radius:2px;background:var(--rd-line);display:inline-block}
+.ap-cf-prog i.on{background:var(--rd-blue)}
+.ap-cf-prog i.run{background:linear-gradient(90deg,var(--rd-blue) 0,#9BB4F3 50%,var(--rd-blue) 100%);background-size:200% 100%;animation:apCfRun 1.1s linear infinite}
+@keyframes apCfRun{from{background-position:200% 0}to{background-position:0 0}}
+/* draft review */
+.ap-cf-dl{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:18px;align-items:start}
+.ap-cf-draft,.ap-cf-rev{padding:22px 24px}
+.ap-cf-dm{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ap-cf-draft h2{margin:10px 0 4px;font-family:'Libre Caslon Text',serif;font-weight:400;font-size:24px;color:var(--rd-ink)}
+.ap-cf-draft > p{font-size:13px!important;color:var(--rd-muted)!important}
+.ap-cf-hooks{display:flex;gap:8px;margin:15px 0;flex-wrap:wrap}
+.ap-cf-hooks button{border:1px solid var(--rd-line);border-radius:8px;background:#fff;color:var(--rd-text);padding:7px 11px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.ap-cf-hooks button.on{background:var(--rd-gold-soft);border-color:#DCC18C;color:#6B4F1B}
+.ap-cf-paper{background:#FBFCFD;border:1px solid var(--rd-line);border-radius:12px;padding:22px 24px}
+.ap-cf-paper .hook{font-family:'Libre Caslon Text',serif;font-size:22px;line-height:1.3;color:var(--rd-ink);margin:0 0 14px}
+.ap-cf-paper .body p{font-size:14px!important;line-height:1.65!important;color:var(--rd-text)!important;margin:0 0 11px!important}
+.ap-cf-paper .cta{color:var(--rd-green);font-size:14px;font-weight:700;margin-top:4px}
+.ap-cf-paper .hl{font-size:12.5px;color:var(--rd-muted);margin-top:6px}
+.ap-cf-paper .tagsl{font-size:12.5px;color:var(--rd-blue-ink);margin-top:8px}
+.ap-cf-paper .foot{font-size:12px;color:var(--rd-muted);margin-top:14px;border-top:1px solid var(--rd-line-soft);padding-top:9px;display:flex;gap:6px 14px;flex-wrap:wrap}
+.ap-cf-trace{margin-top:10px;display:none}
+.ap-cf-trace.on{display:block}
+.ap-cf-trace div{font-size:12.5px;color:var(--rd-text);line-height:1.5;margin:0 0 6px}
+.ap-cf-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.ap-cf-acts .rd-btn{margin:0}
+.ap-cf-funnel{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:18px 0 0;font-size:12.5px;color:var(--rd-text)}
+.ap-cf-funnel span{border:1px solid var(--rd-line);border-radius:7px;padding:5px 9px;background:#fff}
+.ap-cf-funnel i{font-style:normal;color:var(--rd-gold)}
+.ap-cf-rev h3{margin:4px 0 4px!important;font-size:17px!important}
+.ap-cf-rev > p{font-size:12.5px!important;color:var(--rd-muted)!important;margin:0 0 12px!important}
+.ap-cf-chk{display:flex;gap:9px;align-items:flex-start;border-top:1px solid var(--rd-line-soft);padding:11px 0;font-size:13px;color:var(--rd-text);cursor:pointer}
+.ap-cf-chk input{margin-top:2px;accent-color:var(--rd-green)}
+.ap-cf-flags{background:var(--rd-amber-soft);border:1px solid #F0DDB5;border-radius:9px;padding:11px 12px;margin:10px 0;font-size:12.5px;color:#7A5312}
+.ap-cf-flags ul{margin:6px 0 0;padding-left:17px}
+.ap-cf-flags li{margin:0 0 5px;line-height:1.45}
+.ap-cf-stat{background:var(--rd-bg);border-radius:9px;padding:11px 12px;margin:12px 0;font-size:12.5px;color:var(--rd-text)}
+.ap-cf-rev .rd-btn{width:100%;justify-content:center;margin:0}
+.ap-cf-learn{margin-top:16px;padding:14px 15px;background:var(--rd-green-soft);border:1px solid #CDE9D8;border-radius:10px;font-size:12.5px;color:#23583A;line-height:1.5}
+.ap-cf-learn b{display:block;margin-bottom:3px;color:#1B4D30}
+@media(max-width:1180px){.ap-cf-bridge{grid-template-columns:1fr}.ap-cf-bridge .act{align-items:flex-start}}
+@media(max-width:980px){.ap-cf-in,.ap-cf-out,.ap-cf-bl,.ap-cf-create,.ap-cf-dl,.ap-cf-2,.ap-cf-mini,.ap-cf-row2{grid-template-columns:1fr}.ap-cf-bridge .cols{grid-template-columns:1fr}.ap-cf-side,.ap-cf-plan{position:static}.ap-cf-health > div{border-right:0}}
+.sb-item .bdg{flex:none;white-space:nowrap}
+</style>
+
+<script>
+/* ===================================================================
+   Engine 3 content pipeline (v79)
+   Two inputs (your content + market intel) meet in one creative brief,
+   Content Generation turns it into drafts, a person reviews both.
+   Backed by content_requests + workflow "Engine 3 · Content from Source" (/e3-content-run).
+   =================================================================== */
+AP_HOOKS.content_run=AP_N8N+'e3-content-run';
+AP_AGENTS.content_generation={label:'Content Generation Agent',engine:'e3',kind:'Agent 3 · From your content'};
+AP_VIEWS.e3create={page:'ap60',tag:'ENGINE 3',title:'Create content',v60:{engine:'e3',view:'create'}};
+AP_VIEWS.e3briefs={page:'ap60',tag:'ENGINE 3',title:'Intelligence briefs',v60:{engine:'e3',view:'briefs'}};
+const AP_CF_FMT={ad:'Paid ad',thought_leadership:'Thought leadership',newsletter:'Newsletter',email:'Email'};
+const AP_CF_SRC={article:'Article',podcast:'Podcast',interview:'Interview',book_chapter:'Book chapter',transcript:'Transcript',other:'Content'};
+const AP_CF_ST={queued:'Queued',extracting:'Reading your source',drafting:'Writing the draft',done:'Draft ready',error:'Failed'};
+let AP_CF=null;
+function apArr(v){if(Array.isArray(v))return v;if(typeof v==='string'){try{const p=JSON.parse(v);return Array.isArray(p)?p:[];}catch(e){return [];}}return [];}
+function apCfMe(){return (AP_USER&&AP_USER.email)||'dashboard';}
+async function apCfLoad(force){
+  if(AP_CF&&!force&&Date.now()-AP_CF.t<15000)return AP_CF;
+  const q=function(p){return apSb(p).catch(function(){return [];});};
+  const r=await Promise.all([
+    q('agent_outputs?select=id,run_id,title,created_at,content_md,data&agent=eq.intel_tracker&output_type=eq.intel_brief&order=created_at.desc&limit=10'),
+    q('creative_briefs?select=*&order=created_at.desc&limit=12'),
+    q('agent_feedback?select=id,agent,target_id,action,feedback,author,created_at&target_type=eq.brief_approval&order=created_at.desc&limit=300'),
+    q('content_requests?select=id,created_at,updated_at,requested_by,start_mode,format,title,source_type,source_file_name,status,error,run_id,output_id,brief,extraction,desired_action,intel_run,brief_run&order=created_at.desc&limit=60'),
+    q('agent_outputs?select=id,run_id,title,created_at,data&agent=eq.content_generation&output_type=eq.content_draft&order=created_at.desc&limit=60'),
+    q('agent_feedback?select=id,target_id,action,feedback,author,created_at&target_type=eq.draft_review&order=created_at.desc&limit=300'),
+    q('company_profile?select=business_name,industry,target_market&limit=1')
+  ]);
+  AP_CF={t:Date.now(),intel:r[0]||[],ads:r[1]||[],appr:r[2]||[],reqs:(r[3]||[]).map(function(x){x.brief=apJson(x.brief);x.extraction=apJson(x.extraction);return x;}),
+    drafts:(r[4]||[]).map(function(o){o.d=apJson(o.data);return o;}),revs:r[5]||[],prof:(r[6]||[])[0]||{}};
+  return AP_CF;
+}
+/* the latest decision on a brief: approved | changes | null */
+function apCfDecision(id){const C=AP_CF;if(!C||!id)return null;return C.appr.find(function(a){return String(a.target_id)===String(id);})||null;}
+function apCfReview(id){const C=AP_CF;if(!C||!id)return null;return C.revs.find(function(a){return String(a.target_id)===String(id)&&a.action==='ready';})||null;}
+function apCfDraftsToReview(){return AP_CF?AP_CF.drafts.filter(function(o){return !apCfReview(o.id);}).length:0;}
+function apCfChip(dec){
+  if(!dec)return '<span class="ap-cf-chip gold">Review pending</span>';
+  return dec.action==='approved'?'<span class="ap-cf-chip green">Approved</span>':'<span class="ap-cf-chip red">Changes requested</span>';
+}
+function apCfDecLine(dec,fallback){
+  if(!dec)return fallback;
+  return (dec.action==='approved'?'Approved':'Changes requested')+' by '+esc(String(dec.author||'').split('@')[0])+' '+esc(apAgo(dec.created_at))+(dec.feedback?': “'+esc(String(dec.feedback).slice(0,140))+'”':'');
+}
+function apCfClean(s){return String(s||'').replace(/\\([_*#])/g,'$1').replace(/\*\*/g,'').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').trim();}
+/* TL;DR bullets from the intel brief markdown: [{title,text}] */
+function apCfTldr(md){
+  const s=String(md||'');const i=s.search(/TL;DR/i);if(i<0)return [];
+  const rest=s.slice(i).split('\n').slice(1);const out=[];
+  for(const line of rest){
+    if(/^\s*(##|---)/.test(line)&&out.length)break;
+    const m=/^\s*[-*]\s+(.*)$/.exec(line);if(!m)continue;
+    const raw=m[1];const b=/^\*\*([^*]+?):?\*\*:?\s*(.*)$/.exec(raw);
+    out.push(b?{title:apCfClean(b[1]).replace(/:$/,''),text:apCfClean(b[2])}:{title:'',text:apCfClean(raw)});
+  }
+  return out;
+}
+function apCfIntelData(o){return o?apJson(o.data):{};}
+function apCfWhen(v){return v?aplDate(v):'';}
+function apCfDraftTitle(o){const d=o.d||{};let t=d.title||o.title||'';if(/^draft title$/i.test(t))t=(d.brief&&d.brief.title)||'';return t||'Content draft';}
+
+/* ---------------- Overview: the pipeline in one picture ---------------- */
+function apCfFlowHtml(C){
+  const ib=C.intel[0],ab=C.ads[0];
+  const ibDec=ib&&apCfDecision(ib.run_id),abDec=ab&&apCfDecision(ab.run_id);
+  const awaiting=(ib&&!ibDec?1:0)+(ab&&!abDec?1:0);
+  const toReview=apCfDraftsToReview();
+  const req=C.reqs[0];
+  const doneReq=C.reqs.find(function(r){return r.status==='done'&&r.brief&&(r.brief.substance||[]).length;});
+  const reqDec=doneReq&&apCfDecision('content:'+doneReq.id);
+  const adDraft=C.drafts.find(function(o){return (o.d.format||'ad')==='ad';});
+  const orgDraft=C.drafts.find(function(o){return o.d.format&&o.d.format!=='ad';});
+  const ex=req?req.extraction||{}:{};
+  const cnt=function(a,one,many){const n=apArr(a).length;return n?n+' '+(n===1?one:many):'';};
+  const exLine=[cnt(ex.core_ideas,'idea','ideas'),cnt(ex.stories,'story','stories'),cnt(ex.frameworks,'framework','frameworks'),cnt(ex.data_points,'data point','data points'),cnt(ex.quotes,'quote','quotes')].filter(Boolean).join(' · ');
+  const first=function(a,def){const x=apArr(a)[0];return x?esc(String(x).slice(0,110))+(String(x).length>110?'…':''):def;};
+  const b=doneReq?doneReq.brief:{};
+  return '<div class="ap-cf">'+
+    '<div class="ap-cf-health">'+
+      '<div><span class="ap-cf-dot'+(ib?'':' grey')+'"></span><b>Organic intel</b>'+(ib?'brief '+esc(apAgo(ib.created_at)):'no brief yet')+'</div>'+
+      '<div><span class="ap-cf-dot'+(ab?'':' grey')+'"></span><b>Ad strategy</b>'+(ab?'brief '+esc(apAgo(ab.created_at)):'no brief yet')+'</div>'+
+      '<div><span class="ap-cf-dot'+(awaiting?' gold':'')+'"></span><b>Briefs</b>'+(awaiting?awaiting+' awaiting review':'reviewed')+'</div>'+
+      '<div><span class="ap-cf-dot'+(toReview?' gold':' grey')+'"></span><b>Drafts</b>'+toReview+' to review</div>'+
+    '</div>'+
+    '<div class="ap-cf-h"><h3>Two inputs meet in one creative brief</h3><span>Market intel runs on its own schedule. Your content comes in when you have it.</span></div>'+
+    '<div class="ap-cf-in">'+
+      '<article class="ap-cf-card"><div class="ap-cf-hr"><div><span class="lbl">Input A · yours</span><h4>Your ideas and voice</h4>'+
+        '<p>Upload something you published, or answer a few questions to start from a new idea.</p></div><div class="ap-cf-ic">✦</div></div>'+
+        (req?'<div class="ap-cf-src"><span>LATEST '+esc((req.start_mode==='idea'?'IDEA':(AP_CF_SRC[req.source_type]||'SOURCE')).toUpperCase())+' · '+esc(apAgo(req.created_at))+'</span><b>'+esc(req.title||'Untitled')+'</b>'+
+          '<span>'+(exLine?'Pulled out: '+esc(exLine):esc(AP_CF_ST[req.status]||req.status))+'</span></div>'
+          :'<div class="ap-cf-src empty"><span>Nothing uploaded yet. An article, podcast transcript, interview or book chapter all work.</span></div>')+
+        '<div class="ap-cf-foot"><span>The substance comes from you.</span><button class="ap-cf-link" onclick="apGo(\'e3create\')">Start from your content →</button></div></article>'+
+      '<article class="ap-cf-card"><div class="ap-cf-hr"><div><span class="lbl">Input B · running in parallel</span><h4>Market intelligence</h4>'+
+        '<p>Two agents watch different signals in your market.</p></div><div class="ap-cf-ic g">◎</div></div>'+
+        '<div class="ap-cf-mini">'+
+          '<div><span class="t">Agent 1 · organic</span><b>Competitor Intelligence Tracker</b><small>Topics, objections and engagement in organic posts.</small>'+
+            '<span class="when">'+(ib?apCfChip(ibDec)+'<small>'+esc(apCfWhen(ib.created_at))+'</small>':'<small>No brief yet</small>')+'</span>'+
+            '<button class="ap-cf-link" onclick="apCfOpenBrief(\'organic\')">View organic brief →</button></div>'+
+          '<div><span class="t paid">Agent 2 · paid</span><b>Ad Strategist</b><small>Running ads, hook patterns, offer framing and copy structure.</small>'+
+            '<span class="when">'+(ab?apCfChip(abDec)+'<small>'+esc(apCfWhen(ab.created_at))+'</small>':'<small>No brief yet</small>')+'</span>'+
+            '<button class="ap-cf-link" onclick="apCfOpenBrief(\'paid\')">View ad brief →</button></div>'+
+        '</div>'+
+        '<div class="ap-cf-foot"><span>Engagement and ad longevity are signals, not proven conversions.</span></div></article>'+
+    '</div>'+
+    '<div class="ap-cf-join"><span>combine and review</span></div>'+
+    '<div class="ap-cf-bridge">'+
+      '<div><div class="k">Handoff · reviewed by a person</div><h4>One creative brief</h4><p>'+(doneReq?esc(b.title||doneReq.title||'Latest creative brief'):'Your source + selected market patterns + the right format')+'</p></div>'+
+      '<div class="cols"><div><b>Substance</b>'+first(b.substance,'Your framework, stories, data and exact voice')+'</div>'+
+        '<div><b>Packaging</b>'+first(b.packaging,'Hooks, structure, pains, objections and offer from the briefs')+'</div>'+
+        '<div><b>Guardrails</b>'+first(b.claims,'Source trace, inferred labels and a claims check')+'</div></div>'+
+      '<div class="act"><button class="ap-cf-gold" onclick="apCfOpenBrief(\'creative\')">Explore the brief →</button><small>'+
+        (doneReq?(reqDec?(reqDec.action==='approved'?'Approved':'Changes requested'):'Awaiting review')+' · '+esc(apAgo(doneReq.updated_at||doneReq.created_at)):'Created when you start from your content')+'</small></div>'+
+    '</div>'+
+    '<div class="ap-cf-h out"><h3>Content Generation turns the brief into drafts</h3><span>The format decides which brief leads</span></div>'+
+    '<div class="ap-cf-out">'+
+      '<article class="ap-cf-card"><div class="ap-cf-hr"><span class="lbl">Paid path · Ad Strategist leads</span><span class="ap-cf-chip blue">3 hook variants</span></div>'+
+        '<h4>One strong body. Several original hooks.</h4>'+
+        '<p>The body comes from your own source. Three openings test different tensions in your audience. The full funnel run extends it into survey, landing and booking pages.</p>'+
+        (adDraft?'<div class="ap-cf-latest">Latest: <b>'+esc(apCfDraftTitle(adDraft))+'</b> · '+esc(apAgo(adDraft.created_at))+'</div>':'')+
+        '<div class="ap-cf-foot">'+(adDraft?'<button class="ap-cf-link" onclick="apCfOpenDraft(\''+adDraft.id+'\')">Preview ad draft →</button>':'<button class="ap-cf-link" onclick="apCfNew(\'ad\')">Write a paid ad →</button>')+'</div></article>'+
+      '<article class="ap-cf-card"><div class="ap-cf-hr"><span class="lbl">Organic path · Tracker leads</span><span class="ap-cf-chip">Thought leadership</span></div>'+
+        '<h4>Your insight, framed for the conversation.</h4>'+
+        '<p>Organic pains and objections sharpen the topic and the opening. Your position stays your own. Newsletter and email versions reuse the same source.</p>'+
+        (orgDraft?'<div class="ap-cf-latest">Latest: <b>'+esc(apCfDraftTitle(orgDraft))+'</b> · '+esc(AP_CF_FMT[orgDraft.d.format]||'')+' · '+esc(apAgo(orgDraft.created_at))+'</div>':'')+
+        '<div class="ap-cf-foot">'+(orgDraft?'<button class="ap-cf-link" onclick="apCfOpenDraft(\''+orgDraft.id+'\')">Preview organic draft →</button>':'')+
+          '<button class="ap-cf-link" onclick="apCfNew(\'thought_leadership\')">Choose a format →</button></div></article>'+
+    '</div>'+
+    '<div class="ap-cf-loop"><b>Review brief</b><i>→</i><b>Review drafts</b><i>→</i><b>Publish</b><i>→</i><b>Learn from measured results</b>'+
+      '<span>Once ads run, measured client results outrank inferred competitor signals.</span></div>'+
+  '</div>';
+}
+async function apCfFlowRender(host){
+  host.innerHTML='<div class="loading">Loading…</div>';
+  const C=await apCfLoad();
+  if(!host.isConnected)return;
+  host.innerHTML=apCfFlowHtml(C);
+}
+function apCfOpenBrief(kind){RD.aptab.briefs=kind;apGo('e3briefs');}
+function apCfOpenDraft(id){window.__cfDraft=id;RD.aptab.funnel='drafts';if(typeof state!=='undefined')state.studioFull=false;apGo('e3funnel');}
+function apCfNew(fmt){window.__cf=Object.assign(window.__cf||{},{format:fmt});RD.aptab.create='new';apGo('e3create');}
+
+/* ---------------- Intelligence briefs: organic · ad · combined ---------------- */
+RD.cfSel=RD.cfSel||{};
+function apCfApprBar(agent,id,dec,helper){
+  return '<div class="ap-cf-appr"><button class="rd-btn sm pri" onclick="apCfApprove(\''+agent+'\',\''+esc(id)+'\',\'approved\')">'+(dec&&dec.action==='approved'?'Approved ✓':'Approve brief')+'</button>'+
+    '<button class="rd-btn sm" onclick="apCfApprove(\''+agent+'\',\''+esc(id)+'\',\'changes\')">Request changes</button>'+
+    '<span class="m">'+apCfDecLine(dec,helper)+'</span></div>';
+}
+async function apCfApprove(agent,id,action){
+  const save=async function(note){
+    try{
+      await apPost('agent_feedback',{agent:agent,target_type:'brief_approval',target_id:id,action:action,feedback:note||null,author:apCfMe()});
+      toast(action==='approved'?'Brief approved. Content Generation picks approved briefs first.':'Change request saved');
+      await apCfLoad(true);apCfBriefsRepaint();
+    }catch(e){toast('Could not save: '+e.message,false);}
+  };
+  if(action==='changes')ap60Modal('What needs to change in this brief?','Be specific: which signal is off, what is missing, what should not be used.',function(t){return save(t);});
+  else save('');
+}
+function apCfPicker(kind,rows,label,cur){
+  if(rows.length<2)return '';
+  return '<div class="ap-cf-pick"><label>Brief</label><select onchange="RD.cfSel.'+kind+'=this.value;apCfBriefsRepaint()">'+
+    rows.map(function(r){const v=label(r);return '<option value="'+esc(v[0])+'"'+(v[0]===cur?' selected':'')+'>'+esc(v[1])+'</option>';}).join('')+
+    '</select><span>'+rows.length+' on file</span></div>';
+}
+function apCfOrganic(h){
+  const C=AP_CF;const rows=C.intel;
+  if(!rows.length){h.innerHTML='<div class="ap-cf-card ap-cf-empty"><h4>No organic brief yet</h4><p>The Competitor Intelligence Tracker writes one each time it runs.</p></div>';return;}
+  const o=rows.find(function(r){return r.run_id===RD.cfSel.organic;})||rows[0];
+  const d=apCfIntelData(o),dec=apCfDecision(o.run_id),tl=apCfTldr(o.content_md),p=C.prof||{};
+  const themes=apArr(d.top_themes).slice(0,6);
+  const filtered=(d.n_irrelevant_filtered||0)+(d.n_low_engagement_filtered||0);
+  h.innerHTML=apCfPicker('organic',rows,function(r){return [r.run_id,(r.title||'Intel brief')+' · '+apCfWhen(r.created_at)];},o.run_id)+
+  '<div class="ap-cf-bl"><article class="ap-cf-card ap-cf-main">'+
+    '<div class="ap-cf-bh"><div><span class="lbl">Agent 1 · Competitor Intelligence Tracker</span><h2>Organic intelligence brief</h2>'+
+      '<p>'+esc(apCfWhen(o.created_at))+(d.window_start?' · window '+esc(d.window_start)+' to '+esc(d.window_end||''):'')+' · run '+esc(o.run_id)+'</p></div>'+apCfChip(dec)+'</div>'+
+    '<div class="ap-cf-tags">'+(p.industry?'<span>Industry: '+esc(p.industry)+'</span>':'')+(p.target_market?'<span>ICP: '+esc(String(p.target_market).split(',')[0].slice(0,70))+'</span>':'')+'<span>Leads for: thought leadership, newsletters, email</span></div>'+
+    (tl[0]?'<p class="ap-cf-sum"><b>Working insight:</b> '+esc(tl[0].title?tl[0].title+'. ':'')+esc(tl[0].text.slice(0,320))+'</p>':'')+
+    '<div class="ap-cf-sec"><h3>What the tracker surfaced</h3><div class="ap-cf-sig">'+
+      (tl.length?tl.map(function(x){return '<div><div><b>'+esc(x.title||'Signal')+'</b><p>'+esc(x.text.slice(0,360))+'</p></div><span class="ap-cf-chip gold">Inferred</span></div>';}).join('')
+        :'<div><div><b>No summary section in this brief</b><p>Open the full brief in the Tracker to read it.</p></div></div>')+
+    '</div></div>'+
+    '<div class="ap-cf-sec"><h3>Handoff to Content Generation</h3><div class="ap-cf-tags">'+
+      (themes.length?themes.map(function(t){return '<span>'+esc(t.theme||t)+(t.count!=null?' · '+esc(String(t.count)):'')+'</span>';}).join(''):'<span>Themes appear after the next run</span>')+'</div>'+
+      '<p class="ap-cf-note">For thought leadership and newsletters these themes steer the topic and the opening. They are not a template to copy.</p></div>'+
+    apCfApprBar('intel_tracker',o.run_id,dec,'A person reviews this before its signals shape content. Approved briefs are picked first.')+
+  '</article><aside class="ap-cf-card ap-cf-side"><span class="lbl">Evidence</span><h3 style="margin-top:8px">Traceable, with limits</h3>'+
+    '<div class="ap-cf-ev"><b>'+esc(d.n_items!=null?d.n_items+' posts':'Posts')+' · observed</b><span>Linked posts with author, platform and date in the Tracker.</span></div>'+
+    '<div class="ap-cf-ev"><b>'+esc(d.n_high_value!=null?d.n_high_value+' high-value items':'High-value items')+' · inferred</b><span>Scored by the agent for ad context. A judgment, not a measurement.</span></div>'+
+    '<div class="ap-cf-ev"><b>Engagement · observed</b><span>Likes and comments are kept apart from inferred resonance.</span></div>'+
+    (filtered?'<div class="ap-cf-ev"><b>'+filtered+' filtered out</b><span>Off-topic or too little engagement to count.</span></div>':'')+
+    '<div class="ap-cf-call"><b>Cadence:</b> each Tracker run writes a dated brief. Shifts in market language between briefs are flagged.</div>'+
+    '<button class="rd-btn sm" onclick="apGo(\'e3intel\')">Open the full brief →</button>'+
+  '</aside></div>';
+}
+function apCfPaid(h){
+  const C=AP_CF;const rows=C.ads;
+  if(!rows.length){h.innerHTML='<div class="ap-cf-card ap-cf-empty"><h4>No ad brief yet</h4><p>Run the Ad Strategist, or build one from ads you upload.</p><button class="rd-btn pri" onclick="apOpenBuildBrief()">Build ad strategy</button></div>';return;}
+  const b=rows.find(function(r){return r.run_id===RD.cfSel.paid;})||rows[0];
+  const dec=apCfDecision(b.run_id),p=C.prof||{};
+  const hooks=apArr(b.winning_hooks),offers=apArr(b.winning_offers),pains=apArr(b.core_pain_points),obj=apArr(b.objection_themes);
+  const conf=b.confidence!=null?Number(b.confidence).toFixed(2):null;
+  h.innerHTML=apCfPicker('paid',rows,function(r){return [r.run_id,r.run_id+' · '+apCfWhen(r.created_at)];},b.run_id)+
+  '<div class="ap-cf-bl"><article class="ap-cf-card ap-cf-main">'+
+    '<div class="ap-cf-bh"><div><span class="lbl">Agent 2 · Ad Strategist</span><h2>Paid ad strategy brief</h2>'+
+      '<p>'+esc(apCfWhen(b.created_at))+' · run '+esc(b.run_id)+(b.source_intel_run?' · used intel '+esc(b.source_intel_run):'')+'</p></div>'+apCfChip(dec)+'</div>'+
+    '<div class="ap-cf-tags">'+(p.industry?'<span>Industry: '+esc(p.industry)+'</span>':'')+'<span>Leads for: paid social ads</span>'+(b.sophistication_level?'<span>Market sophistication: '+esc(b.sophistication_level)+'</span>':'')+'</div>'+
+    (b.differentiation_angle?'<p class="ap-cf-sum"><b>Working hypothesis:</b> '+esc(b.differentiation_angle)+'</p>':'')+
+    '<div class="ap-cf-sec"><h3>Packaging patterns to test</h3><div class="ap-cf-sig">'+
+      hooks.slice(0,5).map(function(x,i){return '<div><div><b>Hook pattern '+(i+1)+'</b><p>'+esc(x)+'</p></div><span class="ap-cf-chip gold">Inferred</span></div>';}).join('')+
+      (b.copy_formula?'<div><div><b>Body structure</b><p>'+esc(b.copy_formula)+'. The mechanism and proof slots are filled from your own source.</p></div><span class="ap-cf-chip gold">Inferred</span></div>':'')+
+      offers.slice(0,2).map(function(o){o=typeof o==='string'?{type:o}:o;return '<div><div><b>Offer · '+esc(o.type||'offer')+'</b><p>'+esc([o.price_point,o.notes].filter(Boolean).join('. '))+'</p></div><span class="ap-cf-chip blue">Test idea</span></div>';}).join('')+
+    '</div></div>'+
+    (pains.length||obj.length?'<div class="ap-cf-sec"><h3>Pains and objections it found</h3><div class="ap-cf-tags">'+
+      pains.slice(0,6).map(function(x){return '<span>Pain: '+esc(x)+'</span>';}).join('')+obj.slice(0,4).map(function(x){return '<span>Objection: '+esc(x)+'</span>';}).join('')+'</div></div>':'')+
+    '<div class="ap-cf-sec"><h3>Signal quality</h3><div class="ap-cf-tags">'+
+      '<span>'+apArr(b.source_ad_ids).length+' source ads linked</span>'+(conf?'<span>Confidence '+conf+' · inferred</span>':'')+'<span>Conversion data: not connected</span></div>'+
+      '<p class="ap-cf-note">Hooks borrowed from other industries get a portability check before reuse. Results claims, testimonials and performance framing are held for compliance review (SEC Marketing Rule, FINRA 2210).</p></div>'+
+    apCfApprBar('ad_strategist',b.run_id,dec,'Durations and inferred scores keep their labels in every draft.')+
+  '</article><aside class="ap-cf-card ap-cf-side"><span class="lbl">Evidence</span><h3 style="margin-top:8px">What this does and does not show</h3>'+
+    '<div class="ap-cf-ev"><b>Ad duration · observed</b><span>A sign of continued spend, not proof of return.</span></div>'+
+    '<div class="ap-cf-ev"><b>Hook effectiveness · inferred</b><span>A hypothesis until your own campaign data tests it.</span></div>'+
+    '<div class="ap-cf-ev"><b>Your performance · not connected</b><span>Once connected, qualified leads and booked calls rank the hooks.</span></div>'+
+    '<div class="ap-cf-call"><b>Swiped ads are reference only.</b> Generated copy stays original and tied to your own material.</div>'+
+    '<button class="rd-btn sm" onclick="apGo(\'e3ads\')">Open the Ad Strategist →</button>'+
+  '</aside></div>';
+}
+function apCfCreative(h){
+  const C=AP_CF;const rows=C.reqs.filter(function(r){return r.status==='done'&&r.brief&&Object.keys(r.brief).length;});
+  if(!rows.length){h.innerHTML='<div class="ap-cf-card ap-cf-empty"><h4>No creative brief yet</h4><p>A creative brief is built each time you start from your own content. It joins your source with the organic and ad briefs and shows exactly what crosses the handoff.</p><button class="rd-btn pri" onclick="apGo(\'e3create\')">Start from your content</button></div>';return;}
+  const r=rows.find(function(x){return x.id===RD.cfSel.creative;})||rows[0];
+  const b=r.brief||{},dec=apCfDecision('content:'+r.id);
+  const li=function(a){a=apArr(a);return a.length?'<ul>'+a.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>':'<p style="font-size:13px;color:var(--rd-muted)">Nothing recorded.</p>';};
+  const sig=function(k){return k==='ad_strategist'?'Ad Strategist':k==='intel_tracker'?'Organic Tracker':(k&&k!=='none'?k:'');};
+  h.innerHTML=apCfPicker('creative',rows,function(x){return [x.id,(x.title||'Creative brief')+' · '+(AP_CF_FMT[x.format]||x.format)+' · '+apCfWhen(x.created_at)];},r.id)+
+  '<div class="ap-cf-bl"><article class="ap-cf-card ap-cf-main">'+
+    '<div class="ap-cf-bh"><div><span class="lbl">Reviewed handoff · both agents + your source</span><h2>Creative brief: '+esc(b.title||r.title||'Untitled')+'</h2>'+
+      '<p>'+esc(AP_CF_FMT[r.format]||r.format)+' · from '+esc(r.start_mode==='idea'?'a new idea':(AP_CF_SRC[r.source_type]||'your content').toLowerCase())+' · '+esc(apCfWhen(r.created_at))+'</p></div>'+apCfChip(dec)+'</div>'+
+    '<div class="ap-cf-tags">'+(sig(b.primary_signal)?'<span>Primary: '+esc(sig(b.primary_signal))+'</span>':'')+(sig(b.supporting_signal)?'<span>Supporting: '+esc(sig(b.supporting_signal))+'</span>':'')+
+      '<span>Your source: '+esc(r.title||'untitled')+'</span>'+(r.desired_action?'<span>Goal: '+esc(r.desired_action)+'</span>':'')+'</div>'+
+    '<div class="ap-cf-2">'+
+      '<div class="ap-cf-box"><h4>01 · Your substance</h4>'+li(b.substance)+'</div>'+
+      '<div class="ap-cf-box"><h4>02 · Market packaging</h4>'+li(b.packaging)+'</div>'+
+      '<div class="ap-cf-box"><h4>03 · Strategic decisions</h4>'+li(b.strategic)+'</div>'+
+      '<div class="ap-cf-box"><h4>04 · Claims and provenance</h4>'+li(b.claims)+'</div>'+
+      (b.requested_outputs?'<div class="ap-cf-box wide"><h4>05 · Requested outputs</h4><p style="font-size:13px">'+esc(b.requested_outputs)+'</p></div>':'')+
+    '</div>'+
+    apCfApprBar('content_generation','content:'+r.id,dec,'The draft is written alongside this brief. Review both before anything is published.')+
+  '</article><aside class="ap-cf-card ap-cf-side"><span class="lbl">What crossed the handoff</span><h3 style="margin-top:8px">One joined record</h3>'+
+    '<div class="ap-cf-ev"><b>Your '+esc(r.start_mode==='idea'?'idea':(AP_CF_SRC[r.source_type]||'source').toLowerCase())+' · source</b><span>'+esc(r.title||'')+(r.source_file_name?' ('+esc(r.source_file_name)+')':'')+'. Framework, stories, proof and voice.</span></div>'+
+    '<div class="ap-cf-ev"><b>Organic Tracker · directional</b><span>'+(b.intel_run?esc(b.intel_run)+(b.intel_approved?' · approved':' · not approved at the time'):'No organic brief was on file')+'</span></div>'+
+    '<div class="ap-cf-ev"><b>Ad Strategist · directional</b><span>'+(b.ad_run?esc(b.ad_run)+(b.ad_approved?' · approved':' · not approved at the time'):'No ad brief was on file')+'</span></div>'+
+    '<div class="ap-cf-steps"><span>Review brief</span><i>→</i><span>Review draft</span><i>→</i><span>Mark ready</span></div>'+
+    '<div class="ap-cf-call"><b>Priority rule:</b> your facts and approved claims override every outside pattern. Once live results exist, they become the strongest signal.</div>'+
+    (r.output_id?'<button class="rd-btn sm pri" onclick="apCfOpenDraft(\''+r.output_id+'\')">See the draft →</button>':'')+
+  '</aside></div>';
+}
+function apCfBriefsRepaint(){
+  const o=window.__apDemo;if(!o||o.page!=='briefs')return;
+  o.tabs.forEach(function(t){if(t._host&&t._done)t.fill(t._host);});
+  apDemoRefreshStrip();
+}
+async function apRenderBriefs(){
+  const main=document.getElementById('main');if(!main)return;
+  main.innerHTML='<div class="loading">Loading briefs…</div>';
+  const C=await apCfLoad(true);
+  if(state.view!=='briefs')return;
+  main.innerHTML='';
+  const pend=function(){let n=0;if(C.intel[0]&&!apCfDecision(C.intel[0].run_id))n++;if(C.ads[0]&&!apCfDecision(C.ads[0].run_id))n++;
+    const d=C.reqs.find(function(r){return r.status==='done';});if(d&&!apCfDecision('content:'+d.id))n++;return n;};
+  const mk=function(key,label,fill){return {key:key,label:label,fill:fill,render:function(h){fill(h);}};};
+  apDemo({page:'briefs',eyebrow:'ENGINE 3 · INTELLIGENCE',title:'Intelligence briefs',
+    sub:'The evidence behind every draft. Each agent writes its own brief, and the creative brief joins them with your source.',
+    cta:{label:'Start from your content',go:"apGo('e3create')"},
+    purpose:{tag:'Human gate',bold:'Review a brief before it drives content',small:'Approved briefs are the ones Content Generation picks first. Inferred signals keep that label all the way into the draft.'},
+    strip:function(){return [
+      {n:C.intel.length,l:'Organic briefs',s:C.intel[0]?'newest '+apCfWhen(C.intel[0].created_at):'none yet',tab:'organic'},
+      {n:C.ads.length,l:'Ad briefs',s:C.ads[0]?'newest '+apCfWhen(C.ads[0].created_at):'none yet',tab:'paid'},
+      {n:C.reqs.filter(function(r){return r.status==='done';}).length,l:'Creative briefs',s:'from your content',tab:'creative'},
+      {n:pend(),l:'Awaiting review',s:'newest of each kind'}];},
+    tabs:[mk('organic','Organic intelligence',apCfOrganic),mk('paid','Ad strategist',apCfPaid),mk('creative','Combined creative brief',apCfCreative)]});
+}
+
+/* ---------------- Create content: your source or a new idea ---------------- */
+window.__cf=window.__cf||{};
+function apCfState(){const f=window.__cf;if(!f.mode)f.mode='source';if(!f.format)f.format='ad';return f;}
+function apCfFormHtml(){
+  const f=apCfState();
+  const fb=function(k,l){return '<button type="button" data-f="'+k+'" class="'+(f.format===k?'on':'')+'" onclick="apCfFmt(\''+k+'\')">'+l+'</button>';};
+  return '<div class="ap-cf-create"><article class="ap-cf-card ap-cf-form">'+
+    '<span class="lbl">Step 1 · starting point</span><h3>What should this be based on?</h3>'+
+    '<p class="help">Your ideas are always the source of claims, stories and the body. The market briefs only shape how it is packaged.</p>'+
+    '<div class="ap-cf-path"><button type="button" data-m="source" class="'+(f.mode==='source'?'on':'')+'" onclick="apCfMode(\'source\')">↗ Repurpose published content<small>Article, podcast, interview or chapter</small></button>'+
+      '<button type="button" data-m="idea" class="'+(f.mode==='idea'?'on':'')+'" onclick="apCfMode(\'idea\')">✎ Describe a new idea<small>Answer four questions</small></button></div>'+
+    '<div id="cfSrc"'+(f.mode==='source'?'':' hidden')+'>'+
+      '<div class="ap-cf-row2"><label class="f">Source type<select id="cfType"><option value="article">Article</option><option value="podcast">Podcast transcript</option><option value="interview">Interview</option><option value="book_chapter">Book chapter</option><option value="transcript">Talk or webinar transcript</option><option value="other">Other</option></select></label>'+
+        '<label class="f">Title<input id="cfTitle" placeholder="e.g. Why AI pilots stall after week three"></label></div>'+
+      '<label class="f">Link to the original (optional)<input id="cfUrl" placeholder="https://"></label>'+
+      '<div class="ap-cf-drop" id="cfDrop"><input type="file" id="cfFile" accept=".txt,.md,.markdown,.vtt,.srt,.pdf,.docx,.html,.htm" onchange="apCfFile(this.files[0])">'+
+        '<b>Drop a file or click to choose</b><small>TXT, MD, PDF, DOCX, VTT or SRT. Audio and video need a transcript first.</small><span class="msg" id="cfFileMsg"></span></div>'+
+      '<label class="f">Source text <span class="cnt" id="cfCount"></span><textarea id="cfText" rows="9" placeholder="Paste the article or transcript here, or load a file above." oninput="apCfCount()"></textarea></label>'+
+      '<label class="f">What should the audience take away?<textarea id="cfTake" rows="2" placeholder="e.g. Make the workflow owner explicit before adding another AI tool."></textarea></label>'+
+    '</div>'+
+    '<div id="cfIdea"'+(f.mode==='idea'?'':' hidden')+'>'+
+      '<div class="ap-cf-row2"><label class="f">Who are you speaking to?<input id="cfAud" placeholder="Founders and COOs at growing RIAs"></label>'+
+        '<label class="f">Which problem are they facing?<input id="cfPain" placeholder="Promising pilots stall after launch"></label></div>'+
+      '<label class="f">What is your point of view?<textarea id="cfThesis" rows="6" placeholder="Your conclusion, framework, story or example, in your own words."></textarea></label>'+
+      '<label class="f">What can you back it up with?<input id="cfProof" placeholder="A client-approved example, a citation, or something you saw first-hand"></label>'+
+    '</div>'+
+    '<hr class="ap-cf-sep"><span class="lbl">Step 2 · output</span>'+
+    '<div class="ap-cf-fmt">'+fb('ad','Paid ad')+fb('thought_leadership','Thought leadership')+fb('newsletter','Newsletter')+fb('email','Email')+'</div>'+
+    '<div class="ap-cf-row2"><label class="f">Desired action<select id="cfGoal"><option>Book an AI Readiness Diagnostic</option><option>Download a practical checklist</option><option>Reply or comment</option><option>Read the full article</option></select></label>'+
+      '<label class="f">Voice<select id="cfVoice"><option>Match my existing content</option><option>Direct and executive</option><option>Warm and conversational</option></select></label></div>'+
+    '<div class="ap-cf-err" id="cfErr"></div>'+
+    '<button class="rd-btn pri ap-cf-go" id="cfGo" onclick="apCfSubmit()">Generate draft →</button>'+
+  '</article><aside class="ap-cf-card ap-cf-plan"><span class="lbl">Step 3 · what gets joined</span><h3>Your draft plan</h3><p id="cfPlanDesc"></p>'+
+    '<div class="ap-cf-mix"><div><b>From you</b><span id="cfPlanYou"></span></div><div><b>From the market</b><span id="cfPlanMkt"></span></div>'+
+      '<div><b>Human gate</b><span>Review the joined brief and its claims, then review the draft before anything is published.</span></div></div>'+
+    '<div class="ap-cf-res" id="cfPlanRes"></div>'+
+    '<div class="ap-cf-stepsline">1 Source → 2 Format → 3 Creative brief → 4 Review draft</div>'+
+  '</aside></div>';
+}
+function apCfMode(m){
+  apCfState().mode=m;
+  document.querySelectorAll('.ap-cf-path button').forEach(function(b){b.classList.toggle('on',b.dataset.m===m);});
+  const s=document.getElementById('cfSrc'),i=document.getElementById('cfIdea');if(s)s.hidden=m!=='source';if(i)i.hidden=m!=='idea';
+  apCfPlan();
+}
+function apCfFmt(k){
+  apCfState().format=k;
+  document.querySelectorAll('.ap-cf-fmt button').forEach(function(b){b.classList.toggle('on',b.dataset.f===k);});
+  apCfPlan();
+}
+function apCfCount(){const t=document.getElementById('cfText'),c=document.getElementById('cfCount');if(t&&c){const w=(t.value.trim().match(/\S+/g)||[]).length;c.textContent=w?w.toLocaleString()+' words':'';}}
+function apCfPlan(){
+  const f=apCfState(),C=AP_CF||{intel:[],ads:[]};
+  const organic=f.format!=='ad',idea=f.mode==='idea',fl=(AP_CF_FMT[f.format]||'').toLowerCase();
+  const ib=C.intel[0],ab=C.ads[0];
+  const pickApproved=function(rows,key){return rows.find(function(r){const d=apCfDecision(r[key]);return d&&d.action==='approved';})||rows[0];};
+  const ib2=pickApproved(C.intel,'run_id'),ab2=pickApproved(C.ads,'run_id');
+  const lbl=function(r,name){if(!r)return 'no '+name+' on file';const d=apCfDecision(r.run_id);return name+' from '+apCfWhen(r.created_at)+(d&&d.action==='approved'?' (approved)':' (not yet approved)');};
+  const set=function(id,t){const e=document.getElementById(id);if(e)e.textContent=t;};
+  set('cfPlanDesc',organic?'For a '+fl+', the Organic Tracker guides the topic and the opening. The Ad Strategist can inform the offer, but does not dictate the copy.':'For a paid ad, the Ad Strategist supplies the packaging. Organic intel adds audience language and objections.');
+  set('cfPlanYou',idea?'Your answers: audience, problem, point of view and proof. Anything you cannot back up gets flagged.':'Your source: core ideas, stories, data points, any framework, and lines worth quoting word for word.');
+  set('cfPlanMkt',(organic?'Leads: '+lbl(ib2,'organic brief')+'. Optional: '+lbl(ab2,'ad brief')+'.':'Leads: '+lbl(ab2,'ad brief')+'. Supporting: '+lbl(ib2,'organic brief')+'.')+' Inferred guidance stays labeled.');
+  set('cfPlanRes',organic?'You get: three opening options and one '+fl+' draft in your voice, with a CTA that matches the action you picked.':'You get: one ad body from your source, three different hooks, a CTA and a link headline. The full funnel run can extend it into survey, landing and booking pages.');
+}
+function apCfScript(src){
+  return new Promise(function(res,rej){
+    if(document.querySelector('script[src="'+src+'"]'))return res();
+    const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=function(){rej(new Error('Could not load the file reader. Paste the text instead.'));};document.head.appendChild(s);
+  });
+}
+async function apCfReadFile(file){
+  const n=String(file.name||'').toLowerCase();
+  if(/\.(mp3|m4a|wav|aac|mp4|mov|webm)$/.test(n))throw new Error('Audio and video need a transcript first. Paste it, or upload a .txt, .vtt or .srt file.');
+  if(/\.(txt|md|markdown|csv)$/.test(n))return await file.text();
+  if(/\.(vtt|srt)$/.test(n)){return (await file.text()).replace(/^WEBVTT.*$/m,'').replace(/^\d+\s*$/gm,'').replace(/^[\d:.,]+\s*-->\s*[\d:.,]+.*$/gm,'').replace(/<[^>]+>/g,'').replace(/\n{2,}/g,'\n').trim();}
+  if(/\.html?$/.test(n)){const d=new DOMParser().parseFromString(await file.text(),'text/html');d.querySelectorAll('script,style,nav,footer').forEach(function(x){x.remove();});return (d.body.innerText||d.body.textContent||'').trim();}
+  if(/\.pdf$/.test(n)){
+    await apCfScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf=await window.pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;const out=[];
+    for(let i=1;i<=Math.min(pdf.numPages,120);i++){const pg=await pdf.getPage(i);const c=await pg.getTextContent();out.push(c.items.map(function(x){return x.str;}).join(' '));}
+    return out.join('\n\n').trim();
+  }
+  if(/\.docx$/.test(n)){
+    await apCfScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js');
+    const r=await window.mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()});return String(r.value||'').trim();
+  }
+  throw new Error('That file type is not supported. Use TXT, MD, PDF, DOCX, VTT or SRT.');
+}
+async function apCfFile(file){
+  if(!file)return;
+  const msg=document.getElementById('cfFileMsg');
+  if(msg){msg.className='msg';msg.textContent='Reading '+file.name+'…';}
+  try{
+    const t=await apCfReadFile(file);
+    if(!t||t.length<40)throw new Error('No readable text in that file. If it is a scanned PDF, paste the text instead.');
+    const ta=document.getElementById('cfText');if(ta)ta.value=t.slice(0,120000);
+    const ti=document.getElementById('cfTitle');if(ti&&!ti.value)ti.value=file.name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ');
+    apCfState().fileName=file.name;apCfCount();
+    if(msg)msg.textContent='Loaded '+file.name+(t.length>120000?' (first 120,000 characters)':'');
+  }catch(e){if(msg){msg.className='msg err';msg.textContent=e.message;}}
+}
+function apCfVal(id){const e=document.getElementById(id);return e?String(e.value||'').trim():'';}
+async function apCfSubmit(){
+  const f=apCfState(),err=document.getElementById('cfErr'),btn=document.getElementById('cfGo');
+  const fail=function(m){if(err){err.textContent=m;err.classList.add('on');}};
+  if(err)err.classList.remove('on');
+  const row={requested_by:apCfMe(),start_mode:f.mode,format:f.format,desired_action:apCfVal('cfGoal')||null,voice:apCfVal('cfVoice')||null,status:'queued'};
+  if(row.desired_action==='__type_your_own')row.desired_action=null;
+  if(row.voice==='__type_your_own')row.voice=null;
+  if(f.mode==='source'){
+    const text=apCfVal('cfText');
+    if(text.length<300)return fail('Add the source text (at least a few paragraphs). Paste it, or load a file.');
+    Object.assign(row,{source_type:apCfVal('cfType')||'article',title:apCfVal('cfTitle')||null,source_url:apCfVal('cfUrl')||null,source_text:text,takeaway:apCfVal('cfTake')||null,source_file_name:f.fileName||null});
+  }else{
+    const th=apCfVal('cfThesis');
+    if(th.length<60)return fail('Describe your point of view in a few sentences so there is something real to build from.');
+    Object.assign(row,{audience:apCfVal('cfAud')||null,pain:apCfVal('cfPain')||null,thesis:th,proof:apCfVal('cfProof')||null,title:th.split(/[.\n]/)[0].slice(0,90)});
+  }
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+  let rec=null;
+  try{const r=await apPost('content_requests',row);rec=r&&r[0];if(!rec)throw new Error('Supabase did not return the saved request');}
+  catch(e){if(btn){btn.disabled=false;btn.textContent='Generate draft →';}return fail('Could not save the request: '+apCfDbErr(e));}
+  window.__cfWatch=rec.id;
+  await apCfKick(rec.id);
+  ['cfText','cfTake','cfTitle','cfUrl','cfThesis','cfProof','cfAud','cfPain'].forEach(function(id){const e=document.getElementById(id);if(e)e.value='';});
+  f.fileName=null;
+  if(btn){btn.disabled=false;btn.textContent='Generate draft →';}
+  await apCfLoad(true);
+  apTab('requests');
+}
+window.__cfKick=window.__cfKick||{};
+async function apCfKick(id){
+  try{
+    const res=await fetch(AP_HOOKS.content_run,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request_id:id,requested_by:apCfMe()})});
+    if(!res.ok)throw new Error('the workflow answered '+res.status);
+    delete window.__cfKick[id];
+    toast('Draft started. It usually takes about a minute.');
+  }catch(e){window.__cfKick[id]=e.message||'network error';toast('Saved, but the workflow did not start ('+(e.message||'network error')+'). Try again from Your requests.',false);}
+  apCfPoll();
+}
+let AP_CF_TIMER=null;
+function apCfPoll(){
+  clearTimeout(AP_CF_TIMER);
+  AP_CF_TIMER=setTimeout(async function(){
+    const before={};(AP_CF?AP_CF.reqs:[]).forEach(function(r){before[r.id]=r.status;});
+    const C=await apCfLoad(true);
+    C.reqs.forEach(function(r){
+      if(before[r.id]&&before[r.id]!==r.status){
+        if(r.status==='done')toast('Draft ready: '+(r.title||'your content'));
+        if(r.status==='error')toast('Draft failed: '+(r.error||'see Your requests'),false);
+      }
+    });
+    const o=window.__apDemo;
+    if(o&&o.page==='create'){const t=o.tabs.find(function(x){return x.key==='requests';});if(t&&t._host&&t._done)apCfReqs(t._host);apDemoRefreshStrip();
+      const c=document.querySelector('#apChrome .rd-tab[data-tab="requests"] .c');if(c)c.textContent=C.reqs.length;}
+    const live=C.reqs.some(function(r){return ['queued','extracting','drafting'].includes(r.status)&&Date.now()-new Date(r.created_at).getTime()<12*60e3;});
+    if(live)apCfPoll();
+  },5000);
+}
+function apCfProg(st){
+  const order=['queued','extracting','drafting','done'];const i=order.indexOf(st);
+  return '<span class="ap-cf-prog">'+order.slice(0,3).map(function(s,k){return '<i class="'+(k<i?'on':k===i?'run':'')+'"></i>';}).join('')+'<span>'+esc(AP_CF_ST[st]||st)+'</span></span>';
+}
+function apCfReqs(h){
+  const C=AP_CF;const rows=C?C.reqs:[];
+  if(!rows.length){h.innerHTML='<div class="ap-cf-card ap-cf-empty"><h4>Nothing yet</h4><p>Start from something you published or a new idea. Each request shows up here with its progress.</p><button class="rd-btn pri" onclick="apTab(\'new\')">New draft</button></div>';return;}
+  h.innerHTML='<div class="ap-cf-card ap-cf-reqs">'+rows.map(function(r){
+    const running=['queued','extracting','drafting'].includes(r.status);
+    const stale=running&&Date.now()-new Date(r.updated_at||r.created_at).getTime()>4*60e3;
+    const kick=window.__cfKick[r.id];
+    const st=r.status==='done'?'<span class="ap-cf-chip green">Draft ready</span>':r.status==='error'?'<span class="ap-cf-chip red">Failed</span>':(stale||kick)?'<span class="ap-cf-chip gold">Not picked up</span>':apCfProg(r.status);
+    const act=r.status==='done'&&r.output_id?'<button class="rd-btn sm pri" onclick="apCfOpenDraft(\''+r.output_id+'\')">Review draft</button>':
+      (r.status==='error'||stale||kick)?'<button class="rd-btn sm" onclick="apCfRetry(\''+r.id+'\',this)">Try again</button>':'<span></span>';
+    return '<div class="ap-cf-req"><div><b>'+esc(r.title||'Untitled')+'</b><small>'+esc(AP_CF_FMT[r.format]||r.format)+' · '+esc(r.start_mode==='idea'?'New idea':(AP_CF_SRC[r.source_type]||'Source'))+
+      ' · '+esc(apAgo(r.created_at))+(r.requested_by?' · '+esc(String(r.requested_by).split('@')[0]):'')+'</small></div>'+st+act+
+      (r.status==='error'&&r.error?'<div class="errm">'+esc(r.error)+'</div>':'')+(kick&&r.status!=='done'?'<div class="errm">The workflow did not start: '+esc(kick)+'</div>':'')+'</div>';
+  }).join('')+'</div>';
+}
+async function apCfRetry(id,btn){
+  if(btn){btn.disabled=true;btn.textContent='Starting…';}
+  try{await apPatch('content_requests','id=eq.'+id,{status:'queued',error:null});}catch(e){}
+  await apCfKick(id);await apCfLoad(true);
+  const o=window.__apDemo;if(o&&o.page==='create'){const t=o.tabs.find(function(x){return x.key==='requests';});if(t&&t._host)apCfReqs(t._host);}
+}
+async function apRenderCreate(){
+  const main=document.getElementById('main');if(!main)return;
+  main.innerHTML='<div class="loading">Loading…</div>';
+  const C=await apCfLoad();
+  if(state.view!=='create')return;
+  main.innerHTML='';
+  const live=function(){return C.reqs.filter(function(r){return ['queued','extracting','drafting'].includes(r.status);}).length;};
+  apDemo({page:'create',eyebrow:'ENGINE 3 · CONTENT GENERATION',title:'Create content',
+    sub:'Start from something you published or a new idea. The agent joins it with the market briefs and writes a draft for review.',
+    cta:null,
+    purpose:{tag:'From your content',bold:'Your substance, the market’s packaging',small:'Your ideas, stories and data become the body. The briefs shape hooks, structure and objections. Nothing is published from here.'},
+    strip:function(){const R=AP_CF.reqs;return [
+      {n:R.length,l:'Requests',s:'all time',tab:'requests'},
+      {n:R.filter(function(r){return ['queued','extracting','drafting'].includes(r.status);}).length,l:'In progress',s:'about a minute each',tab:'requests'},
+      {n:AP_CF.drafts.length,l:'Drafts written',s:'review in Content Generation'},
+      {n:apCfDraftsToReview(),l:'To review',s:'not marked ready yet'}];},
+    tabs:[
+      {key:'new',label:'New draft',render:function(h){h.innerHTML=apCfFormHtml();apCfPlan();apCfDropWire();}},
+      {key:'requests',label:'Your requests',count:function(){return AP_CF.reqs.length;},render:function(h){apCfReqs(h);},onShow:function(){const o=window.__apDemo;const t=o&&o.tabs.find(function(x){return x.key==='requests';});if(t&&t._host)apCfReqs(t._host);}}
+    ]});
+  if(live())apCfPoll();
+}
+function apCfDropWire(){
+  const d=document.getElementById('cfDrop');if(!d)return;
+  ['dragenter','dragover'].forEach(function(ev){d.addEventListener(ev,function(e){e.preventDefault();d.classList.add('over');});});
+  ['dragleave','drop'].forEach(function(ev){d.addEventListener(ev,function(e){e.preventDefault();d.classList.remove('over');});});
+  d.addEventListener('drop',function(e){const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)apCfFile(f);});
+}
+function apCfDbErr(e){
+  const m=String((e&&e.message)||e||'');
+  if(/42501|row-level security/.test(m))return 'your account is not allowed to create content requests. Only @aiparagonconsulting.com accounts can.';
+  if(/23514/.test(m))return 'one of the values is not accepted by the table.';
+  const msg=(m.match(/"message"\s*:\s*"([^"]*)/)||[])[1];return msg||m.slice(0,160);
+}
+
+/* ---------------- Content Generation: draft review ---------------- */
+window.__cfChecks=window.__cfChecks||{};
+const AP_CF_CHECKS=['The story and framework match the source.','The voice sounds like us and the wording is original.','Offer, CTA and destination are accurate.','Claims, testimonials and regulated-use hooks have had the right review.'];
+function apCfParas(t){return String(t||'').split(/\n{2,}|\n(?=\S)/).map(function(p){return p.trim();}).filter(Boolean).map(function(p){return '<p>'+esc(p)+'</p>';}).join('');}
+function apCfDraftText(o,hi){
+  const d=o.d||{},h=(d.hooks||[])[hi||0];
+  return [h?h.text:'',d.body||'',d.cta||'',(d.hashtags||[]).join(' ')].filter(Boolean).join('\n\n');
+}
+async function apCfDraftsRender(host){
+  host.innerHTML='<div class="loading">Loading drafts…</div>';
+  const C=await apCfLoad();
+  if(!host.isConnected)return;
+  const rows=C.drafts;
+  if(!rows.length){host.innerHTML='<div class="ap-cf-card ap-cf-empty"><h4>No drafts from your own content yet</h4><p>Start from an article, podcast, interview or a new idea and the draft lands here for review, next to the creative brief it came from.</p><button class="rd-btn pri" onclick="apGo(\'e3create\')">Create content</button></div>';return;}
+  const o=rows.find(function(x){return x.id===window.__cfDraft;})||rows[0];window.__cfDraft=o.id;
+  const d=o.d||{},b=d.brief||{},req=C.reqs.find(function(r){return r.id===d.request_id;})||{};
+  const hooks=apArr(d.hooks),rev=apCfReview(o.id),flags=apArr(d.review_flags),tr=d.trace||{};
+  const hi=Math.min(window.__cfHook||0,Math.max(0,hooks.length-1));
+  const chk=window.__cfChecks[o.id]||(window.__cfChecks[o.id]=AP_CF_CHECKS.map(function(){return !!rev;}));
+  const left=chk.filter(function(x){return !x;}).length;
+  const isAd=(d.format||'ad')==='ad';
+  const sig=function(k){return k==='ad_strategist'?'Ad Strategist':k==='intel_tracker'?'Organic Tracker':'';};
+  const hookWord=d.format==='newsletter'||d.format==='email'?'Subject':'Hook';
+  host.innerHTML=
+    '<div class="ap-cf-pick"><label>Draft</label><select onchange="window.__cfDraft=this.value;window.__cfHook=0;apCfDraftsRender(this.closest(\'.ap-tphost\'))">'+
+      rows.map(function(x){return '<option value="'+x.id+'"'+(x.id===o.id?' selected':'')+'>'+esc(apCfDraftTitle(x))+' · '+esc(AP_CF_FMT[x.d.format]||'')+' · '+esc(apCfWhen(x.created_at))+(apCfReview(x.id)?' · ready':'')+'</option>';}).join('')+
+    '</select><span>'+rows.length+' draft'+(rows.length===1?'':'s')+' · '+apCfDraftsToReview()+' to review</span></div>'+
+    '<div class="ap-cf-dl"><article class="ap-cf-card ap-cf-draft">'+
+      '<div class="ap-cf-dm"><span class="lbl">'+esc(d.start_mode==='idea'?'New idea':(AP_CF_SRC[d.source_type]||'Your source'))+' → '+esc(AP_CF_FMT[d.format]||'Draft')+' · '+esc(o.run_id)+'</span>'+
+        (rev?'<span class="ap-cf-chip green">Ready</span>':'<span class="ap-cf-chip gold">Needs review</span>')+'</div>'+
+      '<h2>'+esc(apCfDraftTitle(o))+'</h2>'+
+      '<p>'+[sig(b.primary_signal)?'Primary signal: '+sig(b.primary_signal)+'.':'',sig(b.supporting_signal)?'Supporting: '+sig(b.supporting_signal)+'.':'',req.title?'Source: '+esc(req.title)+'.':''].filter(Boolean).join(' ')+
+        ' <button class="ap-cf-link" onclick="RD.cfSel.creative=\''+esc(d.request_id||'')+'\';apCfOpenBrief(\'creative\')">See the creative brief</button></p>'+
+      (hooks.length?'<div class="ap-cf-hooks">'+hooks.map(function(h,i){return '<button class="'+(i===hi?'on':'')+'" onclick="window.__cfHook='+i+';apCfDraftsRender(this.closest(\'.ap-tphost\'))">'+esc(h.label||(hookWord+' '+'ABC'[i]))+'</button>';}).join('')+'</div>':'')+
+      '<div class="ap-cf-paper">'+
+        (hooks[hi]?'<div class="hook">'+esc(hooks[hi].text)+'</div>':'')+
+        '<div class="body">'+apCfParas(d.body)+'</div>'+
+        (d.cta?'<div class="cta">'+esc(d.cta)+' →</div>':'')+
+        (d.headline?'<div class="hl">'+(isAd?'Link headline: ':'Preview: ')+esc(d.headline)+'</div>':'')+
+        (apArr(d.hashtags).length?'<div class="tagsl">'+esc(apArr(d.hashtags).join(' '))+'</div>':'')+
+        '<div class="foot"><span>Body · from your source</span><span>'+esc(hookWord)+'s · inferred market patterns</span><span>Claims · '+(flags.length?flags.length+' to check':'none flagged')+'</span>'+
+          '<button class="ap-cf-link" style="font-size:12px" onclick="this.closest(\'.ap-cf-paper\').querySelector(\'.ap-cf-trace\').classList.toggle(\'on\')">Where each part came from</button></div>'+
+        '<div class="ap-cf-trace">'+(tr.body?'<div><b>Body:</b> '+esc(tr.body)+'</div>':'')+(tr.hooks?'<div><b>'+esc(hookWord)+'s:</b> '+esc(tr.hooks)+'</div>':'')+(tr.claims?'<div><b>Claims:</b> '+esc(tr.claims)+'</div>':'')+'</div>'+
+      '</div>'+
+      '<div class="ap-cf-acts"><button class="rd-btn sm" onclick="apCfCopy(\''+o.id+'\','+hi+',this)">⧉ Copy this version</button>'+
+        (hooks.length>1?'<button class="rd-btn sm" onclick="apCfCopyHooks(\''+o.id+'\',this)">⧉ Copy all '+esc(hookWord.toLowerCase())+'s</button>':'')+
+        '<button class="rd-btn sm" onclick="apCfDownload(\''+o.id+'\')">⬇ Download .txt</button></div>'+
+      (isAd?'<div class="ap-cf-funnel"><span>Ad draft</span><i>→</i><span>Survey</span><i>→</i><span>Landing / VSL</span><i>→</i><span>Booking</span><i>→</i><span>Follow-up</span></div>'+
+        '<p style="font-size:12.5px;color:var(--rd-muted);margin-top:8px">Survey, landing and booking pages come from the full funnel run. Each asset gets its own review.</p>':'')+
+    '</article><aside class="ap-cf-card ap-cf-rev"><span class="lbl">Second human checkpoint</span><h3>Ready for review?</h3>'+
+      '<p>Tick each one when it is true. Your name and the date are saved with the sign-off.</p>'+
+      AP_CF_CHECKS.map(function(t,i){return '<label class="ap-cf-chk"><input type="checkbox" '+(chk[i]?'checked':'')+(rev?' disabled':'')+' onchange="apCfTick(\''+o.id+'\','+i+',this.checked)"> '+esc(t)+'</label>';}).join('')+
+      (flags.length?'<div class="ap-cf-flags"><b>The agent flagged '+flags.length+' thing'+(flags.length===1?'':'s')+' to check</b><ul>'+flags.map(function(f){return '<li>'+esc(f)+'</li>';}).join('')+'</ul></div>':'')+
+      '<div class="ap-cf-stat" id="cfRevStat">'+(rev?'Marked ready by '+esc(String(rev.author||'').split('@')[0])+' '+esc(apAgo(rev.created_at))+'. Nothing was published.':(left?left+' item'+(left===1?'':'s')+' to check before marking this ready.':'All checked. Mark it ready when you are happy.'))+'</div>'+
+      (rev?'':'<button class="rd-btn pri" id="cfReadyBtn" '+(left?'disabled':'')+' onclick="apCfMarkReady(\''+o.id+'\',this)">Mark ready</button>')+
+      '<div class="ap-cf-learn"><b>The learning loop</b>Before launch, competitor engagement and ad duration are stand-ins. Once ads run, your click-through, qualified leads and booked calls rank future hooks, and measured results stay separate from inferred ones.</div>'+
+    '</aside></div>';
+}
+function apCfTick(id,i,v){
+  const c=window.__cfChecks[id]||[];c[i]=v;window.__cfChecks[id]=c;
+  const left=AP_CF_CHECKS.filter(function(_,k){return !c[k];}).length;
+  const s=document.getElementById('cfRevStat');if(s)s.textContent=left?left+' item'+(left===1?'':'s')+' to check before marking this ready.':'All checked. Mark it ready when you are happy.';
+  const b=document.getElementById('cfReadyBtn');if(b)b.disabled=left>0;
+}
+async function apCfMarkReady(id,btn){
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  try{
+    await apPost('agent_feedback',{agent:'content_generation',target_type:'draft_review',target_id:id,action:'ready',feedback:JSON.stringify({checked:AP_CF_CHECKS}),author:apCfMe()});
+    toast('Marked ready. Nothing was published.');
+    await apCfLoad(true);
+    const h=btn&&btn.closest('.ap-tphost');if(h)apCfDraftsRender(h);
+    const c=document.querySelector('#apChrome .rd-tab[data-tab="drafts"] .c');if(c)c.textContent=apCfDraftsToReview()||'';
+  }catch(e){toast('Could not save: '+e.message,false);if(btn){btn.disabled=false;btn.textContent='Mark ready';}}
+}
+function apCfFind(id){return AP_CF&&AP_CF.drafts.find(function(x){return x.id===id;});}
+function apCfCopyText(t,btn){
+  const done=function(){if(btn){const o=btn.textContent;btn.textContent='✓ Copied';setTimeout(function(){btn.textContent=o;},1400);}};
+  try{navigator.clipboard.writeText(t).then(done,function(){done();});}catch(e){done();}
+}
+function apCfCopy(id,hi,btn){const o=apCfFind(id);if(o)apCfCopyText(apCfDraftText(o,hi),btn);}
+function apCfCopyHooks(id,btn){const o=apCfFind(id);if(o)apCfCopyText(apArr(o.d.hooks).map(function(h){return (h.label?h.label+': ':'')+h.text;}).join('\n'),btn);}
+function apCfDownload(id){
+  const o=apCfFind(id);if(!o)return;const d=o.d||{};
+  const L=[apCfDraftTitle(o),'Format: '+(AP_CF_FMT[d.format]||d.format),''];
+  apArr(d.hooks).forEach(function(h){L.push((h.label||'Hook')+': '+h.text);});
+  L.push('',d.body||'','',(d.cta?'CTA: '+d.cta:''),d.headline?'Headline: '+d.headline:'',apArr(d.hashtags).join(' '));
+  if(apArr(d.review_flags).length){L.push('','Check before publishing:');apArr(d.review_flags).forEach(function(f){L.push('- '+f);});}
+  const name=(apCfDraftTitle(o).replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()||'draft')+'.txt';
+  if(typeof apDl==='function')apDl(name,new Blob([L.filter(function(x){return x!==null&&x!==undefined;}).join('\n')],{type:'text/plain'}));
+}
+
+
+/* ---------------- wiring ---------------- */
+function apCfDraftCount(){
+  if(!AP_CF){apCfLoad().then(function(){const t=document.querySelector('#apChrome .rd-tab[data-tab="drafts"]');const n=apCfDraftsToReview();
+    if(t&&n){let c=t.querySelector('.c');if(!c){c=document.createElement('span');c.className='c';t.appendChild(c);}c.textContent=n;}apCfBadges();});return '';}
+  return apCfDraftsToReview()||'';
+}
+function apCfBadges(){
+  if(!AP_CF)return;
+  let n=0;const C=AP_CF;if(C.intel[0]&&!apCfDecision(C.intel[0].run_id))n++;if(C.ads[0]&&!apCfDecision(C.ads[0].run_id))n++;
+  const b=document.getElementById('e3BriefBdg');if(b){b.textContent=n;b.style.display=n?'':'none';}
+}
+(function(){const _l=apCfLoad;apCfLoad=async function(){const r=await _l.apply(this,arguments);try{apCfBadges();}catch(e){}return r;};})();
+(function(){
+  const _r=render;
+  render=function(){
+    if(state.engine==='e3'&&(state.view==='create'||state.view==='briefs')){
+      if(S.page!=='ap60')nav('ap60');
+      apChromeClear();
+      const p=state.view==='create'?apRenderCreate():apRenderBriefs();
+      Promise.resolve(p).catch(function(e){const m=document.getElementById('main');if(m)m.innerHTML='<div class="empty"><div class="big">This page hit an error</div>'+esc(e.message)+'</div>';});
+      apNavSync();try{window.scrollTo(0,0);}catch(e){}
+      return;
+    }
+    return _r.apply(this,arguments);
+  };
+})();
+/* after sign-in, count what needs a person */
+setTimeout(function(){if(typeof AP_USER!=='undefined'&&AP_USER)apCfLoad().catch(function(){});},2500);
+</script>
+
+<style id="cta80css">
+.rd-ctas{display:flex;gap:10px;flex:none;margin-top:38px;flex-wrap:wrap;justify-content:flex-end}
+.rd-ctas .rd-cta{margin-top:0}
+.rd-cta.sec{background:#fff;color:var(--rd-ink);border:1px solid var(--rd-line);box-shadow:var(--rd-shadow)}
+.rd-cta.sec:hover{background:var(--rd-bg)}
+@media(max-width:760px){.rd-ctas{margin-top:14px;justify-content:flex-start}}
+</style>
+<script>
+/* overview's two ways in open Create content on the matching path */
+function apCfStart(mode){window.__cf=Object.assign(window.__cf||{},{mode:mode});RD.aptab.create='new';apGo('e3create');}
 </script>
 
 </body>
