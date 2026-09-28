@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="np-boot">
 <head>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -58,6 +58,12 @@ a{color:inherit}
 ::-webkit-scrollbar-track{background:transparent}
 
 /* ══ LOGIN ══ */
+/* v12.12: nothing is shown until the page knows where you belong (dashboard or sign-in) */
+html.np-boot body>*:not(#bootSplash){visibility:hidden!important}
+#bootSplash{display:none}
+html.np-boot #bootSplash{display:flex;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:var(--bg)}
+#bootSplash .bs-ring{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--navy);animation:bsSpin .8s linear infinite}
+@keyframes bsSpin{to{transform:rotate(360deg)}}
 #login{
   position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
   background:
@@ -2210,6 +2216,7 @@ body{font-size:15px}
 </style>
 </head>
 <body>
+<div id="bootSplash" aria-label="Loading"><div class="bs-ring"></div></div>
 
 <!-- ═══ LOGIN ═══ -->
 <div id="welRoot">
@@ -2463,8 +2470,8 @@ body{font-size:15px}
 <div id="login">
   <div class="login-box">
     <div class="login-mark"><span class="dot"></span><span>Spectrum Care Advisory OS</span></div>
-    <h1 id="loginTitle">Choose a view</h1>
-    <p class="sub" id="loginSub">Your workspace is set up. Open it as any role — everyone sees only what their role allows.</p>
+    <h1 id="loginTitle">Sign in</h1>
+    <p class="sub" id="loginSub"></p>
 
     <div id="credBox" style="display:none;text-align:left;max-width:360px;margin:0 auto 6px">
       <div class="field"><label>Email</label><input class="inp" id="liEmail" type="email" placeholder="you@example.org" onkeydown="if(event.key==='Enter')el('liPw').focus()"></div>
@@ -2475,7 +2482,7 @@ body{font-size:15px}
         </div>
     </div>
 
-    <div class="role-grid" id="roleGrid">
+    <div class="role-grid" id="roleGrid" style="display:none">
       <button class="role-card" onclick="signIn('director')">
         <div class="rc-ic" style="background:var(--navy-soft);color:var(--navy)">◈</div>
         <h3>Director</h3>
@@ -2518,7 +2525,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.11 beta</span></span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.12 beta</span></span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -4341,7 +4348,7 @@ function promptCredentials(){
 function showOnboarding(){
   const o=el('onbRoot'); if(!o) return false;
   hideWelcome();
-  o.classList.add('on');                 // class, not inline style — the screen keeps its own layout
+  o.classList.add('on'); bootReveal();                 // class, not inline style — the screen keeps its own layout
   el('login').style.display='none';
   el('app').classList.remove('on');
   window.scrollTo(0,0);
@@ -4356,7 +4363,7 @@ function showWelcome(){
   }
   const w=el('welRoot'); if(!w) return false;
   hideOnboarding();
-  w.classList.add('on');
+  w.classList.add('on'); bootReveal();
   el('login').style.display='none';
   el('app').classList.remove('on');
   window.scrollTo(0,0);
@@ -4467,14 +4474,17 @@ function bootPortal(){
     // this browser knows the account but not the workspace — ask the backend before
     // offering setup, so an outage can never make a returning user look brand new
     hideWelcome(); hideOnboarding();
-    el('login').style.display='flex';
-    if(authReady()) showLoginForm(); else showLoginPage();
+    const resuming=authReady()&&AUTH.session&&sbOn()&&lsGet('np_resume');
+    if(!resuming){ el('login').style.display='flex'; showLoginPage(); return; }
     /* v12.9: the first load ran before the saved sign-in was read, so it had no account to
-       load for. With the session known now, load this account's workspace. */
-    if(AUTH.session&&sbOn()){ ORG_READY=false; HYDRATING=sbHydrate(); }
+       load for. With the session known now, load this account's workspace.
+       v12.12: while that happens the loading screen stays up, then it opens the dashboard,
+       or the sign-in page if the account turns out not to have one. */
+    ORG_READY=false; HYDRATING=sbHydrate();
     whenHydrated(()=>{
-      if(roleFor()&&authReady()&&AUTH.session&&lsGet('np_resume')) signIn(roleFor());
-    },5000);
+      if(roleFor()&&authReady()&&AUTH.session) signIn(roleFor());
+      else { el('login').style.display='flex'; showLoginPage(); }
+    },6000);
     return;
   }
   if(ONB.role && ME[ONB.role]){                                    // returning user
@@ -4492,7 +4502,10 @@ function bootPortal(){
     if(!showOnboarding()) el('login').style.display='flex';
     return;
   }
-  if(!showWelcome() && !showOnboarding()) el('login').style.display='flex';                    // first run
+  /* v12.12: a browser that has never been used here opens the sign-in page, which offers
+     "Sign up" / "Create an agency account", instead of dropping straight into a new agency. */
+  if(sbOn()&&!authReady()&&!lsGet('np_reg_done')){ el('login').style.display='flex'; showLoginPage(); return; }
+  if(!showWelcome() && !showOnboarding()){ el('login').style.display='flex'; showLoginPage(); }   // first run
 }
 
 function signIn(role){ loadNotifPrefs(); loadPilot(); loadDocAct(); loadProgram(); AUTH.signedIn=true;
@@ -4510,7 +4523,7 @@ function signIn(role){ loadNotifPrefs(); loadPilot(); loadDocAct(); loadProgram(
   idleReset();
   orgResolve().then(()=>accountTouch('login'));
   state.role=role; state.view='home'; state.client=null;
-  el('login').style.display='none'; el('app').classList.add('on');
+  el('login').style.display='none'; el('app').classList.add('on'); bootReveal();
   const m=ME[role];
   el('suName').textContent=m.name; el('suRole').textContent=m.role; el('suAv').textContent=m.init;
   { const rp=el('rolePillTxt'); if(rp) rp.textContent=m.label; }
@@ -4518,6 +4531,10 @@ function signIn(role){ loadNotifPrefs(); loadPilot(); loadDocAct(); loadProgram(
   renderNav(); render();
   window.scrollTo(0,0);
 }
+/* v12.12: the loading screen lifts once the page has landed somewhere real. The failsafe
+   makes sure a slow or offline backend can never leave someone staring at it. */
+function bootReveal(){ document.documentElement.classList.remove('np-boot'); }
+setTimeout(bootReveal,9000);
 window.addEventListener('DOMContentLoaded',()=>{ setTimeout(bootPortal,40); });
 function printSheet(html){ let p=el('printArea'); if(!p){ p=document.createElement('div'); p.id='printArea'; document.body.appendChild(p);} p.innerHTML=html; setTimeout(()=>window.print(),50); }
 const wetPill = ()=>`<span class="pill warn" title="This record still needs a wet-ink signature on the printed sheet">✍ Wet signature</span>`;
@@ -14967,9 +14984,10 @@ async function saveCredentials(){
 }
 /* the sign-in screen shown after sign-out once credentials exist */
 function showLoginForm(){
+  bootReveal();
   el('login').classList.add('credmode'); loginGoLabel('Sign in');
   el('loginTitle').textContent=ONB.name?('Welcome back, '+String(ONB.name).split(' ')[0]+'.'):'Sign in';
-  el('loginSub').innerHTML='Sign in to the '+esc(ONB.org&&ONB.org!=='Spectrum'?ONB.org:'Delta Day Program')+' dashboard portal.';
+  el('loginSub').innerHTML=(ONB.org&&ONB.org!=='Spectrum')?'Sign in to the '+esc(ONB.org)+' dashboard portal.':'Sign in to your agency\u2019s care portal.';
   const cb0=el('credBox');
   if(!el('loginBrand')) cb0.insertAdjacentHTML('beforeend','<div id="loginBrand" class="tiny muted" style="text-align:center;margin-top:16px;border-top:1px solid var(--line);padding-top:12px">Powered by Spectrum Care Advisory OS · <span class="demo-tag" style="margin-left:4px">Beta '+APP_VERSION+'</span></div>');
   el('roleGrid').style.display='none';
@@ -14979,6 +14997,7 @@ function showLoginForm(){
 function loginMark(t){ const lm=document.querySelector('#login .login-mark span:last-child'); if(lm) lm.textContent=t; }
 function loginGoLabel(t){ const b=el('liGo'); if(b) b.textContent=t; }
 function showRegisterGate(){
+  bootReveal();
   hideOnboarding(); const wr=el('welRoot'); if(wr) wr.classList.remove('on');
   el('app').classList.remove('on'); el('login').style.display='flex';
   el('login').classList.add('credmode');
