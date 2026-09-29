@@ -16123,7 +16123,7 @@ function afFilter(){
 async function renderHubspot(){
   const main = document.getElementById("main");
   main.innerHTML = `<div class="page-head"><div>
-      <div class="eyebrow">Workspace · CRM</div>
+      <div class="eyebrow">Integrations · HubSpot</div>
       <h1 class="page">HubSpot contacts</h1>
       <div class="page-sub">Synced from HubSpot into the shared knowledge base every 6 hours.</div></div></div>
     <div id="hsBody"><div class="loading">Loading contacts…</div></div>`;
@@ -22997,8 +22997,10 @@ function apInlPaint(canvas){
     '<span class="sep"></span>'+
     nb('↶','Undo',"apInlCmd('undo')")+nb('↷','Redo',"apInlCmd('redo')")+
     (hooks.length?'<span class="sep"></span><select data-nofill="1" title="Swap in another hook from this run"><option value="_">Swap hook…</option>'+hooks.map(function(hk,i){return '<option value="'+i+'">Hook '+(i+1)+': '+esc(String(hk).slice(0,60))+'</option>';}).join('')+'</select>':'')+
-    '<span class="st" id="apInlCount"></span>'+
-    '<div class="ap-inl-tip">Click the hook, the body or the button text on the ad and type. Save when you’re happy with it.</div>';
+    '<span class="st" id="apInlCount"></span>';
+  let hint=canvas.querySelector('.ap-inl-hint');
+  if(!hint){hint=document.createElement('div');hint.className='ap-inl-hint';hint.textContent='Click the hook, the body or the button text on the ad and type. Save when you’re happy with it.';grid.parentNode.insertBefore(hint,grid);}
+  hint.classList.toggle('wide',!!window.__fsAll);
   const hs=tools.querySelector('select');
   if(hs)hs.onchange=function(){if(hs.value==='_')return;const el=document.getElementById('vh_'+vi);if(el){el.textContent=hooks[+hs.value];apInlDirty(vi);}hs.value='_';};
 
@@ -25068,6 +25070,9 @@ async function apAuthRefresh(){
         body:JSON.stringify({refresh_token:s.refresh_token})});
       const j=await res.json().catch(function(){return null;});
       if(!res.ok||!j||!j.access_token){
+        /* another tab may have refreshed first: its new session is already in storage */
+        const now=apSess();
+        if(now&&now.refresh_token&&now.refresh_token!==s.refresh_token&&now.expires_at>Date.now())return now;
         if(res.status===400||res.status===401){apSessSet(null);apSessionLost();}
         return null;
       }
@@ -25082,7 +25087,10 @@ async function apTokenFresh(force){
   if(force||!s.expires_at||s.expires_at-Date.now()<5*60*1000){const n=await apAuthRefresh();return n?n.access_token:(apSess()||{}).access_token||null;}
   return s.access_token;
 }
+function apInApp(){const v=document.getElementById('view-app');return !!(v&&!v.classList.contains('hidden')&&typeof AP_USER!=='undefined'&&AP_USER);}
 function apSessionLost(){
+  /* before sign-in (an old saved session that no longer works) the login screen already covers it */
+  if(!apInApp())return;
   if(AP_SESS_WARNED)return;AP_SESS_WARNED=true;
   const b=document.createElement('div');b.id='apSessBar';
   b.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:3000;background:#101828;color:#fff;border-radius:12px;padding:12px 14px 12px 18px;display:flex;align-items:center;gap:14px;font-size:14px;box-shadow:0 12px 32px rgba(16,24,40,.28)';
@@ -25134,6 +25142,1299 @@ apEnsureSession=async function(){await apTokenFresh(false);return apSess();};
 if(!/jsdom/i.test(navigator.userAgent||''))setInterval(function(){if(apSess())apTokenFresh(false);},4*60*1000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&apSess())apTokenFresh(false).then(function(){try{AP_ORG=null;AP_KT_BRIEF=null;}catch(e){}});});
 if(apSess())apTokenFresh(false);
+
+/* a fresh sign-in clears any leftover warning */
+(function(){const _s=apStore;apStore=function(j){const r=_s.apply(this,arguments);if(r){AP_SESS_WARNED=false;const b=document.getElementById('apSessBar');if(b)b.remove();}return r;};})();
+</script>
+
+<style id="v85css">
+/* ---------- v85 · sidebar scrolls, profile stays pinned ---------- */
+aside.rd-sidebar{overflow:hidden}
+aside.rd-sidebar .ap-sb-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;display:flex;flex-direction:column;padding-bottom:10px;scrollbar-width:thin;scrollbar-color:#D0D5DD transparent}
+aside.rd-sidebar .ap-sb-scroll::-webkit-scrollbar{width:6px}
+aside.rd-sidebar .ap-sb-scroll::-webkit-scrollbar-thumb{background:#D0D5DD;border-radius:6px}
+aside.rd-sidebar .sb-foot{flex:none;background:#fff;position:relative;z-index:2}
+aside.rd-sidebar .sb-foot.ap-sb-shadow{box-shadow:0 -8px 16px -10px rgba(16,24,40,.18)}
+aside.rd-sidebar .rd-sb-brand{flex:none}
+@media(max-width:860px){aside.rd-sidebar{overflow:hidden!important}}
+
+/* ---------- v85 · editor toolbar reads on white ---------- */
+.ap60 .ap-inl-tools{background:#101828!important;border-color:#101828!important;color:#fff;box-shadow:0 10px 24px rgba(16,24,40,.26)!important}
+.ap60 .ap-inl-tools button{color:#F2F4F7}
+.ap60 .ap-inl-tools button:hover{background:rgba(255,255,255,.14)}
+.ap60 .ap-inl-tools button:focus-visible{outline:2px solid #FEC84B;outline-offset:1px}
+.ap60 .ap-inl-tools .sep{background:rgba(255,255,255,.2)}
+.ap60 .ap-inl-tools select{background:#1D2939;color:#fff;border-color:rgba(255,255,255,.22)}
+.ap60 .ap-inl-tools select option{background:#fff;color:#101828}
+.ap60 .ap-inl-tools .st{color:#D0D5DD;white-space:normal;text-align:right;flex:1 1 160px;min-width:0;line-height:1.35}
+.ap60 .ap-inl-tools .st.warn{color:#FEC84B}
+.ap60 .ap-inl-tools .ap-inl-tip{display:none}
+.ap60 .ap-inl-hint{max-width:540px;margin:-4px auto 12px;font-size:12.5px;color:var(--rd-muted);text-align:center;line-height:1.45}
+.ap60 .fs-canvas .studio-canvas:not(.ap-solo)~.ap-inl-hint,.ap60 .ap-inl-hint.wide{max-width:1100px}
+.ap60 .ap-inl-acts{border-color:#D0D5DD!important;box-shadow:0 -6px 22px rgba(16,24,40,.14)!important}
+
+/* ---------- v85 · shared bits for the integrations ---------- */
+.ap-int-modal{position:fixed;inset:0;z-index:2500;background:rgba(16,24,40,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.ap-int-modal .box{background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(16,24,40,.3);width:min(520px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:22px 24px}
+.ap-int-modal h3{margin:0 0 6px;font-size:19px;color:var(--rd-ink)}
+.ap-int-modal p{margin:0 0 12px;font-size:14px;line-height:1.55;color:var(--rd-text)}
+.ap-int-modal ol{margin:0 0 14px;padding-left:20px;font-size:14px;line-height:1.6;color:var(--rd-text)}
+.ap-int-modal .row{display:flex;gap:8px;flex-wrap:wrap}
+.ap-int-modal input{flex:1 1 220px;min-width:0;font:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--rd-line);border-radius:9px}
+.ap-int-modal .err{color:#B42318;font-size:13px;min-height:18px;margin-top:8px}
+.ap-int-modal .ok{background:#ECFDF3;border:1px solid #ABEFC6;color:#067647;border-radius:10px;padding:10px 12px;font-size:13.5px;margin-bottom:14px}
+.ap-int-modal .foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}
+.ap-int-modal .x{float:right;background:none;border:0;font-size:22px;line-height:1;color:var(--rd-muted);cursor:pointer;margin:-6px -8px 0 0;padding:4px 8px}
+.ap-int-modal small{display:block;font-size:12.5px;color:var(--rd-muted);line-height:1.5}
+
+/* ---------- v85 · Calls (Fathom) ---------- */
+.ap-calls{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:18px;align-items:start}
+.ap-calls .list{background:#fff;border:1px solid var(--rd-line);border-radius:12px;overflow:hidden;position:sticky;top:80px;max-height:calc(100vh - 100px);display:flex;flex-direction:column}
+.ap-calls .list .q{padding:10px;border-bottom:1px solid var(--rd-line-soft)}
+.ap-calls .list .q input{width:100%;box-sizing:border-box;font:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--rd-line);border-radius:9px}
+.ap-calls .list .rows{overflow-y:auto;flex:1 1 auto;min-height:0}
+.ap-call-row{display:block;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid var(--rd-line-soft);padding:12px 14px;cursor:pointer;font:inherit;color:var(--rd-ink)}
+.ap-call-row:hover{background:var(--rd-bg)}
+.ap-call-row.on{background:var(--rd-blue-soft);box-shadow:inset 3px 0 0 var(--rd-blue)}
+.ap-call-row b{display:block;font-size:14px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ap-call-row small{display:block;font-size:12.5px;color:var(--rd-muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ap-call-chip{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.02em;border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:1px;background:#F2F4F7;color:#475467}
+.ap-call-chip.ext{background:#FEF6E7;color:#93600B}
+.ap-calls .more{padding:10px;text-align:center}
+.ap-calls .empty-l{padding:22px 16px;color:var(--rd-muted);font-size:13.5px;text-align:center}
+.ap-call-d{background:#fff;border:1px solid var(--rd-line);border-radius:12px;padding:20px 22px;min-width:0}
+.ap-call-d h2{margin:0 0 4px;font-size:21px;line-height:1.3;color:var(--rd-ink)}
+.ap-call-d .meta{font-size:13.5px;color:var(--rd-muted);margin-bottom:14px}
+.ap-call-player{position:relative;width:100%;aspect-ratio:16/9;background:#101828;border-radius:12px;overflow:hidden;margin-bottom:10px}
+.ap-call-player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.ap-call-player .poster{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#fff;background:radial-gradient(circle at 30% 20%,#344054,#101828);border:0;width:100%;cursor:pointer;font:inherit}
+.ap-call-player .poster .pl{width:64px;height:64px;border-radius:50%;background:#fff;color:#101828;display:flex;align-items:center;justify-content:center;font-size:24px;padding-left:4px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.ap-call-player .poster span{font-size:14px;opacity:.9}
+.ap-call-player .poster.off{cursor:default}
+.ap-call-note{font-size:12.5px;color:var(--rd-muted);margin:0 0 14px;line-height:1.45}
+.ap-call-acts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.ap-call-seg{display:flex;gap:4px;border-bottom:1px solid var(--rd-line);margin-bottom:14px;overflow-x:auto}
+.ap-call-seg button{background:none;border:0;border-bottom:2px solid transparent;padding:9px 12px;font:inherit;font-size:14px;font-weight:600;color:var(--rd-muted);cursor:pointer;white-space:nowrap}
+.ap-call-seg button.on{color:var(--rd-ink);border-bottom-color:var(--rd-blue)}
+.ap-call-md{font-size:14.5px;line-height:1.6;color:var(--rd-text)}
+.ap-call-md h3,.ap-call-md h4{font-size:15px;margin:16px 0 6px;color:var(--rd-ink)}
+.ap-call-md h3:first-child,.ap-call-md h4:first-child{margin-top:0}
+.ap-call-md ul{margin:4px 0 10px;padding-left:20px}
+.ap-call-md p{margin:0 0 10px}
+.ap-call-md a{color:var(--rd-blue-ink,#1d4ed8)}
+.ap-call-tq{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.ap-call-tq input{flex:1 1 200px;min-width:0;font:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--rd-line);border-radius:9px}
+.ap-call-tq span{font-size:12.5px;color:var(--rd-muted)}
+.ap-call-tr{max-height:520px;overflow-y:auto;border:1px solid var(--rd-line-soft);border-radius:10px;padding:6px 12px}
+.ap-call-ln{display:grid;grid-template-columns:62px minmax(0,1fr);gap:10px;padding:7px 0;border-bottom:1px solid #F2F4F7;font-size:14px;line-height:1.5}
+.ap-call-ln:last-child{border-bottom:0}
+.ap-call-ln .t{font-variant-numeric:tabular-nums;color:var(--rd-muted);font-size:12.5px;padding-top:2px}
+.ap-call-ln b{font-weight:700;color:var(--rd-ink);margin-right:4px}
+.ap-call-ln mark{background:#FEF0C7;color:inherit;border-radius:3px;padding:0 1px}
+.ap-call-ai{list-style:none;margin:0;padding:0}
+.ap-call-ai li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--rd-line-soft);font-size:14px;line-height:1.5}
+.ap-call-ai li:last-child{border-bottom:0}
+.ap-call-ai .bx{flex:none;width:18px;height:18px;border:1.5px solid #98A2B3;border-radius:5px;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:12px}
+.ap-call-ai .bx.done{background:#12B76A;border-color:#12B76A;color:#fff}
+.ap-call-ai small{display:block;color:var(--rd-muted);font-size:12.5px;margin-top:2px}
+.ap-call-ai a{color:var(--rd-blue-ink,#1d4ed8);font-size:12.5px}
+.ap-call-conn{background:#fff;border:1px solid var(--rd-line);border-radius:12px;padding:22px 24px;max-width:640px}
+.ap-call-conn h3{margin:0 0 6px;font-size:19px}
+.ap-call-conn p,.ap-call-conn li{font-size:14px;line-height:1.6;color:var(--rd-text)}
+.ap-call-conn ol{padding-left:20px;margin:6px 0 14px}
+.ap-call-conn .row{display:flex;gap:8px;flex-wrap:wrap}
+.ap-call-conn input{flex:1 1 240px;min-width:0;font:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--rd-line);border-radius:9px}
+.ap-call-conn .err{color:#B42318;font-size:13px;min-height:18px;margin-top:8px}
+.ap-call-err{background:#FEF3F2;border:1px solid #FECDCA;color:#B42318;border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.5}
+@media(max-width:1000px){.ap-calls{grid-template-columns:1fr}.ap-calls .list{position:static;max-height:420px}}
+@media(max-width:600px){.ap-call-d{padding:16px}.ap-call-d h2{font-size:18px}.ap-call-ln{grid-template-columns:1fr;gap:2px}}
+
+/* Create content: pull a call in as the source */
+.ap-cf-fromcall{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 4px;font-size:13px;color:var(--rd-muted)}
+.ap-cf-callpick{border:1px solid var(--rd-line);border-radius:10px;margin:8px 0 12px;overflow:hidden;background:#fff}
+.ap-cf-callpick .q{padding:8px;border-bottom:1px solid var(--rd-line-soft)}
+.ap-cf-callpick .q input{width:100%;box-sizing:border-box;font:inherit;font-size:13.5px;padding:8px 10px;border:1px solid var(--rd-line);border-radius:8px}
+.ap-cf-callpick .rows{max-height:260px;overflow-y:auto}
+.ap-cf-callpick .msg{padding:14px;font-size:13.5px;color:var(--rd-muted)}
+
+/* ---------- v85 · Notion ---------- */
+.ap-nt{display:grid;grid-template-columns:minmax(260px,380px) minmax(0,1fr);gap:18px;align-items:start}
+.ap-nt .col{background:#fff;border:1px solid var(--rd-line);border-radius:12px;overflow:hidden}
+.ap-nt .bar{display:flex;gap:8px;align-items:center;padding:10px;border-bottom:1px solid var(--rd-line-soft);flex-wrap:wrap}
+.ap-nt .bar select,.ap-nt .bar input{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--rd-line);border-radius:9px;background:#fff;min-width:0;flex:1 1 160px}
+.ap-nt .rows{max-height:calc(100vh - 260px);min-height:120px;overflow-y:auto}
+.ap-nt-row{display:block;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid var(--rd-line-soft);padding:11px 14px;cursor:pointer;font:inherit;color:var(--rd-ink)}
+.ap-nt-row:hover{background:var(--rd-bg)}
+.ap-nt-row.on{background:var(--rd-blue-soft);box-shadow:inset 3px 0 0 var(--rd-blue)}
+.ap-nt-row b{display:block;font-size:14px;line-height:1.35;word-break:break-word}
+.ap-nt-row small{display:block;font-size:12.5px;color:var(--rd-muted);margin-top:2px}
+.ap-nt-row .pill{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;background:#F2F4F7;color:#475467;margin-left:6px}
+.ap-nt .add{display:flex;gap:8px;padding:10px;border-top:1px solid var(--rd-line-soft);flex-wrap:wrap}
+.ap-nt .add input{flex:1 1 180px;min-width:0;font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--rd-line);border-radius:9px}
+.ap-nt .msg{padding:18px 16px;color:var(--rd-muted);font-size:13.5px;line-height:1.5}
+.ap-nt-doc{background:#fff;border:1px solid var(--rd-line);border-radius:12px;padding:22px 26px;min-width:0}
+.ap-nt-doc h2{margin:0 0 6px;font-size:22px;line-height:1.3;color:var(--rd-ink);word-break:break-word}
+.ap-nt-doc .meta{font-size:13px;color:var(--rd-muted);margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.ap-nt-props{display:grid;grid-template-columns:minmax(90px,150px) minmax(0,1fr);gap:6px 14px;font-size:13.5px;margin:0 0 16px;padding:12px 14px;background:var(--rd-bg);border-radius:10px}
+.ap-nt-props dt{color:var(--rd-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ap-nt-props dd{margin:0;color:var(--rd-ink);word-break:break-word}
+.ap-nt-body{font-size:15px;line-height:1.65;color:var(--rd-text)}
+.ap-nt-body p{margin:0 0 10px;white-space:pre-wrap}
+.ap-nt-body h3{font-size:19px;margin:18px 0 8px;color:var(--rd-ink)}
+.ap-nt-body h4{font-size:16.5px;margin:16px 0 6px;color:var(--rd-ink)}
+.ap-nt-body h5{font-size:15px;margin:14px 0 6px;color:var(--rd-ink)}
+.ap-nt-body ul,.ap-nt-body ol{margin:0 0 10px;padding-left:22px}
+.ap-nt-body blockquote{margin:0 0 10px;padding:4px 14px;border-left:3px solid #D0D5DD;color:#475467}
+.ap-nt-body .callout{display:flex;gap:10px;background:#F9FAFB;border:1px solid var(--rd-line-soft);border-radius:10px;padding:10px 14px;margin:0 0 10px}
+.ap-nt-body pre{background:#101828;color:#F2F4F7;border-radius:10px;padding:12px 14px;overflow-x:auto;font-size:13px;margin:0 0 10px}
+.ap-nt-body code{background:#F2F4F7;border-radius:4px;padding:0 4px;font-size:.92em}
+.ap-nt-body pre code{background:none;padding:0}
+.ap-nt-body hr{border:0;border-top:1px solid var(--rd-line);margin:14px 0}
+.ap-nt-body img{max-width:100%;border-radius:8px;margin:0 0 10px}
+.ap-nt-body .todo{display:flex;gap:8px;align-items:flex-start;margin:0 0 6px}
+.ap-nt-body .todo i{flex:none;width:16px;height:16px;border:1.5px solid #98A2B3;border-radius:4px;margin-top:4px;font-style:normal;font-size:11px;display:flex;align-items:center;justify-content:center}
+.ap-nt-body .todo.done i{background:#12B76A;border-color:#12B76A;color:#fff}
+.ap-nt-body .todo.done span{color:var(--rd-muted);text-decoration:line-through}
+.ap-nt-body .sub{font-size:13px;color:var(--rd-muted);background:var(--rd-bg);border-radius:8px;padding:8px 12px;margin:0 0 10px}
+.ap-nt-body a{color:var(--rd-blue-ink,#1d4ed8);word-break:break-word}
+.ap-nt-empty{padding:40px 20px;text-align:center;color:var(--rd-muted);font-size:14px;line-height:1.55}
+@media(max-width:1000px){.ap-nt{grid-template-columns:1fr}.ap-nt .rows{max-height:380px}}
+@media(max-width:600px){.ap-nt-doc{padding:16px}.ap-nt-props{grid-template-columns:1fr;gap:2px}.ap-nt-props dd{margin-bottom:6px}}
+#apStrip .rd-strip:empty{display:none}
+.ap-calls>*,.ap-nt>*{min-width:0}
+a.rd-btn{text-decoration:none!important}
+.ap-call-tq input,.ap-calls .list .q input,.ap-nt .bar input,.ap-nt .add input,.ap-cf-callpick .q input{border:1px solid var(--rd-line)!important;box-shadow:none!important;background:#fff!important;outline:none}
+.ap-call-tq input:focus,.ap-calls .list .q input:focus,.ap-nt .bar input:focus,.ap-nt .add input:focus,.ap-cf-callpick .q input:focus{border-color:var(--rd-blue)!important;box-shadow:0 0 0 3px rgba(43,95,191,.15)!important}
+.ap-call-ln b{display:block;margin:0 0 1px}
+.ap-call-md ol{margin:4px 0 10px;padding-left:22px}
+@media(max-width:600px){.ap-call-seg button{padding:8px 7px;font-size:13.5px}}
+</style>
+<script>
+/* ===================================================================
+   v85
+   - sidebar: the nav scrolls on its own, the profile stays pinned
+   - Calls: Fathom recordings with an in-page player, summary,
+     transcript and action items (n8n "Dashboard · Fathom Proxy")
+   - Create content: a Fathom call can be the source
+   - Notion: browse, read and add through n8n "Dashboard · Notion Proxy"
+   - Integrations: Fathom connect, Notion listed
+   =================================================================== */
+
+/* ---------------- sidebar ---------------- */
+(function(){
+  const aside=document.querySelector('aside.rd-sidebar');if(!aside||aside.querySelector('.ap-sb-scroll'))return;
+  const foot=aside.querySelector('.sb-foot'),brand=aside.querySelector('.rd-sb-brand');
+  const files=aside.querySelector('.sb-item[data-view="files"]');
+  if(files&&!aside.querySelector('.sb-item[data-view="calls"]')){
+    const b=document.createElement('button');b.className='sb-item sb-sub';b.dataset.view='calls';b.setAttribute('onclick',"apGo('calls')");
+    b.innerHTML='<svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="13" height="12" rx="2"/><path d="M15.5 10.5l6-3.5v10l-6-3.5z"/></svg><span>Calls</span>';files.after(b);
+  }
+  const wrap=document.createElement('div');wrap.className='ap-sb-scroll';
+  let n=brand?brand.nextSibling:aside.firstChild;
+  while(n&&n!==foot){const nx=n.nextSibling;wrap.appendChild(n);n=nx;}
+  if(foot)aside.insertBefore(wrap,foot);else aside.appendChild(wrap);
+  const shade=function(){if(foot)foot.classList.toggle('ap-sb-shadow',wrap.scrollHeight-wrap.scrollTop-wrap.clientHeight>2);};
+  wrap.addEventListener('scroll',shade,{passive:true});window.addEventListener('resize',shade);setTimeout(shade,600);
+  window.apSbReveal=function(){
+    const on=wrap.querySelector('.sb-item.on');
+    if(on){const r=on.getBoundingClientRect(),w=wrap.getBoundingClientRect();if((r.top<w.top||r.bottom>w.bottom)&&on.scrollIntoView)on.scrollIntoView({block:'nearest'});}
+    shade();
+  };
+})();
+(function(){const _s=apNavSync;apNavSync=function(){const r=_s.apply(this,arguments);try{window.apSbReveal&&window.apSbReveal();}catch(e){}return r;};})();
+
+AP_VIEWS.calls={page:'ap60',title:'Calls',v60:{engine:'home',view:'calls'}};
+AP_VIEWS.notion.title='Notion';
+
+/* ---------------- talking to the n8n proxies ---------------- */
+const AP_FATHOM_HOOK=AP_N8N+'fathom-proxy',AP_NOTION_HOOK=AP_N8N+'notion-proxy';
+async function apProxy(url,body,what,retried){
+  const auth=await apTokenFresh(!!retried);
+  if(!auth){const e=new Error('Sign in again to use '+what+'.');e.code='unauthorized';throw e;}
+  let res;
+  try{res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},body,{auth:auth}))});}
+  catch(e){throw new Error('Could not reach the '+what+' connection. Check your internet and try again.');}
+  if(res.status===404)throw new Error('The '+what+' workflow in n8n is switched off. Turn on “Dashboard · '+what+' Proxy” in n8n.');
+  if(!res.ok)throw new Error('The '+what+' connection answered with an error ('+res.status+'). Try again in a minute.');
+  let j=null;try{j=await res.json();}catch(e){throw new Error('The '+what+' connection sent back something unreadable.');}
+  if(j&&j.code==='unauthorized'&&!retried)return apProxy(url,body,what,true);
+  return j;
+}
+function apMiniMd(md){
+  const inl=function(s){
+    return esc(s).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,function(m,t,u){return '<a href="'+u+'" target="_blank" rel="noopener">'+t+'</a>';});
+  };
+  const out=[];let list=null;
+  const close=function(){if(list){out.push('</'+list+'>');list=null;}};
+  String(md||'').split('\n').forEach(function(raw){
+    const l=raw.trim();
+    if(!l){close();return;}
+    let m;
+    if((m=l.match(/^#{1,6}\s+(.*)$/))){close();out.push('<h4>'+inl(m[1])+'</h4>');return;}
+    if((m=l.match(/^[-*•]\s+(.*)$/))){if(list!=='ul'){close();out.push('<ul>');list='ul';}out.push('<li>'+inl(m[1])+'</li>');return;}
+    if((m=l.match(/^\d+[.)]\s+(.*)$/))){if(list!=='ol'){close();out.push('<ol>');list='ol';}out.push('<li>'+inl(m[1])+'</li>');return;}
+    close();out.push('<p>'+inl(l)+'</p>');
+  });
+  close();return out.join('');
+}
+
+/* ---------------- Fathom ---------------- */
+const AP_FT={status:null,items:[],cursor:null,loaded:false,tx:{},sel:null,q:'',seg:'summary',t:0};
+function apFtFail(j){const e=new Error((j&&j.message)||'Fathom did not answer.');e.code=j&&j.code;return e;}
+async function apFtStatus(force){
+  if(AP_FT.status&&!force)return AP_FT.status;
+  const j=await apProxy(AP_FATHOM_HOOK,{action:'status'},'Fathom');
+  if(!j||j.ok===false)throw apFtFail(j);
+  AP_FT.status=j;return j;
+}
+async function apFtLoad(force){
+  if(AP_FT.loaded&&!force&&Date.now()-AP_FT.t<60*1000)return AP_FT.items;
+  const j=await apProxy(AP_FATHOM_HOOK,{action:'list'},'Fathom');
+  if(!j||j.ok===false)throw apFtFail(j);
+  AP_FT.items=(j.items||[]).filter(function(c){return c&&c.id!=null;}).map(apFtNorm);
+  AP_FT.cursor=j.next_cursor||null;AP_FT.loaded=true;AP_FT.t=Date.now();
+  return AP_FT.items;
+}
+async function apFtMore(){
+  if(!AP_FT.cursor)return [];
+  const j=await apProxy(AP_FATHOM_HOOK,{action:'list',cursor:AP_FT.cursor},'Fathom');
+  if(!j||j.ok===false)throw apFtFail(j);
+  const have={};AP_FT.items.forEach(function(c){have[c.id]=1;});
+  const add=(j.items||[]).filter(function(c){return c&&c.id!=null&&!have[c.id];}).map(apFtNorm);
+  AP_FT.items=AP_FT.items.concat(add);AP_FT.cursor=j.next_cursor||null;
+  return add;
+}
+async function apFtTranscript(id){
+  if(AP_FT.tx[id])return AP_FT.tx[id];
+  const j=await apProxy(AP_FATHOM_HOOK,{action:'transcript',id:String(id)},'Fathom');
+  if(!j||j.ok===false)throw apFtFail(j);
+  AP_FT.tx[id]=j.transcript||[];return AP_FT.tx[id];
+}
+function apFtNorm(c){if(c.invitees&&c.invitees.length)c.external=c.invitees.some(function(i){return i.external;});return c;}
+function apFtTeamOnly(c){const s=String(c.shared_with||'').toLowerCase();return !!s&&!/public|anyone|link/.test(s);}
+function apFtCall(id){return AP_FT.items.find(function(c){return String(c.id)===String(id);});}
+function apFtMins(c){const a=new Date(c.start).getTime(),b=new Date(c.end).getTime();return (a&&b&&b>a)?Math.round((b-a)/60000):0;}
+function apFtHours(m){if(!m)return '0';const h=m/60;return h<10?(Math.round(h*10)/10).toString():String(Math.round(h));}
+function apFtWhen(c){
+  const d=new Date(c.start||c.created_at);if(isNaN(d))return '';
+  const same=d.getFullYear()===new Date().getFullYear();
+  return d.toLocaleDateString(undefined,same?{weekday:'short',month:'short',day:'numeric'}:{month:'short',day:'numeric',year:'numeric'})+' · '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+}
+function apFtEmbed(c){const m=String(c.share_url||'').match(/^https:\/\/fathom\.video\/share\/([A-Za-z0-9_-]{6,})/);return m?'https://fathom.video/embed/'+m[1]+'?autoplay=1':'';}
+function apFtLink(c){const u=String(c.share_url||c.url||'');return /^https:\/\/([a-z0-9-]+\.)*fathom\.video\//i.test(u)?u:'';}
+function apFtGuests(c){return (c.invitees||[]).filter(function(i){return !(c.recorded_by&&i.email&&i.email===c.recorded_by.email);});}
+function apFtText(tx){return (tx||[]).map(function(l){return (l.speaker?l.speaker+': ':'')+l.text;}).join('\n');}
+
+async function apRenderCalls(){
+  const main=document.getElementById('main');if(!main)return;
+  main.innerHTML='<div class="loading">Loading calls…</div>';
+  let st=null,err=null;
+  try{st=await apFtStatus(true);}catch(e){err=e;}
+  if(!err&&st.connected){try{await apFtLoad(false);}catch(e){err=e;}}
+  if(state.view!=='calls')return;
+  main.innerHTML='';
+  const conn=!err&&st&&st.connected;
+  const I=function(){return AP_FT.items;};
+  const pane=function(key,label,cnt){return {key:key,label:label,count:cnt,render:function(){},onShow:function(){
+    const o=window.__apDemo;const t=o&&o.tabs.find(function(x){return x.key===key;});if(t&&t._host)apCallsPane(t._host,key);}};};
+  apDemo({page:'calls',eyebrow:'INTEGRATIONS · FATHOM',title:'Calls',
+    sub:'Your Fathom recordings with the video, summary, transcript and action items. Any call can become the source for a new draft.',
+    cta:conn?{label:'Refresh from Fathom',go:'apCallsReload()'}:null,
+    purpose:{tag:'Fathom',
+      bold:conn?'Read live from Fathom':(err&&err.code!=='not_connected'?'Fathom could not be reached':'Connect Fathom once for the whole team'),
+      small:conn?'Nothing is copied into the dashboard. Pick a call to watch it here, skim the summary, search the transcript, or send it to Create content.':'Paste a Fathom API key and every call it can see shows up here for the team.',
+      alt:conn?'<button class="rd-btn sm" onclick="apFathomModal()">Key ending '+esc(st.hint||'····')+'</button>':''},
+    strip:function(){
+      if(!conn)return [];
+      const it=I(),now=new Date();
+      const mo=it.filter(function(c){const d=new Date(c.start);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).length;
+      const mins=it.reduce(function(a,c){return a+apFtMins(c);},0);
+      return [{n:it.length,l:'Calls loaded',s:AP_FT.cursor?'older ones still in Fathom':'everything the key can see',tab:'all'},
+        {n:it.filter(function(c){return c.external;}).length,l:'With clients',s:'outside guests on the invite',tab:'ext'},
+        {n:mo,l:'This month',s:now.toLocaleString(undefined,{month:'long'})},
+        {n:apFtHours(mins),l:'Hours recorded',s:'across the loaded calls'}];},
+    tabs:conn?[pane('all','All',function(){return I().length;}),
+        pane('ext','Clients',function(){return I().filter(function(c){return c.external;}).length;}),
+        pane('int','Internal',function(){return I().filter(function(c){return !c.external;}).length;})]
+      :[{key:'setup',label:err&&err.code!=='not_connected'?'Connection':'Set up',render:function(h){apCallsSetup(h,err);}}]});
+}
+function apCallsSetup(h,err){
+  const bad=err&&err.code&&err.code!=='not_connected';
+  h.innerHTML='<div class="ap-call-conn">'+
+    (err&&err.code!=='not_connected'&&err.code!=='bad_key'?'<div class="ap-call-err" style="margin-bottom:14px">'+esc(err.message)+'</div>':'')+
+    (err&&err.code==='bad_key'?'<div class="ap-call-err" style="margin-bottom:14px">'+esc(err.message)+'</div>':'')+
+    '<h3>'+(bad&&err.code!=='bad_key'?'Try again, or check the key':'Connect Fathom')+'</h3>'+
+    '<p>Connect once and the whole team can watch calls here, read the summaries and use transcripts as sources for new drafts.</p>'+
+    '<ol><li>In Fathom, open your <b>User Settings</b> and go to <b>API Access</b>.</li><li>Generate an API key and copy it.</li><li>Paste it below.</li></ol>'+
+    '<div class="row"><input id="apFtKeyP" type="password" autocomplete="off" placeholder="Fathom API key" onkeydown="if(event.key===\'Enter\')apFtConnect(\'apFtKeyP\',\'apFtErrP\',this)">'+
+      '<button class="rd-btn sm pri" onclick="apFtConnect(\'apFtKeyP\',\'apFtErrP\',this)">Connect</button>'+
+      (err?'<button class="rd-btn sm" onclick="render()">Retry</button>':'')+'</div>'+
+    '<div class="err" id="apFtErrP"></div>'+
+    '<p style="font-size:12.5px;color:var(--rd-muted);margin-top:10px">The key is stored in the team’s n8n, not in this browser. The dashboard only reads calls, it never changes anything in Fathom. A key sees the calls its owner recorded plus anything shared with them or their team.</p>'+
+  '</div>';
+}
+function apCallsReload(){AP_FT.loaded=false;AP_FT.tx={};render();}
+function apCallsPane(h,f){
+  h.dataset.f=f;
+  h.innerHTML='<div class="ap-calls"><div class="list"><div class="q"><input type="search" placeholder="Search calls or people" aria-label="Search calls" value="'+esc(AP_FT.q)+'" oninput="apCallsQ(this)"></div>'+
+    '<div class="rows"></div><div class="more"'+(AP_FT.cursor?'':' hidden')+'><button class="rd-btn sm" onclick="apCallsMore(this)">Load older calls</button></div></div>'+
+    '<div class="detail"></div></div>';
+  apCallsRows(h);
+}
+function apCallsFiltered(f){
+  const q=AP_FT.q.trim().toLowerCase();
+  return AP_FT.items.filter(function(c){
+    if(f==='ext'&&!c.external)return false;if(f==='int'&&c.external)return false;
+    if(!q)return true;
+    const hay=[c.title,c.meeting_title,c.recorded_by&&c.recorded_by.name].concat((c.invitees||[]).map(function(i){return i.name+' '+i.email;})).join(' ').toLowerCase();
+    return hay.indexOf(q)>=0;
+  });
+}
+function apCallsRows(h){
+  const f=h.dataset.f||'all',rows=apCallsFiltered(f),box=h.querySelector('.rows');if(!box)return;
+  if(!rows.length){
+    const any=AP_FT.items.some(function(c){return f==='ext'?c.external:f==='int'?!c.external:true;});
+    box.innerHTML='<div class="empty-l">'+(AP_FT.q&&any?'No calls match that search.':f==='ext'?'No calls with outside guests loaded yet.':f==='int'?'No internal calls loaded yet.':'No calls yet. Record one in Fathom and refresh.')+'</div>';
+  }else box.innerHTML=rows.map(function(c){
+    const g=apFtGuests(c),m=apFtMins(c);
+    return '<button type="button" class="ap-call-row'+(String(c.id)===String(AP_FT.sel)?' on':'')+'" data-id="'+esc(String(c.id))+'" onclick="apCallPick(this)">'+
+      '<b>'+esc(c.title)+(c.external?'<span class="ap-call-chip ext">Client</span>':'')+'</b>'+
+      '<small>'+esc(apFtWhen(c))+(m?' · '+m+' min':'')+'</small>'+
+      (g.length?'<small>'+esc(g.slice(0,3).map(function(i){return i.name||i.email;}).join(', ')+(g.length>3?' +'+(g.length-3):''))+'</small>':'')+'</button>';}).join('');
+  const more=h.querySelector('.more');if(more)more.hidden=!AP_FT.cursor;
+  let sel=rows.find(function(c){return String(c.id)===String(AP_FT.sel);});
+  if(!sel&&rows[0]){sel=rows[0];AP_FT.sel=sel.id;const b=box.querySelector('.ap-call-row');if(b)b.classList.add('on');}
+  const d=h.querySelector('.detail');
+  if(d&&(!sel||d.dataset.id!==String(sel.id)))apCallDetail(d,sel);
+}
+function apCallsQ(inp){AP_FT.q=inp.value;const h=inp.closest('.ap-tphost');if(h)apCallsRows(h);}
+async function apCallsMore(btn){
+  const h=btn.closest('.ap-tphost');btn.disabled=true;btn.textContent='Loading…';
+  try{const add=await apFtMore();if(!add.length&&!AP_FT.cursor)toast('That is every call the key can see');}
+  catch(e){toast(e.message,false);}
+  btn.disabled=false;btn.textContent='Load older calls';
+  if(h)apCallsRows(h);apDemoRefreshStrip();apCallsCounts();
+}
+function apCallsCounts(){
+  const o=window.__apDemo;if(!o||o.page!=='calls')return;
+  o.tabs.forEach(function(t){const b=document.querySelector('#apChrome .rd-tab[data-tab="'+t.key+'"] .c');if(b&&typeof t.count==='function')b.textContent=t.count();});
+}
+function apCallPick(btn){
+  const h=btn.closest('.ap-tphost');AP_FT.sel=btn.dataset.id;AP_FT.seg='summary';
+  h.querySelectorAll('.ap-call-row').forEach(function(b){b.classList.toggle('on',b===btn);});
+  const d=h.querySelector('.detail');apCallDetail(d,apFtCall(btn.dataset.id));
+  if(window.innerWidth<=1000&&d&&d.scrollIntoView)d.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function apCallDetail(d,c){
+  if(!d)return;
+  if(!c){d.dataset.id='';d.innerHTML='<div class="ap-call-d"><div class="ap-nt-empty">Pick a call to see it here.</div></div>';return;}
+  d.dataset.id=String(c.id);
+  const emb=apFtEmbed(c),link=apFtLink(c),g=apFtGuests(c),m=apFtMins(c),id=esc(String(c.id)),team=apFtTeamOnly(c);
+  const meta=[apFtWhen(c),m?m+' min':'',c.recorded_by&&c.recorded_by.name?'recorded by '+c.recorded_by.name:'',g.length?g.length+' guest'+(g.length===1?'':'s'):''].filter(Boolean).join(' · ');
+  d.innerHTML='<div class="ap-call-d">'+
+    '<h2>'+esc(c.title)+(c.external?'<span class="ap-call-chip ext">Client</span>':'')+'</h2><div class="meta">'+esc(meta)+'</div>'+
+    '<div class="ap-call-player">'+(emb&&!team?'<button type="button" class="poster" data-src="'+esc(emb)+'" onclick="apCallPlay(this)"><span class="pl">▶</span><span>Play the recording here</span></button>'
+      :team?'<div class="poster off"><b>Team-only recording</b><span>Fathom only plays this for people signed in to your Fathom team, and it won’t pass that sign-in to another website.</span>'+
+          (link?'<a class="rd-btn sm" href="'+esc(link)+'" target="_blank" rel="noopener">▶ Watch in Fathom ↗</a>':'')+'</div>'
+      :'<div class="poster off"><span>This call has no share link yet, so it can only be watched in Fathom.</span></div>')+'</div>'+
+    (team?'<p class="ap-call-note">To watch it here instead, open the call in Fathom and set its sharing to <b>Anyone with the link</b>. Summary, transcript and action items work either way.</p>'
+      :emb?'<p class="ap-call-note">Streams from Fathom. If it will not play, the call’s share link may have been made private. Open it in Fathom instead.</p>':'')+
+    '<div class="ap-call-acts"><button class="rd-btn sm pri" onclick="apCallToCreate(\''+id+'\',this)">✎ Use as content source</button>'+
+      (link?'<a class="rd-btn sm" href="'+esc(link)+'" target="_blank" rel="noopener">Open in Fathom ↗</a>':'')+
+      '<button class="rd-btn sm" onclick="apCallCopy(\''+id+'\',this)">⧉ Copy transcript</button></div>'+
+    '<div class="ap-call-seg" role="tablist">'+
+      [['summary','Summary'],['transcript','Transcript'],['actions','Actions'+(c.actions&&c.actions.length?' ('+c.actions.length+')':'')],['people','People'+(g.length?' ('+g.length+')':'')]]
+        .map(function(s){return '<button type="button" role="tab" data-s="'+s[0]+'" class="'+(AP_FT.seg===s[0]?'on':'')+'" onclick="apCallSeg(this)">'+esc(s[1])+'</button>';}).join('')+
+    '</div><div class="ap-call-body"></div></div>';
+  apCallSegPaint(d,c);
+}
+function apCallPlay(btn){
+  const src=btn.dataset.src;if(!/^https:\/\/fathom\.video\/embed\//.test(src))return;
+  const f=document.createElement('iframe');f.src=src;f.title='Fathom recording';f.allow='autoplay; fullscreen; picture-in-picture';f.setAttribute('allowfullscreen','');
+  btn.replaceWith(f);
+}
+function apCallSeg(btn){
+  AP_FT.seg=btn.dataset.s;const d=btn.closest('.detail');
+  d.querySelectorAll('.ap-call-seg button').forEach(function(b){b.classList.toggle('on',b===btn);});
+  apCallSegPaint(d,apFtCall(d.dataset.id));
+}
+function apCallSegPaint(d,c){
+  const box=d.querySelector('.ap-call-body');if(!box||!c)return;
+  const s=AP_FT.seg;
+  if(s==='summary'){box.innerHTML=c.summary?'<div class="ap-call-md">'+apMiniMd(c.summary)+'</div>':'<div class="ap-nt-empty">Fathom has no summary for this call.</div>';return;}
+  if(s==='actions'){
+    const a=c.actions||[];
+    box.innerHTML=a.length?'<ul class="ap-call-ai">'+a.map(function(x){
+      const lk=/^https:\/\/([a-z0-9-]+\.)*fathom\.video\//i.test(x.link||'')?x.link:'';
+      return '<li><span class="bx'+(x.done?' done':'')+'">'+(x.done?'✓':'')+'</span><div>'+esc(x.text)+
+        '<small>'+esc([x.who,x.t].filter(Boolean).join(' · '))+(lk?' · <a href="'+esc(lk)+'" target="_blank" rel="noopener">Jump to this moment ↗</a>':'')+'</small></div></li>';}).join('')+'</ul>'
+      :'<div class="ap-nt-empty">No action items on this call.</div>';
+    return;
+  }
+  if(s==='people'){
+    const p=[];if(c.recorded_by)p.push({name:c.recorded_by.name,email:c.recorded_by.email,role:'Recorded the call'});
+    apFtGuests(c).forEach(function(i){p.push({name:i.name,email:i.email,role:i.external?'Guest from outside':'Teammate'});});
+    box.innerHTML=p.length?'<ul class="ap-call-ai">'+p.map(function(x){return '<li><span class="bx" style="border-radius:50%">'+esc((x.name||x.email||'?').charAt(0).toUpperCase())+'</span><div>'+esc(x.name||x.email)+'<small>'+esc([x.role,x.name?x.email:''].filter(Boolean).join(' · '))+'</small></div></li>';}).join('')+'</ul>'
+      :'<div class="ap-nt-empty">No invite list on this call.</div>';
+    return;
+  }
+  const id=String(c.id);
+  if(!AP_FT.tx[id]){
+    box.innerHTML='<div class="loading">Loading the transcript…</div>';
+    apFtTranscript(id).then(function(){if(d.dataset.id===id&&AP_FT.seg==='transcript')apCallSegPaint(d,c);})
+      .catch(function(e){if(d.dataset.id===id)box.innerHTML='<div class="ap-call-err">'+esc(e.message)+'</div>';});
+    return;
+  }
+  const tx=AP_FT.tx[id];
+  if(!tx.length){box.innerHTML='<div class="ap-nt-empty">Fathom has no transcript for this call.</div>';return;}
+  box.innerHTML='<div class="ap-call-tq"><input type="search" placeholder="Search the transcript" aria-label="Search the transcript" oninput="apCallTq(this)"><span></span></div><div class="ap-call-tr"></div>';
+  apCallTqPaint(box,tx,'');
+}
+function apCallTq(inp){const box=inp.closest('.ap-call-body'),d=inp.closest('.detail');apCallTqPaint(box,AP_FT.tx[d.dataset.id]||[],inp.value);}
+function apCallTqPaint(box,tx,q){
+  q=String(q||'').trim();const ql=q.toLowerCase();
+  const hit=function(s){if(!q)return esc(s);const i=[];let lo=s.toLowerCase(),p=0,k;while((k=lo.indexOf(ql,p))>=0){i.push(k);p=k+ql.length;}
+    if(!i.length)return esc(s);let out='',last=0;i.forEach(function(k){out+=esc(s.slice(last,k))+'<mark>'+esc(s.slice(k,k+q.length))+'</mark>';last=k+q.length;});return out+esc(s.slice(last));};
+  const rows=q?tx.filter(function(l){return (l.text+' '+l.speaker).toLowerCase().indexOf(ql)>=0;}):tx;
+  const tr=box.querySelector('.ap-call-tr'),n=box.querySelector('.ap-call-tq span');
+  if(n)n.textContent=q?rows.length+' of '+tx.length+' lines':tx.length+' lines';
+  tr.innerHTML=rows.length?rows.slice(0,1500).map(function(l){return '<div class="ap-call-ln"><span class="t">'+esc(l.t||'')+'</span><div><b>'+hit(l.speaker||'Speaker')+'</b>'+hit(l.text||'')+'</div></div>';}).join('')
+    :'<div class="ap-nt-empty">Nothing in the transcript matches that.</div>';
+}
+async function apCallCopy(id,btn){
+  const o=btn.textContent;btn.disabled=true;btn.textContent='Loading…';
+  try{const tx=await apFtTranscript(id);if(!tx.length)throw new Error('Fathom has no transcript for this call.');
+    try{await navigator.clipboard.writeText(apFtText(tx));btn.textContent='✓ Copied';}catch(e){btn.textContent='Copy blocked by the browser';}
+  }catch(e){toast(e.message,false);btn.textContent=o;}
+  btn.disabled=false;setTimeout(function(){btn.textContent=o;},1600);
+}
+async function apCallToCreate(id,btn){
+  const c=apFtCall(id);if(!c)return;
+  const o=btn.textContent;btn.disabled=true;btn.textContent='Loading the transcript…';
+  try{
+    const tx=await apFtTranscript(id);
+    if(!tx.length)throw new Error('Fathom has no transcript for this call, so there is nothing to draft from.');
+    window.__cfPrefill={title:c.title,url:apFtLink(c),text:apFtText(tx)};
+    if(typeof RD!=='undefined'&&RD.aptab)RD.aptab.create='new';
+    apGo('e3create');
+  }catch(e){toast(e.message,false);btn.disabled=false;btn.textContent=o;}
+}
+
+/* Create content: fill the form from a call */
+function apCfApplyPrefill(){
+  const p=window.__cfPrefill;if(!p||state.view!=='create')return;
+  const ta=document.getElementById('cfText');if(!ta)return;
+  window.__cfPrefill=null;
+  apCfFillFromCall(p);
+}
+function apCfFillFromCall(p){
+  apCfMode('source');
+  const set=function(id,v){const e=document.getElementById(id);if(e&&v!=null)e.value=v;};
+  set('cfType','transcript');set('cfTitle',p.title||'');set('cfUrl',p.url||'');
+  const ta=document.getElementById('cfText');if(ta)ta.value=String(p.text||'').slice(0,120000);
+  apCfState().fileName=null;apCfCount();
+  const m=document.getElementById('cfFileMsg');if(m){m.className='msg';m.textContent='Loaded the transcript from “'+(p.title||'the call')+'”.';}
+  const tk=document.getElementById('cfTake');if(tk&&tk.focus)try{tk.focus({preventScroll:true});}catch(e){}
+  toast('Call transcript loaded as the source');
+}
+(function(){
+  const _rc=apRenderCreate;
+  apRenderCreate=async function(){const r=await _rc.apply(this,arguments);try{apCfApplyPrefill();}catch(e){}return r;};
+  const _f=apCfFormHtml;
+  apCfFormHtml=function(){
+    const h=_f.apply(this,arguments);
+    const add='<div class="ap-cf-fromcall"><button type="button" class="rd-btn sm" onclick="apCfCallPick()">🎙 Use a Fathom call</button><span>Pulls a recorded call’s transcript in as the source.</span></div>'+
+      '<div class="ap-cf-callpick" id="cfCallPick" hidden></div>';
+    return h.indexOf('<label class="f">Source text')>=0?h.replace('<label class="f">Source text',add+'<label class="f">Source text'):h;
+  };
+})();
+async function apCfCallPick(){
+  const box=document.getElementById('cfCallPick');if(!box)return;
+  if(!box.hidden){box.hidden=true;return;}
+  box.hidden=false;box.innerHTML='<div class="msg">Loading your Fathom calls…</div>';
+  try{
+    const st=await apFtStatus(false);
+    if(!st.connected){box.innerHTML='<div class="msg">Fathom is not connected yet. <button class="rd-btn sm" onclick="apFathomModal()">Connect Fathom</button></div>';return;}
+    await apFtLoad(false);
+    if(!AP_FT.items.length){box.innerHTML='<div class="msg">No calls in Fathom yet.</div>';return;}
+    box.innerHTML='<div class="q"><input type="search" placeholder="Search calls or people" aria-label="Search calls" oninput="apCfCallRows(this.value)"></div><div class="rows"></div>';
+    apCfCallRows('');
+  }catch(e){box.innerHTML='<div class="msg">'+esc(e.message)+(e.code==='not_connected'?' <button class="rd-btn sm" onclick="apFathomModal()">Connect Fathom</button>':'')+'</div>';}
+}
+function apCfCallRows(q){
+  const box=document.querySelector('#cfCallPick .rows');if(!box)return;
+  const save=AP_FT.q;AP_FT.q=q||'';const rows=apCallsFiltered('all').slice(0,40);AP_FT.q=save;
+  box.innerHTML=rows.length?rows.map(function(c){const m=apFtMins(c);
+    return '<button type="button" class="ap-call-row" data-id="'+esc(String(c.id))+'" onclick="apCfUseCall(this)"><b>'+esc(c.title)+(c.external?'<span class="ap-call-chip ext">Client</span>':'')+'</b><small>'+esc(apFtWhen(c))+(m?' · '+m+' min':'')+'</small></button>';}).join('')
+    :'<div class="msg">No calls match that.</div>';
+}
+async function apCfUseCall(btn){
+  const c=apFtCall(btn.dataset.id);if(!c)return;
+  const s=btn.querySelector('small'),o=s?s.textContent:'';if(s)s.textContent='Loading the transcript…';
+  try{
+    const tx=await apFtTranscript(c.id);
+    if(!tx.length)throw new Error('Fathom has no transcript for this call.');
+    apCfFillFromCall({title:c.title,url:apFtLink(c),text:apFtText(tx)});
+    const box=document.getElementById('cfCallPick');if(box)box.hidden=true;
+  }catch(e){if(s)s.textContent=o;toast(e.message,false);}
+}
+
+/* Fathom connect (Integrations, Calls, Create content) */
+async function apFathomModal(){
+  let m=document.getElementById('apFtModal');if(m)m.remove();
+  m=document.createElement('div');m.id='apFtModal';m.className='ap-int-modal';
+  m.addEventListener('click',function(e){if(e.target===m)m.remove();});
+  m.addEventListener('keydown',function(e){if(e.key==='Escape')m.remove();});
+  m.innerHTML='<div class="box" role="dialog" aria-modal="true" aria-labelledby="apFtMt"><button class="x" aria-label="Close" onclick="document.getElementById(\'apFtModal\').remove()">×</button>'+
+    '<h3 id="apFtMt">Fathom</h3><div class="in"><p>Checking the connection…</p></div></div>';
+  document.body.appendChild(m);
+  let st;try{st=await apFtStatus(true);}catch(e){st={ok:false,message:e.message,code:e.code};}
+  apFtModalPaint(st);
+}
+function apFtModalPaint(st){
+  const box=document.querySelector('#apFtModal .in');if(!box)return;
+  const form='<div class="row"><input id="apFtKey" type="password" autocomplete="off" placeholder="Fathom API key" aria-label="Fathom API key" onkeydown="if(event.key===\'Enter\')apFtConnect(\'apFtKey\',\'apFtErr\',this)">'+
+    '<button class="rd-btn sm pri" onclick="apFtConnect(\'apFtKey\',\'apFtErr\',this)">Connect</button></div><div class="err" id="apFtErr"></div>';
+  if(st&&st.connected){
+    box.innerHTML='<div class="ok">Connected. Using the key ending <b>'+esc(st.hint||'····')+'</b>'+(st.updated_by?', added by '+esc(String(st.updated_by).split('@')[0]):'')+(st.updated_at?' '+esc(apAgo(st.updated_at)):'')+'.</div>'+
+      '<p>Everyone at AI Paragon sees the calls this key can see, on the Calls page and in Create content.</p>'+
+      '<details><summary style="cursor:pointer;font-size:13.5px;font-weight:600;color:var(--rd-ink)">Replace the key</summary><div style="margin-top:10px">'+form+'</div></details>'+
+      '<div class="foot"><button class="rd-btn sm" onclick="apFtDisconnect(this)">Disconnect</button><button class="rd-btn sm pri" onclick="document.getElementById(\'apFtModal\').remove();apGo(\'calls\')">Open Calls</button></div>';
+  }else{
+    box.innerHTML=(st&&st.ok===false&&st.code!=='not_connected'?'<div class="ap-call-err" style="margin-bottom:12px">'+esc(st.message||'Fathom could not be reached.')+'</div>':'')+
+      '<p>Connect Fathom once and the team can watch calls here, read the summaries and use transcripts as sources for new drafts.</p>'+
+      '<ol><li>In Fathom, open your <b>User Settings</b> and go to <b>API Access</b>.</li><li>Generate an API key and copy it.</li><li>Paste it below.</li></ol>'+form+
+      '<small style="margin-top:10px">The key is stored in the team’s n8n, not in this browser. The dashboard only reads calls, it never changes anything in Fathom.</small>';
+  }
+  const k=document.getElementById('apFtKey');if(k&&!(st&&st.connected))try{k.focus();}catch(e){}
+}
+async function apFtConnect(inputId,errId,btn){
+  const inp=document.getElementById(inputId),err=document.getElementById(errId);
+  const key=inp?String(inp.value||'').trim():'';
+  if(err)err.textContent='';
+  if(key.length<10){if(err)err.textContent='Paste the whole API key from Fathom.';return;}
+  const b=btn&&btn.tagName==='BUTTON'?btn:(inp&&inp.parentNode.querySelector('button.pri'));
+  if(b){b.disabled=true;b.dataset.o=b.textContent;b.textContent='Checking…';}
+  try{
+    const j=await apProxy(AP_FATHOM_HOOK,{action:'connect',key:key},'Fathom');
+    if(!j||!j.ok)throw apFtFail(j);
+    if(inp)inp.value='';
+    AP_FT.status=null;AP_FT.loaded=false;AP_FT.items=[];AP_FT.tx={};
+    toast('Fathom connected');
+    const m=document.getElementById('apFtModal');if(m)m.remove();
+    if(state.view==='calls'&&S.page==='ap60')render();
+    if(S.page==='integrations'&&typeof renderIntegrations==='function')renderIntegrations();
+  }catch(e){if(err)err.textContent=e.message;}
+  if(b&&b.isConnected){b.disabled=false;b.textContent=b.dataset.o||'Connect';}
+}
+async function apFtDisconnect(btn){
+  if(!confirm('Disconnect Fathom for the whole team? The Calls page will stop showing recordings until a key is added again.'))return;
+  btn.disabled=true;btn.textContent='Disconnecting…';
+  try{
+    const j=await apProxy(AP_FATHOM_HOOK,{action:'disconnect'},'Fathom');
+    if(!j||!j.ok)throw apFtFail(j);
+    AP_FT.status=null;AP_FT.loaded=false;AP_FT.items=[];AP_FT.tx={};AP_FT.sel=null;
+    toast('Fathom disconnected');
+    const m=document.getElementById('apFtModal');if(m)m.remove();
+    if(state.view==='calls'&&S.page==='ap60')render();
+    if(S.page==='integrations'&&typeof renderIntegrations==='function')renderIntegrations();
+  }catch(e){toast(e.message,false);btn.disabled=false;btn.textContent='Disconnect';}
+}
+
+/* Integrations page: real Fathom status, Notion listed */
+(function(){
+  if(typeof INTEGRATIONS==='undefined')return;
+  const f=INTEGRATIONS.find(function(x){return /^Fathom/.test(x.n);});
+  if(f){f.n='Fathom';f.sub='Calls, summaries and transcripts on the Calls page, and as sources for new drafts';f.st='Checking…';f.open=function(){apFathomModal();};}
+  if(!INTEGRATIONS.some(function(x){return x.n==='Notion';}))
+    INTEGRATIONS.push({n:'Notion',cat:'Docs & notes',ic:'N',col:'#37352F',sub:'Browse shared databases, read pages and add entries from the Notion page',st:'Connected',open:function(){apGo('notion');}});
+  renderIntegrations=function(skipCheck){
+    const g=document.getElementById('intGrid');if(!g)return;
+    const cats=['CRM','Email Provider','Messaging Apps','Social Media','Meeting Transcription','Docs & notes','Calendar'];
+    g.innerHTML=cats.map(function(cat){
+      const items=INTEGRATIONS.filter(function(x){return x.cat===cat;});if(!items.length)return '';
+      return '<div style="grid-column:1/-1;margin:4px 0 -6px"><span class="eyebrow">'+esc(cat)+'</span></div>'+items.map(function(x){
+        const i=INTEGRATIONS.indexOf(x);
+        const chip=x.st==='Connected'?'green':x.st==='Planned'?'grey':'amber';
+        return '<button class="tpl-card" onclick="INTEGRATIONS['+i+'].open()"><div style="display:flex;gap:10px;align-items:center">'+
+          '<div class="int-logo" style="background:linear-gradient(135deg,'+x.col+','+x.col+'CC)">'+intGlyph(x)+'</div>'+
+          '<b style="font-family:\'Libre Caslon Text\',serif;font-size:16px;font-weight:500;flex:1;text-align:left">'+esc(x.n)+'</b>'+
+          '<span class="chip '+chip+'">'+esc(x.st)+'</span></div>'+
+          '<span class="help" style="display:block;margin-top:9px;text-align:left">'+esc(x.sub)+'</span></button>';}).join('');
+    }).join('');
+    if(!skipCheck&&f){
+      apFtStatus(true).then(function(s){f.st=s.connected?'Connected':'Not connected';})
+        .catch(function(e){f.st=e.code==='not_connected'?'Not connected':'Needs attention';})
+        .then(function(){if(document.getElementById('intGrid'))renderIntegrations(true);});
+    }
+  };
+})();
+
+/* ---------------- Notion ---------------- */
+const AP_NT={dbs:null,db:null,entries:{},idx:{},blocks:{},sel:{},q:'',found:null};
+try{nStore('secret','');nStore('proxy','');}catch(e){}   /* the old per-browser secret is no longer used */
+async function apNt(action,extra){
+  const j=await apProxy(AP_NOTION_HOOK,Object.assign({action:action},extra||{}),'Notion');
+  if(!j||j.object==='error'){const e=new Error((j&&j.message)||'Notion did not answer.');e.code=j&&j.code;throw e;}
+  const r=j.results||[];r.forEach(function(p){if(p&&p.id)AP_NT.idx[p.id]=p;});
+  return r;
+}
+function apNtPlain(rt){return (rt||[]).map(function(t){return t.plain_text!=null?t.plain_text:(t.text&&t.text.content)||'';}).join('');}
+function apNtRich(rt){
+  return (rt||[]).map(function(t){
+    let s=esc(t.plain_text!=null?t.plain_text:(t.text&&t.text.content)||'');const a=t.annotations||{};
+    if(a.code)s='<code>'+s+'</code>';if(a.bold)s='<b>'+s+'</b>';if(a.italic)s='<i>'+s+'</i>';if(a.strikethrough)s='<s>'+s+'</s>';
+    const href=t.href||(t.text&&t.text.link&&t.text.link.url);
+    if(href&&/^https?:\/\//i.test(href))s='<a href="'+esc(href)+'" target="_blank" rel="noopener">'+s+'</a>';
+    return s;}).join('');
+}
+function apNtTitle(p){
+  if(!p)return 'Untitled';
+  if(p.object==='database')return apNtPlain(p.title)||'Untitled database';
+  const pr=p.properties||{};for(const k in pr){if(pr[k]&&pr[k].type==='title')return apNtPlain(pr[k].title)||'Untitled';}
+  return p.name||'Untitled';
+}
+function apNtStatus(p){const pr=(p&&p.properties)||{};for(const k in pr){const v=pr[k];if(v&&v.type==='status'&&v.status)return v.status.name;}for(const k in pr){const v=pr[k];if(v&&v.type==='select'&&v.select)return v.select.name;}return '';}
+function apNtUrl(p){const u=String((p&&p.url)||'');return /^https:\/\/([a-z0-9-]+\.)*notion\.(so|com)\//i.test(u)?u:'';}
+function apNtPropVal(v){
+  if(!v)return '';
+  switch(v.type){
+    case 'rich_text':return apNtRich(v.rich_text);
+    case 'select':return v.select?esc(v.select.name):'';
+    case 'status':return v.status?esc(v.status.name):'';
+    case 'multi_select':return (v.multi_select||[]).map(function(o){return esc(o.name);}).join(', ');
+    case 'date':return v.date?esc(fmtDate(v.date.start)+(v.date.end?' → '+fmtDate(v.date.end):'')):'';
+    case 'checkbox':return v.checkbox?'Yes':'No';
+    case 'number':return v.number!=null?esc(String(v.number)):'';
+    case 'url':return v.url&&/^https?:\/\//i.test(v.url)?'<a href="'+esc(v.url)+'" target="_blank" rel="noopener">'+esc(v.url.replace(/^https?:\/\//,'').slice(0,60))+'</a>':'';
+    case 'email':return v.email?esc(v.email):'';
+    case 'phone_number':return v.phone_number?esc(v.phone_number):'';
+    case 'people':return (v.people||[]).map(function(u){return esc(u.name||'Someone');}).join(', ');
+    case 'created_time':return esc(fmtDate(v.created_time));
+    case 'last_edited_time':return esc(fmtDate(v.last_edited_time));
+    case 'formula':{const f=v.formula||{};const x=f[f.type];return x==null?'':esc(typeof x==='object'?(x.start||''):String(x));}
+    default:return '';
+  }
+}
+function apNtPropsHtml(p){
+  const pr=(p&&p.properties)||{};const rows=[];
+  Object.keys(pr).forEach(function(k){const v=pr[k];if(!v||v.type==='title')return;const h=apNtPropVal(v);if(h)rows.push('<dt title="'+esc(k)+'">'+esc(k)+'</dt><dd>'+h+'</dd>');});
+  return rows.length?'<dl class="ap-nt-props">'+rows.slice(0,14).join('')+'</dl>':'';
+}
+function apNtBlocksHtml(bl){
+  const out=[];let list=null,skipped=0;
+  const close=function(){if(list){out.push('</'+list+'>');list=null;}};
+  (bl||[]).forEach(function(b){
+    const t=b.type,d=(b&&b[t])||{},rt=d.rich_text||d.text||[],h=apNtRich(rt);
+    if(t==='bulleted_list_item'||t==='numbered_list_item'){const L=t==='bulleted_list_item'?'ul':'ol';if(list!==L){close();out.push('<'+L+'>');list=L;}out.push('<li>'+h+'</li>');return;}
+    close();
+    switch(t){
+      case 'paragraph':if(h)out.push('<p>'+h+'</p>');break;
+      case 'heading_1':out.push('<h3>'+h+'</h3>');break;
+      case 'heading_2':out.push('<h4>'+h+'</h4>');break;
+      case 'heading_3':out.push('<h5>'+h+'</h5>');break;
+      case 'to_do':out.push('<div class="todo'+(d.checked?' done':'')+'"><i>'+(d.checked?'✓':'')+'</i><span>'+h+'</span></div>');break;
+      case 'quote':out.push('<blockquote>'+h+'</blockquote>');break;
+      case 'callout':out.push('<div class="callout"><span>'+esc((d.icon&&d.icon.emoji)||'💡')+'</span><div>'+h+'</div></div>');break;
+      case 'toggle':out.push('<p>▸ '+h+'</p>');break;
+      case 'code':out.push('<pre><code>'+esc(apNtPlain(rt))+'</code></pre>');break;
+      case 'divider':out.push('<hr>');break;
+      case 'image':{const u=d.type==='external'?(d.external&&d.external.url):(d.file&&d.file.url);if(u&&/^https:\/\//i.test(u))out.push('<img src="'+esc(u)+'" alt="'+esc(apNtPlain(d.caption))+'" loading="lazy">');else skipped++;break;}
+      case 'bookmark':case 'embed':case 'link_preview':case 'video':case 'file':case 'pdf':{const u=d.url||(d.external&&d.external.url)||(d.file&&d.file.url);if(u&&/^https?:\/\//i.test(u))out.push('<p><a href="'+esc(u)+'" target="_blank" rel="noopener">'+esc(apNtPlain(d.caption)||u.replace(/^https?:\/\//,'').slice(0,80))+'</a></p>');else skipped++;break;}
+      case 'child_page':out.push('<div class="sub">Sub-page: '+esc(d.title||'Untitled')+'</div>');break;
+      case 'child_database':out.push('<div class="sub">Database inside this page: '+esc(d.title||'Untitled')+'</div>');break;
+      default:skipped++;
+    }
+  });
+  close();
+  if(skipped)out.push('<div class="sub">'+skipped+' block'+(skipped===1?'':'s')+' (tables, synced blocks or embeds) only show in Notion.</div>');
+  return out.join('');
+}
+async function apRenderNotion(){
+  const main=document.getElementById('main');if(!main)return;
+  main.innerHTML='<div class="loading">Loading Notion…</div>';
+  let err=null;
+  try{
+    if(!AP_NT.dbs){
+      const r=await apNt('databases');
+      AP_NT.dbs=r.filter(function(d){return d.object==='database'||d.title;}).map(function(d){return {id:d.id,name:apNtTitle(Object.assign({object:'database'},d)),url:apNtUrl(d),edited:d.last_edited_time};})
+        .sort(function(a,b){return a.name.localeCompare(b.name);});
+    }
+  }catch(e){err=e;}
+  if(state.view!=='notion')return;
+  main.innerHTML='';
+  if(!err&&AP_NT.dbs.length&&!(AP_NT.db&&AP_NT.dbs.some(function(d){return d.id===AP_NT.db;}))){
+    const saved=nRead('db');
+    const recent=AP_NT.dbs.slice().sort(function(a,b){return String(b.edited||'').localeCompare(String(a.edited||''));})[0];
+    AP_NT.db=AP_NT.dbs.some(function(d){return d.id===saved;})?saved:recent.id;
+  }
+  const ok=!err&&AP_NT.dbs.length;
+  const pane=function(key,label,fn){return {key:key,label:label,render:function(){},onShow:function(){const o=window.__apDemo;const t=o&&o.tabs.find(function(x){return x.key===key;});if(t&&t._host&&!t._host.dataset.ready){t._host.dataset.ready='1';fn(t._host);}}};};
+  apDemo({page:'notion',eyebrow:'INTEGRATIONS · NOTION',title:'Notion',
+    sub:'Browse the databases shared with the AI Paragon Notion connection, read any page and add entries without leaving the dashboard.',cta:null,
+    purpose:{tag:'Notion',bold:err?'Notion could not be reached':'Uses the team’s Notion connection in n8n',
+      small:err?'The page will work again once the n8n connection answers.':'Only pages and databases shared with that connection show up here. Nothing to set up per person.'},
+    strip:function(){
+      if(!ok)return [];
+      const E=AP_NT.entries[AP_NT.db]||[],wk=Date.now()-7*864e5;
+      const last=E.reduce(function(a,p){const t=new Date(p.last_edited_time).getTime();return t>a?t:a;},0);
+      const db=AP_NT.dbs.find(function(d){return d.id===AP_NT.db;})||{};
+      return [{n:AP_NT.dbs.length,l:'Databases',s:'shared with the connection',tab:'browse'},
+        {n:E.length,l:'Entries',s:db.name||'',tab:'browse'},
+        {n:E.filter(function(p){return new Date(p.last_edited_time).getTime()>wk;}).length,l:'Edited this week',s:'in this database'},
+        {n:last?apAgo(new Date(last).toISOString()):'None',l:'Last edit',s:'in this database'}];},
+    tabs:ok?[pane('browse','Browse',apNtBrowse),pane('search','Search all pages',apNtSearchPane)]
+      :[{key:'setup',label:err?'Connection':'Get started',render:function(h){
+        h.innerHTML='<div class="ap-call-conn">'+(err?'<div class="ap-call-err" style="margin-bottom:14px">'+esc(err.message)+'</div>':'')+
+          '<h3>'+(err?'Notion is not answering':'Share a database with the connection')+'</h3>'+
+          (err?'<p>The dashboard reads Notion through the “Dashboard · Notion Proxy” workflow in n8n. Check it is switched on, then try again.</p>'
+            :'<p>No databases are shared with the n8n Notion connection yet. In Notion, open a database, choose ••• then <b>Connections</b>, and add the connection n8n uses.</p>')+
+          '<div class="row"><button class="rd-btn sm pri" onclick="AP_NT.dbs=null;render()">Try again</button></div></div>';}}]});
+}
+function apNtBrowse(h){
+  h.innerHTML='<div class="ap-nt"><div class="col"><div class="bar"><select data-nofill="1" aria-label="Database" onchange="apNtPickDb(this)">'+
+    AP_NT.dbs.map(function(d){return '<option value="'+esc(d.id)+'"'+(d.id===AP_NT.db?' selected':'')+'>'+esc(d.name)+'</option>';}).join('')+'</select>'+
+    '<button class="rd-btn sm" title="Refresh" aria-label="Refresh" onclick="apNtReload(this)">↻</button></div>'+
+    '<div class="bar"><input type="search" placeholder="Filter entries" aria-label="Filter entries" oninput="apNtFilter(this)"></div>'+
+    '<div class="rows"><div class="msg">Loading entries…</div></div>'+
+    '<div class="add"><input placeholder="New entry title" aria-label="New entry title" onkeydown="if(event.key===\'Enter\')apNtAdd(this)"><button class="rd-btn sm pri" onclick="apNtAdd(this)">Add entry</button></div></div>'+
+    '<div class="doc"><div class="ap-nt-doc"><div class="ap-nt-empty">Pick an entry to read it here.</div></div></div></div>';
+  apNtLoadEntries(h,false);
+}
+async function apNtLoadEntries(h,force){
+  const box=h.querySelector('.rows'),db=AP_NT.db;
+  if(force||!AP_NT.entries[db]){
+    box.innerHTML='<div class="msg">Loading entries…</div>';
+    try{
+      const r=await apNt('pages',{id:db});
+      AP_NT.entries[db]=r.filter(function(p){return p.object!=='database';}).sort(function(a,b){return String(b.last_edited_time).localeCompare(String(a.last_edited_time));});
+    }catch(e){if(db===AP_NT.db)box.innerHTML='<div class="msg">'+esc(e.message)+'</div>';return;}
+  }
+  if(db!==AP_NT.db)return;
+  apNtRows(h);apDemoRefreshStrip();
+}
+function apNtRows(h){
+  const box=h.querySelector('.rows');if(!box)return;
+  const q=String(h.dataset.q||'').toLowerCase();
+  const E=(AP_NT.entries[AP_NT.db]||[]).filter(function(p){return !q||apNtTitle(p).toLowerCase().indexOf(q)>=0;});
+  if(!E.length){box.innerHTML='<div class="msg">'+(q?'No entries match that.':'This database is empty. Add the first entry below.')+'</div>';return;}
+  const sel=AP_NT.sel.browse;
+  box.innerHTML=E.slice(0,200).map(function(p){const s=apNtStatus(p);
+    return '<button type="button" class="ap-nt-row'+(p.id===sel?' on':'')+'" data-id="'+esc(p.id)+'" onclick="apNtOpen(this)"><b>'+esc(apNtTitle(p))+(s?'<span class="pill">'+esc(s)+'</span>':'')+'</b><small>Edited '+esc(apAgo(p.last_edited_time))+'</small></button>';}).join('');
+  if(!sel||!E.some(function(p){return p.id===sel;})){const first=box.querySelector('.ap-nt-row');if(first&&window.innerWidth>1000)apNtOpen(first);}
+}
+function apNtPickDb(sel){AP_NT.db=sel.value;nStore('db',sel.value);AP_NT.sel.browse=null;const h=sel.closest('.ap-tphost');
+  h.querySelector('.doc').innerHTML='<div class="ap-nt-doc"><div class="ap-nt-empty">Pick an entry to read it here.</div></div>';apNtLoadEntries(h,false);}
+function apNtReload(btn){const h=btn.closest('.ap-tphost');AP_NT.blocks={};apNtLoadEntries(h,true);}
+function apNtFilter(inp){const h=inp.closest('.ap-tphost');h.dataset.q=inp.value;apNtRows(h);}
+async function apNtAdd(el){
+  const h=el.closest('.ap-tphost'),inp=h.querySelector('.add input'),btn=h.querySelector('.add button');
+  const title=String(inp.value||'').trim();if(!title){inp.focus();return;}
+  inp.disabled=true;btn.disabled=true;btn.textContent='Adding…';
+  try{
+    const r=await apNt('add',{id:AP_NT.db,title:title});
+    const p=r[0];if(!p)throw new Error('Notion did not return the new entry.');
+    (AP_NT.entries[AP_NT.db]=AP_NT.entries[AP_NT.db]||[]).unshift(p);
+    inp.value='';toast('Added to Notion');
+    AP_NT.sel.browse=p.id;apNtRows(h);apDemoRefreshStrip();
+    const b=h.querySelector('.ap-nt-row[data-id="'+p.id+'"]');if(b)apNtOpen(b);
+  }catch(e){toast('Could not add it: '+e.message,false);}
+  inp.disabled=false;btn.disabled=false;btn.textContent='Add entry';try{inp.focus();}catch(e){}
+}
+async function apNtOpen(btn){
+  const h=btn.closest('.ap-tphost'),id=btn.dataset.id,key=h.dataset.tp==='search'?'search':'browse';
+  AP_NT.sel[key]=id;
+  h.querySelectorAll('.ap-nt-row').forEach(function(b){b.classList.toggle('on',b===btn);});
+  const doc=h.querySelector('.doc'),p=AP_NT.idx[id]||{id:id};
+  const url=apNtUrl(p);
+  doc.dataset.id=id;
+  doc.innerHTML='<article class="ap-nt-doc"><h2>'+esc(apNtTitle(p))+'</h2><div class="meta">'+(p.last_edited_time?'<span>Edited '+esc(apAgo(p.last_edited_time))+'</span>':'')+
+    (url?'<a class="rd-btn sm" href="'+esc(url)+'" target="_blank" rel="noopener">Open in Notion ↗</a>':'')+'</div>'+apNtPropsHtml(p)+
+    '<div class="ap-nt-body"><div class="loading">Loading the page…</div></div></article>';
+  if(window.innerWidth<=1000&&doc.scrollIntoView)doc.scrollIntoView({behavior:'smooth',block:'start'});
+  const body=doc.querySelector('.ap-nt-body');
+  try{
+    if(!AP_NT.blocks[id])AP_NT.blocks[id]=await apNt('blocks',{id:id});
+    if(doc.dataset.id!==id)return;
+    const html=apNtBlocksHtml(AP_NT.blocks[id]);
+    body.innerHTML=html||'<p style="color:var(--rd-muted)">This page has no text yet.</p>';
+  }catch(e){if(doc.dataset.id===id)body.innerHTML='<div class="ap-call-err">'+esc(e.message)+'</div>';}
+}
+function apNtSearchPane(h){
+  h.innerHTML='<div class="ap-nt"><div class="col"><div class="bar"><input type="search" placeholder="Search every page the connection can see" aria-label="Search Notion" onkeydown="if(event.key===\'Enter\')apNtSearch(this)">'+
+    '<button class="rd-btn sm pri" onclick="apNtSearch(this)">Search</button></div><div class="rows"><div class="msg">Search by title across every shared page and database entry.</div></div></div>'+
+    '<div class="doc"><div class="ap-nt-doc"><div class="ap-nt-empty">Pick a result to read it here.</div></div></div></div>';
+}
+async function apNtSearch(el){
+  const h=el.closest('.ap-tphost'),inp=h.querySelector('.bar input'),box=h.querySelector('.rows');
+  const q=String(inp.value||'').trim();
+  box.innerHTML='<div class="msg">Searching…</div>';
+  try{
+    const r=(await apNt('search',{text:q})).filter(function(p){return p.object!=='database';});
+    if(!r.length){box.innerHTML='<div class="msg">Nothing found'+(q?' for “'+esc(q)+'”':'')+'. Only pages shared with the connection can be searched.</div>';return;}
+    box.innerHTML=r.map(function(p){return '<button type="button" class="ap-nt-row" data-id="'+esc(p.id)+'" onclick="apNtOpen(this)"><b>'+esc(apNtTitle(p))+'</b><small>Edited '+esc(apAgo(p.last_edited_time))+'</small></button>';}).join('');
+  }catch(e){box.innerHTML='<div class="msg">'+esc(e.message)+'</div>';}
+}
+renderNotion=apRenderNotion;
+
+/* route the two pages */
+(function(){
+  const _r=render;
+  render=function(){
+    if(state.view==='calls'||state.view==='notion'){
+      if(S.page!=='ap60')nav('ap60');
+      apChromeClear();
+      const p=state.view==='calls'?apRenderCalls():apRenderNotion();
+      Promise.resolve(p).catch(function(e){const m=document.getElementById('main');if(m)m.innerHTML='<div class="empty"><div class="big">This page hit an error</div>'+esc(e.message)+'</div>';});
+      apNavSync();try{window.scrollTo(0,0);}catch(e){}
+      return;
+    }
+    return _r.apply(this,arguments);
+  };
+})();
+</script>
+
+<style id="v86css">
+/* ---------- v86 · one Integrations area ---------- */
+.ap-intnav{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:0 0 14px;padding:4px;background:#fff;border:1px solid var(--rd-line);border-radius:12px;width:fit-content;max-width:100%;box-sizing:border-box}
+.ap-intnav button{display:inline-flex;align-items:center;gap:7px;background:none;border:0;border-radius:9px;padding:7px 12px;font:inherit;font-size:13.5px;font-weight:600;color:var(--rd-muted);cursor:pointer;white-space:nowrap}
+.ap-intnav button:hover{background:var(--rd-bg);color:var(--rd-ink)}
+.ap-intnav button.on{background:var(--rd-blue-soft);color:var(--rd-blue-ink)}
+.ap-intnav i{width:7px;height:7px;border-radius:50%;background:#D0D5DD;flex:none}
+.ap-intnav i.ok{background:#12B76A}
+.ap-intnav i.warn{background:#F79009}
+
+.ap-int-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.ap-int-card{background:#fff;border:1px solid var(--rd-line);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.ap-int-card .hd{display:flex;align-items:center;gap:12px}
+.ap-int-card .lg{width:40px;height:40px;border-radius:10px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex:none}
+.ap-int-card .lg svg{width:20px;height:20px}
+.ap-int-card h3{margin:0;font-size:17px;color:var(--rd-ink);flex:1;min-width:0}
+.ap-int-card .st{font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;white-space:nowrap;background:#F2F4F7;color:#475467}
+.ap-int-card .st.ok{background:#ECFDF3;color:#067647}
+.ap-int-card .st.warn{background:#FFFAEB;color:#B54708}
+.ap-int-card p{margin:0;font-size:14px;line-height:1.55;color:var(--rd-text)}
+.ap-int-card .meta{font-size:12.5px;color:var(--rd-muted);line-height:1.5}
+.ap-int-card .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:4px}
+.ap-int-card.muted{background:#FCFCFD}
+.ap-int-card.muted .lg{opacity:.75}
+.ap-int-note{margin:18px 0 0;font-size:13px;color:var(--rd-muted);line-height:1.5}
+.ap-int-chat{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--rd-line);border-radius:12px;padding:14px 18px;margin-top:16px;flex-wrap:wrap}
+.ap-int-chat div{flex:1 1 240px;min-width:0}
+.ap-int-chat b{font-size:14px;color:var(--rd-ink)}
+.ap-int-chat p{margin:3px 0 0;font-size:13px;color:var(--rd-muted)}
+@media(max-width:600px){.ap-intnav{width:100%;flex-wrap:nowrap;overflow-x:auto}.ap-int-grid{grid-template-columns:1fr}}
+</style>
+<script>
+/* ===================================================================
+   v86 · one Integrations area
+   Sidebar gets a single "Integrations" item. It opens an overview of
+   every connection, and HubSpot contacts, Fathom calls and Notion sit
+   under it with a shared switcher at the top of each page.
+   =================================================================== */
+const AP_INT_VIEWS=['integrations','calls','notion','hubspot'];
+
+/* sidebar: one entry instead of three */
+(function(){
+  const w=document.querySelector('aside.rd-sidebar .ap-sb-scroll')||document.querySelector('aside.rd-sidebar');if(!w)return;
+  const files=w.querySelector('.sb-item[data-view="files"]');
+  ['calls','hubspot','notion'].forEach(function(v){const b=w.querySelector('.sb-item[data-view="'+v+'"]');if(b)b.remove();});
+  if(!w.querySelector('.sb-item[data-view="integrations"]')){
+    const b=document.createElement('button');b.className='sb-item sb-sub';b.dataset.view='integrations';b.setAttribute('onclick',"apGo('integrations')");
+    b.innerHTML='<svg viewBox="0 0 24 24"><path d="M9 7V3M15 7V3"/><path d="M6 7h12v4a6 6 0 0 1-12 0z"/><path d="M12 17v4"/></svg><span>Integrations</span>';
+    if(files)files.after(b);else w.appendChild(b);
+  }
+})();
+AP_VIEWS.integrations={page:'ap60',title:'Integrations',v60:{engine:'home',view:'integrations'}};
+AP_VIEWS.calls.tag='Integrations';AP_VIEWS.calls.title='Fathom calls';
+AP_VIEWS.notion.tag='Integrations';
+AP_VIEWS.hubspot.tag='Integrations';
+/* the sub-pages light up the Integrations item */
+(function(){
+  const _s=apNavSync;
+  apNavSync=function(){
+    const r=_s.apply(this,arguments);
+    if(S.page==='ap60'&&AP_INT_VIEWS.indexOf(state.view)>=0){
+      document.querySelectorAll('.rd-sidebar .sb-item[data-view]').forEach(function(b){b.classList.toggle('on',b.dataset.view==='integrations');});
+      try{window.apSbReveal&&window.apSbReveal();}catch(e){}
+    }
+    return r;
+  };
+})();
+/* the old Integrations page (profile menu, links) now opens this one */
+(function(){
+  const _nav=nav;
+  nav=function(p){if(p==='integrations'){apGo('integrations');return;}return _nav.apply(this,arguments);};
+})();
+
+/* shared switcher at the top of each integration page */
+function apIntDot(k){
+  if(k==='calls'){const s=AP_FT.status;return s?(s.connected?'ok':'warn'):'';}
+  if(k==='notion')return AP_NT.dbs?(AP_NT.dbs.length?'ok':'warn'):'';
+  if(k==='hubspot')return AP_INT.hub?(AP_INT.hub.n?'ok':'warn'):'';
+  return '';
+}
+function apIntNav(){
+  const c=document.getElementById('apChrome');if(!c||AP_INT_VIEWS.indexOf(state.view)<0)return;
+  const old=c.querySelector('.ap-intnav');if(old)old.remove();
+  const items=[['integrations','Overview'],['calls','Fathom calls'],['notion','Notion'],['hubspot','HubSpot contacts']];
+  const n=document.createElement('nav');n.className='ap-intnav';n.setAttribute('aria-label','Integrations');
+  n.innerHTML=items.map(function(it){const d=it[0]==='integrations'?'':apIntDot(it[0]);
+    return '<button type="button" class="'+(state.view===it[0]?'on':'')+'" onclick="apGo(\''+it[0]+'\')"'+(state.view===it[0]?' aria-current="page"':'')+'>'+
+      (it[0]==='integrations'?'':'<i class="'+d+'"></i>')+esc(it[1])+'</button>';}).join('');
+  c.insertBefore(n,c.firstChild);
+}
+(function(){
+  const _d=apDemo;
+  apDemo=function(o){const r=_d.apply(this,arguments);if(o&&AP_INT_VIEWS.indexOf(o.page)>=0)apIntNav();return r;};
+})();
+
+/* ---------------- the overview ---------------- */
+const AP_INT={hub:null};
+async function apIntHubspot(){
+  try{
+    const rows=await apSb('hubspot_contacts?select=synced_at&order=synced_at.desc&limit=5000');
+    AP_INT.hub={n:(rows||[]).length,last:rows&&rows[0]?rows[0].synced_at:null};
+  }catch(e){AP_INT.hub={n:0,last:null,err:e.message};}
+  return AP_INT.hub;
+}
+async function apRenderIntegrations(){
+  const main=document.getElementById('main');if(!main)return;
+  main.innerHTML='<div class="loading">Checking your connections…</div>';
+  const res=await Promise.all([
+    apFtStatus(true).catch(function(e){return {ok:false,connected:false,message:e.message,code:e.code};}),
+    (AP_NT.dbs?Promise.resolve(AP_NT.dbs):apNt('databases').then(function(r){
+      AP_NT.dbs=r.filter(function(d){return d.object==='database'||d.title;}).map(function(d){return {id:d.id,name:apNtTitle(Object.assign({object:'database'},d)),url:apNtUrl(d),edited:d.last_edited_time};})
+        .sort(function(a,b){return a.name.localeCompare(b.name);});return AP_NT.dbs;})).catch(function(e){return {err:e.message};}),
+    apIntHubspot()
+  ]);
+  if(state.view!=='integrations')return;
+  main.innerHTML='';
+  const ft=res[0],nt=res[1],hub=res[2];
+  const ntOk=Array.isArray(nt)&&nt.length,ntErr=nt&&nt.err;
+  const hubStale=!!(hub.last&&Date.now()-new Date(hub.last).getTime()>36*3600*1000);
+  const cards=[
+    {k:'hubspot',name:'HubSpot',lg:intGlyph({n:'HubSpot CRM'}),col:'#FF7A59',
+      ok:hub.n>0&&!hubStale,st:hub.err?'Needs attention':!hub.n?'No contacts yet':hubStale?'Sync looks stuck':'Syncing',
+      p:'Contacts sync into the dashboard every 6 hours through n8n, and feed the lead pipeline and the Ask bot.',
+      meta:hub.err?'Could not read the synced contacts.':hub.n?hub.n.toLocaleString()+' contacts · last sync '+apAgo(hub.last)+(hubStale?'. Check the HubSpot Contact Sync workflow in n8n.':''):'The sync has not written any contacts yet.',
+      acts:'<button class="rd-btn sm pri" onclick="apGo(\'hubspot\')">Open contacts</button>'},
+    {k:'calls',name:'Fathom',lg:'F',col:'#7C5CFF',
+      ok:!!ft.connected,st:ft.connected?'Connected':ft.ok===false&&ft.code!=='not_connected'?'Needs attention':'Not connected',
+      p:'Watch recorded calls here, read summaries and action items, and use any transcript as the source for a new draft.',
+      meta:ft.connected?'Key ending '+(ft.hint||'····')+(ft.updated_by?' · added by '+String(ft.updated_by).split('@')[0]:''):ft.ok===false&&ft.message&&ft.code!=='not_connected'?ft.message:'Paste a Fathom API key once and the whole team gets the calls.',
+      acts:ft.connected?'<button class="rd-btn sm pri" onclick="apGo(\'calls\')">Open calls</button><button class="rd-btn sm" onclick="apFathomModal()">Manage key</button>'
+        :'<button class="rd-btn sm pri" onclick="apFathomModal()">Connect Fathom</button>'},
+    {k:'notion',name:'Notion',lg:'N',col:'#37352F',
+      ok:!!ntOk,st:ntErr?'Needs attention':ntOk?'Connected':'Nothing shared yet',
+      p:'Browse the databases shared with the team’s Notion connection in n8n, read pages and add entries.',
+      meta:ntErr?nt.err:ntOk?nt.length+' database'+(nt.length===1?'':'s')+' shared':'Share a database with the n8n connection in Notion to see it here.',
+      acts:'<button class="rd-btn sm pri" onclick="apGo(\'notion\')">Open Notion</button>'}
+  ];
+  const card=function(c){
+    return '<article class="ap-int-card" data-k="'+c.k+'"><div class="hd"><div class="lg" style="background:'+c.col+'">'+c.lg+'</div><h3>'+esc(c.name)+'</h3>'+
+      '<span class="st '+(c.ok?'ok':'warn')+'">'+esc(c.st)+'</span></div><p>'+esc(c.p)+'</p><div class="meta">'+esc(c.meta)+'</div><div class="acts">'+c.acts+'</div></article>';
+  };
+  const later=(typeof INTEGRATIONS!=='undefined'?INTEGRATIONS:[]).filter(function(x){return ['HubSpot CRM','Fathom','Notion','HubSpot Email'].indexOf(x.n)<0;});
+  const laterHtml=function(){
+    return '<div class="ap-int-grid">'+later.map(function(x){
+      return '<article class="ap-int-card muted"><div class="hd"><div class="lg" style="background:'+x.col+'">'+intGlyph(x)+'</div><h3>'+esc(x.n)+'</h3>'+
+        '<span class="st">'+(x.st==='Planned'?'Planned':'Not set up')+'</span></div><p>'+esc(x.sub)+'</p></article>';}).join('')+'</div>'+
+      '<p class="ap-int-note">These are not wired up yet. Each one needs its own n8n workflow before it can show real data here.</p>'+
+      '<div class="ap-int-chat"><div><b>Team chat</b><p>Turn the built-in team chat off if the team already lives in Slack or Teams.</p></div>'+
+        '<button class="rd-btn sm" id="apIntChat" onclick="toggleOrgChat();this.textContent=ORG_CHAT?\'On\':\'Off\'">'+(typeof ORG_CHAT!=='undefined'&&!ORG_CHAT?'Off':'On')+'</button></div>';
+  };
+  const live=cards.filter(function(c){return c.ok;}).length;
+  apDemo({page:'integrations',eyebrow:'WORKSPACE · INTEGRATIONS',title:'Integrations',
+    sub:'Every outside tool the dashboard talks to, in one place. Open one to work with it, or manage its connection.',cta:null,
+    purpose:{tag:'n8n',bold:'Connections run through the team’s n8n',small:'Keys and logins live in n8n, not in anyone’s browser. The dashboard only reads from these tools, except adding Notion entries.'},
+    strip:function(){return [
+      {n:live,l:'Working',s:'of '+cards.length+' connections',tab:'inuse'},
+      {n:hub.n||0,l:'HubSpot contacts',s:hub.last?'synced '+apAgo(hub.last):'not synced yet'},
+      {n:ntOk?nt.length:0,l:'Notion databases',s:'shared with n8n'},
+      {n:later.length,l:'Not set up yet',s:'more tools',tab:'later'}];},
+    tabs:[{key:'inuse',label:'In use',count:cards.length,render:function(h){h.innerHTML='<div class="ap-int-grid">'+cards.map(card).join('')+'</div>';}},
+      {key:'later',label:'More tools',count:later.length,render:function(h){h.innerHTML=laterHtml();}}]});
+}
+
+/* route the overview, and give HubSpot the switcher too */
+(function(){
+  const _r=render;
+  render=function(){
+    if(state.view==='integrations'){
+      if(S.page!=='ap60')nav('ap60');
+      apChromeClear();
+      Promise.resolve(apRenderIntegrations()).catch(function(e){const m=document.getElementById('main');if(m)m.innerHTML='<div class="empty"><div class="big">This page hit an error</div>'+esc(e.message)+'</div>';});
+      apNavSync();try{window.scrollTo(0,0);}catch(e){}
+      return;
+    }
+    const r=_r.apply(this,arguments);
+    if(state.view==='hubspot'){apIntNav();if(!AP_INT.hub)apIntHubspot().then(function(){if(state.view==='hubspot')apIntNav();});}
+    return r;
+  };
+})();
+/* after connecting or disconnecting Fathom, refresh whichever integration page is open */
+(function(){
+  ['apFtConnect','apFtDisconnect'].forEach(function(n){
+    const f=window[n];window[n]=async function(){const r=await f.apply(this,arguments);if(S.page==='ap60'&&state.view==='integrations')render();return r;};
+  });
+})();
+</script>
+
+<style id="v87css">
+.ap-call-player .poster.off{gap:12px;padding:0 24px;text-align:center}
+.ap-call-player .poster.off b{font-size:16px}
+.ap-call-player .poster.off span{max-width:440px;line-height:1.5;opacity:.85}
+.ap-call-player .poster.off .rd-btn{background:#fff;color:#101828;border-color:#fff}
+</style>
+
+<style id="v88css">
+/* ---------- v88 · Company profile: your details on top ---------- */
+.ap-me{display:flex;gap:22px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.ap-me-l{display:flex;align-items:center;gap:14px}
+.ap-me-l .avvy{width:64px;height:64px;font-size:24px;border-radius:50%;background-size:cover;background-position:center;flex:none}
+.ap-me-l .acts{display:flex;flex-direction:column;gap:6px}
+.ap-me-l label.rd-btn{cursor:pointer}
+.ap-me-f{flex:1 1 320px;min-width:0}
+.ap-me-f .lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--rd-muted)}
+.ap-me-f p{margin:2px 0 10px;font-size:13.5px;color:var(--rd-muted)}
+.ap-me-f .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.ap-me-f label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:600;color:var(--rd-muted)}
+.ap-me-f input{font:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--rd-line);border-radius:9px;background:#fff;color:var(--rd-ink)}
+.ap-me-f input[readonly]{background:var(--rd-bg);color:var(--rd-muted)}
+.ap-cp-links{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:18px 0 6px}
+.ap-cp-links .lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--rd-muted);margin-right:4px}
+
+/* ---------- v88 · Fathom ---------- */
+.ap-call-md li.sub{margin-left:18px;list-style:circle}
+.ap-call-md a.ts{font-size:12px;font-weight:700;background:#EEF4FF;color:#3538CD;border-radius:6px;padding:1px 6px;text-decoration:none;margin-left:2px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ap-call-md a.ts:hover{background:#E0EAFF}
+.ap-call-player .poster.off.wait{flex-direction:row;gap:10px}
+.ap-call-player .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:apspin .8s linear infinite;flex:none}
+@keyframes apspin{to{transform:rotate(360deg)}}
+.ap-ft-stamp{font-size:11.5px;color:var(--rd-muted);margin-top:6px;min-height:14px}
+</style>
+<script>
+/* ===================================================================
+   v88
+   - one Company profile: the sidebar item is gone, Settings & system
+     opens the full profile (with your own details on top)
+   - Fathom: the dashboard checks each call's share link and only offers
+     in-page playback when Fathom allows it; new calls show up within a
+     minute while the page is open; cleaner summaries and guest names
+   =================================================================== */
+
+/* ---------------- one Company profile ---------------- */
+(function(){
+  const w=document.querySelector('aside.rd-sidebar .ap-sb-scroll')||document.querySelector('aside.rd-sidebar');
+  const b=w&&w.querySelector('.sb-item[data-view="profile"]');if(b)b.remove();
+  const av=document.getElementById('sbAvvy');if(av)av.setAttribute('onclick',"event.stopPropagation();apOpenProfile(true)");
+})();
+AP_VIEWS.profile.tag='Settings';AP_VIEWS.profile.title='Company profile';
+function apOpenProfile(me){
+  const m=document.getElementById('profileMenu');if(m)m.classList.remove('open');
+  apGo('profile');
+  if(me)setTimeout(function(){const e=document.getElementById('apMeCard');if(e&&e.scrollIntoView)e.scrollIntoView({block:'start',behavior:'smooth'});},450);
+}
+(function(){
+  const _nav=nav;
+  nav=function(p){if(p==='company'){apOpenProfile(false);return;}return _nav.apply(this,arguments);};
+  const _s=apNavSync;
+  apNavSync=function(){
+    const r=_s.apply(this,arguments);
+    const on=S.page==='ap60'&&state.view==='profile';
+    const f=document.getElementById('sbFoot');if(f&&on)f.classList.add('pm-active');
+    document.querySelectorAll('#profileMenu .pm-item[data-page="company"]').forEach(function(x){x.classList.toggle('on',on);});
+    return r;
+  };
+})();
+function apMeAvaPaint(){
+  const src=document.getElementById('sbAvvy'),dst=document.getElementById('apMeAva');if(!src||!dst)return;
+  dst.style.backgroundImage=src.style.backgroundImage||'';dst.textContent=src.style.backgroundImage?'':(src.textContent||'').trim();
+}
+(function(){
+  const _a=setAvatar;setAvatar=function(){const r=_a.apply(this,arguments);apMeAvaPaint();return r;};
+  const _n=pcSaveName;pcSaveName=function(){const r=_n.apply(this,arguments);apMeAvaPaint();return r;};
+})();
+function apProfileExtras(){
+  const main=document.getElementById('main');if(!main||state.view!=='profile')return;
+  const head=main.querySelector('.page-head');if(!head||main.querySelector('#apMeCard'))return;
+  const eb=head.querySelector('.eyebrow');if(eb)eb.textContent='Settings · Company';
+  const sub=head.querySelector('.page-sub');if(sub)sub.textContent='You, the business context and the competitor watchlist every engine draws from.';
+  const name=(document.getElementById('sbUser')||{}).textContent||(S.user||'');
+  const email=(typeof AP_USER!=='undefined'&&AP_USER&&AP_USER.email)||'';
+  const card=document.createElement('div');card.className='panel ap-me';card.id='apMeCard';
+  card.innerHTML='<div class="ap-me-l"><div class="avvy" id="apMeAva"></div><div class="acts">'+
+      '<label class="rd-btn sm">Upload photo<input type="file" accept="image/*" hidden onchange="avPick(this)"></label>'+
+      '<button type="button" class="rd-btn sm" onclick="setAvatar(null)">Use my initial</button></div></div>'+
+    '<div class="ap-me-f"><div class="lbl">You</div><p>How you show up across the workspace.</p><div class="row">'+
+      '<label>Name<input id="apMeName" type="text" value="'+esc(String(name).trim())+'" onchange="pcSaveName(this.value)"></label>'+
+      '<label>Email<input type="text" value="'+esc(email)+'" readonly></label></div></div>';
+  head.after(card);apMeAvaPaint();
+}
+function apProfileLinks(){
+  const main=document.getElementById('main');if(!main||state.view!=='profile'||main.querySelector('.ap-cp-links'))return;
+  const d=document.createElement('div');d.className='ap-cp-links';
+  d.innerHTML='<span class="lbl">Also company-wide</span>'+
+    [["Brand voice","navPm('voice')"],["Templates","apGo('templates')"],["Knowledge base","apGo('kb')"],["Dashboard AI settings","navPm('learning')"],["Integrations","apGo('integrations')"]]
+      .map(function(x){return '<button type="button" class="rd-btn sm" onclick="'+x[1]+'">'+esc(x[0])+' →</button>';}).join('');
+  main.appendChild(d);
+}
+(function(){
+  const _p=renderProfile;
+  renderProfile=function(){
+    const r=_p.apply(this,arguments);
+    try{apProfileExtras();}catch(e){}
+    Promise.resolve(r).then(function(){try{apProfileExtras();apProfileLinks();}catch(e){}});
+    return r;
+  };
+})();
+
+/* ---------------- Fathom: tidier data ---------------- */
+function apFtNiceName(n,email){
+  n=String(n||'').trim();
+  if(!n||/@/.test(n)){const l=String(n||email||'').split('@')[0].replace(/[._-]+/g,' ').trim();return l?l.replace(/\b\w/g,function(c){return c.toUpperCase();}):'';}
+  return n;
+}
+apFtNorm=function(c){
+  (c.invitees||[]).forEach(function(i){i.name=apFtNiceName(i.name,i.email);});
+  if(c.recorded_by)c.recorded_by.name=apFtNiceName(c.recorded_by.name,c.recorded_by.email);
+  if(c.invitees&&c.invitees.length)c.external=c.invitees.some(function(i){return i.external;});
+  return c;
+};
+AP_FT.access=AP_FT.access||{};
+function apFtToken(c){const m=String(c.share_url||'').match(/^https:\/\/fathom\.video\/share\/([A-Za-z0-9_-]{8,64})/);return m?m[1]:'';}
+function apFtAccessOf(c){const t=apFtToken(c);return t?(AP_FT.access[t]||'checking'):'none';}
+apFtTeamOnly=function(c){return apFtAccessOf(c)==='team';};
+async function apFtCheckAccess(items){
+  const toks=[];(items||AP_FT.items).forEach(function(c){const t=apFtToken(c);if(t&&!AP_FT.access[t]&&toks.indexOf(t)<0)toks.push(t);});
+  for(let i=0;i<toks.length;i+=25){
+    const part=toks.slice(i,i+25);
+    try{
+      const j=await apProxy(AP_FATHOM_HOOK,{action:'access',tokens:part},'Fathom');
+      const a=(j&&j.access)||{};part.forEach(function(t){AP_FT.access[t]=a[t]||'unknown';});
+    }catch(e){part.forEach(function(t){AP_FT.access[t]='unknown';});}
+  }
+  if(toks.length)apCallPlayersRefresh();
+}
+function apCallPlayersRefresh(){
+  document.querySelectorAll('#main .detail[data-id]').forEach(function(d){
+    const c=apFtCall(d.dataset.id),w=d.querySelector('.ap-call-pwrap');
+    if(c&&w&&!w.querySelector('iframe'))w.innerHTML=apCallPlayerHtml(c);
+  });
+}
+(function(){
+  const _l=apFtLoad;apFtLoad=async function(){const r=await _l.apply(this,arguments);apFtCheckAccess(AP_FT.items);AP_FT.checked=AP_FT.t;return r;};
+  const _m=apFtMore;apFtMore=async function(){const r=await _m.apply(this,arguments);apFtCheckAccess(r);return r;};
+})();
+
+/* ---------------- Fathom: the player ---------------- */
+function apCallPlayerHtml(c){
+  const emb=apFtEmbed(c),link=apFtLink(c),acc=apFtAccessOf(c);
+  const watch=link?'<a class="rd-btn sm" href="'+esc(link)+'" target="_blank" rel="noopener">▶ Watch in Fathom ↗</a>':'';
+  if(!emb)return '<div class="ap-call-player"><div class="poster off"><span>This call has no share link yet, so it can only be watched in Fathom.</span>'+watch+'</div></div>';
+  if(acc==='checking')return '<div class="ap-call-player"><div class="poster off wait"><span class="spin"></span><span>Checking whether Fathom lets this call play here…</span></div></div>';
+  if(acc==='team')return '<div class="ap-call-player"><div class="poster off"><b>This call is team-only in Fathom</b>'+
+      '<span>Fathom only plays it for people signed in to Fathom, and it won’t pass that sign-in to another website. Switch its share link to anyone with the link and it plays right here.</span>'+watch+'</div></div>'+
+    '<p class="ap-call-note">In Fathom: open the call, click <b>Share</b> and pick <b>Anyone with the link can view</b>. To make that the default for new calls, an admin can set <b>Default Share Link Access</b> in Fathom’s organization settings.</p>';
+  return '<div class="ap-call-player"><button type="button" class="poster" data-src="'+esc(emb)+'" onclick="apCallPlay(this)"><span class="pl">▶</span><span>Play the recording here</span></button></div>'+
+    (acc==='unknown'?'<p class="ap-call-note">Could not check this call’s sharing. If Fathom asks you to sign in, open it in Fathom instead.</p>':'');
+}
+apCallDetail=function(d,c){
+  if(!d)return;
+  if(!c){d.dataset.id='';d.innerHTML='<div class="ap-call-d"><div class="ap-nt-empty">Pick a call to see it here.</div></div>';return;}
+  d.dataset.id=String(c.id);
+  const link=apFtLink(c),g=apFtGuests(c),m=apFtMins(c),id=esc(String(c.id));
+  const meta=[apFtWhen(c),m?m+' min':'',c.recorded_by&&c.recorded_by.name?'recorded by '+c.recorded_by.name:'',g.length?g.length+' guest'+(g.length===1?'':'s'):''].filter(Boolean).join(' · ');
+  d.innerHTML='<div class="ap-call-d">'+
+    '<h2>'+esc(c.title)+(c.external?'<span class="ap-call-chip ext">Client</span>':'')+'</h2><div class="meta">'+esc(meta)+'</div>'+
+    '<div class="ap-call-pwrap">'+apCallPlayerHtml(c)+'</div>'+
+    '<div class="ap-call-acts"><button class="rd-btn sm pri" onclick="apCallToCreate(\''+id+'\',this)">✎ Use as content source</button>'+
+      (link?'<a class="rd-btn sm" href="'+esc(link)+'" target="_blank" rel="noopener">Open in Fathom ↗</a>':'')+
+      '<button class="rd-btn sm" onclick="apCallCopy(\''+id+'\',this)">⧉ Copy transcript</button></div>'+
+    '<div class="ap-call-seg" role="tablist">'+
+      [['summary','Summary'],['transcript','Transcript'],['actions','Actions'+(c.actions&&c.actions.length?' ('+c.actions.length+')':'')],['people','People'+(g.length?' ('+g.length+')':'')]]
+        .map(function(s){return '<button type="button" role="tab" data-s="'+s[0]+'" class="'+(AP_FT.seg===s[0]?'on':'')+'" onclick="apCallSeg(this)">'+esc(s[1])+'</button>';}).join('')+
+    '</div><div class="ap-call-body"></div></div>';
+  apCallSegPaint(d,c);
+};
+
+/* ---------------- Fathom: summaries read like notes ---------------- */
+apMiniMd=function(md){
+  const clock=function(u){const m=String(u).match(/[?&]timestamp=([\d.]+)/);if(!m)return '';const s=Math.floor(+m[1]);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
+  const fmt=function(s){return esc(s).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');};
+  const inl=function(s){
+    const whole=s.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
+    if(whole){const t=clock(whole[2]);return fmt(whole[1])+(t?' <a class="ts" href="'+esc(whole[2])+'" target="_blank" rel="noopener" title="Open this moment in Fathom">'+t+'</a>':'');}
+    return fmt(s).replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,function(m,t,u){return '<a href="'+u+'" target="_blank" rel="noopener">'+t+'</a>';});
+  };
+  const out=[];let list=null;
+  const close=function(){if(list){out.push('</'+list+'>');list=null;}};
+  String(md||'').split('\n').forEach(function(raw){
+    const l=raw.trim();if(!l){close();return;}
+    const ind=(raw.match(/^\s*/)[0]||'').length;let m;
+    if((m=l.match(/^#{1,6}\s+(.*)$/))){close();out.push('<h4>'+inl(m[1].replace(/:$/,''))+'</h4>');return;}
+    if((m=l.match(/^[-*•]\s+(.*)$/))){if(list!=='ul'){close();out.push('<ul>');list='ul';}out.push('<li'+(ind>=4?' class="sub"':'')+'>'+inl(m[1])+'</li>');return;}
+    if((m=l.match(/^\d+[.)]\s+(.*)$/))){if(list!=='ol'){close();out.push('<ol>');list='ol';}out.push('<li'+(ind>=4?' class="sub"':'')+'>'+inl(m[1])+'</li>');return;}
+    close();out.push('<p>'+inl(l)+'</p>');
+  });
+  close();return out.join('');
+};
+
+/* ---------------- Fathom: new calls within a minute ---------------- */
+function apFtStamp(){
+  const t=AP_FT.checked?Math.round((Date.now()-AP_FT.checked)/1000):null;
+  const txt=t==null?'':(t<45?'Checked Fathom just now':'Checked Fathom '+Math.max(1,Math.round(t/60))+' min ago')+' · new calls show up within a minute';
+  document.querySelectorAll('.ap-ft-stamp').forEach(function(e){e.textContent=txt;});
+}
+function apFtPollOn(){
+  const onCalls=S.page==='ap60'&&state.view==='calls';
+  const pick=document.getElementById('cfCallPick');
+  return onCalls||(pick&&!pick.hidden&&S.page==='ap60'&&state.view==='create');
+}
+function apFtPollStart(){if(AP_FT.pollT)return;AP_FT.pollT=setInterval(apFtPoll,60000);}
+async function apFtPoll(){
+  if(!apFtPollOn()){clearInterval(AP_FT.pollT);AP_FT.pollT=null;return;}
+  apFtStamp();
+  if(document.hidden||AP_FT.polling||!AP_FT.loaded||!(AP_FT.status&&AP_FT.status.connected))return;
+  AP_FT.polling=true;
+  try{
+    const j=await apProxy(AP_FATHOM_HOOK,{action:'list'},'Fathom');
+    if(!j||j.ok===false)return;
+    const idx={};AP_FT.items.forEach(function(c,i){idx[String(c.id)]=i;});
+    const added=[];
+    (j.items||[]).filter(function(c){return c&&c.id!=null;}).map(apFtNorm).forEach(function(c){
+      const i=idx[String(c.id)];
+      if(i!=null)Object.assign(AP_FT.items[i],c);else added.push(c);
+    });
+    if(added.length){
+      AP_FT.items=added.concat(AP_FT.items).sort(function(a,b){return String(b.start||b.created_at).localeCompare(String(a.start||a.created_at));});
+      apFtCheckAccess(added);
+    }
+    AP_FT.t=Date.now();AP_FT.checked=Date.now();
+    if(S.page==='ap60'&&state.view==='calls'){
+      document.querySelectorAll('#main .ap-tphost').forEach(function(h){if(!h.classList.contains('ap-hide')&&h.querySelector('.ap-calls'))apCallsRows(h);});
+      apDemoRefreshStrip();apCallsCounts();
+    }
+    if(document.querySelector('#cfCallPick .rows')){const q=document.querySelector('#cfCallPick .q input');apCfCallRows(q?q.value:'');}
+    if(added.length)toast(added.length===1?'New call from Fathom: '+added[0].title:added.length+' new calls from Fathom');
+  }catch(e){}
+  finally{AP_FT.polling=false;apFtStamp();}
+}
+(function(){
+  const _pane=apCallsPane;
+  apCallsPane=function(h){
+    const r=_pane.apply(this,arguments);
+    const q=h.querySelector('.ap-calls .list .q');
+    if(q&&!q.querySelector('.ap-ft-stamp')){const s=document.createElement('div');s.className='ap-ft-stamp';q.appendChild(s);}
+    apFtStamp();apFtPollStart();
+    return r;
+  };
+  const _pick=apCfCallPick;
+  apCfCallPick=async function(){const r=await _pick.apply(this,arguments);apFtPollStart();return r;};
+  document.addEventListener('visibilitychange',function(){if(!document.hidden&&AP_FT.pollT&&AP_FT.checked&&Date.now()-AP_FT.checked>55000)apFtPoll();});
+})();
 </script>
 
 </body>
