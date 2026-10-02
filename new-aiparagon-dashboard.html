@@ -30749,5 +30749,1633 @@ apJo=function(v){
 };
 </script>
 
+<style id="v95css">
+/* ---------- v95 ---------- */
+.ap-orgcard{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0 0 16px;padding:14px 18px;border:1px solid var(--rd-line);border-left:4px solid var(--e9-org,#7C5CFF);border-radius:12px;background:#FAF8FF}
+.ap-orgcard>div{flex:1 1 320px;min-width:0}
+.ap-orgcard b{display:block;font-size:15.5px;color:var(--rd-ink);margin:2px 0 2px}
+.ap-orgcard small{display:block;font-size:13px;color:var(--rd-muted);line-height:1.5}
+@media (max-width:700px){.ap-orgcard .rd-btn{width:100%;justify-content:center}}
+</style>
+<script id="v95js">
+/* ===================================================================
+   v95 · one home per brief
+   - the organic brief lives in Intelligence briefs only
+   - Competitor Intel Tracker keeps the posts, replies and takeaways,
+     with a short card that opens its brief in Intelligence briefs
+   =================================================================== */
+function apIntelToBriefs(){RD.cfSel.organic=(state.intelRun||'');apCfOpenBrief('organic');}
+function apIbCardHtml(){
+  const C=typeof AP_CF!=='undefined'&&AP_CF;const rid=state.intelRun||'';
+  const rows=(C&&C.intel)||[];const r=rows.find(function(x){return x.run_id===rid;})||(rid?null:rows[0]);
+  const at=r?r.created_at:'';const day=at?e9Day(at):(rid?e9RunDay(rid):'');
+  const today=at&&new Date(at).toDateString()===new Date().toDateString();
+  const newest=rows[0]&&r&&rows[0].run_id===r.run_id;
+  const head=today?'Today’s organic brief is ready':day?(newest?'The newest organic brief is from '+day:'The organic brief of '+day):'The organic brief';
+  return '<div><span class="e9-k">Organic brief</span><b>'+esc(head)+'</b>'+
+    '<small>It lives in Intelligence briefs, next to the ad brief. This page holds the posts and replies behind it.</small></div>'+
+    '<button class="rd-btn pri" onclick="apIntelToBriefs()">Open in Intelligence briefs →</button>';
+}
+(function(){
+  const _d=apDemo;
+  apDemo=function(o){
+    if(o&&o.page==='intel'&&Array.isArray(o.tabs)&&!o.__oneHome){
+      o.__oneHome=true;
+      o.tabs=o.tabs.filter(function(t){return t.key!=='brief';});
+      if(RD.aptab.intel==='brief')RD.aptab.intel=null;
+      if(o.cta&&/brief/i.test(o.cta.label||''))o.cta={label:'Open the brief',go:'apIntelToBriefs()'};
+    }
+    const r=_d.apply(this,arguments);
+    try{
+      if(o&&o.page==='intel'){
+        const s=apSec('Daily brief');if(s){s.classList.add('ap-hide');s.dataset.tp='none';s.style.display='none';}
+        const strip=document.getElementById('apStrip');
+        if(strip&&!document.getElementById('apIbCard')){
+          const d=document.createElement('div');d.id='apIbCard';d.className='ap-orgcard';d.innerHTML=apIbCardHtml();strip.parentNode.insertBefore(d,strip);
+          apCfLoad().then(function(){const c=document.getElementById('apIbCard');if(c)c.innerHTML=apIbCardHtml();}).catch(function(){});
+        }
+      }
+    }catch(e){console.warn('intel one home',e.message);}
+    return r;
+  };
+})();
+</script>
+
+<style id="v96css">
+/* ===================== v96 · Engine 3, simpler and clearer ===================== */
+.v96-muted{color:var(--rd-muted);font-size:13.5px}
+.v96-dl{display:inline-block;margin-right:14px;white-space:nowrap}
+.v96-dl b{font-weight:600;color:var(--rd-ink)}
+.v96-dl a{color:var(--rd-blue);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+@media (max-width:700px){.v96-dl{white-space:normal;display:block;margin:0 0 2px}}
+
+/* ---------- overview: four steps only ---------- */
+#apChrome[data-v96="overview"] .rd-purpose,#apChrome[data-v96="overview"] #apStrip,#apChrome[data-v96="overview"] .rd-tabs,#apChrome[data-v96="overview"] #apLtBar{display:none}
+.v96-ov{display:flex;flex-direction:column;gap:18px;margin-top:4px}
+.v96-ov-intro{font-size:14px;line-height:1.6;color:var(--rd-text);margin:0;max-width:880px}
+.v96-steps .v96-step{padding:16px 16px 14px;gap:6px}
+.v96-steps .v96-step b{font-size:16px}
+.v96-steps .v96-step .feeds{font-size:13.5px;line-height:1.5;color:var(--rd-text)}
+.v96-find-k{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--rd-faint);margin-top:6px}
+.v96-find{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.v96-find li{font-size:13px;color:var(--rd-ink);padding-left:12px;position:relative}
+.v96-find li:before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--c)}
+.v96-open{margin-top:auto;padding-top:8px;font-size:13px;font-weight:700;color:var(--i)}
+.v96-ov-note{border:1px solid var(--rd-line);background:#fff;border-radius:12px;padding:12px 16px;font-size:14px;line-height:1.55;color:var(--rd-text)}
+.v96-ov-note b{color:var(--rd-ink)}
+.v96-ov-note a{color:var(--rd-blue);cursor:pointer;font-weight:600}
+@media (max-width:1100px){.v96-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.v96-steps{grid-template-columns:1fr}}
+
+/* ---------- running for + following ---------- */
+.e9-ind.v96-ind{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:0}
+.v96-ind-r,.v96-fol-r{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;padding:11px 14px}
+.v96-fol-r{border-top:1px solid var(--rd-line);background:#FAF8FF;border-radius:0 0 12px 12px}
+.v96-fol-r .e9-k{color:var(--e9-org-ink)}
+.v96-fol-n{font-size:13.5px;color:var(--rd-text)}
+.v96-fol-n b{font-weight:600;color:var(--rd-ink)}
+.v96-ind-r .sp,.v96-fol-r .sp{flex:1}
+.v96-ind-r .aud{color:var(--rd-text);max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v96-ind-r .v{color:var(--rd-ink);font-weight:600}
+@media (max-width:700px){.v96-ind-r .aud{max-width:100%;white-space:normal}.v96-fol-r .rd-btn{width:100%;justify-content:center}}
+.v96-qnote{margin:0 0 12px;font-size:13.5px;color:var(--rd-text);background:#FAF8FF;border:1px solid var(--e9-org-line);border-radius:10px;padding:9px 12px}
+.v96-qnote a{color:var(--e9-org-ink);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+
+/* ---------- following tab ---------- */
+.v96-fol{display:flex;flex-direction:column;gap:16px}
+.v96-fol-intro h3{font-family:'Libre Caslon Text',serif;font-size:21px;font-weight:400;margin:4px 0 4px;color:var(--rd-ink)}
+.v96-fol-intro p{margin:0;font-size:14px;line-height:1.55;color:var(--rd-text);max-width:820px}
+.v96-fol-intro .e9-k{color:var(--e9-org-ink)}
+.v96-fol-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.v96-fol-c{border:1px solid var(--rd-line);border-radius:14px;background:#fff;padding:14px 16px;min-width:0}
+.v96-fol-c .hd,.v96-terms .hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.v96-fol-c .hd b,.v96-terms .hd b{font-size:15px;color:var(--rd-ink)}
+.v96-fol-c .hd .n{font-size:12px;font-weight:700;background:var(--e9-org-soft);color:var(--e9-org-ink);border-radius:999px;padding:1px 8px}
+.v96-fol-c .hd .sp{flex:1}
+.v96-fol-c ul,.v96-fol-off ul{list-style:none;margin:0;padding:0}
+.v96-fol-c li,.v96-fol-off li{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #F0F1F4}
+.v96-fol-c li:first-child{border-top:0}
+.v96-fol-c .who,.v96-fol-off .who{flex:1;min-width:0}
+.v96-fol-c .who b,.v96-fol-off .who b{font-size:14px;color:var(--rd-ink);margin-right:6px}
+.v96-fol-c .who small,.v96-fol-off .who small{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12.5px;color:var(--rd-muted);margin-top:2px}
+.v96-fol-c .who a,.v96-fol-off .who a{color:var(--rd-blue);text-decoration:none}
+.v96-fol-c .who a:hover{text-decoration:underline}
+.v96-web{color:#A3520C}
+.v96-acts{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:0 0 auto}
+.v96-x{border:0;background:none;padding:2px 0;font:inherit;font-size:12.5px;color:var(--rd-muted);cursor:pointer;text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
+.v96-x:hover{color:var(--rd-red)}
+.v96-x.v96-mv:hover{color:var(--rd-blue)}
+.v96-ind-t{display:inline-block;font-size:11.5px;font-weight:600;color:#0E6A77;background:#E8F6F8;border-radius:999px;padding:1px 8px;margin-top:2px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+.v96-ind-t.none{color:var(--rd-faint);background:#F2F4F7}
+.apl-cell .v96-ind-t{display:block;width:max-content;margin-top:3px}
+.v96-terms{border:1px solid var(--rd-line);border-radius:14px;background:#fff;padding:14px 16px}
+.v96-terms .hd small{font-size:12.5px;color:var(--rd-muted);margin-left:auto}
+.v96-terms-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.v96-tcol{border:1px solid #EEF0F3;background:#FCFCFD;border-radius:12px;padding:11px 12px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.v96-tcol-h b{display:block;font-size:13.5px;color:var(--rd-ink)}
+.v96-tcol-h small{font-size:12px;color:var(--rd-muted)}
+.v96-chips{display:flex;flex-wrap:wrap;gap:6px}
+.v96-tchip{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;background:var(--e9-org-soft);color:var(--e9-org-ink);border:1px solid var(--e9-org-line);border-radius:999px;padding:2px 4px 2px 10px;max-width:100%}
+.v96-tchip button{border:0;background:none;color:inherit;font-size:15px;line-height:1;cursor:pointer;padding:0 5px;border-radius:50%}
+.v96-tchip button:hover{background:#fff}
+.v96-tadd{display:flex;gap:6px;margin-top:auto}
+.v96-tadd input{flex:1;min-width:0;border:1px solid var(--rd-line);border-radius:8px;padding:6px 9px;font:inherit;font-size:13px}
+.v96-fol-off summary{cursor:pointer;font-size:13.5px;color:var(--rd-muted)}
+.v96-fol-off{border:1px dashed var(--rd-line);border-radius:12px;padding:10px 14px;background:#fff}
+@media (max-width:900px){.v96-fol-g,.v96-terms-g{grid-template-columns:1fr}}
+
+/* ---------- intelligence briefs ---------- */
+#apChrome[data-v96="briefs"] .rd-purpose,#apChrome[data-v96="briefs"] #apStrip,#apChrome[data-v96="briefs"] .e9-from{display:none}
+.v96-pills{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 16px}
+.v96-pill{align-items:center}
+.v96-pill.on{border-color:var(--c);box-shadow:inset 0 0 0 1px var(--c)}
+.v96-pill .t small.v96-pd{color:var(--rd-ink);font-weight:600;margin-top:2px}
+.ap-cf-bh p .v96-dl{font-size:13.5px;color:var(--rd-text)}
+@media (max-width:700px){.v96-pills{grid-template-columns:1fr}}
+/* snapshot points open their sources */
+.e9-snap-l li.v96-snapi{cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s;outline:none}
+.e9-snap-l li.v96-snapi:hover,.e9-snap-l li.v96-snapi:focus-visible{border-color:var(--e9-org);box-shadow:0 4px 12px rgba(16,24,40,.08);transform:translateY(-1px)}
+.e9-snap.ad .e9-snap-l li.v96-snapi:hover,.e9-snap.ad .e9-snap-l li.v96-snapi:focus-visible{border-color:var(--e9-ad)}
+.v96-srcl{font-size:12px;font-weight:700;color:var(--e9-org-ink);margin-top:auto;padding-top:2px}
+.e9-snap.ad .v96-srcl{color:var(--e9-ad-ink)}
+.e9-snap-l li .v96-srcl{grid-column:2}
+@container (min-width:900px){.e9-snap-l li .v96-srcl{grid-column:auto}}
+.v96-snaph{font-size:12px;color:var(--rd-muted);font-style:italic}
+.v96-src-why{font-size:14.5px;line-height:1.55;color:var(--rd-text);margin:0 0 10px}
+.v96-src-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--rd-muted);margin-bottom:14px}
+.v96-src-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.v96-src-l li{border:1px solid var(--rd-line);border-radius:12px;padding:10px 12px;background:#fff}
+.v96-src-l .h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.v96-src-l .h b{font-size:14px;color:var(--rd-ink)}
+.v96-src-l .h small{font-size:12.5px;color:var(--rd-muted)}
+.v96-src-l .h a{margin-left:auto;font-size:13px;font-weight:600;color:var(--rd-blue);text-decoration:none}
+.v96-src-l p{margin:4px 0 2px;font-size:14px;line-height:1.5;color:var(--rd-ink)}
+.v96-src-l small.w{display:block;font-size:12.5px;color:#176B3A}
+.v96-src-none{font-size:14px;color:var(--rd-text);background:#F9FAFB;border-radius:10px;padding:10px 12px}
+
+/* ---------- ad strategist ---------- */
+.ap-orgcard.v96-adcard{border-left-color:var(--e9-ad);background:#F5F8FF}
+.ap-orgcard.v96-adcard b .e9-chip{vertical-align:2px;margin-left:6px}
+.v96-top5{border:1px solid var(--e9-ad-line);border-radius:14px;background:linear-gradient(180deg,var(--e9-ad-soft),#fff 160%);padding:14px 16px;margin:0 0 16px;container-type:inline-size}
+.v96-top5-h{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.v96-top5-h .e9-k{color:var(--e9-ad-ink)}
+.v96-top5-h b{display:block;font-size:16px;color:var(--rd-ink);margin-top:2px}
+.v96-top5-h small{display:block;font-size:12.5px;color:var(--rd-muted);margin-top:2px}
+.v96-top5-h .sp{flex:1}
+.v96-top5-l{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr;gap:8px}
+@container (min-width:860px){.v96-top5-l{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@container (min-width:520px) and (max-width:859px){.v96-top5-l{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.v96-top5-l li{background:#fff;border:1px solid var(--rd-line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:5px;min-width:0;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s;outline:none}
+.v96-top5-l li:hover,.v96-top5-l li:focus-visible{border-color:var(--e9-ad);box-shadow:0 4px 12px rgba(16,24,40,.08);transform:translateY(-1px)}
+.v96-top5-l .top{display:flex;align-items:center;gap:8px;min-width:0}
+.v96-top5-l .n{width:22px;height:22px;border-radius:50%;background:var(--e9-ad-soft);color:var(--e9-ad-ink);font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+.v96-top5-l .adv{font-size:13.5px;font-weight:700;color:var(--rd-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v96-top5-l .img{border-radius:8px;overflow:hidden;background:#F2F4F7;aspect-ratio:16/10}
+.v96-top5-l .img img{width:100%;height:100%;object-fit:cover;display:block}
+.v96-top5-l .hook{font-size:13.5px;line-height:1.35;color:var(--rd-ink);font-weight:650}
+.v96-top5-l .offer{font-size:12.5px;line-height:1.4;color:var(--rd-muted)}
+.v96-top5-l .meta{display:flex;flex-wrap:wrap;gap:4px 8px;font-size:12px;color:var(--rd-muted);margin-top:auto}
+.v96-top5-l .meta .ok{color:#176B3A;font-weight:600}
+.v96-indl{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow:auto;padding-right:4px}
+.v96-indl label{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr);gap:10px;align-items:center;font-size:14px;color:var(--rd-ink)}
+.v96-indl input{border:1px solid var(--rd-line);border-radius:9px;padding:8px 10px;font:inherit;font-size:14px;min-width:0}
+@media (max-width:560px){.v96-indl label{grid-template-columns:1fr;gap:4px}}
+/* takeaways say where they come from */
+.v96-srcbox{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;border:1px solid var(--e9-ad-line);background:var(--e9-ad-soft);border-radius:12px;padding:10px 14px;margin:0 0 14px;font-size:13.5px;color:var(--rd-text)}
+.v96-srcbox.org{border-color:var(--e9-org-line);background:var(--e9-org-soft)}
+.v96-srcbox .e9-k{width:100%;color:var(--e9-ad-ink)}
+.v96-srcbox.org .e9-k{color:var(--e9-org-ink)}
+.v96-srcbox b{color:var(--rd-ink);font-weight:600}
+.v96-srcbox .sp{flex:1}
+.v96-srcbox a{font-weight:600;color:var(--rd-blue);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.v96-from{display:block;font-size:12px;font-weight:500;color:var(--rd-muted);text-transform:none;letter-spacing:0;margin:2px 0 6px}
+
+/* ---------- create content: 1, 2, 3 ---------- */
+.v96-123{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1.15fr) auto minmax(0,1fr);gap:10px;align-items:stretch;margin:0 0 16px}
+.v96-b{--c:var(--e9-you);--s:var(--e9-you-soft);--l:var(--e9-you-line);--i:var(--e9-you-ink);
+  border:1px solid var(--l);border-top:4px solid var(--c);border-radius:14px;background:#fff;padding:12px 14px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.v96-b.mkt{--c:var(--e9-org);--s:var(--e9-org-soft);--l:var(--e9-org-line);--i:var(--e9-org-ink)}
+.v96-b.out{--c:var(--e9-out);--s:var(--e9-out-soft);--l:var(--e9-out-line);--i:var(--e9-out-ink)}
+.v96-b-h{display:flex;align-items:center;gap:10px}
+.v96-b-h .n,.v96-123s .n{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;background:var(--s,var(--e9-you-soft));color:var(--i,var(--e9-you-ink));border:1px solid var(--l,var(--e9-you-line));flex:0 0 auto}
+.v96-b-h b{display:block;font-size:15px;color:var(--rd-ink)}
+.v96-b-h small{display:block;font-size:12.5px;color:var(--rd-muted)}
+.v96-arr{align-self:center;font-size:18px;color:var(--rd-faint)}
+.v96-path{display:flex;flex-direction:column;gap:6px;margin:0}
+.ap-cf-path.v96-path button{display:block;text-align:left;border:1px solid var(--rd-line);background:#fff;border-radius:10px;padding:8px 11px;font:inherit;font-size:13.5px;font-weight:600;color:var(--rd-ink);cursor:pointer;width:100%}
+.ap-cf-path.v96-path button small{display:block;font-size:12px;font-weight:400;color:var(--rd-muted);margin-top:1px}
+.ap-cf-path.v96-path button.on{border-color:var(--e9-you);background:var(--e9-you-soft);box-shadow:inset 0 0 0 1px var(--e9-you)}
+.v96-rev{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.v96-rev li{border:1px solid var(--rd-line);border-radius:10px;padding:7px 10px;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:8px;align-items:baseline;background:#fff}
+.v96-rev li[role="button"]{cursor:pointer}
+.v96-rev li[role="button"]:hover{border-color:var(--e9-org)}
+.v96-rev li .role{grid-row:span 2;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:2px 7px;background:#F2F4F7;color:#475467;align-self:center;min-width:64px;text-align:center}
+.v96-rev li.org .role{background:var(--e9-org-soft);color:var(--e9-org-ink)}
+.v96-rev li.ad .role{background:var(--e9-ad-soft);color:var(--e9-ad-ink)}
+.v96-rev li.you .role{background:var(--e9-you-soft);color:var(--e9-you-ink)}
+.v96-rev li b{font-size:13.5px;color:var(--rd-ink)}
+.v96-rev li small{font-size:12px;color:var(--rd-muted)}
+.ap-cf-fmt.v96-fmt{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+.v96-get{margin:0;font-size:13px;line-height:1.5;color:var(--rd-text)}
+@media (max-width:1100px){.v96-123{grid-template-columns:1fr}.v96-arr{transform:rotate(90deg);justify-self:center;line-height:1}}
+.v96-reqs h3{font-family:'Libre Caslon Text',serif;font-size:20px;font-weight:400;margin:4px 0 4px}
+.v96-reqs .help{margin:0 0 10px}
+.v96-reqs .ap-cf-card.ap-cf-reqs{border:0;box-shadow:none;padding:0;background:none}
+.v96-reqs #v96ReqList.v96-cap .ap-cf-req:nth-child(n+7){display:none}
+.v96-reqs .ap-cf-req{gap:8px}
+.v96-flash{box-shadow:0 0 0 3px var(--e9-out-line)!important;transition:box-shadow .3s}
+
+/* ---------- your voice ---------- */
+.v96-voice{display:flex;flex-direction:column;gap:16px}
+.v96-123s{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.v96-123s li{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--e9-you-line);border-radius:12px;background:#fff;padding:12px 14px}
+.v96-123s li b{display:block;font-size:14.5px;color:var(--rd-ink)}
+.v96-123s li small{display:block;font-size:13px;line-height:1.45;color:var(--rd-muted);margin-top:2px}
+@media (max-width:800px){.v96-123s{grid-template-columns:1fr}}
+.v96-vsum{margin-bottom:0}
+.v96-vsum-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.v96-vsum-g .c{background:#fff;border:1px solid var(--rd-line);border-radius:12px;padding:11px 13px;min-width:0}
+.v96-vsum-g .c.wide{grid-column:1/-1}
+.v96-vsum-g .c>b{display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--e9-you-ink);margin-bottom:5px}
+.v96-vsum-g .c p{margin:0;font-size:14px;line-height:1.55;color:var(--rd-ink)}
+.v96-vsum-g .c ul{margin:6px 0 0;padding-left:18px;font-size:13.5px;line-height:1.5;color:var(--rd-ink)}
+.v96-tones{display:flex;flex-wrap:wrap;gap:5px}
+.v96-tones span{font-size:12px;font-weight:600;background:var(--e9-you-soft);color:var(--e9-you-ink);border:1px solid var(--e9-you-line);border-radius:999px;padding:2px 9px}
+.v96-vsum-more{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:10px;font-size:13px;color:var(--rd-text)}
+.v96-vsum-more b{color:var(--rd-ink);font-weight:600}
+.v96-vform textarea{resize:vertical}
+.v96-vform .f{margin-top:10px}
+.v96-vform .fl{display:block;font-size:13px;font-weight:600;color:var(--rd-ink);margin-bottom:5px}
+.v96-vform .fl small{font-weight:400;color:var(--rd-muted)}
+.v96-sugg{margin:0 0 4px;font-size:13.5px;color:var(--e9-you-ink);background:var(--e9-you-soft);border-radius:9px;padding:8px 10px}
+.v96-ev{margin-top:10px}.v96-ev summary{cursor:pointer;font-size:13px;color:var(--rd-muted)}
+.v96-vacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.v96-vshare h3{font-family:'Libre Caslon Text',serif;font-size:20px;font-weight:400;margin:4px 0 4px}
+.v96-vhist{border:1px solid var(--rd-line);border-radius:12px;background:#fff;padding:10px 14px}
+.v96-vhist summary{cursor:pointer;font-size:13.5px;color:var(--rd-muted)}
+.v96-vhist .row{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:8px 0;border-top:1px solid #F0F1F4}
+.v96-vhist .row b{display:block;font-size:13.5px;color:var(--rd-ink)}
+.v96-vhist .row small{display:block;font-size:12.5px;color:var(--rd-muted)}
+@media (max-width:700px){.v96-vsum-g{grid-template-columns:1fr}.e9-vl-form.v96-vform .two{grid-template-columns:1fr}}
+
+/* ---------- content generation ---------- */
+.v96-make{border:1px solid var(--rd-line);border-radius:14px;background:#fff;padding:14px 16px;margin:0 0 16px}
+.v96-make-h{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.v96-make-h b{display:block;font-size:16px;color:var(--rd-ink);margin-top:2px}
+.v96-make-h small{display:block;font-size:13px;color:var(--rd-muted);margin-top:2px}
+.v96-make-h .sp{flex:1}
+.v96-make-d{border:1px solid var(--e9-out-line);background:var(--e9-out-soft);color:var(--e9-out-ink);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.v96-make-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.v96-src{--c:var(--e9-you);--s:var(--e9-you-soft);--l:var(--e9-you-line);--i:var(--e9-you-ink);
+  border:1px solid var(--l);border-top:4px solid var(--c);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0;background:#fff}
+.v96-src.org{--c:var(--e9-org);--s:var(--e9-org-soft);--l:var(--e9-org-line);--i:var(--e9-org-ink)}
+.v96-src.ad{--c:var(--e9-ad);--s:var(--e9-ad-soft);--l:var(--e9-ad-line);--i:var(--e9-ad-ink)}
+.v96-src-h{display:flex;gap:10px;align-items:center}
+.v96-src-h .n{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12.5px;background:var(--s);color:var(--i);border:1px solid var(--l);flex:0 0 auto}
+.v96-src-h b{display:block;font-size:14.5px;color:var(--rd-ink)}
+.v96-src-h .when{display:block;font-size:12px;color:var(--i);font-weight:600}
+.v96-src p{margin:0;font-size:13.5px;line-height:1.5;color:var(--rd-text)}
+.v96-src .how{font-size:12.5px;color:var(--rd-muted);line-height:1.45}
+.v96-src .rd-btn{align-self:flex-start;margin-top:auto}
+@media (max-width:900px){.v96-make-g{grid-template-columns:1fr}}
+.v96-mk-m select{width:100%;box-sizing:border-box;border:1px solid var(--rd-line);border-radius:9px;padding:9px 11px;font:inherit;font-size:14px;background:#fff}
+#apChrome[data-v96="funnel"] .rd-purpose .txt small{line-height:1.6}
+#apChrome[data-v96="funnel"] .rd-purpose .txt small a{color:var(--rd-blue);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+#e9Made[data-v96]{margin:0 0 16px}
+/* survey, landing and booking: read view */
+.v96-rtog{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:4px 0 12px}
+.v96-rtog>span{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--rd-muted);margin-right:4px}
+.v96-rtog button{border:1px solid var(--rd-line);background:#fff;border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;font-weight:600;color:var(--rd-text);cursor:pointer}
+.v96-rtog button.on{background:var(--rd-ink,#101828);border-color:var(--rd-ink,#101828);color:#fff}
+.v96-rtog small{font-size:12.5px;color:var(--rd-muted);margin-left:6px}
+#adImgBlock[data-v96view="read"] .studio{display:none}
+#adImgBlock[data-v96view="edit"] #v96Read{display:none}
+.v96-read{display:flex;flex-direction:column;gap:0;border:1px solid var(--rd-line);border-radius:14px;background:#fff;max-width:860px}
+.v96-rd-s{display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr);gap:16px;padding:14px 18px;border-top:1px solid #F0F1F4}
+.v96-rd-s:first-child{border-top:0}
+.v96-rd-h b{display:block;font-size:13.5px;color:var(--rd-ink)}
+.v96-rd-h small{display:block;font-size:12.5px;color:var(--rd-muted);margin-top:2px;line-height:1.4}
+.v96-rd-b p{margin:0;font-size:14.5px;line-height:1.6;color:var(--rd-ink)}
+.v96-rd-b p.v96-clk{cursor:pointer}
+.v96-rd-l{margin:0;padding-left:18px;font-size:14px;line-height:1.55;color:var(--rd-ink)}
+.v96-rd-l li{margin:0 0 4px}
+.v96-rd-faq{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.v96-rd-faq li{border:1px solid #EEF0F3;border-radius:10px;padding:8px 11px;cursor:pointer;background:#FCFCFD}
+.v96-rd-faq li b{font-size:14px;color:var(--rd-ink)}
+.v96-rd-faq li p{display:none;margin:6px 0 0;font-size:13.5px;line-height:1.55;color:var(--rd-text)}
+.v96-rd-faq li.open p{display:block}
+.v96-rd-q{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:10px}
+.v96-rd-q>li b{display:block;font-size:14px;line-height:1.45;color:var(--rd-ink)}
+.v96-rd-q ul{margin:4px 0 0;padding-left:18px;font-size:13.5px;line-height:1.5;color:var(--rd-text)}
+.v96-qt{display:inline-block;margin-top:4px;font-size:11.5px;font-weight:600;border-radius:999px;padding:1px 8px;background:#F2F4F7;color:#475467}
+.v96-qt.no{background:#FBEDEB;color:#A5301F}
+@media (max-width:700px){.v96-rd-s{grid-template-columns:1fr;gap:6px}.v96-rtog small{margin-left:0;width:100%}}
+/* fixes after the first look */
+#apChrome .rd-purpose .txt small .v96-dl b{display:inline;font-size:inherit;font-weight:600;color:var(--rd-ink);margin:0;line-height:inherit;font-family:inherit}
+#apChrome .rd-purpose .txt small .v96-dl{color:var(--rd-text)}
+#apChrome[data-v96="create"] .rd-purpose{display:none}
+.ap-cf-plan.v96-reqs{padding:20px 22px}
+.v96-voice .v96-vshare{padding:20px 22px}
+.v96-voice .v96-vshare .ap-cf-drop{margin-top:12px}
+/* phone: the old mobile rule forces the banner on, so these need to win */
+#apChrome[data-v96="overview"] .rd-purpose,#apChrome[data-v96="briefs"] .rd-purpose,#apChrome[data-v96="create"] .rd-purpose{display:none!important}
+#apChrome[data-v96="overview"] #apStrip,#apChrome[data-v96="briefs"] #apStrip{display:none!important}
+@container (max-width:519px){.v96-top5-l .img{display:none}}
+@media (max-width:700px){.ap-cf-bh{flex-wrap:wrap}.ap-cf-bh>div:first-child{flex:1 1 220px;min-width:0}}
+
+#apChrome[data-v96="funnel"] .rd-purpose .alt select{max-width:min(340px,100%)}
+</style>
+<script id="v96js">
+/* ===================================================================
+   v96 · Engine 3, simpler and clearer
+   - Overview: the four steps only, each one opens its page
+   - Social Listening (was the Competitor Intel Tracker): a follow list of
+     people, companies, topics, technologies and industries, clear dates
+   - Intelligence briefs: brief buttons on top, Date published and Period
+     covered, "advertisement" wording, snapshot points open their sources
+   - Ad Strategist: a card that opens the brief instead of a second copy,
+     top 5 advertisements, industry per advertiser, sources on takeaways
+   - Create content: 1, 2, 3 at the top, pick the output there, see what it
+     reviews, your requests beside the form, three tabs
+   - Your voice: an editable summary on top, website and other info
+   - Content Generation: start from one of three sources, which brief a run
+     was built from, a read view for funnel pages, no blocks in the wrong tab
+   =================================================================== */
+const V96={prep:{},after:{},snap:{},cache:{}};
+function v96Day(v){return v?e9Day(v):'';}
+/* "1 Oct to 2 Oct 2026" from two dates; date-only values are read as UTC days */
+function v96Span(a,b){
+  const d=function(x){if(!x)return null;const s=String(x);const t=new Date(/^\d{4}-\d{2}-\d{2}$/.test(s)?s+'T12:00:00Z':s);return isNaN(t)?null:t;};
+  const A=d(a),B=d(b);if(!A)return '';
+  const f=function(t,y){return t.getUTCDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][t.getUTCMonth()]+(y?' '+t.getUTCFullYear():'');};
+  if(!B||A.toISOString().slice(0,10)===B.toISOString().slice(0,10))return f(A,true);
+  return f(A,A.getUTCFullYear()!==B.getUTCFullYear())+' to '+f(B,true);
+}
+function v96Chip(dec){return !dec?'<span class="e9-chip">Review pending</span>':dec.action==='approved'?'<span class="e9-chip ok">Approved</span>':'<span class="e9-chip no">Changes asked</span>';}
+function v96Who(e){return String(e||'').split('@')[0];}
+function v96Json(v,def){if(v&&typeof v==='object')return v;try{const x=JSON.parse(v);return x==null?def:x;}catch(e){return def;}}
+/* settings writes that report failure (apAiSet swallows errors) */
+async function v96Set(key,val){
+  await apSb('ai_settings',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal','Content-Type':'application/json'},
+    body:JSON.stringify({key:key,value:val,updated_by:AP_ME(),updated_at:new Date().toISOString()})});
+  if(typeof AP_AISET!=='undefined'&&AP_AISET)AP_AISET[key]=val;
+}
+/* wait for something a slower painter adds */
+function v96Wait(test,tries,gap){
+  return new Promise(function(res){let n=0;const go=function(){let v=null;try{v=test();}catch(e){v=null;}
+    if(v||++n>=(tries||40))return res(v||null);setTimeout(go,gap||150);};go();});
+}
+
+/* ---------- one name for the listening agent ---------- */
+const V96_RN=[[/\b[Tt]he (?:Competitor Intel(?:ligence)? Tracker|Intel Tracker)\b/g,'Social Listening'],[/Competitor Intel(?:ligence)? Tracker/g,'Social Listening'],[/\bTracker run\b/g,'Social Listening run'],[/\bIntel Tracker\b/g,'Social Listening'],
+  [/\bOrganic Tracker\b/g,'Social Listening'],[/\bThe next Tracker\b/g,'The next Social Listening'],[/\bthe Tracker\b/g,'Social Listening']];
+function v96RnNode(n){
+  const p=n.parentElement;if(!p||p.closest('textarea,script,style,[contenteditable="true"],.v96-keep'))return;
+  let t=n.data;if(t.indexOf('Tracker')<0)return;
+  V96_RN.forEach(function(r){t=t.replace(r[0],r[1]);});
+  if(t!==n.data)n.data=t;
+}
+function v96RenameIn(root){
+  if(!root)return;
+  if(root.nodeType===3){v96RnNode(root);return;}
+  if(root.nodeType!==1)return;
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null);let n;const list=[];
+  while((n=w.nextNode()))if(n.data.indexOf('Tracker')>=0)list.push(n);
+  list.forEach(v96RnNode);
+}
+if(typeof AP_VIEWS!=='undefined'&&AP_VIEWS.e3intel)AP_VIEWS.e3intel.title='Social Listening';
+if(typeof AP_VIEWS!=='undefined'&&AP_VIEWS.e3funnel)AP_VIEWS.e3funnel.title='Content Generation';
+if(typeof AP_AGENTS!=='undefined'&&AP_AGENTS.intel_tracker)AP_AGENTS.intel_tracker.label='Social Listening';
+
+/* ---------- "advertisement" rather than "ad" on the advertisement brief ---------- */
+const V96_ADW={Ads:'Advertisements',ads:'advertisements',Ad:'Advertisement',ad:'advertisement'};
+const V96_ADRE=/\b(Ads|ads|Ad|ad)\b(?!\s*(?:Strategist|strategist|Library|library|Manager|account))/g;
+function v96AdWords(root){
+  const el=root&&(root.nodeType===1?root:root.parentElement);if(!el)return;
+  const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,null);let n;const list=[];
+  while((n=w.nextNode()))if(/\b[Aa]ds?\b/.test(n.data))list.push(n);
+  list.forEach(function(n){
+    const p=n.parentElement;if(!p||p.closest('textarea,input,select,script,style,td,.e9-hsm,.v96-keep'))return;
+    if(/source ads linked$/.test(n.data))return;
+    const t=n.data.replace(V96_ADRE,function(m){return V96_ADW[m];});if(t!==n.data)n.data=t;
+  });
+}
+function v96AdHost(){return (typeof state!=='undefined'&&state.view==='briefs')?document.querySelector('#main .ap-tphost[data-tp="paid"]'):null;}
+
+/* both of the above run on anything added to the page, before it is painted */
+(function(){
+  let q=[],sched=false;
+  const flush=function(){
+    sched=false;const items=q;q=[];
+    const host=v96AdHost();
+    items.forEach(function(n){
+      if(!n.isConnected)return;
+      v96RenameIn(n);
+      if(host){const el=n.nodeType===1?n:n.parentElement;if(el&&host.contains(el))v96AdWords(el);}
+    });
+  };
+  const mo=new MutationObserver(function(muts){
+    muts.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1||n.nodeType===3)q.push(n);});});
+    if(q.length&&!sched){sched=true;Promise.resolve().then(flush);}
+  });
+  const start=function(){v96RenameIn(document.body);mo.observe(document.body,{childList:true,subtree:true});};
+  if(document.body)start();else document.addEventListener('DOMContentLoaded',start);
+})();
+
+/* ---------- one wrapper for every Engine 3 page ---------- */
+(function(){
+  const _d=apDemo;
+  apDemo=function(o){
+    try{if(o&&V96.prep[o.page])V96.prep[o.page](o);}catch(e){console.warn('v96 prep',o&&o.page,e.message);}
+    const r=_d.apply(this,arguments);
+    if(o&&window.__apDemo===o){
+      const ch=document.getElementById('apChrome');if(ch)ch.dataset.v96=o.page||'';
+      try{if(V96.after[o.page])V96.after[o.page](o);}catch(e){console.warn('v96 after',o.page,e.message);}
+    }
+    return r;
+  };
+})();
+/* tabs re-render the strip; keep our extras in step */
+(function(){
+  const _t=apTab;
+  apTab=function(key){
+    const r=_t.apply(this,arguments);
+    try{const o=window.__apDemo;if(o&&V96.tab&&V96.tab[o.page])V96.tab[o.page](key,o);}catch(e){}
+    return r;
+  };
+})();
+V96.tab={};
+/* clamp toggles inside our blocks */
+document.addEventListener('click',function(e){
+  const p=e.target.closest&&e.target.closest('.v96-clk');if(!p||e.target.closest('a,button'))return;p.classList.toggle('open');
+});
+
+/* ===================================================================
+   Overview: the four steps, each one opens its page
+   =================================================================== */
+function v96OvHtml(){
+  const st=function(cls,n,title,page,does,find,go){
+    return '<li class="e9-step v96-step '+cls+'" role="button" tabindex="0" data-e9="go" data-go="'+esc(go)+'">'+
+      '<span class="num">'+n+'</span><span class="go">→</span><b>'+esc(title)+'</b><span class="who">'+esc(page)+'</span>'+
+      '<span class="feeds">'+esc(does)+'</span>'+
+      '<span class="v96-find-k">You will find</span><ul class="v96-find">'+find.map(function(f){return '<li>'+esc(f)+'</li>';}).join('')+'</ul>'+
+      '<span class="v96-open">Open '+esc(page)+' →</span></li>';
+  };
+  return '<div class="v96-ov">'+
+    '<p class="v96-ov-intro">Engine 3 is the lead generation and marketing engine. It listens to your market, learns which advertisements keep running, and turns your own ideas into posts, ads and funnels. A person approves every brief and every draft.</p>'+
+    '<ol class="e9-steps v96-steps">'+
+      st('org',1,'Watch the market','Social Listening','Reads posts from the people, companies and topics you follow, and drafts replies for you to approve.',
+        ['Replies to approve','Posts from who you follow','Your follow list'],"apGo('e3intel')")+
+      st('ad',2,'Learn what sells','Ad Strategist','Finds competitor advertisements that keep running, and why they work.',
+        ['Top 5 advertisements','Winner ads by industry','Key takeaways'],"apGo('e3ads')")+
+      st('you',3,'Write in your voice','Create content','Joins your ideas with the briefs and writes posts, ads and funnels in your voice.',
+        ['New draft','Your voice','Library and ideas'],"apGo('e3create')")+
+      st('out',4,'Approve and publish','Intelligence briefs','Every brief and draft waits for a yes from a person before it is used.',
+        ['Organic brief','Advertisement brief','Approve or ask for changes'],"apGo('e3briefs')")+
+    '</ol>'+
+    '<div class="v96-ov-note"><b>Where the briefs come from.</b> Steps 1 and 2 each write a brief: the organic brief and the advertisement brief. '+
+      'You read and approve both in <a data-e9="go" data-go="apGo(\'e3briefs\')">Intelligence briefs</a>. '+
+      'Drafts, ads and funnels land in <a data-e9="go" data-go="apGo(\'e3funnel\')">Content Generation</a>.</div>'+
+  '</div>';
+}
+apDemoOverview=function(){
+  const cards=document.getElementById('ovCards');if(cards)cards.remove();
+  const cols=document.getElementById('ovCols');if(cols){cols.classList.add('ap-hide');cols.dataset.tp='none';}
+  apDemo({page:'overview',eyebrow:'ENGINE 3 · LEAD GENERATION & MARKETING',title:'Overview',
+    sub:'How the marketing engine works. Click a step to open its page.',
+    cta:null,purpose:{tag:'Engine 3',bold:'',small:''},
+    strip:function(){return [];},
+    tabs:[{key:'flow',label:'How it works',render:function(h){h.innerHTML=v96OvHtml();}}]});
+};
+
+/* ===================================================================
+   Social Listening (was the Competitor Intel Tracker)
+   - follow list: people and companies (competitors table) and the topics,
+     technologies and industries it searches (ai_settings)
+   - clear dates for the run on screen
+   =================================================================== */
+const V96F={rows:null,terms:null,t:0,p:null,err:''};
+const V96_TERM={topics:{l:'Topics',one:'topic',hint:'Subjects to listen for',ph:'e.g. AI governance'},
+  tech:{l:'Technologies',one:'technology',hint:'Tools and platforms',ph:'e.g. Microsoft Copilot'},
+  industries:{l:'Industries',one:'industry',hint:'Markets to watch',ph:'e.g. Wealth management'}};
+const V96_TMAX=12;
+function v96Kind(c){
+  if(c.follow_kind==='person'||c.follow_kind==='company')return c.follow_kind;
+  const li=String(c.handle_linkedin||'');
+  if(/^in\//i.test(li))return 'person';
+  if(/^(company|school|showcase)\//i.test(li))return 'company';
+  return c.handle_x&&!c.meta_page_id&&!c.website?'person':'company';
+}
+function v96Terms(S){
+  let f=S&&S.intel_follow;f=v96Json(f,null);
+  let kw=v96Json(S&&S.intel_keywords,[]);kw=Array.isArray(kw)?kw.map(function(k){return String(k).trim();}).filter(Boolean):[];
+  if(!f||typeof f!=='object')f={topics:kw.slice(),tech:[],industries:[]};
+  f={topics:apArr(f.topics),tech:apArr(f.tech),industries:apArr(f.industries)};
+  Object.keys(f).forEach(function(k){f[k]=f[k].map(function(s){return String(s).trim();}).filter(Boolean);});
+  const all=f.topics.concat(f.tech,f.industries).map(function(s){return s.toLowerCase();});
+  kw.forEach(function(k){if(all.indexOf(k.toLowerCase())<0){f.topics.push(k);all.push(k.toLowerCase());}});
+  return f;
+}
+function v96TermsFlat(f){const out=[],seen={};f.topics.concat(f.tech,f.industries).forEach(function(s){const k=s.toLowerCase();if(!seen[k]){seen[k]=1;out.push(s);}});return out;}
+async function v96FollowLoad(force){
+  if(V96F.rows&&!force&&Date.now()-V96F.t<20000)return V96F;
+  if(V96F.p&&!force)return V96F.p;
+  V96F.p=(async function(){
+    let rows=[];V96F.err='';
+    try{rows=(await apSb('competitors?select=id,name,handle_linkedin,handle_x,meta_page_id,website,category,status,source,added_by,created_at,follow_kind,notes&order=created_at.asc&limit=500'))||[];}
+    catch(e){V96F.err=e.message||String(e);rows=V96F.rows||[];}
+    let S={};try{S=await apAiSettingsLoad(true);}catch(e){S={};}
+    V96F.rows=rows;V96F.terms=v96Terms(S);V96F.ind=v96Json(S.ad_industries,{})||{};V96F.t=Date.now();V96F.p=null;
+    return V96F;
+  })();
+  return V96F.p;
+}
+function v96FollowCounts(){
+  const rows=(V96F.rows||[]).filter(function(c){return c.status!=='denied';});
+  const p=rows.filter(function(c){return v96Kind(c)==='person';}).length;
+  const T=V96F.terms||{topics:[],tech:[],industries:[]};
+  return {people:p,companies:rows.length-p,topics:T.topics.length,tech:T.tech.length,industries:T.industries.length,all:rows.length};
+}
+function v96Plural(n,one,many){return n+' '+(n===1?one:(many||one+'s'));}
+function v96FollowBar(){
+  if(!V96F.rows)return '<div class="v96-fol-r"><span class="e9-k">Following</span><span class="v96-muted">Loading who you follow…</span></div>';
+  const n=v96FollowCounts();
+  return '<div class="v96-fol-r"><span class="e9-k">Following</span>'+
+    '<span class="v96-fol-n"><b>'+v96Plural(n.people,'person','people')+'</b> · <b>'+v96Plural(n.companies,'company','companies')+'</b> · <b>'+v96Plural(n.topics,'topic')+'</b> · <b>'+
+      v96Plural(n.tech,'technology','technologies')+'</b> · <b>'+v96Plural(n.industries,'industry','industries')+'</b></span>'+
+    '<span class="sp"></span><button class="rd-btn sm" onclick="v96FollowGo()">Manage what you follow</button></div>';
+}
+function v96FollowGo(){
+  if(state.view==='intel'&&window.__apDemo&&window.__apDemo.page==='intel'){apTab('follow');const c=document.getElementById('apChrome');if(c&&c.scrollIntoView)setTimeout(function(){const t=document.querySelector('#apChrome .rd-tabs');if(t)t.scrollIntoView({block:'start',behavior:'smooth'});},60);}
+  else apGoTab('e3intel','intel','follow');
+}
+/* the bar at the top: what the reading is run for, and who it follows */
+e9IndHtml=function(){
+  const p=(typeof AP_CF!=='undefined'&&AP_CF&&AP_CF.prof)||{};
+  const onIntel=typeof state!=='undefined'&&state.view==='intel';
+  return '<div class="e9-ind v96-ind" id="e9Ind"><div class="v96-ind-r"><span class="e9-k">Running for</span>'+
+    '<span class="v">'+(p.industry?esc(p.industry):'No industry set')+'</span>'+
+    (p.target_market?'<span class="aud" title="'+esc(p.target_market)+'">Audience: '+esc(p.target_market)+'</span>':'')+
+    '<span class="sp"></span><button class="rd-btn sm" onclick="e9IndEdit()">Change</button></div>'+
+    (onIntel?v96FollowBar():'')+'</div>';
+};
+function v96IndRepaint(){document.querySelectorAll('#e9Ind').forEach(function(x){x.outerHTML=e9IndHtml();});}
+e9IndEdit=async function(){
+  await apCfLoad();
+  const p=AP_CF.prof||{};
+  apModal('e9IndM','<div class="k">Engine 3 · market reading</div><h3 class="ap-m89h">What industry is this run for?</h3>'+
+    '<p class="help">Social Listening and the Ad Strategist judge what matters through this. Changes apply from the next run.</p>'+
+    '<div class="e9-ind-m"><label>Industry<input id="e9IndI" value="'+esc(p.industry||'')+'" placeholder="e.g. AI consulting for wealth management firms"></label>'+
+      '<label>Who you sell to<textarea id="e9IndA" rows="2" placeholder="e.g. Growth-stage RIAs and independent advisory firms">'+esc(p.target_market||'')+'</textarea></label></div>'+
+    '<p class="help" style="margin-top:12px">The people, companies, topics, technologies and industries it searches are in <a onclick="apModalClose(\'e9IndM\');v96FollowGo()">Social Listening › Following</a>.</p>'+
+    '<div class="ap-cf-err" id="e9IndErr"></div>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="rd-btn" onclick="apModalClose(\'e9IndM\')">Cancel</button><button class="rd-btn pri" id="e9IndGo" onclick="e9IndSave()">Save</button></div>',560);
+};
+e9IndSave=async function(){
+  const g=function(id){const e=document.getElementById(id);return e?e.value.trim():'';};
+  const ind=g('e9IndI'),aud=g('e9IndA');
+  const err=document.getElementById('e9IndErr'),btn=document.getElementById('e9IndGo');
+  if(!ind){if(err)err.textContent='Add the industry.';return;}
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  try{
+    const id=(AP_CF&&AP_CF.prof&&AP_CF.prof.id)||1;
+    await apPatch('company_profile','id=eq.'+encodeURIComponent(id),{industry:ind,target_market:aud||null,updated_by:apCfMe(),updated_at:new Date().toISOString()});
+    await apCfLoad(true);
+    apModalClose('e9IndM');v96IndRepaint();
+    toast('Saved. The next Social Listening and Ad Strategist runs use it.');
+  }catch(e){if(err)err.textContent='Could not save: '+e.message;if(btn){btn.disabled=false;btn.textContent='Save';}}
+};
+
+/* ---------- Following tab ---------- */
+function v96Links(c){
+  const out=[];const li=String(c.handle_linkedin||'');
+  if(li)out.push('<a href="https://www.linkedin.com/'+esc(/^(in|company|school|showcase)\//i.test(li)?li:'company/'+li)+'" target="_blank" rel="noopener">LinkedIn ↗</a>');
+  if(c.handle_x)out.push('<a href="https://x.com/'+esc(String(c.handle_x).replace(/^@/,''))+'" target="_blank" rel="noopener">X ↗</a>');
+  if(c.meta_page_id)out.push('<a href="https://www.facebook.com/'+esc(c.meta_page_id)+'" target="_blank" rel="noopener">Facebook ↗</a>');
+  if(c.website)out.push('<a href="'+esc(/^https?:\/\//i.test(c.website)?c.website:'https://'+c.website)+'" target="_blank" rel="noopener">Website ↗</a>');
+  return out;
+}
+function v96FolRow(c,stopped){
+  const L=v96Links(c),ind=V96F.ind&&V96F.ind[String(c.name||'').trim().toLowerCase()];
+  const how=L.length?'':'<span class="v96-web">web search only</span>';
+  return '<li><div class="who"><b>'+esc(c.name||'Unnamed')+'</b>'+(ind?'<span class="v96-ind-t">'+esc(ind)+'</span>':'')+
+      '<small>'+(L.length?L.join(''):'')+how+(c.created_at?'<span>added '+esc(v96Day(c.created_at))+(c.added_by?' by '+esc(v96Who(c.added_by)):'')+'</span>':'')+'</small></div>'+
+    (stopped?'<button class="rd-btn sm" data-e9="folAgain" data-id="'+esc(c.id)+'">Follow again</button>'
+      :'<span class="v96-acts"><button class="v96-x v96-mv" data-e9="folKind" data-id="'+esc(c.id)+'" title="Move to '+(v96Kind(c)==='person'?'companies':'people')+'">'+(v96Kind(c)==='person'?'Move to companies':'Move to people')+'</button>'+
+        '<button class="v96-x" data-e9="folStop" data-id="'+esc(c.id)+'" title="Stop following '+esc(c.name||'')+'">Stop following</button></span>')+'</li>';
+}
+async function v96FollowRender(h){
+  if(!h)return;
+  if(!V96F.rows)h.innerHTML='<div class="loading">Loading who you follow…</div>';
+  await v96FollowLoad(true);
+  if(!h.isConnected)return;
+  const rows=V96F.rows||[],on=rows.filter(function(c){return c.status!=='denied';}),off=rows.filter(function(c){return c.status==='denied';});
+  const ppl=on.filter(function(c){return v96Kind(c)==='person';}),cos=on.filter(function(c){return v96Kind(c)!=='person';});
+  const T=V96F.terms,used=v96TermsFlat(T).length;
+  const col=function(k){const D=V96_TERM[k];const list=T[k];
+    return '<div class="v96-tcol" data-k="'+k+'"><div class="v96-tcol-h"><b>'+D.l+'</b><small>'+D.hint+'</small></div>'+
+      '<div class="v96-chips">'+(list.length?list.map(function(t,i){return '<span class="v96-tchip">'+esc(t)+'<button type="button" aria-label="Remove '+esc(t)+'" data-e9="termDel" data-k="'+k+'" data-i="'+i+'">×</button></span>';}).join('')
+        :'<span class="v96-muted">None yet</span>')+'</div>'+
+      '<div class="v96-tadd"><input id="v96T_'+k+'" maxlength="80" placeholder="'+esc(D.ph)+'" onkeydown="if(event.key===\'Enter\'){event.preventDefault();v96TermAdd(\''+k+'\');}">'+
+        '<button class="rd-btn sm" onclick="v96TermAdd(\''+k+'\')">Add</button></div></div>';};
+  h.innerHTML='<div class="v96-fol">'+
+    '<div class="v96-fol-intro"><span class="e9-k">Following</span><h3>Who and what Social Listening reads</h3>'+
+      '<p>Each run reads new posts from the people and companies below, and searches LinkedIn and the web for your topics, technologies and industries. What it finds fills the Posts tab, the replies to approve and the organic brief. Changes apply from the next run.</p></div>'+
+    (V96F.err?'<div class="ap-call-err">Could not load the follow list: '+esc(V96F.err)+'</div>':'')+
+    '<div class="v96-fol-g">'+
+      '<section class="v96-fol-c"><div class="hd"><b>People</b><span class="n">'+ppl.length+'</span><span class="sp"></span><button class="rd-btn sm" data-e9="folAdd" data-k="person">+ Add a person</button></div>'+
+        (ppl.length?'<ul>'+ppl.map(function(c){return v96FolRow(c);}).join('')+'</ul>':'<p class="v96-muted">No people yet. Add someone whose posts are worth reading and replying to.</p>')+'</section>'+
+      '<section class="v96-fol-c"><div class="hd"><b>Companies</b><span class="n">'+cos.length+'</span><span class="sp"></span><button class="rd-btn sm" data-e9="folAdd" data-k="company">+ Add a company</button></div>'+
+        (cos.length?'<ul>'+cos.map(function(c){return v96FolRow(c);}).join('')+'</ul>':'<p class="v96-muted">No companies yet.</p>')+'</section>'+
+    '</div>'+
+    '<section class="v96-terms"><div class="hd"><b>Topics, technologies and industries</b><small>'+used+' of '+V96_TMAX+' searches used</small></div>'+
+      '<div class="v96-terms-g">'+col('topics')+col('tech')+col('industries')+'</div>'+
+      '<p class="help">Each one is searched on LinkedIn and the web every run, up to '+V96_TMAX+' in total. To follow a person or company directly, add them above with their LinkedIn link.</p>'+
+      '<div class="ap-cf-err" id="v96TErr"></div></section>'+
+    (off.length?'<details class="v96-fol-off"><summary>Stopped following ('+off.length+')</summary><ul>'+off.map(function(c){return v96FolRow(c,true);}).join('')+'</ul></details>':'')+
+  '</div>';
+}
+function v96FollowRepaint(){
+  const o=window.__apDemo;if(o&&o.page==='intel'){const t=o.tabs.find(function(x){return x.key==='follow';});if(t&&t._host&&t._done)v96FollowRender(t._host);
+    const c=document.querySelector('#apChrome .rd-tab[data-tab="follow"] .c');if(c)c.textContent=v96FollowCounts().all;}
+  v96IndRepaint();
+}
+async function v96TermAdd(k){
+  const i=document.getElementById('v96T_'+k);if(!i)return;const v=i.value.replace(/\s+/g,' ').trim();if(!v){i.focus();return;}
+  const err=document.getElementById('v96TErr');if(err){err.textContent='';err.classList.remove('on');}
+  const T=JSON.parse(JSON.stringify(V96F.terms||{topics:[],tech:[],industries:[]}));
+  if(v96TermsFlat(T).some(function(x){return x.toLowerCase()===v.toLowerCase();})){if(err){err.textContent='“'+v+'” is already on the list.';err.classList.add('on');}return;}
+  if(v96TermsFlat(T).length>=V96_TMAX){if(err){err.textContent='That is '+V96_TMAX+' already, the most one run can search. Remove one first.';err.classList.add('on');}return;}
+  T[k].push(v);i.disabled=true;
+  try{await v96TermsSave(T);toast('Added. The next run searches for it.');i.value='';}catch(e){if(err){err.textContent='Could not save: '+e.message;err.classList.add('on');}}
+  i.disabled=false;v96FollowRepaint();
+}
+async function v96TermsSave(T){
+  await v96Set('intel_follow',{topics:T.topics,tech:T.tech,industries:T.industries});
+  await v96Set('intel_keywords',v96TermsFlat(T).slice(0,V96_TMAX));
+  V96F.terms=T;
+}
+E9_ACT.termDel=async function(t){
+  const k=t.dataset.k,i=+t.dataset.i;const T=JSON.parse(JSON.stringify(V96F.terms||{}));if(!T[k]||T[k][i]==null)return;
+  const v=T[k][i];T[k].splice(i,1);
+  try{await v96TermsSave(T);toast('Removed “'+v+'”.');}catch(e){toast('Could not save: '+e.message,false);}
+  v96FollowRepaint();
+};
+E9_ACT.folStop=async function(t){
+  const c=(V96F.rows||[]).find(function(x){return String(x.id)===t.dataset.id;});if(!c)return;
+  if(!confirm('Stop following '+(c.name||'this one')+'? Their posts are no longer read from the next run. You can follow them again any time.'))return;
+  try{await apPatch('competitors','id=eq.'+encodeURIComponent(c.id),{status:'denied',updated_at:new Date().toISOString()});c.status='denied';toast('Stopped following '+(c.name||'')+'.');}
+  catch(e){toast('Could not save: '+e.message,false);}
+  v96FollowRepaint();
+};
+E9_ACT.folKind=async function(t){
+  const c=(V96F.rows||[]).find(function(x){return String(x.id)===t.dataset.id;});if(!c)return;
+  const k=v96Kind(c)==='person'?'company':'person';
+  try{await apPatch('competitors','id=eq.'+encodeURIComponent(c.id),{follow_kind:k,updated_at:new Date().toISOString()});c.follow_kind=k;toast('Moved '+(c.name||'')+' to '+(k==='person'?'people':'companies')+'.');}
+  catch(e){toast('Could not save: '+e.message,false);}
+  v96FollowRepaint();
+};
+E9_ACT.folAgain=async function(t){
+  const c=(V96F.rows||[]).find(function(x){return String(x.id)===t.dataset.id;});if(!c)return;
+  try{await apPatch('competitors','id=eq.'+encodeURIComponent(c.id),{status:'approved',updated_at:new Date().toISOString()});c.status='approved';toast('Following '+(c.name||'')+' again.');}
+  catch(e){toast('Could not save: '+e.message,false);}
+  v96FollowRepaint();
+};
+function v96Li(s,kind){
+  s=String(s||'').trim();if(!s)return null;
+  const m=s.match(/linkedin\.com\/(company|in|school|showcase)\/([^\/?#\s]+)/i);if(m)return m[1].toLowerCase()+'/'+m[2];
+  if(/^(company|in|school|showcase)\//i.test(s))return s.replace(/\/+$/,'');
+  if(/^https?:\/\//i.test(s))return null;
+  return (kind==='person'?'in/':'company/')+s.replace(/^@/,'').replace(/\/+$/,'');
+}
+function v96Xh(s){s=String(s||'').trim();if(!s)return null;return s.replace(/^https?:\/\/(www\.)?(x|twitter)\.com\//i,'').replace(/^@/,'').replace(/[\/?#].*$/,'')||null;}
+E9_ACT.folAdd=function(t){
+  const k=t.dataset.k==='person'?'person':'company',P=k==='person';
+  apModal('v96FolM','<div class="k">Social Listening · Following</div><h3 class="ap-m89h">'+(P?'Follow a person':'Follow a company')+'</h3>'+
+    '<p class="help">'+(P?'Someone whose posts are worth reading and replying to, like an industry voice or a buyer you want to reach.':'A competitor or a company your buyers listen to.')+
+      ' With a LinkedIn link their posts are read directly. Without one, they are found through web search.</p>'+
+    '<div class="e9-ind-m"><label>Name<input id="v96FName" maxlength="120" placeholder="'+(P?'e.g. Alex Hormozi':'e.g. Acme Advisory')+'"></label>'+
+      '<label>LinkedIn link<input id="v96FLi" maxlength="200" placeholder="'+(P?'https://www.linkedin.com/in/…':'https://www.linkedin.com/company/…')+'"></label>'+
+      '<label>X handle <small style="display:inline">optional</small><input id="v96FX" maxlength="80" placeholder="@handle"></label>'+
+      (P?'':'<label>Website <small style="display:inline">optional</small><input id="v96FWeb" maxlength="200" placeholder="https://"></label>')+
+      '<label>Why follow them <small style="display:inline">optional</small><input id="v96FNote" maxlength="300" placeholder="e.g. Posts about AI governance for advisors"></label></div>'+
+    '<div class="ap-cf-err" id="v96FErr"></div>'+
+    '<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'v96FolM\')">Cancel</button><button class="rd-btn pri" id="v96FGo" onclick="v96FolSave(\''+k+'\')">Follow</button></div>',560);
+  setTimeout(function(){const i=document.getElementById('v96FName');if(i)i.focus();},30);
+};
+async function v96FolSave(kind){
+  const g=function(id){const e=document.getElementById(id);return e?e.value.trim():'';};
+  const name=g('v96FName'),liRaw=g('v96FLi'),err=document.getElementById('v96FErr'),btn=document.getElementById('v96FGo');
+  const say=function(m){if(err){err.textContent=m;err.classList.add('on');}};
+  if(!name)return say('Add a name.');
+  const li=v96Li(liRaw,kind);
+  if(liRaw&&!li)return say('That does not look like a LinkedIn link. Paste the profile or company page link.');
+  await v96FollowLoad();
+  const same=(V96F.rows||[]).find(function(c){return String(c.name||'').trim().toLowerCase()===name.toLowerCase();});
+  if(same&&same.status!=='denied')return say(name+' is already on the list.');
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  try{
+    if(same){
+      await apPatch('competitors','id=eq.'+encodeURIComponent(same.id),Object.assign({status:'approved',follow_kind:kind,updated_at:new Date().toISOString()},li?{handle_linkedin:li}:{}));
+    }else{
+      const row={name:name,handle_linkedin:li,handle_x:v96Xh(g('v96FX')),website:g('v96FWeb')||null,notes:g('v96FNote')||null,
+        follow_kind:kind,status:'approved',source:'manual',priority:'medium',added_by:AP_ME()};
+      await apPost('competitors',row);
+    }
+    apModalClose('v96FolM');toast('Following '+name+'. The next run reads their posts.');
+    await v96FollowLoad(true);v96FollowRepaint();
+  }catch(e){say('Could not save: '+e.message);if(btn){btn.disabled=false;btn.textContent='Follow';}}
+}
+
+/* ---------- the page itself ---------- */
+function v96IntelRun(){
+  const C=typeof AP_CF!=='undefined'&&AP_CF;if(!C)return null;
+  const rid=state.intelRun||'';
+  return (C.intel||[]).find(function(x){return x.run_id===rid;})||(rid?null:(C.intel||[])[0])||null;
+}
+function v96DatesHtml(r,cover){
+  if(!r)return '';
+  return '<span class="v96-dl"><b>Date published:</b> '+esc(v96Day(r.created_at))+'</span>'+(cover?'<span class="v96-dl"><b>Period covered:</b> '+esc(cover)+'</span>':'');
+}
+function v96IntelDates(){
+  const sm=document.querySelector('#apChrome[data-v96="intel"] .rd-purpose .txt small');if(!sm)return;
+  const r=v96IntelRun();
+  if(!r){if(state.intelRun)sm.innerHTML='<span class="v96-dl"><b>Run:</b> '+esc(e9RunDay(state.intelRun)||state.intelRun)+'</span>';return;}
+  const d=apCfIntelData(r);
+  sm.innerHTML=v96DatesHtml(r,d.window_start?v96Span(d.window_start,d.window_end):'');
+}
+V96.prep.intel=function(o){
+  if(o.__v96)return;o.__v96=true;
+  o.title='Social Listening';
+  o.sub='Posts from the people, companies and topics you follow, and the replies drafted for you to approve.';
+  o.purpose=Object.assign({},o.purpose,{bold:'Listens to who and what you follow',small:'Writes the organic brief and drafts replies. Nothing is posted without approval.'});
+  if(o.cta&&/^Review \d+ drafts?$/.test(o.cta.label||''))o.cta=Object.assign({},o.cta,{label:o.cta.label.replace(/drafts?$/,function(m){return m==='draft'?'reply':'replies';})});
+  o.__ir=true;o.cta2={label:'Run now with new names',go:'apOpenIntelRun()'};
+  try{const cur=state.intelRun&&typeof AP_IRSRC!=='undefined'&&AP_IRSRC[state.intelRun];if(cur==='custom')o.purpose.alt='<span class="ap-src-chip c">Custom run</span>';}catch(e){}
+  if(Array.isArray(o.tabs)&&!o.tabs.some(function(t){return t.key==='follow';})){
+    const tab={key:'follow',label:'Following',count:function(){return V96F.rows?v96FollowCounts().all:'';},
+      render:function(h){v96FollowRender(h);}};
+    const i=o.tabs.findIndex(function(t){return t.key==='takeaways';});
+    if(i>=0)o.tabs.splice(i,0,tab);else o.tabs.push(tab);
+  }
+  const st=o.strip;o.strip=function(){const a=st();if(a&&a[3])a[3]=Object.assign({},a[3],{l:'Replies to approve'});return a;};
+};
+V96.after.intel=function(){
+  v96IntelDates();
+  apCfLoad().then(v96IntelDates).catch(function(){});
+  v96FollowLoad().then(function(){v96IndRepaint();const c=document.querySelector('#apChrome .rd-tab[data-tab="follow"]');
+    if(c){let s=c.querySelector('.c');if(!s){s=document.createElement('span');s.className='c';c.appendChild(s);}s.textContent=v96FollowCounts().all;}}).catch(function(){});
+  /* a short note above the reply queue, once its list is in */
+  v96Wait(function(){const q=apSec('Engagement queue');return q&&q.querySelector('.apl-host')?q:null;},30,200).then(function(q){
+    if(!q||q.querySelector('.v96-qnote'))return;
+    const host=q.querySelector('.apl-host');
+    host.insertAdjacentHTML('beforebegin','<p class="v96-qnote">Replies are drafted for posts from the people, companies and topics you follow. <a onclick="v96FollowGo()">See who you follow</a></p>');
+  });
+};
+/* the organic brief card names the advertisement brief in full */
+(function(){
+  const _c=apIbCardHtml;
+  apIbCardHtml=function(){return String(_c.apply(this,arguments)).replace('next to the ad brief','next to the advertisement brief');};
+})();
+/* the custom run modal speaks the same language */
+(function(){
+  const _o=apOpenIntelRun;
+  apOpenIntelRun=function(){
+    const r=_o.apply(this,arguments);
+    try{
+      const m=document.getElementById('apIntelRun');if(m){
+        const h=m.querySelector('.ap-m89h');if(h)h.textContent='Run now with new names';
+        const p=m.querySelector('.help');if(p)p.textContent='Add the people or companies you want read now. They join your follow list and Social Listening runs straight away, reading their LinkedIn, X and Facebook posts plus recent news about them. The result is marked as a custom run so you can tell it apart from the daily run.';
+        m.querySelectorAll('button').forEach(function(b){if(/Add another competitor/.test(b.textContent))b.textContent='+ Add another name';});
+        m.querySelectorAll('.ap-ir-opts b').forEach(function(b){if(/^Only these competitors/.test(b.textContent))b.textContent='Only these names this run';});
+        m.querySelectorAll('.ap-ir-opts small').forEach(function(s){if(/full watchlist/.test(s.textContent))s.textContent='Untick to read everyone you follow too. Faster and cheaper when ticked.';});
+      }
+    }catch(e){}
+    return r;
+  };
+})();
+
+/* ===================================================================
+   Intelligence briefs
+   - the organic and advertisement brief buttons sit on top of the page
+   - Date published and Period covered, in words
+   - "advertisement" rather than "ad" on the advertisement brief
+   - every snapshot point opens the posts or advertisements behind it
+   =================================================================== */
+function v96PillsHtml(){
+  const C=typeof AP_CF!=='undefined'&&AP_CF;if(!C)return '';
+  const cur=RD.aptab.briefs||'organic';
+  const one=function(k,title,from,rows){
+    const r=rows[0],dec=r&&apCfDecision(r.run_id);
+    return '<div class="e9-pill v96-pill'+(k==='paid'?' ad':'')+(cur===k?' on':'')+'" role="button" tabindex="0" data-e9="v96Pill" data-k="'+k+'">'+
+      '<span class="dot"></span><span class="t"><b>'+esc(title)+'</b><small>'+esc(from)+'</small>'+
+        '<small class="v96-pd">'+(r?'Date published: '+esc(v96Day(r.created_at)):'None yet')+'</small></span>'+
+      '<span class="r">'+(r?v96Chip(dec):'')+'<span class="open">'+(r?'Open newest →':'')+'</span>'+
+        (rows.length>1?'<button type="button" class="lib" data-e9="v96PillLib" data-k="'+k+'">All '+rows.length+' briefs</button>':'')+'</span></div>';
+  };
+  return one('organic','Organic brief','From Social Listening · for posts, newsletters and emails',C.intel||[])+
+    one('paid','Advertisement brief','From the Ad Strategist · for advertisements',C.ads||[]);
+}
+function v96PillsPaint(){const p=document.getElementById('v96Pills');if(p)p.innerHTML=v96PillsHtml();}
+function v96BriefTab(k){
+  const o=window.__apDemo;
+  if(!o||o.page!=='briefs'){apCfOpenBrief(k);return;}
+  const t=o.tabs.find(function(x){return x.key===k;});if(t&&t._host)t._done=false;
+  apTab(k);
+}
+E9_ACT.v96Pill=function(t){
+  const k=t.dataset.k,C=AP_CF,r=C&&(k==='paid'?C.ads[0]:C.intel[0]);
+  if(r)RD.cfSel[k]=r.run_id;v96BriefTab(k);
+};
+E9_ACT.v96PillLib=function(t){
+  E9_ACT.v96Pill(t);
+  setTimeout(function(){const s=document.querySelector('#main .ap-tphost[data-tp="'+t.dataset.k+'"] .ap-cf-pick select');if(s){s.focus();s.scrollIntoView({block:'center'});}},450);
+};
+V96.prep.briefs=function(o){
+  if(o.__v96)return;o.__v96=true;
+  o.sub='Short strategy summaries of what Social Listening and the Ad Strategist found. Read and approve them here before they shape content.';
+  o.strip=function(){return [];};
+  (o.tabs||[]).forEach(function(t){if(t.key==='organic')t.label='Organic intelligence';if(t.key==='paid')t.label='Advertisement intelligence';});
+};
+V96.after.briefs=function(){
+  const sub=document.querySelector('#apChrome .rd-head p');if(sub)sub.textContent='Short strategy summaries of what Social Listening and the Ad Strategist found. Read and approve them here before they shape content.';
+  const st=document.getElementById('apStrip');
+  if(st&&!document.getElementById('v96Pills')){const d=document.createElement('div');d.id='v96Pills';d.className='v96-pills';st.parentNode.insertBefore(d,st);}
+  v96PillsPaint();
+};
+V96.tab.briefs=function(){v96PillsPaint();};
+
+/* dates in words */
+(function(){
+  const _o=apCfOrganic;
+  apCfOrganic=function(h){
+    const r=_o.apply(this,arguments);
+    try{
+      const C=AP_CF;if(C&&C.intel.length){
+        const o=C.intel.find(function(x){return x.run_id===RD.cfSel.organic;})||C.intel[0];const d=apCfIntelData(o);
+        const p=h.querySelector('.ap-cf-bh p');if(p)p.innerHTML=v96DatesHtml(o,d.window_start?v96Span(d.window_start,d.window_end):'');
+      }
+    }catch(e){}
+    return r;
+  };
+  const _p=apCfPaid;
+  apCfPaid=function(h){
+    const r=_p.apply(this,arguments);
+    try{
+      const C=AP_CF;if(C&&C.ads.length){
+        const b=C.ads.find(function(x){return x.run_id===RD.cfSel.paid;})||C.ads[0];
+        const intel=b.source_intel_run&&C.intel.find(function(x){return x.run_id===b.source_intel_run;});
+        const p=h.querySelector('.ap-cf-bh p');
+        if(p)p.innerHTML='<span class="v96-dl"><b>Date published:</b> '+esc(v96Day(b.created_at))+'</span>'+
+          (intel?'<span class="v96-dl"><b>Built on:</b> the organic brief of '+esc(v96Day(intel.created_at))+'</span>':'');
+      }
+      v96AdWords(h);
+    }catch(e){}
+    return r;
+  };
+})();
+
+/* ---------- snapshot points open their sources ---------- */
+(function(){
+  const _s=e9SnapHtml;
+  e9SnapHtml=function(kind,runId,when,fallback){
+    let h=_s.apply(this,arguments);if(!h)return h;
+    const ad=kind==='ad',S=e9SnapItems(kind,runId,fallback);
+    const key=(ad?'ad':'org')+'|'+(runId||'');
+    V96.snap[key]={items:S.items,kind:ad?'ad':'org',run:runId||'',when:when||''};
+    let i=0;
+    h=h.replace(/<li>/g,function(){return '<li class="v96-snapi" role="button" tabindex="0" data-e9="snapSrc" data-key="'+esc(key)+'" data-i="'+(i++)+'" title="See where this comes from">';});
+    h=h.replace(/<\/li>/g,'<span class="v96-srcl">Sources →</span></li>');
+    h=h.replace(/(<div class="e9-snap-h">[\s\S]*?<b>[^<]*<\/b>)/,'$1<span class="v96-snaph">Click a point to see its sources</span>');
+    return h;
+  };
+})();
+const V96_STOP=new Set(('the a an and or of to in on for with from by at as is are was were be been being this that these those it its into than then their they them our your you we not no '+
+  'but more most less over under about across after before still just only also very much many now how what why who when where which while who whose post posts brief briefs engagement engagements '+
+  'earned earn drove drive driving interaction interactions like likes reach reached highest high higher get gets got make makes made using use used one two three').split(' '));
+function v96Toks(s){return String(s||'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').split(/\s+/).filter(function(w){return w.length>2&&!V96_STOP.has(w);}).map(function(w){return w.replace(/(ing|ed|es|s)$/,'');}).filter(function(w){return w.length>2;});}
+function v96Nums(s){return (String(s||'').match(/\b\d{2,6}\b/g)||[]).map(Number);}
+async function v96OrgCands(run){
+  const k='org:'+run;if(V96.cache[k])return V96.cache[k];
+  let rows=[];try{rows=(await apSb('intel_items?select=url,headline,summary,working,signal,themes,engagement_total,platform,author_name,author_company,ad_context_value,sophistication_note&run_id=eq.'+encodeURIComponent(run)+'&limit=500'))||[];}catch(e){rows=[];}
+  const out=rows.map(function(r){const th=apArr(r.themes).map(String);
+    return {url:r.url,who:apSrcNorm(r.author_name||r.author_company||'')||'Unknown',platform:r.platform||'',head:r.headline||e9Words(r.summary,14),work:r.working||'',
+      eng:r.engagement_total,value:r.ad_context_value||'',themes:th,text:[r.headline,r.summary,r.working,r.signal,r.sophistication_note,th.join(' ')].join(' ')};});
+  V96.cache[k]=out;return out;
+}
+async function v96AdCands(run){
+  const k='ad:'+run;if(V96.cache[k])return V96.cache[k];
+  try{await e9AdMeta();}catch(e){}
+  let src=[];try{src=apAdSources(run)||[];}catch(e){src=[];}
+  let rows=[];
+  if(src.length){
+    rows=src.map(function(s){const M=(typeof E9AD!=='undefined'&&E9AD)||{byUrl:{},byId:{}};const m=(s.url&&M.byUrl[s.url])||(s.ad&&M.byId[s.ad.id])||s.ad||{};
+      return {url:s.url||m.ad_library_url||'',who:String(s.advertiser||m.advertiser_name||'').trim(),hook:s.hook||m.hook||'',cta:m.cta||'',offer:m.offer_inferred||'',
+        days:s.days!=null?s.days:m.days_running,active:s.active!=null?s.active:m.is_active,body:m.body||'',extra:m.copy_formula||''};});
+  }else{
+    try{const r=(await apSb('winner_creatives?select=advertiser_name,hook,body,cta,offer_inferred,copy_formula,extracted_patterns,ad_library_url,days_running,is_active,performance_score&run_id=eq.'+encodeURIComponent(run)+'&order=performance_score.desc&limit=60'))||[];
+      rows=r.map(function(m){return {url:m.ad_library_url&&/^https?:/.test(m.ad_library_url)?m.ad_library_url:'',who:String(m.advertiser_name||'').trim(),hook:m.hook||'',cta:m.cta||'',
+        offer:m.offer_inferred||'',days:m.days_running,active:m.is_active,body:m.body||'',extra:[m.copy_formula,apArr(m.extracted_patterns).join(' ')].join(' ')};});}catch(e){rows=[];}
+  }
+  rows.forEach(function(r){r.text=[r.hook,r.body,r.cta,r.offer,r.extra].join(' ');});
+  V96.cache[k]=rows;return rows;
+}
+function v96Rank(it,rows,org,hsUrls){
+  const q=new Set(v96Toks(it.text+' '+(it.why||'')));const nums=v96Nums(it.why).concat(v96Nums(it.text));
+  const tag=String(it.tag||'').toLowerCase();
+  const seen={};
+  return rows.map(function(r){
+    const toks=new Set(v96Toks(r.text));let s=0;q.forEach(function(w){if(toks.has(w))s+=1;});s=Math.min(s,6);
+    if(org){
+      if(nums.length&&r.eng!=null&&nums.indexOf(Number(r.eng))>=0)s+=6;
+      if(tag&&r.themes.some(function(x){x=String(x).toLowerCase().replace(/[-_]/g,' ').trim();return x.length>2&&(x.indexOf(tag)>=0||tag.indexOf(x)>=0);}))s+=2;
+      if(r.value==='low')s-=3;else if(r.value==='high')s+=1;
+    }else{
+      if(hsUrls&&r.url&&hsUrls.has(r.url))s+=6;
+      if(tag==='offer'&&r.offer&&v96Toks(r.offer).some(function(w){return q.has(w);}))s+=1;
+    }
+    return {r:r,s:s};
+  }).filter(function(x){if(x.s<(org?3:2))return false;const k=(x.r.url||'')+'|'+(x.r.hook||x.r.head||'');if(seen[k])return false;seen[k]=1;return true;})
+    .sort(function(a,b){return b.s-a.s||(Number(b.r.eng||b.r.days)||0)-(Number(a.r.eng||a.r.days)||0);}).slice(0,6);
+}
+function v96SrcList(hits,org){
+  return '<ul class="v96-src-l">'+hits.map(function(x){const r=x.r;
+    const open=r.url?'<a href="'+esc(r.url)+'" target="_blank" rel="noopener">Open ↗</a>':'';
+    if(org)return '<li><div class="h"><b>'+esc(r.who)+'</b><small>'+esc(r.platform)+(r.eng!=null?' · engagement '+esc(String(r.eng)):'')+'</small>'+open+'</div>'+
+      '<p>'+esc(e9Clean(r.head))+'</p>'+(r.work?'<small class="w">What’s working: '+esc(e9Clean(r.work))+'</small>':'')+'</li>';
+    return '<li><div class="h"><b>'+esc(r.who||'Advertiser')+'</b><small>'+(r.days!=null?esc(String(r.days))+' days running':'')+(r.active?' · still running':'')+'</small>'+open+'</div>'+
+      (r.hook?'<p>“'+esc(String(r.hook).slice(0,160))+'”</p>':'')+
+      ((r.cta||r.offer)?'<small class="w">'+(r.cta?'Call to action: '+esc(r.cta):'')+(r.cta&&r.offer?' · ':'')+(r.offer?'Offer: '+esc(e9Words(r.offer,14)):'')+'</small>':'')+'</li>';
+  }).join('')+'</ul>';
+}
+E9_ACT.snapSrc=function(t){v96SrcOpen(t.dataset.key,+t.dataset.i);};
+async function v96SrcOpen(key,i){
+  const S=V96.snap[key];if(!S)return;const it=S.items[i];if(!it)return;
+  const org=S.kind!=='ad';
+  apModal('v96Src','<div class="k">Where this comes from</div><h3 class="ap-m89h" style="font-size:20px">'+esc(e9Clean(it.text))+'</h3>'+
+    (it.why?'<p class="v96-src-why">'+esc(e9Clean(it.why))+'</p>':'')+
+    '<div class="v96-src-meta">'+(it.tag?'<span class="e9-tag '+e9TagCls(it.tag)+'">'+esc(it.tag)+'</span>':'')+
+      '<span>From the '+(org?'organic brief':'advertisement brief')+(S.when?' published '+esc(v96Day(S.when)):'')+', written by '+(org?'Social Listening':'the Ad Strategist')+'</span></div>'+
+    '<div id="v96SrcBody"><div class="loading">Finding the '+(org?'posts':'advertisements')+' behind it…</div></div>',700);
+  let rows=[];try{rows=org?await v96OrgCands(S.run):await v96AdCands(S.run);}catch(e){rows=[];}
+  let hs=null;
+  if(!org){const sn=e9SnapFor(S.run);if(sn&&Array.isArray(sn.hook_sources)){const q=new Set(v96Toks(it.text+' '+(it.why||'')));hs=new Set();
+    sn.hook_sources.forEach(function(x){const ov=v96Toks(x.key||'').filter(function(w){return q.has(w);}).length;if(ov>=2)(x.ads||[]).forEach(function(u){hs.add(u);});});}}
+  const hits=v96Rank(it,rows,org,hs);
+  const body=document.getElementById('v96SrcBody');if(!body)return;
+  const all=org?"apModalClose('v96Src');state.intelRun='"+esc(S.run)+"';apGoTab('e3intel','intel','posts')":"apModalClose('v96Src');state.adsRun='"+esc(S.run)+"';apGoTab('e3ads','ads','winners')";
+  body.innerHTML=(hits.length?'<span class="e9-k" style="margin:4px 0 8px">The '+(org?'posts':'advertisements')+' closest to this point</span>'+v96SrcList(hits,org)
+      :'<p class="v96-src-none">No single '+(org?'post':'advertisement')+' matches this point closely. It is drawn from across the '+(rows.length?rows.length+' ':'')+(org?'posts':'advertisements')+' read for this brief.</p>')+
+    '<p class="help" style="margin-top:12px">Matched on the topic, the wording and any numbers in the point. The agent writes each point from everything it read, so these are the closest '+(org?'posts':'advertisements')+', not a full list.</p>'+
+    '<div class="ap-m89f"><button class="rd-btn" onclick="'+all+'">See all '+(org?'posts behind this brief':'advertisements')+'</button><button class="rd-btn pri" onclick="apModalClose(\'v96Src\')">Done</button></div>';
+}
+
+/* ===================================================================
+   Ad Strategist
+   - the advertisement brief lives in Intelligence briefs only; a card here opens it
+   - top 5 advertisements at the top of the winner ads
+   - the industry of every advertiser, editable, and a filter for it
+   - key takeaways say where they come from
+   =================================================================== */
+function v96IndMap(){const S=(typeof AP_AISET!=='undefined'&&AP_AISET)||{};const m=v96Json(S.ad_industries,{});return m&&typeof m==='object'?m:{};}
+function v96Ind(name){const k=String(name||'').trim().toLowerCase();if(!k)return '';return v96IndMap()[k]||'';}
+function v96OpenAdBrief(run){RD.cfSel.paid=run||(AP_CF&&AP_CF.ads[0]&&AP_CF.ads[0].run_id)||'';apCfOpenBrief('paid');}
+apOpenBriefRun=function(runId){if(runId)RD.cfSel.paid=runId;apCfOpenBrief('paid');};
+function v96AdCardHtml(){
+  const C=typeof AP_CF!=='undefined'&&AP_CF;
+  if(!C)return '<div><span class="e9-k">Advertisement brief</span><b>Loading the newest advertisement brief…</b></div>';
+  const r=(C.ads||[])[0],dec=r&&apCfDecision(r.run_id);
+  return '<div><span class="e9-k">Advertisement brief</span><b>'+(r?'The newest advertisement brief is from '+esc(v96Day(r.created_at))+' '+v96Chip(dec):'No advertisement brief yet')+'</b>'+
+    '<small>It lives in Intelligence briefs, next to the organic brief. This page holds the advertisements behind it.</small></div>'+
+    (r?'<button class="rd-btn pri" onclick="v96OpenAdBrief()">Open in Intelligence briefs →</button>':'');
+}
+V96.prep.ads=function(o){
+  if(o.__v96)return;o.__v96=true;
+  o.tabs=(o.tabs||[]).filter(function(t){return t.key!=='brief';});
+  if(RD.aptab.ads==='brief')RD.aptab.ads=null;
+  o.sub='Competitor advertisements that have run long enough to be working, and why they work.';
+  o.purpose=Object.assign({},o.purpose,{bold:'Finds the advertisements that keep running',small:'Its advertisement brief lives in Intelligence briefs. This page holds the advertisements behind it.'});
+};
+V96.after.ads=function(){
+  const s=apSec('Creative brief');if(s){s.classList.add('ap-hide');s.dataset.tp='none';s.style.display='none';}
+  const strip=document.getElementById('apStrip');
+  if(strip&&!document.getElementById('v96AdCard')){
+    const d=document.createElement('div');d.id='v96AdCard';d.className='ap-orgcard v96-adcard';d.innerHTML=v96AdCardHtml();strip.parentNode.insertBefore(d,strip);
+    apCfLoad().then(function(){const c=document.getElementById('v96AdCard');if(c)c.innerHTML=v96AdCardHtml();}).catch(function(){});
+  }
+};
+
+/* ---------- top 5 ---------- */
+function v96AdAct(a){return typeof adActive==='function'?adActive(a):!!a.is_active;}
+function v96Top5Rows(){
+  const ads=(window._winnerAds||[]).slice();
+  const real=ads.filter(function(a){return !(typeof apAdIsDynamic==='function'&&apAdIsDynamic(a));});
+  const base=real.length>=5?real:ads;
+  const scored=base.filter(function(a){return a.performance_score!=null;});
+  const pool=scored.length>=5?scored:base;
+  pool.sort(function(a,b){return (Number(b.performance_score)||0)-(Number(a.performance_score)||0)||(Number(b.days_running)||0)-(Number(a.days_running)||0)||(v96AdAct(b)?1:0)-(v96AdAct(a)?1:0);});
+  const seen={},per={},out=[];
+  const pass=function(cap){for(const a of pool){if(out.length>=5)break;
+    const adv=String(a.advertiser_name||'').trim().toLowerCase();
+    const k=adv+'|'+String(apAdTitle(a)).toLowerCase().replace(/\s+/g,' ').slice(0,80);
+    if(seen[k]||(cap&&(per[adv]||0)>=2))continue;seen[k]=1;per[adv]=(per[adv]||0)+1;out.push(a);}};
+  pass(true);if(out.length<5)pass(false);
+  return out;
+}
+function v96Top5Html(){
+  const rows=v96Top5Rows();if(!rows.length)return '';
+  V96.top5=rows;
+  return '<section class="v96-top5" id="v96Top5"><div class="v96-top5-h"><div><span class="e9-k">At a glance</span><b>Top 5 advertisements right now</b>'+
+      '<small>Ranked by ad score, then days running. At most two per advertiser, each counted once.'+e9Info('adscore')+'</small></div>'+
+      '<span class="sp"></span><button class="rd-btn sm" onclick="v96IndEditOpen()">Set industries</button></div>'+
+    '<ol class="v96-top5-l">'+rows.map(function(a,i){
+      const ind=v96Ind(a.advertiser_name),act=v96AdAct(a),img=a.image_url||apArr(a.image_urls)[0]||'';
+      return '<li role="button" tabindex="0" data-e9="v96TopAd" data-i="'+i+'" title="Open this advertisement">'+
+        '<div class="top"><span class="n">'+(i+1)+'</span><span class="adv">'+esc(String(a.advertiser_name||'Unknown').trim())+'</span></div>'+
+        '<span class="v96-ind-t'+(ind?'':' none')+'">'+esc(ind||'Industry not set')+'</span>'+
+        (img&&/^https?:/.test(img)?'<div class="img"><img src="'+esc(img)+'" alt="" loading="lazy" onerror="this.parentNode.remove()"></div>':'')+
+        '<b class="hook">'+esc(aplShort(apAdTitle(a),90))+'</b>'+
+        (a.offer_inferred?'<small class="offer">Offer: '+esc(e9Words(a.offer_inferred,12))+'</small>':'')+
+        '<div class="meta">'+(a.days_running!=null?'<span>'+esc(String(a.days_running))+' days</span>':'')+
+          '<span class="'+(act?'ok':'')+'">'+(act?'still running':'ended')+'</span>'+
+          (a.performance_score!=null?'<span>score '+Number(a.performance_score).toFixed(2)+'</span>':'')+'</div></li>';
+    }).join('')+'</ol></section>';
+}
+E9_ACT.v96TopAd=function(t){const a=(V96.top5||[])[+t.dataset.i];if(a&&typeof apAdPopup==='function')apAdPopup(a);};
+async function v96AdsDecorate(){
+  if(typeof state==='undefined'||state.view!=='ads')return;
+  try{await apAiSettingsLoad();}catch(e){}
+  const sec=await v96Wait(function(){const s=apSec('Winner ads');const st=aplState('ads');return s&&s.querySelector('.apl-host')&&st&&st.cfg?s:null;},50,150);
+  if(!sec||state.view!=='ads')return;
+  const old=document.getElementById('v96Top5');if(old)old.remove();
+  const host=sec.querySelector('.apl-host');const html=v96Top5Html();
+  if(html)host.insertAdjacentHTML('beforebegin',html);
+  try{aplRender('ads');}catch(e){}
+}
+(function(){
+  const f=window.renderAds;if(typeof f!=='function')return;
+  window.renderAds=function(){
+    return Promise.resolve(f.apply(this,arguments)).then(function(v){v96AdsDecorate().catch(function(e){console.warn('top 5',e.message);});return v;});
+  };
+})();
+/* industry on every winner ad, and a filter for it */
+(function(){
+  const _m=aplMount;
+  aplMount=function(key,host,cfg){
+    if(key==='ads'&&cfg&&!cfg.__v96){
+      cfg.__v96=true;
+      const _h=cfg.head;
+      cfg.head=function(a){
+        const h=_h.apply(this,arguments);const ind=v96Ind(a.advertiser_name);
+        return ind?String(h).replace(/(<span class="apl-cell">)([^<]*)(<\/span>)/,function(m,x,y,z){return x+y+'<small class="v96-ind-t">'+esc(ind)+'</small>'+z;}):h;
+      };
+      if(Array.isArray(cfg.filters))cfg.filters.splice(1,0,{k:'ind',label:'Industry',get:function(a){return v96Ind(a.advertiser_name)||'Not set';}});
+      const _s=cfg.search;if(typeof _s==='function')cfg.search=function(a){return _s.apply(this,arguments)+' '+v96Ind(a.advertiser_name);};
+    }
+    return _m.apply(this,arguments);
+  };
+})();
+async function v96IndEditOpen(){
+  try{await apAiSettingsLoad();}catch(e){}
+  const map=v96IndMap();
+  const names=[...new Set((window._winnerAds||[]).map(function(a){return String(a.advertiser_name||'').trim();}).filter(Boolean))].sort(function(a,b){return a.localeCompare(b);});
+  apModal('v96IndE','<div class="k">Ad Strategist</div><h3 class="ap-m89h">What industry is each advertiser in?</h3>'+
+    '<p class="help">Shown on the top 5 and on every winner ad, and you can filter the list by it.</p>'+
+    '<div class="v96-indl">'+(names.length?names.map(function(n){return '<label><span>'+esc(n)+'</span><input data-n="'+esc(n)+'" value="'+esc(map[n.toLowerCase()]||'')+'" maxlength="80" placeholder="e.g. Payroll software"></label>';}).join('')
+      :'<p class="help">No advertisers on this run yet.</p>')+'</div>'+
+    '<div class="ap-cf-err" id="v96IndErr"></div>'+
+    '<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'v96IndE\')">Cancel</button><button class="rd-btn pri" id="v96IndGo" onclick="v96IndSave()">Save</button></div>',620);
+}
+async function v96IndSave(){
+  const map=Object.assign({},v96IndMap());
+  document.querySelectorAll('#v96IndE input[data-n]').forEach(function(i){const k=i.dataset.n.toLowerCase(),v=i.value.replace(/\s+/g,' ').trim();if(v)map[k]=v;else delete map[k];});
+  const btn=document.getElementById('v96IndGo'),err=document.getElementById('v96IndErr');
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  try{await v96Set('ad_industries',map);apModalClose('v96IndE');toast('Saved. Industries show on every advertisement.');v96AdsDecorate();}
+  catch(e){if(err){err.textContent='Could not save: '+e.message;err.classList.add('on');}if(btn){btn.disabled=false;btn.textContent='Save';}}
+}
+
+/* ---------- key takeaways: where they come from ---------- */
+(function(){
+  const _a=apAdsPanel,_o=apOrgPanel;
+  apAdsPanel=function(D){
+    let h=_a.apply(this,arguments);if(!D||typeof h!=='string')return h;
+    const b=D.brief,day=b?v96Day(b.created_at):'',ads=D.ads||[],nUp=ads.filter(function(a){return a.uploaded_by;}).length;
+    const see=state.view==='ads'?"apTab('winners')":"apGoTab('e3ads','ads','winners')";
+    const box='<div class="v96-srcbox"><span class="e9-k">Where these come from</span>'+
+      '<span>'+(b?'<b>The advertisement brief</b> published '+esc(day)+' by the Ad Strategist':'<b>No advertisement brief yet</b>')+'</span>'+
+      '<span><b>'+ads.length+' advertisements</b> analysed across runs'+(nUp?', '+nUp+' uploaded by your team':'')+'</span><span class="sp"></span>'+
+      (b?'<a onclick="v96OpenAdBrief(\''+esc(b.run_id)+'\')">Open the brief</a>':'')+'<a onclick="'+see+'">See the advertisements</a></div>';
+    h=h.replace(/<div class="srcline">[\s\S]*?<\/div>/,box);
+    h=h.replace('<b class="t">Hooks</b>','<b class="t">Hooks</b><small class="v96-from">From the advertisement brief'+(day?' of '+esc(day):'')+'</small>');
+    h=h.replace('<b class="t">Content</b>','<b class="t">Content</b><small class="v96-from">From the advertisements on the Winner ads tab</small>');
+    h=h.replace('<b class="t">Images</b>','<b class="t">Images</b><small class="v96-from">From screenshots your team uploaded</small>');
+    return h;
+  };
+  apOrgPanel=function(D){
+    let h=_o.apply(this,arguments);if(!D||!D.brief||typeof h!=='string')return h;
+    const b=D.brief,day=v96Day(b.created_at),n=(D.items||[]).length;
+    const see=state.view==='intel'?"apTab('posts')":"state.intelRun='"+esc(b.run_id)+"';apGoTab('e3intel','intel','posts')";
+    const box='<div class="v96-srcbox org"><span class="e9-k">Where these come from</span>'+
+      '<span><b>The organic brief</b> published '+esc(day)+' by Social Listening</span>'+
+      '<span><b>'+n+' posts</b> it read from who and what you follow</span><span class="sp"></span>'+
+      '<a onclick="RD.cfSel.organic=\''+esc(b.run_id)+'\';apCfOpenBrief(\'organic\')">Open the brief</a><a onclick="'+see+'">See the posts</a></div>';
+    h=h.replace(/<div class="srcline">[\s\S]*?<\/div>/,box);
+    h=h.replace('<b class="t">Themes</b>','<b class="t">Themes</b><small class="v96-from">From the '+n+' posts in this run</small>');
+    h=h.replace('<b class="t">What resonated</b>','<b class="t">What resonated</b><small class="v96-from">From the posts with the most engagement</small>');
+    h=h.replace('<b class="t">Shifts and signals</b>','<b class="t">Shifts and signals</b><small class="v96-from">From posts flagged as a shift or high value</small>');
+    return h;
+  };
+})();
+
+/* ===================================================================
+   Create content
+   - 1 your input, 2 what it reviews, 3 your output, side by side on top
+   - the output is picked up there; the old "draft plan" panel is gone
+   - your requests sit beside the form, so you see each draft arrive
+   - three tabs: New draft, Your voice, Library & ideas
+   =================================================================== */
+function v96FlowHtml(){
+  const f=apCfState();
+  const fb=function(k,l){return '<button type="button" data-f="'+k+'" class="'+(f.format===k?'on':'')+'" onclick="apCfFmt(\''+k+'\')">'+l+'</button>';};
+  return '<div class="v96-123" id="v96Flow">'+
+    '<div class="v96-b you"><div class="v96-b-h"><span class="n">1</span><div><b>Your input</b><small>What it is based on</small></div></div>'+
+      '<div class="ap-cf-path v96-path"><button type="button" data-m="source" class="'+(f.mode==='source'?'on':'')+'" onclick="apCfMode(\'source\');v96ToForm()">Something you published<small>Article, podcast, interview, book</small></button>'+
+        '<button type="button" data-m="idea" class="'+(f.mode==='idea'?'on':'')+'" onclick="apCfMode(\'idea\');v96ToForm()">A new idea<small>Answer four questions</small></button></div></div>'+
+    '<span class="v96-arr" aria-hidden="true">→</span>'+
+    '<div class="v96-b mkt"><div class="v96-b-h"><span class="n">2</span><div><b>What it reviews</b><small>Before it writes a word</small></div></div><ul class="v96-rev" id="v96Rev"></ul></div>'+
+    '<span class="v96-arr" aria-hidden="true">→</span>'+
+    '<div class="v96-b out"><div class="v96-b-h"><span class="n">3</span><div><b>Your output</b><small>Pick one</small></div></div>'+
+      '<div class="ap-cf-fmt v96-fmt">'+fb('ad','Paid ad')+fb('thought_leadership','Thought leadership')+fb('newsletter','Newsletter')+fb('email','Email')+'</div>'+
+      '<p class="v96-get" id="v96Get"></p></div>'+
+  '</div>';
+}
+function v96ToForm(){const f=document.querySelector('.ap-cf-form');if(f&&f.scrollIntoView)f.scrollIntoView({block:'start',behavior:'smooth'});}
+function v96FlowPaint(){
+  const ul=document.getElementById('v96Rev');if(!ul)return;
+  const f=apCfState(),C=(typeof AP_CF!=='undefined'&&AP_CF)||{intel:[],ads:[]},paid=f.format==='ad';
+  const pick=function(rows){return (rows||[]).find(function(r){const d=apCfDecision(r.run_id);return d&&d.action==='approved';})||(rows||[])[0];};
+  const ib=pick(C.intel),ab=pick(C.ads);
+  const state1=function(r){const d=r&&apCfDecision(r.run_id);return d&&d.action==='approved'?'approved':'not approved yet';};
+  const li=function(cls,role,name,from,r,go){
+    return '<li class="'+cls+'"'+(r?' role="button" tabindex="0" data-e9="go" data-go="'+esc(go)+'"':'')+'><span class="role">'+role+'</span><b>'+name+'</b>'+
+      '<small>'+(r?esc(from)+' · '+esc(v96Day(r.created_at))+' · '+state1(r):'none on file yet')+'</small></li>';};
+  const org=li('org',paid?'Supports':'Leads','Organic brief','Social Listening',ib,ib?"RD.cfSel.organic='"+ib.run_id+"';apCfOpenBrief('organic')":'');
+  const ad=li('ad',paid?'Leads':'Optional','Advertisement brief','Ad Strategist',ab,ab?"RD.cfSel.paid='"+ab.run_id+"';apCfOpenBrief('paid')":'');
+  const v=typeof apVoiceCur==='function'?apVoiceCur():null;
+  const voice='<li class="you" role="button" tabindex="0" data-e9="go" data-go="apTab(\'voice\')"><span class="role">Tone</span><b>Your voice</b><small>'+(v?'saved '+esc(v96Day(v.created_at)):'not set up yet')+'</small></li>';
+  ul.innerHTML=(paid?ad+org:org+ad)+voice;
+  const get=document.getElementById('v96Get');
+  const fl=(AP_CF_FMT[f.format]||'').toLowerCase();
+  if(get)get.textContent=paid?'One advertisement body from your input, three different hooks, a call to action and a headline.'
+    :'Three opening options and one '+fl+' draft in your voice, with a call to action that matches what you want readers to do.';
+}
+(function(){const _p=apCfPlan;apCfPlan=function(){try{_p.apply(this,arguments);}catch(e){}v96FlowPaint();};})();
+
+/* the form: no plan panel, no second output picker; requests beside it */
+(function(){
+  const _f=apCfFormHtml;
+  apCfFormHtml=function(){
+    let h=String(_f.apply(this,arguments));
+    h=h.replace(/<aside class="ap-cf-card ap-cf-plan">[\s\S]*?<\/aside>/,
+      '<aside class="ap-cf-card ap-cf-plan v96-reqs" id="v96Reqs"><span class="lbl">Your requests</span><h3>Drafts in progress</h3>'+
+      '<p class="help">Each request shows up here while it is written. Open a draft when it is ready.</p><div id="v96ReqList"></div></aside>');
+    h=h.replace(/<hr class="ap-cf-sep"><span class="lbl">Step 2 · output<\/span><div class="ap-cf-fmt">[\s\S]*?<\/div>/,'<hr class="ap-cf-sep"><span class="lbl">Details</span>');
+    h=h.replace(/<div class="ap-cf-path">[\s\S]*?<\/div>/,'');
+    h=h.replace('<span class="lbl">Step 1 · starting point</span><h3>What should this be based on?</h3>','<span class="lbl">1 · Your input</span><h3>Add your source or idea</h3>');
+    setTimeout(function(){v96ReqsPaint();v96FlowPaint();},0);
+    return v96FlowHtml()+h;
+  };
+})();
+function v96ReqsPaint(){
+  const box=document.getElementById('v96ReqList');if(!box)return;
+  const C=typeof AP_CF!=='undefined'&&AP_CF,rows=C?C.reqs:[];
+  if(!rows.length){box.innerHTML='<p class="v96-muted">Nothing yet. Your first draft shows up here as soon as you press Generate.</p>';return;}
+  apCfReqs(box);
+  const n=box.querySelectorAll('.ap-cf-req').length;
+  if(n>6&&!box.querySelector('.v96-more')){box.classList.add('v96-cap');
+    box.insertAdjacentHTML('beforeend','<button type="button" class="ap-cf-link v96-more" onclick="const b=this.parentNode;b.classList.toggle(\'v96-cap\');this.textContent=b.classList.contains(\'v96-cap\')?\'Show all '+n+'\':\'Show fewer\'">Show all '+n+'</button>');}
+}
+function v96ReqFocus(){
+  const o=window.__apDemo;
+  if(!o||o.page!=='create'){RD.aptab.create='new';apGo('e3create');setTimeout(v96ReqFocus,700);return;}
+  if(RD.aptab.create!=='new')apTab('new');
+  setTimeout(function(){const r=document.getElementById('v96Reqs');if(r){r.scrollIntoView({block:'start',behavior:'smooth'});r.classList.add('v96-flash');setTimeout(function(){r.classList.remove('v96-flash');},1600);}},80);
+}
+(function(){
+  const _l=apCfLoad;
+  apCfLoad=async function(){const r=await _l.apply(this,arguments);try{v96ReqsPaint();v96FlowPaint();}catch(e){}return r;};
+  const _s=apCfSubmit;
+  apCfSubmit=async function(){const r=await _s.apply(this,arguments);try{v96ReqsPaint();if(window.__cfWatch)v96ReqFocus();}catch(e){}return r;};
+})();
+/* starting from the organic brief (Content Generation › Make new content) */
+function v96ApplyPrefill(){
+  const p=window.__v96Prefill;if(!p||state.view!=='create')return;
+  const th=document.getElementById('cfThesis');if(!th)return;
+  window.__v96Prefill=null;
+  apCfMode(p.mode||'idea');if(p.format)apCfFmt(p.format);
+  th.value=p.thesis||'';
+  const m=document.getElementById('cfErr');
+  if(m){m.style.color='var(--rd-muted)';m.classList.add('on');m.textContent='Started from '+p.from+'. Add your own point of view and what you can back it up with, then generate.';}
+  th.focus();
+}
+(function(){
+  const _rc=apRenderCreate;
+  apRenderCreate=async function(){const r=await _rc.apply(this,arguments);try{v96ApplyPrefill();}catch(e){}return r;};
+})();
+V96.prep.create=function(o){
+  if(o.__v96)return;o.__v96=true;
+  o.sub='Start from something you published or a new idea. It reviews the briefs and your voice, then writes a draft for you to check.';
+  o.tabs=(o.tabs||[]).filter(function(t){return t.key!=='requests'&&t.key!=='how';});
+  if(RD.aptab.create==='requests'||RD.aptab.create==='how')RD.aptab.create='new';
+  o.right={label:'How it learns',go:'v96LearnOpen()'};
+  const st=o.strip;
+  o.strip=function(){return st().map(function(x){return x.tab==='requests'?Object.assign({},x,{tab:null,go:'v96ReqFocus()'}):x;});};
+};
+V96.after.create=function(){setTimeout(function(){v96ReqsPaint();v96FlowPaint();},0);};
+function v96LearnOpen(){
+  const c=apModal('v96Learn','<div id="e9Learn"><div class="loading">Loading…</div></div>',760);
+  const m=document.getElementById('v96Learn');
+  if(m&&!m.dataset.v96){m.dataset.v96='1';m.addEventListener('click',function(e){if(e.target.closest('.e9-learn button'))apModalClose('v96Learn');});}
+  e9LearnPaint();
+  return c;
+}
+/* the library no longer points at a tab that moved */
+(function(){
+  const _l=e9LibRender;
+  e9LibRender=async function(h){
+    const r=await _l.apply(this,arguments);
+    try{if(h)h.querySelectorAll('.e9-grp p.help').forEach(function(p){p.textContent=p.textContent.replace(/more in Your requests/,'more under Your requests on New draft');});}catch(e){}
+    return r;
+  };
+})();
+
+/* ===================================================================
+   Your voice
+   - 1, 2, 3 on top: share your content, we summarize it, every draft uses it
+   - the summary (bio, voice, mission, values) is the top block, editable
+   - share a website and anything else, not only writing samples
+   =================================================================== */
+(function(){
+  const _d=apVoiceDraft;
+  apVoiceDraft=function(){
+    const v=_d.apply(this,arguments);
+    if(v.summary===undefined){
+      const c=apVoiceCur()||{};
+      v.summary=c.summary||'';v.other_info=c.other_info||'';
+      v.website=c.website||((typeof AP_CF!=='undefined'&&AP_CF&&AP_CF.prof&&AP_CF.prof.website)||'');
+    }
+    if(v.values===undefined){const c=apVoiceCur()||{};v.values=c.values_text||'';v.mission=c.mission||'';}
+    return v;
+  };
+  const _c=apVoiceCompile;
+  apVoiceCompile=function(v){return [_c.apply(this,arguments),v.summary?'Voice summary: '+String(v.summary).replace(/\s*\n+\s*/g,' · ').trim():''].filter(Boolean).join('\n');};
+})();
+apVoiceUse=function(i){
+  const h=(AP_VOICE||[])[i];if(!h)return;
+  window.__vd={about:h.about||'',audience:h.audience||'',tone:(h.tone||[]).slice(),samples:h.samples||'',phrases:h.phrases||'',avoid:h.avoid||'',
+    values:h.values_text||'',mission:h.mission||'',summary:h.summary||'',website:h.website||'',other_info:h.other_info||'',
+    change_note:'Restored the version from '+apCfWhen(h.created_at)};
+  window.__v96vEdit=true;apVoiceRepaint();toast('Loaded. Save to make it current.');
+};
+function v96Voice123(){
+  return '<ol class="v96-123s">'+
+    '<li><span class="n">1</span><div><b>Share your content</b><small>Writing samples, your website and anything else that sounds like you.</small></div></li>'+
+    '<li><span class="n">2</span><div><b>We summarize your voice</b><small>A short bio, how you sound, your mission and values. Edit any line.</small></div></li>'+
+    '<li><span class="n">3</span><div><b>Every draft uses it</b><small>New drafts follow the newest version. Your edits and feedback keep refining it.</small></div></li></ol>';
+}
+function v96VoiceView(c){
+  const lines=String(c.summary||'').split(/\n+/).map(function(s){return s.replace(/^\s*[-•*]\s*/,'').trim();}).filter(Boolean);
+  const tone=apArr(c.tone);
+  const P=function(x){return x?'<p>'+esc(x)+'</p>':'<p class="v96-muted">Not set yet</p>';};
+  const n=apArr(c.learned_from).length;
+  return '<div class="v96-vsum-g">'+
+      '<div class="c wide"><b>Bio</b>'+P(c.about)+'</div>'+
+      '<div class="c"><b>Voice</b>'+(tone.length?'<div class="v96-tones">'+tone.map(function(t){return '<span>'+esc(t)+'</span>';}).join('')+'</div>':'')+
+        (lines.length?'<ul>'+lines.map(function(l){return '<li>'+esc(l)+'</li>';}).join('')+'</ul>':(tone.length?'':'<p class="v96-muted">Not set yet</p>'))+'</div>'+
+      '<div class="c"><b>Mission</b>'+P(c.mission)+'</div>'+
+      '<div class="c"><b>Values</b>'+P(c.values_text)+'</div>'+
+    '</div>'+
+    ((c.audience||c.phrases||c.avoid)?'<div class="v96-vsum-more">'+(c.audience?'<span><b>Speaks to:</b> '+esc(c.audience)+'</span>':'')+
+      (c.phrases?'<span><b>Phrases:</b> '+esc(c.phrases)+'</span>':'')+(c.avoid?'<span><b>Never says:</b> '+esc(c.avoid)+'</span>':'')+'</div>':'')+
+    '<div class="e9-vl-src">'+(c.source==='learned'?'Summarized '+esc(v96Day(c.created_at))+(n?' from '+v96Plural(n,'piece')+' of your content':''):'Written '+esc(v96Day(c.created_at)))+
+      (c.created_by?', saved by '+esc(v96Who(c.created_by)):'')+'. Every save keeps the earlier version.</div>';
+}
+function v96VoiceForm(v,L){
+  const tone=AP_TONES.map(function(t){return '<button type="button" class="'+(v.tone.indexOf(t)>=0?'on':'')+'" onclick="apVoiceTone(\''+t+'\',this)">'+t+'</button>';}).join('');
+  const learned=L&&L.state==='done';const ev=learned&&L.voice&&Array.isArray(L.voice.evidence)?L.voice.evidence:[];
+  const inp=function(id,k,label,ph){return '<label>'+label+'<input id="'+id+'" value="'+esc(v[k]||'')+'" oninput="apVoiceSet(\''+k+'\',this.value)" placeholder="'+esc(ph)+'"></label>';};
+  return '<div class="e9-vl-form v96-vform">'+
+    (learned?'<p class="v96-sugg">Suggested from '+esc((L.learned_from||[]).map(function(s){return s.title||s.kind;}).join(' · ')||'your content')+'. Check it, change what is off, then save.</p>':'')+
+    '<label>Bio<textarea id="vAbout" rows="3" oninput="apVoiceSet(\'about\',this.value)" placeholder="Two or three sentences: who you are, what you do and what you talk about.">'+esc(v.about||'')+'</textarea></label>'+
+    '<label>Voice<textarea id="vSum" rows="3" oninput="apVoiceSet(\'summary\',this.value)" placeholder="A few short lines a writer can follow. e.g. Short sentences. Name the owner. No hype.">'+esc(v.summary||'')+'</textarea></label>'+
+    '<div class="f"><span class="fl">Tone <small>pick up to four</small></span><div class="ap-voice-tone">'+tone+'</div></div>'+
+    '<div class="two">'+inp('vMis','mission','Mission','e.g. Get advisory firms past the AI pilot stage safely.')+inp('vVals','values','Values','e.g. Governance before speed.')+'</div>'+
+    '<div class="two">'+inp('vAud','audience','Who you speak to','e.g. Founders and COOs at RIAs')+inp('vPhr','phrases','Words and phrases you use','e.g. workflow owner, next practical step')+'</div>'+
+    inp('vAvoid','avoid','Never say','e.g. synergy, game-changer')+
+    (ev.length?'<details class="v96-ev"><summary>Why it suggests this</summary><ul class="e9-vl-q">'+ev.map(function(q){return '<li><i>“'+esc(q.quote)+'”</i><small>'+esc(q.shows)+'</small></li>';}).join('')+'</ul></details>':'')+
+    '<div class="ap-cf-err" id="vErr"></div>'+
+    '<div class="v96-vacts"><button class="rd-btn pri" id="vSave" onclick="apVoiceSave(\'vErr\',this)">Save</button><button class="rd-btn" onclick="v96VoiceCancel()">Cancel</button></div></div>';
+}
+function v96VoiceShare(v){
+  const n=apVoiceWords(v.samples);
+  return '<section class="ap-cf-card ap-cf-form v96-vshare" id="v96VShare"><span class="lbl">Share your content</span><h3>Content you can share to help express your voice</h3>'+
+    '<p class="help">The more you share, the closer drafts sound like you. Your library and the files in the knowledge base are read too.</p>'+
+    '<label class="f">Your website<input id="vWeb" inputmode="url" value="'+esc(v.website||'')+'" oninput="apVoiceSet(\'website\',this.value)" placeholder="https://"></label>'+
+    '<label class="f">Writing samples <span class="cnt" id="vCount">'+(n?n.toLocaleString()+' words':'')+'</span>'+
+      '<textarea id="vSamples" rows="7" oninput="apVoiceSet(\'samples\',this.value);apVoiceCount()" placeholder="Paste posts, emails, a talk transcript or a page from your site. Two or three short pieces are enough. Used for style only, never copied.">'+esc(v.samples||'')+'</textarea></label>'+
+    '<div class="ap-cf-drop sm" id="vDrop"><input type="file" accept=".txt,.md,.markdown,.vtt,.srt,.pdf,.docx,.html,.htm" onchange="apVoiceFile(this.files[0])"><b>Add a file as a sample</b><small>TXT, MD, PDF, DOCX, VTT or SRT</small><span class="msg" id="vFileMsg"></span></div>'+
+    '<label class="f">Anything else <small>optional</small><textarea id="vOther" rows="3" oninput="apVoiceSet(\'other_info\',this.value)" placeholder="A short bio, your LinkedIn profile, talks you have given, causes you care about">'+esc(v.other_info||'')+'</textarea></label>'+
+    '<div class="ap-cf-err" id="vErr2"></div>'+
+    '<div class="v96-vacts"><button class="rd-btn pri" onclick="v96VoiceLearn()">Summarize my voice</button><button class="rd-btn" id="vSave2" onclick="apVoiceSave(\'vErr2\',this)">Save without summarizing</button></div></section>';
+}
+function v96VoiceHist(){
+  const hist=AP_VOICE||[];if(!hist.length)return '';
+  return '<details class="v96-vhist"><summary>Earlier versions ('+hist.length+')</summary>'+hist.slice(0,10).map(function(h,i){
+    return '<div class="row'+(i===0?' cur':'')+'"><div><b>'+(i===0?'Current':'Version '+(hist.length-i))+' · '+esc(apCfWhen(h.created_at))+'</b>'+
+      '<small>'+esc(h.change_note||(i===hist.length-1?'First version':'No note'))+(h.created_by?' · '+esc(v96Who(h.created_by)):'')+'</small></div>'+
+      (i>0?'<button class="rd-btn sm" onclick="apVoiceUse('+i+')">Load</button>':'')+'</div>';}).join('')+'</details>';
+}
+apVoiceHtml=function(){
+  const v=apVoiceDraft(),cur=apVoiceCur(),L=window.__e9vl||{state:'idle'};
+  if(L.state==='done'&&!L.applied){
+    const V=L.voice||{};L.applied=true;window.__v96vEdit=true;
+    Object.assign(v,{about:V.about||v.about,audience:V.audience||v.audience,tone:apArr(V.tone).slice(0,4).length?apArr(V.tone).slice(0,4):v.tone,
+      phrases:V.phrases||v.phrases,avoid:V.avoid||v.avoid,values:V.values||v.values,mission:V.mission||v.mission,summary:V.summary||v.summary,
+      source:'learned',learned_from:L.learned_from||null,change_note:'Summarized from my content'});
+  }
+  const edit=!!window.__v96vEdit;
+  const busy=L.state==='busy';
+  const msg=busy?'<p class="e9-vl-msg">Reading your writing and website. This takes about 20 seconds…</p>':L.state==='err'?'<p class="e9-vl-msg err">'+esc(L.msg||'Something went wrong.')+'</p>':'';
+  const head='<div class="e9-vl-h"><div><span class="e9-k" style="color:var(--e9-you-ink)">Your voice</span><h3>Your voice, summarized</h3>'+
+      '<p>Summarized from your content and your feedback. Edit anything. It is refined over time.</p></div><span class="sp"></span>'+
+    '<div class="acts">'+(edit?'':'<button class="rd-btn" onclick="v96VoiceEdit(true)">Edit</button>')+
+      '<button class="rd-btn pri" id="e9VlGo" onclick="v96VoiceLearn()"'+(busy?' disabled':'')+'>'+(busy?'Reading…':(cur?'Summarize again':'Summarize my voice'))+'</button></div></div>';
+  const body=edit?v96VoiceForm(v,L):cur?v96VoiceView(cur):'<p class="e9-vl-msg">Nothing summarized yet. Share some content below, then press Summarize my voice. Or press Edit and write it yourself.</p>';
+  return '<div class="v96-voice ap-voice">'+v96Voice123()+'<section class="e9-vl v96-vsum" id="e9Vl">'+head+msg+body+'</section>'+v96VoiceShare(v)+v96VoiceHist()+'</div>';
+};
+function v96VoiceEdit(on){window.__v96vEdit=!!on;apVoiceRepaint();if(on)setTimeout(function(){const a=document.getElementById('vAbout');if(a)a.focus();},30);}
+function v96VoiceCancel(){
+  const v=apVoiceDraft(),keep={samples:v.samples,website:v.website,other_info:v.other_info};
+  window.__v96vEdit=false;window.__e9vl=null;window.__vd=null;Object.assign(apVoiceDraft(),keep);apVoiceRepaint();
+}
+async function v96VoiceLearn(){
+  const v=apVoiceDraft();
+  window.__e9vl={state:'busy'};apVoiceRepaint();
+  try{
+    const j=await apProxy(AP_HOOKS.learn_voice,{samples:String(v.samples||'').slice(0,12000),website:String(v.website||'').trim(),other_info:String(v.other_info||'').slice(0,4000)},'Learn Voice');
+    if(!j||!j.ok){
+      window.__e9vl={state:'err',msg:j&&j.code==='not_enough'?'Not enough to go on yet. Add your website, a few published posts or a transcript (about a page in total), then try again.'
+        :(j&&j.message)||'Could not read your voice this time. Try again.'};
+    }else window.__e9vl={state:'done',voice:j.voice||{},learned_from:j.learned_from||[]};
+  }catch(e){window.__e9vl={state:'err',msg:e.message||String(e)};}
+  apVoiceRepaint();
+  const el=document.getElementById('e9Vl');if(el&&el.scrollIntoView)el.scrollIntoView({block:'start'});
+}
+apVoiceSave=async function(errId,btn){
+  const v=apVoiceDraft(),err=document.getElementById(typeof errId==='string'?errId:'vErr');
+  btn=btn&&btn.tagName?btn:document.getElementById('vSave')||document.getElementById('vSave2');
+  const say=function(t){if(err){err.textContent=t||'';err.classList.toggle('on',!!t);}};
+  const has=[v.about,v.samples,v.website,v.other_info,v.summary].some(function(x){return String(x||'').trim();});
+  if(!has){say('Add a short bio, your website or a writing sample first.');return;}
+  const web=String(v.website||'').trim();
+  if(web&&!/^https?:\/\/\S+\.\S+/i.test(web)&&!/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(web)){say('That website does not look right. Use the full address, like https://example.com');return;}
+  say('');const label=btn?btn.textContent:'';if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  const cur=apVoiceCur();
+  const row={created_by:apCfMe(),about:String(v.about||'').trim()||null,audience:String(v.audience||'').trim()||null,tone:v.tone||[],
+    samples:String(v.samples||'').trim()||null,phrases:String(v.phrases||'').trim()||null,avoid:String(v.avoid||'').trim()||null,
+    values_text:String(v.values||'').trim()||null,mission:String(v.mission||'').trim()||null,summary:String(v.summary||'').trim()||null,
+    website:web?(/^https?:\/\//i.test(web)?web:'https://'+web):null,other_info:String(v.other_info||'').trim()||null,
+    source:v.source||(cur&&cur.source)||'manual',learned_from:v.learned_from||(cur&&cur.learned_from)||null,
+    change_note:String(v.change_note||'').trim()||(cur?null:'First version'),compiled:apVoiceCompile(v)};
+  try{
+    await apPost('brand_voice',row);
+    try{await apPatch('company_profile','id=eq.'+encodeURIComponent((AP_CF&&AP_CF.prof&&AP_CF.prof.id)||1),{brand_voice:row.compiled});}catch(e){}
+    window.__vd=null;window.__e9vl=null;window.__v96vEdit=false;await apVoiceLoad(true);
+    toast('Voice saved. New drafts use it from now on.');
+    apVoiceRepaint();apDemoRefreshStrip();
+    const o=window.__apDemo,nt=o&&o.tabs.find(function(x){return x.key==='new';});
+    if(nt&&nt._host&&nt._done){nt._host.innerHTML=apCfFormHtml();apCfPlan();apCfDropWire();}
+  }catch(e){say('Could not save: '+(typeof apCfDbErr==='function'?apCfDbErr(e):(e.message||e)));if(btn){btn.disabled=false;btn.textContent=label||'Save';}}
+};
+
+/* ===================================================================
+   Content Generation
+   - make new content from one of three sources, and say how each runs
+   - which brief the run on screen was built from, at the top
+   - what the run used sits with the ad creatives only
+   - survey, landing and booking pages read top to bottom by default
+   - the package view stays in its own tab and reads in plain words
+   =================================================================== */
+function v96MakeCard(cls,n,title,when,what,how,btn,go,off){
+  return '<div class="v96-src '+cls+'"><div class="v96-src-h"><span class="n">'+n+'</span><div><b>'+esc(title)+'</b>'+(when?'<small class="when">'+esc(when)+'</small>':'')+'</div></div>'+
+    '<p>'+esc(what)+'</p><small class="how">'+esc(how)+'</small>'+
+    '<button class="rd-btn sm'+(off?'':' pri')+'" onclick="'+go+'"'+(off?' disabled':'')+'>'+esc(btn)+'</button></div>';
+}
+function v96MakeHtml(){
+  const C=(typeof AP_CF!=='undefined'&&AP_CF)||{intel:[],ads:[],drafts:[]};
+  const ib=(C.intel||[])[0],ab=(C.ads||[])[0];
+  const toRev=typeof apCfDraftsToReview==='function'?apCfDraftsToReview():0,ld=AP_CF?e9LatestDraft(C):null;
+  return '<div class="v96-make-h"><div><span class="e9-k">Make new content</span><b>Start from one of three sources</b>'+
+      '<small>Nothing here runs on its own. Each one starts when you press it.</small></div><span class="sp"></span>'+
+      '<button type="button" class="v96-make-d" data-e9="openDraft">'+(toRev?v96Plural(toRev,'draft')+' to review':'No drafts waiting')+(ld?' · newest '+esc(v96Day(ld.when)):'')+' →</button></div>'+
+    '<div class="v96-make-g">'+
+      v96MakeCard('you',1,'Your content','','A podcast, article, book chapter or interview you published, or a new idea.',
+        'Starts when you press it. A draft takes about a minute.','Start in Create content →','v96MakeYours()')+
+      v96MakeCard('org',2,'Organic brief',ib?'From Social Listening · '+v96Day(ib.created_at):'No organic brief yet',
+        'What the people and topics you follow are talking about. Best for posts, newsletters and emails.',
+        'A new brief arrives every morning. Writing from it starts when you press it.','Write a post from it →','v96MakeOrganic()',!ib)+
+      v96MakeCard('ad',3,'Advertisement brief',ab?'From the Ad Strategist · '+v96Day(ab.created_at):'No advertisement brief yet',
+        'The competitor advertisements that keep running, and why. Best for ads and a full funnel.',
+        'Starts when you press it. Ads, survey, landing and booking pages take about five minutes.','Build ads and a funnel →','v96MakeAds()',!ab)+
+    '</div>';
+}
+function v96MakePaint(){const m=document.getElementById('v96Make');if(m)m.innerHTML=v96MakeHtml();}
+function v96MakeYours(){RD.aptab.create='new';apCfStart('source');}
+function v96MakeOrganic(){
+  const C=AP_CF,ib=C&&C.intel[0];if(!ib){apGo('e3create');return;}
+  const S=e9SnapItems('org',ib.run_id,e9OrgFallback(ib.content_md)),top=S.items[0];
+  window.__v96Prefill={mode:'idea',format:'thought_leadership',from:'the organic brief of '+v96Day(ib.created_at),
+    thesis:top?'The organic brief says: '+e9Clean(top.text)+(top.why?'. '+e9Clean(top.why):'')+'.\n\nMy take: ':''};
+  RD.aptab.create='new';apGo('e3create');
+}
+function v96MakeAds(){
+  const rows=(AP_CF&&AP_CF.ads)||[];if(!rows.length){toast('No advertisement brief yet.',false);return;}
+  apModal('v96MakeM','<div class="k">Content Generation</div><h3 class="ap-m89h">Build ads and a funnel</h3>'+
+    '<p class="help">Writes three ad variants, a qualification survey, a landing page and a booking page from the advertisement brief you pick. It takes about five minutes and lands here. Nothing goes live until it is approved.</p>'+
+    '<div class="e9-ind-m v96-mk-m"><label>Advertisement brief<select id="v96MakeB" data-nofill="1">'+rows.map(function(r,i){return '<option value="'+esc(r.run_id)+'">'+esc(e9RunLabel(rows,r)+(i===0?' · newest':''))+'</option>';}).join('')+'</select></label></div>'+
+    '<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'v96MakeM\')">Cancel</button><button class="rd-btn pri" id="v96MakeGo" onclick="v96MakeAdsGo()">Start</button></div>',560);
+}
+function v96MakeAdsGo(){const s=document.getElementById('v96MakeB'),run=s&&s.value;apModalClose('v96MakeM');apSendToLowTicket(run);}
+
+/* which brief the run on screen came from */
+async function v96RunOut(run){
+  const k='lt:'+run;if(V96.cache[k])return V96.cache[k];
+  let out=null;try{out=((await apSb('agent_outputs?select=run_id,created_at,data&agent=eq.low_ticket_content&run_id=eq.'+encodeURIComponent(run)+'&order=created_at.desc&limit=1'))||[])[0]||null;}catch(e){out=null;}
+  V96.cache[k]=out||{};return V96.cache[k];
+}
+async function v96RunSrcPaint(){
+  const txt=document.querySelector('#apChrome[data-v96="funnel"] .rd-purpose .txt');if(!txt)return;
+  const run=state.funnelRun;if(!run)return;
+  const out=await v96RunOut(run);try{await apCfLoad();}catch(e){}
+  const t2=document.querySelector('#apChrome[data-v96="funnel"] .rd-purpose .txt');if(!t2||state.funnelRun!==run)return;
+  const C=AP_CF||{ads:[],intel:[]},d=apJson(out.data)||{};
+  const b=C.ads.find(function(x){return d.source_brief_id&&String(x.id)===String(d.source_brief_id);})||C.ads.find(function(x){return x.run_id===d.source_brief_run;});
+  const bRun=(b&&b.run_id)||d.source_brief_run||'',ib=C.intel.find(function(x){return x.run_id===d.source_intel_run;});
+  const R=(typeof AP_RUNS!=='undefined'&&AP_RUNS||[]).find(function(r){return r.run_id===run;});
+  const who=R&&R.requested_by?'Started by '+v96Who(R.requested_by):'';
+  const bold=t2.querySelector('b'),small=t2.querySelector('small');if(!bold||!small)return;
+  const when=out.created_at||(R&&(R.finished_at||R.started_at));
+  bold.textContent=when?'Run of '+v96Day(when):'This run';
+  small.innerHTML='<span class="v96-dl"><b>Built from:</b> '+
+    (bRun?'<a onclick="RD.cfSel.paid=\''+esc(bRun)+'\';apCfOpenBrief(\'paid\')">the advertisement brief of '+esc(b?v96Day(b.created_at):(e9RunDay(bRun)||bRun))+'</a>':'an advertisement brief that is not on file')+
+    (ib?' and <a onclick="RD.cfSel.organic=\''+esc(ib.run_id)+'\';apCfOpenBrief(\'organic\')">the organic brief of '+esc(v96Day(ib.created_at))+'</a>':'')+'</span>'+
+    (who?'<span class="v96-dl">'+esc(who)+'</span>':'');
+}
+async function v96FunnelPickerLabels(){
+  const sel=document.querySelector('#apChrome[data-v96="funnel"] #apPurposeAlt select');if(!sel||sel.dataset.v96)return;sel.dataset.v96='1';
+  let rows=V96.cache.ltAll;
+  if(!rows){try{rows=(await apSb('agent_outputs?select=run_id,data&agent=eq.low_ticket_content&order=created_at.desc&limit=60'))||[];}catch(e){rows=[];}V96.cache.ltAll=rows;}
+  const map={};rows.forEach(function(r){const d=apJson(r.data)||{};if(!map[r.run_id]&&d.source_brief_run)map[r.run_id]=d.source_brief_run;});
+  [...sel.options].forEach(function(o){const b=map[o.value];if(b&&o.text.indexOf(' · brief of ')<0){const day=e9RunDay(b);if(day)o.text=o.text+' · brief of '+day.replace(/ \d{4}$/,'');}});
+}
+V96.prep.funnel=function(o){
+  if(o.__v96)return;o.__v96=true;
+  o.title='Content Generation';
+  o.sub='Ads, posts and funnels written from your content and the briefs. Nothing goes live until it is approved.';
+  o.purpose=Object.assign({},o.purpose,{bold:'This run',small:'Finding where it came from…'});
+};
+V96.after.funnel=function(){
+  const ch=document.getElementById('apChrome'),pur=ch&&ch.querySelector('.rd-purpose');
+  if(pur&&!document.getElementById('v96Make')){const d=document.createElement('section');d.id='v96Make';d.className='v96-make';pur.parentNode.insertBefore(d,pur);}
+  v96MakePaint();
+  apCfLoad().then(v96MakePaint).catch(function(){});
+  v96RunSrcPaint().catch(function(){});
+  v96FunnelPickerLabels().catch(function(){});
+};
+V96.tab.funnel=function(key){
+  document.querySelectorAll('#main .ap-vm-host').forEach(function(h){const bar=h.querySelector(':scope > .ap-vm');if(bar)apVmApply(h,apVmGet(bar.dataset.k));});
+};
+
+/* what this run used: with the ad creatives, above the preview */
+(function(){
+  const _m=e9MadePaint;
+  e9MadePaint=async function(){
+    const r=await _m.apply(this,arguments);
+    try{
+      const m=document.getElementById('e9Made'),blk=document.getElementById('adImgBlock');
+      if(m&&blk&&!m.dataset.v96){
+        m.dataset.v96='1';m.dataset.tp='creatives';blk.parentNode.insertBefore(m,blk);
+        m.classList.toggle('ap-hide',(RD.aptab.funnel||'creatives')!=='creatives');
+        const k=m.querySelector('.e9-made-h .e9-k');if(k)k.textContent='What this run used';
+        const h3=m.querySelector('.e9-made-h h3');if(h3)h3.textContent=h3.textContent.replace(/^Built from the ad brief of/,'Built from the advertisement brief of');
+      }
+    }catch(e){}
+    return r;
+  };
+})();
+/* the package view belongs to the package tab, and reads in plain words */
+function v96PkgTidy(host){
+  host.querySelectorAll('.ap-st-facts > div').forEach(function(f){
+    const l=f.querySelector('span'),v=f.querySelector('b');if(!l||!v)return;
+    const lab=l.textContent.trim();
+    if(/^(prepared by|run id)$/i.test(lab)){f.remove();return;}
+    if(/^status$/i.test(lab)){v.textContent=/pending/i.test(v.textContent)?'Waiting for approval':/approved/i.test(v.textContent)?'Approved':v.textContent.toLowerCase().replace(/^./,function(c){return c.toUpperCase();});return;}
+    if(/^funnel mode$/i.test(lab)){l.textContent='Path';const m=/\(([^)]*)\)/.exec(v.textContent);let t=m?m[1]:v.textContent.replace(/_/g,' ');
+      t=t.replace(/\s*->\s*/g,' → ').replace(/\brouted\s+/g,'');const parts=t.split(/,\s*/);
+      v.textContent=parts[0].replace(/^./,function(c){return c.toUpperCase();})+(parts.length>1?'. '+parts.slice(1).join(', ').replace(/^./,function(c){return c.toUpperCase();})+'.':'');return;}
+    v.textContent=v.textContent.replace(/\s*[\u2012-\u2015]\s*/g,', ');
+    if(/^anchor offer/i.test(lab)){l.textContent='Offer';return;}
+    if(/^core promise/i.test(lab)){l.textContent='Promise';return;}
+    if(/^built from$/i.test(lab)){
+      const ids=v.textContent.match(/agent\d_(?:custom_)?\d{4}-\d{2}-\d{2}_\d{4}/g)||[];
+      if(ids.length)v.textContent=ids.map(function(id){return (/^agent2/.test(id)?'Advertisement brief of ':'Organic brief of ')+(e9RunDay(id)||id);}).join(' · ');
+    }
+  });
+  const h3=host.querySelector('.ap-vm-s .ap-st-top h3');
+  if(h3)h3.textContent=h3.textContent.replace(/\s+[‒-―]\s+/g,' · ').replace(/(\d{4}-\d{2}-\d{2})\s*$/,function(d){return v96Span(d);});
+}
+(function(){
+  const _m=apVmMount;
+  apVmMount=function(wrap,key){
+    const r=_m.apply(this,arguments);
+    try{
+      const host=wrap&&wrap.parentNode;
+      if(host&&host.classList&&host.classList.contains('ap-vm-host')&&key==='funnel'){
+        host.dataset.tp='package';delete wrap.dataset.tp;wrap.classList.remove('ap-hide');
+        host.classList.toggle('ap-hide',(RD.aptab.funnel||'creatives')!=='package');
+        apVmApply(host,apVmGet('funnel'));v96PkgTidy(host);
+      }
+    }catch(e){}
+    return r;
+  };
+})();
+
+/* ---------- survey, landing and booking pages: a read view ---------- */
+function v96RdSec(title,note,body){return body?'<section class="v96-rd-s"><div class="v96-rd-h"><b>'+esc(title)+'</b>'+(note?'<small>'+esc(note)+'</small>':'')+'</div><div class="v96-rd-b">'+body+'</div></section>':'';}
+function v96RdP(t,clamp){t=String(t||'').trim();if(!t)return '';return '<p class="'+(clamp?'e9-clamp l3 v96-clk':'')+'"'+(clamp?' title="Click to read all of it"':'')+'>'+esc(e9Clean(t))+'</p>';}
+function v96RdList(a,ol){a=apArr(a).map(function(x){return String(x||'').trim();}).filter(Boolean);if(!a.length)return '';return '<'+(ol?'ol':'ul')+' class="v96-rd-l">'+a.map(function(x){return '<li>'+esc(e9Clean(x))+'</li>';}).join('')+'</'+(ol?'ol':'ul')+'>';}
+function v96ReadHtml(step){
+  let d={};try{d=fsDraft(step)||{};}catch(e){d={};}
+  if(!d||!Object.keys(d).length)return '<p class="v96-muted">Nothing stored for this page yet. Switch to Preview and edit to see the full spec.</p>';
+  const out=[];
+  if(step==='landing'){
+    out.push(v96RdSec('Headline','The first thing they read',v96RdP(d.headline)));
+    out.push(v96RdSec('Subheadline','Why they should keep reading',v96RdP(d.subheadline,true)));
+    out.push(v96RdSec('What they get','The benefits, one per line',v96RdList(d.benefit_bullets)));
+    out.push(v96RdSec('The offer','What happens when they book',v96RdP(d.offer_block,true)));
+    const faq=apArr(d.faq).filter(function(x){return x&&(x.objection||x.question);});
+    if(faq.length)out.push(v96RdSec('Doubts it answers','Click one to read the answer','<ul class="v96-rd-faq">'+faq.map(function(x){
+      return '<li class="v96-clk"><b>'+esc(e9Clean(x.objection||x.question))+'</b><p>'+esc(e9Clean(x.answer||''))+'</p></li>';}).join('')+'</ul>'));
+    out.push(v96RdSec('Call to action','The button',v96RdP(d.cta)));
+    if(d.proof_note)out.push(v96RdSec('Proof','Fill in before launch',v96RdP(d.proof_note,true)));
+  }else if(step==='booking'){
+    out.push(v96RdSec('Headline','The first thing they read',v96RdP(d.headline)));
+    out.push(v96RdSec('Reassurance','Why booking is safe',v96RdP(d.reassurance_subhead,true)));
+    out.push(v96RdSec('What happens next','In order',v96RdList(d.what_happens_next,true)));
+    out.push(v96RdSec('Main button','',v96RdP(d.primary_action)));
+    out.push(v96RdSec('After they book','',v96RdP(d.confirmation_microcopy,true)));
+    if(d.no_show_reminder_draft)out.push(v96RdSec('No-show reminder','A draft, sent only if you approve',v96RdP(d.no_show_reminder_draft,true)));
+  }else if(step==='survey'){
+    const qs=apArr(d.questions);
+    if(qs.length)out.push(v96RdSec('Questions','In the order they are asked','<ol class="v96-rd-q">'+qs.map(function(q){
+      const lines=String(q.question||'').split(/\n+/).map(function(s){return s.trim();}).filter(Boolean);
+      const head=lines.shift()||'',opts=lines.map(function(s){return s.replace(/^[•\-*]\s*/,'');}).filter(Boolean);
+      const tag=q.type==='disqualify'?'<span class="v96-qt no">Screens out: '+esc(q.disqualify_on||'some answers')+'</span>':q.type?'<span class="v96-qt">'+esc(apLabelCase(String(q.type).replace(/_/g,' ')))+'</span>':'';
+      return '<li><b>'+esc(e9Clean(head))+'</b>'+tag+(opts.length?'<ul>'+opts.map(function(o){return '<li>'+esc(e9Clean(o))+'</li>';}).join('')+'</ul>':'')+'</li>';}).join('')+'</ol>'));
+    out.push(v96RdSec('Before the booking page','The line that moves them on',v96RdP(d.transition_line)));
+    if(d.branching_notes)out.push(v96RdSec('Routing','Who goes where',v96RdP(typeof d.branching_notes==='string'?d.branching_notes:JSON.stringify(d.branching_notes),true)));
+  }
+  const html=out.filter(Boolean).join('');
+  return html||'<p class="v96-muted">Nothing stored for this page yet.</p>';
+}
+function v96FView(m){
+  state.v96FView=m;
+  const blk=document.getElementById('adImgBlock');if(blk)blk.dataset.v96view=m;
+  document.querySelectorAll('#v96RTog button').forEach(function(b){b.classList.toggle('on',b.dataset.m===m);});
+  if(m==='read'){const r=document.getElementById('v96Read');if(r)r.innerHTML=v96ReadHtml(state.funnelStep);}
+}
+function v96FunnelRead(){
+  const blk=document.getElementById('adImgBlock');if(!blk)return;
+  ['v96Read','v96RTog'].forEach(function(id){const e=document.getElementById(id);if(e)e.remove();});
+  const step=state.funnelStep||'ad';
+  if(step==='ad'){delete blk.dataset.v96view;return;}
+  const studio=blk.querySelector('.studio');if(!studio)return;
+  const mode=state.v96FView||'read';blk.dataset.v96view=mode;
+  studio.insertAdjacentHTML('beforebegin','<div class="v96-rtog" id="v96RTog"><span>View</span>'+
+    '<button type="button" data-m="read" class="'+(mode==='read'?'on':'')+'" onclick="v96FView(\'read\')">Read</button>'+
+    '<button type="button" data-m="edit" class="'+(mode==='edit'?'on':'')+'" onclick="v96FView(\'edit\')">Preview and edit</button>'+
+    '<small>Read shows the words on the page, top to bottom. Preview and edit shows the page and lets you change it.</small></div>'+
+    '<div class="v96-read" id="v96Read">'+v96ReadHtml(step)+'</div>');
+}
+(function(){
+  const f=window.renderFunnel;if(typeof f!=='function')return;
+  window.renderFunnel=function(){
+    return Promise.resolve(f.apply(this,arguments)).then(function(v){try{v96FunnelRead();}catch(e){console.warn('read view',e.message);}return v;});
+  };
+})();
+
+</script>
+
 </body>
 </html>
