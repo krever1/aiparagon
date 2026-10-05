@@ -32599,6 +32599,27 @@ function v96FunnelRead(){
 .v97-cn{margin:0 0 10px;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px 12px}
 .v97-cn small{flex-basis:100%}
 .v97-cn .rd-btn{margin-left:auto}
+
+/* round 2: sample source, plan preview, sidebar group */
+.v97-sample{margin:2px 0 0!important;font-size:13px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.v97-sample .v97-a{font-size:13px;cursor:pointer}
+.v97-sample span{font-size:12.5px;color:var(--e9-you-ink)}
+.v97-pv-btn{width:100%;justify-content:center;margin:0 0 8px}
+.v97-pv{display:flex;flex-direction:column}
+.v97-pv-s{border-top:1px solid var(--rd-line);padding:11px 0}
+.v97-pv-s:first-child{border-top:0;padding-top:4px}
+.v97-pv-s .e9-k{display:block;margin-bottom:5px}
+.v97-pv p{margin:3px 0;font-size:13.5px;line-height:1.55;color:var(--rd-text)}
+.v97-pv p b{color:var(--rd-ink);font-weight:600}
+.v97-pv p.m{font-size:12.5px;color:var(--rd-muted)}
+.v97-pv-big{font-weight:600;color:var(--rd-ink)!important}
+.v97-pv blockquote{margin:8px 0 2px;padding:8px 12px;border-left:3px solid var(--e9-you-line);background:var(--e9-you-soft);border-radius:0 8px 8px 0;font-size:13px;line-height:1.55;color:var(--rd-text);overflow-wrap:anywhere}
+.v97-pv-l{margin:6px 0 2px 18px;padding:0;font-size:13.5px;color:var(--rd-text)}
+.v97-pv-l li{margin:4px 0}
+.v97-pv-l small{display:block;font-size:12px;color:var(--rd-muted);line-height:1.45}
+.v97-pv-miss{color:#8A3B12!important;font-size:13px!important}
+.rd-sb-sec.v97-sb-ag{font-size:9.5px;padding:12px 20px 4px 26px;color:var(--rd-faint)}
+.ap-cf-form .v97-note,.v97-opt .v97-note{margin:10px 0 0!important;font-size:12.5px!important;line-height:1.5;color:var(--rd-muted)!important}
 </style>
 <script id="v97js">
 /* ===================================================================
@@ -32710,14 +32731,21 @@ v96RenameIn=function(root){
   if(typeof AP_SCOPES!=='undefined')AP_SCOPES.forEach(function(x){if(x[0]==='content_generation')x[1]='Content Transformation';});
   if(typeof AP_WHERE!=='undefined')AP_WHERE.forEach(function(x){if(/^Content Generation \(Create content\)/.test(x[0]))x[0]='Content Transformation';});
 })();
-/* the sidebar: new names, and the two pages that make content side by side */
+/* the sidebar: new names, grouped like the redesign. Your pages first, then the agents:
+   Overview, Content Transformation, Market Intelligence Briefs
+   Explore agents: Intel Tracker, Ad Strategist, Marketing Generation, then Ad Testing and Uploads & runs */
 function v97Sidebar(){
   const set=function(view,label){
     const b=document.querySelector('.rd-sidebar .sb-item[data-view="'+view+'"],.sb-item[data-view="'+view+'"]');if(!b)return null;
-    const s=b.querySelector('span:not(.bdg)');if(s){s.textContent=label;s.title=label;}return b;};
+    if(label){const s=b.querySelector('span:not(.bdg)');if(s){s.textContent=label;s.title=label;}}return b;};
   const cr=set('e3create','Content Transformation'),fu=set('e3funnel','Marketing Generation');
-  set('e3briefs','Market Intelligence Briefs');set('e3intel','Intel Tracker');
-  if(cr&&fu&&cr.nextElementSibling!==fu)cr.insertAdjacentElement('afterend',fu);
+  const br=set('e3briefs','Market Intelligence Briefs'),it=set('e3intel','Intel Tracker'),ad=set('e3ads');
+  if(!cr||!fu||!br||!it||!ad)return;
+  const after=function(a,b){if(a.nextElementSibling!==b)a.insertAdjacentElement('afterend',b);};
+  after(cr,br);
+  let h=document.getElementById('v97SbAgents');
+  if(!h){h=document.createElement('div');h.id='v97SbAgents';h.className='rd-sb-sec v97-sb-ag';h.textContent='Explore agents';}
+  after(br,h);after(h,it);after(it,ad);after(ad,fu);
 }
 v97Sidebar();
 document.addEventListener('DOMContentLoaded',v97Sidebar);
@@ -32858,7 +32886,8 @@ apDemoOverview=function(){
    Content Transformation (was Create content)
    - start with something you published or a new idea, as two big choices
    - what are you making, then one short form for that start
-   - voice, call to action and structure tucked under "Optional"
+   - voice, call to action and structure under "Optional", open from the start
+   - a sample source to explore with, and a preview of the draft plan
    - a draft plan beside the form: substance, the brief that leads, voice
    - drafts and requests in progress on their own tab, on this page
    =================================================================== */
@@ -32878,6 +32907,15 @@ const V97_STRUCT=[
   ['builtin:myth','Common belief → what is true → proof',[['The common belief','What most of the market assumes.'],['What is actually true','The view from the material.'],['The proof','An example or fact from the material.']]],
   ['builtin:steps','Practical steps',[['Why it matters','One or two lines on the stakes.'],['The steps','Three to five steps, in order.'],['Where to start','The first step to take.']]]
 ];
+/* shapes for paid ads; with none picked, the ad brief's copy formula decides */
+const V97_AD_STRUCT=[
+  ['ad:pain','Pain → proof → offer',[['The pain','Name the problem the reader already feels.'],['The proof','One credible reason to believe it can be fixed.'],['The offer','The next step and what they get from it.']]],
+  ['ad:question','Question → answer → next step',[['The question','A question the reader has already asked themselves.'],['The answer','A short, specific answer.'],['The next step','What to do now, and why now.']]],
+  ['ad:myth','Common belief → what is true → proof',[['The common belief','What most of the market assumes.'],['What is actually true','The view the brief and the offer support.'],['The proof','One example or fact that backs it.']]],
+  ['ad:story','Story → lesson → next step',[['The story','A short moment the reader recognises.'],['The lesson','What it shows.'],['The next step','The offer as the natural next move.']]],
+  ['ad:before','Before → after → how',[['Before','Life with the problem today.'],['After','What changes once it is solved.'],['How','How the offer gets them there.']]]
+];
+function v97Shapes(fmt){return fmt==='ad'?V97_AD_STRUCT:V97_STRUCT;}
 /* thought leadership is the most common starting format here */
 apCfState=function(){const f=window.__cf||(window.__cf={});if(!f.mode)f.mode='source';if(!f.format)f.format='thought_leadership';return f;};
 function v97CtaOpts(cur){return V97_CTA.map(function(c){return '<option'+(c===cur?' selected':'')+'>'+esc(c)+'</option>';}).join('');}
@@ -32895,7 +32933,7 @@ function v97GoVoice(){if(typeof state!=='undefined'&&state.view==='create')apTab
 function v97StructHtml(fmt,cur){
   const T=(typeof AP_TPLS!=='undefined'&&AP_TPLS||[]).filter(function(t){return t.active!==false&&(!t.format||t.format===fmt||t.format==='any');});
   return '<option value="">Let the brief suggest a structure</option>'+
-    V97_STRUCT.map(function(s){return '<option value="'+s[0]+'"'+(cur===s[0]?' selected':'')+'>'+esc(s[1])+'</option>';}).join('')+
+    v97Shapes(fmt).map(function(s){return '<option value="'+s[0]+'"'+(cur===s[0]?' selected':'')+'>'+esc(s[1])+'</option>';}).join('')+
     (T.length?'<optgroup label="Your templates">'+T.map(function(t){return '<option value="'+esc(t.id)+'"'+(cur===t.id?' selected':'')+'>'+esc(t.name)+'</option>';}).join('')+'</optgroup>':'');
 }
 function v97StructFill(id,fmt){
@@ -32909,7 +32947,7 @@ function v97TplCount(tid){
 }
 function v97StructTpl(id,fmt){
   const v=v97Val(id);if(!v)return null;
-  const b=V97_STRUCT.find(function(s){return s[0]===v;});
+  const b=V97_STRUCT.concat(V97_AD_STRUCT).find(function(s){return s[0]===v;});
   if(b)return {id:null,template:{name:b[1],format:fmt,description:'A simple shape picked in the dashboard',sections:b[2].map(function(x){return {title:x[0],guidance:x[1]};}),rules:'',example_text:''}};
   const t=(typeof AP_TPLS!=='undefined'&&AP_TPLS||[]).find(function(x){return x.id===v;});
   return t?{id:t.id,template:{name:t.name,format:t.format,description:t.description,sections:t.sections,rules:t.rules,example_text:t.example_text}}:null;
@@ -32948,6 +32986,7 @@ function v97CtFormHtml(){
           '<label class="f">Source text <span class="cnt" id="cfCount"></span><textarea id="cfText" rows="8" placeholder="Paste an excerpt or transcript here. The draft uses only the material you provide." oninput="apCfCount();v97CtPlan()"></textarea></label>'+
           '<label class="f">Core takeaway<input id="cfTake" placeholder="What should the audience remember?"></label>'+
           '<label class="f">Link to the original <small class="v97-opt-t">optional</small><input id="cfUrl" placeholder="https://"></label>'+
+          '<p class="v97-sample"><a class="v97-a" role="button" tabindex="0" onclick="v97CtSample()">Use a sample source to explore</a><span id="v97SampleMsg"></span></p>'+
         '</div>'+
         '<div id="cfIdea"'+(idea?'':' hidden')+'>'+
           '<label class="f">What is the key idea?<textarea id="cfThesis" rows="5" placeholder="State the perspective you want to share, in your own words." oninput="v97CtPlan()"></textarea></label>'+
@@ -32955,7 +32994,7 @@ function v97CtFormHtml(){
             '<label class="f">What should they do next?<select id="cfGoalIdea" data-nofill="1">'+v97CtaOpts()+'</select></label></div>'+
           '<label class="f">What proof or example can you give?<textarea id="cfProof" rows="3" placeholder="A client story, data point, framework or something you saw first-hand. Leave blank if you have none."></textarea></label>'+
         '</div>'+
-        '<details class="v97-opt" id="v97CtOpt"><summary>Optional: voice, call to action and structure</summary>'+
+        '<details class="v97-opt" id="v97CtOpt" open><summary>Optional: voice, call to action and structure</summary>'+
           '<div class="ap-cf-row2"><label class="f">Voice<select id="cfVoice" data-nofill="1" onchange="v97CtPlan()">'+v97VoiceOpts()+'</select><small class="ap-voice-hint" id="v97VoiceHint">'+v97VoiceHint()+'</small></label>'+
             '<label class="f" id="v97GoalWrap"'+(idea?' hidden':'')+'>Call to action<select id="cfGoal" data-nofill="1">'+v97CtaOpts()+'</select></label></div>'+
           '<label class="f">Structure<select id="v97Struct" data-nofill="1" onchange="v97CtPlan()">'+v97StructHtml(f.format,'')+'</select></label>'+
@@ -33005,6 +33044,28 @@ apCfFmt=function(k){
   if(typeof e9IdeaApply==='function'){const _i=e9IdeaApply;e9IdeaApply=function(){const r=_i.apply(this,arguments);try{const m=v97$('cfErr');if(m&&m.textContent){m.textContent='Loaded your idea note. Add who it is for, then generate.';m.classList.add('on');}v97CtPlan();}catch(e){}return r;};}
 })();
 
+/* ---------- a sample source to explore the form with ---------- */
+const V97_SAMPLE={type:'article',title:'Why AI pilots stall after week three',take:'Pilots stall when nobody owns the workflow after launch.',
+  text:'Most AI pilots do not fail in the demo. They fail in week three, when the excitement fades and the pilot meets the real workflow.\n\n'+
+    'In the first two weeks, someone is watching every output. Questions get answered quickly, edge cases get fixed by hand, and the results look great. '+
+    'Then the pilot team goes back to their day jobs. Nobody owns the workflow the tool now sits inside. Exceptions pile up, people quietly route around it, '+
+    'and by the end of the month fewer people are using it.\n\n'+
+    'The firms that get past week three do three things before launch. They name one person who owns the workflow, not just the tool. '+
+    'They write down what happens when the AI is unsure, so exceptions have a home. And they decide up front which number will tell them it is working.\n\n'+
+    'None of this is technical. It is operating discipline, and it is the difference between a pilot and a process.'};
+function v97IsSample(){return v97Val('cfText')===V97_SAMPLE.text;}
+function v97CtSample(){
+  const set=function(id,v){const e=v97$(id);if(e)e.value=v;};
+  set('cfType',V97_SAMPLE.type);set('cfTitle',V97_SAMPLE.title);set('cfText',V97_SAMPLE.text);set('cfTake',V97_SAMPLE.take);
+  apCfState().fileName=null;
+  const fm=v97$('cfFileMsg');if(fm)fm.textContent='';
+  if(typeof apCfCount==='function')apCfCount();
+  const m=v97$('v97SampleMsg');if(m)m.textContent='Sample loaded. Swap in your own material for a real draft.';
+  v97CtPlan();
+}
+/* enough material to write from */
+function v97CtReady(){return apCfState().mode==='idea'?v97Val('cfThesis').length>=60:v97Val('cfText').length>=300;}
+
 /* ---------- the draft plan ---------- */
 function v97PlanItem(n,cls,title,line,sub){
   return '<li class="'+cls+'"><span class="n">'+n+'</span><div><b>'+title+'</b><small>'+line+'</small>'+(sub?'<small class="sub">'+sub+'</small>':'')+'</div></li>';
@@ -33038,7 +33099,8 @@ function v97CtPlan(){
   if(!idea){
     const txt=v97Val('cfText'),w=v97Words(txt),ty=v97$('cfType'),tl=v97Val('cfTitle');
     ok1=txt.length>=300;
-    s1=ok1?esc((ty&&ty.selectedOptions[0]?ty.selectedOptions[0].text:'Source')+' · '+v97Num(w)+' words'+(tl?' · “'+v97Clip(tl,44)+'”':''))
+    s1=v97IsSample()?'Sample source loaded. Swap in your own material for a real draft.'
+      :ok1?esc((ty&&ty.selectedOptions[0]?ty.selectedOptions[0].text:'Source')+' · '+v97Num(w)+' words'+(tl?' · “'+v97Clip(tl,44)+'”':''))
       :txt?'Add a few more paragraphs. '+v97Num(w)+' words so far.':'Paste source text or load a file to supply the facts and your voice.';
   }else{
     const th=v97Val('cfThesis'),aud=v97Val('cfAud');
@@ -33052,14 +33114,64 @@ function v97CtPlan(){
   const w=window.__v97Watch&&window.__v97Watch.scope!=='brief'?window.__v97Watch:null;
   box.innerHTML='<span class="lbl">Draft readiness</span><h3>Your draft plan</h3><p class="help">A quick check of what the generator will use.</p>'+
     '<ol class="v97-pl">'+
-      v97PlanItem(1,ok1?'ok':'todo','Substance from you',s1)+
+      v97PlanItem(1,ok1?(!idea&&v97IsSample()?'warn':'ok'):'todo','Substance from you',s1)+
       v97PlanItem(2,u&&v97BriefState(u)==='approved'?'ok':'warn',paid?'Ad patterns lead':'Organic signals lead',s2,paid?'Organic signals may support pain points.':'Paid findings may support pain points.')+
       v97PlanItem(3,'ok','Voice and output',esc(V97_FMT_OUT[f.format]||''),esc(s3b))+
     '</ol>'+
     v97BriefWarn(paid?'paid':'organic',lead)+
+    '<button type="button" class="rd-btn v97-pv-btn" id="v97PvBtn" onclick="v97PlanPreview()">Preview draft plan →</button>'+
     '<button class="rd-btn pri v97-go" id="cfGo" onclick="v97CtSubmit()"'+(ok1?'':' disabled')+'>Generate draft →</button>'+
     '<p class="v97-eta">'+(ok1?'About a minute. It lands in Drafts on this page.':'Add your material to generate.')+'</p>'+
     v97WatchHtml(w,C);
+}
+
+/* ---------- preview: everything the generator will use, before it writes ---------- */
+function v97PlanPreview(){
+  const f=apCfState(),C=(typeof AP_CF!=='undefined'&&AP_CF)||{intel:[],ads:[]};
+  const idea=f.mode==='idea',paid=f.format==='ad';
+  const sec=function(k,body){return '<section class="v97-pv-s"><span class="e9-k">'+k+'</span>'+body+'</section>';};
+  const row=function(l,v){return v?'<p><b>'+esc(l)+':</b> '+esc(v)+'</p>':'';};
+  const miss=function(t){return '<p class="v97-pv-miss">'+esc(t)+'</p>';};
+  let sub='';
+  if(!idea){
+    const txt=v97Val('cfText'),ty=v97$('cfType'),tt=ty&&ty.selectedOptions[0]?ty.selectedOptions[0].text:'Source';
+    sub=!txt?miss('No source text yet. Paste it or load a file.')
+      :(v97IsSample()?miss('This is the sample source. Swap in your own material for a real draft.'):'')+
+        row('Source',tt+' · '+v97Num(v97Words(txt))+' words')+row('Title',v97Val('cfTitle'))+
+        row('Core takeaway',v97Val('cfTake')||'Not given. It picks the strongest point in the source.')+row('Link',v97Val('cfUrl'))+
+        '<blockquote>'+esc(v97Clip(txt,320))+'</blockquote>'+(txt.length<300?miss('Add a few more paragraphs before you generate.'):'');
+  }else{
+    const th=v97Val('cfThesis');
+    sub=!th?miss('No key idea yet. Describe it in a few sentences.')
+      :row('Key idea',v97Clip(th,320))+row('Who it is for',v97Val('cfAud')||'Not given')+row('Their problem',v97Val('cfPain'))+
+        row('Proof',v97Clip(v97Val('cfProof'),220)||'None given. It will not invent any.')+row('Also draw on',v97Clip(v97Val('v97Extra'),220))+
+        (th.length<60?miss('Add a little more on your point of view before you generate.'):'');
+  }
+  const lead=paid?v97Pick(C.ads):v97Pick(C.intel),u=lead.use,sup=(paid?v97Pick(C.intel):v97Pick(C.ads)).use;
+  let sig='';
+  if(u){
+    let S={items:[]};
+    try{S=paid?e9SnapItems('ad',u.run_id,e9AdFallback(u)):e9SnapItems('org',u.run_id,e9OrgFallback(u.content_md));}catch(e){}
+    sig='<p><b>'+(paid?'Ad patterns lead':'Organic signals lead')+':</b> '+esc((paid?'the Ad Strategist':'the Intel Tracker')+' brief of '+v97Short(u.created_at)+', '+v97StateText(u))+'</p>'+
+      (S.items.length?'<ol class="v97-pv-l">'+S.items.slice(0,3).map(function(x){return '<li>'+esc(e9Clean(x.text))+(x.why?'<small>'+esc(e9Clean(x.why))+'</small>':'')+'</li>';}).join('')+'</ol>':'');
+  }else sig=miss('No '+(paid?'advertisement':'organic')+' brief yet. It leans on your material and your voice only.');
+  if(sup)sig+='<p class="m">'+esc((paid?'Organic signals':'Paid findings')+' from the brief of '+v97Short(sup.created_at)+' may support the pain points.')+'</p>';
+  const vs=v97Val('cfVoice')||'Use my saved voice',cur=typeof apVoiceCur==='function'&&apVoiceCur();
+  const vtxt=/saved/i.test(vs)?(cur?'Your saved voice'+(cur.tone&&cur.tone.length?': '+cur.tone.join(', '):''):'Your voice is not set up yet, so it writes plainly and clearly.')
+    :vs==='Match my source'?'It matches the voice of your source.':vs+'.';
+  const tp=v97StructTpl('v97Struct',f.format);
+  const st=tp?'<p><b>'+esc(tp.template.name)+'</b></p><ol class="v97-pv-l">'+(tp.template.sections||[]).map(function(x){return '<li>'+esc(x.title||'')+(x.guidance?'<small>'+esc(x.guidance)+'</small>':'')+'</li>';}).join('')+'</ol>'+(tp.template.rules?'<p class="m">'+esc(tp.template.rules)+'</p>':'')
+    :'<p>'+esc(paid&&u&&u.copy_formula?'The brief suggests: '+u.copy_formula:'The brief suggests a structure that fits the format.')+'</p>';
+  const cta=idea?v97Val('cfGoalIdea'):v97Val('cfGoal');
+  const ready=v97CtReady();
+  apModal('v97PvM','<div class="k">Content Transformation</div><h3 class="ap-m89h">Draft plan preview</h3>'+
+    '<p class="help">What the generator will use. Nothing is written until you press Generate.</p>'+
+    '<div class="v97-pv">'+
+      sec('What you are making','<p class="v97-pv-big">'+esc(V97_FMT_OUT[f.format]||'')+'</p><p class="m">'+esc(V97_FMT_D[f.format]||'')+'</p>')+
+      sec('Substance from you',sub)+sec('Market signals',sig)+sec('Voice','<p>'+esc(vtxt)+'</p>')+sec('Structure',st)+sec('Call to action','<p>'+esc(cta||'None')+'</p>')+
+    '</div>'+v97BriefWarn(paid?'paid':'organic',lead)+
+    '<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'v97PvM\')">Back to the form</button>'+
+      '<button class="rd-btn pri" id="v97PvGo" onclick="apModalClose(\'v97PvM\');v97CtSubmit()"'+(ready?'':' disabled')+'>Generate draft →</button></div>',760);
 }
 
 /* ---------- send it ---------- */
@@ -33072,7 +33184,7 @@ async function v97CtSubmit(){
   if(!idea){
     const text=v97Val('cfText');
     if(text.length<300)return fail('Add the source text, at least a few paragraphs. Paste it, or load a file.');
-    Object.assign(row,{source_type:v97Val('cfType')||'article',title:v97Val('cfTitle')||null,source_url:v97Val('cfUrl')||null,source_text:text,takeaway:v97Val('cfTake')||null,source_file_name:f.fileName||null});
+    Object.assign(row,{source_type:v97Val('cfType')||'article',title:(v97IsSample()?'Sample · ':'')+v97Val('cfTitle')||null,source_url:v97Val('cfUrl')||null,source_text:text,takeaway:v97Val('cfTake')||null,source_file_name:f.fileName||null});
   }else{
     const th=v97Val('cfThesis');
     if(th.length<60)return fail('Describe the key idea in a few sentences so there is something real to build from.');
@@ -33091,6 +33203,7 @@ async function v97CtSubmit(){
   ['cfText','cfTake','cfTitle','cfUrl','cfThesis','cfProof','cfAud','cfPain','v97Extra'].forEach(function(id){const e=v97$(id);if(e)e.value='';});
   f.fileName=null;apCfCount();
   const fm=v97$('cfFileMsg');if(fm)fm.textContent='';
+  const sm=v97$('v97SampleMsg');if(sm)sm.textContent='';
   try{await apCfLoad(true);}catch(e){}
   v97CtPlan();v97CtCounts();
 }
@@ -33255,15 +33368,26 @@ function v97CampStatus(L,o){
   if(p&&/approved/i.test(p.status)&&!/pending/i.test(p.status))return {t:'Approved',c:'ok'};
   return {t:'Waiting for approval',c:''};
 }
+/* the ad structure picked on Make new rides on the request as its last line */
+function v97SplitShape(r){
+  const m=String(r||'').match(/^([\s\S]*?)\n?Ad structure: ([^\n]*)$/);
+  return m?{request:m[1].trim(),shape:m[2].replace(/\s*\(.*$/,'').replace(/\.\s.*$|\.$/,'').trim()}:{request:String(r||'').trim(),shape:''};
+}
+function v97ShapeLine(t){
+  const steps=(t.sections||[]).filter(function(x){return x&&(x.title||x.guidance);}).map(function(x,i){return (i+1)+') '+String(x.guidance||x.title).replace(/\.?\s*$/,'.');}).join(' ');
+  return 'Ad structure: '+t.name+'. Build every ad in this order instead of the usual call-out, pain, solution order, with each hook as the opening step and the body carrying the rest'+(steps?': '+steps:'.')+' Do not write the step names in the ad.'+(t.rules?' '+v97Clip(t.rules,200):'');
+}
 /* what you asked for: stored with the run since 5 Oct; older runs fall back to the request log */
 function v97ReqFor(L,o){
-  if(o.d&&(o.d.request||o.d.must_use))return {request:o.d.request||'',must_use:o.d.must_use||'',funnel_mode:o.d.requested_mode||''};
+  if(o.d&&(o.d.request||o.d.must_use)){const sp=v97SplitShape(o.d.request);return {request:sp.request,shape:sp.shape,must_use:o.d.must_use||'',funnel_mode:o.d.requested_mode||''};}
   const log=(typeof AP_AISET!=='undefined'&&AP_AISET&&Array.isArray(AP_AISET.mg_requests))?AP_AISET.mg_requests:[];
   if(!log.length)return null;
   const R=L.runs[o.run_id],t=R&&R.started_at?Date.parse(R.started_at):Date.parse(o.created_at)-4*60e3,win=R&&R.started_at?3*60e3:10*60e3;
   let best=null,gap=1e15;
   log.forEach(function(e){const g=Math.abs(Date.parse(e.t0)-t);if(g<win&&g<gap){gap=g;best=e;}});
-  return best;
+  if(!best)return null;
+  const sp=v97SplitShape(best.request);
+  return Object.assign({},best,{request:sp.request,shape:best.structure||sp.shape});
 }
 async function v97ReqLogAdd(e){
   await apAiSettingsLoad(true);
@@ -33298,10 +33422,10 @@ function v97MgFormHtml(){
             (rows.length?rows.map(function(r,i){return '<option value="'+esc(r.run_id)+'">'+esc(e9RunLabel(rows,r)+' · '+v97StateText(r)+(i===0?' · newest':''))+'</option>';}).join(''):'<option value="">No advertisement brief yet</option>')+
           '</select></label>'+
         '</div>'+
-        '<details class="v97-opt" id="v97MgOpt"><summary><span>Optional: <span id="v97MgOptS">'+(ad?'voice':'voice, call to action and structure')+'</span></span></summary>'+
+        '<details class="v97-opt" id="v97MgOpt" open><summary><span>Optional: <span id="v97MgOptS">'+(ad?'voice and ad structure':'voice, call to action and structure')+'</span></span></summary>'+
           '<div class="ap-cf-row2"><label class="f">Voice<select id="v97MgVoice" data-nofill="1" onchange="v97MgPlan()">'+v97MgVoiceOpts()+'</select><small class="ap-voice-hint">'+v97VoiceHint()+'</small></label>'+
             '<label class="f v97-org-only"'+(ad?' hidden':'')+'>Call to action<select id="v97MgGoal" data-nofill="1">'+v97CtaOpts()+'</select></label></div>'+
-          '<label class="f v97-org-only"'+(ad?' hidden':'')+'>Structure<select id="v97MgStruct" data-nofill="1" onchange="v97MgPlan()">'+v97StructHtml(ad?'thought_leadership':fmt,'')+'</select></label>'+
+          '<label class="f"><span id="v97MgStructL">'+(ad?'Ad structure':'Structure')+'</span><select id="v97MgStruct" data-nofill="1" onchange="v97MgPlan()">'+v97StructHtml(fmt,'')+'</select></label>'+
           '<p class="v97-note">Competitor patterns shape it. Their wording never appears in it.</p>'+
         '</details>'+
         '<div class="ap-cf-err" id="v97MgErr"></div>'+
@@ -33325,7 +33449,7 @@ function v97MgRender(h){
       const vs=v97$('v97MgVoice');if(vs&&keep.v&&[...vs.options].some(function(o){return o.value===keep.v;}))vs.value=keep.v;}
     v97MgPlan();
   }).catch(function(){});
-  if(typeof apTplLoad==='function')apTplLoad(false).then(function(){v97StructFill('v97MgStruct',V97.mg.fmt==='ad'?'thought_leadership':V97.mg.fmt);}).catch(function(){});
+  if(typeof apTplLoad==='function')apTplLoad(false).then(function(){v97StructFill('v97MgStruct',V97.mg.fmt);}).catch(function(){});
 }
 function v97MgFmt(k){
   V97.mg.fmt=k;const ad=k==='ad';
@@ -33333,9 +33457,10 @@ function v97MgFmt(k){
   const d=v97$('v97MgFmtD');if(d)d.textContent=V97_MG_D[k]||'';
   const a=v97$('v97MgAd');if(a)a.hidden=!ad;
   document.querySelectorAll('.v97-mg .v97-org-only').forEach(function(x){x.hidden=ad;});
-  const s=v97$('v97MgOptS');if(s)s.textContent=ad?'voice':'voice, call to action and structure';
+  const s=v97$('v97MgOptS');if(s)s.textContent=ad?'voice and ad structure':'voice, call to action and structure';
+  const sl=v97$('v97MgStructL');if(sl)sl.textContent=ad?'Ad structure':'Structure';
   const w=v97$('v97MgWhat');if(w)w.placeholder=V97_MG_PH[k]||'';
-  if(!ad)v97StructFill('v97MgStruct',k);
+  v97StructFill('v97MgStruct',k);
   v97MgPlan();
 }
 function v97MgPk(k){
@@ -33351,7 +33476,8 @@ function v97MgPlan(){
   const what=v97Val('v97MgWhat'),must=v97Val('v97MgMust'),vs=v97Val('v97MgVoice');
   const s2=what?'“'+esc(v97Clip(what,110))+'”':'None given. The brief decides the angle.';
   const s2b=must?'Must use: “'+esc(v97Clip(must,90))+'”':'';
-  const voiceTxt=v97MgVoiceText(vs);
+  const voiceTxt=v97MgVoiceText(vs),stE=v97$('v97MgStruct');
+  const stTxt=stE&&stE.value&&stE.selectedOptions[0]?'structure: '+stE.selectedOptions[0].text:'the brief suggests the structure';
   let items='',warn='',btn='',eta='',watch='';
   if(ad){
     const run=v97Val('v97MgBrief'),rows=v97Uniq(C.ads),b=rows.find(function(r){return r.run_id===run;})||rows[0]||null;
@@ -33359,7 +33485,7 @@ function v97MgPlan(){
     items=v97PlanItem(1,b&&v97BriefState(b)==='approved'?'ok':'warn','Ad patterns lead',b?esc('Ad Strategist · '+v97Short(b.created_at)+' · '+v97StateText(b)):'No advertisement brief yet',
         ib?esc('Audience language from the organic brief of '+v97Short(ib.created_at)+'.'):'')+
       v97PlanItem(2,'ok','Your request',s2,s2b)+
-      v97PlanItem(3,'ok','Output','Three ads with images, a qualification survey, a landing page and a booking page',esc(V97_PK[V97.mg.pk][0]+': '+V97_PK[V97.mg.pk][1].toLowerCase()+' · '+voiceTxt));
+      v97PlanItem(3,'ok','Output','Three ads with images, a qualification survey, a landing page and a booking page',esc(V97_PK[V97.mg.pk][0]+': '+V97_PK[V97.mg.pk][1].toLowerCase()+' · '+voiceTxt+' · '+stTxt));
     if(!b)warn='<div class="v97-warn"><p>There is no advertisement brief yet. Run the Ad Strategist first.</p><a class="v97-a" onclick="apGo(\'e3ads\')">Open the Ad Strategist →</a></div>';
     else{
       const parts=[];
@@ -33375,10 +33501,10 @@ function v97MgPlan(){
     btn='<button class="rd-btn pri v97-go" id="v97MgGoBtn" onclick="v97MgGo()"'+(run1||!b?' disabled':'')+'>'+(run1?'Generating…':'Generate campaign →')+'</button>';
     eta='About five minutes. It lands in Ad creatives.';
   }else{
-    const pk=v97Pick(C.intel),u=pk.use,st=v97$('v97MgStruct');
+    const pk=v97Pick(C.intel),u=pk.use;
     items=v97PlanItem(1,u&&v97BriefState(u)==='approved'?'ok':'warn','Organic signals lead',u?esc('Intel Tracker · '+v97Short(u.created_at)+' · '+v97StateText(u)):'No organic brief on file yet','Paid findings may support pain points.')+
       v97PlanItem(2,'ok','Your request',s2,s2b)+
-      v97PlanItem(3,'ok','Voice and output',esc(V97_FMT_OUT[fmt]||''),esc(voiceTxt.replace(/^in/,'In')+' · '+(st&&st.value&&st.selectedOptions[0]?'structure: '+st.selectedOptions[0].text:'the brief suggests the structure')));
+      v97PlanItem(3,'ok','Voice and output',esc(V97_FMT_OUT[fmt]||''),esc(voiceTxt.replace(/^in/,'In')+' · '+stTxt));
     warn=v97BriefWarn('organic',pk);
     const w=window.__v97Watch&&window.__v97Watch.scope==='brief'?window.__v97Watch:null;
     watch=v97WatchHtml(w,C);
@@ -33399,6 +33525,7 @@ async function v97MgStartAds(){
   const run=v97Val('v97MgBrief')||((C.ads||[])[0]||{}).run_id||'';
   if(!run)return fail('There is no advertisement brief yet. Run the Ad Strategist first.');
   const what=v97Val('v97MgWhat'),must=v97Val('v97MgMust'),vsel=v97Val('v97MgVoice');
+  const sp=v97StructTpl('v97MgStruct','ad'),request=[what,sp?v97ShapeLine(sp.template):''].filter(Boolean).join('\n');
   let voice=vsel==='house'||!vsel?'':vsel;
   if(vsel==='saved'){const cur=typeof apVoiceCur==='function'&&apVoiceCur();voice=cur?apVoiceCompile(cur):'';}
   if(btn){btn.disabled=true;btn.textContent='Starting…';}
@@ -33407,13 +33534,14 @@ async function v97MgStartAds(){
     const auth=await apTokenFresh(false);
     if(!auth)throw new Error('Sign in again to start Marketing Generation.');
     const res=await fetch(AP_HOOKS.lt_run,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({auth:auth,source_brief_run:run,requested_by:apCfMe(),format:'ad',funnel_mode:V97.mg.pk,request:what,must_use:must,voice:voice})});
+      body:JSON.stringify({auth:auth,source_brief_run:run,requested_by:apCfMe(),format:'ad',funnel_mode:V97.mg.pk,request:request,must_use:must,voice:voice})});
     if(res.status===404){apLtSet({status:'setup',t0:t0,brief:run});throw new Error('The funnel builder is not switched on in n8n yet.');}
     if(!res.ok)throw new Error('Marketing Generation answered with an error ('+res.status+'). Try again in a minute.');
     let j=null;try{j=await res.json();}catch(e){j=null;}
     if(j&&j.ok===false)throw new Error(j.message||'Marketing Generation did not start.');
-    apLtSet({status:'running',t0:t0,brief:run,mode:V97.mg.pk,request:what,must_use:must});
-    v97ReqLogAdd({t0:new Date(t0).toISOString(),by:apCfMe(),format:'ad',brief:run,funnel_mode:V97.mg.pk,request:what,must_use:must}).catch(function(e){console.warn('request log',e.message);});
+    apLtSet({status:'running',t0:t0,brief:run,mode:V97.mg.pk,request:request,must_use:must});
+    v97ReqLogAdd({t0:new Date(t0).toISOString(),by:apCfMe(),format:'ad',brief:run,funnel_mode:V97.mg.pk,request:request,must_use:must,structure:sp?sp.template.name:''}).catch(function(e){console.warn('request log',e.message);});
+    if(sp&&sp.id)v97TplCount(sp.id);
     toast('Marketing Generation started. It takes about five minutes. The ads land in Ad creatives.');
     ['v97MgWhat','v97MgMust'].forEach(function(id){const e=v97$(id);if(e)e.value='';});
     apLtPoll();
@@ -33497,7 +33625,7 @@ async function v97CampPaint(){
       '<p class="m">Built from '+(bRun?'<a onclick="RD.cfSel.paid=\''+esc(bRun)+'\';apCfOpenBrief(\'paid\')">the advertisement brief of '+esc(b?e9Day(b.created_at):e9RunDay(bRun))+'</a>':'an advertisement brief that is not on file')+
         (ib?' and <a onclick="RD.cfSel.organic=\''+esc(ib.run_id)+'\';apCfOpenBrief(\'organic\')">the organic brief of '+esc(e9Day(ib.created_at))+'</a>':'')+'.'+
         (R&&R.requested_by?' Started by '+esc(v96Who(R.requested_by))+'.':'')+'</p>'+
-      (rq&&(rq.request||rq.must_use)?'<p class="ask">'+(rq.request?'<span><b>You asked for:</b> '+esc(v97Clip(rq.request,160))+'</span>':'')+(rq.must_use?'<span><b>Must use:</b> '+esc(v97Clip(rq.must_use,120))+'</span>':'')+'</p>':'')+
+      (rq&&(rq.request||rq.must_use||rq.shape)?'<p class="ask">'+(rq.request?'<span><b>You asked for:</b> '+esc(v97Clip(rq.request,160))+'</span>':'')+(rq.must_use?'<span><b>Must use:</b> '+esc(v97Clip(rq.must_use,120))+'</span>':'')+(rq.shape?'<span><b>Ad structure:</b> '+esc(rq.shape)+'</span>':'')+'</p>':'')+
       (mism?'<p class="v97-mism">You picked '+esc(V97_PK[rq.funnel_mode][0])+', but this run used '+esc(pk[0])+'. It ran before Marketing Generation read the funnel type.</p>':'')+
       v97ImgNote(d)+
       (v97TestPlan(d)?'<p class="m v97-tp"><button type="button" class="rd-btn sm" onclick="v97TestPlanOpen(\''+esc(o.run_id)+'\')">Test plan and review checks</button><small>Budget, metrics and what a person checks before launch</small></p>':'')+
@@ -33557,7 +33685,7 @@ function v97CampCard(L,o){
       '<b>'+esc(d.offer_name||'Campaign')+'</b>'+
       (hook?'<p class="hook">“'+esc(v97Clip(hook,110))+'”</p>':'')+
       '<small>'+esc((pk?pk[0]:'Funnel')+' · from the advertisement brief of '+(e9RunDay(d.source_brief_run)||'an earlier run'))+'</small>'+
-      (rq&&rq.request?'<small class="ask">Asked for: '+esc(v97Clip(rq.request,90))+'</small>':'')+
+      (rq&&(rq.request||rq.shape)?'<small class="ask">'+(rq.request?'Asked for: '+esc(v97Clip(rq.request,90)):'Ad structure: '+esc(rq.shape))+'</small>':'')+
       '<span class="open">'+(on?'On screen in Ad creatives':'Open in Ad creatives →')+'</span></div></article>';
 }
 async function v97LibRender(h){
