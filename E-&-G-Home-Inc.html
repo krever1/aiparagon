@@ -2525,7 +2525,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.13 beta</span></span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.14 beta</span></span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -2637,47 +2637,199 @@ const BACKEND = Object.assign({
 }, (typeof window!=='undefined' && window.NP_CONFIG) || {});
 let SYS_NOTIFS=[];
 
-/* ══════════════ GOOGLE CALENDAR (client-side OAuth, nothing stored) ══════════════ */
-const GCAL={ token:null, events:[], connected:false, loading:false };
+/* ══════════════ GOOGLE CALENDAR ══════════════
+   v12.14: a connection made while signed in stays connected, on every device and through every
+   reload and sign-in, until the person disconnects it (or Google ends it). Google only lets a page
+   hold a calendar token for about an hour, so the server function np-gcal keeps Google's
+   long-lived token, encrypted, and hands this page a fresh hour-long one whenever it needs it.
+   Calendar events are still never stored: they are read live from Google.
+   Until that server piece is set up, and in the demo view, it works as before: this session only. */
+const GCAL={ token:null, events:[], connected:false, loading:false, email:'', exp:0, kept:false, ready:null, owner:'' };
+const GCAL_SCOPE='https://www.googleapis.com/auth/calendar.events';
 function gcalReady(){ return !!BACKEND.googleClientId; }
-function gcalLoadSdk(cb){
+let _gsiLoad=null;
+function gcalLoadSdk(cb,quiet){
   if(window.google&&google.accounts&&google.accounts.oauth2) return cb();
-  const sc=document.createElement('script'); sc.src='https://accounts.google.com/gsi/client'; sc.async=true;
-  sc.onload=cb; sc.onerror=()=>toast('Could not load Google sign-in. Check your connection.');
-  document.head.appendChild(sc);
+  if(!_gsiLoad) _gsiLoad=new Promise((res,rej)=>{
+    const sc=document.createElement('script'); sc.src='https://accounts.google.com/gsi/client'; sc.async=true;
+    sc.onload=()=>res(); sc.onerror=()=>{ _gsiLoad=null; sc.remove(); rej(new Error('gsi')); };
+    document.head.appendChild(sc); });
+  _gsiLoad.then(()=>cb(),()=>{ if(!quiet) toast('Could not load Google sign-in. Check your connection.'); });
+}
+/* whose calendar this page may use: the signed-in person, and nobody once they sign out */
+const gcalWho=()=>realSession()?String((AUTH&&AUTH.email)||'').toLowerCase():(DEMO_VIEW?'demo':'');
+const gcalSrvOn=()=>gcalReady()&&realSession()&&!DEMO_VIEW;
+async function gcalSrv(action,extra){                                 // the np-gcal server function, as the signed-in person
+  if(!gcalSrvOn()) return {ready:false};
+  const url=String(BACKEND.url).replace(/\/+$/,'')+'/functions/v1/np-gcal';
+  if(AUTH.session&&AUTH.session.at&&Date.now()-AUTH.session.at>50*60000) await sbRefresh();   // an hour-old sign-in is renewed first
+  const send=()=>fetch(url,{method:'POST',headers:{'Content-Type':'application/json',apikey:BACKEND.anon,
+    Authorization:'Bearer '+sbTok(),'X-Requested-With':'XmlHttpRequest'},body:JSON.stringify(Object.assign({action},extra||{}))});
+  try{
+    let r;
+    try{ r=await send(); }catch(e){ if(sbTok()&&await sbRefresh()) r=await send(); else throw e; }   // an expired sign-in can fail before the server answers
+    if(r.status===401&&sbTok()&&await sbRefresh()) r=await send();
+    if(r.status===404) return {status:404,ready:false};              // the server function is not deployed yet
+    const d=await r.json().catch(()=>({}));
+    return Object.assign({},(d&&typeof d==='object')?d:{},{status:r.status});
+  }catch(e){ return {status:0,error:'offline'}; }
+}
+const gcalNotSetUp=d=>d.status===404||(d.status===503&&d.ready===false);
+let _gcalFails=0,_gcalNext=0,_gcalWarned=0;
+function gcalBackoff(){                                               // Google or the server did not answer: wait longer each time, up to 10 minutes
+  _gcalFails++; _gcalNext=Date.now()+Math.min(600000,30000*Math.pow(2,_gcalFails-1));
+  if(Date.now()-_gcalWarned>600000){ _gcalWarned=Date.now(); toast('Google Calendar isn’t answering right now. Your connection is kept and it will try again.'); }
+}
+function gcalClear(){ GCAL.token=null; GCAL.connected=false; GCAL.kept=false; GCAL.events=[]; GCAL.email=''; GCAL.exp=0; GCAL.owner=''; _gcalFails=0; _gcalNext=0; }
+function gcalApply(d){                                                // an hour-long token from the server
+  GCAL.token=d.access_token; GCAL.exp=Date.now()+Math.max(60,(+d.expires_in||3600)-300)*1000;   // renewed five minutes early
+  if(d.email) GCAL.email=d.email;
+  GCAL.connected=true; GCAL.kept=true; GCAL.ready=true; GCAL.owner=gcalWho();
+  _gcalFails=0; _gcalNext=0; _gcalRestoreTry=0;
+  gcalAutoRefresh();
+}
+let _gcalRenew=null;
+function gcalRenew(){                                                 // one renewal at a time, however many calls need it
+  if(_gcalRenew) return _gcalRenew;
+  _gcalRenew=(async()=>{
+    const me=gcalWho();
+    if(!me||me!==GCAL.owner){ gcalClear(); render(); return false; }
+    const d=await gcalSrv('token');
+    if(gcalWho()!==me||GCAL.owner!==me){                              // signed out or switched account meanwhile: nothing of theirs stays
+      if(GCAL.owner&&GCAL.owner!==gcalWho()){ gcalClear(); render(); }
+      return false; }
+    if(!GCAL.kept) return false;                                      // disconnected meanwhile
+    if(d.access_token){ gcalApply(d); return true; }
+    if(d.status===200&&d.connected===false){                         // disconnected on another device, or Google ended it
+      const was=GCAL.connected; gcalClear(); render();
+      if(d.reason==='expired') toast('Your Google Calendar connection ended (Google expired or revoked it). Connect it again from the calendar.');
+      else if(was) toast('Google Calendar was disconnected.');
+      return false;
+    }
+    if(d.status===401||d.status===403){                              // signed out, or no longer part of an agency: nothing to retry
+      gcalClear(); render();
+      if(d.status===403) toast('Google Calendar is off here: this login is no longer part of an agency.');
+      return false;
+    }
+    gcalBackoff(); return false;                                      // a hiccup: stay connected and try again later
+  })().finally(()=>{ _gcalRenew=null; });
+  return _gcalRenew;
+}
+const GCAL_NO={ok:false,status:401,skipped:true,json:async()=>({}),text:async()=>''};   // the call never went to Google
+/* every call to Google goes through here: a fresh token first, and at most one renewal per call.
+   manual: something the person clicked, which never waits out the backoff */
+async function gcalApi(url,opts,manual){
+  opts=opts||{};
+  if(GCAL.owner!==gcalWho()){ gcalClear(); render(); return GCAL_NO; }   // never another account's calendar
+  let fresh=false;
+  if(GCAL.kept&&(!GCAL.token||Date.now()>GCAL.exp)){
+    if(!manual&&Date.now()<_gcalNext) return GCAL_NO;                // backing off after a failure
+    if(!(await gcalRenew())) return GCAL_NO;
+    fresh=true;
+  }
+  const tok=GCAL.token, who=GCAL.owner;
+  if(!tok||who!==gcalWho()) return GCAL_NO;
+  const go=t=>fetch(url,Object.assign({},opts,{headers:Object.assign({},opts.headers||{},{Authorization:'Bearer '+t})}));
+  let r=await go(tok);
+  if(r.status===401&&GCAL.kept&&!fresh&&(manual||Date.now()>=_gcalNext)&&await gcalRenew()&&GCAL.owner===who&&who===gcalWho()) r=await go(GCAL.token);
+  return r;
+}
+let _gcalRestoredFor='',_gcalRestoreTry=0,_gcalRestoreT=null;
+async function gcalRestore(){                                         // signed in: pick up a connection made earlier, on any device
+  if(!gcalSrvOn()) return;
+  const me=gcalWho(); if(!me) return;
+  if(GCAL.owner&&GCAL.owner!==me) gcalClear();
+  if(GCAL.connected||_gcalRestoredFor===me) return;
+  _gcalRestoredFor=me; clearTimeout(_gcalRestoreT);
+  gcalLoadSdk(()=>{},true);                                           // so Connect opens Google's window straight away
+  const d=await gcalSrv('token');
+  if(gcalWho()!==me||GCAL.connected) return;                          // signed out meanwhile, or connected by hand
+  if(gcalNotSetUp(d)){ GCAL.ready=false; render(); return; }          // the server piece is not set up yet
+  if(d.status===401||d.status===403) return;                          // signed out, or not part of an agency: nothing to retry
+  if(d.status===200) GCAL.ready=true;
+  if(d.access_token){ gcalApply(d); render(); gcalFetch(true); return; }
+  if(d.status===200&&d.connected===false){
+    if(d.reason==='expired') toast('Your Google Calendar connection ended (Google expired or revoked it). Connect it again from the calendar.');
+    return; }
+  if(d.connected===true){                                             // on file, Google just did not answer: keep it and retry quietly
+    GCAL.ready=true; GCAL.kept=true; GCAL.connected=true; GCAL.email=d.email||''; GCAL.owner=me;
+    gcalBackoff(); gcalAutoRefresh(); render(); return; }
+  _gcalRestoredFor=''; _gcalRestoreTry++;                             // a passing problem (offline, server busy): ask again a little later
+  if(_gcalRestoreTry<=4) _gcalRestoreT=setTimeout(gcalRestore,Math.min(600000,30000*Math.pow(2,_gcalRestoreTry-1)));
 }
 function gcalConnect(){
-  if(!gcalReady()) return;
-  gcalLoadSdk(()=>{
+  if(!gcalReady()||GCAL.loading) return;
+  if(gcalSrvOn()&&GCAL.ready!==false) return gcalConnectKept();
+  gcalLoadSdk(()=>{                                                   // this session only: the demo view, or before the server piece is in
     const tc=google.accounts.oauth2.initTokenClient({
-      client_id:BACKEND.googleClientId,
-      scope:'https://www.googleapis.com/auth/calendar.events',
+      client_id:BACKEND.googleClientId, scope:GCAL_SCOPE,
       callback:(resp)=>{
         if(resp.error) return toast('Google sign-in was cancelled.');
-        GCAL.token=resp.access_token; GCAL.connected=true; gcalAutoRefresh();
+        GCAL.token=resp.access_token; GCAL.exp=Date.now()+Math.max(60,(+resp.expires_in||3600)-60)*1000;
+        GCAL.kept=false; GCAL.connected=true; GCAL.owner=gcalWho(); gcalAutoRefresh();
         logAudit('Connected Google Calendar','This browser only — events are never stored');
-        toast('Google Calendar connected. Loading your events…');
+        toast(gcalSrvOn()?'Google Calendar connected for this session only. Staying connected needs the server update.':'Google Calendar connected. Loading your events…');
         gcalFetch();
       }
     });
     tc.requestAccessToken();
   });
 }
-function gcalDisconnect(){
-  if(GCAL.token && window.google && google.accounts) try{ google.accounts.oauth2.revoke(GCAL.token,()=>{}); }catch(e){}
-  GCAL.token=null; GCAL.connected=false; GCAL.events=[];
-  logAudit('Disconnected Google Calendar',''); render(); toast('Google Calendar disconnected.');
+function gcalConnectKept(){                                           // v12.14: Google hands over a one-time code; the server keeps the connection
+  gcalLoadSdk(()=>{
+    let cc;
+    try{
+      cc=google.accounts.oauth2.initCodeClient({
+        client_id:BACKEND.googleClientId, scope:'openid '+GCAL_SCOPE, ux_mode:'popup',   // openid: tells the server which Google account this is
+        select_account:true,                                          // always ask which Google account (a shared computer may be signed in to someone else's)
+        callback:async(resp)=>{
+          if(!resp||resp.error||!resp.code) return toast('Google sign-in was cancelled.');
+          const me=gcalWho();
+          GCAL.loading=true; render();
+          const d=await gcalSrv('connect',{code:resp.code,origin:location.origin});
+          GCAL.loading=false;
+          if(gcalWho()!==me){ render(); return; }
+          if(d.access_token){
+            gcalApply(d); render();
+            logAudit('Connected Google Calendar','Stays connected until disconnected — events are never stored');
+            toast('Google Calendar connected'+(d.email?' ('+d.email+')':'')+'. It stays connected until you disconnect it.');
+            gcalFetch(true); return;
+          }
+          if(gcalNotSetUp(d)){ GCAL.ready=false; render(); return toast('Staying connected needs a server update that isn’t in yet. Click Connect Google Calendar again to connect for this session.'); }
+          render(); toast(d.error||'Google Calendar could not be connected. Try again in a moment.');
+        },
+        error_callback:(e)=>{ toast(e&&e.type==='popup_failed_to_open'?'Your browser blocked Google’s sign-in window. Allow pop-ups for this site, then connect again.':'Google sign-in was closed before it finished.'); }
+      });
+    }catch(e){ return toast('Could not start Google sign-in.'); }
+    cc.requestCode();
+  });
+}
+async function gcalDisconnect(){
+  if(GCAL.kept){                                                      // v12.14: on every device; only a confirmed answer counts
+    const d=await gcalSrv('disconnect');
+    if(!(d.status===200&&d.connected===false)) return toast(d.error||'Could not disconnect right now. Check your connection and try again.');
+  } else if(GCAL.token && window.google && google.accounts) try{ google.accounts.oauth2.revoke(GCAL.token,()=>{}); }catch(e){}
+  const kept=GCAL.kept; gcalClear();
+  logAudit('Disconnected Google Calendar',''); render(); toast(kept?'Google Calendar disconnected on every device.':'Google Calendar disconnected.');
 }
 async function gcalFetch(quiet){
-  if(!GCAL.token) return;
+  if(!GCAL.token&&!GCAL.kept) return;
+  const kept=GCAL.kept, who=GCAL.owner;                               // v12.14: as things were when this started
+  window._gcalLast=Date.now();                                        // a failed try counts too, so focusing the tab doesn't hammer Google
   GCAL.loading=true; render();
   try{
     const tmin=new Date(); tmin.setDate(tmin.getDate()-7);
     const tmax=new Date(); tmax.setDate(tmax.getDate()+45);
     const url='https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime'
       +'&timeMin='+encodeURIComponent(tmin.toISOString())+'&timeMax='+encodeURIComponent(tmax.toISOString())+'&maxResults=100&showDeleted=true';
-    const r=await fetch(url,{headers:{Authorization:'Bearer '+GCAL.token}});
-    if(r.status===401){ GCAL.token=null; GCAL.connected=false; GCAL.loading=false; render(); return toast('Google session expired — connect again.'); }
+    const r=await gcalApi(url,null,!quiet);                           // v12.14: renews the token when it has run out (a click never waits)
+    if(GCAL.owner!==who||!GCAL.connected||who!==gcalWho()){           // signed out, switched or disconnected meanwhile
+      if(GCAL.owner&&GCAL.owner!==gcalWho()) gcalClear();
+      GCAL.loading=false; render(); return; }
+    if(r.status===401){
+      GCAL.loading=false;
+      if(kept){ render(); return; }                                   // the renewal already said what happened, or retries later
+      GCAL.token=null; GCAL.connected=false; render(); return toast('Google session expired — connect again.'); }
     const d=await r.json();
     if(!r.ok){
       const msg=(d.error&&d.error.message)||('Google returned '+r.status);
@@ -2736,19 +2888,20 @@ async function gcalFetch(quiet){
   GCAL.loading=false; render();
 }
 function gcalPush(a){ // portal appointment → user's Google Calendar (UCI only, browser-side)
-  if(!GCAL.token) return;
+  if(!GCAL.token&&!GCAL.kept) return;
   const startIso=a.date+'T'+a.time+':00';
   const end=new Date(new Date(startIso).getTime()+(a.dur||30)*60000);
   const pad=n=>String(n).padStart(2,'0');
   const endIso=end.getFullYear()+'-'+pad(end.getMonth()+1)+'-'+pad(end.getDate())+'T'+pad(end.getHours())+':'+pad(end.getMinutes())+':00';
   // Google rejects a naive dateTime with 400 unless a timeZone accompanies it
   let tz='UTC'; try{ tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'; }catch(e){}
-  fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
-    method:'POST', headers:{Authorization:'Bearer '+GCAL.token,'Content-Type':'application/json'},
+  gcalApi('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
+    method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ summary:a.title+' — '+client(a.cid).init+' ('+client(a.cid).uci+')',
       location:a.loc||'', description:'Created by Spectrum Care Advisory OS · client identified by ID only',
       start:{dateTime:startIso,timeZone:tz}, end:{dateTime:endIso,timeZone:tz} })
-  }).then(async r=>{
+  },true).then(async r=>{
+    if(r.skipped) return toast('Saved here, but Google Calendar couldn\u2019t be reached, so it isn\u2019t on your Google Calendar yet.');
     if(r.ok){
       // show it on the Google lane straight away — no reconnect needed
       try{
@@ -2773,17 +2926,17 @@ function gcalPush(a){ // portal appointment → user's Google Calendar (UCI only
 }
 /* v6.6: portal edits follow through to Google — the sync runs both ways */
 async function gcalUpdate(a){
-  if(!GCAL.token||!a.gid) return false;
+  if((!GCAL.token&&!GCAL.kept)||!a.gid) return false;
   let tz='UTC'; try{ tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'; }catch(e){}
   const startIso=a.date+'T'+a.time+':00';
   const end=new Date(new Date(startIso).getTime()+(a.dur||30)*60000);
   const pad=n=>String(n).padStart(2,'0');
   const endIso=end.getFullYear()+'-'+pad(end.getMonth()+1)+'-'+pad(end.getDate())+'T'+pad(end.getHours())+':'+pad(end.getMinutes())+':00';
   try{
-    const r=await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+encodeURIComponent(a.gid),{
-      method:'PATCH', headers:{Authorization:'Bearer '+GCAL.token,'Content-Type':'application/json'},
+    const r=await gcalApi('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+encodeURIComponent(a.gid),{
+      method:'PATCH', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ summary:a.title+' — '+client(a.cid).init+' ('+client(a.cid).uci+')',
-        location:a.loc||'', start:{dateTime:startIso,timeZone:tz}, end:{dateTime:endIso,timeZone:tz} })});
+        location:a.loc||'', start:{dateTime:startIso,timeZone:tz}, end:{dateTime:endIso,timeZone:tz} })},true);
     if(!r.ok){ console.warn('[np-demo] gcal update failed',r.status); return false; }
     const g=GCAL.events.find(x=>x.id==='g_'+a.gid);
     if(g){ g.date=a.date; g.time=a.time; g.dur=a.dur||30; g.loc=a.loc||''; }
@@ -2791,10 +2944,10 @@ async function gcalUpdate(a){
   }catch(e){ console.warn('[np-demo] gcal update failed',e); return false; }
 }
 async function gcalDelete(a){
-  if(!GCAL.token||!a.gid) return false;
+  if((!GCAL.token&&!GCAL.kept)||!a.gid) return false;
   try{
-    const r=await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+encodeURIComponent(a.gid),{
-      method:'DELETE', headers:{Authorization:'Bearer '+GCAL.token}});
+    const r=await gcalApi('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+encodeURIComponent(a.gid),{
+      method:'DELETE'},true);
     if(!r.ok&&r.status!==410&&r.status!==404){ console.warn('[np-demo] gcal delete failed',r.status); return false; }
     GCAL.events=GCAL.events.filter(x=>x.id!=='g_'+a.gid);
     return true;
@@ -4781,6 +4934,7 @@ function signIn(role){
     renderNav(); render();
     setTimeout(()=>personPromptIfNeeded(0),500);                     // v12.13
     teamListEnsure();
+    gcalRestore();                                                   // v12.14: a Google Calendar connected earlier comes back by itself
   });
   idleReset();
   orgResolve().then(()=>accountTouch('login'));
@@ -4827,6 +4981,7 @@ async function signOut(){
   try{ const tk=sbTok(); if(tk&&BACKEND.url) fetch(BACKEND.url+'/auth/v1/logout',{method:'POST',keepalive:true,
     headers:{apikey:BACKEND.anon,Authorization:'Bearer '+tk}}).catch(()=>{}); }catch(e){}
   orgForget(); AUTH.session=null; saveAuth();
+  try{ gcalClear(); }catch(e){}                                      // v12.14: this tab forgets the token; the connection itself stays
   if(typeof tourEnd==='function') tourEnd();
   const f=el('tlFull'); if(f) f.remove();
   const i=el('inspFull'); if(i){ i.remove(); inspRun=null; }
@@ -7648,7 +7803,7 @@ function viewCalendar(){
     <div class="page-acts">
       ${gcalReady()?(GCAL.connected
         ?`<button class="btn ghost sm" onclick="gcalFetch()" title="Pull the latest events from Google">${GCAL.loading?'Refreshing…':'⟳ Refresh Google'}</button>
-           <button class="btn ghost sm" onclick="gcalDisconnect()">Google ✓ · Disconnect</button>`
+           <button class="btn ghost sm" onclick="gcalDisconnect()" title="${GCAL.kept?esc('Connected'+(GCAL.email?' as '+GCAL.email:'')+' \u00b7 stays connected until you disconnect'):'Connected for this session only'}">Google ✓ · Disconnect</button>`
         :`<button class="btn gold sm" onclick="gcalConnect()">${GCAL.loading?'Connecting…':'Connect Google Calendar'}</button>`):''}
       ${/* v9.96: sample data is a workspace setting, not a calendar one — it lives in Settings */''}
       <div class="seg"><button class="${state.calMode==='today'?'active':''}" onclick="state.calMode='today';render()">Today</button>
@@ -13875,17 +14030,18 @@ async function saveGcalEdit(id){
   const title=(el('geTitle').value||'').trim()||g.title;
   const date=el('geDate').value||g.date, time=el('geTime').value||g.time;
   const dur=Math.max(5,+el('geDur').value||g.dur||60), loc=(el('geLoc').value||'').trim();
-  if(!GCAL.connected||!GCAL.token) return toast('Reconnect Google Calendar to save changes.');
+  if(!GCAL.connected||(!GCAL.token&&!GCAL.kept)) return toast('Reconnect Google Calendar to save changes.');
   const gid=String(id).replace(/^g_/,'');
   const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
   const startIso=`${date}T${time}:00`;
   const endMin=toMin(time)+dur;
   const endIso=`${date}T${String(Math.floor(endMin/60)%24).padStart(2,'0')}:${String(endMin%60).padStart(2,'0')}:00`;
   try{
-    const r=await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(gid)}`,{
-      method:'PATCH',headers:{Authorization:'Bearer '+GCAL.token,'Content-Type':'application/json'},
+    const r=await gcalApi(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(gid)}`,{
+      method:'PATCH',headers:{'Content-Type':'application/json'},
       body:JSON.stringify(Object.assign({summary:title,location:loc},
-        g.allday?{}:{start:{dateTime:startIso,timeZone:tz},end:{dateTime:endIso,timeZone:tz}}))});
+        g.allday?{}:{start:{dateTime:startIso,timeZone:tz},end:{dateTime:endIso,timeZone:tz}}))},true);
+    if(r.skipped) return toast('Google Calendar couldn\u2019t be reached. Try again in a moment.');
     if(!r.ok){ console.warn('[np-demo] gcal edit failed',r.status); return toast('Google would not accept that change.'); }
   }catch(e){ console.warn('[np-demo] gcal edit failed',e); return toast('Could not reach Google Calendar.'); }
   g.title=title; g.date=date; g.time=time; g.dur=dur; g.loc=loc;
