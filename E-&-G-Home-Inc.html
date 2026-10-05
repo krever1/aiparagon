@@ -2483,25 +2483,25 @@ body{font-size:15px}
     </div>
 
     <div class="role-grid" id="roleGrid" style="display:none">
-      <button class="role-card" onclick="signIn('director')">
+      <button class="role-card" id="rcDir" onclick="signIn('director')">
         <div class="rc-ic" style="background:var(--navy-soft);color:var(--navy)">◈</div>
         <h3>Director</h3>
         <p>Full agency view: every client, staff performance, compliance exports and audit history.</p>
-        <div class="rc-who"><b>Ezra</b> · Executive Director</div>
+        <div class="rc-who" id="rcWhoD"><b>Agency director</b> · Executive Director</div>
       </button>
       <button class="role-card" onclick="signIn('staff')" style="position:relative">
         <span class="pill neutral" style="position:absolute;top:10px;right:10px;font-size:10.5px">Demo preview</span>
         <div class="rc-ic" style="background:var(--good-soft);color:#22614A">◧</div>
         <h3>Care staff</h3>
         <p>Today's shift: appointments, tasks, checklists and incident reporting for assigned clients.</p>
-        <div class="rc-who"><b>M. Reyes</b> · Direct Support Professional</div>
+        <div class="rc-who" id="rcWhoS"><b>Preview</b> · what care staff see</div>
       </button>
       <button class="role-card" onclick="signIn('family')" style="position:relative">
         <span class="pill neutral" style="position:absolute;top:10px;right:10px;font-size:10.5px">Demo preview</span>
         <div class="rc-ic" style="background:var(--gold-soft);color:#7A5E12">◇</div>
         <h3>Family member</h3>
         <p>One person only: their medications, appointments, documents and a line to the care team.</p>
-        <div class="rc-who"><b>Guardian (4023180)</b> · Guardian of Client 4023180</div>
+        <div class="rc-who" id="rcWhoF"><b>Preview</b> · what a family member sees</div>
       </button>
     </div>
 
@@ -2520,12 +2520,12 @@ body{font-size:15px}
       <div id="sideProg"></div>
       <div class="side-user" onclick="go('profile')" title="Open your profile">
         <div class="av" id="suAv">EZ</div>
-        <div class="su-t"><b id="suName">Ezra</b><small id="suRole">Director</small></div>
+        <div class="su-t"><b id="suName"></b><small id="suRole">Director</small></div>
         <span class="muted" style="font-size:13px">⚙</span>
       </div>
       <div class="side-foot">
         <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.12 beta</span></span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.13 beta</span></span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -2877,7 +2877,7 @@ async function memberRoleFetch(){
     if(!r.ok) return null;
     const v=await r.json().catch(()=>null);
     if(typeof v!=='string'||!v) return null;
-    return /^director$/i.test(v)?'director':'staff';
+    return v==='director'?'director':'staff';                        // v12.13: a job title saved as a role ("Director") is not director access
   }catch(e){ return null; }
 }
 /* v9.90: which agency am I? The account's membership answers it, and only the database
@@ -2892,7 +2892,9 @@ async function orgResolve(){
       if(r.status===401&&attempt===0){ if(await sbRefresh()) continue; }
       if(r.ok){
         const v=await r.json().catch(()=>null);
-        if(v&&typeof v==='string'){ ORG_ID=v; lsSet('np_org_id',ORG_ID); ORG_READY=true; MEMBER_ROLE=await memberRoleFetch(); return ORG_ID; }
+        if(v&&typeof v==='string'){ ORG_ID=v; lsSet('np_org_id',ORG_ID); ORG_READY=true; MEMBER_ROLE=await memberRoleFetch();
+          if(!MEMBER_ROLE){ await sleep(700); MEMBER_ROLE=await memberRoleFetch(); }   // v12.13: one more try before the role counts as unknown
+          return ORG_ID; }
       }
     }catch(e){}
     break;
@@ -2930,7 +2932,7 @@ async function sbRefresh(){
   })().finally(()=>{ SB_REFRESHING=null; });
   return SB_REFRESHING;
 }
-async function sbGet(t,q){ if(!sbOn()) return []; try{
+async function sbGetX(t,q){ if(!sbOn()) return null; try{
     let r=await fetch(`${BACKEND.url}/rest/v1/${t}?${ORG_UNSUPPORTED[t]?(q||'select=*'):orgScope(q)}`,{headers:sbH()});
     if(!r.ok){
       let b=''; try{ b=await r.text(); }catch(e){}
@@ -2940,7 +2942,7 @@ async function sbGet(t,q){ if(!sbOn()) return []; try{
       if(isOrgColErr(b)&&!ORG_UNSUPPORTED[t]){
         ORG_UNSUPPORTED[t]=true;
         console.warn('[np-demo] '+t+' has no org_id column — refusing to read it unscoped');
-        sbDown('read',t,'no org_id column'); return [];
+        sbDown('read',t,'no org_id column'); return null;
       }
       if(r.status===401&&await sbRefresh()){
         r=await fetch(`${BACKEND.url}/rest/v1/${t}?${orgScope(q)}`,{headers:sbH()});
@@ -2949,17 +2951,22 @@ async function sbGet(t,q){ if(!sbOn()) return []; try{
         for(let i=0;i<2&&!r.ok;i++){ await sleep(600*(i+1));
           try{ r=await fetch(`${BACKEND.url}/rest/v1/${t}?${ORG_UNSUPPORTED[t]?(q||'select=*'):orgScope(q)}`,{headers:sbH()}); }catch(e){}
         }
-        if(!r.ok){ sbDown('read',t,r.status); return []; }
+        if(!r.ok){ sbDown('read',t,r.status); return null; }
       }
-      if(!r.ok){ sbFail('read',t,`HTTP ${r.status} ${String(b).slice(0,160)}`); return []; }
+      if(!r.ok){ sbFail('read',t,`HTTP ${r.status} ${String(b).slice(0,160)}`); return null; }
     }
     const j=await r.json();
     if(!Array.isArray(j)){                                             // an error object with a 200 must not break boot
       if(j&&(j.message||j.code)) sbFail('read',t,String(j.message||j.code));
-      return [];
+      return null;
     }
     return j;
-  }catch(e){ sbFail('read',t,String(e&&e.message||e)); return []; } }
+  }catch(e){ sbFail('read',t,String(e&&e.message||e)); return null; } }
+/* v12.13: sbGet hands back [] whatever happened, so a failed read looks like an empty table.
+   Anything that reads a shared row in order to write it back uses sbGetStrict, which says
+   null when the read failed, so it never writes its own stale copy over everyone else's. */
+async function sbGet(t,q){ const r=await sbGetX(t,q); return r||[]; }
+async function sbGetStrict(t,q){ return sbGetX(t,q); }
 let SB_FAILS=[];                                                      // what did not save, and why
 let NET_BLOCKED=false;
 function isNetErr(d){ return /failed to fetch|networkerror|load failed|err_(blocked|failed)/i.test(String(d)); }
@@ -3092,8 +3099,104 @@ function sbPush(t,row){ if(!sbOn()) return Promise.resolve(false);
 function sbPushKeep(t,row,rec){ if(!sbOn()) return Promise.resolve(false);
   return sbSend('write',t,`${BACKEND.url}/rest/v1/${t}`,{method:'POST',headers:Object.assign(sbH(),{Prefer:'return=representation'}),
     onRow:x=>{ if(rec&&x&&x.id!=null) rec.dbId=x.id; }},row); }
-function sbUpsert(t,row){ if(!sbOn()) return Promise.resolve(false);
+function sbUpsertRaw(t,row){ if(!sbOn()) return Promise.resolve(false);
   return sbSend('upsert',t,`${BACKEND.url}/rest/v1/${t}`,{method:'POST',headers:{...sbH(),Prefer:'return=minimal,resolution=merge-duplicates'}},row); }
+/* v12.13: an agency's settings rows (np_demo_program) are shared by everyone in it. A save used to
+   write this page's whole copy, so anything a colleague saved after this page loaded was lost: a
+   staff member's acknowledgement, a progress note, a list entry. In a signed-in workspace a save
+   now applies only what changed on this page since it last read or wrote the row, on top of the
+   latest copy (a three-way merge), so both people's changes are kept. */
+function sbUpsert(t,row){
+  if(t==='np_demo_program'&&row&&row.key&&row.value&&typeof row.value==='object'&&isRealSession()) return progSave(row);
+  return sbUpsertRaw(t,row);
+}
+function isRealSession(){ try{ return realSession(); }catch(e){ return false; } }
+let PROG_BASE={};                                                    // key -> JSON of the copy this page's version was built from
+let PROG_READ=false;                                                 // the settings rows were read in full when the page loaded
+function canon(v){
+  if(Array.isArray(v)) return '['+v.map(canon).join(',')+']';
+  if(v&&typeof v==='object') return '{'+Object.keys(v).filter(k=>v[k]!==undefined).sort().map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}';
+  return v===undefined?'~':JSON.stringify(v);
+}
+function jeq(a,b){ return canon(a)===canon(b); }
+const isPlainObj=x=>!!x&&typeof x==='object'&&!Array.isArray(x);
+function arrIdKey(...arrs){                                          // the field that names each item, if there is one
+  const all=[].concat(...arrs);
+  if(!all.length||!all.every(isPlainObj)) return null;
+  for(const k of ['id','key','t','q','g','n','name','title','tid','sid','cid']){
+    if(!all.every(x=>typeof x[k]==='string'||typeof x[k]==='number')) continue;
+    if(arrs.every(a=>new Set(a.map(x=>String(x[k]))).size===a.length)) return k;
+  }
+  return null;
+}
+function mergeArr(b,m,t){                                            // b undefined: the starting copy is not known, so nothing is removed
+  const idk=arrIdKey(b||[],m,t);
+  const out=[], seen=new Set(), push=(k,v)=>{ if(v!==undefined&&!seen.has(k)){ seen.add(k); out.push(v); } };
+  if(idk){
+    const id=x=>String(x[idk]);
+    const bm=new Map((b||[]).map(x=>[id(x),x])), mm=new Map(m.map(x=>[id(x),x])), tm=new Map(t.map(x=>[id(x),x]));
+    m.forEach(x=>{ const k=id(x); push(k, b?merge3(bm.get(k),x,tm.get(k)):(tm.has(k)?merge3(undefined,x,tm.get(k)):x)); });
+    t.forEach(x=>{ const k=id(x); if(seen.has(k)) return;
+      if(b&&bm.has(k)&&!mm.has(k)){ if(!jeq(bm.get(k),x)) push(k,x); return; }   // removed here; kept only if they changed it meanwhile
+      push(k,x); });
+    return out;
+  }
+  const bs=new Set((b||[]).map(canon)), ms=new Set(m.map(canon)), ts=new Set(t.map(canon));
+  m.forEach(x=>{ const k=canon(x); if(b&&bs.has(k)&&!ts.has(k)) return; push(k,x); });           // removed by them
+  t.forEach(x=>{ const k=canon(x); if(b&&bs.has(k)&&!ms.has(k)) return; push(k,x); });           // removed here
+  return out;
+}
+function merge3(b,m,t){                                              // b: the copy both started from · m: this page · t: the database now
+  if(jeq(m,b)) return t;                                             // not changed here: theirs
+  if(jeq(t,b)) return m;                                             // not changed there: ours
+  if(jeq(m,t)) return m;
+  if(m===undefined) return t;                                        // removed here, changed there: keep their version, whole
+  if(t===undefined) return m;                                        // removed there, changed here: keep this version, whole
+  if(Array.isArray(m)&&Array.isArray(t)) return mergeArr(Array.isArray(b)?b:undefined,m,t);
+  if(isPlainObj(m)&&isPlainObj(t)){
+    const bb=isPlainObj(b)?b:undefined, out={};
+    new Set([...Object.keys(m),...Object.keys(t),...(bb?Object.keys(bb):[])]).forEach(k=>{
+      const r=bb?merge3(bb[k],m[k],t[k]):(m[k]===undefined?t[k]:t[k]===undefined?m[k]:merge3(undefined,m[k],t[k]));
+      if(r!==undefined) out[k]=r;
+    });
+    return out;
+  }
+  return m;                                                          // one value changed on both sides: this save wins
+}
+function pruneUnchanged(b,m){                                        // the row was removed meanwhile: keep only what changed here, each entry whole
+  const out={};
+  Object.keys(m).forEach(k=>{
+    const bv=b[k], mv=m[k];
+    if(jeq(bv,mv)) return;
+    if(isPlainObj(bv)&&isPlainObj(mv)){ const o={}; Object.keys(mv).forEach(i=>{ if(!jeq(bv[i],mv[i])) o[i]=mv[i]; }); if(Object.keys(o).length) out[k]=o; return; }
+    if(Array.isArray(bv)&&Array.isArray(mv)){ const bs=new Set(bv.map(canon)); const a=mv.filter(x=>!bs.has(canon(x))); if(a.length) out[k]=a; return; }
+    out[k]=mv;
+  });
+  return Object.keys(out).length?out:null;
+}
+let PROG_READ_FAILED=false, _progWarned=0;
+function progForget(keep){ Object.keys(PROG_BASE).forEach(k=>{ if(!(keep||[]).includes(k)) delete PROG_BASE[k]; }); }   // after this page removes rows itself
+function progFlush(maxMs){                                           // wait for settings saves still on their way
+  return Promise.race([Promise.all(Object.values(_mergeQ)),new Promise(r=>setTimeout(r,maxMs||5000))]);
+}
+function progSave(row){
+  const key=row.key; let mine;
+  /* the agency's settings never loaded on this page, so what it holds is built-in sample data:
+     saving it would mix that into the agency's real settings */
+  if(PROG_READ_FAILED){
+    if(Date.now()-_progWarned>4000){ _progWarned=Date.now(); toast('This page could not load the agency\u2019s settings \u2014 reload the page before making changes. Nothing was saved.'); }
+    console.warn('[np-demo] settings save refused ('+key+'): the settings rows did not load');
+    return Promise.resolve(false);
+  }
+  try{ mine=JSON.parse(JSON.stringify(row.value)); }catch(e){ return sbUpsertRaw('np_demo_program',row); }
+  return programMerge(key,(cur,exists)=>{
+    const known=Object.prototype.hasOwnProperty.call(PROG_BASE,key);   // read when the save runs, after any earlier save of this row
+    const base=known?JSON.parse(PROG_BASE[key]):(PROG_READ?{}:undefined);
+    if(!exists&&isPlainObj(base)&&Object.keys(base).length&&isPlainObj(mine)) return pruneUnchanged(base,mine);   // someone removed the row (e.g. erased the workspace)
+    const out=merge3(base,mine,exists&&cur&&typeof cur==='object'?cur:{});
+    return (out&&typeof out==='object')?out:mine;
+  },()=>{ PROG_BASE[key]=JSON.stringify(mine); });                   // this page's copy now matches what it has saved
+}
 function sbPatch(t,id,patch){ if(!sbOn()) return Promise.resolve(false);
   const scope=(ORG_ID&&!ORG_UNSUPPORTED[t])?`&org_id=eq.${encodeURIComponent(ORG_ID)}`:'';     // v12.11: this agency only
   return sbSend('patch',t,`${BACKEND.url}/rest/v1/${t}?id=eq.${encodeURIComponent(id)}${scope}`,{method:'PATCH',headers:sbH()},patch); }
@@ -3435,13 +3538,13 @@ function cnDel(cid,i){
 }
 function addClientNote(cid){
   const v=el('cnNew').value.trim(); if(!v) return;
-  (CLIENT_NOTES[cid]=CLIENT_NOTES[cid]||[]).unshift({text:v,by:ME[state.role].name,at:nowStamp()});
-  sbPush('np_demo_client_notes',{cid, note:v, noted_by:ME[state.role].name});
+  (CLIENT_NOTES[cid]=CLIENT_NOTES[cid]||[]).unshift({text:v,by:actorName(),at:nowStamp()});
+  sbPush('np_demo_client_notes',{cid, note:v, noted_by:actorName()});
   logAudit('Added internal note',client(cid).uci);
   const mentioned=mentionTargets(v);
   mentioned.forEach(st=>{
-    SYS_NOTIFS.unshift({t:'You were mentioned',s:`${st.init} · note on ${client(cid).uci} by ${ME[state.role].name}`,at:nowStamp(),k:'msg'});
-    sbPush('np_demo_notifications',{title:'You were mentioned',body:`${st.init} · note on ${client(cid).uci} by ${ME[state.role].name}`,kind:'msg',for_staff:st.id});
+    SYS_NOTIFS.unshift({t:'You were mentioned',s:`${st.init} · note on ${client(cid).uci} by ${actorName()}`,at:nowStamp(),k:'msg'});
+    sbPush('np_demo_notifications',{title:'You were mentioned',body:`${st.init} · note on ${client(cid).uci} by ${actorName()}`,kind:'msg',for_staff:st.id});
     logAudit('Mention notification',`${st.init} · ${client(cid).uci}`);
   });
   if(mentioned.length) renderNav();
@@ -3524,9 +3627,9 @@ const DOCS = [
 
 let FAQ = [
   {q:'A medication was refused — what do I record?', a:'Mark it Refused on the paper MAR sheet with a short note on what the client said or did, and tell the shift lead before end of shift. Do not re-offer without checking the order. If it is refused twice in a row, the nurse needs to know the same day.', by:'Nell Harding, RN · updated June 2026'},
-  {q:'When does an incident report have to be filed?', a:'Within one hour of the event for anything involving injury, a medication error, a police or ambulance call, or an allegation. Everything else goes in before the end of your shift. The report guide walks through each type.', by:'Ezra · updated May 2026'},
-  {q:'Can I text a family member from my own phone?', a:'No. All family communication goes through the portal messages so it is logged. If a guardian calls your personal phone, take the message and reply from the portal.', by:'Ezra · updated March 2026'},
-  {q:'Who can see the notes I write on an appointment?', a:'Admin and staff assigned to that client. Family members see appointment time, location and any note you explicitly mark as shared with family.', by:'Ezra · updated March 2026'},
+  {q:'When does an incident report have to be filed?', a:'Within one hour of the event for anything involving injury, a medication error, a police or ambulance call, or an allegation. Everything else goes in before the end of your shift. The report guide walks through each type.', by:'R. Castillo · updated May 2026'},
+  {q:'Can I text a family member from my own phone?', a:'No. All family communication goes through the portal messages so it is logged. If a guardian calls your personal phone, take the message and reply from the portal.', by:'R. Castillo · updated March 2026'},
+  {q:'Who can see the notes I write on an appointment?', a:'Admin and staff assigned to that client. Family members see appointment time, location and any note you explicitly mark as shared with family.', by:'R. Castillo · updated March 2026'},
   {q:'Where do medication records live?', a:'On the paper MAR sheets only — print blanks from Documents & templates. Nothing about medications is entered into the portal during the pilot. The signed paper sheet in the med room binder is the record.', by:'Nell Harding, RN · updated February 2026'}
 ];
 
@@ -3553,10 +3656,10 @@ const ONBOARD = [
 
 const THREADS = [
   {id:'th1', who:'Maria Reyes', sub:'4023180 — transport for dental visit', role:'Staff', last:'Confirmed, I can take him at 1:30.', unread:1,
-   msgs:[{me:1,t:'4023180 has a dental cleaning Friday at 2pm. Can you cover transport?',w:'Ezra',at:'Yesterday 3:20 PM'},
+   msgs:[{me:1,t:'4023180 has a dental cleaning Friday at 2pm. Can you cover transport?',w:'Rosa Castillo',at:'Yesterday 3:20 PM'},
          {me:0,t:'Confirmed, I can take him at 1:30.',w:'Maria Reyes',at:'Yesterday 4:05 PM'}]},
   {id:'th2', who:'Guardian on file (4023180)', sub:'4023180 — visit summary', role:'Guardian', last:'Thank you for letting me know.', unread:0,
-   msgs:[{me:1,t:'Wanted to let you know the dental visit is booked for Friday afternoon. I will send a summary after.',w:'Ezra',at:'Today 8:05 AM'},
+   msgs:[{me:1,t:'Wanted to let you know the dental visit is booked for Friday afternoon. I will send a summary after.',w:'Rosa Castillo',at:'Today 8:05 AM'},
          {me:0,t:'Thank you for letting me know.',w:'Guardian (4023180)',at:'Today 8:31 AM'}]}
 ];
 
@@ -3565,9 +3668,9 @@ const AUDIT = [
   {at:'Today 07:58', who:'M. Reyes', act:'Signed in', obj:'Maple House workstation'},
   {at:'Yesterday 19:52', who:'G. Okonjo', act:'Created incident report', obj:'Client 6259400 · Fall'},
   {at:'Yesterday 17:40', who:'N. Harding', act:'Added internal note', obj:'2911770 · pre-visit reminder'},
-  {at:'Yesterday 14:03', who:'Ezra', act:'Exported compliance packet', obj:'All clients · Q2 2026'},
+  {at:'Yesterday 14:03', who:'R. Castillo', act:'Exported compliance packet', obj:'All clients · Q2 2026'},
   {at:'2 days ago 11:20', who:'D. Clarke', act:'Uploaded document', obj:'Client 2911770 · INR results'},
-  {at:'2 days ago 09:14', who:'Ezra', act:'Changed role permissions', obj:'T. Ibarra → Direct Support Professional'}
+  {at:'2 days ago 09:14', who:'R. Castillo', act:'Changed role permissions', obj:'T. Ibarra → Direct Support Professional'}
 ];
 
 /* ══════════════ STATE ══════════════ */
@@ -3590,7 +3693,7 @@ const NAV = {
 };
 
 const ME = {
-  director:{name:'Ezra', init:'EZ', role:'Executive Director', label:'Director view'},
+  director:{name:'Rosa Castillo', init:'RC', role:'Executive Director', label:'Director view'},
   staff:{name:'Maria Reyes', init:'MR', role:'Direct Support Professional · Maple House', label:'Staff view'},
   family:{name:'Guardian on file', init:'DW', role:'Guardian of Client 4023180', label:'Family view'}
 };
@@ -3672,7 +3775,7 @@ const client = id => CLIENTS.find(c=>c.id===id);
 const staff  = id => STAFF.find(s=>s.id===id);
 const visibleClients = () => {
   let base = state.role==='family' ? CLIENTS.filter(c=>c.id==='c1') : CLIENTS;
-  if(state.role==='staff'){ const acl=staffAccess(meSid()); if(acl) base=base.filter(c=>acl.includes(c.id)); }
+  if(state.role==='staff'){ const ms=meSid(); if(ms===null) return []; const acl=staffAccess(ms); if(acl) base=base.filter(c=>acl.includes(c.id)); }
   return base.filter(c=>!hid('client',c.id));
 };
 const visibleStaff = () => STAFF.filter(st=>!hid('staff',st.id));
@@ -3854,10 +3957,117 @@ const visShifts = () => shiftsUnique(SHIFTS.filter(s=>staff(s.sid)&&!hid('shift'
 const visIncidents = () => INCIDENTS.filter(i=>client(i.cid)&&visibleClients().some(c=>c.id===i.cid));
 const visAppts = () => APPTS.filter(a=>!hid('appt',a.id)&&client(a.cid)&&visibleClients().some(c=>c.id===a.cid)&&calMine(a));
 const visThreads = () => THREADS.filter(t=>!t.cid||(client(t.cid)&&visibleClients().some(c=>c.id===t.cid))).filter(t=>!hid('thread',t.id))                                       // sample threads hide; real conversations never do
-  .filter(t=>{ if(state.role!=='staff') return true;                 // staff see threads addressed to them, house-wide threads, and ones they started
-    const me=ME.staff.name; return t.who===me||t.role==='Group'||(t.msgs||[]).some(m=>m.w===me)||(USERS[(AUTH.email||'').toLowerCase()]||{}).sid&&t.who===stName(staff(meSid())||{}); });
+  .filter(t=>threadMine(t));
+/* v12.13: a conversation belongs to the people in it. A staff member sees the ones they started,
+   the ones addressed to them or to their house, and any they have written in; directors oversee
+   every conversation in the agency. Each one is named from the viewer's own side. Sent to someone
+   by sign-in email or staff record, never by a name that could belong to someone else. */
+function isSampleThread(t){ return !!t&&(SAMPLE.thread||[]).includes(String(t.id)); }
+function homeMatch(home,house){ return !!home&&!!house&&(home===house||home==='All homes'); }   // "All homes" staff belong to every house
+function threadKind(t){ const k=String((t&&(t.toKind||t.role))||'').toLowerCase(); return ['director','staff','group','guardian'].includes(k)?k:'staff'; }
+function threadTo(t){                                                // {kind, ref}: a staff id, a house, or a director's email
+  const kind=threadKind(t); let ref=(t&&t.toRef)||'';
+  if(!ref&&kind==='staff'){ const st=STAFF.find(x=>x.name===t.who); if(st) ref=st.id; }               // threads saved before v12.13
+  if(!ref&&kind==='group'&&/ team$/.test(t.who||'')) ref=String(t.who).replace(/ team$/,'');
+  return {kind,ref};
+}
+function threadMine(t){
+  if(!realSession()||isSampleThread(t)){                             // the sample conversations keep their old rule
+    if(state.role!=='staff') return true;
+    const me=ME.staff.name; return t.who===me||t.role==='Group'||(t.msgs||[]).some(m=>m.w===me)||(USERS[(AUTH.email||'').toLowerCase()]||{}).sid&&t.who===stName(staff(meSid())||{});
+  }
+  if(state.role==='director') return true;
+  const em=String(AUTH.email||'').toLowerCase(), to=threadTo(t);
+  if(state.role==='family') return to.kind==='guardian';
+  if(t.from&&t.from===em) return true;                              // I started it
+  if((t.msgs||[]).some(m=>m.me)) return true;                       // I have written in it
+  const sid=meSid(), st=sid&&staff(sid);
+  if(to.kind==='staff') return !!sid&&to.ref===sid;
+  if(to.kind==='group') return !to.ref||homeMatch(st&&st.home,to.ref);   // a house's thread, or one for the whole team
+  return false;                                                     // between other people
+}
+function threadView(t){                                              // {title,label} as the viewer sees it
+  const base={title:(t&&t.who)||'',label:(t&&t.role)||''};
+  if(!t||!realSession()||isSampleThread(t)) return base;
+  const em=String(AUTH.email||'').toLowerCase(), to=threadTo(t);
+  if(to.kind==='group'||to.kind==='guardian') return base;
+  const first=(t.msgs||[])[0]||{};
+  if(t.from?t.from===em:!!first.me) return base;                    // I started it: named for the person I wrote to
+  const fromName=t.fromName||first.w||'';
+  if(!fromName) return base;
+  const fromLabel=(t.fromRole||first.role)==='director'?'Director':'Staff';
+  const toMe=to.kind==='director'?(state.role==='director'&&(!to.ref||to.ref===em)):(!!to.ref&&to.ref===meSid());
+  return toMe?{title:fromName,label:fromLabel}:{title:fromName+' \u2192 '+base.title,label:base.label};
+}
+function msgIsMe(m){ return realSession()?!!m.me:(m.role?m.role===state.role:!!m.me); }
+function sidEmails(sid){                                             // a staff member's sign-in and work addresses
+  const out=new Set(); const st=staff(sid); if(st&&st.email) out.add(String(st.email).toLowerCase());
+  Object.entries(USERS).forEach(([em,b])=>{ if(b&&b.sid===sid&&/@/.test(em)) out.add(String(em).toLowerCase()); });
+  return [...out];
+}
+function teamDirectors(){                                            // the agency's other directors, from the team list
+  const me=String(AUTH.email||'').toLowerCase(), out=[];
+  Object.entries(USERS).forEach(([em,u])=>{ em=String(em).toLowerCase(); if(u&&u.role==='director'&&/@/.test(em)&&em!==me) out.push({email:em,name:u.name||nameFromEmail(em),title:u.title||'Director'}); });
+  return out.sort((a,b)=>a.name.localeCompare(b.name));
+}
+function directorEmails(){                                           // where "the director" is emailed: the agency's alerts address first
+  if(AGENCY_EMAIL) return [String(AGENCY_EMAIL).toLowerCase()];
+  const ds=Object.entries(USERS).filter(([em,u])=>u&&u.role==='director'&&/@/.test(em)).map(([em])=>String(em).toLowerCase());
+  if(ds.length) return ds;
+  if(AGENCY_PROFILE&&AGENCY_PROFILE.email) return [String(AGENCY_PROFILE.email).toLowerCase()];
+  return (!realSession()&&ONB.email)?[ONB.email]:[];
+}
+function threadPeople(t){                                            // everyone a conversation is for, by email
+  const out=new Set(), to=threadTo(t);
+  if(t.from) out.add(t.from);
+  (t.msgs||[]).forEach(m=>{
+    if(m.email) out.add(m.email);
+    else if(m.w&&!m.me){                                             // saved before the database update: known only by name
+      const st=STAFF.find(x=>x.name===m.w);
+      if(st) sidEmails(st.id).forEach(e=>out.add(e));
+      else Object.entries(USERS).forEach(([em,u])=>{ if(u&&u.name===m.w&&/@/.test(em)) out.add(String(em).toLowerCase()); });
+    }
+  });
+  if(to.kind==='staff'&&to.ref) sidEmails(to.ref).forEach(e=>out.add(e));
+  if(to.kind==='director'){ if(to.ref&&/@/.test(to.ref)) out.add(String(to.ref).toLowerCase()); else teamDirectors().forEach(d=>out.add(d.email)); }
+  if(to.kind==='group'&&to.ref) STAFF.filter(x=>homeMatch(x.home,to.ref)).forEach(x=>sidEmails(x.id).forEach(e=>out.add(e)));
+  return [...out];
+}
+function msgOtherSide(t){                                           // who a message is going to, as the sender sees it
+  const to=threadTo(t); if(to.kind==='group'||to.kind==='guardian') return t.who;
+  const em=String(AUTH.email||'').toLowerCase(), first=(t.msgs||[])[0]||{};
+  const iStarted=t.from?t.from===em:!!first.me;
+  return iStarted?t.who:(t.fromName||first.w||t.who);
+}
+function msgAudience(t){                                             // which staff member the in-portal notice is for (directors see them all)
+  const to=threadTo(t);
+  if(to.kind==='group') return to.ref?'@home:'+to.ref:null;
+  const mySid=realSession()?meSid():null;
+  if(to.kind==='staff'&&to.ref&&to.ref!==mySid) return to.ref;       // the staff member it is addressed to
+  const em=String(AUTH.email||'').toLowerCase(), first=(t.msgs||[])[0]||{}, creator=t.from||first.email||'';
+  if(creator&&creator!==em){                                         // otherwise back to whoever started it
+    const u=USERS[creator]||{}, st=(u.sid&&staff(u.sid))||STAFF.find(x=>String(x.email||'').toLowerCase()===creator);
+    if(st) return st.id;
+  }
+  if(!creator&&first.w&&!first.me){                                  // saved before the database update: known only by name
+    const st=STAFF.find(x=>x.name===first.w); if(st) return st.id;
+  }
+  return '@director';
+}
+/* v12.13: who a system notification is for. '@director' is for the directors, '@home:<house>' for
+   that house's staff, a staff id for that person, nothing for everyone. Directors see them all. */
+function notifFor(n){
+  if(!realSession()) return state.role!=='staff'||!n.sid||n.sid===meSid();
+  if(state.role==='director') return true;
+  const a=n.sid; if(!a) return true;
+  if(a==='@director'||state.role!=='staff') return false;
+  const sid=meSid(); if(!sid) return false;
+  if(a===sid) return true;
+  if(String(a).indexOf('@home:')===0){ const st=staff(sid); return !!st&&homeMatch(st.home,String(a).slice(6)); }
+  return false;
+}
 
-const meInit=()=>ME[state.role].name.split(' ').map(w=>w[0]+'.').join('');
+const meInit=()=>actorName().split(' ').map(w=>w[0]+'.').join('');
 
 /* ── fillable dropdowns ───────────────────────────────────────────────
    fillSelect() renders any picker with a "＋ Add new…" entry. Choosing it
@@ -3969,14 +4179,55 @@ function tblApply(view,rows,cols){
    of writing, so nothing identifying is ever stored. */
 function auditScrub(t){
   let s=String(t==null?'':t);
+  /* v12.13: whole names only, so a short name ("Ed") can never eat part of a word ("Edited").
+     In a signed-in workspace your own name stays as it is: the entry is already yours. */
+  const swap=(name,to)=>{ name=String(name||'').trim(); if(name.length<3||to==null) return;
+    const re=new RegExp('(^|[^A-Za-z0-9])'+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![A-Za-z0-9])','g');
+    s=s.replace(re,(m0,p)=>p+to); };
   try{
-    CLIENTS.forEach(c=>{ if(c.name) s=s.split(c.name).join(c.uci); });
-    STAFF.forEach(x=>{ if(x.name) s=s.split(x.name).join(x.init); });
-    Object.keys(ME).forEach(k=>{ if(ME[k].name) s=s.split(ME[k].name).join(ME[k].label); });
+    CLIENTS.forEach(c=>swap(c.name,c.uci));
+    STAFF.forEach(x=>swap(x.name,x.init));
+    if(!realSession()) Object.keys(ME).forEach(k=>swap(ME[k].name,ME[k].label));
   }catch(e){}
   return s;
 }
-function auditActor(){ return (ME[state.role]&&ME[state.role].name)||state.role; }
+/* v12.13: who is actually signed in. Every name the portal writes onto a record (signatures,
+   the audit trail, notes, messages, sign-offs, acknowledgements) comes from here. It is worked
+   out from the signed-in account's own email: the agency's team list first, then a staff record
+   with that email, then the agency owner's profile if it is theirs. It never falls back to the
+   built-in sample people, and never to whoever used this browser before. */
+let PERSON=null;                                                     // {email,name,named,title,sid,init}
+let AGENCY_PROFILE=null;                                             // the agency owner's record ('profile')
+let AGENCY_EMAIL='';                                                 // where the agency's digests and alerts go ('email')
+const realSession=()=>sbOn()&&sbAuthed()&&!!AUTH&&AUTH.mode==='supabase';
+function nameFromEmail(e){ const l=String(e||'').split('@')[0]||''; return l.split(/[._+-]+/).filter(Boolean).map(w=>w[0].toUpperCase()+w.slice(1)).join(' ')||'Signed-in user'; }
+function initialsOf(n){ const p=String(n||'').trim().split(/\s+/).filter(Boolean); if(!p.length) return '··'; return ((p[0][0]||'')+(p[1]?p[1][0]:(p[0][1]||''))).toUpperCase(); }
+function isAgencyOwner(){ const em=String(AUTH.email||'').toLowerCase(); return !AGENCY_PROFILE||!AGENCY_PROFILE.email||String(AGENCY_PROFILE.email).toLowerCase()===em; }
+function resolvePerson(){
+  if(!realSession()){ PERSON=null; return null; }
+  const email=String(AUTH.email||'').toLowerCase();
+  const u=USERS[email]||{};
+  const st=(u.sid&&staff(u.sid))||STAFF.find(x=>String(x.email||'').toLowerCase()===email)||null;
+  const own=(AGENCY_PROFILE&&String(AGENCY_PROFILE.email||'').toLowerCase()===email)?AGENCY_PROFILE:null;
+  let name=u.name||(st&&st.name)||(own&&own.name)||'';
+  const named=!!name;
+  if(!name) name=lsGet('np_me_name')||nameFromEmail(email);
+  const title=u.title||(st&&st.role)||(own&&own.roleTitle)||'';
+  PERSON={email,name,named,title,sid:st?st.id:'',init:initialsOf(name)};
+  if(named) lsSet('np_me_name',name);
+  return PERSON;
+}
+function actorName(){ if(realSession()){ const p=PERSON||resolvePerson(); if(p&&p.name) return p.name; } return (ME[state.role]&&ME[state.role].name)||state.role; }
+function greetName(){ return sbOn()?(lsGet('np_me_name')||''):(ONB.name||''); }
+function auditActor(){ return actorName(); }
+/* v12.13: a director looking at the staff or family view is previewing it. Nothing is saved in a
+   staff member's name while they do: acknowledgements, credentials, tasks, messages. */
+function previewing(){ return realSession()&&state.role!=='director'&&roleFor()==='director'; }
+function previewBlock(){
+  if(!previewing()) return false;
+  toast('You are previewing the '+(state.role==='family'?'family':'staff')+' view \u2014 switch back to Director to do this in your own name.');
+  return true;
+}
 let CHG_CATS={'Note':'📝','Policy':'📋','Maintenance':'🔧','Meeting':'🗓','Other':'▤'};
 function chgCatsSave(){ sbUpsert('np_demo_program',{key:'chgcats',value:{map:CHG_CATS},updated_by:auditActor()}); }
 function chgEntryForm(){
@@ -4300,14 +4551,14 @@ function brandName(){
 }
 function applySetup(){
   const lt=el('loginTitle');
-  if(lt) lt.textContent=ONB.name?('Welcome back, '+String(ONB.name).split(' ')[0]):'Choose a view';
+  if(lt) lt.textContent=greetName()?('Welcome back, '+String(greetName()).split(' ')[0]):'Sign in';
   const NAME=brandName();
   const b=document.querySelector('.brand b'); if(b) b.textContent=NAME;
   const lm=document.querySelector('#login .login-mark span:last-child'); if(lm) lm.textContent=NAME;
   const wm=document.querySelector('#welRoot .brand-name'); if(wm) wm.textContent=NAME;   // welcome screen
   const om=document.querySelector('#onbRoot .brand-name'); if(om) om.textContent=NAME;   // onboarding
   document.title=NAME==='Spectrum Care Advisory OS'?(NAME+' — Pilot'):(NAME+' — Spectrum Care Advisory OS');
-  if(ONB.name && ONB.role && ME[ONB.role]){
+  if(!sbOn() && ONB.name && ONB.role && ME[ONB.role]){            // v12.13: with accounts, names come from the account
     ME[ONB.role].name=ONB.name;
     const parts=String(ONB.name).trim().split(/\s+/);
     ME[ONB.role].init=(parts[0][0]+(parts[1]?parts[1][0]:parts[0][1]||'')).toUpperCase();
@@ -4432,7 +4683,12 @@ async function joinBoot(){
       body:JSON.stringify({p_token:JOIN_TOKEN})});
     const peek=pr.ok?((await pr.json().catch(()=>[]))||[])[0]:null;
     const inv=peek?{email:peek.email,org:peek.org_name,role_title:peek.role_title,sid:peek.staff_id||'',
-      name:peek.staff_name||'staff',token:JOIN_TOKEN,used_at:peek.used?1:null}:null;
+      name:peek.staff_name||'staff',token:JOIN_TOKEN,used_at:peek.used?1:null,access:peek.access==='director'?'director':'staff'}:null;
+    if(inv&&inv.access!=='director'){                                 // v12.13: is this a director invite?
+      try{ const ar=await fetch(`${BACKEND.url}/rest/v1/rpc/np_invite_access`,{method:'POST',
+        headers:{apikey:BACKEND.anon,Authorization:'Bearer '+BACKEND.anon,'Content-Type':'application/json'},body:JSON.stringify({p_token:JOIN_TOKEN})});
+        if(ar.ok){ const v=await ar.json().catch(()=>null); if(v==='director') inv.access='director'; } }catch(e){}
+    }
     if(!inv){ showLoginPage(); toast('That invite link is not valid — ask your director for a new one.'); return; }
     if(inv.used_at){ showLoginPage(); const e0=el('liEmail'); if(e0&&inv.email) e0.value=inv.email; toast('That invite was already used — just sign in.'); return; }
     window._joinInvite=inv;
@@ -4458,6 +4714,7 @@ function bootPortal(){
     signIn('director');                                               // no welcome, no login, no agreement — just the sample workspace
     return;
   }
+  if(sbOn()) ME.director={name:'Your director',init:'DR',role:'Agency director',label:'Director view'};   // v12.13: no built-in name in a real workspace (before the invite page too)
   if(JOIN_TOKEN&&sbOn()){                                             // invited staff land on their own registration page
     hideWelcome(); hideOnboarding();
     el('login').style.display='flex';
@@ -4482,7 +4739,8 @@ function bootPortal(){
        or the sign-in page if the account turns out not to have one. */
     ORG_READY=false; HYDRATING=sbHydrate();
     whenHydrated(()=>{
-      if(roleFor()&&authReady()&&AUTH.session) signIn(roleFor());
+      const r=roleFor()||(ORG_ID?'staff':null);                      // v12.13: in an agency but role unknown: the staff view, never the director's
+      if(r&&authReady()&&AUTH.session) signIn(r);
       else { el('login').style.display='flex'; showLoginPage(); }
     },6000);
     return;
@@ -4508,7 +4766,9 @@ function bootPortal(){
   if(!showWelcome() && !showOnboarding()){ el('login').style.display='flex'; showLoginPage(); }   // first run
 }
 
-function signIn(role){ loadNotifPrefs(); loadPilot(); loadDocAct(); loadProgram(); AUTH.signedIn=true;
+function signIn(role){
+  if(realSession()&&role==='director'){ const rr=roleFor(); if(rr&&rr!=='director') role=rr; }   // v12.13: only the agency's directors open the director view
+  loadNotifPrefs(); loadPilot(); loadDocAct(); loadProgram(); AUTH.signedIn=true;
   bindIdentity(role);
   whenHydrated(()=>{
     bindIdentity(role);
@@ -4519,6 +4779,8 @@ function signIn(role){ loadNotifPrefs(); loadPilot(); loadDocAct(); loadProgram(
       toast('Could not reach the backend — showing what is cached. Reload once it is back.');
     } else pilotGate();
     renderNav(); render();
+    setTimeout(()=>personPromptIfNeeded(0),500);                     // v12.13
+    teamListEnsure();
   });
   idleReset();
   orgResolve().then(()=>accountTouch('login'));
@@ -4557,7 +4819,9 @@ function idleReset(){
 }
 function setIdle(v){ IDLE_MIN=+v||0; lsSet('np_idle_min',String(IDLE_MIN)); userSetSave({idle:IDLE_MIN}); idleReset(); toast(IDLE_MIN?('Auto sign-out after '+IDLE_MIN+' minutes idle — just for your account.'):'Auto sign-out is off for your account.'); }
 ['click','keydown','mousemove','scroll','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{ if(AUTH.signedIn) idleReset(); },{passive:true}));
-function signOut(){
+async function signOut(){
+  /* v12.13: a change saved a moment ago finishes saving while this person is still signed in */
+  if(Object.keys(_mergeQ).length){ try{ await progFlush(3000); }catch(e){} }
   /* v12.11: end the session on the server as well, and reload afterwards so nothing the
      last account loaded stays in this tab's memory for whoever signs in next. */
   try{ const tk=sbTok(); if(tk&&BACKEND.url) fetch(BACKEND.url+'/auth/v1/logout',{method:'POST',keepalive:true,
@@ -4622,7 +4886,7 @@ function renderNav(){
     if(n.id==='tasks'){ const o=myTasks().filter(t=>t.stage!=='Done');
       if(o.length) badge=`<span class="badge" title="${o.length} open · ${o.filter(t=>t.due<=T).length} due today or earlier">${o.length}</span>`; }
     if(n.id==='incidents'){ const c=visIncidents().filter(i=>i.status!=='Closed').length; if(c) badge=`<span class="badge">${c}</span>`; }
-    if(n.id==='messages'){ const c=THREADS.reduce((a,t)=>a+t.unread,0); if(c) badge=`<span class="badge">${c}</span>`; }
+    if(n.id==='messages'){ const c=visThreads().reduce((a,t)=>a+t.unread,0); if(c) badge=`<span class="badge">${c}</span>`; }
     const gl=ICON_PATHS[NAV_ICON[n.id]]?ico(NAV_ICON[n.id]):`<span style="font-size:15px">${n.i}</span>`;
     return `<button class="nav-item ${state.view===n.id?'active':''}" onclick="go('${n.id}')"><span class="ni">${gl}</span>${esc(navLabel(n))}${badge}</button>`;
   }).join('');
@@ -6148,7 +6412,7 @@ function weeklySheet(cid){
 }
 function wkToggle(cid,i){
   const w=WEEKLY[cid][i]; w.d=w.d?0:1;
-  if(w.d){ w.by=ME[state.role].name; w.at=nowStamp(); } else { w.by=''; w.at=''; }
+  if(w.d){ w.by=actorName(); w.at=nowStamp(); } else { w.by=''; w.at=''; }
   sbPush('np_demo_checklist_logs',{cid, item:w.t, done:w.d, signed_by:w.d?w.by:null, signed_at:w.d?new Date().toISOString():null});
   chkSave();                                                            // the tick itself now survives a reload
   logAudit(w.d?'Completed weekly checklist item':'Unchecked weekly checklist item',`${client(cid).uci} · ${w.t}`);
@@ -7055,11 +7319,14 @@ function notifyRule(ev,title,body){
   const r=ruleOf(ev); if(!r.who.length) return;
   const all=r.who.includes('all'), dir=r.who.includes('director');
   const sids=all?STAFF.filter(st=>!hid('staff',st.id)).map(st=>st.id):r.who.filter(x=>x!=='director'&&x!=='all');
-  if(all||dir){ SYS_NOTIFS.unshift({t:title,s:body,at:nowStamp(),k:ev}); sbPush('np_demo_notifications',{title,body,kind:ev,for_staff:null}); }
-  sids.forEach(sid=>{ SYS_NOTIFS.unshift({t:title,s:body,at:nowStamp(),k:ev,sid}); sbPush('np_demo_notifications',{title,body,kind:ev,for_staff:sid}); });
+  /* v12.13: "Director" means the directors only (it used to be saved for everyone, so staff saw it),
+     and "All staff" is one notice for everyone rather than one each plus a copy */
+  if(all){ SYS_NOTIFS.unshift({t:title,s:body,at:nowStamp(),k:ev}); sbPush('np_demo_notifications',{title,body,kind:ev,for_staff:null}); }
+  else if(dir){ SYS_NOTIFS.unshift({t:title,s:body,at:nowStamp(),k:ev,sid:'@director'}); sbPush('np_demo_notifications',{title,body,kind:ev,for_staff:'@director'}); }
+  if(!all) sids.forEach(sid=>{ SYS_NOTIFS.unshift({t:title,s:body,at:nowStamp(),k:ev,sid}); sbPush('np_demo_notifications',{title,body,kind:ev,for_staff:sid}); });
   if(r.email){                                                       // email goes to each chosen person's sign-in address
     const emails=new Set();
-    if(dir||all){ if(ONB.email) emails.add(ONB.email); }
+    if(dir||all){ directorEmails().forEach(e=>emails.add(e)); }       // v12.13: the agency's directors, never whoever's browser this is
     sids.forEach(sid=>{ const st=staff(sid); if(st&&st.email) emails.add(st.email); const u=Object.entries(USERS).find(([em,b])=>b&&b.sid===sid); if(u) emails.add(u[0]); });
     emails.forEach(to=>sendPortalEmail(to,'[Care portal] '+title,`<div style="font-family:sans-serif;font-size:14px"><h3 style="margin:0 0 8px">${esc(title)}</h3><p>${esc(body)}</p><p style="color:#666;font-size:12px">Sent by the care portal notification rules.</p></div>`).catch(()=>{}));
   }
@@ -7107,7 +7374,7 @@ function noteCatsApply(){
 }
 function clientNotes(c){
   const all=PROG_NOTES[c.id]||[];
-  const mine=n=>n.by===ME[state.role].name||state.role==='director';
+  const mine=n=>n.by===actorName()||state.role==='director';
   const q=(state.noteQ||'').trim().toLowerCase();
   let notes=all.filter(n=>!state.noteCat||n.cat===state.noteCat);
   if(q) notes=notes.filter(n=>[n.t,n.by,n.cat,n.at].some(f=>String(f||'').toLowerCase().includes(q)));
@@ -7153,7 +7420,7 @@ function noteAdd(cid,i){
 function noteAddGo(cid,i){
   const v=(el('naT').value||'').trim(); if(!v) return toast('Write something first.');
   const n=(PROG_NOTES[cid]||[])[i]; if(!n) return;
-  n.adds=(n.adds||[]).concat([{by:ME[state.role].name,at:nowStamp(),t:v}]);
+  n.adds=(n.adds||[]).concat([{by:actorName(),at:nowStamp(),t:v}]);
   noteSave();
   logAudit('Added to a progress note',(client(cid)||{}).uci||'');
   closeAll(); render(); toast('Added.');
@@ -8027,7 +8294,7 @@ function courseNote(tid){
 }
 function courseNoteGo(tid){
   const v=(el('cnT').value||'').trim(); if(!v) return toast('Write the note first.');
-  const t=TRAINING.find(x=>x.id===tid); t.notes=(t.notes||[]).concat([{by:ME[state.role].name,at:nowStamp(),t:v}]);
+  const t=TRAINING.find(x=>x.id===tid); t.notes=(t.notes||[]).concat([{by:actorName(),at:nowStamp(),t:v}]);
   trainSave(); logAudit('Added a training note',t.n); closeAll(); render(); toast('Note added.');
 }
 function courseNoteDel(tid,i){ const t=TRAINING.find(x=>x.id===tid); (t.notes||[]).splice(i,1); trainSave(); render(); }
@@ -8173,7 +8440,7 @@ function obShare(){
 }
 function obToggle(sid,i){
   const it=OB_ASSIGN[sid][i]; it.d=it.d?0:1;
-  if(it.d){ it.by=ME[state.role].name; it.at=nowStamp(); } else { it.by=''; it.at=''; }
+  if(it.d){ it.by=actorName(); it.at=nowStamp(); } else { it.by=''; it.at=''; }
   obSave(); logAudit(it.d?'Completed onboarding item':'Unchecked onboarding item',`${staff(sid).init} · ${it.t}`);
   openStaffPage(sid);
 }
@@ -8189,8 +8456,13 @@ function obCard(sid){
 }
 function guidesSave(){ sbUpsert('np_demo_program',{key:'guides',value:{items:GUIDES},updated_by:auditActor()}); }
 function meSid(){
-  const b=USERS[(AUTH.email||ONB.email||'').toLowerCase()];
+  const em=String(AUTH.email||'').toLowerCase();
+  const b=USERS[em]||(realSession()?null:USERS[String(ONB.email||'').toLowerCase()]);   // v12.13: a signed-in account is only ever itself
   if(b&&b.sid&&staff(b.sid)) return b.sid;
+  if(realSession()){
+    const byMail=STAFF.find(x=>String(x.email||'').toLowerCase()===em); if(byMail) return byMail.id;
+    if(roleFor()!=='director') return null;                          // v12.13: a staff account never borrows the sample person's work
+  }
   const m=STAFF.find(x=>x.name===ME.staff.name); return m?m.id:'s1';
 }
 function openGuide(gi){
@@ -8222,9 +8494,24 @@ function guideAck(gi,sid){
   if(!g.ack.includes(sid)){ g.ack.push(sid); guidesSave(); notifyRule('guideack','Guide acknowledged',`${(staff(sid)||{}).name||sid} · ${g.t}`); logAudit('Recorded guide acknowledgment',`${staff(sid).init} · ${g.t}`); }
   openGuide(gi); render();
 }
-function guideAckMe(gi){
-  const g=GUIDES[gi]; if(!g) return; g.ack=g.ack||[]; const sid=meSid();
-  if(!g.ack.includes(sid)){ g.ack.push(sid); guidesSave(); logAudit('Acknowledged readiness guide',g.t); toast('Acknowledged — thank you.'); }
+const _ackBusy={};                                                   // an acknowledgement on its way: a second click does nothing
+async function guideAckMe(gi){
+  const g=GUIDES[gi]; if(!g) return; g.ack=g.ack||[];
+  if(previewBlock()) return;
+  const sid=meSid();
+  if(!sid) return toast('Your account is not linked to a staff record yet \u2014 ask your director to link it.');
+  if(g.ack.includes(sid)) return render();
+  if(realSession()){                                                 // v12.13: added to the agency's latest list, and confirmed only once saved
+    const bk='guide:'+g.t; if(_ackBusy[bk]) return; _ackBusy[bk]=1;
+    const ok=await programMerge('guides',v=>{
+      const items=(Array.isArray(v.items)&&v.items.length)?v.items:JSON.parse(JSON.stringify(GUIDES));
+      const it=items.find(x=>x.t===g.t); if(!it) return null;
+      it.ack=Array.isArray(it.ack)?it.ack:[]; if(!it.ack.includes(sid)) it.ack.push(sid);
+      v.items=items; return v; }).finally(()=>{ delete _ackBusy[bk]; });
+    if(!ok) return toast('Your acknowledgement did not save \u2014 check your connection and try again.');
+    if(!g.ack.includes(sid)) g.ack.push(sid);
+  } else { g.ack.push(sid); guidesSave(); }
+  logAudit('Acknowledged readiness guide',g.t); toast('Acknowledged — thank you.');
   render();
 }
 function guideRemindAll(gi){
@@ -8297,7 +8584,7 @@ function openStaffDrawer(sid){
 }
 function staffPageBody(sid){
   const st=staff(sid);
-  const canColor=(state.role==='director'||(state.role==='staff'&&sid===meSid()));
+  const canColor=(state.role==='director'||(state.role==='staff'&&sid===meSid()&&!previewing()));
   const sdocs=DOCS.filter(d=>d.cid===sid);
   const certs=CREDS[sid]||[];
   const tasks=TASKS.filter(t=>t.sid===sid&&t.stage!=='Done');
@@ -8972,6 +9259,7 @@ function openStaff(sid){
 /* ══════════════ MESSAGES ══════════════ */
 function viewMessages(){
   const th=visThreads().find(t=>t.id===state.thread)||visThreads()[0]||{id:'',who:'',msgs:[],unread:0};
+  if(th.id) state.thread=th.id;                                      // v12.13: what is on screen is what a reply goes to
   return `
   <div class="page-h">
     <div><h1>Messages</h1><div class="sub">Every message is logged to the client record</div></div>
@@ -8981,16 +9269,16 @@ function viewMessages(){
     <div style="display:grid;grid-template-columns:280px 1fr" class="msg-split">
       <div class="threads">
         ${visThreads().filter(t=>!hid('thread',t.id)).map(t=>`<button class="thread-i ${t.id===th.id?'active':''}" onclick="state.thread='${t.id}';t_unread('${t.id}');render()">
-          <span class="av-sm ${t.role==='Guardian'?'g':t.role==='Group'?'gr':''}">${t.who.split(' ').map(w=>w[0]).slice(0,2).join('')}</span>
-          <div class="tt"><b>${esc(t.who)}</b><span>${esc(t.sub)}</span><span class="tiny">${esc(t.last)}</span></div>
+          <span class="av-sm ${t.role==='Guardian'?'g':t.role==='Group'?'gr':''}">${String(threadView(t).title||'?').split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('')}</span>
+          <div class="tt"><b>${esc(threadView(t).title)}</b><span>${esc(t.sub)}</span><span class="tiny">${esc(t.last)}</span></div>
           ${t.unread?`<span class="badge" style="background:var(--bad);color:#fff;border-radius:20px;font-size:10.5px;font-weight:700;padding:1px 6px;height:17px">${t.unread}</span>`:''}
           ${state.role==='director'?`<span class="btn ghost sm" style="padding:0 7px" onclick="event.stopPropagation();delThread('${t.id}')" title="Delete conversation">✕</span>`:''}
         </button>`).join('')}
       </div>
       <div>
-        <div class="card-h"><h2>${esc(th.sub)}</h2><div class="sub">${esc(th.who)} · ${esc(th.role)}</div></div>
+        <div class="card-h"><h2>${esc(th.sub)}</h2><div class="sub">${esc(threadView(th).title)}${threadView(th).label?' · '+esc(threadView(th).label):''}</div></div>
         <div class="chat-log">
-          ${th.msgs.map(m=>`<div class="msg ${(m.role?m.role===state.role:m.me)?'me':'bot'}">${esc(m.t)}
+          ${th.msgs.map(m=>`<div class="msg ${msgIsMe(m)?'me':'bot'}">${esc(m.t)}
             ${m.att?`<div style="margin-top:6px"><button class="btn ghost sm" onclick="askOpenDoc('${m.att.id}')">◫ ${esc(m.att.name)}</button></div>`:''}
             <div style="font-size:11px;opacity:.65;margin-top:4px">${esc(m.w)} · ${esc(m.at)}</div></div>`).join('')}
         </div>
@@ -9010,14 +9298,22 @@ function sendMsg(){
   let v=(el('msgIn').value||'').trim();
   if(!v && state.msgAtt) v='Shared: '+state.msgAtt.name;             // attachment alone is a valid message
   if(!v) return;
-  const th=THREADS.find(t=>t.id===state.thread); if(!th) return;
-  const m={me:1,role:state.role,t:v,w:ME[state.role].name,at:nowStamp(),att:state.msgAtt||null};
+  if(previewBlock()) return;
+  const th=visThreads().find(t=>t.id===state.thread)||visThreads()[0]; if(!th) return;   // v12.13: never a hidden conversation
+  state.thread=th.id;
+  const myEm=String(AUTH.email||'').toLowerCase();
+  const m={me:1,role:state.role,t:v,w:actorName(),email:myEm,at:nowStamp(),att:state.msgAtt||null};
   th.msgs.push(m); th.last=v; state.msgAtt=null;
-  sbUpsert('np_demo_threads',{id:th.id,who:th.who,subject:th.sub,role:th.role,last_msg:v,unread:1});
-  sbPush('np_demo_messages',{thread_id:th.id,author:m.w,role:state.role,body:v,is_me:true,attach_doc:m.att?m.att.id:null});
-  th.last=v; sbPatch('np_demo_threads',th.id,{last_msg:v,unread:1});
+  /* v12.13: the conversation row is saved before the message that points at it (the database
+     refuses a message whose conversation is not there yet) */
+  const myRole=state.role;
+  (async()=>{
+    await sbUpsert('np_demo_threads',{id:th.id,who:th.who,subject:th.sub,role:th.role,last_msg:v,unread:1});
+    sbPush('np_demo_messages',{thread_id:th.id,author:m.w,author_email:myEm||null,role:myRole,body:v,is_me:true,attach_doc:m.att?m.att.id:null});
+  })();
+  th.last=v;
   msgNotify(th,v);
-  extNotify('message',1);                       // recipient gets "new secure message" — no content
+  extNotify('message',1,{to:threadPeople(th),audience:msgAudience(th)});   // the other people get "new secure message" — no content
   logAudit('Sent message',`${th.who} · ${askTr(v,60)}`);
   render(); toast('Message sent and logged to the client record.');
 }
@@ -9038,12 +9334,17 @@ function msgAttachPick(){
   toast('Attached '+d.name+' — send when ready.');
 }
 function openNewThread(){
+  if(previewBlock()) return;
+  const real=realSession(), mySid=meSid(), dirs=real?teamDirectors():[];
   const people=[
-    ...(state.role!=='director'?[{v:'director:1',l:ME.director.name+' · '+ME.director.role}]:[]),
-    ...visibleStaff().filter(x=>!(state.role==='staff'&&x.name===ME.staff.name)).map(x=>({v:'staff:'+x.id,l:x.name+' · '+x.role})),
-    {v:'guardian:c1',l:'Guardian on file · client family'},
-    {v:'group:maple',l:'Maple House team · group'},{v:'group:cedar',l:'Cedar House team · group'},
-    {v:'group:birch',l:'Birch House team · group'}];
+    ...(real
+      ? (dirs.length?dirs.map(d=>({v:'director:'+d.email,l:d.name+' · '+(d.title||'Director')}))
+                    :(state.role!=='director'?[{v:'director:',l:'The director'}]:[]))
+      : (state.role!=='director'?[{v:'director:1',l:ME.director.name+' · '+ME.director.role}]:[])),
+    ...visibleStaff().filter(x=>!(state.role==='staff'&&(real?x.id===mySid:x.name===ME.staff.name))).map(x=>({v:'staff:'+x.id,l:x.name+' · '+x.role})),
+    ...(real?[]:[{v:'guardian:c1',l:'Guardian on file · client family'}]),
+    ...HOMES.filter(h=>h&&h!=='All homes').map(h=>({v:'group:'+h,l:h+' team · group'}))];
+  if(!people.length) return toast('There is nobody to message yet — add staff or invite a director first.');
   openModal('New message',`
     <div class="field"><label>To</label><select class="inp" id="nmTo">${people.map(p=>`<option value="${esc(p.v)}">${esc(p.l)}</option>`).join('')}</select></div>
     <div class="field"><label>Subject</label><input class="inp" id="nmSub" placeholder="e.g. 4023180 — dental follow-up"></div>
@@ -9055,16 +9356,30 @@ function createThread(){
   const to=el('nmTo').value, sub=(el('nmSub').value||'').trim(), body=(el('nmBody').value||'').trim();
   if(!sub) return toast('Give the message a subject.');
   if(!body) return toast('Write a message first.');
-  const [kind,ref]=to.split(':');
-  const who=kind==='director'?ME.director.name:kind==='staff'?(staff(ref)||{}).name:kind==='guardian'?'Guardian on file':(ref.charAt(0).toUpperCase()+ref.slice(1)+' House team');
+  if(previewBlock()) return;
+  const i0=to.indexOf(':'), kind=i0<0?to:to.slice(0,i0), ref=i0<0?'':to.slice(i0+1);
+  const houseOf=r=>HOMES.includes(r)?r:(r.charAt(0).toUpperCase()+r.slice(1)+' House');
+  let who, toRef=ref;
+  if(kind==='director'){
+    if(!realSession()){ who=ME.director.name; toRef=''; }
+    else { const d=ref&&USERS[ref]; who=ref?((d&&d.name)||nameFromEmail(ref)):'The director'; }
+  }
+  else if(kind==='staff') who=(staff(ref)||{}).name||'Staff';
+  else if(kind==='guardian'){ who='Guardian on file'; toRef=''; }
+  else { toRef=houseOf(ref); who=toRef+' team'; }
   const role=kind==='director'?'Director':kind==='staff'?'Staff':kind==='guardian'?'Guardian':'Group';
-  const id='th'+Date.now();
-  const th={id,who,sub,role,last:body,unread:0,msgs:[{me:1,role:state.role,t:body,w:ME[state.role].name,at:nowStamp()}]};
+  const id='th'+Date.now(), myEm=String(AUTH.email||'').toLowerCase();
+  const th={id,who,sub,role,last:body,unread:0,from:myEm,fromName:actorName(),fromRole:state.role,toKind:kind,toRef,
+    msgs:[{me:1,role:state.role,t:body,w:actorName(),email:myEm,at:nowStamp()}]};
   THREADS.unshift(th); state.thread=id;
-  sbPush('np_demo_threads',{id,who,subject:sub,role,last_msg:body,unread:0});
+  /* v12.13: who wrote it and who it is for travel with the conversation (columns from the database update) */
+  const by=actorName(), myRole=state.role;
+  (async()=>{                                                        // the conversation first, then the message that points at it
+    await sbPush('np_demo_threads',{id,who,subject:sub,role,last_msg:body,unread:0,from_email:myEm||null,from_name:by,to_kind:kind,to_ref:toRef||null});
+    sbPush('np_demo_messages',{thread_id:id,author:by,author_email:myEm||null,role:myRole,body,is_me:true});
+  })();
   msgNotify(th,body);
-  sbPush('np_demo_messages',{thread_id:id,author:ME[state.role].name,role:state.role,body,is_me:true});
-  extNotify('message',1);
+  extNotify('message',1,{to:threadPeople(th),audience:msgAudience(th)});
   logAudit('Started message thread',`${who} · ${sub}`);
   closeAll(); render(); toast('Message sent to '+who+'.');
 }
@@ -9091,7 +9406,7 @@ function faqForm(i){
 function faqSave(i){
   const q=(el('fqQ').value||'').trim(), a=(el('fqA').value||'').trim();
   if(!q||!a) return toast('Fill in both the question and the answer.');
-  const by=ME[state.role].name+' · updated '+TODAY.toLocaleString(undefined,{month:'long',year:'numeric'});
+  const by=actorName()+' · updated '+TODAY.toLocaleString(undefined,{month:'long',year:'numeric'});
   if(i==null) FAQ.unshift({q,a,by}); else Object.assign(FAQ[i],{q,a,by});
   faqPersist(); logAudit(i==null?'Added FAQ answer':'Edited FAQ answer',q);
   closeAll(); render(); toast('Saved — every staff view now shows this answer.');
@@ -9106,7 +9421,7 @@ function openPolicy(){
        ['Lock the screen, every time','Stepping away from a shared workstation means locking it. Sessions auto-expire after 15 minutes.'],
        ['Report privacy incidents fast','A misdirected message, a lost printout, a screen left open — report it like any other incident, within the hour.']]
       .map(([t,s],i)=>`<div class="guide-step" style="padding:12px 0"><div class="gn">${i+1}</div><div><b>${t}</b><span>${s}</span></div></div>`).join('')}`,
-    `<button class="btn ghost" onclick="closeAll()">Close</button><button class="btn navy" onclick="closeAll();logAudit('Acknowledged privacy policy',ME[state.role].name);toast('Acknowledgment recorded with your name and the time.')">I've read and agree</button>`);
+    `<button class="btn ghost" onclick="closeAll()">Close</button><button class="btn navy" onclick="closeAll();logAudit('Acknowledged privacy policy',actorName());toast('Acknowledgment recorded with your name and the time.')">I've read and agree</button>`);
 }
 function viewTraining(){
   const me=staff(meSid())||staff('s1');
@@ -9982,13 +10297,29 @@ function runBinder(){
     toast('Inspection binder generated.'); },1500);
 }
 let MY_QUALS={director:[{c:'Administrator certification',d:'Dec 2027',s:'ok'},{c:'CPR / First Aid',d:'May 2027',s:'ok'}],staff:null,family:[]};
+let MY_QUALS_P={};                                                   // v12.13: each director's own credentials, by sign-in email
 function editEmail(){
+  if(realSession()){                                                 // v12.13: this is the agency's address, not the person's
+    openModal('Agency alerts email',`
+      <div class="field"><label>Send agency alerts to</label><input class="inp" id="meEmail" type="email" value="${esc(AGENCY_EMAIL||'')}" placeholder="director@agency.org"></div>
+      <div class="tiny muted">The daily overdue-task digest and SIR deadline alerts for the whole agency are emailed here. It does not change anyone\u2019s sign-in email.</div>`,
+      `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveEmail()">Save</button>`);
+    return;
+  }
   openModal('Your email',`
     <div class="field"><label>Email address</label><input class="inp" id="meEmail" type="email" value="${esc(ONB.email||'')}" placeholder="you@agency.org"></div>
     <div class="tiny muted">Used on your profile and for notification settings. Leave blank to remove.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveEmail()">Save</button>`);
 }
 function saveEmail(){
+  if(realSession()){
+    const v=(el('meEmail').value||'').trim();
+    if(v&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return toast('Enter a valid email address.');
+    AGENCY_EMAIL=v;
+    sbUpsert('np_demo_program',{key:'email',value:{v},updated_by:auditActor()});
+    logAudit('Changed agency alerts email',v||'(none)');
+    closeAll(); render(); return toast(v?'Agency alerts will go to '+v+'.':'Agency alerts email removed.');
+  }
   ONB.email=(el('meEmail').value||'').trim();
   lsSet('np_onboarding',JSON.stringify(ONB));
   sbUpsert('np_demo_program',{key:'email',value:{v:ONB.email},updated_by:auditActor()});
@@ -10012,23 +10343,69 @@ function editPrefs(){
 }
 function savePrefs(){
   PREFS={dateFmt:el('pfDate').value,timeFmt:el('pfTime').value,theme:el('pfTheme').value,lang:el('pfLang').value};
-  userSetSave({prefs:PREFS}); prefsSave(); logAudit('Updated preferences','');
+  userSetSave({prefs:PREFS}); if(!realSession()) prefsSave();          // v12.13: signed in, your preferences are yours alone
+  logAudit('Updated preferences','');
   closeAll(); render(); toast('Preferences saved.');
 }
 function editMyName(){
+  const p=realSession()?(PERSON||resolvePerson()||{}):null;
   openModal('Your name',`
-    <div class="field"><label>Full name</label><input class="inp" id="meName" value="${esc(ONB.name||'')}"></div>
-    <div class="field"><label>Role title</label><input class="inp" id="meRoleT" value="${esc(ONB.roleTitle||'')}" placeholder="e.g. Executive Director"></div>`,
+    <div class="field"><label>Full name</label><input class="inp" id="meName" value="${esc(p?(p.named?p.name:''):(ONB.name||''))}" placeholder="Your full name"></div>
+    <div class="field"><label>Role title</label><input class="inp" id="meRoleT" value="${esc(p?(p.title||''):(ONB.roleTitle||''))}" placeholder="e.g. Executive Director"></div>
+    ${p?'<div class="tiny muted">This is the name on your signatures, notes and the audit trail. It is yours only \u2014 nobody else\u2019s profile changes.</div>':''}`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>
      <button class="btn navy" onclick="saveMyName()">Save</button>`);
 }
-function saveMyName(){
+async function saveMyName(){
   const n=(el('meName').value||'').trim(); if(!n) return toast('Enter your name.');
+  if(realSession()){ await personSave(n,(el('meRoleT').value||'').trim()); closeAll(); render(); return toast('Saved \u2014 your records will show '+n+'.'); }
   ONB.name=n; ONB.roleTitle=(el('meRoleT').value||'').trim();
   lsSet('np_onboarding',JSON.stringify(ONB));
   profileSave(); applySetup();
   logAudit('Updated profile name',n);
   closeAll(); render(); toast('Profile updated.');
+}
+/* v12.13: a person's name and title live on the agency's team list under their own sign-in
+   email. The agency owner's record is updated too, but only when this person is the owner. */
+async function personSave(name,title){
+  const em=String(AUTH.email||'').toLowerCase(); if(!em) return;
+  const cur=USERS[em]||{};
+  const role=cur.role||roleFor()||'';                                 // v12.13: only a role the agency actually knows
+  await usersAddSelf(em,Object.assign({},cur,{name,title},role?{role}:{}));
+  if(AGENCY_PROFILE&&String(AGENCY_PROFILE.email||'').toLowerCase()===em){
+    AGENCY_PROFILE=Object.assign({},AGENCY_PROFILE,{name,roleTitle:title});
+    sbUpsert('np_demo_program',{key:'profile',value:AGENCY_PROFILE,updated_by:name});
+  }
+  lsSet('np_me_name',name); resolvePerson(); bindIdentity(state.role);
+  logAudit('Updated profile name',name);
+}
+/* v12.13: everyone who signs in is on the agency's team list with the role the agency records,
+   so colleagues can message them and alerts can reach them. An agency's owner used to be missing
+   (their name comes from the owner profile), so staff could not write to them. */
+function teamListEnsure(){
+  if(!realSession()) return;
+  const em=String(AUTH.email||'').toLowerCase(), r=roleFor(); if(!em||!r) return;
+  const p=resolvePerson()||{}, cur=USERS[em]||{}, want={};
+  if(cur.role!==r) want.role=r;
+  if(p.named&&!cur.name) want.name=p.name;
+  if(p.title&&!cur.title) want.title=p.title;
+  if(p.sid&&!cur.sid) want.sid=p.sid;
+  if(Object.keys(want).length) usersAddSelf(em,want);
+}
+/* the first time someone signs in without a name on file, ask for it once */
+let _askedName=false;
+function personPromptIfNeeded(tries){
+  if(!realSession()||_askedName||state.role==='family') return;
+  const p=resolvePerson(); if(!p||p.named) return;                  // fresh: a name given a moment ago (e.g. on the agreement) counts
+  if(state.role==='staff'&&roleFor()==='director') return;           // previewing, not really staff
+  if(window._gateLock||el('modal').classList.contains('on')){ if((tries||0)<40) setTimeout(()=>personPromptIfNeeded((tries||0)+1),1500); return; }
+  _askedName=true;
+  openModal('What name should your records show?',`
+    <div class="sec-note" style="margin-top:0"><span>\u270d</span><div><b>One-time setup for ${esc(AUTH.email||'your account')}</b>Signatures, notes, sign-offs and the audit trail carry the name of whoever is signed in. Add yours once.</div></div>
+    <div class="field"><label>Full name</label><input class="inp" id="meName" placeholder="Your full name"></div>
+    <div class="field"><label>Role title</label><input class="inp" id="meRoleT" placeholder="${state.role==='director'?'e.g. Executive Director':'e.g. Direct Support Professional'}"></div>`,
+    `<button class="btn ghost" onclick="closeAll()">Later</button><button class="btn navy" id="meNameGo" onclick="saveMyName()">Save</button>`);
+  setTimeout(()=>{ const i=el('meName'); if(i) i.focus(); },60);
 }
 function editTz(){
   const cur=lsGet('np_tz')||Intl.DateTimeFormat().resolvedOptions().timeZone||'';
@@ -10065,7 +10442,9 @@ function saveOrgName(){
 }
 function viewProfile(){
   const m=ME[state.role];
-  const quals = state.role==='staff' ? (CREDS[meSid()]||[]) : (MY_QUALS[state.role]||[]).filter(x=>!state.hideSample||!x._seed);
+  const quals = state.role==='staff' ? (CREDS[meSid()]||[])
+    : (realSession()&&state.role==='director') ? (MY_QUALS_P[String(AUTH.email||'').toLowerCase()]||[])   // v12.13: yours, not the role's
+    : (MY_QUALS[state.role]||[]).filter(x=>!state.hideSample||!x._seed);
   const tab = state.profTab||'creds';
   return `
   <section class="hero" style="display:flex;gap:18px;align-items:center">
@@ -10095,9 +10474,12 @@ function viewProfile(){
       <section class="card">
         <div class="card-h"><h2>About</h2></div>
         <div class="card-b flush"><table class="tb"><tbody>
-          ${[['Email',state.role==='director'?((ONB.email||AUTH.email)?esc(ONB.email||AUTH.email)+' <button class="btn ghost sm" onclick="editEmail()">✎</button>':'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editEmail()">＋ Add email</button>'):state.role==='staff'?esc((ONB.email||AUTH.email)||'on file'):'guardian on file'],
-             ...(state.role==='director'?[['Website',ONB.domain?`<a href="https://${esc(ONB.domain)}" target="_blank" style="color:var(--navy);font-weight:700">${esc(ONB.domain)}</a> <button class="btn ghost sm" onclick="editSite()">✎</button>`:'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editSite()">＋ Add website</button>']]:[]),
-             ['Role',esc(ONB.roleTitle||ME[state.role].label||'')],
+          ${[...(realSession()&&state.role!=='family'
+               ? [['Sign-in email',esc(AUTH.email||'')+' <span class="tiny muted">\u00b7 the email you sign in with</span>'],
+                  ...(state.role==='director'?[['Agency alerts',(AGENCY_EMAIL?esc(AGENCY_EMAIL)+' <button class="btn ghost sm" onclick="editEmail()" title="Where the daily overdue digest and SIR deadline alerts are emailed">✎</button>':'<span class="muted">Not set</span> <button class="btn ghost sm" onclick="editEmail()">＋ Add</button>')+'<div class="tiny muted">Agency-wide: daily digest and SIR alerts go here</div>']]:[])]
+               : [['Email',state.role==='director'?((ONB.email||AUTH.email)?esc(ONB.email||AUTH.email)+' <button class="btn ghost sm" onclick="editEmail()">✎</button>':'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editEmail()">＋ Add email</button>'):state.role==='staff'?esc((ONB.email||AUTH.email)||'on file'):'guardian on file']]),
+             ...(state.role==='director'?[[realSession()?'Agency website':'Website',ONB.domain?`<a href="https://${esc(ONB.domain)}" target="_blank" style="color:var(--navy);font-weight:700">${esc(ONB.domain)}</a> <button class="btn ghost sm" onclick="editSite()">✎</button>`:'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editSite()">＋ Add website</button>']]:[]),
+             ['Role',esc(realSession()?((PERSON&&PERSON.title)||ME[state.role].role||ME[state.role].label||''):(ONB.roleTitle||ME[state.role].label||''))],
              ['Phone','On file'],['Timezone',`${esc(lsGet('np_tz')||Intl.DateTimeFormat().resolvedOptions().timeZone||'Local')} <button class="btn ghost sm" onclick="editTz()">✎</button>`],
              ['Permission',state.role==='director'?'Administrator — full control of the organization':state.role==='staff'?'Care staff — assigned clients only':'Family — one client only']]
             .map(([k,v])=>`<tr><td class="muted" style="width:110px">${k}</td><td>${v}</td></tr>`).join('')}
@@ -10118,7 +10500,7 @@ function viewProfile(){
               <button class="btn ghost sm" onclick="printSheet(pilotSheet())">⎙ Print</button>
               <button class="btn ghost sm" onclick="emailAgreement()">Email me a copy</button>
             </div>`
-           :'<div class="empty">Not signed in this view yet.</div>'}
+           :('<div class="empty">'+(realSession()?'You have not signed it yet.':'Not signed in this view yet.')+'</div>')}
         </div>
       </section>
       <section class="card">
@@ -10147,7 +10529,7 @@ function profTrainingTab(){
     <div class="tiny muted" style="padding:10px 18px 14px">Add a course, attach a link or file, and assign it to specific staff. Assigned courses land on each person’s dashboard and show in the Staff section.</div>`;
   }
   const mine=TRAINING.filter(t=>t.req||(t.asg||[]).includes(meSid()));
-  return `${mine.map(t=>{ const done=t.done.includes('s1');
+  return `${mine.map(t=>{ const done=t.done.includes(meSid());
     return `<div class="docrow"><div class="di">◉</div><div class="dt"><b>${esc(t.n)}</b><span>${t.mins} min${t.due?` · due ${esc(t.due)}`:''}${t.req?' · required':''}</span></div>
       ${done?'<span class="pill ok">Complete</span>':(t.link?`<a class="btn ghost sm" href="${t.link}" target="_blank" rel="noopener">Start ↗</a>`:'<span class="pill warn">Pending</span>')}</div>`;
   }).join('')||'<div class="empty">No training assigned to you yet.</div>'}`;
@@ -10186,7 +10568,14 @@ function saveMyCredential(){
   const n=el('myCrName').value.trim(); if(!n) return toast('Give the credential a name.');
   const exp=el('myCrExp').value;
   const row=exp?credRowFromDb({cred_name:n,expires_on:exp}):{c:n,d:'On file',s:'ok'};
+  if(state.role==='staff'&&previewBlock()) return;
+  if(state.role==='staff'&&!meSid()) return toast('Your account is not linked to a staff record yet \u2014 ask your director to link it.');
   if(state.role==='staff'){ const ms=meSid(); (CREDS[ms]=CREDS[ms]||[]).push(row); sbPush('np_demo_credentials',{sid:ms,cred_name:n,expires_on:exp||null,label:exp?null:'On file',status:exp?null:'ok'}); }
+  else if(realSession()&&state.role==='director'){                   // v12.13: each director's own list, merged with everyone else's
+    const em=String(AUTH.email||'').toLowerCase();
+    (MY_QUALS_P[em]=MY_QUALS_P[em]||[]).push(row);
+    programMerge('myquals',v=>{ v.map=v.map||{}; v.people=Object.assign({},v.people||{}); v.people[em]=MY_QUALS_P[em]; return v; });
+  }
   else { (MY_QUALS[state.role]=MY_QUALS[state.role]||[]).push(row); sbUpsert('np_demo_program',{key:'myquals',value:{map:MY_QUALS},updated_by:auditActor()}); }
   logAudit('Added credential',n); closeAll(); render(); toast('Credential added.');
 }
@@ -10364,7 +10753,7 @@ function renderInspRunner(){
     </div>`;
 }
 function inspSnapshot(){ const t=inspTpl(inspRun.tid); const sc=inspScore(inspRun);
-  return {tid:t.id, title:t.name, folder:t.folder, num:sc.num, den:sc.den, pct:sc.pct, by:ME[state.role].name, at:nowStamp(), date:T, obs:(inspRun&&inspRun.obs)||'',
+  return {tid:t.id, title:t.name, folder:t.folder, num:sc.num, den:sc.den, pct:sc.pct, by:actorName(), at:nowStamp(), date:T, obs:(inspRun&&inspRun.obs)||'',
     responses:t.questions.map(q=>({label:q.label,type:q.type,v:(inspRun.resp[q.id]||{}).v||'',note:(inspRun.resp[q.id]||{}).note||''}))}; }
 function completeInspection(){
   const t=inspTpl(inspRun.tid);
@@ -10376,7 +10765,7 @@ function completeInspection(){
   INSP_DONE.unshift(Object.assign({id,filed:title+'.pdf'},snap));
   if(t.builtin) builtinLogRecord(t,snap);                            // v9.84: keeps the drill and temperature history filling
   autoFileLog(t.folder, title, `Inspection · score ${snap.num}/${snap.den} (${snap.pct}%) · by ${meInit()}`, null, null, {html:inspSheet(Object.assign({title},snap))});
-  sbPush('np_demo_inspections',{id, kind:'completed', template_id:t.id, title, folder:t.folder, score_num:snap.num, score_den:snap.den, responses:snap.responses, created_by:ME[state.role].name});
+  sbPush('np_demo_inspections',{id, kind:'completed', template_id:t.id, title, folder:t.folder, score_num:snap.num, score_den:snap.den, responses:snap.responses, created_by:actorName()});
   docAct('generated',title,FOLDER_NAMES[t.folder]||t.folder);
   logAudit('Completed inspection',`${t.name} · ${snap.num}/${snap.den}`);
   closeInspRunner(); go('safety');
@@ -10526,7 +10915,7 @@ function newLogSave(){
     questions:qs.map((l,i)=>({id:'q'+i,label:l,type:(el('nlScale')&&el('nlScale').value)||'yn',req:false}))};
   INSP_TEMPLATES.push(t); unhide('insp',String(t.id));
   sbUpsert('np_demo_inspections',{id:t.id,kind:'template',template_id:t.id,title:t.name,folder:t.folder,
-    questions:t.questions,per_week:t.perWeek,has_obs:t.obs,created_by:ME[state.role].name});
+    questions:t.questions,per_week:t.perWeek,has_obs:t.obs,created_by:actorName()});
   logAudit('Created log',name);
   closeAll(); render(); toast(`"${name}" created — run it from the Safety log page.`);
 }
@@ -10646,7 +11035,7 @@ function saveInspTemplate(){
   if(!d.questions.length) return toast('Add at least one question.');
   const ex=inspTpl(d.id);
   if(ex){ Object.assign(ex,d); } else INSP_TEMPLATES.push(d);
-  sbUpsert('np_demo_inspections',{id:d.id, kind:'template', template_id:d.id, title:d.name, folder:d.folder, questions:d.questions, per_week:d.perWeek||0, has_obs:!!d.obs, created_by:ME[state.role].name});
+  sbUpsert('np_demo_inspections',{id:d.id, kind:'template', template_id:d.id, title:d.name, folder:d.folder, questions:d.questions, per_week:d.perWeek||0, has_obs:!!d.obs, created_by:actorName()});
   logAudit(window._inspEditing?'Edited inspection template':'Created inspection template',d.name);
   const ff=el('formFull'); if(ff) ff.remove();
   closeAll(); render(); toast('Inspection template saved.');
@@ -10978,7 +11367,7 @@ function builtinLogEnsure(kind){
     questions:seed.lines.map(([l,ty],i)=>({id:'q'+i,label:l,type:ty,req:false,perWeek:i===0?0:seed.perWeek}))};
   INSP_TEMPLATES.push(t); unhide('insp',String(t.id));
   sbUpsert('np_demo_inspections',{id:t.id,kind:'template',template_id:t.id,title:t.name,folder:t.folder,
-    questions:t.questions,per_week:t.perWeek,has_obs:true,created_by:ME[state.role].name});
+    questions:t.questions,per_week:t.perWeek,has_obs:true,created_by:actorName()});
   logAudit('Opened a built-in log as a form',seed.name);
   return t;
 }
@@ -11244,7 +11633,7 @@ function docFocusClient(c){
 function docFocusStaff(st){
   const rows=staffBinderRows().filter(r=>r.sid===st.id);
   const docs=DOCS.filter(d=>d.cid===st.id);
-  const canEdit=state.role==='director'||st.id===meSid();
+  const canEdit=state.role==='director'||(st.id===meSid()&&!previewing());
   return docFocusHead(`${esc(st.name)} \u00b7 binder`,
       `${esc(st.role||'')}${st.home?' \u00b7 '+esc(st.home):''} \u00b7 the same documents as ${esc(st.name.split(' ')[0])}'s staff file`,
       `${canEdit?`<button class="btn navy" onclick="uploadStaffDoc('${st.id}')">\uff0b Upload document</button>`:''}
@@ -11961,9 +12350,9 @@ function docPersist(id){
   const content=Object.assign({}, EXAMPLE_VALUES[id]||{});
   if(USER_DOCS[id]){ content._fields=d.fields; content._file=USER_DOCS[id].url||content._file||null;
     content._layout={subtitle:d.subtitle,foot:d.foot,sysNote:d.sysNote,tpl:d.tpl||null}; }
-  content._meta={by:ME[state.role].name, at:nowStamp()};
+  content._meta={by:actorName(), at:nowStamp()};
   EXAMPLE_VALUES[id]=content;
-  sbUpsert('np_demo_example_docs',{doc_id:id,folder:d.key,sec:d.sec,name:d.name,content,updated_by:ME[state.role].name,updated_at:new Date().toISOString()});
+  sbUpsert('np_demo_example_docs',{doc_id:id,folder:d.key,sec:d.sec,name:d.name,content,updated_by:actorName(),updated_at:new Date().toISOString()});
 }
 /* ── v11.6: a completed document is saved whole ───────────────────────────────────────────────────
    Filing used to record only the document's name in the binder and then clear the answers so
@@ -12594,7 +12983,7 @@ async function libCreateEditable(f,title,key,sec){
   const id='ux-'+Date.now();
   USER_DOCS[id]={id, key, sec, name:title, fields, url, source:'upload'};
   if(f){ try{ TPL_SRC_URL[id]=URL.createObjectURL(f); USER_DOCS[id].srcFile=f.name; }catch(e){} }
-  EXAMPLE_VALUES[id]={_fields:fields, _file:url, _meta:{by:ME[state.role].name, at:nowStamp()}};
+  EXAMPLE_VALUES[id]={_fields:fields, _file:url, _meta:{by:actorName(), at:nowStamp()}};
   docPersist(id);
   docAct('generated',title,FOLDER_NAMES[key]||key,id);
   logAudit('Created editable document', title+' → '+(FOLDER_NAMES[key]||key));
@@ -12627,12 +13016,12 @@ async function libSaveUpload(){
   closeAll(); toast('Uploading…');
   let url=null, size=f?Math.max(1,Math.round(f.size/1024))+' KB':'';
   if(f) url=await sbUpload(`${key}/${Date.now()}_${f.name.replace(/[^A-Za-z0-9._-]/g,'_')}`,f);
-  const sub=`Uploaded by ${ME[state.role].name} · ${fmtDate(T)}${size?' · '+size:''}`;
+  const sub=`Uploaded by ${actorName()} · ${fmtDate(T)}${size?' · '+size:''}`;
   const row={dbId:'tmp'+Date.now(), n:title, sub, url};
   ((USER_LIB[key]=USER_LIB[key]||{forms:[],res:[]})[sec]=USER_LIB[key][sec]||[]).push(row);
   if(sbOn()){
     try{
-      const r=await fetch(`${BACKEND.url}/rest/v1/np_demo_library`,{method:'POST',headers:{...sbH(),Prefer:'return=representation'},body:JSON.stringify({folder:key,sec,title,url,sub,uploaded_by:ME[state.role].name})});
+      const r=await fetch(`${BACKEND.url}/rest/v1/np_demo_library`,{method:'POST',headers:{...sbH(),Prefer:'return=representation'},body:JSON.stringify({folder:key,sec,title,url,sub,uploaded_by:actorName()})});
       if(r.ok){ const j=await r.json(); if(j[0]) row.dbId=j[0].id; }
     }catch(e){ console.warn('[np-demo] library write failed',e); }
   }
@@ -12725,7 +13114,7 @@ async function orgJoinByToken(token){
       body:JSON.stringify({p_token:token})});
     if(!r.ok) return null;
     const v=await r.json().catch(()=>null);
-    if(v&&typeof v==='string'){ ORG_ID=v; ORG_READY=true; lsSet('np_org_id',v); return v; }
+    if(v&&typeof v==='string'){ ORG_ID=v; ORG_READY=true; lsSet('np_org_id',v); MEMBER_ROLE=await memberRoleFetch(); return v; }   // v12.13: the role in the agency just joined
   }catch(e){}
   return null;
 }
@@ -12753,6 +13142,7 @@ function eraseAll(){
     const tables=['tasks','incidents','fire_drills','water_temps','med_logs','documents','credentials','appointments','templates','client_notes','notifications','audit_log','checklist_logs','clients','staff','shifts','threads','messages','ask_log','doc_activity','doc_signatures','example_docs','inspections','library'];
     for(const t of tables){ try{ await sbDel('np_demo_'+t,'id=not.is.null'); }catch(e){} }
     try{ await sbDel('np_demo_program','key=not.in.(org,email,pilot,users,usersettings)'); }catch(e){}   // identity, agreement, everyone's accounts + personal settings/layouts survive
+    progForget(['org','email','pilot','users','usersettings']);      // v12.13: the rows written next start fresh
     ['np_deleted','np_notif_prefs','np_training','np_onboard_steps','np_doc_activity'].forEach(k=>lsDel(k));
     try{ lsSet('np_hide_sample','1'); }catch(e){}
     [CLIENTS,STAFF,SHIFTS,TASKS,APPTS,INCIDENTS,DOCS,THREADS,WATERTEMP,FIREDRILLS,INSP_DONE,AUDIT,TEMPLATES5]
@@ -12765,7 +13155,8 @@ function eraseAll(){
     clearSampleLists();                              // example houses, programs and categories go too
     state.hideSample=true; renderNav(); render();   // take effect immediately in this session too
     try{ await sbUpsert('np_demo_program',{key:'hidesample',value:{v:true},updated_by:auditActor()}); }catch(e){}
-    setTimeout(()=>location.reload(),1200);                          // session resumes — lands back on a clean dashboard
+    await progFlush(8000);                                           // v12.13: every save is in before the page reloads
+    setTimeout(()=>location.reload(),300);                           // session resumes — lands back on a clean dashboard
   },'Erase everything');
 }
 function resetWorkspace(mode){
@@ -12780,6 +13171,7 @@ function resetWorkspace(mode){
       'np_demo_doc_signatures','np_demo_example_docs','np_demo_med_logs','np_demo_agreements','np_demo_ask_log'];
     tables.forEach(t=>sbDel(t,'id=not.is.null'));
     sbDel('np_demo_program','key=not.in.(deleted,users,usersettings)');   // deletion registry + accounts + personal settings survive the wipe
+    progForget(['deleted','users','usersettings']);
     DEL={};
     if(empty){                                   // keep EXACTLY one of everything, all tied to the same kept client + staff member
       const keepC=CLIENTS[0], keepS=STAFF[0];
@@ -12814,7 +13206,7 @@ function resetWorkspace(mode){
     lsSet('np_deleted',JSON.stringify(DEL));
     if(!empty) delSave(); else delSave();
     toast(empty?'Workspace cleared. Reloading…':'Demonstration data restored. Reloading…');
-    setTimeout(()=>location.reload(),empty?1300:700);
+    setTimeout(()=>{ progFlush(8000).then(()=>location.reload()); },empty?1300:700);   // v12.13: and only once the saves are in
   }, empty?'Clear everything':'Restore sample data');
 }
 function delLoad(){ try{ DEL=JSON.parse(lsGet('np_deleted')||'{}')||{}; }catch(e){ DEL={}; } }
@@ -13412,7 +13804,7 @@ function createFromTemplate(name){
     <div class="field"><label>Title</label><input class="inp" id="tpTitle" value="${esc(name)} — ${month}"></div>
     <div class="row2">
       <div class="field"><label>Report date</label><input class="inp" type="date" value="${T}"></div>
-      <div class="field"><label>Prepared by</label><input class="inp" value="${esc(ME[state.role].name)}" disabled></div>
+      <div class="field"><label>Prepared by</label><input class="inp" value="${esc(actorName())}" disabled></div>
     </div>
     <div class="field"><label>Draft — pre-filled from portal data, edit the brackets</label>
       <textarea class="inp" id="tpBody" style="min-height:150px">Summary
@@ -13798,7 +14190,7 @@ function openTask(id){
     <section class="card"><div class="card-h"><h2>Sign-off</h2></div><div class="card-b">
       ${t.signoff?`<div class="sec-note"><span>✓</span><div><b>Signed off by ${esc(t.signoff.by)}</b>${esc(t.signoff.at)}</div></div>`
       :`<div class="tiny muted" style="margin-bottom:10px">Signing off records your name with the date and time, and marks the task done.</div>
-        <button class="btn navy sm" onclick="signOffTask('${t.id}')">Sign off as ${esc(ME[state.role].name)}</button>`}
+        <button class="btn navy sm" onclick="signOffTask('${t.id}')">Sign off as ${esc(actorName())}</button>`}
     </div></section>
     <section class="card"><div class="card-h"><h2>Move to</h2></div><div class="card-b">
       <div style="display:flex;gap:8px;flex-wrap:wrap">${['Not started','In progress','Done'].map(s=>
@@ -13808,13 +14200,13 @@ function openTask(id){
 }
 function addTaskNote(id){
   const v=el('tkNote').value.trim(); if(!v) return;
-  const t=TASKS.find(x=>x.id===id); (t.notes=t.notes||[]).unshift({text:v,by:ME[state.role].name,at:nowStamp()});
+  const t=TASKS.find(x=>x.id===id); (t.notes=t.notes||[]).unshift({text:v,by:actorName(),at:nowStamp()});
   sbPatch('np_demo_tasks',id,{notes:t.notes});
   logAudit('Added task note',t.title); openTask(id); toast('Note added.');
 }
 function signOffTask(id){
   const t=TASKS.find(x=>x.id===id);
-  t.signoff={by:ME[state.role].name,at:nowStamp()}; t.stage='Done'; t.doneAt=T;
+  t.signoff={by:actorName(),at:nowStamp()}; t.stage='Done'; t.doneAt=T;
   sbPatch('np_demo_tasks',id,{signoff:t.signoff,stage:'Done',done_at:T});
   notifyRule('tasksign','Task signed off',t.title);
   logAudit('Signed off task',t.title); renderNav(); openTask(id); toast('Signed off — name, date and time recorded.');
@@ -13898,7 +14290,12 @@ function absorbListOpt(listKey,arr,val,saveFn){
 }
 function saveTask(){
   const t=el('ntTitle').value.trim(); if(!t) return toast('Give the task a name.');
-  const nt={id:'t'+Date.now(),title:t,sid:state.role==='director'?el('ntWho').value:'s1',cid:el('ntClient').value||null,
+  const sid=state.role==='director'?el('ntWho').value:meSid();       // v12.13: "Assigned to: You" means you
+  if(state.role!=='director'){
+    if(previewBlock()) return;
+    if(!sid) return toast('Your account is not linked to a staff record yet \u2014 ask your director to link it.');
+  }
+  const nt={id:'t'+Date.now(),title:t,sid,cid:el('ntClient').value||null,
     due:el('ntDue').value,stage:'Not started',pri:el('ntPri').value,cat:el('ntCat').value,notes:[],subs:[],by:meInit(),at:'just now'};
   TASKS.unshift(nt);
   sbPush('np_demo_tasks',{id:nt.id,title:nt.title,sid:nt.sid,cid:nt.cid,due:nt.due,stage:nt.stage,pri:nt.pri,category:nt.cat});
@@ -14355,10 +14752,10 @@ function openNoteForm(cid){
 }
 function saveProgNote(cid){
   const v=(el('pnNew').value||'').trim(); if(!v) return toast('Write the note first.');
-  (PROG_NOTES[cid]=PROG_NOTES[cid]||[]).unshift({cat:(el('pnCat')&&el('pnCat').value)||'',by:ME[state.role].name,at:nowStamp(),t:v,rev:false});
+  (PROG_NOTES[cid]=PROG_NOTES[cid]||[]).unshift({cat:(el('pnCat')&&el('pnCat').value)||'',by:actorName(),at:nowStamp(),t:v,rev:false});
   noteSave();
   logAudit('Added progress note',client(cid).uci);
-  notifyRule('note','New progress note',`${client(cid).uci} · by ${ME[state.role].name}`);
+  notifyRule('note','New progress note',`${client(cid).uci} · by ${actorName()}`);
   closeAll(); render(); toast('Progress note saved.');
 }
 
@@ -14455,7 +14852,7 @@ function saveNotifPrefs(){
   // counts only — the appointment titles and client IDs never leave the portal
   n8nHook('reminders',{event:'reminder.prefs',prefs:{lead:NOTIF_PREFS.lead,inapp:NOTIF_PREFS.inapp,
     email:NOTIF_PREFS.email,sms:NOTIF_PREFS.sms,emailTo:NOTIF_PREFS.emailTo,smsTo:NOTIF_PREFS.smsTo},
-    user:ME[state.role].name, upcoming_count:upcomingReminders().length, phi:false});
+    user:actorName(), upcoming_count:upcomingReminders().length, phi:false});
   logAudit('Updated reminder settings',`${NOTIF_PREFS.lead}h · ${['in-app'].concat(NOTIF_PREFS.email?['email']:[],NOTIF_PREFS.sms?['text']:[]).join(', ')}`);
   closeAll(); render(); toast('Reminder settings saved.');
 }
@@ -14505,13 +14902,14 @@ function openAlerts(){
       <div class="ai info">◷</div><div class="at"><b>${esc(r.t)}</b><span>${esc(r.s)}</span></div>
       <div class="aa">${esc(r.at)}</div></div>`).join('')
       :`<div class="empty">Nothing in the next ${NOTIF_PREFS.lead||24} hours.</div>`}</div></section>`;
-  const un=THREADS.filter(t=>t.unread);
+  const un=visThreads().filter(t=>t.unread);
   const msgHtml=un.length?`<section class="card"><div class="card-h"><h2>Messages & questions</h2><div class="right"><span class="pill bad">${un.reduce((a,t)=>a+t.unread,0)} unread</span></div></div>
     <div class="card-b flush">${un.map(t=>`<div class="attn" onclick="closeAll();state.thread='${t.id}';t_unread('${t.id}');go('messages')">
-      <div class="ai info">✉</div><div class="at"><b>${esc(t.who)} — ${esc(t.sub)}</b><span>${esc(t.last)}</span></div>
+      <div class="ai info">✉</div><div class="at"><b>${esc(threadView(t).title)} — ${esc(t.sub)}</b><span>${esc(t.last)}</span></div>
       <div class="aa">Open →</div></div>`).join('')}</div></section>`:'';
-  const sysHtml=SYS_NOTIFS.length?`<section class="card"><div class="card-h acc-navy"><h2>System notifications</h2><div class="sub">Delivered by the portal's automation backend</div></div>
-    <div class="card-b flush">${SYS_NOTIFS.filter(n=>!state.hideSample||!n._seed).filter(n=>state.role!=='staff'||!n.sid||n.sid===meSid()).map(n=>`<div class="attn"><div class="ai ${n.k==='bad'?'bad':'info'}">◈</div>
+  const sysList=SYS_NOTIFS.filter(n=>!state.hideSample||!n._seed).filter(notifFor);
+  const sysHtml=sysList.length?`<section class="card"><div class="card-h acc-navy"><h2>System notifications</h2><div class="sub">Delivered by the portal's automation backend</div></div>
+    <div class="card-b flush">${sysList.map(n=>`<div class="attn"><div class="ai ${n.k==='bad'?'bad':'info'}">◈</div>
     <div class="at"><b>${esc(n.t)}</b><span>${esc(n.s)} · ${esc(n.at)}</span></div></div>`).join('')}</div></section>`:'';
   openDrawer('Notifications',`${rem.length?rem.length+' upcoming · ':''}${un.length?un.reduce((a,t)=>a+t.unread,0)+' unread messages · ':''}${attn.length} items need attention`,
     remHtml+sysHtml+msgHtml+(attn.length?attn.map((a,i)=>`<div class="card" style="margin-bottom:10px"><div class="attn" style="border:none" onclick="closeAll();_attn[${i}].go()">
@@ -14524,22 +14922,26 @@ function openSettings(){
   const m=ME[state.role];
   openDrawer('Account', esc(m.role), `
     <section class="card"><div class="card-h"><h2>Profile</h2></div><div class="card-b">
-      <div class="field"><label>Display name</label><input class="inp" value="${esc(m.name)}"></div>
-      <div class="field"><label>Email</label><input class="inp" value="${m.name.toLowerCase().replace(' ','.')}@deltadayprogram.org"></div>
+      <div class="field"><label>Name on your records</label><div style="display:flex;gap:8px"><input class="inp" value="${esc(realSession()?actorName():m.name)}" disabled>${state.role!=='family'?`<button class="btn ghost sm" onclick="closeAll();editMyName()">✎ Edit</button>`:''}</div></div>
+      <div class="field"><label>Sign-in email</label><input class="inp" value="${esc(AUTH.email||(DEMO_VIEW?'Demo preview \u2014 no sign-in':''))}" disabled></div>
       <div class="field"><label>Role</label><input class="inp" value="${esc(m.role)}" disabled></div>
     </div></section>
     <section class="card"><div class="card-h"><h2>Security</h2></div><div class="card-b">
-      <div class="field"><label>Current password</label><input class="inp" type="password" value="········"></div>
-      <div class="row2"><div class="field"><label>New password</label><input class="inp" type="password"></div>
-      <div class="field"><label>Confirm</label><input class="inp" type="password"></div></div>
-      <div class="sec-note"><span>🔒</span><div><b>Session timeout</b>You are signed out after 15 minutes of inactivity on shared workstations.</div></div>
+      <button class="btn ghost sm" onclick="closeAll();openCredentials()">🔑 ${realSession()?'Change password':(authReady()?'Sign-in credentials':'Set up sign-in')}</button>
+      <div class="sec-note"><span>🔒</span><div><b>Auto sign-out</b>${IDLE_MIN?'You are signed out after '+IDLE_MIN+' minutes without activity on this account.':'Off for your account. Turn it on for shared workstations from the idle timer setting.'}</div></div>
     </div></section>
     <section class="card"><div class="card-h"><h2>Notifications</h2><div class="sub">Appointment reminders and how they reach you</div></div><div class="card-b">
       <div class="tiny muted" style="margin-bottom:8px">Currently: ${NOTIF_PREFS.lead||24} hours ahead · ${['in the portal'].concat(NOTIF_PREFS.email?['email']:[],NOTIF_PREFS.sms?['text']:[]).join(', ')}</div>
       <button class="btn ghost sm" onclick="closeAll();openReminderPrefs()">⚙ Reminder settings</button>
-      <button class="btn ghost sm" onclick="closeAll();openCredentials()">🔑 ${authReady()?'Sign-in credentials':'Set up sign-in'}</button>
-      <button class="btn ghost sm" onclick="restartOnboarding()">↻ Run setup again</button>
+      ${realSession()?'':`<button class="btn ghost sm" onclick="closeAll();openCredentials()">🔑 ${authReady()?'Sign-in credentials':'Set up sign-in'}</button>`}
+      ${(!realSession()||(state.role==='director'&&isAgencyOwner()))?'<button class="btn ghost sm" onclick="restartOnboarding()">↻ Run setup again</button>':''}
     </div></section>
+    ${state.role==='director'&&realSession()?`
+    <section class="card"><div class="card-h"><h2>Team access</h2><div class="sub">People who sign in to this agency</div></div><div class="card-b">
+      ${Object.entries(USERS).filter(([e,u])=>u&&/@/.test(e)).map(([e,u])=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px"><span><b>${esc(u.name||e)}</b>${u.title?' \u00b7 '+esc(u.title):''}<br><span class="tiny muted">${esc(e)}</span></span><span class="pill ${u.role==='director'?'ok':''}">${u.role==='director'?'Director':'Staff'}</span></div>`).join('')||'<div class="tiny muted">Nobody else yet.</div>'}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn navy sm" onclick="closeAll();inviteDirector()">＋ Invite a director</button></div>
+      <div class="tiny muted" style="margin-top:8px">Staff are invited from their staff record (Staff \u2192 open a person \u2192 Invite). Each person gets their own sign-in.</div>
+    </div></section>`:''}
     ${state.role==='director'?`
     <section class="card"><div class="card-h"><h2>Sample data</h2><div class="sub">Mock records that show how each page works</div></div><div class="card-b">
       <label style="display:flex;gap:9px;align-items:center;font-size:13.4px;cursor:pointer">
@@ -14575,6 +14977,7 @@ function openSettings(){
           </div>
         </div>`).join('')}
     </div></section>`:''}
+    ${state.role==='director'?`
     <section class="card"><div class="card-h"><h2>Lists</h2><div class="sub">Houses and task categories — rename or remove</div></div><div class="card-b">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn ghost sm" onclick="closeAll();manageHouses()">Manage houses</button>
@@ -14586,16 +14989,16 @@ function openSettings(){
     </div></section>
     <section class="card"><div class="card-h"><h2>Colors</h2><div class="sub">Home colors on shifts; a color per kind of item that needs attention</div><div class="right"><button class="btn ghost sm" onclick="homeColorForm()">🏠 Homes</button><button class="btn ghost sm" onclick="attnColorForm()">⚠ Attention</button></div></div></section>
     <section class="card"><div class="card-h"><h2>Names</h2><div class="sub">Rename menus and binders to match what your team says — "Alta binder", "House log", anything</div><div class="right"><button class="btn ghost sm" onclick="labelsForm()">✎ Rename</button></div></div></section>
-    <section class="card"><div class="card-h"><h2>Certification reminders</h2><div class="sub">${certWindow()} days ahead · ${CERT_REMIND.who==='both'?'staff member and director':CERT_REMIND.who==='staff'?'staff member only':'director only'}</div><div class="right"><button class="btn ghost sm" onclick="certRemindForm()">✎ Edit</button></div></div></section>
+    <section class="card"><div class="card-h"><h2>Certification reminders</h2><div class="sub">${certWindow()} days ahead · ${CERT_REMIND.who==='both'?'staff member and director':CERT_REMIND.who==='staff'?'staff member only':'director only'}</div><div class="right"><button class="btn ghost sm" onclick="certRemindForm()">✎ Edit</button></div></div></section>`:''}
     <section class="card"><div class="card-h"><h2>Session</h2><div class="sub">Sign out automatically after a period of inactivity — your setting only, teammates keep theirs</div></div><div class="card-b">
       <select class="inp" style="max-width:240px" onchange="setIdle(this.value)">
         ${[[0,'Never (stay signed in)'],[15,'After 15 minutes idle'],[30,'After 30 minutes idle'],[60,'After 1 hour idle']].map(([v,l])=>`<option value="${v}" ${IDLE_MIN===v?'selected':''}>${l}</option>`).join('')}
       </select></div></section>
-    <section class="card"><div class="card-h"><h2>Staff display</h2><div class="sub">How staff names appear across the whole dashboard</div></div><div class="card-b">
+    ${state.role==='director'?`<section class="card"><div class="card-h"><h2>Staff display</h2><div class="sub">How staff names appear across the whole dashboard</div></div><div class="card-b">
       <div style="display:flex;gap:8px">
         <button class="btn ${NAME_MODE==='full'?'navy':'ghost'} sm" onclick="setNameMode('full')">Full names</button>
         <button class="btn ${NAME_MODE==='initials'?'navy':'ghost'} sm" onclick="setNameMode('initials')">Initials only</button>
-      </div></div></section>
+      </div></div></section>`:''}
     <section class="card"><div class="card-h"><h2>Signed agreement</h2><div class="sub">A read-only record — print it for your file</div></div>
       <div class="card-b">
         ${PILOT_AGREED?`<div style="background:var(--paper,#FAF9F6);border:1px solid var(--line);border-radius:10px;padding:14px;max-height:280px;overflow:auto">
@@ -14605,17 +15008,17 @@ function openSettings(){
           <button class="btn ghost sm" onclick="printSheet(pilotSheet())">⎙ Print</button>
           <button class="btn ghost sm" onclick="emailAgreement()">Email me a copy</button>
         </div>`
-        :'<div class="empty">Not signed in this view yet.</div>'}
+        :('<div class="empty">'+(realSession()?'You have not signed it yet.':'Not signed in this view yet.')+'</div>')}
       </div></section>
     <section class="card" style="display:none"><div class="card-h"><h2>Pilot agreement</h2><div class="sub">${PILOT_AGREED?('Signed by '+esc(PILOT_AGREED.by)+' · '+esc(PILOT_AGREED.at||'')):'Not signed in this view yet'}</div></div><div class="card-b">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn ghost sm" onclick="closeAll();printSheet(pilotSheet())">View / print signed copy</button>
         <button class="btn ghost sm" onclick="emailAgreement()">Email me a copy</button>
       </div></div></section>
-    <section class="card"><div class="card-h"><h2>Switch view</h2><div class="sub">Currently: ${ME[state.role].label}</div></div><div class="card-b">
+    ${(!realSession()||roleFor()==='director')?`<section class="card"><div class="card-h"><h2>Switch view</h2><div class="sub">Currently: ${ME[state.role].label}</div></div><div class="card-b">
       <button class="btn navy" onclick="closeAll();switchView()">Switch view →</button>
-      <div class="tiny muted" style="margin-top:8px">Takes you to the Welcome back screen to open the workspace as a different role. Signing out fully is the ⏻ button in the top bar.</div>
-    </div></section>`,
+      <div class="tiny muted" style="margin-top:8px">${realSession()?'Preview what care staff or a family member see. Nothing is saved in their name while you preview.':'Takes you to the Welcome back screen to open the workspace as a different role.'} Signing out fully is the ⏻ button in the top bar.</div>
+    </div></section>`:''}`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="closeAll();toast('Account updated.')">Save changes</button>`);
 }
 
@@ -14638,14 +15041,24 @@ function completedRemove(key,idx){
 let TPL_ASSIGN={};
 let TPL_ACK={};                                                      // tid -> {sid:{at}}
 function tplAckSave(){ sbUpsert('np_demo_program',{key:'tplassign',value:{map:TPL_ASSIGN,ack:TPL_ACK},updated_by:auditActor()}); }
-function tplAcknowledge(tid){
+async function tplAcknowledge(tid){
   const t=tplById(tid); if(!t) return;
+  if(previewBlock()) return;
   const sid=meSid();
-  TPL_ACK[tid]=TPL_ACK[tid]||{};
-  TPL_ACK[tid][sid]={at:nowStamp(),by:ME[state.role].name};
-  tplAckSave();
-  notifyRule('doc','Document acknowledged',`${ME[state.role].name} acknowledged ${t.name}`);
-  sbPush('np_demo_notifications',{title:'Document acknowledged',body:`${ME[state.role].name} · ${t.name}`,kind:'doc',for_staff:null});
+  if(!sid) return toast('Your account is not linked to a staff record yet \u2014 ask your director to link it.');
+  const entry={at:nowStamp(),by:actorName()};
+  if(realSession()){                                                 // v12.13: only your own acknowledgement is added, and nothing follows unless it saved
+    const bk='tpl:'+tid;
+    if(_ackBusy[bk]||((TPL_ACK[tid]||{})[sid])) return;               // already on its way, or already done
+    _ackBusy[bk]=1;
+    const ok=await programMerge('tplassign',v=>{
+      v.map=v.map||TPL_ASSIGN; v.ack=Object.assign({},v.ack||{});
+      v.ack[tid]=Object.assign({},v.ack[tid]||{},{[sid]:entry}); return v; }).finally(()=>{ delete _ackBusy[bk]; });
+    if(!ok) return toast('Your acknowledgement did not save \u2014 check your connection and try again.');
+    TPL_ACK[tid]=TPL_ACK[tid]||{}; TPL_ACK[tid][sid]=entry;
+  } else { TPL_ACK[tid]=TPL_ACK[tid]||{}; TPL_ACK[tid][sid]=entry; tplAckSave(); }
+  notifyRule('doc','Document acknowledged',`${actorName()} acknowledged ${t.name}`);
+  sbPush('np_demo_notifications',{title:'Document acknowledged',body:`${actorName()} · ${t.name}`,kind:'doc',for_staff:'@director'});
   const task={id:'tk'+Date.now(),title:`Complete ${t.name}`,sid,cid:null,due:addDays(TODAY,3).toISOString?T:T,
     stage:'To do',pri:TASK_PRIS[0]||'High',cat:TASK_CATS.includes('Documentation')?'Documentation':(TASK_CATS[0]||'Agency'),notes:[],subs:[]};
   TASKS.unshift(task);
@@ -14753,7 +15166,7 @@ function saveTplAssign(tid){
   tplAckSave();
   trainSave();
   sbUpsert('np_demo_example_docs',{doc_id:'tplasg-'+tid,folder:t.dest||'Agency',sec:'forms',name:t.name+' (assignment)',
-    content:{_assign:TPL_ASSIGN[tid]},updated_by:ME[state.role].name,updated_at:new Date().toISOString()});
+    content:{_assign:TPL_ASSIGN[tid]},updated_by:actorName(),updated_at:new Date().toISOString()});
   logAudit('Assigned document',`${t.name} → ${TPL_ASSIGN[tid].map(id=>(staff(id)||{}).init).join(', ')||'no one'}`);
   closeAll(); render(); toast('Assignment saved and staff notified.');
 }
@@ -14762,7 +15175,7 @@ function saveTplAssign(tid){
 
 
 /* ══════════════ v6.4: SIGN-6259400 CREDENTIALS ══════════════
-   Ezra sets his own email + password — either on the welcome screen or later
+   The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
 const APP_VERSION='2.0';                                             // shown on the sign-in screen
@@ -14775,22 +15188,51 @@ let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | 
 let USERS={};                                                        // email -> {sid, role, name}
 let USER_SET={};                                                     // email -> {prefs, tz, idle, notifprefs}
 function userKey(){ return ((AUTH.email||ONB.email||'').toLowerCase())||('role:'+state.role); }
-function usersSave(){ sbUpsert('np_demo_program',{key:'users',value:{map:USERS},updated_by:auditActor()}); }
 /* v12.11: add one person to the agency's team list without ever replacing it. The list is read
    fresh from the agency first, so a slow load can never shrink it to just this person. */
+/* v12.13: change one part of a shared settings row without losing what others saved meanwhile.
+   The row is read fresh first, and if that read fails nothing is written at all, so a bad
+   connection can never put this page's stale copy over everyone else's. Changes this page makes
+   to the same row go one at a time, so two quick saves can never undo each other. */
+const _mergeQ={};
+function programMerge(key,mutate,after){
+  const run=()=>programMergeNow(key,mutate,after);
+  const p=(_mergeQ[key]||Promise.resolve()).then(run,run);
+  _mergeQ[key]=p.catch(()=>false);
+  return p;
+}
+async function programMergeNow(key,mutate,after){
+  if(!sbOn()||!sbAuthed()) return false;
+  if(!ORG_ID){ try{ await orgResolve(); }catch(e){} }
+  if(!ORG_ID) return false;
+  const rows=await sbGetStrict('np_demo_program','key=eq.'+encodeURIComponent(key)+'&select=value');
+  if(!Array.isArray(rows)) return false;                              // could not read it: better not to write it at all
+  const cur=(rows[0]&&rows[0].value&&typeof rows[0].value==='object')?JSON.parse(JSON.stringify(rows[0].value)):{};
+  const next=mutate(cur,rows.length>0);
+  if(!next||typeof next!=='object') return false;
+  const ok=await sbUpsertRaw('np_demo_program',{key,value:next,updated_by:auditActor()});
+  if(ok&&after){ try{ after(next); }catch(e){} }
+  return ok;
+}
 async function usersAddSelf(email,entry){
-  let rows=null;
-  try{ rows=await sbGet('np_demo_program','key=eq.users&select=value'); }catch(e){ rows=null; }
-  USERS[email]=entry;
-  if(!Array.isArray(rows)) return false;                            // could not read the list: better not to write it at all
-  const latest=rows[0]&&rows[0].value&&rows[0].value.map;
-  if(latest&&typeof latest==='object') Object.keys(latest).forEach(k=>{ if(!USERS[k]) USERS[k]=latest[k]; });
-  return usersSave();
+  email=String(email||'').toLowerCase(); if(!email) return false;
+  USERS[email]=Object.assign({},USERS[email]||{},entry);
+  return programMerge('users',v=>{
+    const map=(v.map&&typeof v.map==='object')?v.map:{};
+    map[email]=Object.assign({},map[email]||{},entry);                // only this person's own entry changes
+    Object.keys(map).forEach(k=>{ if(k!==email) USERS[k]=map[k]; });  // and this page catches up with everyone else's
+    v.map=map; return v;
+  });
 }
 function userSetSave(patch){
   const k=userKey();
   USER_SET[k]=Object.assign({},USER_SET[k]||{},patch);
-  sbUpsert('np_demo_program',{key:'usersettings',value:{map:USER_SET},updated_by:auditActor()});
+  if(!realSession()){ sbUpsert('np_demo_program',{key:'usersettings',value:{map:USER_SET},updated_by:auditActor()}); return; }
+  programMerge('usersettings',v=>{                                    // v12.13: your own settings only, never a teammate's
+    const map=(v.map&&typeof v.map==='object')?v.map:{};
+    map[k]=Object.assign({},map[k]||{},USER_SET[k]);
+    v.map=map; return v;
+  });
 }
 function applyUserSettings(){
   const m=USER_SET[userKey()]; if(!m) return;
@@ -14816,7 +15258,7 @@ function certReminderRun(){
       const title=days<0?`Certification expired — ${c.c}`:`Certification due in ${days} day${days===1?'':'s'} — ${c.c}`;
       const body=`${st.name} · ${days<0?'expired':'expires'} ${fmtDate(c.exp)}. Upload the renewal to their staff file.`;
       if(CERT_REMIND.who!=='director'){ SYS_NOTIFS.unshift({t:title,s:body,at:nowStamp(),k:days<0?'bad':'warn',sid}); sbPush('np_demo_notifications',{title,body,kind:'cert',for_staff:sid}); }
-      if(CERT_REMIND.who!=='staff'){ SYS_NOTIFS.unshift({t:title,s:body,at:nowStamp(),k:days<0?'bad':'warn'}); sbPush('np_demo_notifications',{title,body,kind:'cert',for_staff:null}); }
+      if(CERT_REMIND.who!=='staff'){ SYS_NOTIFS.unshift({t:title,s:body,at:nowStamp(),k:days<0?'bad':'warn',sid:'@director'}); sbPush('np_demo_notifications',{title,body,kind:'cert',for_staff:'@director'}); }
       fired++;
     });
   });
@@ -14841,11 +15283,22 @@ function certRemindApply(){
   closeAll(); const n=certReminderRun(); render(); toast('Reminders set to '+CERT_REMIND.days+' days'+(n?' — '+n+' sent now':'.'));
 }
 function bindIdentity(role){
-  const b=USERS[(AUTH.email||ONB.email||'').toLowerCase()];
-  if(role==='staff'&&b&&b.sid&&staff(b.sid)){
-    const st=staff(b.sid);
-    ME.staff={name:st.name, init:(st.init||'').replace(/\./g,'').slice(0,2)||st.name.slice(0,2).toUpperCase(),
-      role:(st.role||'Direct Support Professional')+(st.home?' · '+st.home:''), label:'Staff view'};
+  if(realSession()){                                                 // v12.13: the signed-in person, never a built-in sample
+    resolvePerson();
+    if(role==='director') ME.director={name:PERSON.name,init:PERSON.init,role:PERSON.title||'Director',label:'Director view'};
+    else if(role==='staff'&&roleFor()!=='director'){                 // a director previewing the staff view keeps the sample person on screen
+      const st=PERSON.sid&&staff(PERSON.sid);
+      ME.staff=st?{name:st.name, init:(st.init||'').replace(/\./g,'').slice(0,2)||initialsOf(st.name),
+          role:(st.role||'Direct Support Professional')+(st.home?' · '+st.home:''), label:'Staff view'}
+        :{name:PERSON.name, init:PERSON.init, role:PERSON.title||'Care staff', label:'Staff view'};
+    }
+  } else {
+    const b=USERS[(AUTH.email||ONB.email||'').toLowerCase()];
+    if(role==='staff'&&b&&b.sid&&staff(b.sid)){
+      const st=staff(b.sid);
+      ME.staff={name:st.name, init:(st.init||'').replace(/\./g,'').slice(0,2)||st.name.slice(0,2).toUpperCase(),
+        role:(st.role||'Direct Support Professional')+(st.home?' · '+st.home:''), label:'Staff view'};
+    }
   }
   applyUserSettings(); idleReset();
   if(el('app').classList.contains('on')){
@@ -14870,9 +15323,11 @@ async function accountTouch(evt){                                    // signup /
     workspace:NP_WS,
     org_id:ORG_ID,
     org:ONB.org||'',
-    name:ONB.name||'',
-    role:ONB.role||'',
-    role_title:ONB.roleTitle||'',
+    /* v12.13: in a signed-in workspace only what is known about THIS person is sent (a field left
+       out keeps what is on file). The role is the agency's record of it, not the view being previewed. */
+    name:realSession()?((PERSON&&PERSON.named)?PERSON.name:undefined):(ONB.name||''),
+    role:realSession()?(roleFor()||undefined):(ONB.role||''),
+    role_title:realSession()?((PERSON&&PERSON.title)||undefined):(ONB.roleTitle||''),
     auth_mode:AUTH.mode||'',
     last_event:evt||'',
     last_seen_at:new Date().toISOString(),
@@ -14890,15 +15345,21 @@ async function accountTouch(evt){                                    // signup /
 }
 function profileSave(){                                              // who signed up: name, role, title, email
   if(!sbOn()||!sbAuthed()||!ORG_ID) return;
+  if(!isAgencyOwner()) return;                                       // v12.13: a co-director never overwrites the owner's record
   sbUpsert('np_demo_program',{key:'profile',value:{
-    name:ONB.name||'', role:ONB.role||'', roleTitle:ONB.roleTitle||'', email:ONB.email||AUTH.email||'',
+    name:ONB.name||'', role:ONB.role||'', roleTitle:ONB.roleTitle||'', email:AUTH.email||ONB.email||'',
     auth_mode:AUTH.mode||'', org_id:ORG_ID, registered_at:ONB.registeredAt||new Date().toISOString()
   },updated_by:ONB.name||AUTH.email||'signup'});
   sbUpsert('np_demo_program',{key:'orgid',value:{v:ORG_ID,org:ONB.org||''},updated_by:ONB.name||'signup'});
 }
 function authReady(){ return !!AUTH.email && AUTH.mode!=='none'; }
 /* which view this account opens: its entry on the team list first, then its own setup */
-function roleFor(){ const em=(AUTH.email||'').toLowerCase(); const b=USERS[em]; if(b&&ME[b.role]) return b.role;
+function roleFor(){ const em=(AUTH.email||'').toLowerCase();
+  /* v12.13: in a signed-in workspace the membership (np_my_role) is the record of who is a
+     director. The team list is a shared settings row anyone in the agency can save, so it only
+     decides when the membership is not known yet. */
+  if(realSession()&&MEMBER_ROLE&&ME[MEMBER_ROLE]) return MEMBER_ROLE;
+  const b=USERS[em]; if(b&&ME[b.role]) return b.role;
   if(MEMBER_ROLE&&ME[MEMBER_ROLE]) return MEMBER_ROLE;
   const mine=!ONB.email||String(ONB.email).toLowerCase()===em;       // another account's setup on this browser never decides
   return (mine&&ONB.role&&ME[ONB.role])?ONB.role:null; }
@@ -14961,6 +15422,15 @@ async function authLogin(email,pw){
 }
 /* Account settings → set up or change credentials */
 function openCredentials(){
+  if(realSession()){                                                 // v12.13: change this account's password, nothing else
+    openModal('Change your password',`
+      <div class="field"><label>Signed in as</label><input class="inp" value="${esc(AUTH.email||'')}" disabled></div>
+      <div class="field"><label>New password</label><input class="inp" id="crPw" type="password" placeholder="At least 8 characters"></div>
+      <div class="field"><label>Confirm new password</label><input class="inp" id="crPw2" type="password" placeholder="Type it again"></div>
+      <div class="tiny muted">Your password is handled by the portal\u2019s authentication service \u2014 we never see it.</div>`,
+      `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" id="crGo" onclick="changePassword()">Change password</button>`);
+    return;
+  }
   const has=authReady();
   openModal(has?'Sign-in credentials':'Set up your sign-in',`
     <div class="sec-note" style="margin-top:0"><span>🔑</span><div><b>${has?'Your login':'Choose how you sign in'}</b>${has
@@ -14974,6 +15444,15 @@ function openCredentials(){
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>
      <button class="btn navy" onclick="saveCredentials()">${has?'Update':'Save credentials'}</button>`);
 }
+async function changePassword(){
+  const pw=el('crPw').value, pw2=el('crPw2').value;
+  if(String(pw||'').length<8) return toast('Use at least 8 characters.');
+  if(pw!==pw2) return toast('The two passwords do not match.');
+  const send=()=>fetch(BACKEND.url+'/auth/v1/user',{method:'PUT',headers:{'Content-Type':'application/json',apikey:BACKEND.anon,Authorization:'Bearer '+sbTok()},body:JSON.stringify({password:pw})});
+  let r; try{ r=await send(); if(r.status===401&&await sbRefresh()) r=await send(); }catch(e){ return toast('Could not reach the sign-in service. Try again in a moment.'); }
+  if(!r.ok){ const d=await r.json().catch(()=>({})); return toast((d&&(d.msg||d.error_description||d.message))||'The password could not be changed.'); }
+  logAudit('Changed password',AUTH.email||''); closeAll(); toast('Password changed. Use the new one next time you sign in.');
+}
 async function saveCredentials(){
   const email=el('crEmail').value, pw=el('crPw').value, pw2=el('crPw2').value;
   if(pw!==pw2) return toast('The two passwords do not match.');
@@ -14986,7 +15465,7 @@ async function saveCredentials(){
 function showLoginForm(){
   bootReveal();
   el('login').classList.add('credmode'); loginGoLabel('Sign in');
-  el('loginTitle').textContent=ONB.name?('Welcome back, '+String(ONB.name).split(' ')[0]+'.'):'Sign in';
+  el('loginTitle').textContent=greetName()?('Welcome back, '+String(greetName()).split(' ')[0]+'.'):'Sign in';
   el('loginSub').innerHTML=(ONB.org&&ONB.org!=='Spectrum')?'Sign in to the '+esc(ONB.org)+' dashboard portal.':'Sign in to your agency\u2019s care portal.';
   const cb0=el('credBox');
   if(!el('loginBrand')) cb0.insertAdjacentHTML('beforeend','<div id="loginBrand" class="tiny muted" style="text-align:center;margin-top:16px;border-top:1px solid var(--line);padding-top:12px">Powered by Spectrum Care Advisory OS · <span class="demo-tag" style="margin-left:4px">Beta '+APP_VERSION+'</span></div>');
@@ -15033,14 +15512,15 @@ function showLoginPage(){
   const lf0=el('loginFresh'); if(lf0) lf0.remove();
   if(!el('loginFresh')) cb.insertAdjacentHTML('beforeend','<div id="loginFresh" class="tiny muted" style="text-align:center;margin-top:10px">'
     +(AUTH.email?'Not '+esc(AUTH.email)+'? <a href="#" onclick="event.preventDefault();loginOtherAccount()">Use a different account</a><br>':'')
-    +'Setting up a new agency? <a href="#" onclick="event.preventDefault();showRegisterGate()">Create an agency account</a></div>');
-  if(!el('loginSwap')) cb.insertAdjacentHTML('beforeend','<div id="loginSwap" class="tiny" style="text-align:center;margin-top:12px">Don\'t have an account? <a href="#" onclick="event.preventDefault();showRegisterGate()" style="color:var(--navy);font-weight:800">Sign up</a></div>');
+    +'Setting up a new agency? <a href="#" onclick="event.preventDefault();showRegisterGate()">Create an agency account</a>'
+    +'<div style="margin-top:6px">Joining your agency\u2019s team? Use the invite link your director sends you \u2014 it sets up your sign-in.</div></div>');
+  { const ls0=el('loginSwap'); if(ls0) ls0.remove(); }                // v12.13: one link to start an agency, not two
 }
 async function finishRegister(){
   const em=(el('liEmail').value||'').trim(), pw=(el('liPw').value||'');
   const inv=window._joinInvite;
   const roleTxt=inv?(inv.role_title||'Staff'):(((el('regRole')&&el('regRole').value)||'').trim());
-  const role=inv?'staff':(/\b(staff|dsp|support professional|aide|caregiver|nurse)\b/i.test(roleTxt)?'staff':'director');
+  const role=inv?(inv.access==='director'?'director':'staff'):(/\b(staff|dsp|support professional|aide|caregiver|nurse)\b/i.test(roleTxt)?'staff':'director');
   if(!inv&&el('regOrg')&&!String(el('regOrg').value||'').trim()){ el('regOrg').focus(); return toast('Give your agency a name.'); }
   const r=await authRegister(em,pw);                                // Supabase Auth when the backend is configured
   if(!r.ok) return toast(r.msg);
@@ -15059,7 +15539,7 @@ async function finishRegister(){
         : 'That invite could not be redeemed \u2014 ask your director to send a new one.');
       return;
     }
-    ONB.org=inv.org||ONB.org; ONB.name=inv.name||''; ONB.role='staff'; ONB.roleTitle=inv.role_title||'';
+    ONB.org=inv.org||ONB.org; ONB.name=inv.name||''; ONB.role=role; ONB.roleTitle=inv.role_title||'';
     ONB.email=AUTH.email||em; ONB.registeredAt=new Date().toISOString();
     lsSet('np_onboarding',JSON.stringify(ONB));
     accountTouch('signup');                                          // v12.11: the agency's profile is its owner's; a new staff member never overwrites it
@@ -15075,9 +15555,9 @@ async function finishRegister(){
     /* v12.11: only now, inside the agency and with its team list loaded, add this account to it.
        Written earlier it landed in the throwaway sign-up agency and the real list never knew
        this person was staff, so on another device they opened as a director. */
-    MEMBER_ROLE='staff';
-    await usersAddSelf((AUTH.email||em).toLowerCase(),{sid:inv.sid,role:'staff',name:inv.name||''});
-    signIn('staff');
+    MEMBER_ROLE=role;
+    await usersAddSelf((AUTH.email||em).toLowerCase(),Object.assign({role,name:inv.name||'',title:inv.role_title||''},inv.sid?{sid:inv.sid}:{}));
+    signIn(role);
     return;
   }
   /* v12.9: a new agency starts from nothing. Nothing is carried over from whichever agency
@@ -15132,10 +15612,17 @@ function startFresh(){
 }
 function showRolePicker(){
   el('login').classList.remove('credmode');
-  el('loginTitle').textContent=ONB.name?('Welcome back, '+String(ONB.name).split(' ')[0]+'.'):'Choose a view';
+  el('loginTitle').textContent=greetName()?('Welcome back, '+String(greetName()).split(' ')[0]+'.'):'Choose a view';
   el('loginSub').innerHTML=(ONB.org&&ONB.org!=='Spectrum'?'<b>'+esc(ONB.org)+'</b> · ':'')+'pick the view to open — everyone sees only what their role allows. Powered by Spectrum Care Advisory OS · Beta.';
   el('credBox').style.display='none';
   el('roleGrid').style.display='';
+  /* v12.13: the director card is the signed-in director; the other two are previews */
+  const rd=el('rcWhoD'), card=el('rcDir');
+  if(realSession()){
+    const p=PERSON||resolvePerson();
+    if(rd) rd.innerHTML='<b>'+esc((p&&p.name)||'You')+'</b> \u00b7 '+esc((p&&p.title)||'Director');
+    if(card) card.style.display=(roleFor()&&roleFor()!=='director')?'none':'';
+  } else if(rd) rd.innerHTML='<b>Agency director</b> \u00b7 Executive Director';
 }
 async function doLogin(){
   if(window._regMode) return finishRegister();
@@ -15153,7 +15640,11 @@ async function doLogin(){
   await orgResolve(AUTH.email);
   HYDRATING=sbHydrate();
   await Promise.race([HYDRATING, new Promise(r2=>setTimeout(r2,4000))]);
-  signIn(roleFor()||'director');
+  /* v12.13: if the role is not known yet, open the staff view (never the director's) and move to
+     the right one as soon as the workspace says what it is */
+  const r0=roleFor();
+  signIn(r0||(ORG_ID?'staff':'director'));
+  if(!r0) whenHydrated(()=>{ const r=roleFor(); if(r&&r!==state.role) signIn(r); },8000);
 }
 
 /* ══════════════ v6.3: RECENT DOCUMENT ACTIVITY ══════════════
@@ -15171,10 +15662,10 @@ const ACT_SAYS={generated:'generated',edited:'edited',exported:'exported',printe
 function loadDocAct(){ try{ const r=lsGet('np_doc_activity'); if(r) DOC_ACT=JSON.parse(r)||[]; }catch(e){ DOC_ACT=[]; } }
 const ACT_KEEP=25;
 function docAct(kind,name,where,docId){
-  DOC_ACT.unshift({k:kind,n:name,w:where||'',id:docId||null,by:ME[state.role].name,at:nowStamp(),ts:Date.now()});
+  DOC_ACT.unshift({k:kind,n:name,w:where||'',id:docId||null,by:actorName(),at:nowStamp(),ts:Date.now()});
   DOC_ACT=DOC_ACT.slice(0,ACT_KEEP);                          // recent, not a whole history
   lsSet('np_doc_activity',JSON.stringify(DOC_ACT));
-  sbPush('np_demo_doc_activity',{kind,doc_name:name,folder:where||'',doc_id:docId||null,actor:ME[state.role].name});
+  sbPush('np_demo_doc_activity',{kind,doc_name:name,folder:where||'',doc_id:docId||null,actor:actorName()});
 }
 Object.assign(PAGE_SIZES,{docact:8});
 function docActOpen(){ return ((USER_SET[userKey()]||{}).docActOpen)!==false; }
@@ -15231,6 +15722,19 @@ function extAlert(kind,count){
 function extNotify(kind,count,opts){
   opts=opts||{};
   const body=extAlert(kind,count);
+  /* v12.13: an outside alert is for the people it concerns, sent by THEIR alert settings, and only
+     if they turned outside alerts on. It used to carry the sender's own settings, so the person
+     writing a message was the one alerted. */
+  if(realSession()){
+    const me=String(AUTH.email||'').toLowerCase();
+    Array.from(new Set((opts.to||[]).map(e=>String(e||'').toLowerCase()).filter(e=>e&&e!==me))).forEach(em=>{
+      const p=(USER_SET[em]||{}).notifprefs;
+      if(!p||(!p.email&&!p.sms)) return;
+      n8nHook('reminders',{event:'alert.external',kind,count:count||1,subject:'Spectrum Care Advisory OS',body,phi:false,
+        channel:{email:!!p.email,sms:!!p.sms},to:{email:p.email?(p.emailTo||em):'',sms:p.sms?(p.smsTo||''):''},audience:opts.audience||null});
+    });
+    return body;
+  }
   n8nHook('reminders',{
     event:'alert.external', kind, count:count||1,
     subject:'Spectrum Care Advisory OS', body, phi:false,
@@ -15390,15 +15894,17 @@ function homeVal(id){
   return v;
 }
 function msgNotify(th,snippet){
-  SYS_NOTIFS.unshift({t:'New message',s:`${th.who} thread · ${askTr(snippet,60)}`,at:nowStamp(),k:'msg'});
-  sbPush('np_demo_notifications',{title:'New message',body:`${th.who} thread · ${askTr(snippet,60)}`,kind:'msg',for_staff:null});
+  const aud=realSession()?msgAudience(th):null;                     // v12.13: for the other side of the conversation, not everyone
+  const body=realSession()?`${actorName()} \u2192 ${msgOtherSide(th)} \u00b7 ${askTr(snippet,60)}`:`${th.who} thread · ${askTr(snippet,60)}`;
+  SYS_NOTIFS.unshift(Object.assign({t:'New message',s:body,at:nowStamp(),k:'msg'},aud?{sid:aud}:{}));
+  sbPush('np_demo_notifications',{title:'New message',body,kind:'msg',for_staff:aud});
   renderNav();
 }
 function pingStaff(sid,title,body){
   const st=staff(sid); if(!st) return;
   SYS_NOTIFS.unshift({t:title,s:`${st.init} · ${body}`,at:nowStamp(),k:'info',sid});   // in-portal: full detail, routed to that person
   sbPush('np_demo_notifications',{title,body:`${st.init} · ${body}`,kind:'info',for_staff:sid});
-  extNotify('assignment',1,{staffInit:st.init});                                       // outbound: generic only
+  extNotify('assignment',1,{staffInit:st.init,to:sidEmails(sid),audience:sid});       // outbound: generic only, to that person
   renderNav();
 }
 function openStaffForm(sid){
@@ -15443,8 +15949,8 @@ function sendPortalEmail(to,subject,html){
   if(!relayOn()) return Promise.reject(new Error('no relay'));
   return relayCall('email',{to,subject,html});                         // the email token is added on the server
 }
-function inviteSendNow(sid,email,link){
-  const st=staff(sid); if(!st) return;
+function inviteSendNow(sid,email,link,nm,rl,isDir){
+  const st=sid?staff(sid):{name:nm||'there',role:rl||''}; if(!st) return;
   const org=(ONB.org&&ONB.org!=='Spectrum')?ONB.org:'the team';
   const html=`<div style="font-family:sans-serif;font-size:14px;line-height:1.6;color:#222">
     <h2 style="margin:0 0 10px">You\u2019re invited to the ${esc(org)} dashboard</h2>
@@ -15452,12 +15958,49 @@ function inviteSendNow(sid,email,link){
     <p>You\u2019ve been invited to the care portal as <b>${esc(st.name)}</b>${st.role?' · '+esc(st.role):''}. Create your account here:</p>
     <p><a href="${esc(link)}" style="background:#152B47;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;display:inline-block">Create my account</a></p>
     <p style="font-size:12px;color:#666">Or paste this link into your browser:<br>${esc(link)}</p>
-    <p style="font-size:12px;color:#666">The link signs you up in the staff view and works once.</p></div>`;
+    <p style="font-size:12px;color:#666">${isDir?'The link sets up your director sign-in and works once.':'The link signs you up in the staff view and works once.'}</p></div>`;
   sendPortalEmail(email,'You\u2019re invited to the '+org+' dashboard',html)
     .then(async r=>{
       if(r&&r.ok===false){ const d=await r.json().catch(()=>({})); return toast((d&&d.error?d.error+' ':'')+'The invite was not sent \u2014 use Copy link or Gmail instead.'); }
       logAudit('Emailed portal invite',`${st.name} · ${email}`); toast('Invite emailed to '+email+'.'); })
     .catch(()=>toast('Could not reach the email service — use Copy link or Gmail instead.'));
+}
+/* v12.13: a director brings another director into this agency. They get their own sign-in;
+   nobody shares anyone else's. Once the v12.13 database update is in, only directors can create
+   invites and the database decides the new person's role from the invite. */
+function inviteDirector(){
+  openModal('Invite a director',`
+    <div class="field"><label>Full name</label><input class="inp" id="idName" placeholder="e.g. Jordan Lee"></div>
+    <div class="field"><label>Email</label><input class="inp" id="idEmail" type="email" placeholder="name@agency.org"></div>
+    <div class="field"><label>Title</label><input class="inp" id="idTitle" value="Director" placeholder="e.g. Executive Director"></div>
+    <div class="tiny muted">They get a link to set their own password and land in this agency with full director access. The link works once, for this email only, and expires in 14 days.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" id="idGo" onclick="inviteDirectorCreate()">Create invite link</button>`);
+}
+async function inviteDirectorCreate(){
+  const name=(el('idName').value||'').trim(), email=(el('idEmail').value||'').trim().toLowerCase(), title=(el('idTitle').value||'').trim()||'Director';
+  if(!name) return toast('Enter their name.');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Enter a valid email address.');
+  const token='iv'+Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
+  const ok=await sbPush('np_demo_invites',{token,workspace:NP_WS,org:ONB.org||'',email,sid:'',name,role_title:title,access:'director',invited_by:auditActor()});
+  if(ok===false) return toast('The invite could not be saved \u2014 only directors can invite people.');
+  if((COL_UNSUPPORTED['np_demo_invites']||[]).includes('access')){   // the database cannot mark it as a director invite yet
+    sbDel('np_demo_invites','token=eq.'+encodeURIComponent(token));
+    return toast('Director invites need a one-time database update first \u2014 the invite was not created.');
+  }
+  const link=location.origin+location.pathname+'?join='+token;
+  logAudit('Invited a director to the portal',`${name} \u00b7 ${email}`);
+  const org=(ONB.org&&ONB.org!=='Spectrum')?ONB.org:'the team';
+  const su=encodeURIComponent('You\u2019re invited to the '+org+' dashboard');
+  const bd=encodeURIComponent('Hi '+name.split(' ')[0]+',\n\nYou\u2019ve been invited to the '+org+' care portal as a director. Set up your sign-in here:\n'+link+'\n\nThe link works once, for this email address.');
+  openModal('Invite link ready',`
+    <div class="field"><label>Registration link for ${esc(name)}</label><input class="inp" id="ivLink" value="${esc(link)}" readonly onclick="this.select()"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn navy sm" onclick="inviteSendNow('',${esc(JSON.stringify(email))},el('ivLink').value,${esc(JSON.stringify(name))},${esc(JSON.stringify(title))},true)">✉ Email the invite now</button>
+      <button class="btn ghost sm" onclick="el('ivLink').select();document.execCommand('copy');toast('Link copied.')">⧉ Copy link</button>
+      <a class="btn ghost sm" style="text-decoration:none" target="_blank" rel="noopener" href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(email)}&su=${su}&body=${bd}">Gmail draft</a>
+    </div>
+    <div class="tiny muted" style="margin-top:10px">The link works once, for ${esc(email)} only. If it goes astray, create a fresh one.</div>`,
+    `<button class="btn navy" onclick="closeAll()">Done</button>`);
 }
 function inviteCreate(sid){
   const st=staff(sid); if(!st) return;
@@ -15501,7 +16044,7 @@ function goalSave(cid,gi){
   c.goals=c.goals||[];
   const prev=gi==null?{notes:[]}:(c.goals[gi]||{notes:[]});
   const notes=(prev.notes||[]).slice();
-  if(note) notes.unshift({t:note,by:ME[state.role].name,at:nowStamp()});
+  if(note) notes.unshift({t:note,by:actorName(),at:nowStamp()});
   const rec={g,notes};
   if(gi==null){ c.goals.push(rec); logAudit('Added IPP goal',`${c.uci} · ${g}`); }
   else { c.goals[gi]=rec; logAudit(note?'Added IPP progress note':'Edited IPP goal',`${c.uci} · ${g}`); }
@@ -16165,7 +16708,10 @@ function catDel(name){
 /* pilot agreement — every director and staff user signs individually; family is exempt */
 let PILOT_SIGNED={};
 let PILOT_AGREED=null;                                              // the signature for the CURRENT role
-function pilotSync(){ PILOT_AGREED=PILOT_SIGNED[state.role]||null; }
+/* v12.13: signed per person (by sign-in email) in a real workspace. It used to be per role, so the
+   first director's signature counted for every later director and showed their name to them. */
+function pilotKey(){ return (realSession()&&AUTH.email)?'u:'+String(AUTH.email).toLowerCase():state.role; }
+function pilotSync(){ PILOT_AGREED=PILOT_SIGNED[pilotKey()]||null; }
 function pilotGate(){
   if(DEMO_VIEW) return;                                              // the demo sandbox is never gated
   pilotSync();
@@ -16180,8 +16726,8 @@ function pilotGate(){
       <div class="field"><label>Facility license number(s)</label><input class="inp" id="pgLicense" placeholder="e.g. 347001234"></div>
     </div>
     <div class="row2">
-      <div class="field"><label>Authorized signer</label><input class="inp" id="pgName" placeholder="Full legal name"></div>
-      <div class="field"><label>Title</label><input class="inp" id="pgTitle" placeholder="e.g. Executive Director"></div>
+      <div class="field"><label>Authorized signer</label><input class="inp" id="pgName" placeholder="Full legal name" value="${esc(realSession()&&PERSON&&PERSON.named?PERSON.name:'')}"></div>
+      <div class="field"><label>Title</label><input class="inp" id="pgTitle" placeholder="e.g. Executive Director" value="${esc(realSession()&&PERSON?(PERSON.title||''):'')}"></div>
     </div>
     <div class="tiny muted" style="margin:2px 0 8px">Effective date: <b>${fmtLong(T)}</b> · Pilot term: <b>30 days from first login</b> (through ${expires})</div>
     <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;cursor:pointer;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)">
@@ -16198,12 +16744,14 @@ function pilotGateSign(){
   if(!nm) return toast('Enter the authorized signer\'s full name.');
   if(!el('pgAccept').checked) return toast('Check the acceptance box to sign.');
   PILOT_AGREED={by:nm,title,agency,license:lic,at:nowStamp(),role:ME[state.role].label,term:'30 days',expires:new Date(Date.now()+30*864e5).toISOString().slice(0,10)};
-  PILOT_SIGNED[state.role]=PILOT_AGREED;
+  if(realSession()) PILOT_AGREED.email=String(AUTH.email||'').toLowerCase();
+  PILOT_SIGNED[pilotKey()]=PILOT_AGREED;
   lsSet('np_pilot_agreed',JSON.stringify(PILOT_SIGNED));
   pilotRecordSigned();
   pilotPersist(nm);
   n8nHook('reminders',{event:'pilot.signed',by:nm,agency,at:new Date().toISOString()});
   logAudit('Signed pilot agreement',`${agency} · ${nm}`);
+  if(realSession()&&PERSON&&!PERSON.named) personSave(nm,title).catch(()=>{});   // the name you sign with is the name on your records
   window._gateLock=false;
   closeAll(); render(); toast('Agreement signed — welcome aboard.');
 }
@@ -16239,14 +16787,15 @@ function openPilotAgreement(){
        ['Paper records','Documents requiring a wet signature remain the official record. The portal keeps the working copy and the reminders.'],
        ['Support','Questions and issues go to support@aiparagonconsulting.com. Feedback gathered during the pilot informs the final build.']]
       .map(([t,d],i)=>`<div class="guide-step" style="padding:12px 0"><div class="gn">${i+1}</div><div><b>${t}</b><span>${d}</span></div></div>`).join('')}
-    <div class="field" style="margin-top:12px"><label>Type your full name to sign</label><input class="inp" id="paName" placeholder="${esc(ME[state.role].name)}"></div>`,
+    <div class="field" style="margin-top:12px"><label>Type your full name to sign</label><input class="inp" id="paName" placeholder="${esc(actorName())}"></div>`,
     `<button class="btn ghost" onclick="closeAll()">Not now</button><button class="btn navy" onclick="signPilot()">Sign agreement</button>`);
 }
 function signPilot(){
   const nm=(el('paName').value||'').trim();
   if(!nm) return toast('Type your full name to sign.');
   PILOT_AGREED={by:nm,at:nowStamp(),role:ME[state.role].label};
-  PILOT_SIGNED[state.role]=PILOT_AGREED;
+  if(realSession()) PILOT_AGREED.email=String(AUTH.email||'').toLowerCase();
+  PILOT_SIGNED[pilotKey()]=PILOT_AGREED;
   lsSet('np_pilot_agreed',JSON.stringify(PILOT_SIGNED));
   pilotRecordSigned();
   pilotPersist(nm);
@@ -16263,16 +16812,20 @@ function emailAgreement(){
   const P=PILOT_AGREED||{};
   const su=encodeURIComponent('Signed Pilot Dashboard Agreement — '+(ONB.org||'Spectrum'));
   const bd=encodeURIComponent(`Signed by: ${P.by||''} (${P.role||''})\nAgency: ${P.agency||ONB.org||''}\nSigned at: ${P.at||''}\nTerm: ${P.term||'30 days'} · expires ${P.expires||''}\n\nOpen your dashboard profile for the full printable agreement text.`);
-  const to=encodeURIComponent(ONB.email||'');
+  const to=encodeURIComponent(AUTH.email||ONB.email||'');
   if(GCAL&&GCAL.connected) window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${bd}`,'_blank');
   else location.href=`mailto:${decodeURIComponent(to)}?subject=${su}&body=${bd}`;
   toast('Compose opened — add any recipients and send.');
 }
 async function pilotPersist(nm){
   if(!ORG_ID) await orgResolve();
-  const okKey=await sbUpsert('np_demo_program',{key:'pilot',value:{signatures:PILOT_SIGNED},updated_by:nm||auditActor()});
+  const k=pilotKey(), mine=PILOT_SIGNED[k];
+  const okKey=realSession()                                          // v12.13: adds your signature without touching anyone else's
+    ? await programMerge('pilot',v=>{ v.signatures=Object.assign({},v.signatures||{}); v.signatures[k]=mine; return v; })
+    : await sbUpsert('np_demo_program',{key:'pilot',value:{signatures:PILOT_SIGNED},updated_by:nm||auditActor()});
   const okRow=await sbPush('np_demo_agreements',{
-    signed_by:nm||auditActor(), role:state.role, org_id:ORG_ID, workspace:NP_WS,
+    signed_by:nm||auditActor(), role:realSession()?(roleFor()||state.role):state.role, org_id:ORG_ID, workspace:NP_WS,
+    signer_email:realSession()?String(AUTH.email||'').toLowerCase():null,
     doc:(function(){const P=PILOT_AGREED||{};
       return P.agency?`Pilot Dashboard Agreement · ${P.agency}${P.license?' · lic '+P.license:''}${P.title?' · '+P.title:''}`:'Pilot agreement';})(),
     agency:(PILOT_AGREED||{}).agency||null,
@@ -16420,7 +16973,7 @@ function askContext(){
     sec('Editable documents & their filled content', filled.slice(0,120));
     sec('Report templates', (typeof TEMPLATES5!=='undefined'?TEMPLATES5:[]).map(t=>`- ${t.name}${t.dest?' → '+t.dest:''}`));
     sec('Policy & guideline library', GUIDES.map(g=>`- ${g.t||g.n||''}${g.d?' · '+askTr(g.d,80):''}`));
-    sec('Message threads', THREADS.map(th=>`- ${askTr(th.subject||th.s||'',70)}${th.msgs&&th.msgs.length?' · last: '+askTr((th.msgs[th.msgs.length-1]||{}).t||'',80):''}`));
+    sec('Message threads', visThreads().map(th=>`- ${askTr(th.sub||th.subject||'',70)}${th.msgs&&th.msgs.length?' · last: '+askTr((th.msgs[th.msgs.length-1]||{}).t||'',80):''}`));
   }
 
   let out=L.join('\n');
@@ -16511,7 +17064,7 @@ function aiTag(view){
     style="border:none;cursor:pointer;margin-left:8px;vertical-align:middle">✦ AI</button>`;
 }
 function askSeed(){
-  el('askLog').innerHTML=`<div class="msg bot">Hi ${esc(ME[state.role].name.split(' ')[0])} ✦ I'm Ask Spectrum. Ask me about a client, a policy, or what is happening on the floor — I only answer from records you are allowed to see. New here? Tap a question below, or <b>Show me around</b> for a quick guide.</div>`;
+  el('askLog').innerHTML=`<div class="msg bot">Hi ${esc(actorName().split(' ')[0])} ✦ I'm Ask Spectrum. Ask me about a client, a policy, or what is happening on the floor — I only answer from records you are allowed to see. New here? Tap a question below, or <b>Show me around</b> for a quick guide.</div>`;
   askSugFill();
 }
 function askSugFill(){
@@ -16546,7 +17099,7 @@ function askTour(){
 }
 async function askViaBackend(q){
   try{
-    const r=await relayCall('ask',{question:q, role:state.role, user:ME[state.role].name,
+    const r=await relayCall('ask',{question:q, role:state.role, user:actorName(),
         context:askContext(), history:ASK_HIST.slice(-6)});
     if(!r.ok) return null;
     const d=await r.json();
@@ -16561,8 +17114,10 @@ function askKey(){                                                   // one hist
 }
 let ASK_ALL={};                                                      // key -> chats, so switching user switches history
 function askChatsSave(){
-  ASK_ALL[askKey()]=ASK_CHATS.slice(0,20);
-  sbUpsert('np_demo_program',{key:'askchats',value:{byUser:ASK_ALL},updated_by:auditActor()});
+  const k=askKey();
+  ASK_ALL[k]=ASK_CHATS.slice(0,20);
+  if(!realSession()){ sbUpsert('np_demo_program',{key:'askchats',value:{byUser:ASK_ALL},updated_by:auditActor()}); return; }
+  programMerge('askchats',v=>{ const by=(v.byUser&&typeof v.byUser==='object')?v.byUser:{}; by[k]=ASK_ALL[k]; v.byUser=by; return v; });   // v12.13: only your own history
 }
 function askChatsLoad(){ ASK_CHATS=(ASK_ALL[askKey()]||[]).slice(); ASK_CUR=null; }
 function askCur(){
@@ -16966,7 +17521,7 @@ function doseBody(m,c,t){
       <div class="tiny muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Why?</div>
       ${REFUSE_REASONS.map((r,i)=>`<button class="reason-btn" id="rb${i}" onclick="pickReason(${i})">${r}</button>`).join('')}
     </div>
-    <div class="tiny muted" style="margin-top:14px">Saving signs this entry as <b>${esc(ME[state.role].name)}</b> at ${hm12(nowHM())}. Entries can be corrected but never deleted.</div>`;
+    <div class="tiny muted" style="margin-top:14px">Saving signs this entry as <b>${esc(actorName())}</b> at ${hm12(nowHM())}. Entries can be corrected but never deleted.</div>`;
 }
 function pickDose(s){
   doseSel.status=s; doseSel.reason=null;
@@ -17021,8 +17576,8 @@ async function sbHydrate(){
   /* v9.90: a workspace nobody has written to yet is a new agency. It opens empty rather
      than showing the built-in example clients and staff as if they were real records. */
   try{
-    const seen=await sbGet('np_demo_program','key=eq.hidesample&select=value');
-    if(!seen.length && lsGet('np_hide_sample')===null){
+    const seen=await sbGetStrict('np_demo_program','key=eq.hidesample&select=value');   // v12.13: a failed read is not "nothing there"
+    if(Array.isArray(seen) && !seen.length && lsGet('np_hide_sample')===null){
       state.hideSample=true; lsSet('np_hide_sample','1');
       sbUpsert('np_demo_program',{key:'hidesample',value:{v:true},updated_by:'signup'});
       try{ clearSampleLists(); }catch(e){}
@@ -17038,7 +17593,7 @@ async function sbHydrate(){
     sbGet('np_demo_appointments','select=*&order=appt_date'),
     sbGet('np_demo_templates'),
     sbGet('np_demo_client_notes','select=*&order=created_at.desc'),
-    sbGet('np_demo_notifications','select=*&order=created_at.desc&limit=20')]);
+    sbGet('np_demo_notifications','select=*&order=created_at.desc&limit=120')]);
   const [lib,sigs,exdocs,insps,apts,thr,msgs,slogs]=await Promise.all([
     sbGet('np_demo_library','select=*&order=created_at'),
     sbGet('np_demo_doc_signatures','select=*&order=created_at'),
@@ -17121,7 +17676,11 @@ async function sbHydrate(){
   })();
   apts.forEach(r=>{ const a=APPTS.find(x=>x.id===r.id); if(a&&r.gcal_id) a.gid=r.gcal_id; });
   try{
-    const prog=await sbGet('np_demo_program','select=*');
+    const progRows=await sbGetStrict('np_demo_program','select=*');   // v12.13: each row as read is the starting copy for merged saves
+    PROG_READ=Array.isArray(progRows); PROG_READ_FAILED=!PROG_READ;
+    if(PROG_READ_FAILED) console.warn('[np-demo] the agency settings did not load \u2014 settings saves are held until the page is reloaded');
+    const prog=progRows||[];
+    prog.forEach(r=>{ try{ PROG_BASE[r.key]=JSON.stringify(r.value); }catch(e){} });
     prog.forEach(r=>{
       if(r.key==='onboarding'&&r.value&&Array.isArray(r.value.steps)&&r.value.steps.length){ ONBOARD.length=0; r.value.steps.forEach(x=>ONBOARD.push(x)); }
       if(r.key==='faq'&&r.value&&Array.isArray(r.value.items)&&r.value.items.length){ FAQ.length=0; r.value.items.forEach(x=>FAQ.push(x)); }
@@ -17199,6 +17758,7 @@ async function sbHydrate(){
       if(r.key==='usersettings'&&r.value&&r.value.map){ USER_SET=r.value.map; }
       if(r.key==='incnotes'&&r.value&&r.value.map){ INC_NOTES=r.value.map; }
       if(r.key==='myquals'&&r.value&&r.value.map){ Object.assign(MY_QUALS,r.value.map); }
+      if(r.key==='myquals'&&r.value&&r.value.people&&typeof r.value.people==='object'){ MY_QUALS_P=r.value.people; }
       if(r.key==='filleddocs'&&r.value&&r.value.map){ FILLED=r.value.map; }
       if(r.key==='chklib'&&r.value&&Array.isArray(r.value.groups)&&r.value.groups.length){ CHECKLIST=r.value.groups; }
       if(r.key==='notifrules'&&r.value&&r.value.rules){ Object.assign(NOTIF_RULES,r.value.rules); if(r.value.cadence) NOTIF_CADENCE=r.value.cadence; }
@@ -17206,13 +17766,16 @@ async function sbHydrate(){
       if(r.key==='goals'&&r.value&&r.value.map){ Object.entries(r.value.map).forEach(([cid,gs])=>{ const c=client(cid); if(c) c.goals=gs; }); }
       if(r.key==='clientnotes'&&r.value&&r.value.map){ Object.assign(CLIENT_NOTES,r.value.map); }
       if(r.key==='prognotes'&&r.value&&r.value.map){ Object.entries(r.value.map).forEach(([cid,ns])=>{ PROG_NOTES[cid]=ns; }); }
-      if(r.key==='email'&&r.value&&typeof r.value.v==='string'){ ONB.email=r.value.v; lsSet('np_onboarding',JSON.stringify(ONB)); }
+      if(r.key==='email'&&r.value&&typeof r.value.v==='string'){ AGENCY_EMAIL=r.value.v; }   // v12.13: the agency's alerts address, not anyone's own email
       /* v12.11: which agency this is comes only from the membership (np_my_org). Stored
          settings used to be able to overwrite it, so a bad value broke every save. */
       if(r.key==='profile'&&r.value&&typeof r.value==='object'){
+        AGENCY_PROFILE=r.value;
         /* v12.9: this is the person who set the agency up. It describes someone else when a
            staff member signs in, so it only fills in who you are when it is you. */
-        const mine=!r.value.email||!AUTH.email||String(r.value.email).toLowerCase()===String(AUTH.email).toLowerCase();
+        const mine=realSession()                                       // v12.13: signed in, it has to be your own email on it
+          ? (!!r.value.email&&!!AUTH.email&&String(r.value.email).toLowerCase()===String(AUTH.email).toLowerCase())
+          : (!r.value.email||!AUTH.email||String(r.value.email).toLowerCase()===String(AUTH.email).toLowerCase());
         if(mine){
           if(r.value.name) ONB.name=r.value.name;
           if(r.value.role&&ME[r.value.role]) ONB.role=r.value.role;
@@ -17238,7 +17801,8 @@ async function sbHydrate(){
   }catch(e){ console.warn('[np-demo] program settings',e); }
   thr.forEach(r=>{
     if(THREADS.some(t=>t.id===r.id)) return;
-    THREADS.unshift({id:r.id,who:r.who||'',sub:r.subject||'',role:r.role||'Staff',last:r.last_msg||'',unread:r.unread||0,msgs:[]});
+    THREADS.unshift({id:r.id,who:r.who||'',sub:r.subject||'',role:r.role||'Staff',last:r.last_msg||'',unread:r.unread||0,msgs:[],
+      from:String(r.from_email||'').toLowerCase(),fromName:r.from_name||'',toKind:r.to_kind||'',toRef:r.to_ref||''});
   });
   msgs.forEach(r=>{
     let th=THREADS.find(t=>t.id===r.thread_id);
@@ -17249,7 +17813,9 @@ async function sbHydrate(){
     if(!th) return;
     if(th.msgs.some(m=>m._db===r.id)) return;
     const d=docById(r.attach_doc);
-    th.msgs.push({_db:r.id,me:!!r.is_me,role:r.role||'',t:r.body||'',w:r.author||'',
+    /* v12.13: "me" means the signed-in person wrote it, not whoever saved it */
+    const mine=r.author_email?String(r.author_email).toLowerCase()===String(AUTH.email||'').toLowerCase():(realSession()?(r.author||'')===actorName():!!r.is_me);
+    th.msgs.push({_db:r.id,me:mine,role:r.role||'',t:r.body||'',w:r.author||'',email:String(r.author_email||'').toLowerCase(),
       at:r.created_at?new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'',
       att:d?{id:d.id,name:d.name}:null});
   });
@@ -17302,7 +17868,7 @@ async function sbHydrate(){
   if(creds.length){ Object.keys(CREDS).forEach(k=>delete CREDS[k]); creds.forEach(r=>{ (CREDS[r.sid]=CREDS[r.sid]||[]).push(credRowFromDb(r)); }); }
   if(tpls.length){ tpls.forEach(r=>{ const t=TEMPLATES5.find(x=>x.id===r.id); if(t){ t.name=r.name; t.fields=r.fields||t.fields; } }); }
   Object.keys(TPL_EXTRAS||{}).forEach(id=>{ const t=tplById(id), x=TPL_EXTRAS[id]; if(t&&x){ if(x.subtitle!=null) t.subtitle=x.subtitle; if(x.foot!=null) t.foot=x.foot; if(x.sysNote===false) t.sysNote=false; else delete t.sysNote; } });
-  SYS_NOTIFS=notifs.map(r=>({t:r.title,s:r.body,_seed:0,at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),k:r.kind||'info',sid:r.for_staff||undefined}));
+  SYS_NOTIFS=notifs.slice(0,120).map(r=>({t:r.title,s:r.body,_seed:0,at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),k:r.kind||'info',sid:r.for_staff||undefined}));
   if(cnotes.length){ CLIENT_NOTES={}; cnotes.forEach(r=>{ (CLIENT_NOTES[r.cid]=CLIENT_NOTES[r.cid]||[]).push({text:r.note,by:r.noted_by,at:new Date(r.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}); }); }
   if(appts.length){ APPTS.length=0; appts.forEach(r=>APPTS.push({id:r.id,cid:r.cid,title:r.title,type:r.type,date:r.appt_date,time:r.appt_time,dur:r.dur,provider:r.provider||'',loc:r.loc||'',flag:r.flag||'',ride:r.ride||'',cancelled:r.cancelled||0,cxBy:r.cx_by||'',gid:r.gcal_id||null,cal:r.cal||'company',owner:r.owner||'',acl:r.acl||null,notes:[],files:[]})); }
   if(window._APPT_EXTRAS){ APPTS.forEach(a=>{ const x=window._APPT_EXTRAS[a.id]; if(x){ a.notes=x.notes||a.notes||[]; a.files=x.files||a.files||[]; } }); }
