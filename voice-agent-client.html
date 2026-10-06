@@ -72,6 +72,8 @@ h2{font-size:16px;color:var(--navy);margin:0}
 .card .delta{font-size:12px;color:var(--muted)}
 .card .delta.up{color:var(--good)}
 .card .delta.warn{color:var(--warn)}
+.card.clickcard{cursor:pointer;transition:border-color .12s}
+.card.clickcard:hover{border-color:var(--blue)}
 
 .panel{background:var(--card);border:1px solid var(--blue-line);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:20px;overflow:hidden}
 .panel .ph{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--blue-line);flex-wrap:wrap}
@@ -115,7 +117,17 @@ td .t2{display:block;color:var(--muted);font-size:13px;margin-top:2px}
 .li:hover{background:#f7fbfe}
 .li[aria-selected="true"]{background:var(--blue-soft);box-shadow:inset 3px 0 0 var(--blue)}
 .li b{color:var(--navy);display:block}
-.li span{color:var(--muted);font-size:13px}
+.li span{color:var(--muted);font-size:13px;display:block}
+.li .lirow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.li .lirow b{display:flex;align-items:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li .tag{font-size:11px;padding:1px 8px}
+.li .lmeta{font-size:12px}
+.udot{display:inline-block;flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:var(--blue);margin-right:7px}
+.lday{position:sticky;top:0;z-index:1;background:var(--page);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 16px;border-bottom:1px solid #e7eef4;font-weight:700}
+.pill.btnlike{cursor:pointer}
+.kbt{display:flex;gap:10px;flex-wrap:wrap}
+.kbt input{flex:1;min-width:220px;border:1px solid var(--blue-line);border-radius:8px;padding:9px 11px}
+.kbres{margin-top:14px}
 
 .bubble{max-width:74%;padding:10px 13px;border-radius:12px;margin-bottom:6px;font-size:14px}
 .out{background:var(--blue-soft);border:1px solid #b9d9f0;margin-left:auto}
@@ -230,7 +242,9 @@ td .t2{display:block;color:var(--muted);font-size:13px;margin-top:2px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--navy);color:#fff;border-radius:10px;padding:10px 16px;font-size:14px;box-shadow:0 10px 30px #082b4c40;z-index:70;display:none;align-items:center;gap:14px}
 .toast[data-open="true"]{display:flex}
 .toast button{background:#fff;color:var(--navy);border:0;border-radius:6px;padding:5px 10px;font-weight:700}
-@media (max-width:820px){.flow{grid-template-columns:1fr 1fr}.choice{grid-template-columns:1fr}}
+@media (max-width:820px){.flow{grid-template-columns:1fr 1fr}.choice{grid-template-columns:1fr}
+  .bubble{max-width:92%}.fbk{max-width:92%}.bubble.coachable{padding-right:13px}
+  .bubble .cbtn{position:static;display:block;margin-top:6px;opacity:1}}
 
 @media (max-width:1080px){
   .cards{grid-template-columns:repeat(2,1fr)} .two{grid-template-columns:1fr} .three{grid-template-columns:1fr}
@@ -276,7 +290,7 @@ td .t2{display:block;color:var(--muted);font-size:13px;margin-top:2px}
 
   <div class="main">
     <div class="topbar">
-      <div class="search"><em>⌕</em><input id="q" placeholder="Search calls, customers, knowledge" aria-label="Search"></div>
+      <div class="search"><em>⌕</em><input id="q" placeholder="Search calls: name, phone, words said  (Ctrl K)" aria-label="Search calls"></div>
       <div class="spacer"></div>
       <span class="pill live" id="modePill">Demo data</span>
       <span class="pill" id="clock">—</span>
@@ -291,7 +305,7 @@ td .t2{display:block;color:var(--muted);font-size:13px;margin-top:2px}
       <div class="head">
         <div>
           <h1>Customer response overview</h1>
-          <p class="sub" id="ovDate">All channels · Pacific Time</p>
+          <p class="sub" id="ovDate">All channels</p>
         </div>
         <div class="row">
           <button class="btn" data-go="conversations">Review calls</button>
@@ -384,6 +398,7 @@ td .t2{display:block;color:var(--muted);font-size:13px;margin-top:2px}
       <div class="head">
         <div><h1>Agent training</h1><p class="sub">Review real calls, correct what the agent said, and publish the change to the live agent.</p></div>
         <div class="row">
+          <button class="btn" id="testQBtn">Test a question</button>
           <button class="btn" id="addRule">Add rule</button>
           <button class="btn primary" id="publishBtn">Publish to agent</button>
         </div>
@@ -423,7 +438,14 @@ td .t2{display:block;color:var(--muted);font-size:13px;margin-top:2px}
       </div>
       <div class="note" style="margin-bottom:18px">These entries are what the voice agent is allowed to say. Anything not covered here is escalated to a human rather than answered.</div>
       <div class="panel">
-        <div class="ph"><h2>Knowledge collections</h2><span class="tag neut" id="syncedAt">—</span></div>
+        <div class="ph"><h2>Test a question</h2><span class="tag neut">See what the agent would say, before a caller asks</span></div>
+        <div class="pb">
+          <div class="kbt"><input id="kbTestQ" placeholder="Type what a caller might ask, like: will my insurance cover this?" aria-label="Caller question"><button class="btn primary" id="kbTestBtn">Test</button></div>
+          <div id="kbTestOut" class="kbres"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph"><h2>Knowledge collections</h2><div class="row"><input id="kbFilter" placeholder="Filter answers" aria-label="Filter answers" style="border:1px solid var(--blue-line);border-radius:8px;padding:6px 10px;width:200px"><span class="tag neut" id="syncedAt">—</span></div></div>
         <div class="pb flush"><table id="knowTable"></table></div>
       </div>
       <div class="panel">
@@ -530,7 +552,7 @@ td .t2{display:block;color:var(--muted);font-size:13px;margin-top:2px}
   <div class="lvl"><i id="callLevel"></i></div>
   <div class="db" id="callLog"></div>
   <div class="derr" id="callErr"></div>
-  <div class="df"><button class="btn sm" id="callMute">Mute</button><span style="flex:1"></span><button class="btn sm danger" id="callEnd">End call</button></div>
+  <div class="df"><button class="btn sm" id="callMute">Mute</button><span style="flex:1"></span><button class="btn sm primary hidden" id="callOpen">Open the call</button><button class="btn sm danger" id="callEnd">End call</button></div>
 </div>
 
 <div class="toast" id="toast" role="status"><span id="toastMsg"></span><button id="toastBtn" class="hidden"></button></div>
@@ -898,7 +920,7 @@ document.addEventListener("click", (e) => {
 function money(n) { return "$" + Number(n).toLocaleString("en-US"); }
 
 function renderCounts() {
-  $("cCount").textContent = S.calls.length;
+  $("cCount").textContent = S.calls.filter((c) => !isReviewed(c)).length;
   $("tCount").textContent = S.threads.filter((t) => t.awaiting).length;
   $("qCount").textContent = S.reviews.filter((r) => r.status === "open").length;
   const td = trainData();
@@ -907,13 +929,14 @@ function renderCounts() {
 
 function renderOverview() {
   const k = S.kpis;
-  $("ovDate").textContent = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) + " · All channels · Pacific Time";
+  let tz = ""; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g, " ").split("/").pop(); } catch (e) {}
+  $("ovDate").textContent = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) + " · All channels" + (tz ? " · " + tz + " time" : "");
   $("ovCards").innerHTML = (S.kpiCards || [
     { lbl: "Calls handled today", big: k.calls, d: "↑ " + k.callsDelta, cls: "up" },
     { lbl: "Inspections booked", big: k.booked, d: k.bookedNote, cls: "" },
     { lbl: "Missed calls recovered", big: k.recovered, d: k.recoveredNote, cls: "" },
     { lbl: "Needs attention", big: k.attention, d: k.attentionNote, cls: "warn" }
-  ]).map((c) => '<div class="card"><div class="lbl">' + esc(c.lbl) + '</div><div class="big">' + esc(c.big) + '</div><div class="delta ' + c.cls + '">' + esc(c.d) + "</div></div>").join("");
+  ]).map((c) => '<div class="card' + (c.go ? ' clickcard" data-kpi="' + c.go : "") + '"><div class="lbl">' + esc(c.lbl) + '</div><div class="big">' + esc(c.big) + '</div><div class="delta ' + c.cls + '">' + esc(c.d) + "</div></div>").join("");
 
   $("ovTable").innerHTML =
     "<thead><tr><th>Customer</th><th>Intent</th><th>Outcome</th><th>Time</th></tr></thead><tbody>" +
@@ -940,43 +963,92 @@ function outcomeTag(c) {
 
 let convFilter = "All";
 let convSel = null;
+let convQuery = "";
+const ENDED = { "customer-ended-call": "Caller hung up", "assistant-ended-call": "Agent ended the call", "silence-timed-out": "Went quiet, call timed out", "exceeded-max-duration": "Hit the time limit", "customer-did-not-answer": "No answer" };
+function isReviewed(c) { return c.reviewStatus === "reviewed"; }
+function callMatches(c, q) {
+  if (!q) return true;
+  const hay = [c.customer, c.phone, c.intent, c.address, c.summary, (c.transcript || []).map((l) => l[1]).join(" ")].join(" ").toLowerCase();
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every((w) => hay.indexOf(w) !== -1);
+}
+function dayLabel(iso) {
+  if (!iso) return "";
+  const d = new Date(iso); const t = new Date();
+  const y = new Date(t.getTime() - 86400000);
+  if (d.toDateString() === t.toDateString()) return "Today";
+  if (d.toDateString() === y.toDateString()) return "Yesterday";
+  return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+}
 function renderConversations() {
-  const filters = ["All", "Needs review", "Booked", "Urgent"];
-  $("convFilters").innerHTML = filters.map((f) =>
-    '<button class="btn sm' + (f === convFilter ? " primary" : "") + '" data-filter="' + esc(f) + '">' + esc(f) + "</button>").join("");
+  const counts = {
+    "All": S.calls.length,
+    "Needs review": S.calls.filter((c) => !isReviewed(c)).length,
+    "Booked": S.calls.filter((c) => c.state === "booked").length,
+    "Escalated": S.calls.filter((c) => c.state === "urgent").length
+  };
+  $("convFilters").innerHTML = Object.keys(counts).map((f) =>
+    '<button class="btn sm' + (f === convFilter ? " primary" : "") + '" data-filter="' + esc(f) + '">' + esc(f) + ' <span style="opacity:.7">' + counts[f] + "</span></button>").join("") +
+    (convQuery ? '<span class="tag info">Matching "' + esc(convQuery) + '"</span><button class="btn sm ghost" id="clearSearch">Clear search</button>' : "");
 
   const list = S.calls.filter((c) => {
-    if (convFilter === "All") return true;
+    if (!callMatches(c, convQuery)) return false;
     if (convFilter === "Booked") return c.state === "booked";
-    if (convFilter === "Urgent") return c.state === "urgent";
-    return c.state === "needs" || c.actions.some((a) => !a.ok);
+    if (convFilter === "Escalated") return c.state === "urgent";
+    if (convFilter === "Needs review") return !isReviewed(c);
+    return true;
   });
 
   if (!convSel || !list.some((c) => c.id === convSel)) convSel = list.length ? list[0].id : null;
 
-  $("convList").innerHTML = list.length ? list.map((c) =>
-    '<div class="li" data-conv="' + c.id + '" aria-selected="' + (c.id === convSel) + '"><b>' + esc(c.customer) +
-    '</b><span>' + esc(c.intent) + " · " + esc(c.time) + " · " + esc(c.duration) + "</span></div>").join("")
-    : '<div class="empty">No conversations match that filter.</div>';
+  let lastDay = null;
+  $("convList").innerHTML = list.length ? list.map((c) => {
+    const day = c.receivedAt ? dayLabel(c.receivedAt) : "";
+    const head = day && day !== lastDay ? '<div class="lday">' + esc(day) + "</div>" : "";
+    lastDay = day || lastDay;
+    return head + '<div class="li" data-conv="' + esc(c.id) + '" aria-selected="' + (c.id === convSel) + '">' +
+      '<div class="lirow"><b>' + (!isReviewed(c) ? '<i class="udot" title="Not reviewed yet"></i>' : "") + esc(c.customer) + "</b>" + outcomeTag(c) + "</div>" +
+      "<span>" + esc(c.intent) + "</span><span class=\"lmeta\">" + esc(c.time) + " · " + esc(c.duration) + (isReviewed(c) ? " · ✓ Reviewed" : "") + "</span></div>";
+  }).join("") : '<div class="empty">' + (convQuery ? "No calls match that search." : S.calls.length ? "Nothing in this filter." : LIVE.on ? "No calls yet. Use Call the agent at the top to place one." : "No conversations.") + "</div>";
 
   const c = S.calls.find((x) => x.id === convSel);
-  if (!c) { $("convDetail").innerHTML = '<div class="empty">' + (LIVE.on ? 'No calls yet. Place one with Call the agent, or phone the assistant.' : 'Select a conversation.') + '</div>'; return; }
+  if (!c) { $("convDetail").innerHTML = '<div class="empty">' + (LIVE.on && !S.calls.length ? "Calls show up here a few seconds after they end." : "Select a conversation.") + "</div>"; return; }
 
+  const reviewed = isReviewed(c);
+  const tel = c.phone && /\d{6,}/.test(c.phone.replace(/\D/g, "")) ? c.phone.replace(/[^\d+]/g, "") : "";
+  const goal = c.success === "true" ? "Yes" : c.success === "false" ? "No" : "";
   $("convDetail").innerHTML =
-    '<div class="head"><div><h2>' + esc(c.customer) + "</h2><p class=\"sub\" style=\"margin:4px 0 0\">" + esc(c.address) + "</p></div>" + outcomeTag(c) + "</div>" +
-    '<dl class="kv" style="margin-bottom:16px"><dt>Intent</dt><dd>' + esc(c.intent) + "</dd>" +
-    "<dt>Time and duration</dt><dd>" + esc(c.time) + " · " + esc(c.duration) + "</dd>" +
+    '<div class="head" style="margin-bottom:10px"><div><h2>' + esc(c.customer) + "</h2><p class=\"sub\" style=\"margin:4px 0 0\">" + esc(c.address) + "</p></div>" + outcomeTag(c) + "</div>" +
+    '<div class="row" style="margin-bottom:16px">' +
+      '<button class="btn sm' + (reviewed ? "" : " primary") + '" data-reviewcall="' + esc(c.id) + '">' + (reviewed ? "✓ Reviewed · undo" : "Mark reviewed") + "</button>" +
+      (tel ? '<a class="btn sm" href="tel:' + esc(tel) + '" style="text-decoration:none">Call back</a>' : "") +
+      '<button class="btn sm" data-copysum="' + esc(c.id) + '">Copy summary</button>' +
+      (c.transcript.length ? '<button class="btn sm" data-jump="transcript">Coach this call</button>' : "") +
+    "</div>" +
+    '<dl class="kv" style="margin-bottom:16px"><dt>What they called about</dt><dd>' + esc(c.intent) + "</dd>" +
+    "<dt>When</dt><dd>" + esc(c.time) + " · " + esc(c.duration) + (c.ended && ENDED[c.ended] ? " · " + esc(ENDED[c.ended]) : "") + "</dd>" +
+    (c.phone && c.phone !== "Web call" ? "<dt>Phone</dt><dd>" + esc(c.phone) + "</dd>" : "") +
+    (c.slot ? "<dt>Booked slot</dt><dd><b>" + esc(c.slot) + "</b></dd>" : "") +
+    (goal ? "<dt>Call goal met</dt><dd>" + (goal === "Yes" ? '<span class="tag ok">Yes</span>' : '<span class="tag warnt">No</span>') + "</dd>" : "") +
     "<dt>Recording</dt><dd>" + (c.recordingUrl ? '<audio controls preload="none" src="' + esc(c.recordingUrl) + '" style="width:100%;max-width:360px"></audio>' : esc(c.recording)) + "</dd>" +
     "<dt>Summary</dt><dd>" + esc(c.summary) + "</dd>" +
     (c.missing && c.missing.length ? "<dt>Still missing</dt><dd>" + esc(c.missing.join(", ")) + "</dd>" : "") +
-    (c.unanswered && c.unanswered.length ? "<dt>Unanswered questions</dt><dd>" + esc(c.unanswered.join("; ")) + "</dd>" : "") +
+    (realQuestions(c).length ? "<dt>Unanswered questions</dt><dd>" + esc(realQuestions(c).join("; ")) + "</dd>" : "") +
     "</dl>" + (c.live ? renderMission(c) : "") +
-    renderTranscript(c) +
+    '<div id="transcriptAnchor"></div>' + renderTranscript(c) +
     "<h2 style=\"margin-bottom:8px\">System actions</h2><table>" +
     "<thead><tr><th>Tool</th><th>Result</th><th>Status</th></tr></thead><tbody>" +
     c.actions.map((a) => "<tr><td>" + esc(a.t) + "</td><td>" + esc(a.r) + "</td><td>" +
       (a.ok ? '<span class="tag ok">Clean</span>' : '<span class="tag warnt">Flagged</span>') + "</td></tr>").join("") +
     "</tbody></table>";
+}
+// Vapi's analysis sometimes lists the agent's own questions as "unanswered". Keep only what the caller asked.
+function realQuestions(c) {
+  const agent = (c.transcript || []).filter((l) => l[0] === "Agent").map((l) => normQ(l[1]));
+  return (c.unanswered || []).concat(c.kbMisses || []).filter((q, i, arr) => {
+    const n = normQ(q);
+    if (!n || arr.findIndex((x) => normQ(x) === n) !== i) return false;
+    return !agent.some((a) => a.indexOf(n) !== -1);
+  });
 }
 
 let threadSel = null;
@@ -1060,7 +1132,7 @@ function renderKnowledge() {
   $("syncedAt").textContent = "Last synced " + S.syncedMinutes + " min ago";
   $("knowTable").innerHTML =
     "<thead><tr><th>Collection</th><th>Example approved response</th><th>Size</th><th>Status</th><th></th></tr></thead><tbody>" +
-    S.knowledge.map((k) =>
+    S.knowledge.filter((k) => { const f = ($("kbFilter").value || "").toLowerCase().trim(); return !f || (k.collection + " " + k.sample).toLowerCase().indexOf(f) !== -1; }).map((k) =>
       "<tr><td><b>" + esc(k.collection) + "</b></td><td>" + esc(k.sample) + "</td><td>" + k.entries + " " + esc(k.kind) +
       '</td><td><span class="tag ' + (k.status === "Current" ? "ok" : "warnt") + '">' + esc(k.status) +
       '</span></td><td><button class="btn sm" data-editknow="' + k.id + '">Edit</button></td></tr>').join("") +
@@ -1155,7 +1227,8 @@ function renderSettings() {
     "<thead><tr><th>System</th><th>State</th></tr></thead><tbody>" +
     S.systems.map((x) => "<tr><td><b>" + esc(x.name) + '</b><span class="t2">' + esc(x.note) +
       '</span></td><td><span class="tag ok">' + esc(x.state) + "</span></td></tr>").join("") + "</tbody>";
-  $("modePill").textContent = LIVE.on ? "Live · Supabase" : "Demo data";
+  $("modePill").textContent = pillText();
+  if (LIVE.on) $("setToggles").insertAdjacentHTML("afterbegin", '<div class="note" style="margin-bottom:6px">These switches are a preview. They don\'t change the live agent yet.</div>');
 }
 
 function renderAll() {
@@ -1171,11 +1244,11 @@ document.addEventListener("click", (e) => {
 
   if (el.dataset.deliv && LIVE.on) {
     const parts = el.dataset.deliv.split("|");
-    liveWrite(LIVE.sb.from("vc_approvals").upsert({ mission_id: parts[0], deliverable: parts[1], status: parts[2], decided_by: LIVE.user ? LIVE.user.email : null, decided_at: new Date().toISOString() }, { onConflict: "mission_id,deliverable" }));
+    liveWrite(LIVE.sb.from("vc_approvals").upsert({ mission_id: parts[0], deliverable: parts[1], status: parts[2], decided_by: LIVE.user ? LIVE.user.email : null, decided_at: new Date().toISOString() }, { onConflict: "mission_id,deliverable" }), parts[2] === "approved" ? "Approved." : "Sent back for changes.");
     return;
   }
   if (el.dataset.editknow && LIVE.on) { editKnowledgeLive(el.dataset.editknow); return; }
-  if (el.dataset.fixappt && LIVE.on) { liveWrite(LIVE.sb.from("vc_appointments").update({ status: "confirmed", note: "Confirmed by " + (LIVE.user ? LIVE.user.email : "a coordinator") }).eq("id", el.dataset.fixappt)); return; }
+  if (el.dataset.fixappt && LIVE.on) { liveWrite(LIVE.sb.from("vc_appointments").update({ status: "confirmed", note: "Confirmed by " + (LIVE.user ? LIVE.user.email : "a coordinator") }).eq("id", el.dataset.fixappt), "Booking confirmed."); return; }
 
   if (el.dataset.filter) { convFilter = el.dataset.filter; convSel = null; renderConversations(); return; }
   if (el.dataset.conv) { convSel = el.dataset.conv; renderConversations(); return; }
@@ -1202,7 +1275,7 @@ document.addEventListener("change", (e) => {
     if (o) { o.stage = t.value; save(); renderOpportunities(); }
   }
   if (t.dataset && t.dataset.auth && LIVE.on) {
-    liveWrite(LIVE.sb.from("vc_authority").update({ level: LABEL_LEVEL[t.value] || "allowed", updated_at: new Date().toISOString() }).eq("id", t.dataset.auth));
+    liveWrite(LIVE.sb.from("vc_authority").update({ level: LABEL_LEVEL[t.value] || "allowed", updated_at: new Date().toISOString() }).eq("id", t.dataset.auth), "Saved. Applies from the next call.");
     return;
   }
   if (t.dataset && t.dataset.auth) {
@@ -1216,6 +1289,36 @@ document.addEventListener("change", (e) => {
   }
 });
 
+document.addEventListener("click", async (e) => {
+  const el = e.target.closest ? e.target.closest("[data-reviewcall],[data-copysum],[data-jump],#clearSearch") : null;
+  if (!el) return;
+  if (el.id === "clearSearch") { convQuery = ""; $("q").value = ""; renderConversations(); return; }
+  if (el.dataset.jump) { const t = $("transcriptAnchor"); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+  const c = S.calls.find((x) => x.id === (el.dataset.reviewcall || el.dataset.copysum));
+  if (!c) return;
+  if (el.dataset.copysum) {
+    const text = c.customer + (c.phone ? " (" + c.phone + ")" : "") + "\n" + c.address + "\n" + c.intent + " · " + c.time + "\n\n" + c.summary;
+    try { await navigator.clipboard.writeText(text); toast("Summary copied."); } catch (err) { toast("Copy was blocked by the browser."); }
+    return;
+  }
+  const next = isReviewed(c) ? "unreviewed" : "reviewed";
+  if (LIVE.on && c.live) { await liveWrite(LIVE.sb.from("vc_calls").update({ review_status: next }).eq("id", c.id), next === "reviewed" ? "Marked reviewed." : "Back in the review queue."); }
+  else { c.reviewStatus = next; save(); renderAll(); toast(next === "reviewed" ? "Marked reviewed." : "Back in the review queue."); }
+  if (next === "reviewed" && convFilter === "Needs review") {
+    const nextCall = S.calls.find((x) => !isReviewed(x) && x.id !== c.id);
+    if (nextCall) { convSel = nextCall.id; renderConversations(); }
+  }
+});
+
+document.addEventListener("click", (e) => {
+  const k = e.target.closest ? e.target.closest("[data-kpi],#openLatest") : null;
+  if (!k) return;
+  if (k.id === "openLatest") { if (S.calls[0]) openCall(S.calls[0].id); return; }
+  if (k.dataset.kpi === "review") { convFilter = "Needs review"; convSel = null; go("conversations"); return; }
+  if (k.dataset.kpi === "conversations") { convFilter = "All"; convSel = null; }
+  go(k.dataset.kpi);
+});
+
 function openReview(id) {
   const r = S.reviews.find((x) => x.id === id);
   if (!r) return;
@@ -1226,8 +1329,8 @@ function openReview(id) {
       (call && call.phone ? "<dt>Callback</dt><dd>" + esc(call.phone) + "</dd>" : "") + "<dt>Suggested next step</dt><dd>" + esc(r.suggestion) + "</dd></dl>" +
       '<div class="note" style="margin-top:16px">Adding an answer marks the escalation accepted and opens the editor, so the agent can answer this next time, or hand it off on purpose.</div>',
       [
-        { label: "Dismiss", onClick: () => { closeModal(); liveWrite(LIVE.sb.from("vc_escalations").update({ status: "dismissed", resolved_at: new Date().toISOString() }).eq("id", r.id)); } },
-        { label: "Resolved", onClick: () => { closeModal(); liveWrite(LIVE.sb.from("vc_escalations").update({ status: "resolved", resolved_at: new Date().toISOString(), assigned_to: LIVE.user ? LIVE.user.email : null }).eq("id", r.id)); } },
+        { label: "Dismiss", onClick: () => { closeModal(); liveWrite(LIVE.sb.from("vc_escalations").update({ status: "dismissed", resolved_at: new Date().toISOString() }).eq("id", r.id), "Dismissed."); } },
+        { label: "Resolved", onClick: () => { closeModal(); liveWrite(LIVE.sb.from("vc_escalations").update({ status: "resolved", resolved_at: new Date().toISOString(), assigned_to: LIVE.user ? LIVE.user.email : null }).eq("id", r.id), "Marked resolved."); } },
         { label: "Add an answer", primary: true, onClick: async () => { closeModal(); await LIVE.sb.from("vc_escalations").update({ status: "accepted", assigned_to: LIVE.user ? LIVE.user.email : null }).eq("id", r.id); openAnswerEditor({ question: r.reason, callId: r.callId }); } }
       ]);
     return;
@@ -1400,10 +1503,16 @@ $("copyTiers").addEventListener("click", async () => {
 $("printTiers").addEventListener("click", () => window.print());
 
 $("q").addEventListener("input", () => {
-  const v = $("q").value.trim().toLowerCase();
-  if (!v) return;
-  const hit = S.calls.find((c) => (c.customer + " " + c.intent + " " + c.address).toLowerCase().indexOf(v) !== -1);
-  if (hit) { convSel = hit.id; renderConversations(); }
+  convQuery = $("q").value.trim();
+  if (!$("s-conversations").classList.contains("hidden")) { convSel = null; renderConversations(); }
+});
+$("q").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { convQuery = $("q").value.trim(); convSel = null; convFilter = "All"; go("conversations"); }
+  if (e.key === "Escape") { $("q").value = ""; convQuery = ""; $("q").blur(); renderConversations(); }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && $("modalBg").dataset.open === "true") { closeModal(); return; }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); $("q").focus(); $("q").select(); }
 });
 
 
@@ -1454,6 +1563,8 @@ async function startCall() {
   $("callErr").textContent = "";
   $("callMute").textContent = "Mute";
   $("callEnd").textContent = "End call";
+  $("callOpen").classList.add("hidden");
+  pendingCall = null;
   $("callTimer").textContent = "0:00";
   setCallStatus("Loading");
   $("callDrawer").dataset.open = "true";
@@ -1533,6 +1644,8 @@ function finishCall(failed) {
   renderCallLog();
 
   const spoken = call.lines.filter((l) => l.kind !== "tool");
+  // Live: the real record comes from Vapi via n8n within a few seconds. Wait for it instead of faking one.
+  if (LIVE.on && !failed && call.id) { awaitCallRecord(call.id); return; }
   if (failed || !spoken.length) return;
 
   const callerText = spoken.filter((l) => l.role === "user").map((l) => l.text).join(" ");
@@ -1572,6 +1685,36 @@ function finishCall(failed) {
   if (LIVE.on) { setTimeout(() => loadLive(true), 8000); setTimeout(() => loadLive(true), 45000); setTimeout(() => loadLive(true), 120000); }
 }
 
+let pendingCall = null;
+function awaitCallRecord(id) {
+  pendingCall = { id: id, tries: 0 };
+  setCallStatus("Call ended · saving the record");
+  const tick = async () => {
+    if (!pendingCall || pendingCall.id !== id) return;
+    pendingCall.tries++;
+    await loadLive(true);
+    if (!pendingCall || pendingCall.id !== id) return;
+    if (pendingCall.tries < 18) setTimeout(tick, 5000);
+    else { setCallStatus("Call ended · the record is taking longer than usual"); pendingCall = null; }
+  };
+  setTimeout(tick, 4000);
+}
+function checkPendingCall() {
+  if (!pendingCall) return;
+  const c = S.calls.find((x) => x.id === pendingCall.id);
+  if (!c) return;
+  pendingCall = null;
+  setCallStatus("Call ended · saved");
+  $("callOpen").classList.remove("hidden");
+  $("callOpen").dataset.id = c.id;
+  toast("Call saved: " + c.customer + ".", "Open it", () => openCall(c.id));
+}
+function openCall(id) {
+  convSel = id; convFilter = "All"; convQuery = ""; $("q").value = "";
+  $("callDrawer").dataset.open = "false";
+  go("conversations");
+}
+$("callOpen").addEventListener("click", () => openCall($("callOpen").dataset.id));
 $("callAgent").addEventListener("click", startCall);
 $("callEnd").addEventListener("click", () => {
   if (call && call.active && vapi) { try { vapi.stop(); } catch (e) {} setTimeout(() => finishCall(false), 1500); }
@@ -1661,7 +1804,7 @@ function buildLive(raw) {
       id: c.id, live: true,
       customer: name,
       phone: c.phone || (c.source === "web" ? "Web call" : ""),
-      intent: c.issue || "Inbound call",
+      intent: c.issue || (c.duration_seconds && c.duration_seconds < 25 ? "Hung up early" : "Not captured"),
       outcome: c.outcome === "booked" ? "Booked" : c.outcome === "escalated" ? "Escalated" : "No booking",
       state: state,
       time: fmtWhen(c.received_at),
@@ -1676,6 +1819,7 @@ function buildLive(raw) {
       unanswered: c.unanswered_questions || [],
       kbMisses: ev.filter((e) => e.tool === "lookup_knowledge" && !e.kb_entry_id && e.args && e.args.question).map((e) => String(e.args.question)),
       sentiment: c.sentiment, urgency: c.urgency, slot: c.appointment_slot, cost: c.cost,
+      success: c.success_evaluation, ended: c.ended_reason,
       reviewStatus: c.review_status,
       mission: m, approvals: m ? (approvalsByMission[m.id] || {}) : {},
       actions: ev.length ? ev.map((e) => ({
@@ -1710,12 +1854,14 @@ function buildLive(raw) {
   const openEsc = V.reviews.length;
   const highEsc = V.reviews.filter((r) => r.priority === "High").length;
   const pendingAppts = V.appointments.filter((a) => a.status === "Action needed").length;
-  V.kpis = { calls: today.length, booked: booked, attention: openEsc + pendingAppts };
+  const toReview = V.calls.filter((c) => c.reviewStatus !== "reviewed").length;
+  const attention = openEsc + pendingAppts + toReview;
+  V.kpis = { calls: today.length, booked: booked, attention: attention };
   V.kpiCards = [
-    { lbl: "Calls handled today", big: today.length, d: V.calls.length + " total on record", cls: "" },
-    { lbl: "Inspections booked", big: booked, d: pct(booked, V.calls.length) + " of calls", cls: booked ? "up" : "" },
-    { lbl: "Open escalations", big: openEsc, d: highEsc + " high urgency", cls: highEsc ? "warn" : "" },
-    { lbl: "Needs attention", big: openEsc + pendingAppts, d: openEsc + " escalations · " + pendingAppts + " bookings to confirm", cls: (openEsc + pendingAppts) ? "warn" : "" }
+    { lbl: "Calls handled today", big: today.length, d: V.calls.length + " total on record", cls: "", go: "conversations" },
+    { lbl: "Inspections booked", big: booked, d: pct(booked, V.calls.length) + " of calls", cls: booked ? "up" : "", go: "appointments" },
+    { lbl: "Open escalations", big: openEsc, d: highEsc + " high urgency", cls: highEsc ? "warn" : "", go: "quality" },
+    { lbl: "Needs attention", big: attention, d: [toReview + " to review", openEsc + " escalations", pendingAppts + " to confirm"].join(" · "), cls: attention ? "warn" : "", go: "review" }
   ];
 
   const week = V.calls.filter((c) => Date.now() - new Date(c.receivedAt).getTime() < 7 * 86400000);
@@ -1779,7 +1925,7 @@ function buildLive(raw) {
   };
 
   V.opportunities = V.calls.map((c) => ({
-    id: c.id, live: true, customer: c.customer, service: c.intent === "Inbound call" ? "Not captured yet" : c.intent,
+    id: c.id, live: true, customer: c.customer, service: c.intent,
     source: c.phone === "Web call" ? "Web call" : "Inbound call",
     stage: c.state === "booked" ? "Booked" : c.state === "urgent" ? "Urgent" : "Follow-up",
     value: null,
@@ -1805,6 +1951,7 @@ async function loadLive(quiet) {
   ]);
   const bad = res.find((r) => r.error);
   if (bad) {
+    if (/jwt|expired|not authenticated/i.test(bad.error.message)) { if (!quiet) openSignIn(); return false; }
     if (!quiet) showLiveError(bad.error.message);
     return false;
   }
@@ -1826,8 +1973,10 @@ async function loadLive(quiet) {
   const keepSel = convSel;
   S = buildLive(raw);
   convSel = keepSel;
+  LIVE.loadedAt = Date.now();
   renderAll();
   updateLiveChrome();
+  checkPendingCall();
   return true;
 }
 
@@ -1837,9 +1986,22 @@ function showLiveError(msg) {
   openModal("Could not load live data", "", "<p>" + esc(msg + hint) + "</p>", [{ label: "Close", onClick: closeModal }]);
 }
 
+function pillText() {
+  return LIVE.on ? "Live · " + (LIVE.loadedAt ? "updated " + ago(new Date(LIVE.loadedAt).toISOString()) : "loading") : "Demo data";
+}
 function updateLiveChrome() {
-  $("modePill").textContent = LIVE.on ? "Live · Supabase" : "Demo data";
+  $("modePill").textContent = pillText();
   $("modePill").classList.toggle("live", LIVE.on);
+  $("modePill").classList.toggle("btnlike", LIVE.on);
+  $("modePill").title = LIVE.on ? "Click to refresh" : "Sign in to see live calls";
+  const textsNav = document.querySelector('.nav[data-go="texts"]');
+  if (textsNav) textsNav.classList.toggle("hidden", LIVE.on);
+  if (LIVE.on && !$("s-texts").classList.contains("hidden")) go("overview");
+  $("ingestBtn").classList.toggle("hidden", LIVE.on);
+  const u = LIVE.on && LIVE.user ? LIVE.user.email : "";
+  document.querySelector(".who").innerHTML = u
+    ? '<span class="av">' + esc(u.slice(0, 2).toUpperCase()) + "</span><span><b>" + esc(shortName(u)) + "</b><span>" + esc(u) + "</span></span>"
+    : '<span class="av">ER</span><span><b>Erica</b><span>Administrator · demo</span></span>';
   $("authBtn").textContent = LIVE.user ? "Sign out" : "Sign in";
   $("resetAll").classList.toggle("hidden", LIVE.on);
   SAMPLE_SECTIONS.forEach((s) => {
@@ -1929,12 +2091,25 @@ $("authBtn").addEventListener("click", async () => {
 /* ---------- live writes ---------- */
 async function liveWrite(promise, okMsg) {
   const r = await promise;
-  if (r && r.error) { openModal("That change did not save", "", "<p>" + esc(r.error.message) + "</p>", [{ label: "Close", onClick: closeModal }]); return false; }
+  if (r && r.error) {
+    if (/jwt|expired|not authenticated/i.test(r.error.message)) { openSignIn(); return false; }
+    openModal("That change did not save", "", "<p>" + esc(r.error.message) + "</p>", [{ label: "Close", onClick: closeModal }]);
+    return false;
+  }
   await loadLive(true);
+  if (okMsg) toast(okMsg);
   return true;
 }
 
 const RX_SPECIAL = /[\\^$.*+?()[\]{}]/;
+// Show a regex the way a person would read it: "cost, price, how much, free"
+function readablePattern(p) {
+  const simple = phrasesFrom(p);
+  if (simple) return simple;
+  const parts = String(p || "").split("|").map((x) => x.replace(/\\[bsSdDwW]/g, " ").replace(/\(\?:?|[()\[\]{}^$+*?]|\.\*?|\\/g, " ").replace(/\s+/g, " ").trim()).filter((x) => x.length > 1);
+  const uniq = parts.filter((x, i) => parts.indexOf(x) === i);
+  return uniq.slice(0, 8).join(", ") + (uniq.length > 8 ? ", and " + (uniq.length - 8) + " more" : "");
+}
 function phrasesFrom(pattern) {
   if (!pattern || RX_SPECIAL.test(pattern)) return "";
   return pattern.split("|").map((x) => x.trim()).filter(Boolean).join(", ");
@@ -1978,6 +2153,12 @@ function editKnowledgeLive(id, opts) {
           if (!pattern) { $("kMsg").textContent = "Add at least one word or phrase the caller might say."; return; }
           if (!answer) { $("kMsg").textContent = md === "handoff" ? "Add what the agent should say instead, for example that someone will call back." : "Add the answer the agent should give."; return; }
           try { new RegExp(pattern, "i"); } catch (e) { $("kMsg").textContent = "The advanced pattern is not valid: " + e.message; return; }
+          const broad = broadHits(pattern);
+          if (broad.length >= 2 && $("kMsg").dataset.warned !== pattern) {
+            $("kMsg").dataset.warned = pattern;
+            $("kMsg").innerHTML = '<span style="color:var(--warn);font-weight:600">Those words would also catch everyday calls like \u201c' + esc(broad[0]) + '\u201d.</span> Make them more specific, or press ' + (isNew ? "Add" : "Save") + " again to keep them.";
+            return;
+          }
           if (LIVE.on && !LIVE.trainingReady && (md === "handoff" || opts.callId)) { $("kMsg").textContent = "Hand-off topics and answers from calls need vc-training.sql run in Supabase first."; return; }
           let newId = k.id;
           if (isNew) {
@@ -2008,9 +2189,9 @@ function renderKnowledgeLive() {
   $("syncedAt").textContent = LIVE.knowledge.length + " entries · live";
   $("knowTable").innerHTML =
     "<thead><tr><th>Collection</th><th>Approved answer</th><th>Caller mentions</th><th>Status</th><th></th></tr></thead><tbody>" +
-    (LIVE.knowledge.length ? LIVE.knowledge.map((k) =>
+    (LIVE.knowledge.length ? LIVE.knowledge.filter((k) => { const f = ($("kbFilter").value || "").toLowerCase().trim(); return !f || (k.collection + " " + k.answer + " " + k.pattern + " " + k.id).toLowerCase().indexOf(f) !== -1; }).map((k) =>
       "<tr><td><b>" + esc(k.collection) + '</b><span class="t2">' + esc(k.id) + "</span>" + (k.mode === "handoff" ? '<span class="kind handoff" style="margin-top:4px">Hand-off</span>' : "") + "</td><td>" + esc(k.answer) +
-      '</td><td style="font-size:13px;color:var(--muted)">' + esc((phrasesFrom(k.pattern) || "Custom pattern").slice(0, 70)) +
+      '</td><td style="font-size:13px;color:var(--muted)">' + esc(readablePattern(k.pattern) || "Custom pattern") +
       '</td><td><span class="tag ' + (k.status === "active" ? "ok" : "warnt") + '">' + esc(k.status) +
       '</span></td><td><button class="btn sm" data-editknow="' + esc(k.id) + '">Edit</button></td></tr>').join("")
       : '<tr><td colspan="5" class="empty">No entries yet. The agent is using its built-in fallback list.</td></tr>') +
@@ -2050,12 +2231,18 @@ function uid() {
 }
 function whoAmI() { return LIVE.on && LIVE.user ? LIVE.user.email : "demo@aiparagonconsulting.com"; }
 function shortName(email) {
+  if (email === "n8n configure") return "System";
   const n = String(email || "").split("@")[0].split(/[._-]/)[0];
   return n ? n.charAt(0).toUpperCase() + n.slice(1) : "Someone";
 }
 function cleanRule(t) { return String(t || "").replace(/\s+/g, " ").trim().slice(0, 400); }
 function normQ(q) { return String(q || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim(); }
-const STOP = ("a an the and or but if is are was were be been am i im you your we our us my me it its this that these those to of in on at for with from by about do does did can could would should will shall have has had any some there here what when where why how who which just really like okay ok so then than also too very much many more get got going want need know think tell say said yeah yes no not dont none someone somebody anyone anything something come out still sure maybe actually thing things kind sort guess mean right well good great thanks thank please sorry wondering wonder question ask asking check able let look one guys").split(" ");
+const STOP = ("a an the and or but if is are was were be been am i im you your we our us my me it its this that these those to of in on at for with from by about do does did can could would should will shall have has had any some there here what when where why how who which just really like okay ok so then than also too very much many more get got going want need know think tell say said yeah yes no not dont none someone somebody anyone anything something come out still sure maybe actually thing things kind sort guess mean right well good great thanks thank please sorry wondering wonder question ask asking check able let look one guys roof roofs roofing install installed installing company house home help call someone service services today does").split(" ");
+// Everyday caller lines. A new answer whose words catch these would hijack normal calls.
+const GENERIC_LINES = ["my roof is leaking", "i need someone to look at my roof", "can you send someone out", "i want to book an inspection", "there's water coming through my ceiling", "can you help me", "we had a storm last night", "what's the address you need"];
+function broadHits(pattern) {
+  try { const r = new RegExp(pattern, "i"); return GENERIC_LINES.filter((g) => r.test(g)); } catch (e) { return []; }
+}
 // Pull the two or three most specific words out of a caller's question, as a starting point for matching.
 function keywordsFrom(q) {
   const words = normQ(q).split(" ").filter((w) => w.length > 2 && STOP.indexOf(w) === -1);
@@ -2089,7 +2276,7 @@ function gapsFor(d) {
   const out = [];
   const seen = {};
   S.calls.forEach((c) => {
-    ((c.unanswered || []).concat(c.kbMisses || [])).forEach((q) => {
+    realQuestions(c).forEach((q) => {
       const k = c.id + "|" + normQ(q);
       if (!normQ(q) || seen[k] || handled[k]) return;
       seen[k] = true;
@@ -2229,6 +2416,8 @@ function openCoach(callId, idx) {
             const pattern = patternFrom($("cPhr").value);
             const answer = $("cAns").value.trim().replace(/\s+/g, " ");
             if (!pattern || !answer) { $("cMsg").textContent = "Add the words a caller might use and the answer she should give."; return; }
+            const broad = broadHits(pattern);
+            if (broad.length >= 2 && $("cMsg").dataset.warned !== pattern) { $("cMsg").dataset.warned = pattern; $("cMsg").innerHTML = '<span style="color:var(--warn);font-weight:600">Those words would also catch everyday calls like \u201c' + esc(broad[0]) + '\u201d.</span> Make them more specific, or press Save again.'; return; }
             let kid = ("caller-questions-" + pattern.split("|")[0]).replace(/\\/g, "").replace(/[^a-z0-9]+/g, "-").replace(/-$/, "").slice(0, 40);
             let n = 2; const base = kid;
             while (kbList().some((x) => x.id === kid)) kid = base + "-" + (n++);
@@ -2397,7 +2586,8 @@ function renderTraining() {
   ["addRule", "addHandoff"].forEach((id) => { $(id).disabled = !ready; });
   if (!publishing) {
     $("publishBtn").disabled = !ready;
-    $("publishBtn").textContent = !p.live && !p.count ? "Publish to agent" : p.count ? "Publish " + p.count + " change" + (p.count > 1 ? "s" : "") : "Up to date";
+    $("publishBtn").textContent = !p.live && !p.count ? "Publish to agent" : p.count ? "Publish " + p.count + " change" + (p.count > 1 ? "s" : "") : "✓ Up to date";
+    $("publishBtn").classList.toggle("primary", !!p.count || !p.live);
   }
   const live = p.live;
   const good = d.feedback.filter((f) => f.verdict === "good").length;
@@ -2422,7 +2612,7 @@ function renderTraining() {
         (f.quote ? '<span class="t2">On: "' + esc(String(f.quote).slice(0, 110)) + '"</span>' : "") + "</td>" +
         '<td><a href="#" data-call="' + esc(f.call_id) + '">' + esc(callLabel(f.call_id)) + '</a><span class="t2">' + esc(shortName(f.created_by)) + " · " + esc(f.created_at ? ago(f.created_at) : "") + "</span></td>" +
         '<td><div class="row"><button class="btn sm primary" data-tri="' + i + '|rule">Rule</button><button class="btn sm" data-tri="' + i + '|restriction">Restriction</button><button class="btn sm" data-tri="' + i + '|answer">Answer</button><button class="btn sm ghost" data-tri="' + i + '|dismiss">Dismiss</button></div></td></tr>';
-    }).join("") : '<tr><td colspan="3" class="empty">Nothing waiting. Coach a call in Conversations and it shows up here.</td></tr>') + "</tbody>";
+    }).join("") : '<tr><td colspan="3" class="empty">Nothing waiting. Coach a reply on a real call and it shows up here.' + (S.calls.length ? '<div style="margin-top:10px"><button class="btn sm primary" id="openLatest">Open the latest call</button></div>' : "") + "</td></tr>") + "</tbody>";
 
   const rules = d.rules.filter((r) => showRetired || r.status === "active" || p.snap[r.id]);
   const retiredN = d.rules.filter((r) => r.status !== "active").length;
@@ -2444,7 +2634,7 @@ function renderTraining() {
   const hand = d.kb.filter((k) => k.mode === "handoff");
   $("trHandoffs").innerHTML = "<thead><tr><th>When the caller mentions</th><th>What the agent says instead</th><th>State</th><th></th></tr></thead><tbody>" +
     (hand.length ? hand.map((k) =>
-      "<tr><td><b>" + esc(phrasesFrom(k.pattern) || "Custom pattern") + "</b></td><td>" + esc(k.answer) + "</td>" +
+      "<tr><td><b>" + esc(readablePattern(k.pattern) || "Custom pattern") + "</b></td><td>" + esc(k.answer) + "</td>" +
       '<td><span class="tag ' + (k.status === "active" ? "ok" : "neut") + '">' + (k.status === "active" ? "Live" : esc(k.status)) + "</span></td>" +
       '<td><button class="btn sm" data-editkb="' + esc(k.id) + '">Edit</button></td></tr>').join("")
       : '<tr><td colspan="4" class="empty">No hand-off topics. Add one for anything the agent should never answer, like legal or warranty claims.</td></tr>') + "</tbody>";
@@ -2454,7 +2644,7 @@ function renderTraining() {
     (d.versions.length ? d.versions.map((v) =>
       "<tr><td><b>v" + v.version + "</b></td><td>" + esc(fmtWhen(v.published_at)) + '<span class="t2">' + esc(shortName(v.published_by)) + "</span></td><td>" + v.rules_count + "</td>" +
       '<td><span class="tag ' + (v.status === "live" ? (String(v.id) === liveId ? "ok" : "neut") : "badt") + '">' + (v.status === "live" ? (String(v.id) === liveId ? "Live now" : "Superseded") : "Failed") + "</span></td>" +
-      '<td><div class="row"><button class="btn sm" data-viewver="' + esc(v.id) + '">View</button>' + (v.status === "live" && String(v.id) !== liveId ? '<button class="btn sm" data-restorever="' + esc(v.id) + '">Roll back</button>' : "") + "</div></td></tr>").join("")
+      '<td><div class="row"><button class="btn sm" data-viewver="' + esc(v.id) + '">View</button>' + (v.status === "live" && String(v.id) !== liveId && JSON.stringify(snapOf(v)) !== JSON.stringify(p.snap) ? '<button class="btn sm" data-restorever="' + esc(v.id) + '">Roll back</button>' : "") + "</div></td></tr>").join("")
       : '<tr><td colspan="5" class="empty">Nothing published yet.</td></tr>') + "</tbody>";
 }
 
@@ -2503,9 +2693,59 @@ $("addHandoff").addEventListener("click", () => { if (LIVE.on && !LIVE.trainingR
 $("publishBtn").addEventListener("click", publishAgent);
 $("toggleRetired").addEventListener("click", () => { showRetired = !showRetired; renderTraining(); });
 
+
+/* ---------- test a question against the knowledge base, the same way the tool server does ---------- */
+const DEMO_PATTERNS = [
+  { id: "safety-electrical", collection: "Safety and escalation", pattern: "electric|outlet|socket|light fixture|light switch|ceiling fan|\\bfan\\b|electrical panel|fuse box|breaker|spark|burning smell", answer: "Please stay out of that area and don't touch any switches or outlets near the water. I'm flagging this as urgent so a person calls you right away.", priority: 10 },
+  { id: "ai-disclosure", collection: "Services and service areas", pattern: "robot|real person|\\bhuman\\b|\\bai\\b|\\bbot\\b|automated", answer: "I'm an AI assistant for Arrington Roofing. A real person does the inspection and handles anything I can't.", priority: 30 },
+  { id: "how-soon", collection: "Storm damage and inspections", pattern: "how soon|when can (someone|you|they)|\\btoday\\b|tonight|right away|asap|emergency|tarp", answer: "If water's coming in we treat it as urgent and a coordinator calls you within the hour.", priority: 50 },
+  { id: "inspection-duration", collection: "Storm damage and inspections", pattern: "how long|take long|how much time", answer: "The inspection usually takes forty five minutes to an hour.", priority: 60 },
+  { id: "why-leaking", collection: "Storm damage and inspections", pattern: "why .*leak|what('?s| is)? caus|cause of|how did (this|it) happen", answer: "There are a few usual suspects: damaged shingles, cracked flashing, gutters backing up, or a worn seal. Which one it is only shows up on the inspection.", priority: 70 },
+  { id: "insurance", collection: "Insurance boundaries", pattern: "cover|covered|coverage|claim|insur|deductible|carrier|adjuster|policy", answer: "I can't tell you what your carrier will decide. What we can do is document exactly what's up there with photos, so you're deciding with facts.", priority: 90 },
+  { id: "pricing", collection: "Pricing response policy", pattern: "cost|price|quote|how much|estimate|afford|ballpark|charge|\\bfree\\b|\\bfee\\b", answer: "I'm not able to quote anything over the phone. The inspection is where the real scope comes from.", priority: 100 },
+  { id: "hours", collection: "Services and service areas", pattern: "hours|\\bopen\\b|weekend|saturday|sunday|after hours", answer: "Inspections run Monday to Saturday, and this line is answered around the clock.", priority: 170 }
+];
+function testQuestion(q) {
+  const out = $("kbTestOut");
+  q = String(q || "").trim();
+  if (!q) { out.innerHTML = ""; return; }
+  const list = (LIVE.on ? LIVE.knowledge : ((S.training && S.training.kb) || []).concat(DEMO_PATTERNS))
+    .filter((k) => k.pattern && k.answer && (k.status || "active") === "active")
+    .slice().sort((a, b) => (a.priority || 100) - (b.priority || 100));
+  const faqOff = LIVE.on && LIVE.raw && (LIVE.raw.authority || []).some((a) => a.id === "answer_faq" && a.level === "prohibited");
+  let hit = null;
+  if (!faqOff) hit = list.find((k) => { try { return new RegExp(k.pattern, "i").test(q); } catch (e) { return false; } }) || null;
+  const editable = hit && kbList().some((k) => k.id === hit.id);
+  if (faqOff) {
+    out.innerHTML = '<div class="note">Answering questions is switched off under System authority, so the agent hands every question to a person.</div>';
+  } else if (hit && hit.mode === "handoff") {
+    out.innerHTML = '<div class="quote"><small><span class="kind handoff">Hand-off</span> ' + esc(hit.collection) + "</small>She won't answer this. She'll say: “" + esc(hit.answer) + "” and flag it for a person.</div>" +
+      (editable ? '<button class="btn sm" data-editkb="' + esc(hit.id) + '">Edit this topic</button>' : "");
+  } else if (hit) {
+    out.innerHTML = '<div class="quote"><small><span class="kind always">Answered</span> ' + esc(hit.collection) + " · " + esc(hit.id) + "</small>" + esc(hit.answer) + "</div>" +
+      '<div class="row">' + (editable ? '<button class="btn sm" data-editkb="' + esc(hit.id) + '">Edit this answer</button>' : "") +
+      '<span class="sub" style="margin:0;font-size:13px">She says this in her own words. Wrong entry? Add a more specific one with a lower priority number.</span></div>';
+  } else {
+    out.innerHTML = '<div class="quote"><small><span class="kind never">No approved answer</span></small>She\'ll say she\'d rather not guess, and flag it so a person calls back.</div>' +
+      '<div class="row"><button class="btn sm primary" id="kbTestAdd">Add an answer for this</button><button class="btn sm" id="kbTestHand">Make it a hand-off topic</button></div>';
+    $("kbTestAdd").addEventListener("click", () => { if (LIVE.on && !LIVE.trainingReady) { showTrainingSetup(); return; } openAnswerEditor({ question: q }); });
+    $("kbTestHand").addEventListener("click", () => { if (LIVE.on && !LIVE.trainingReady) { showTrainingSetup(); return; } openAnswerEditor({ question: q, mode: "handoff" }); });
+  }
+}
+$("kbTestBtn").addEventListener("click", () => testQuestion($("kbTestQ").value));
+$("kbFilter").addEventListener("input", () => renderKnowledge());
+$("kbTestQ").addEventListener("keydown", (e) => { if (e.key === "Enter") testQuestion($("kbTestQ").value); });
+$("testQBtn").addEventListener("click", () => { go("knowledge"); setTimeout(() => { $("kbTestQ").focus(); }, 30); });
+
 function tick() {
   $("clock").textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (LIVE.on) $("modePill").textContent = pillText();
 }
+$("modePill").addEventListener("click", async () => {
+  if (!LIVE.on) return;
+  $("modePill").textContent = "Live · refreshing";
+  if (await loadLive(false)) toast("Up to date.");
+});
 tick();
 setInterval(tick, 30000);
 
