@@ -2525,7 +2525,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.14 beta</span></span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.15 beta</span></span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -3043,19 +3043,33 @@ async function orgResolve(){
     try{
       const r=await fetch(`${BACKEND.url}/rest/v1/rpc/np_my_org`,{method:'POST',headers:sbH(),body:'{}'});
       if(r.status===401&&attempt===0){ if(await sbRefresh()) continue; }
+      ORG_NONE=false;
       if(r.ok){
-        const v=await r.json().catch(()=>null);
+        let txt=null; try{ txt=await r.text(); }catch(e){}
+        let v; try{ v=JSON.parse(txt); }catch(e){ v=undefined; }
         if(v&&typeof v==='string'){ ORG_ID=v; lsSet('np_org_id',ORG_ID); ORG_READY=true; MEMBER_ROLE=await memberRoleFetch();
           if(!MEMBER_ROLE){ await sleep(700); MEMBER_ROLE=await memberRoleFetch(); }   // v12.13: one more try before the role counts as unknown
           return ORG_ID; }
+        ORG_NONE=(typeof txt==='string'&&txt.trim()==='null');      // v12.15: only a clear "no agency" from the database counts, never a broken reply
       }
-    }catch(e){}
+    }catch(e){ ORG_NONE=false; }
     break;
   }
   ORG_READY=true; ORG_ID=null;                                       // no membership, no rows — never guess one
   return null;
 }
-function orgForget(){ ORG_ID=null; ORG_READY=false; MEMBER_ROLE=null; }
+function orgForget(){ ORG_ID=null; ORG_READY=false; MEMBER_ROLE=null; ORG_NONE=false; }
+let ORG_NONE=false;                                                  // v12.15: true only when the database says this sign-in belongs to no agency
+/* v12.15: a saved sign-in whose access was removed (a deleted staff member, say) lands on the
+   sign-in page with a plain message, not in an empty dashboard */
+function noAgencyOut(){
+  try{ const tk=sbTok(); if(tk&&BACKEND.url) fetch(BACKEND.url+'/auth/v1/logout?scope=local',{method:'POST',keepalive:true,   // this device only
+    headers:{apikey:BACKEND.anon,Authorization:'Bearer '+tk}}).catch(()=>{}); }catch(e){}
+  orgForget(); AUTH.session=null; AUTH.signedIn=false; saveAuth(); lsDel('np_resume');
+  try{ gcalClear(); }catch(e){}
+  el('app').classList.remove('on'); closeAll(); hideWelcome(); hideOnboarding(); showLoginPage(); bootReveal();
+  const m=el('liErr'); if(m){ m.textContent='This account is no longer part of an agency. If that is a mistake, ask your director for a new invite link.'; m.style.display='block'; }
+}
 const DEMO_VIEW = (()=>{ try{ return new URLSearchParams(location.search).get('demo')==='1'; }catch(e){ return false; } })();
 const sbOn = () => !!(BACKEND.url && BACKEND.anon && !DEMO_VIEW);      // demo view is a sandbox: nothing it does is saved
 /* v9.90: the database now decides what you can see, not the app. Row level security
@@ -3228,7 +3242,7 @@ async function sbSend(kind,t,url,init,row){
   if(row===undefined) return sbCheck(kind,t,fetch(url,init),()=>fetch(url,init));
   let payload=stripCols(orgStampFor(t,row),COL_UNSUPPORTED[t]||[]);
   const onRow=init.onRow; if(onRow){ init=Object.assign({},init); delete init.onRow; }
-  const hand=r=>{ if(onRow&&r&&r.ok){ try{ (r.clone?r.clone():r).json().then(j=>{ const x=Array.isArray(j)?j[0]:j; if(x) onRow(x); }).catch(()=>{}); }catch(e){} } return r; };
+  const hand=async r=>{ if(onRow&&r&&r.ok){ try{ const j=await (r.clone?r.clone():r).json(); const x=Array.isArray(j)?j[0]:j; if(x) onRow(x); }catch(e){} } return r; };   // v12.15: the save counts as done once the new row's id is known
   const send=()=>fetch(url,Object.assign({},init,{body:JSON.stringify(payload)})).then(hand);
   let okRes=await sbCheck(kind,t,send(),send);
   // a column the table does not have loses the whole row — drop it and keep the rest
@@ -4410,9 +4424,10 @@ function logAudit(act,obj,cat){
   sbPush('np_demo_audit_log',{who:entry.who,act:entry.act,obj:entry.obj,role:state.role,category:entry.cat||null});
 }
 function toast(msg){ el('toastTxt').textContent=msg; el('toast').classList.add('on'); clearTimeout(window._tt); window._tt=setTimeout(()=>el('toast').classList.remove('on'),2400); }
-function toMin(hm){ const [h,m]=hm.split(':').map(Number); return h*60+m; }
+function toMin(hm){ if(!hm||typeof hm!=='string') return 0; const [h,m]=hm.split(':').map(Number); return h*60+(m||0); }
 function pctOfDay(hm){ const START=6*60, END=22*60; return Math.max(0,Math.min(100,(toMin(hm)-START)/(END-START)*100)); }
-function hm12(hm){ const [h,m]=hm.split(':').map(Number); const ap=h>=12?'PM':'AM'; const hh=h%12||12; return `${hh}:${String(m).padStart(2,'0')} ${ap}`; }
+function hm12(hm){ if(!hm||typeof hm!=='string') return ''; const [h,m]=hm.split(':').map(Number);   // v12.15: a time-less entry (from another app) shows no time instead of breaking the page
+  const ap=h>=12?'PM':'AM'; const hh=h%12||12; return `${hh}:${String(m).padStart(2,'0')} ${ap}`; }
 function relDay(d){ const diff=Math.round((new Date(d)-new Date(T))/864e5); return diff===0?'Today':diff===1?'Tomorrow':diff===-1?'Yesterday':fmtDate(d); }
 
 function toggleNav(force){
@@ -4848,7 +4863,7 @@ async function joinBoot(){
     showRegisterGate();
     const rw=el('regRoleWrap'); if(rw) rw.remove();                  // the invite decides the role
     el('loginTitle').textContent='Join '+((inv.org&&inv.org!=='Spectrum')?inv.org:'the team');
-    el('loginSub').innerHTML='You\u2019ve been invited as <b>'+esc(inv.name||'staff')+'</b>'+(inv.role_title?' · '+esc(inv.role_title):'')+'. Set a password to get started.';
+    el('loginSub').innerHTML='You\u2019ve been invited as <b>'+esc(inv.name||'staff')+'</b>'+(inv.role_title?' · '+esc(inv.role_title):'')+'. Set a password to get started, or enter your existing one if you already have a sign-in.';
     const e=el('liEmail'); if(e) e.value=inv.email||'';
     setTimeout(()=>{ const pw=el('liPw'); if(pw) pw.focus(); },80);
   }catch(err){ showLoginPage(); }
@@ -4892,6 +4907,7 @@ function bootPortal(){
        or the sign-in page if the account turns out not to have one. */
     ORG_READY=false; HYDRATING=sbHydrate();
     whenHydrated(()=>{
+      if(ORG_NONE&&realSession()) return noAgencyOut();              // v12.15: removed from the agency since the last visit
       const r=roleFor()||(ORG_ID?'staff':null);                      // v12.13: in an agency but role unknown: the staff view, never the director's
       if(r&&authReady()&&AUTH.session) signIn(r);
       else { el('login').style.display='flex'; showLoginPage(); }
@@ -4902,7 +4918,8 @@ function bootPortal(){
     hideWelcome(); hideOnboarding();
     if(authReady() && AUTH.session && lsGet('np_resume')){ const pre=USERS[(AUTH.email||'').toLowerCase()];   // active session resumes
       signIn(pre&&ME[pre.role]?pre.role:ONB.role);
-      whenHydrated(()=>{ const r=roleFor(); if(r==='staff'&&state.role!=='staff') signIn('staff'); },5000);   // a staff account never opens the director view
+      whenHydrated(()=>{ if(ORG_NONE&&realSession()) return noAgencyOut();   // v12.15: removed from the agency since the last visit
+        const r=roleFor(); if(r==='staff'&&state.role!=='staff') signIn('staff'); },5000);   // a staff account never opens the director view
       return; }
     el('login').style.display='flex';
     showLoginPage(); return;                                        // v12.11: the full sign-in page, with "use a different account" and "create an agency" 
@@ -8800,7 +8817,7 @@ function saveCredential(sid){
   const exp=el('crExp').value;
   const row=exp?credRowFromDb({cred_name:n,expires_on:exp}):{c:n,d:'On file',s:'ok'};
   (CREDS[sid]=CREDS[sid]||[]).push(row);
-  sbPush('np_demo_credentials',{sid,cred_name:n,expires_on:exp||null,label:exp?null:'On file',status:exp?null:'ok'});
+  credInsert(row,{sid,cred_name:n,expires_on:exp||null,label:exp?null:'On file',status:exp?null:'ok'});   // v12.15: keeps its id, so ✕ removes this one
   logAudit('Added credential',`${staff(sid).name} · ${n}`); closeAll(); openStaffPage(sid); toast('Credential added.');
 }
 function uploadStaffDoc(sid){
@@ -8951,11 +8968,27 @@ function staffColorForm(sid){
 function trainingsOutstanding(sid){
   return TRAINING.filter(t=>!hid('course',t.id)&&(t.req||(t.asg||[]).includes(sid))&&!t.done.includes(sid)).length;
 }
+/* v12.15: a certification's database row is tracked from the moment it is added, so removing it
+   (even straight away) deletes that row and no other: two certifications can share a name, like
+   an expired and a renewed CPR card. A save that is still on its way is waited for. */
+const CRED_SAVING=new WeakMap();
+function credInsert(row,data,after,sid){
+  const p=Promise.resolve(after===undefined?true:after).then(ok=>{
+    if(!ok) return false;                                            // the person's own record did not save, so neither can this
+    if(sid&&!(CREDS[sid]||[]).includes(row)) return false;          // removed before it was sent
+    return sbPushKeep('np_demo_credentials',data,row);
+  });
+  CRED_SAVING.set(row,p); return p;
+}
+async function credDropDb(c){
+  if(c.dbId==null&&CRED_SAVING.has(c)){ try{ await CRED_SAVING.get(c); }catch(e){} }
+  return c.dbId!=null?sbDel('np_demo_credentials','id=eq.'+encodeURIComponent(c.dbId)):false;   // never saved: nothing to delete
+}
 function credDel(sid,i){
   const c=(CREDS[sid]||[])[i]; if(!c) return;
   askDelete('Remove this credential?',esc(c.c||''),()=>{
     CREDS[sid].splice(i,1);
-    sbDel('np_demo_credentials',`sid=eq.${encodeURIComponent(sid)}&cred_name=eq.${encodeURIComponent(c.c||'')}`);
+    credDropDb(c);                                 // v12.15: exactly this one, not every certification with the same name
     logAudit('Removed credential',`${(staff(sid)||{}).init||sid} · ${c.c||''}`);
     render(); toast('Credential removed.');
   },'Remove');
@@ -9082,18 +9115,23 @@ async function saveCert(sid){
   (CREDS[sid]=CREDS[sid]||[]).push(row);
   // the certificate file itself, stored so it opens on any device
   const cf=el('cfFile'), f=cf&&cf.files&&cf.files[0];
-  if(f){
-    const path=`creds/${sid}/${Date.now()}_${f.name.replace(/[^A-Za-z0-9._-]/g,'_')}`;
-    const url=await sbUpload(path,f);
-    if(url) row.doc={n:f.name,at:fmtDate(T),by:auditActor(),path,url};
-  }
-  if(sbOn()){
+  const saving=(async()=>{                                           // v12.15: tracked, so a quick ✕ waits for it and removes this row
+    if(f){
+      const path=`creds/${sid}/${Date.now()}_${f.name.replace(/[^A-Za-z0-9._-]/g,'_')}`;
+      const url=await sbUpload(path,f);
+      if(url) row.doc={n:f.name,at:fmtDate(T),by:auditActor(),path,url};
+    }
+    if(!(CREDS[sid]||[]).includes(row)) return false;                // removed while the file was uploading
+    if(!sbOn()) return false;
     try{
       const r=await fetch(`${BACKEND.url}/rest/v1/np_demo_credentials`,{method:'POST',headers:Object.assign({},sbH(),{Prefer:'return=representation'}),
         body:JSON.stringify({sid,cred_name:n,expires_on:exp||null,label:exp?null:(ref||'On file'),status:exp?null:st,doc:row.doc||null})});
-      if(r.ok){ const j=await r.json(); if(j[0]) row.dbId=j[0].id; }
+      if(r.ok){ const j=await r.json(); if(j[0]) row.dbId=j[0].id; return true; }
     }catch(e){}
-  }
+    return false;
+  })();
+  CRED_SAVING.set(row,saving);
+  await saving;
   logAudit('Added certification',`${staff(sid).init} · ${n}`);
   if(st!=='ok') pingStaff(sid,'Certification needs attention',n);
   closeAll(); openStaff(sid); render();
@@ -9102,7 +9140,7 @@ async function saveCert(sid){
 function removeCred(sid,i){
   const c=(CREDS[sid]||[])[i]; if(!c) return;
   CREDS[sid].splice(i,1);
-  if(c.dbId!=null) sbDel('np_demo_credentials','id=eq.'+encodeURIComponent(c.dbId));
+  credDropDb(c);                                                     // v12.15: exactly this one, also when it was only just added
   if(c.doc&&c.doc.path&&sbOn()) fetch(`${BACKEND.url}/storage/v1/object/np-demo-docs/${orgPath(c.doc.path)}`,{method:'DELETE',headers:sbH()}).catch(()=>{});
   logAudit('Removed certification',`${staff(sid).init} · ${c.c}`);
   openStaff(sid); render(); toast('Certification removed.');
@@ -9215,33 +9253,114 @@ function reminderSend(sid){
 }
 function delStaff(sid){
   const st=staff(sid); if(!st) return;
-  askDelete('Delete '+st.name+'?','Their shifts, certifications and assigned tasks go with them. The change log keeps a record that it happened.',()=>{
+  askDelete('Delete '+st.name+'?','Their shifts, certifications and assigned tasks go with them, and their sign-in, if they have one, stops opening this agency. The change log keeps a record that it happened.',()=>{
+    const logins=staffLogins(sid);                 // read before the record goes
     const i=STAFF.findIndex(x=>x.id===sid); if(i>-1) STAFF.splice(i,1);
     for(let j=SHIFTS.length-1;j>=0;j--) if(SHIFTS[j].sid===sid) SHIFTS.splice(j,1);
     for(let j=TASKS.length-1;j>=0;j--) if(TASKS[j].sid===sid) TASKS.splice(j,1);
     delete CREDS[sid];
-    sbDel('np_demo_staff','id=eq.'+encodeURIComponent(sid));
-    sbDel('np_demo_credentials','sid=eq.'+encodeURIComponent(sid));
-    sbDel('np_demo_shifts','staff_id=eq.'+encodeURIComponent(sid));
-    sbDel('np_demo_tasks','sid=eq.'+encodeURIComponent(sid));           // their assigned tasks go with them everywhere, not just here
+    (async()=>{                                    // v12.15: what points at the staff record goes first, then the record itself
+      const q=encodeURIComponent(sid);             // (the database refuses to delete a person who still has certifications)
+      await Promise.all([sbDel('np_demo_credentials','sid=eq.'+q),sbDel('np_demo_shifts','staff_id=eq.'+q),
+        sbDel('np_demo_tasks','sid=eq.'+q)]);      // their assigned tasks go with them everywhere, not just here
+      await sbDel('np_demo_staff','id=eq.'+q);
+    })();
     delMark('staff',sid);
     logAudit('Deleted staff member',st.name);
     closeAll(); state.view='team'; render(); toast(st.name+' deleted.');
+    if(logins.length) logins.forEach(e=>staffAccessEnd(e,sid,st.name,true));
+    else staffAccessEnd('',sid,st.name,true);      // no sign-in yet: an invite link sent to them still stops working
   },'Delete staff member');
+}
+/* v12.15: the sign-ins that belong to a staff record: the accounts linked to it when their invite
+   was used, and the address on the record (where the invite went), unless that address is someone
+   else's sign-in or a director's */
+function staffLogins(sid){
+  const out=[];
+  Object.entries(USERS).forEach(([k,u])=>{ k=String(k).toLowerCase(); if(u&&u.sid===sid&&/@/.test(k)&&!out.includes(k)) out.push(k); });
+  const st=staff(sid), e=String((st&&st.email)||'').trim().toLowerCase();
+  if(e&&!out.includes(e)){ const u=USERS[e]; if(!(u&&((u.sid&&u.sid!==sid)||u.role==='director'))) out.push(e); }
+  return out;
+}
+/* v12.15: a staff member who is deleted (or whose access is removed) can no longer sign in to this
+   agency, and invite links sent to them stop working. The database decides who may do this: a
+   director, for staff of their own agency. A director's access is never removed this way, nor the
+   access of whoever is doing it, and a second staff record with the same email keeps it. */
+async function staffAccessEnd(email,sid,name,afterDelete){
+  email=String(email||'').trim().toLowerCase();
+  if((!email&&!sid)||!realSession()||!sbOn()) return null;
+  if(email&&email===String(AUTH.email||'').toLowerCase()) return null;
+  if(email&&afterDelete){                          // still someone's sign-in here: a record that stays is linked to it or carries it
+    const u=USERS[email];
+    if((u&&u.sid&&u.sid!==sid&&staff(u.sid))||STAFF.some(x=>String(x.email||'').trim().toLowerCase()===email)) return null;
+  }
+  if(!ORG_ID){ try{ await orgResolve(); }catch(e){} }
+  if(!ORG_ID) return null;
+  const pre=afterDelete?name+' deleted, but ':'';
+  const say=m=>{ if(email) toast(m); };            // with no sign-in there is nothing to report
+  let r=null;
+  for(let attempt=0;attempt<2;attempt++){
+    try{ r=await fetch(`${BACKEND.url}/rest/v1/rpc/np_remove_member`,{method:'POST',headers:sbH(),
+      body:JSON.stringify({p_org:ORG_ID,p_email:email,p_sid:sid||null})}); }catch(e){ r=null; }
+    if(r&&r.status===401&&attempt===0&&await sbRefresh()) continue;
+    break;
+  }
+  if(r&&r.status===404){                           // the database update for this is not installed yet
+    console.warn('[np-demo] np_remove_member is missing: run np-v12-15-deleted-staff-lose-access.sql');
+    say(pre+(afterDelete?'their':name+'’s')+' sign-in could not be switched off yet (a database update is needed).');
+    return {removed:false,reason:'missing'};
+  }
+  if(!r||!r.ok){
+    if(r) sbFail('access','np_org_members',`HTTP ${r.status} ${String(await r.text().catch(()=>'')).slice(0,160)}`);
+    say(pre+(afterDelete?'their':name+'’s')+' sign-in could not be switched off. Try again from Settings → Team access.');
+    return false;
+  }
+  const j=await r.json().catch(()=>null)||{};
+  const gone=j.removed||j.reason==='not-a-member';
+  if(email&&gone&&USERS[email]&&USERS[email].role!=='director'){   // off the team list too
+    delete USERS[email];
+    programMerge('users',v=>{ const map=(v.map&&typeof v.map==='object')?v.map:{}; delete map[email]; v.map=map; return v; });
+  }
+  if(j.removed){
+    logAudit('Ended sign-in access',`${name} · ${email}`);
+    toast(afterDelete?name+' deleted. Their sign-in no longer opens this agency.':name+'’s sign-in no longer opens this agency.');
+  }else if(j.reason==='director'){
+    toast(afterDelete?name+' deleted. They sign in as a director, so their access stays.':name+' signs in as a director, so their access stays.');
+  }else if(!afterDelete&&j.reason==='not-a-member'){
+    toast(name+' had no access to this agency. They are off the list now.');
+  }
+  if(typeof render==='function'&&!afterDelete) render();
+  return j;
+}
+function teamAccessRemove(email){
+  const u=USERS[email]||{}, name=u.name||email;
+  askDelete('Remove '+name+'’s access?','Their sign-in stops opening this agency, and any invite link sent to them stops working. Their staff record, if they have one, stays.',async()=>{
+    await staffAccessEnd(email,u.sid||'',name,false);
+    if(typeof openSettings==='function') openSettings();
+  },'Remove access');
 }
 function delClient(cid){
   const c=client(cid); if(!c) return;
-  askDelete('Delete '+c.uci+'?','Their appointments, notes and weekly checklist are removed from the portal.',()=>{
+  askDelete('Delete '+c.uci+'?','Everything on their file goes with them: appointments, medications, notes, the weekly checklist, incidents, documents and daily logs. The change log keeps a record that it happened.',()=>{
     const i=CLIENTS.findIndex(x=>x.id===cid); if(i>-1) CLIENTS.splice(i,1);
     for(let j=APPTS.length-1;j>=0;j--) if(APPTS[j].cid===cid) APPTS.splice(j,1);
     for(let j=DOCS.length-1;j>=0;j--) if(DOCS[j].cid===cid) DOCS.splice(j,1);
     for(let j=INCIDENTS.length-1;j>=0;j--) if(INCIDENTS[j].cid===cid) INCIDENTS.splice(j,1);
     for(let j=MEDS.length-1;j>=0;j--) if(MEDS[j].cid===cid) MEDS.splice(j,1);
     for(let j=LOGS.length-1;j>=0;j--) if(!MEDS.some(m=>m.id===LOGS[j].mid)) LOGS.splice(j,1);
+    [VITALS,ADLS,WHEREABOUTS].forEach(a=>{ for(let j=a.length-1;j>=0;j--) if(a[j].cid===cid) a.splice(j,1); });
+    vitalsIndex(); adlsIndex(); acctIndex();       // rows open by their position, so the positions are renumbered
+    try{ let ch=false;                             // completed forms filed to their file: that copy goes, binder copies stay
+      Object.values(FILED_DOCS).forEach(f=>{ const n0=filedRefs(f).length; f.refs=filedRefs(f).filter(r=>r.cid!==cid);
+        if(f.refs.length!==n0){ ch=true; if(!f.refs.length) delete FILED_DOCS[f.id]; } });
+      if(ch) filedSave(); }catch(e){}
     delete WEEKLY[cid]; delete CLIENT_NOTES[cid];
-    sbDel('np_demo_clients','id=eq.'+encodeURIComponent(cid));
-    sbDel('np_demo_appointments','cid=eq.'+encodeURIComponent(cid));
-    sbDel('np_demo_client_notes','cid=eq.'+encodeURIComponent(cid));
+    (async()=>{                                    // v12.15: everything filed under the client goes first, then the client
+      const q='cid=eq.'+encodeURIComponent(cid);   // (the database refuses to delete a client who still has appointments or checklist ticks)
+      await Promise.all(['np_demo_appointments','np_demo_client_notes','np_demo_checklist_logs','np_demo_meds','np_demo_med_logs',
+        'np_demo_incidents','np_demo_documents','np_demo_vitals','np_demo_adls','np_demo_whereabouts'].map(t=>sbDel(t,q)));
+      await sbDel('np_demo_clients','id=eq.'+encodeURIComponent(cid));
+    })();
     delMark('client',cid);
     logAudit('Deleted client record',c.uci);
     state.client=null; closeAll(); state.view='clients'; render(); toast(c.uci+' deleted.');
@@ -10725,7 +10844,7 @@ function saveMyCredential(){
   const row=exp?credRowFromDb({cred_name:n,expires_on:exp}):{c:n,d:'On file',s:'ok'};
   if(state.role==='staff'&&previewBlock()) return;
   if(state.role==='staff'&&!meSid()) return toast('Your account is not linked to a staff record yet \u2014 ask your director to link it.');
-  if(state.role==='staff'){ const ms=meSid(); (CREDS[ms]=CREDS[ms]||[]).push(row); sbPush('np_demo_credentials',{sid:ms,cred_name:n,expires_on:exp||null,label:exp?null:'On file',status:exp?null:'ok'}); }
+  if(state.role==='staff'){ const ms=meSid(); (CREDS[ms]=CREDS[ms]||[]).push(row); credInsert(row,{sid:ms,cred_name:n,expires_on:exp||null,label:exp?null:'On file',status:exp?null:'ok'}); }
   else if(realSession()&&state.role==='director'){                   // v12.13: each director's own list, merged with everyone else's
     const em=String(AUTH.email||'').toLowerCase();
     (MY_QUALS_P[em]=MY_QUALS_P[em]||[]).push(row);
@@ -13294,8 +13413,12 @@ function delCount(){ return Object.keys(DEL).filter(k=>k!=='auditClearedAt').red
 function eraseAll(){
   askDelete('Erase all workspace data?','Every record is deleted — clients, staff, shifts, tasks, documents, messages and logs — and sample data is hidden, leaving a clean workspace. Everyone\'s accounts, sign-ins, personal settings and layouts, the organization details and the signed agreement are kept, and you stay right here. This cannot be undone.',async()=>{
     toast('Erasing the workspace…');
-    const tables=['tasks','incidents','fire_drills','water_temps','med_logs','documents','credentials','appointments','templates','client_notes','notifications','audit_log','checklist_logs','clients','staff','shifts','threads','messages','ask_log','doc_activity','doc_signatures','example_docs','inspections','library'];
-    for(const t of tables){ try{ await sbDel('np_demo_'+t,'id=not.is.null'); }catch(e){} }
+    const tables=['tasks','incidents','fire_drills','water_temps','med_logs','documents','credentials','appointments','templates','client_notes','notifications','audit_log','checklist_logs',
+      'meds','vitals','adls','whereabouts','signed_logs',                // v12.15: daily logs and signed logs go too, and medications before the clients they belong to
+      'clients','staff','shifts','threads','messages','ask_log','doc_activity','doc_signatures','example_docs','inspections','library'];
+    const last=['clients','staff'];                                     // v12.15: others point at these, so they go once the rest is gone
+    await Promise.all(tables.filter(t=>!last.includes(t)).map(t=>sbDel('np_demo_'+t,wipeAll('np_demo_'+t)).catch(()=>false)));
+    await Promise.all(last.map(t=>sbDel('np_demo_'+t,wipeAll('np_demo_'+t)).catch(()=>false)));
     try{ await sbDel('np_demo_program','key=not.in.(org,email,pilot,users,usersettings)'); }catch(e){}   // identity, agreement, everyone's accounts + personal settings/layouts survive
     progForget(['org','email','pilot','users','usersettings']);      // v12.13: the rows written next start fresh
     ['np_deleted','np_notif_prefs','np_training','np_onboard_steps','np_doc_activity'].forEach(k=>lsDel(k));
@@ -13318,19 +13441,32 @@ function resetWorkspace(mode){
   const empty=mode==='empty';
   askDelete(empty?'Clear the entire workspace?':'Restore the sample data?',
     empty?'The workspace is cleared for real data. Exactly ONE record stays in each list — one client, one staff member, one incident, one task, one appointment, one shift, one document, one template, one course, one guide, one drill, one reading and one conversation — kept as an editable guide. Everything else is deleted, in the portal and in the database.'
-         :'Deletions and edits are discarded and the original demonstration records come back. Anything you created is removed.',()=>{
+         :'Deletions and edits are discarded and the original demonstration records come back. Anything you created is removed.',async()=>{
+    toast(empty?'Clearing the workspace…':'Restoring the sample data…');
+    /* v12.15: the records others point at (clients, staff) go once everything else is gone, so every
+       delete goes through. In a signed-in agency the organization details and the signed agreement
+       are kept, the same as Erase all data. */
+    const real=realSession();
     const tables=['np_demo_tasks','np_demo_incidents','np_demo_documents','np_demo_credentials','np_demo_appointments',
       'np_demo_templates','np_demo_client_notes','np_demo_notifications','np_demo_messages','np_demo_threads',
-      'np_demo_clients','np_demo_staff','np_demo_shifts','np_demo_audit_log','np_demo_doc_activity',
-      'np_demo_checklist_logs','np_demo_fire_drills','np_demo_water_temps','np_demo_inspections','np_demo_library',
-      'np_demo_doc_signatures','np_demo_example_docs','np_demo_med_logs','np_demo_agreements','np_demo_ask_log'];
-    tables.forEach(t=>sbDel(t,'id=not.is.null'));
-    sbDel('np_demo_program','key=not.in.(deleted,users,usersettings)');   // deletion registry + accounts + personal settings survive the wipe
-    progForget(['deleted','users','usersettings']);
+      'np_demo_checklist_logs','np_demo_meds','np_demo_med_logs','np_demo_vitals','np_demo_adls','np_demo_whereabouts','np_demo_signed_logs',
+      'np_demo_shifts','np_demo_clients','np_demo_staff','np_demo_audit_log','np_demo_doc_activity',
+      'np_demo_fire_drills','np_demo_water_temps','np_demo_inspections','np_demo_library',
+      'np_demo_doc_signatures','np_demo_example_docs','np_demo_ask_log'].concat(real?[]:['np_demo_agreements']);
+    const last=['np_demo_clients','np_demo_staff'];
+    await Promise.all(tables.filter(t=>!last.includes(t)).map(t=>sbDel(t,wipeAll(t)).catch(()=>false)));
+    await Promise.all(last.map(t=>sbDel(t,wipeAll(t)).catch(()=>false)));
+    const keepKeys=real?['deleted','users','usersettings','org','email','pilot']:['deleted','users','usersettings'];
+    try{ await sbDel('np_demo_program','key=not.in.('+keepKeys.join(',')+')'); }catch(e){}   // deletion registry + accounts + personal settings survive the wipe
+    progForget(keepKeys);
+    if(real&&!empty){                                                 // v12.15: an agency that asks for the samples gets to see them
+      state.hideSample=false;
+      try{ await sbUpsert('np_demo_program',{key:'hidesample',value:{v:false},updated_by:auditActor()}); }catch(e){}
+    }
     DEL={};
+    const guides=[];                              // fresh rows written when no seeded child fits the kept parents
     if(empty){                                   // keep EXACTLY one of everything, all tied to the same kept client + staff member
       const keepC=CLIENTS[0], keepS=STAFF[0];
-      const guides=[];                            // fresh rows written when no seeded child fits the kept parents
       const oneOf=(arr,kind,keyFn,pred,mkGuide)=>{
         const keep=arr.find(pred);
         if(keep){ DEL[kind]=arr.filter(x=>x!==keep).map(keyFn); }
@@ -13355,13 +13491,15 @@ function resetWorkspace(mode){
       DEL.drill=FIREDRILLS.slice(1).map(drillKey);
       DEL.temp=WATERTEMP.slice(1).map(tempKey);
       DEL.auditClearedAt=new Date().toISOString();
-      if(guides.length) setTimeout(()=>guides.forEach(g=>sbPush(g[0],g[1])),500);  // after the table wipes have gone out
     }
     try{ ['np_deleted','np_training','np_hide_sample'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
+    if(real&&!empty) lsSet('np_hide_sample','0');                    // not mistaken for a brand-new agency on the reload
     lsSet('np_deleted',JSON.stringify(DEL));
-    if(!empty) delSave(); else delSave();
+    delSave();
+    for(const g of guides){ try{ await sbPush(g[0],g[1]); }catch(e){} }   // the wipes above are done, so these stay
     toast(empty?'Workspace cleared. Reloading…':'Demonstration data restored. Reloading…');
-    setTimeout(()=>{ progFlush(8000).then(()=>location.reload()); },empty?1300:700);   // v12.13: and only once the saves are in
+    await progFlush(8000);                                             // v12.13: and only once the saves are in
+    setTimeout(()=>location.reload(),300);
   }, empty?'Clear everything':'Restore sample data');
 }
 function delLoad(){ try{ DEL=JSON.parse(lsGet('np_deleted')||'{}')||{}; }catch(e){ DEL={}; } }
@@ -13419,6 +13557,7 @@ function askDelete(title,body,fn,label){
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>
      <button class="btn danger" onclick="const f=window._delFn;closeAll();if(f)f()">${label||'Delete'}</button>`);
 }
+const wipeAll=t=>t==='np_demo_example_docs'?'doc_id=not.is.null':'id=not.is.null';   // v12.15: every row of a table (example docs are keyed by doc_id)
 function sbDel(t,q){ if(!sbOn()) return Promise.resolve(false);
   const qq=(ORG_ID&&!ORG_UNSUPPORTED[t]&&!/(^|&)org_id=/.test(q||''))?(q+`&org_id=eq.${encodeURIComponent(ORG_ID)}`):q;   // v12.11: this agency only
   return sbCheck('delete',t,fetch(`${BACKEND.url}/rest/v1/${t}?${qq}`,{method:'DELETE',headers:sbH()})); }
@@ -15094,7 +15233,7 @@ function openSettings(){
     </div></section>
     ${state.role==='director'&&realSession()?`
     <section class="card"><div class="card-h"><h2>Team access</h2><div class="sub">People who sign in to this agency</div></div><div class="card-b">
-      ${Object.entries(USERS).filter(([e,u])=>u&&/@/.test(e)).map(([e,u])=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px"><span><b>${esc(u.name||e)}</b>${u.title?' \u00b7 '+esc(u.title):''}<br><span class="tiny muted">${esc(e)}</span></span><span class="pill ${u.role==='director'?'ok':''}">${u.role==='director'?'Director':'Staff'}</span></div>`).join('')||'<div class="tiny muted">Nobody else yet.</div>'}
+      ${Object.entries(USERS).filter(([e,u])=>u&&/@/.test(e)).map(([e,u])=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px"><span><b>${esc(u.name||e)}</b>${u.title?' \u00b7 '+esc(u.title):''}<br><span class="tiny muted">${esc(e)}</span></span><span style="display:flex;gap:6px;align-items:center"><span class="pill ${u.role==='director'?'ok':''}">${u.role==='director'?'Director':'Staff'}</span>${u.role!=='director'&&e!==String(AUTH.email||'').toLowerCase()?`<button class="btn ghost sm" title="End this person’s sign-in access" onclick="closeAll();teamAccessRemove(${esc(JSON.stringify(e))})">Remove</button>`:''}</span></div>`).join('')||'<div class="tiny muted">Nobody else yet.</div>'}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn navy sm" onclick="closeAll();inviteDirector()">＋ Invite a director</button></div>
       <div class="tiny muted" style="margin-top:8px">Staff are invited from their staff record (Staff \u2192 open a person \u2192 Invite). Each person gets their own sign-in.</div>
     </div></section>`:''}
@@ -15545,7 +15684,7 @@ async function authRegister(email,pw){
         :'Check your inbox to confirm the address, then sign in with this email and password.'};
     }
     const m=(r.d&&(r.d.msg||r.d.error_description||r.d.message))||'';
-    if(/already/i.test(m)) return {ok:false,msg:'That email already has an account — sign in instead.'};
+    if(/already/i.test(m)) return {ok:false,exists:true,msg:'That email already has an account — sign in instead.'};
     // Supabase reachable but rejected (e.g. signups disabled) — fall through to a local credential
     console.warn('[np-demo] supabase signup failed',r.status,m);
   }
@@ -15554,6 +15693,20 @@ async function authRegister(email,pw){
   /* v9.90: a device-only credential has no database identity, so it gets a device-only
      workspace. Nothing it records leaves this browser. Said plainly rather than failing quietly. */
   return {ok:true,msg:'Saved on this device only — this browser keeps its own copy and nothing syncs. Set up an email sign-in to work across devices.'};
+}
+/* v12.15: an invite can be used by someone who already has a sign-in (a person whose access was
+   removed and who is now invited back, say). They sign in with their own password; the invite then
+   adds them to the agency. Unlike a normal sign-in this does not need an agency yet. */
+async function authSignInOnly(email,pw){
+  email=String(email||'').trim().toLowerCase();
+  if(!sbOn()) return {ok:false,msg:'Could not sign in.'};
+  const r=await sbAuth('token?grant_type=password',{email,password:pw});
+  if(r.ok&&r.d.access_token){
+    AUTH={email,session:{t:r.d.access_token,r:r.d.refresh_token||'',at:Date.now()},mode:'supabase'}; saveAuth(); orgForget();
+    return {ok:true};
+  }
+  const m=(r.d&&(r.d.error_description||r.d.msg||r.d.message))||'';
+  return {ok:false,msg:/invalid/i.test(m)?'This email already has a sign-in. Enter its existing password to join.':(m||'Could not sign in.')};
 }
 async function authLogin(email,pw){
   email=String(email||'').trim().toLowerCase();
@@ -15678,7 +15831,18 @@ async function finishRegister(){
   const roleTxt=inv?(inv.role_title||'Staff'):(((el('regRole')&&el('regRole').value)||'').trim());
   const role=inv?(inv.access==='director'?'director':'staff'):(/\b(staff|dsp|support professional|aide|caregiver|nurse)\b/i.test(roleTxt)?'staff':'director');
   if(!inv&&el('regOrg')&&!String(el('regOrg').value||'').trim()){ el('regOrg').focus(); return toast('Give your agency a name.'); }
-  const r=await authRegister(em,pw);                                // Supabase Auth when the backend is configured
+  let r=await authRegister(em,pw);                                  // Supabase Auth when the backend is configured
+  if(!r.ok&&r.exists&&inv){                                          // v12.15: someone who already has a sign-in joins with it
+    const li=await authSignInOnly(em,pw);
+    if(!li.ok) return toast(li.msg);
+    await orgResolve();
+    if(!ORG_NONE){                                                   // it already opens an agency: joining would move it out of that one
+      const had=!!ORG_ID; orgForget(); AUTH.session=null; saveAuth();
+      return toast(had?'This email is already part of an agency in the portal. If it is this one, just sign in; otherwise ask your director to invite a different email address.'
+        :'Could not check this sign-in right now. Try again in a moment.');
+    }
+    r={ok:true,msg:''};
+  }
   if(!r.ok) return toast(r.msg);
   try{ lsSet('np_reg_done','1'); lsSet('np_resume','1'); }catch(e){}
   if(inv){                                                          // invited staff: the workspace already exists — no setup flow
@@ -15711,9 +15875,10 @@ async function finishRegister(){
     /* v12.11: only now, inside the agency and with its team list loaded, add this account to it.
        Written earlier it landed in the throwaway sign-up agency and the real list never knew
        this person was staff, so on another device they opened as a director. */
-    MEMBER_ROLE=role;
-    await usersAddSelf((AUTH.email||em).toLowerCase(),Object.assign({role,name:inv.name||'',title:inv.role_title||''},inv.sid?{sid:inv.sid}:{}));
-    signIn(role);
+    MEMBER_ROLE=MEMBER_ROLE||role;                                  // v12.15: the role the database gave on joining wins
+    const joinedAs=MEMBER_ROLE==='director'?'director':'staff';
+    await usersAddSelf((AUTH.email||em).toLowerCase(),Object.assign({role:joinedAs,name:inv.name||'',title:inv.role_title||''},inv.sid?{sid:inv.sid}:{}));
+    signIn(joinedAs);
     return;
   }
   /* v12.9: a new agency starts from nothing. Nothing is carried over from whichever agency
@@ -16024,8 +16189,8 @@ function saveClientEdit(cid){
   c.uci=uci; c.home=homeVal('ecHome'); c.age=+el('ecAge').value||c.age;
   c.dx=ctypeVal('ecDx')||c.dx; c.guardian=(el('ecGuard').value||'').trim();
   c.alerts=(el('ecAlerts').value||'').split(',').map(x=>x.trim()).filter(Boolean);
-  c.init=uci.slice(-2);
-  sbPatch('np_demo_clients',cid,{uci:c.uci,home:c.home,age:c.age,dx:c.dx,guardian:c.guardian,alerts:c.alerts});
+  if(!c.init||/^#\d*$/.test(c.init)) c.init='#'+String(uci).replace(/[^0-9]/g,'').slice(-2);   // v12.15: typed initials stay; only number-based ones follow the UCI
+  sbPatch('np_demo_clients',cid,{uci:c.uci,init:c.init,home:c.home,age:c.age,dx:c.dx,guardian:c.guardian,alerts:c.alerts});
   logAudit('Edited client',c.uci);
   closeAll(); render(); toast('Client updated.');
 }
@@ -16329,13 +16494,14 @@ function saveStaff(sid){
   }else{
     const id='s'+Date.now();
     STAFF.push(Object.assign({trainings:{},hrs:0,id},rec)); CREDS[id]=CREDS[id]||[];
-    sbUpsert('np_demo_staff',Object.assign({id},rec));
+    const saved=sbUpsert('np_demo_staff',Object.assign({id},rec));   // v12.15: certifications are written once the person is
     [[el('sfCert1'),el('sfExp1')],[el('sfCert2'),el('sfExp2')]].forEach(([cEl,eEl])=>{
       const n=cEl&&(cEl.value||'').trim(); if(!n) return;
       const exp=eEl?eEl.value:'';
       const st2=!exp?'ok':(exp<T?'bad':(new Date(exp)-new Date(T))/864e5<certWindow()?'warn':'ok');
-      CREDS[id].push({c:n,d:exp?'Expires '+fmtDate(exp):'On file',s:st2});
-      sbPush('np_demo_credentials',{sid:id,cred_name:n,expires_on:exp||null,label:exp?null:'On file',status:exp?null:st2});
+      const row={c:n,d:exp?'Expires '+fmtDate(exp):'On file',s:st2,exp:exp||null};
+      CREDS[id].push(row);
+      credInsert(row,{sid:id,cred_name:n,expires_on:exp||null,label:exp?null:'On file',status:exp?null:st2},saved,id);
     });
     logAudit('Added staff member',rec.name);
     pingStaff(id,'Welcome to the portal','Your profile was created — onboarding steps are on your Profile page.');
