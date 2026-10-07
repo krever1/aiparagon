@@ -2525,7 +2525,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.15 beta</span></span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.16 beta</span></span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -3068,7 +3068,8 @@ function noAgencyOut(){
   orgForget(); AUTH.session=null; AUTH.signedIn=false; saveAuth(); lsDel('np_resume');
   try{ gcalClear(); }catch(e){}
   el('app').classList.remove('on'); closeAll(); hideWelcome(); hideOnboarding(); showLoginPage(); bootReveal();
-  const m=el('liErr'); if(m){ m.textContent='This account is no longer part of an agency. If that is a mistake, ask your director for a new invite link.'; m.style.display='block'; }
+  const em0=AUTH.email; loginErr('This login is no longer part of an agency. If that is a mistake, ask your director for a new invite link.',true);
+  const e=el('liEmail'); if(e&&em0) e.value=em0;
 }
 const DEMO_VIEW = (()=>{ try{ return new URLSearchParams(location.search).get('demo')==='1'; }catch(e){ return false; } })();
 const sbOn = () => !!(BACKEND.url && BACKEND.anon && !DEMO_VIEW);      // demo view is a sandbox: nothing it does is saved
@@ -15676,17 +15677,29 @@ async function authRegister(email,pw){
        admits one email domain. Tagging the account marks it as a care portal sign-up so that
        gate lets agencies register. */
     const r=await sbAuth('signup',{email,password:pw,data:{app:'spectrum'}});
+    /* v12.16: with "Confirm email" switched on in Supabase, sign-up hands back no session. The answer
+       looks the same for a brand-new login and for an address that already has one (Supabase hides
+       which, the second as a stand-in with no identities), so the caller signs in with the password
+       and looks at the account before going any further. */
+    if(r.ok&&!(r.d&&r.d.access_token)){
+      const su=(r.d&&(r.d.user||r.d))||{};
+      const fresh=Array.isArray(su.identities)&&su.identities.length>0;
+      AUTH={email, session:null, mode:'supabase'}; saveAuth(); orgForget();
+      return {ok:fresh, nosession:true, fresh, exists:!fresh,
+        msg:fresh?'Check your inbox to confirm the address, then sign in with this email and password.':'That email already has an account \u2014 sign in instead.'};
+    }
     if(r.ok){
-      AUTH={email, session:r.d.access_token?{t:r.d.access_token,r:r.d.refresh_token||'',at:Date.now()}:null, mode:'supabase'};
-      saveAuth(); orgForget(); if(r.d.access_token) await orgResolve();
+      AUTH={email, session:{t:r.d.access_token,r:r.d.refresh_token||'',at:Date.now()}, mode:'supabase'};
+      saveAuth(); orgForget(); await orgResolve();
       logAudit('Set up sign-in credentials',email);
-      return {ok:true,msg:r.d.access_token?'Credentials saved. Use this email and password to sign in.'
-        :'Check your inbox to confirm the address, then sign in with this email and password.'};
+      return {ok:true,msg:'Credentials saved. Use this email and password to sign in.'};
     }
     const m=(r.d&&(r.d.msg||r.d.error_description||r.d.message))||'';
     if(/already/i.test(m)) return {ok:false,exists:true,msg:'That email already has an account — sign in instead.'};
-    // Supabase reachable but rejected (e.g. signups disabled) — fall through to a local credential
+    /* v12.16: the real backend said no (an email it could not send, a rate limit, a dropped
+       connection). Say so. Before, this quietly made a login that only worked in this browser. */
     console.warn('[np-demo] supabase signup failed',r.status,m);
+    return {ok:false,msg:'The login could not be created right now'+(m?' ('+m+')':'')+'. Try again in a few minutes. If it keeps happening, contact support.'};
   }
   AUTH={email, session:{h:locHash(pw)}, mode:'local'};
   saveAuth(); orgForget(); logAudit('Set up sign-in credentials',email);
@@ -15694,10 +15707,48 @@ async function authRegister(email,pw){
      workspace. Nothing it records leaves this browser. Said plainly rather than failing quietly. */
   return {ok:true,msg:'Saved on this device only — this browser keeps its own copy and nothing syncs. Set up an email sign-in to work across devices.'};
 }
+/* v12.16: messages on the sign-in card stay until the next try (a toast is gone in two seconds) */
+function regSay(msg){ toast(msg); const m=el('liErr'); if(m){ m.textContent=msg; m.style.display='block'; } }
+function loginErr(msg,offerAgency){
+  const m=el('liErr'); if(!m) return;
+  m.innerHTML=esc(msg)+(offerAgency?'<br><a href="#" onclick="event.preventDefault();agencyFromLogin()" style="color:var(--navy);font-weight:700">Set up a new agency with this login</a>':'');
+  m.style.display='block';
+}
+/* v12.16: a login with no agency (its agency was deleted, or its access removed) can start one */
+function agencyFromLogin(){
+  const em=String((el('liEmail')&&el('liEmail').value)||AUTH.email||'').trim();
+  showRegisterGate();
+  const e=el('liEmail'); if(e) e.value=em;
+  const pw=el('liPw'); if(pw) pw.placeholder='The password you already use';
+  el('loginSub').innerHTML='Starting a new agency with <b>'+esc(em)+'</b>. Use the password you already have. The agency gets its own private workspace.';
+  const er=el('liErr'); if(er) er.style.display='none';
+}
+/* v12.16: a login whose only agency is the empty one its own sign-up made (nobody else in it, no
+   records, no signed agreement). That happens when an earlier sign-up or invite stopped half way. */
+async function orgIsSpare(){
+  if(!sbOn()||!sbAuthed()) return false;
+  try{
+    const r=await fetch(`${BACKEND.url}/rest/v1/rpc/np_my_org_is_spare`,{method:'POST',headers:sbH(),body:'{}'});
+    if(r.status===404) return undefined;                             // the database update is not installed: the caller decides
+    if(!r.ok) return false;
+    return (await r.json().catch(()=>false))===true;
+  }catch(e){ return false; }
+}
+async function orgCreateMine(){                                      // undefined: the database update is missing · null: not made
+  if(!sbOn()||!sbAuthed()) return null;
+  try{
+    const r=await fetch(`${BACKEND.url}/rest/v1/rpc/np_create_my_org`,{method:'POST',headers:sbH(),body:'{}'});
+    if(r.status===404){ console.warn('[np-demo] np_create_my_org is missing: run np-v12-16-existing-logins-start-an-agency.sql'); return undefined; }
+    if(!r.ok) return null;
+    const v=await r.json().catch(()=>null);
+    if(v&&typeof v==='string'){ ORG_ID=v; ORG_READY=true; ORG_NONE=false; MEMBER_ROLE='director'; lsSet('np_org_id',v); return v; }
+  }catch(e){}
+  return null;
+}
 /* v12.15: an invite can be used by someone who already has a sign-in (a person whose access was
    removed and who is now invited back, say). They sign in with their own password; the invite then
    adds them to the agency. Unlike a normal sign-in this does not need an agency yet. */
-async function authSignInOnly(email,pw){
+async function authSignInOnly(email,pw,purpose){
   email=String(email||'').trim().toLowerCase();
   if(!sbOn()) return {ok:false,msg:'Could not sign in.'};
   const r=await sbAuth('token?grant_type=password',{email,password:pw});
@@ -15706,7 +15757,9 @@ async function authSignInOnly(email,pw){
     return {ok:true};
   }
   const m=(r.d&&(r.d.error_description||r.d.msg||r.d.message))||'';
-  return {ok:false,msg:/invalid/i.test(m)?'This email already has a sign-in. Enter its existing password to join.':(m||'Could not sign in.')};
+  return {ok:false,msg:/invalid/i.test(m)?(purpose==='agency'
+    ?'This email already has a login. Enter its existing password to set up the agency with it, or use a different email.'
+    :'This email already has a sign-in. Enter its existing password to join.'):(m||'Could not sign in.')};
 }
 async function authLogin(email,pw){
   email=String(email||'').trim().toLowerCase();
@@ -15720,7 +15773,8 @@ async function authLogin(email,pw){
     if(r.ok&&r.d.access_token){
       AUTH={email,session:{t:r.d.access_token,r:r.d.refresh_token||'',at:Date.now()},mode:'supabase'}; saveAuth();
       orgForget(); await orgResolve();                                // pick up which agency this account belongs to
-      if(!ORG_ID) return {ok:false,msg:'This account is not attached to an agency yet — ask your director to re-send the invite.'};
+      if(!ORG_ID) return {ok:false,noAgency:ORG_NONE,msg:ORG_NONE?'This login isn\u2019t part of an agency. If you work for one, ask your director for a new invite link.'
+        :'Could not reach your agency right now. Try again in a moment.'};
       return {ok:true};
     }
     const m=(r.d&&(r.d.error_description||r.d.msg||r.d.message))||'';
@@ -15832,18 +15886,32 @@ async function finishRegister(){
   const role=inv?(inv.access==='director'?'director':'staff'):(/\b(staff|dsp|support professional|aide|caregiver|nurse)\b/i.test(roleTxt)?'staff':'director');
   if(!inv&&el('regOrg')&&!String(el('regOrg').value||'').trim()){ el('regOrg').focus(); return toast('Give your agency a name.'); }
   let r=await authRegister(em,pw);                                  // Supabase Auth when the backend is configured
-  if(!r.ok&&r.exists&&inv){                                          // v12.15: someone who already has a sign-in joins with it
-    const li=await authSignInOnly(em,pw);
-    if(!li.ok) return toast(li.msg);
+  if(r.nosession||(!r.ok&&r.exists)){                                // v12.15/16: sign in with the password and look at the login before going on
+    const li=await authSignInOnly(em,pw,inv?'join':'agency');
+    if(!li.ok&&!r.fresh) return regSay(li.msg);
+    if(!li.ok){                                                      // a new login that really has to confirm its email first
+      if(inv) return regSay('Check your inbox and confirm your email address, then open this invite link again.');
+      r={ok:true,msg:r.msg};                                         // carries on to "check your email", as before
+    }else{
     await orgResolve();
-    if(!ORG_NONE){                                                   // it already opens an agency: joining would move it out of that one
+    const sp=(!ORG_NONE&&ORG_ID)?await orgIsSpare():false;
+    const spare=sp===true||(sp===undefined&&!!r.fresh);              // only an empty agency of its own (a brand-new login's, or a half-finished one) can still be used
+    if(!ORG_NONE&&!spare){                                           // it already opens an agency: joining would move it out of that one, and a second one is not supported
       const had=!!ORG_ID; orgForget(); AUTH.session=null; saveAuth();
-      return toast(had?'This email is already part of an agency in the portal. If it is this one, just sign in; otherwise ask your director to invite a different email address.'
-        :'Could not check this sign-in right now. Try again in a moment.');
+      return regSay(!had?'Could not check this sign-in right now. Try again in a moment.'
+        :inv?'This email is already part of an agency in the portal. If it is this one, just sign in; otherwise ask your director to invite a different email address.'
+        :'This email already has an agency in the portal. Log in instead.');
+    }
+    if(!inv&&!spare){
+      const made=await orgCreateMine();                              // a new, empty agency for this login, with them as its director
+      if(!made){ orgForget(); AUTH.session=null; saveAuth();
+        return regSay(made===undefined?'This login can\u2019t start an agency until a database update is installed. Ask your portal administrator.'
+          :'Could not set up the agency right now. Try again in a moment.'); }
     }
     r={ok:true,msg:''};
+    }
   }
-  if(!r.ok) return toast(r.msg);
+  if(!r.ok) return regSay(r.msg);
   try{ lsSet('np_reg_done','1'); lsSet('np_resume','1'); }catch(e){}
   if(inv){                                                          // invited staff: the workspace already exists — no setup flow
     /* v9.90: the new account starts in its own empty organization. Redeeming the token is
@@ -15948,7 +16016,7 @@ function showRolePicker(){
 async function doLogin(){
   if(window._regMode) return finishRegister();
   const r=await authLogin(el('liEmail').value, el('liPw').value);
-  if(!r.ok){ el('liErr').textContent=r.msg; el('liErr').style.display='block'; return; }
+  if(!r.ok){ loginErr(r.msg,r.noAgency); return; }
   el('liErr').style.display='none';
   try{ lsSet('np_resume','1'); }catch(e){}
   /* v12.9: this page still holds whatever the last account loaded. Another account starts
