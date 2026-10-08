@@ -2476,6 +2476,7 @@ body{font-size:15px}
     <div id="credBox" style="display:none;text-align:left;max-width:360px;margin:0 auto 6px">
       <div class="field"><label>Email</label><input class="inp" id="liEmail" type="email" placeholder="you@example.org" onkeydown="if(event.key==='Enter')el('liPw').focus()"></div>
       <div class="field"><label>Password</label><input class="inp" id="liPw" type="password" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div id="liForgotWrap" class="tiny" style="display:none;text-align:right;margin:-6px 0 10px"><a href="#" id="liForgot" onclick="event.preventDefault();forgotOpen()" style="color:var(--navy);font-weight:700">Forgot password?</a></div>
       <div id="liErr" class="tiny" style="display:none;color:var(--bad);margin:-4px 0 10px"></div>
       <button class="btn navy" id="liGo" style="width:100%;justify-content:center" onclick="doLogin()">Sign in</button>
       <div class="tiny muted" style="margin-top:10px;text-align:center">
@@ -2525,7 +2526,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.16 beta</span></span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.18 beta</span></span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -2613,8 +2614,25 @@ window.NP_CONFIG = {
 };
 </script>
 <script>
+/* ══════════════ v12.18: WHOSE CLOCK ══════════════
+   Dates and times follow the time zone of the computer the dashboard is open on. A person can pick
+   another zone in their settings (travelling, say): then "today", the clock, the calendar's now-line
+   and anything sent to Google Calendar follow that zone instead. The choice is saved with their
+   account; this device keeps a copy under np_tz_force so the very first date on the page is right. */
+const TZ_DEVICE=(()=>{ try{ return Intl.DateTimeFormat().resolvedOptions().timeZone||''; }catch(e){ return ''; } })();
+const TZ_FORCE=(()=>{ try{ const z=localStorage.getItem('np_tz_force')||''; if(z) new Intl.DateTimeFormat('en-US',{timeZone:z}); return z; }catch(e){ return ''; } })();
+function tzOffsetMin(tz,at){                                          // minutes ahead of UTC in that zone, at that moment
+  const p=new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).formatToParts(new Date(at));
+  const g=t=>+((p.find(x=>x.type===t)||{}).value||0);
+  return Math.round((Date.UTC(g('year'),g('month')-1,g('day'),g('hour')%24,g('minute'),g('second'))-Math.floor(at/1000)*1000)/60000);
+}
+/* a moment, as a Date whose day and hour read as the wall clock in the chosen zone */
+function zOf(d){ const t=d instanceof Date?d.getTime():+d; if(!TZ_FORCE) return new Date(t);
+  try{ return new Date(t+(tzOffsetMin(TZ_FORCE,t)+new Date(t).getTimezoneOffset())*60000); }catch(e){ return new Date(t); } }
+function zNow(){ return zOf(Date.now()); }
+const tzEff=()=>TZ_FORCE||TZ_DEVICE||'UTC';                          // the zone the dashboard is showing
 /* ══════════════ DEMO DATA ══════════════ */
-const TODAY = new Date();
+const TODAY = zNow();
 const iso = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');   // local date, not UTC
 const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
 const fmtDate = d => new Date(d).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
@@ -2851,7 +2869,7 @@ async function gcalFetch(quiet){
       }
       if(a.cancelled){ a.cancelled=0; a.cxBy=''; sbPatch('np_demo_appointments',a.id,{cancelled:0,cx_by:''}); }
       const st=ev.start||{}; if(!st.dateTime) return;              // portal appts are timed
-      const sd=new Date(st.dateTime);
+      const sd=zOf(new Date(st.dateTime));
       const nd=sd.getFullYear()+'-'+pad(sd.getMonth()+1)+'-'+pad(sd.getDate());
       const nt=pad(sd.getHours())+':'+pad(sd.getMinutes());
       let ndur=a.dur; if(ev.end&&ev.end.dateTime) ndur=Math.max(15,Math.round((new Date(ev.end.dateTime)-sd)/60000));
@@ -2867,7 +2885,7 @@ async function gcalFetch(quiet){
       const start=ev.start||{}, allday=!start.dateTime;
       let dt, tm;
       if(allday){ dt=start.date; tm=''; }
-      else{ const sd=new Date(start.dateTime);   // offset-safe: convert to the viewer's local wall clock
+      else{ const sd=zOf(new Date(start.dateTime));   // offset-safe: convert to the viewer's wall clock (v12.18: their chosen zone)
             dt=sd.getFullYear()+'-'+pad(sd.getMonth()+1)+'-'+pad(sd.getDate());
             tm=pad(sd.getHours())+':'+pad(sd.getMinutes()); }
       let dur=30;
@@ -2894,7 +2912,7 @@ function gcalPush(a){ // portal appointment → user's Google Calendar (UCI only
   const pad=n=>String(n).padStart(2,'0');
   const endIso=end.getFullYear()+'-'+pad(end.getMonth()+1)+'-'+pad(end.getDate())+'T'+pad(end.getHours())+':'+pad(end.getMinutes())+':00';
   // Google rejects a naive dateTime with 400 unless a timeZone accompanies it
-  let tz='UTC'; try{ tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'; }catch(e){}
+  const tz=tzEff();
   gcalApi('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ summary:a.title+' — '+client(a.cid).init+' ('+client(a.cid).uci+')',
@@ -2927,7 +2945,7 @@ function gcalPush(a){ // portal appointment → user's Google Calendar (UCI only
 /* v6.6: portal edits follow through to Google — the sync runs both ways */
 async function gcalUpdate(a){
   if((!GCAL.token&&!GCAL.kept)||!a.gid) return false;
-  let tz='UTC'; try{ tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'; }catch(e){}
+  const tz=tzEff();
   const startIso=a.date+'T'+a.time+':00';
   const end=new Date(new Date(startIso).getTime()+(a.dur||30)*60000);
   const pad=n=>String(n).padStart(2,'0');
@@ -3457,7 +3475,7 @@ function buildLogs(){
   }
   return out;
 }
-function nowHM(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function nowHM(){ const d=zNow(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
 const LOGS = buildLogs();
 
 const APPTS = [
@@ -3718,7 +3736,7 @@ function addClientNote(cid){
   if(mentioned.length) renderNav();
   render(); toast(mentioned.length?`Note added — ${mentioned.map(s2=>s2.init).join(', ')} notified.`:'Note added.');
 }
-function nowStamp(){ return new Date().toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
+function nowStamp(){ return zNow().toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
 
 const WEEKLY = {
   c1:[{t:'Check if bathroom items need to be replaced',d:1,by:'M.R.',at:'Mon 9:20 AM'},{t:'Clean room',d:1,by:'M.R.',at:'Mon 9:40 AM'},{t:'Change bed linens',d:0},{t:'Restock personal supplies',d:0},{t:'Check clothing for repairs or replacement',d:0}],
@@ -4842,6 +4860,7 @@ function clearSampleLists(){
      change event, so the category form never opened. Keep them. */
   (L.chgcats||[]).forEach(k=>{ delete CHG_CATS[k]; }); chgCatsSave&&chgCatsSave();
 }
+const RESET_TOKEN=(()=>{ try{ return new URLSearchParams(location.search).get('reset')||''; }catch(e){ return ''; } })();   // v12.17: from a reset email
 const JOIN_TOKEN=(()=>{ try{ return new URLSearchParams(location.search).get('join')||''; }catch(e){ return ''; } })();
 async function joinBoot(){
   try{
@@ -4884,6 +4903,12 @@ function bootPortal(){
     return;
   }
   if(sbOn()) ME.director={name:'Your director',init:'DR',role:'Agency director',label:'Director view'};   // v12.13: no built-in name in a real workspace (before the invite page too)
+  if(RESET_TOKEN&&sbOn()){                                            // v12.17: a link from a password reset email
+    hideWelcome(); hideOnboarding();
+    el('login').style.display='flex';
+    resetBoot();
+    return;
+  }
   if(JOIN_TOKEN&&sbOn()){                                             // invited staff land on their own registration page
     hideWelcome(); hideOnboarding();
     el('login').style.display='flex';
@@ -4892,7 +4917,11 @@ function bootPortal(){
   }
   if(!OB_MASTER.length) OB_MASTER=ONBOARD.map(t=>({t,link:''}));
   SAMPLE.temp=WATERTEMP.map(tempKey); SAMPLE.drill=FIREDRILLS.map(drillKey); SAMPLE.shift=SHIFTS.map(shiftKey);
-  setInterval(()=>{ if(iso(new Date())!==T) location.reload(); },60000);   // roll to the new day live
+  setInterval(()=>{ if(iso(zNow())!==T) location.reload(); },60000);   // roll to the new day live
+  /* v12.18: a tab left open overnight (or a computer that slept) gets no timer while it is in the
+     background, so it also checks the moment it is looked at again */
+  const dayCheck=()=>{ if(document.visibilityState!=='hidden'&&iso(zNow())!==T) location.reload(); };
+  document.addEventListener('visibilitychange',dayCheck); window.addEventListener('focus',dayCheck); window.addEventListener('pageshow',dayCheck);
   TEMP_LIMIT=+(lsGet('np_temp_limit')||120);
   loadSetup(); loadAuth(); applySetup();
   if(lsGet('np_setup_pending')&&authReady()&&AUTH.session){ hideOnboarding(); newAgencyContinue(); return; }   // v12.9: a new agency's setup
@@ -4999,6 +5028,7 @@ async function signOut(){
   try{ const tk=sbTok(); if(tk&&BACKEND.url) fetch(BACKEND.url+'/auth/v1/logout',{method:'POST',keepalive:true,
     headers:{apikey:BACKEND.anon,Authorization:'Bearer '+tk}}).catch(()=>{}); }catch(e){}
   orgForget(); AUTH.session=null; saveAuth();
+  try{ localStorage.removeItem('np_tz_force'); }catch(e){}            // v12.18: the next person starts on this computer's own zone
   try{ gcalClear(); }catch(e){}                                      // v12.14: this tab forgets the token; the connection itself stays
   if(typeof tourEnd==='function') tourEnd();
   const f=el('tlFull'); if(f) f.remove();
@@ -5952,7 +5982,7 @@ function csDel(page,id){
 
 /* ══════════════ HOME ══════════════ */
 function greeting(){
-  const h=new Date().getHours();
+  const h=zNow().getHours();
   return h<12?'Good morning':h<17?'Good afternoon':'Good evening';
 }
 
@@ -6053,7 +6083,7 @@ document.addEventListener('pointermove',e=>{
   if(!tlGrip) return;
   tlRowSet(tlGrip.h+(e.clientY-tlGrip.y));
   document.querySelectorAll('.tl-row:not(.tl-hrow):not(.tl-group) .tl-cells')
-    .forEach(c=>{ if(!c.dataset.lane) c.style.height=tlRowH()+'px'; });
+    .forEach(c=>{ if(c.dataset.need) c.style.height=Math.max(tlRowH(),+c.dataset.need)+'px'; else if(!c.dataset.lane) c.style.height=tlRowH()+'px'; });
 });
 document.addEventListener('pointerup',()=>{ if(tlGrip){ tlGrip=null; render(); } });
 const boardDay=()=>state.boardDay||T;
@@ -6107,21 +6137,25 @@ function tlCard(full){
 
   let rows=[
 
-    {dot:'#C9A84C',lab:'Appointments',lane:_lanes>1,on:state.role!=='family'?"openApptForm()":null,h:_lanes>1?(_lanes*21+8):null,
+    {dot:'#C9A84C',lab:'Appointments',sub:apptBars?'':'Nothing scheduled',lane:_lanes>1,on:state.role!=='family'?"openApptForm()":null,h:_lanes>1?(_lanes*21+8):null,
      bars:apptBars||'<span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:11.5px;color:var(--muted)">Nothing scheduled</span>'}
   ];
   if(state.role!=='family'){
     const lanes=[];
+    /* v12.18: the row is as tall as the Appointments row (taller only when the shifts need it), and
+       the shifts sit in the middle of it, so it never shrinks to a sliver when the day is empty */
+    const nSh=visShifts().length, needH=10+nSh*23, rowH=Math.max(tlRowH(),needH), off=Math.max(5,Math.round((rowH-(nSh*23-4))/2));
     const shiftBars=visShifts().slice().sort((x,y)=>x.start.localeCompare(y.start)).map(s=>{
       const L=tlPx(s.start),R=tlPx(s.end);
       let ln=lanes.length; lanes[ln]=R;                    // a line each, so two shifts never share a row
       const canEdit=state.role==='director';
-      return tlBar({l:L,w:Math.max(R-L,60),top:5+ln*23,cls:'b-shift',txt:`${glyphHtml(homeIcon(s.home),12)} ${esc(staff(s.sid).init)} ${esc(s.home.replace(' House',''))}`,
+      return tlBar({l:L,w:Math.max(R-L,60),top:off+ln*23,cls:'b-shift',txt:`${glyphHtml(homeIcon(s.home),12)} ${esc(staff(s.sid).init)} ${esc(s.home.replace(' House',''))}`,
         tip:canEdit?`${staff(s.sid).name} · ${hm12(s.start)} to ${hm12(s.end)} — drag to move, click to edit`:`${staff(s.sid).name} · ${hm12(s.start)} to ${hm12(s.end)}`,
         attrs:(canEdit?`data-shift="${s.sid}" data-sk="${esc(shiftIdent(s))}" `:'')+`style="${barPaint(homeColor(s.home))}"`,
         on:canEdit?`shiftMenu(${visShifts().indexOf(s)})`:"go('team')"});
     }).join('');
-    rows.push({dot:'#9AA3B2',lab:'Staff on shift',bars:shiftBars,h:10+lanes.length*23,lane:1,
+    rows.push({dot:'#9AA3B2',lab:'Staff on shift',sub:shiftBars?'':'No shifts this day',bars:shiftBars||'<span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:11.5px;color:var(--muted)">No shifts this day</span>',
+      need:needH,lane:1,
       on:state.role==='director'?'openShiftForm()':null});
   }
 
@@ -6158,7 +6192,9 @@ function tlCard(full){
     }
     if(state.role!=='family'){
       rows.push({group:'Staff on shift'});
-      visShifts().filter(s=>(!tlState.home||s.home===tlState.home||s.home==='All homes')).forEach(s=>{
+      const fShifts=visShifts().filter(s=>(!tlState.home||s.home===tlState.home||s.home==='All homes'));
+      if(!fShifts.length) rows.push({dot:'#9AA3B2',lab:'No one',bars:'<span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:11.5px;color:var(--muted)">No shifts this day</span>'});
+      fShifts.forEach(s=>{
         const canEdit=state.role==='director';
         rows.push({dot:homeColor(s.home),lab:esc(staff(s.sid).init),sub:esc(staff(s.sid).role),
         bars:tlBar({l:tlPx(s.start),w:Math.max(tlPx(s.end)-tlPx(s.start),60),cls:'b-shift',
@@ -6183,7 +6219,7 @@ function tlCard(full){
         <div class="tl-row ${r.lane?'tl-lane':''}">
           <div class="tl-lab ${r.on?'click':''}" ${r.on?`onclick="${r.on}"`:''}><span class="gd" style="background:${r.dot}"></span>
             <span>${r.lab}${r.sub?`<small>${r.sub}</small>`:''}</span></div>
-          <div class="tl-cells" ${r.h?'data-lane="1"':''} style="width:${trackW}px;height:${r.h||tlRowH()}px">${r.bars}</div>
+          <div class="tl-cells" ${r.h?'data-lane="1"':''}${r.need?` data-need="${r.need}"`:''} style="width:${trackW}px;height:${r.h||(r.need?Math.max(tlRowH(),r.need):tlRowH())}px">${r.bars}</div>
         </div>`).join('')}
       ${D===T?`<div class="tl-nowline" data-x="${now}" style="left:${TL.lab+now}px"></div>`:''}
       ${/* v10.4: the board can sit on another day now, so it says so rather than implying today */''}
@@ -6309,7 +6345,7 @@ function viewHome(){
   // stats per role
   let stats;
   if(state.role==='director'){
-    const od=TASKS.filter(t=>t.stage==='Overdue'||(t.stage!=='Done'&&t.due<T)).length;
+    const od=myTasks().filter(t=>t.stage==='Overdue'||(t.stage!=='Done'&&t.due<T)).length;   // v12.18: the same tasks the tile counts (hidden sample ones never show as overdue)
     stats=[
       {lb:'Open tasks',vl:myTasks().filter(t=>t.stage!=='Done').length,ft:od?od+' overdue':'None overdue',c:od?'warn':'ok',go:"go('tasks')"},
       {lb:'Staff on shift now',vl:visShifts().filter(s=>s.start<=nowHM()&&s.end>=nowHM()).length,ft:`${visShifts().length} scheduled today`,c:'',go:"go('team')"},
@@ -10682,13 +10718,26 @@ function personPromptIfNeeded(tries){
     `<button class="btn ghost" onclick="closeAll()">Later</button><button class="btn navy" id="meNameGo" onclick="saveMyName()">Save</button>`);
   setTimeout(()=>{ const i=el('meName'); if(i) i.focus(); },60);
 }
-function editTz(){
-  const cur=lsGet('np_tz')||Intl.DateTimeFormat().resolvedOptions().timeZone||'';
-  const zones=['America/Los_Angeles','America/Denver','America/Chicago','America/New_York','America/Anchorage','Pacific/Honolulu','America/Phoenix'];
+function editTz(){                                                  // v12.18: automatic (this computer) or a zone of their choosing
+  let zones=[]; try{ zones=Intl.supportedValuesOf('timeZone'); }catch(e){}
+  if(!zones.length) zones=['America/Los_Angeles','America/Denver','America/Phoenix','America/Chicago','America/New_York','America/Anchorage','Pacific/Honolulu',
+    'Europe/London','Europe/Paris','Asia/Dubai','Asia/Manila','Asia/Singapore','Asia/Tokyo','Australia/Sydney','UTC'];
+  if(TZ_DEVICE&&!zones.includes(TZ_DEVICE)) zones.unshift(TZ_DEVICE);
+  const nice=z=>z.replace(/_/g,' ');
   openModal('Your time zone',`
-    <div class="field"><label>Time zone</label><select class="inp" id="meTz">${zones.map(z=>`<option ${cur===z?'selected':''}>${z}</option>`).join('')}</select></div>
-    <div class="tiny muted">Used for how times are labeled on your profile. The clock itself always follows this device.</div>`,
-    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="lsSet('np_tz',el('meTz').value);userSetSave({tz:el('meTz').value});closeAll();render();toast('Time zone saved — just for your account.')">Save</button>`);
+    <div class="field"><label>Time zone</label><select class="inp" id="meTz">
+      <option value="" ${TZ_FORCE?'':'selected'}>Automatic: this computer (${esc(nice(TZ_DEVICE||'local time'))})</option>
+      ${zones.map(z=>`<option value="${esc(z)}" ${TZ_FORCE===z?'selected':''}>${esc(nice(z))}</option>`).join('')}</select></div>
+    <div class="tiny muted">Automatic follows the clock on the computer or phone you are using. Pick a zone to see today\u2019s date, the clock and the calendar in that zone instead, on every device you sign in on, until you set it back to Automatic. Only your account changes.</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="tzSave()">Save</button>`);
+}
+async function tzSave(){
+  const z=String((el('meTz')&&el('meTz').value)||'');
+  userSetSave({tzForce:z});
+  try{ if(z) localStorage.setItem('np_tz_force',z); else localStorage.removeItem('np_tz_force'); }catch(e){}
+  closeAll(); toast(z?'Time zone set to '+z.replace(/_/g,' ')+'. Updating\u2026':'Back to automatic time zone. Updating\u2026');
+  try{ await progFlush(5000); }catch(e){}
+  setTimeout(()=>location.reload(),300);
 }
 function editSite(){
   openModal("Your organization's website",`
@@ -10755,7 +10804,7 @@ function viewProfile(){
                : [['Email',state.role==='director'?((ONB.email||AUTH.email)?esc(ONB.email||AUTH.email)+' <button class="btn ghost sm" onclick="editEmail()">✎</button>':'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editEmail()">＋ Add email</button>'):state.role==='staff'?esc((ONB.email||AUTH.email)||'on file'):'guardian on file']]),
              ...(state.role==='director'?[[realSession()?'Agency website':'Website',ONB.domain?`<a href="https://${esc(ONB.domain)}" target="_blank" style="color:var(--navy);font-weight:700">${esc(ONB.domain)}</a> <button class="btn ghost sm" onclick="editSite()">✎</button>`:'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editSite()">＋ Add website</button>']]:[]),
              ['Role',esc(realSession()?((PERSON&&PERSON.title)||ME[state.role].role||ME[state.role].label||''):(ONB.roleTitle||ME[state.role].label||''))],
-             ['Phone','On file'],['Timezone',`${esc(lsGet('np_tz')||Intl.DateTimeFormat().resolvedOptions().timeZone||'Local')} <button class="btn ghost sm" onclick="editTz()">✎</button>`],
+             ['Phone','On file'],['Timezone',`${esc(tzEff().replace(/_/g,' '))}${TZ_FORCE?'':' (automatic)'} <button class="btn ghost sm" onclick="editTz()">✎</button>`],
              ['Permission',state.role==='director'?'Administrator — full control of the organization':state.role==='staff'?'Care staff — assigned clients only':'Family — one client only']]
             .map(([k,v])=>`<tr><td class="muted" style="width:110px">${k}</td><td>${v}</td></tr>`).join('')}
         </tbody></table></div>
@@ -13407,7 +13456,7 @@ async function sbUpload(p0,file){
   }catch(e){ console.warn('[np-demo] storage upload failed',e); return null; }
 }
 let DEL={};                                   // kind -> [keys]
-function weekStart(){ const d=new Date(); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); return iso(d); }
+function weekStart(){ const d=zNow(); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); return iso(d); }
 function inWeek(dateStr){ return dateStr>=weekStart() && dateStr<=T; }
 function delCount(){ return Object.keys(DEL).filter(k=>k!=='auditClearedAt').reduce((a,k)=>a+(DEL[k]||[]).length,0); }
 /* 'demo' puts the seeded demonstration data back; 'empty' hands over a blank workspace */
@@ -14172,7 +14221,7 @@ async function saveGcalEdit(id){
   const dur=Math.max(5,+el('geDur').value||g.dur||60), loc=(el('geLoc').value||'').trim();
   if(!GCAL.connected||(!GCAL.token&&!GCAL.kept)) return toast('Reconnect Google Calendar to save changes.');
   const gid=String(id).replace(/^g_/,'');
-  const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
+  const tz=tzEff();
   const startIso=`${date}T${time}:00`;
   const endMin=toMin(time)+dur;
   const endIso=`${date}T${String(Math.floor(endMin/60)%24).padStart(2,'0')}:${String(endMin%60).padStart(2,'0')}:00`;
@@ -15154,7 +15203,7 @@ function saveNotifPrefs(){
 }
 function upcomingReminders(){
   const lead=(NOTIF_PREFS.lead||24)*60*60*1000;
-  const now=new Date(); const out=[];
+  const now=zNow(); const out=[];
   const cl=visibleClients().map(c=>c.id);
   const add=(when,label,sub,id)=>{
     const diff=when-now;
@@ -15221,6 +15270,7 @@ function openSettings(){
       <div class="field"><label>Name on your records</label><div style="display:flex;gap:8px"><input class="inp" value="${esc(realSession()?actorName():m.name)}" disabled>${state.role!=='family'?`<button class="btn ghost sm" onclick="closeAll();editMyName()">✎ Edit</button>`:''}</div></div>
       <div class="field"><label>Sign-in email</label><input class="inp" value="${esc(AUTH.email||(DEMO_VIEW?'Demo preview \u2014 no sign-in':''))}" disabled></div>
       <div class="field"><label>Role</label><input class="inp" value="${esc(m.role)}" disabled></div>
+      <div class="field"><label>Time zone</label><div style="display:flex;gap:8px"><input class="inp" value="${esc(tzEff().replace(/_/g,' '))}${TZ_FORCE?'':' (automatic)'}" disabled><button class="btn ghost sm" onclick="closeAll();editTz()">✎ Change</button></div></div>
     </div></section>
     <section class="card"><div class="card-h"><h2>Security</h2></div><div class="card-b">
       <button class="btn ghost sm" onclick="closeAll();openCredentials()">🔑 ${realSession()?'Change password':(authReady()?'Sign-in credentials':'Set up sign-in')}</button>
@@ -15530,7 +15580,20 @@ function userSetSave(patch){
     v.map=map; return v;
   });
 }
+/* v12.18: this device follows the zone saved with the signed-in account (or the computer's own) */
+function tzSync(){
+  if(!realSession()||!PROG_READ||PROG_READ_FAILED) return;          // only once the account's settings are really loaded
+  const m=USER_SET[userKey()]||{};
+  let want=String(m.tzForce||'');
+  if(want){ try{ new Intl.DateTimeFormat('en-US',{timeZone:want}); }catch(e){ want=''; } }
+  let have=''; try{ have=localStorage.getItem('np_tz_force')||''; }catch(e){ return; }
+  if(want===have) return;
+  try{ if(want) localStorage.setItem('np_tz_force',want); else localStorage.removeItem('np_tz_force'); }catch(e){ return; }
+  let now=null; try{ now=localStorage.getItem('np_tz_force')||''; }catch(e){}
+  if(now===want&&want!==TZ_FORCE) setTimeout(()=>location.reload(),60);   // the page was drawn in the other zone
+}
 function applyUserSettings(){
+  try{ tzSync(); }catch(e){}
   const m=USER_SET[userKey()]; if(!m) return;
   if(m.prefs) PREFS=Object.assign({},PREFS,m.prefs);
   if(m.tz) lsSet('np_tz',m.tz);
@@ -15707,6 +15770,99 @@ async function authRegister(email,pw){
      workspace. Nothing it records leaves this browser. Said plainly rather than failing quietly. */
   return {ok:true,msg:'Saved on this device only — this browser keeps its own copy and nothing syncs. Set up an email sign-in to work across devices.'};
 }
+/* ══════════════ v12.17: FORGOT PASSWORD ══════════════
+   "Forgot password?" asks the np-password server function to email a reset link (through n8n,
+   like invites, because Supabase's own sender only reaches the Supabase team). The link brings the
+   person back here with a one-time token, which Supabase trades for a short session that is only
+   used to set the new password. Then they log in as usual. */
+const pwFnUrl=()=>String(BACKEND.url).replace(/\/+$/,'')+'/functions/v1/np-password';
+function forgotOpen(){                                               // shown on the log-in card itself (a pop-up would sit behind it)
+  const em=String((el('liEmail')&&el('liEmail').value)||'').trim();
+  const cb=el('credBox'); if(cb) cb.style.display='none';
+  const lf=el('loginFresh'); if(lf) lf.style.display='none';
+  el('loginTitle').textContent='Reset your password';
+  el('loginSub').textContent='We email you a link to choose a new password. It works once, for an hour.';
+  let box=el('forgotBox'); if(box) box.remove();
+  el('loginSub').insertAdjacentHTML('afterend',`<div id="forgotBox" style="text-align:left;max-width:360px;margin:0 auto 6px">
+    <div class="field"><label>Email</label><input class="inp" id="fpEmail" type="email" value="${esc(em)}" placeholder="you@youragency.org" onkeydown="if(event.key==='Enter')forgotSend()"></div>
+    <div id="fpMsg" class="tiny" style="display:none;margin:-4px 0 10px"></div>
+    <button class="btn navy" id="fpGo" style="width:100%;justify-content:center" onclick="forgotSend()">Send reset link</button>
+    <div class="tiny" id="fpBack" style="text-align:center;margin-top:12px"><a href="#" onclick="event.preventDefault();forgotClose()" style="color:var(--navy);font-weight:700">Back to log in</a></div></div>`);
+  setTimeout(()=>{ const f=el('fpEmail'); if(f) f.focus(); },60);
+}
+function forgotClose(){
+  const em=String((el('fpEmail')&&el('fpEmail').value)||'').trim();
+  const box=el('forgotBox'); if(box) box.remove();
+  const cb=el('credBox'); if(cb) cb.style.display='block';
+  showLoginPage();
+  const e=el('liEmail'); if(e&&em) e.value=em;
+}
+async function forgotSend(){
+  const em=String((el('fpEmail')&&el('fpEmail').value)||'').trim().toLowerCase();
+  const msg=el('fpMsg'), go=el('fpGo');
+  const say=(t,bad)=>{ if(!msg) return toast(t); msg.textContent=t; msg.style.display='block'; msg.style.color=bad?'var(--bad)':'var(--good)'; };
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return say('Enter a valid email address.',true);
+  if(go) go.disabled=true;
+  let r=null;
+  try{ r=await fetch(pwFnUrl(),{method:'POST',headers:{'Content-Type':'application/json',apikey:BACKEND.anon,Authorization:'Bearer '+BACKEND.anon},
+    body:JSON.stringify({action:'request',email:em})}); }catch(e){ r=null; }
+  if(go) go.disabled=false;
+  if(r&&r.ok){
+    say('If there is a login for that email, a reset link is on its way. Check your inbox (and spam).',false);
+    if(go){ go.textContent='Back to log in'; go.onclick=()=>forgotClose(); }
+    { const bk=el('fpBack'); if(bk) bk.style.display='none'; }
+    return;
+  }
+  if(r&&r.status===429) return say('Too many requests. Try again in a little while.',true);
+  if(r&&r.status===404) return say('Password reset is not switched on yet. Ask your portal administrator.',true);
+  say('Could not send the reset link right now. Try again in a few minutes.',true);
+}
+let RESET_SESSION=null;
+function resetBoot(){
+  showLoginPage();
+  el('loginTitle').textContent='Choose a new password';
+  el('loginSub').textContent='Pick a new password for your login. You will log in with it straight after.';
+  const cb=el('credBox'); if(cb) cb.style.display='none';
+  const lf=el('loginFresh'); if(lf) lf.remove();
+  let box=el('resetBox');
+  if(!box){ el('loginSub').insertAdjacentHTML('afterend',`<div id="resetBox" style="text-align:left;max-width:360px;margin:0 auto 6px">
+    <div class="field"><label>New password</label><input class="inp" id="rsPw" type="password" placeholder="At least 8 characters" onkeydown="if(event.key==='Enter')el('rsPw2').focus()"></div>
+    <div class="field"><label>Type it again</label><input class="inp" id="rsPw2" type="password" onkeydown="if(event.key==='Enter')resetSave()"></div>
+    <div id="rsErr" class="tiny" style="display:none;color:var(--bad);margin:-4px 0 10px"></div>
+    <button class="btn navy" id="rsGo" style="width:100%;justify-content:center" onclick="resetSave()">Save new password</button></div>`); }
+  setTimeout(()=>{ const p=el('rsPw'); if(p) p.focus(); },60);
+}
+async function resetSave(){
+  const p1=String(el('rsPw').value||''), p2=String(el('rsPw2').value||''), go=el('rsGo'), m=el('rsErr');
+  const say=t=>{ m.textContent=t; m.style.display='block'; };
+  if(p1.length<8) return say('Use at least 8 characters.');
+  if(p1!==p2) return say('The two passwords are different.');
+  m.style.display='none'; go.disabled=true;
+  try{
+    if(!RESET_SESSION){                                               // the link's one-time token, traded for a short session
+      const r=await fetch(`${BACKEND.url}/auth/v1/verify`,{method:'POST',headers:{apikey:BACKEND.anon,'Content-Type':'application/json'},
+        body:JSON.stringify({type:'recovery',token_hash:RESET_TOKEN})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.access_token){ go.disabled=false; return say('This reset link has expired or was already used. Ask for a new one with "Forgot password?" on the log-in page.'); }
+      RESET_SESSION=d;
+    }
+    const u=await fetch(`${BACKEND.url}/auth/v1/user`,{method:'PUT',headers:{apikey:BACKEND.anon,Authorization:'Bearer '+RESET_SESSION.access_token,'Content-Type':'application/json'},
+      body:JSON.stringify({password:p1})});
+    if(!u.ok){ const d=await u.json().catch(()=>({})); go.disabled=false;
+      return say(/same/i.test(String(d&&(d.error_code||d.code||d.msg)||''))?'That is the password you already have. Pick a different one.':((d&&(d.msg||d.error_description||d.message))||'The password could not be changed. Try again.')); }
+    const em=String((RESET_SESSION.user&&RESET_SESSION.user.email)||'');
+    fetch(`${BACKEND.url}/auth/v1/logout?scope=local`,{method:'POST',keepalive:true,headers:{apikey:BACKEND.anon,Authorization:'Bearer '+RESET_SESSION.access_token}}).catch(()=>{});
+    RESET_SESSION=null;
+    try{ history.replaceState(null,'',location.pathname); }catch(e){}
+    const box=el('resetBox'); if(box) box.remove();
+    const cb=el('credBox'); if(cb) cb.style.display='block';
+    showLoginPage();
+    const e=el('liEmail'); if(e&&em) e.value=em;
+    el('loginTitle').textContent='Password changed';
+    el('loginSub').textContent='Log in with your new password.';
+    setTimeout(()=>{ const p=el('liPw'); if(p) p.focus(); },60);
+  }catch(e){ go.disabled=false; say('Could not reach the sign-in service. Try again in a moment.'); }
+}
 /* v12.16: messages on the sign-in card stay until the next try (a toast is gone in two seconds) */
 function regSay(msg){ toast(msg); const m=el('liErr'); if(m){ m.textContent=msg; m.style.display='block'; } }
 function loginErr(msg,offerAgency){
@@ -15758,7 +15914,7 @@ async function authSignInOnly(email,pw,purpose){
   }
   const m=(r.d&&(r.d.error_description||r.d.msg||r.d.message))||'';
   return {ok:false,msg:/invalid/i.test(m)?(purpose==='agency'
-    ?'This email already has a login. Enter its existing password to set up the agency with it, or use a different email.'
+    ?'This email already has an account. Enter that account\u2019s password, or use a different email.'
     :'This email already has a sign-in. Enter its existing password to join.'):(m||'Could not sign in.')};
 }
 async function authLogin(email,pw){
@@ -15779,7 +15935,7 @@ async function authLogin(email,pw){
     }
     const m=(r.d&&(r.d.error_description||r.d.msg||r.d.message))||'';
     return {ok:false,msg:/confirm/i.test(m)?'Confirm your email address first — check your inbox.'
-      :/invalid/i.test(m)?'That email and password do not match.':(m||'Could not sign in.')};
+      :/invalid/i.test(m)?'Wrong password for this email, or there is no login with this email yet.':(m||'Could not sign in.')};
   }
   return {ok:false,msg:'No credentials are set up on this device yet.'};
 }
@@ -15828,6 +15984,7 @@ async function saveCredentials(){
 function showLoginForm(){
   bootReveal();
   el('login').classList.add('credmode'); loginGoLabel('Sign in');
+  { const fw=el('liForgotWrap'); if(fw) fw.style.display=sbOn()?'block':'none'; }   // v12.17: forgot password
   el('loginTitle').textContent=greetName()?('Welcome back, '+String(greetName()).split(' ')[0]+'.'):'Sign in';
   el('loginSub').innerHTML=(ONB.org&&ONB.org!=='Spectrum')?'Sign in to the '+esc(ONB.org)+' dashboard portal.':'Sign in to your agency\u2019s care portal.';
   const cb0=el('credBox');
@@ -15859,6 +16016,8 @@ function showRegisterGate(){
   const em=el('liEmail'); if(em){ em.value=''; em.placeholder='you@youragency.org'; }
   const pw=el('liPw'); if(pw){ pw.value=''; pw.placeholder='At least 8 characters'; }
   loginGoLabel('Create agency account');
+  { const fw=el('liForgotWrap'); if(fw) fw.style.display='none'; }
+  { const er=el('liErr'); if(er){ er.style.display='none'; er.textContent=''; } }   // v12.17: a sign-in message from before does not carry over
   setTimeout(()=>{ const o=el('regOrg'); if(o) o.focus(); },60);
   if(!el('regSwap')) cb.insertAdjacentHTML('beforeend','<div id="regSwap" class="tiny" style="text-align:center;margin-top:12px"><div class="muted" style="margin-bottom:6px">Joining an agency that already uses this? Open the invite link your director sent you.</div>Already have an account? <a href="#" onclick="event.preventDefault();showLoginPage()" style="color:var(--navy);font-weight:800">Log in</a></div>');
   const ls=el('loginSwap'); if(ls) ls.remove();
@@ -15870,6 +16029,8 @@ function showLoginPage(){
   window._regMode=false;
   const rw=el('regRoleWrap'); if(rw) rw.remove();
   const rs=el('regSwap'); if(rs) rs.remove();
+  { const er=el('liErr'); if(er&&!AUTH.signedIn){ er.style.display='none'; er.textContent=''; } }   // v12.17: same the other way round
+  { const fb=el('forgotBox'); if(fb) fb.remove(); const cb0=el('credBox'); if(cb0&&!el('resetBox')) cb0.style.display='block'; }
   showLoginForm();
   const cb=el('credBox');
   const lf0=el('loginFresh'); if(lf0) lf0.remove();
