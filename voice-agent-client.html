@@ -499,6 +499,33 @@ tr.flash td{animation:flashbg 2.6s ease-out}
   .headchips{justify-content:flex-start}
   .npanel{right:12px;top:110px}
 }
+/* tool steps inside a transcript */
+.step{max-width:74%;margin:2px auto 10px;border:1px dashed var(--blue-line);border-left:3px solid var(--blue);background:#fff;border-radius:10px;padding:9px 12px;font-size:13px}
+.step.miss{border-left-color:var(--bad)}
+.step.warn{border-left-color:var(--bad);background:#fffafa}
+.step.changed{border-left-color:var(--warn)}
+.step .sh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.step .sh b{color:var(--navy)}
+.step .sic{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--blue-soft);color:var(--blue);font-size:11px;font-weight:800}
+.step.miss .sic,.step.warn .sic{background:#fdf1ef;color:var(--bad)}
+.step .tn{font-size:11px;color:var(--muted);background:var(--page);border-radius:4px;padding:0 5px}
+.step .st{margin-left:auto;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.step .sq{color:var(--ink);margin:2px 0 4px}
+.step .sm{color:var(--muted);margin:3px 0}
+.step .sm b{color:var(--ink);font-weight:600}
+.step .sm.faint{font-size:12px}
+.step .snow{margin:5px 0;padding:6px 9px;border-radius:7px;background:#fdf7e9;color:#6b4a00}
+.step .sres{margin:5px 0 2px}
+.step .sres summary{cursor:pointer;color:var(--blue);font-weight:600;font-size:12px}
+.step .sres div{margin-top:5px;padding:7px 9px;background:var(--page);border-radius:7px;color:var(--ink);white-space:pre-wrap;font-size:12.5px;line-height:1.45}
+.step .row{margin-top:7px;gap:6px}
+.stepbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-2px 0 12px;font-size:13px;color:var(--muted)}
+.drawer .tool b{color:var(--navy);font-weight:600}
+.drawer .tool .tq{color:var(--ink)}
+.drawer .tool .tres{margin-top:3px;color:var(--muted)}
+.drawer .tool.miss{border-left-color:var(--bad)}
+.drawer .tool.warn{border-left-color:var(--bad)}
+@media (max-width:760px){.step{max-width:100%}}
 @media print{.side,.topbar,.actions,.btn{display:none!important}.app{grid-template-columns:1fr}body{background:#fff}.panel{box-shadow:none}}
 </style>
 </head>
@@ -1211,14 +1238,17 @@ const SEED_KB = [
   { id: "safety-sagging", collection: "Health and Safety", priority: 20, mode: "urgent", escalate_reason: "Ceiling may be holding water",
     pattern: String.raw`sag|bulg|ceiling (is )?(falling|coming down|caving)|collaps|drooping`,
     answer: "Please keep everyone out of that room. A bulging ceiling can be holding water and can come down. If it's safe, put a bucket under the lowest point. I'm marking this as urgent." },
+  { id: "call-recording", collection: "Company and Trust", priority: 25, mode: "answer",
+    pattern: String.raw`\brecorded\b|are you recording|recording (this|the|my|our) call|(this|the) call (is |being )?record`,
+    answer: "Yes, calls may be recorded for quality assurance and training purposes." },
   { id: "ai-disclosure", collection: "Company and Trust", priority: 30, mode: "answer",
-    pattern: String.raw`robot|real person|\bhuman\b|\bai\b|\bbot\b|computer|automated|recording`,
+    pattern: String.raw`robot|real person|\bhuman\b|\bai\b|\bbot\b|computer|automated`,
     answer: "I'm an AI assistant for Arrington Roofing. A real person does the inspection and handles anything I can't." },
   { id: "what-to-do-now", collection: "Health and Safety", priority: 40, mode: "answer",
     pattern: String.raw`what (should|do|can) i do|right now|in the meantime|until (you|someone|they)|stop (it|the leak|the water)|contain|bucket`,
     answer: "Put a bucket or container under the drip, move furniture and anything valuable out of the way, and lay down towels to protect the floor. Don't go up on the roof yourself, especially when it's wet." },
   { id: "how-soon", collection: "Current Damage Concerns", priority: 50, mode: "answer",
-    pattern: String.raw`how soon|when can (someone|you|they)|\btoday\b|tonight|right away|asap|emergency|tarp|temporary`,
+    pattern: String.raw`how soon|when can (someone|you|they)|when (will|would|is|does) (someone|somebody|anyone|you|they|a person|the team|the coordinator|someone from)|expect (a|the|your) call|call me back|hear back|get back to me|\btoday\b|tonight|right away|asap|emergency|tarp|temporary`,
     answer: "If water's coming in we treat it as urgent and a coordinator calls you within the hour. We can usually get temporary covering on quickly, and the coordinator will confirm the timing." },
   { id: "inspection-duration", collection: "Scheduling and Service Area", priority: 60, mode: "answer",
     pattern: String.raw`how long|take long|how much time|duration`,
@@ -1260,7 +1290,7 @@ const SEED_KB = [
     pattern: String.raw`warrant|guarantee`,
     answer: "Warranty terms depend on the material and the scope, so that's a conversation for after the inspection when we know what we're dealing with." },
   { id: "financing", collection: "Pricing and Financing", priority: 190, mode: "answer",
-    pattern: String.raw`financ|payment plan|instal|monthly payment|pay over time`,
+    pattern: String.raw`financ|payment plan|installment|instalment|monthly payment|pay over time`,
     answer: "There are options, but I'd rather not talk numbers before anyone has seen the roof. The inspector can go through it with you." },
   { id: "licensed", collection: "Company and Trust", priority: 200, mode: "answer",
     pattern: String.raw`licens|insured|bonded|how long have you|credential|legit|trust`,
@@ -1360,10 +1390,10 @@ function seed() {
         ],
         unanswered: ["Do you work with my insurance adjuster directly?"],
         actions: [
-          { t: "lookup_knowledge", r: "Insurance Protocols · approved answer returned", ok: true, ref: { kind: "kb", id: "insurance", q: "Is this the kind of thing insurance would cover?" } },
-          { t: "check_availability", r: "3 times offered", ok: true, ref: { kind: "slots", slots: brianOffered } },
-          { t: "book_appointment", r: "", ok: true, ref: { kind: "appt", id: "a-brian" } },
-          { t: "send_confirmation", r: "Email accepted without domain validation", ok: false, ref: { kind: "messages", customerId: "cust-brian" } }
+          { t: "lookup_knowledge", at: 5, r: "Insurance Protocols · approved answer returned", ok: true, ref: { kind: "kb", id: "insurance", q: "Is this the kind of thing insurance would cover?" } },
+          { t: "check_availability", at: 7, r: "3 times offered", ok: true, ref: { kind: "slots", slots: brianOffered } },
+          { t: "book_appointment", at: 9, r: "", ok: true, ref: { kind: "appt", id: "a-brian" } },
+          { t: "send_confirmation", at: 9, r: "Email accepted without domain validation", ok: false, ref: { kind: "messages", customerId: "cust-brian" } }
         ] },
       { id: "c2", customerId: "cust-michael", customer: "Michael Chen", phone: "+1 770 555 0198", intent: "Active leak", outcome: "Escalated", state: "urgent", time: fmtWhen(tMichael), receivedAt: tMichael, duration: "1m 51s",
         recording: "call-0141.wav", address: "88 Oakvale Court, Marietta, GA",
@@ -1376,8 +1406,8 @@ function seed() {
           ["Caller","Okay, thank you."]
         ],
         actions: [
-          { t: "lookup_knowledge", r: "Health and Safety · urgent safety answer", ok: true, ref: { kind: "kb", id: "safety-electrical", q: "There's water coming down right next to my kitchen light. Is that dangerous?" } },
-          { t: "escalate_to_human", r: "Urgency high · assigned to Maria", ok: true, ref: { kind: "review", id: "r1" } }
+          { t: "lookup_knowledge", at: 1, r: "Health and Safety · urgent safety answer", ok: true, ref: { kind: "kb", id: "safety-electrical", q: "There's water coming down right next to my kitchen light. Is that dangerous?" } },
+          { t: "escalate_to_human", at: 1, r: "Urgency high · assigned to Maria", args: { urgency: "high", reason: "Possible electrical hazard near water" }, ok: true, ref: { kind: "review", id: "r1" } }
         ] },
       { id: "c3", customerId: "cust-amy", customer: "Amy Patel", phone: "+1 678 555 0110", intent: "Inspection request", outcome: "No booking", state: "needs", time: fmtWhen(tAmy), receivedAt: tAmy, duration: "2m 12s",
         recording: "call-0139.wav", address: "17 Bellwood Lane, Acworth, GA",
@@ -1392,8 +1422,8 @@ function seed() {
         ],
         unanswered: ["Can someone come out on a Sunday?"],
         actions: [
-          { t: "check_availability", r: "3 morning times offered, no afternoon retry", ok: false, ref: { kind: "slots", slots: amyOffered } },
-          { t: "send_confirmation", r: "Email bounced", ok: false, ref: { kind: "messages", customerId: "cust-amy" } }
+          { t: "check_availability", at: 1, r: "3 morning times offered, no afternoon retry", ok: false, ref: { kind: "slots", slots: amyOffered } },
+          { t: "send_confirmation", at: 4, r: "Email bounced", ok: false, ref: { kind: "messages", customerId: "cust-amy" } }
         ] },
       { id: "c4", customerId: "cust-elena", customer: "Elena Torres", phone: "+1 404 555 0163", intent: "Replacement", outcome: "Qualified", state: "booked", time: fmtWhen(tElena), receivedAt: tElena, duration: "4m 38s",
         recording: "call-0137.wav", address: "1290 Crestline Ave, Smyrna, GA",
@@ -1407,8 +1437,8 @@ function seed() {
         ],
         unanswered: ["Do you install metal roofs?"],
         actions: [
-          { t: "lookup_knowledge", r: "Pricing and Financing · approved answer returned", ok: true, ref: { kind: "kb", id: "pricing", q: "What does that run?" } },
-          { t: "escalate_to_human", r: "Financing call requested", ok: true, ref: { kind: "customer", id: "cust-elena" } }
+          { t: "lookup_knowledge", at: 0, r: "Pricing and Financing · approved answer returned", ok: true, ref: { kind: "kb", id: "pricing", q: "What does that run?" } },
+          { t: "escalate_to_human", at: 3, r: "Financing call requested", args: { urgency: "normal", reason: "Wants to talk through financing" }, ok: true, ref: { kind: "customer", id: "cust-elena" } }
         ] },
       { id: "c5", customerId: "cust-marcus", customer: "Marcus Lee", phone: "+1 678 555 0177", intent: "Leak inspection", outcome: "Booked", state: "booked", time: fmtWhen(tMarcus), receivedAt: tMarcus, duration: "2m 41s",
         recording: "call-0134.wav", address: "3 Harper Row, Marietta, GA",
@@ -1420,8 +1450,8 @@ function seed() {
           ["Caller","Perfect."]
         ],
         actions: [
-          { t: "check_availability", r: "3 times offered", ok: true, ref: { kind: "slots", slots: [marcusAppt, at(2, 13, 0), at(3, 8, 0)] } },
-          { t: "book_appointment", r: "", ok: true, ref: { kind: "appt", id: "a-marcus" } }
+          { t: "check_availability", at: 0, r: "3 times offered", ok: true, ref: { kind: "slots", slots: [marcusAppt, at(2, 13, 0), at(3, 8, 0)] } },
+          { t: "book_appointment", at: 2, r: "", ok: true, ref: { kind: "appt", id: "a-marcus" } }
         ] }
     ],
     appointments: [
@@ -1613,8 +1643,33 @@ function backfill(st) {
   if (!st.skipped) st.skipped = {};
   if (!st.training) st.training = d.training;
   if (!st.training.kb) st.training.kb = d.training.kb;
+  if (!st.training.fixedOct12) { kbFixesOct12(st.training.kb); st.training.fixedOct12 = true; }
+  // Sample calls saved before tool steps had a place in the transcript pick it up from the seed.
+  (d.calls || []).forEach((fc) => {
+    const c = (st.calls || []).find((x) => x.id === fc.id);
+    if (!c || !Array.isArray(c.actions)) return;
+    c.actions.forEach((a, i) => { const fa = (fc.actions || [])[i]; if (fa && fa.t === a.t) { if (a.at == null && fa.at != null) a.at = fa.at; if (!a.args && fa.args) a.args = fa.args; } });
+  });
   if (!st.schedulerAt) st.schedulerAt = Date.now();
   return st;
+}
+// The fixes from the Oct 10 test call, applied once to saved demo knowledge. Entries someone has edited are left alone.
+const KB_OLD = {
+  "how-soon": String.raw`how soon|when can (someone|you|they)|\btoday\b|tonight|right away|asap|emergency|tarp|temporary`,
+  "ai-disclosure": String.raw`robot|real person|\bhuman\b|\bai\b|\bbot\b|computer|automated|recording`,
+  "financing": "financ|payment plan|instal|monthly payment|pay over time"
+};
+function kbFixesOct12(kb) {
+  if (!Array.isArray(kb)) return;
+  Object.keys(KB_OLD).forEach((id) => {
+    const k = kb.find((x) => x.id === id);
+    const fresh = SEED_KB.find((x) => x.id === id);
+    if (k && fresh && k.pattern === KB_OLD[id]) k.pattern = fresh.pattern;
+  });
+  if (!kb.some((x) => x.id === "call-recording")) {
+    const rec = SEED_KB.find((x) => x.id === "call-recording");
+    if (rec) kb.push(JSON.parse(JSON.stringify(rec)));
+  }
 }
 function loadState() {
   const st = store.read();
@@ -3672,12 +3727,13 @@ onChange("[data-auth]", (t) => {
 });
 
 /* ---------- test a question ---------- */
-function testQuestion(q) {
+function testQuestion(q, ctx) {
   const out = $("kbTestOut");
   q = String(q || "").trim();
   if (!q) { out.innerHTML = ""; return; }
   const faqOff = LIVE.on ? (LIVE.raw && (LIVE.raw.authority || []).some((a) => a.id === "answer_faq" && a.level === "prohibited")) : S.authority.some((a) => a.id === "au1" && a.level === "Prohibited");
-  const hit = faqOff ? null : kbMatch(q);
+  const res = faqOff ? null : kbResolve(q, null, ctx);
+  const hit = res ? res.primary : null;
   const editable = hit && kbList().some((k) => k.id === hit.id);
   if (faqOff) { out.innerHTML = '<div class="note">Answering questions is switched off under System authority, so the agent hands every question to a person.</div>'; return; }
   if (!hit) {
@@ -3690,7 +3746,7 @@ function testQuestion(q) {
   const c = collByName(hit.collection) || {};
   const mode = hit.mode || "answer";
   const asks = ((hit.clarify || []).length ? hit.clarify : (c.clarify || [])).slice(0, 3);
-  let html = '<div class="quote"><small><span class="mode ' + esc(mode) + '">' + esc(MODE_SHORT[mode] || mode) + "</span> " + esc(hit.collection) + " · " + esc(hit.id) + "</small>";
+  let html = (ctx && ctx.flagged ? '<p class="sub" style="margin:0 0 8px;font-size:13px">Checked as it would be answered at that point in the call, after it was flagged urgent, so safety answers step aside for the actual question.</p>' : "") + '<div class="quote"><small><span class="mode ' + esc(mode) + '">' + esc(MODE_SHORT[mode] || mode) + "</span> " + esc(hit.collection) + " · " + esc(hit.id) + "</small>";
   if (mode === "handoff") html += "She won't answer this. She'll say: “" + esc(hit.answer) + "” and flag it for a person.";
   else if (mode === "urgent") html += "<b>First she says:</b> “" + esc(hit.answer) + "”<br><b>Then:</b> alerts a person right away at high urgency" + (hit.escalate_reason ? " (" + esc(hit.escalate_reason) + ")" : "") + ", and keeps helping the caller.";
   else if (mode === "clarify") html += "<b>She asks first, one at a time, only what she still needs:</b>" + (asks.length ? '<ol class="qlist">' + asks.map((x) => "<li>" + esc(x) + "</li>").join("") + "</ol>" : " whatever she needs to understand it.") + '<b style="display:block;margin-top:6px">Then she says:</b>' + esc(hit.answer);
@@ -3698,6 +3754,9 @@ function testQuestion(q) {
   else html += esc(hit.answer);
   html += "</div>";
   if ((c.escalate_when || []).length && mode !== "handoff") html += '<div class="note" style="margin-bottom:10px"><b>' + esc(c.name) + " hand-over rules apply.</b> She gets a person involved (" + (c.urgency === "high" ? "high" : "normal") + " urgency) if: " + esc(c.escalate_when.join("; ")) + ".</div>";
+  if (res.extra) html += '<div class="quote"><small><span class="mode ' + esc(res.extra.mode || "answer") + '">' + esc(MODE_SHORT[res.extra.mode || "answer"] || "") + "</span> " + esc(res.extra.collection) + " · " + esc(res.extra.id) + " · also covered</small>The question touches a second topic, so she adds this too: " + esc(res.extra.answer) + "</div>";
+  const others = res.hits.filter((h) => h.id !== hit.id && (!res.extra || h.id !== res.extra.id));
+  if (others.length) html += '<p class="sub" style="margin:0 0 10px;font-size:13px">Also matches, but not used: ' + esc(others.map((h) => h.collection + " · " + h.id).join(", ")) + ".</p>";
   html += '<div class="row">' + (editable ? '<button class="btn sm" data-editkb="' + esc(hit.id) + '">Edit this answer</button><button class="btn sm ghost" data-showkb="' + esc(hit.id) + '">Show it in its collection</button>' : "") +
     '<span class="sub" style="margin:0;font-size:13px">She says this in her own words. Wrong match? Add a more specific answer with a lower priority number.</span></div>';
   out.innerHTML = html;
@@ -4517,6 +4576,261 @@ $("copyTiers").addEventListener("click", async () => {
 });
 $("printTiers").addEventListener("click", () => window.print());
 
+/* ---------- tool steps: what the agent looked up during a call, what it got back, and where in the conversation ---------- */
+
+// Every entry whose pattern matches, in priority order, with where in the question it matched.
+function kbMatchAll(q, list) {
+  const l = (list || kbList()).filter((k) => k.pattern && k.answer && (k.status || "active") === "active").slice().sort((a, b) => (a.priority || 100) - (b.priority || 100));
+  const out = [];
+  l.forEach((k) => { try { const m = compile(k.pattern).exec(String(q || "")); if (m) out.push({ k: k, at: m.index, end: m.index + m[0].length }); } catch (e) {} });
+  return out;
+}
+function isSafetyEntry(k) {
+  const c = collByName(k.collection) || {};
+  return k.mode === "urgent" || (k.mode === "clarify" && c.urgency === "high");
+}
+// The same choice the tool server makes. Safety answers come first, but once the call has been flagged
+// they no longer swallow the question that was actually asked, and a question touching two topics gets both.
+function kbResolve(q, list, ctx) {
+  ctx = ctx || {};
+  const hits = kbMatchAll(q, list);
+  if (!hits.length) return { primary: null, extra: null, hits: [], skipped: null };
+  const apart = (a, b) => a.end <= b.at || b.end <= a.at;
+  let p = hits[0];
+  let extra = null;
+  let skipped = null;
+  if (isSafetyEntry(p.k)) {
+    const other = hits.find((h) => !isSafetyEntry(h.k) && apart(h, p));
+    if (other && ctx.flagged) { skipped = p; p = other; }
+    else if (other) extra = other;
+  } else {
+    const other = hits.find((h) => h !== p && h.k.collection !== p.k.collection && !isSafetyEntry(h.k) && apart(h, p));
+    if (other) extra = other;
+  }
+  return { primary: p.k, extra: extra ? extra.k : null, hits: hits.map((h) => h.k), skipped: skipped ? skipped.k : null };
+}
+
+const STEP_STOP = new Set(("this that with have there their what when will would could should about your they them then than from into just like know need some does been were also only want call calls calling someone somebody anyone right okay yeah").split(" "));
+function stepWords(t) { return String(t || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).filter((w) => w.length >= 4 && !STEP_STOP.has(w)).map((w) => w.slice(0, 5)); }
+function stepKey(s) { const a = s.args || {}; return s.q || a.question || a.reason || a.preference || a.slot || ""; }
+
+// Calls saved before the timeline existed: put each step after the caller line it best matches, in order.
+function placeSteps(transcript, steps) {
+  let floor = -1;
+  steps.forEach((s) => {
+    if (typeof s.after === "number") { floor = Math.max(floor, s.after); return; }
+    const want = stepWords(stepKey(s));
+    let best = -1, bestScore = 0;
+    if (want.length) {
+      for (let i = Math.max(0, floor); i < transcript.length; i++) {
+        if (transcript[i][0] !== "Caller") continue;
+        const have = new Set(stepWords(transcript[i][1]));
+        const score = want.filter((w) => have.has(w)).length / want.length;
+        if (score > bestScore + 0.001) { best = i; bestScore = score; }
+      }
+    }
+    s.after = best >= 0 && bestScore >= 0.25 ? best : floor >= 0 ? floor : Math.max(0, transcript.findIndex((l) => l[0] === "Caller"));
+    s.approx = true;
+    floor = s.after;
+  });
+  return steps;
+}
+
+function normLine(t) { return String(t || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim(); }
+// Live calls saved with a timeline: line the timed turns up with the transcript, then hang each tool step
+// after the last thing said before it. Each step is joined to its tool server row (matched answer, full result)
+// by the same arguments first, then by the nearest time, then by order.
+function sameArgs(a, b) {
+  const clean = (x) => { const o = Object.assign({}, x || {}); delete o._kb; return JSON.stringify(Object.keys(o).sort().map((k) => [k, o[k]])); };
+  return clean(a) === clean(b);
+}
+function stepsFromTimeline(tl, transcript, ev, actions, startedAt) {
+  let ti = -1;
+  let lastWho = null;
+  const used = {};
+  const out = [];
+  const t0 = startedAt ? new Date(startedAt).getTime() : NaN;
+  const spoken = tl.map((e) => (e && e.who) || null);
+  const marks = [];
+  tl.forEach((e, k) => {
+    if (!e) return;
+    if (e.who) {
+      // The transcript merges back-to-back turns by the same speaker into one line, so stay on it.
+      if (e.who === lastWho && ti >= 0) return;
+      lastWho = e.who;
+      const head = normLine(e.text).slice(0, 40);
+      let found = -1;
+      for (let j = ti + 1; j < Math.min(transcript.length, ti + 5); j++) if (transcript[j][0] === e.who && (!head || normLine(transcript[j][1]).indexOf(head) !== -1)) { found = j; break; }
+      if (found === -1 && transcript[ti + 1] && transcript[ti + 1][0] === e.who) found = ti + 1;
+      if (found !== -1) ti = found;
+      if (typeof e.t === "number") marks.push({ t: e.t, ti: ti });
+      return;
+    }
+    if (!e.tool) return;
+    const cand = [];
+    ev.forEach((r, j) => { if (!used[j] && r.tool === e.tool) cand.push(j); });
+    let ei = cand.find((j) => sameArgs(ev[j].args, e.args));
+    if (ei == null && cand.length && !isNaN(t0) && typeof e.t === "number") {
+      const at = t0 + e.t * 1000;
+      const near = cand.map((j) => ({ j: j, d: Math.abs(new Date(ev[j].created_at).getTime() - at) })).sort((x, y) => x.d - y.d)[0];
+      if (near && near.d < 8000) ei = near.j;
+    }
+    if (ei == null && cand.length && (isNaN(t0) || typeof e.t !== "number")) ei = cand[0];
+    if (ei == null) ei = -1;
+    if (ei >= 0) used[ei] = true;
+    const row = ei >= 0 ? ev[ei] : null;
+    const args = (row && row.args) || e.args || {};
+    const result = (row && row.result) || e.result || "";
+    const a = ei >= 0 ? actions[ei] : null;
+    // A tool called partway through one agent reply goes before that reply, since what follows depends on it.
+    let prev = null, next = null;
+    for (let j = k - 1; j >= 0; j--) if (spoken[j]) { prev = spoken[j]; break; }
+    for (let j = k + 1; j < tl.length; j++) if (spoken[j]) { next = spoken[j]; break; }
+    const mid = prev === "Agent" && next === "Agent" && ti >= 0 && transcript[ti] && transcript[ti][0] === "Agent";
+    out.push({ tool: e.tool, t: typeof e.t === "number" ? e.t : null, after: mid ? ti - 1 : ti, mid: mid, args: args, q: args.question || "", result: result,
+      kb: row ? (row.kb_entry_id || null) : (e.tool === "lookup_knowledge" ? (/^no approved answer/i.test(result) ? null : undefined) : null),
+      also: Array.isArray(args._kb) ? args._kb : null, ai: ei, ok: a ? a.ok : true, ref: a ? a.ref : null, label: a ? a.r : "" });
+  });
+  // Anything the tool server logged that the timeline missed still shows, placed by time when possible.
+  const extra = [];
+  ev.forEach((row, j) => {
+    if (used[j]) return;
+    const a = actions[j] || {};
+    const t = !isNaN(t0) && row.created_at ? (new Date(row.created_at).getTime() - t0) / 1000 : null;
+    let after;
+    if (t != null) { after = -1; marks.forEach((m) => { if (m.t <= t) after = m.ti; }); }
+    extra.push({ tool: row.tool, t: t, after: after, args: row.args || {}, q: (row.args || {}).question || "", result: row.result || "", kb: row.kb_entry_id || null, also: Array.isArray((row.args || {})._kb) ? row.args._kb : null, ai: j, ok: a.ok, ref: a.ref, label: a.r });
+  });
+  if (extra.length) placeSteps(transcript, extra);
+  return out.concat(extra).sort((x, y) => (x.after - y.after) || ((x.t == null ? 1e9 : x.t) - (y.t == null ? 1e9 : y.t)));
+}
+
+// Steps for any call: the timed version when there is one, otherwise built from the call's actions.
+function stepsFor(c) {
+  if (Array.isArray(c.steps)) return c.steps;
+  const acts = (c.actions || []).map((a, i) => ({ a: a, i: i })).filter((x) => x.a.t && x.a.t !== "none");
+  const steps = acts.map((x) => {
+    const a = x.a;
+    const args = a.args || {};
+    const q = (a.ref && a.ref.q) || args.question || "";
+    return { tool: a.t, t: null, after: typeof a.at === "number" ? a.at : undefined, args: args, q: q, result: a.result || "",
+      kb: a.t === "lookup_knowledge" ? (a.kb !== undefined ? a.kb : a.ref && a.ref.kind === "kb" ? a.ref.id : null) : null,
+      also: Array.isArray(args._kb) ? args._kb : null, ai: x.i, ok: a.ok, ref: a.ref, label: a.r };
+  });
+  return placeSteps(c.transcript || [], steps);
+}
+
+function clock(sec) { sec = Math.max(0, Math.round(Number(sec) || 0)); return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"); }
+const STEP_TITLE = { lookup_knowledge: "Looked up an answer", escalate_to_human: "Flagged for a person", check_availability: "Checked the calendar", book_appointment: "Booking", endCall: "Ended the call", send_confirmation: "Sent a confirmation" };
+
+function kbName(id) {
+  const k = kbList().find((x) => x.id === id);
+  return k ? k.collection + " · " + k.id : id;
+}
+function modeChip(k) { const m = (k && k.mode) || "answer"; return '<span class="mode ' + esc(m) + '">' + esc(MODE_SHORT[m] || m) + "</span>"; }
+
+function stepCard(c, s, n, steps, canEdit) {
+  const tool = s.tool;
+  const ref = s.ref || {};
+  const time = s.t != null ? '<span class="st">' + clock(s.t) + "</span>" : "";
+  const act = s.ai != null && s.ai >= 0 && c.actions && c.actions[s.ai] && actionOpen(c.actions[s.ai]) ? esc(c.id) + "|" + s.ai : "";
+  let cls = "";
+  let body = "";
+  let btns = [];
+  if (tool === "lookup_knowledge") {
+    const flagged = flaggedBefore(steps, n);
+    const k = s.kb ? kbList().find((x) => x.id === s.kb) : null;
+    body += s.q ? '<div class="sq">“' + esc(s.q) + "”</div>" : "";
+    if (s.kb) body += '<div class="sm">' + (k ? modeChip(k) + " " : "") + "Answered from <b>" + esc(kbName(s.kb)) + "</b>" + (s.also && s.also.length > 1 ? ", plus <b>" + esc(s.also.filter((x) => x !== s.kb).map(kbName).join(", ")) + "</b>" : "") + "</div>";
+    else if (s.kb === null) { cls = " miss"; body += '<div class="sm"><span class="kind never">No approved answer</span> She said she would rather not guess and flagged it for a person.</div>'; }
+    else body += '<div class="sm">The tool server did not log which answer it used.</div>';
+    if (s.q) {
+      const now = kbResolve(s.q, null, { flagged: flagged });
+      const nowId = now.primary ? now.primary.id : null;
+      if (s.kb !== undefined && nowId !== (s.kb || null)) {
+        cls = cls || " changed";
+        body += '<div class="snow">' + (nowId ? "With today's knowledge she'd use <b>" + esc(kbName(nowId)) + "</b> instead" + (now.skipped ? ", because safety was already covered on this call" : "") + "." : "Today nothing matches this question, so she'd say she'll have someone get back to them.") + "</div>";
+      }
+      const others = now.hits.filter((h) => h.id !== s.kb && h.id !== nowId);
+      if (others.length) body += '<div class="sm faint">Also matches: ' + esc(others.map((h) => h.collection + " · " + h.id).join(", ")) + "</div>";
+    }
+    if (s.result) body += '<details class="sres"><summary>What the agent was told</summary><div>' + esc(s.result) + "</div></details>";
+    if (canEdit) {
+      if (k) btns.push('<button class="btn sm" data-editkb="' + esc(k.id) + '">Edit this answer</button>');
+      if (s.q) btns.push('<button class="btn sm' + (s.kb === null ? " primary" : "") + '" data-stepadd="' + esc(c.id) + "|" + n + '">' + (s.kb === null ? "Add an answer" : "Add a better answer") + "</button>");
+      if (s.q) btns.push('<button class="btn sm ghost" data-steptest="' + esc(c.id) + "|" + n + '">Test this question</button>');
+    }
+  } else if (tool === "escalate_to_human") {
+    const a = s.args || {};
+    const u = String(a.urgency || (/high/i.test(s.label || "") ? "high" : "normal")).toLowerCase();
+    cls = u === "high" ? " warn" : "";
+    body += '<div class="sm"><span class="tag ' + (u === "high" ? "badt" : "neut") + '">' + esc(u === "high" ? "High urgency" : u === "low" ? "Low urgency" : "Normal urgency") + "</span> " + esc(a.reason || s.label || "") + "</div>";
+    if (act) btns.push('<button class="btn sm" data-act="' + act + '">' + esc(actionOpen(c.actions[s.ai])) + "</button>");
+  } else if (tool === "check_availability") {
+    const a = s.args || {};
+    const slots = ref.kind === "slots" ? ref.slots || [] : [];
+    body += '<div class="sm">' + (a.preference ? "Asked for " + esc(a.preference) + ". " : "") + (slots.length ? "Offered " + esc(slots.slice(0, 3).map((x) => apptShort(x)).join(", ")) : esc(s.label || "Checked open times")) + "</div>";
+    if (s.ok === false) cls = " changed";
+    if (act) btns.push('<button class="btn sm" data-act="' + act + '">See the times</button>');
+  } else if (tool === "book_appointment") {
+    const a = s.args || {};
+    const failed = s.ok === false || /taken|not one of|switched off/i.test(s.result || "");
+    cls = failed ? " changed" : "";
+    body += '<div class="sm">' + (failed ? "Tried " : "Booked ") + esc(a.slot || (c.actions && c.actions[s.ai] ? actionResult(c.actions[s.ai], c) : "") || "a time") + (failed ? ", not booked" : "") + "</div>";
+    if (act) btns.push('<button class="btn sm" data-act="' + act + '">Open the booking</button>');
+  } else if (tool === "endCall") {
+    const after = (c.transcript || []).slice(s.after + 1);
+    const callerAfter = after.some((l) => l[0] === "Caller");
+    cls = callerAfter ? " warn" : "";
+    body += '<div class="sm">' + (callerAfter ? "The agent decided to hang up here, and the caller was still talking afterwards." : "The agent hung up after this point.") + "</div>";
+  } else {
+    body += '<div class="sm">' + esc(s.label || "") + "</div>";
+    if (s.ok === false) cls = " changed";
+    if (act) btns.push('<button class="btn sm" data-act="' + act + '">' + esc(actionOpen(c.actions[s.ai])) + "</button>");
+  }
+  if (s.mid) body += '<div class="sm faint">This happened partway through the reply below.</div>';
+  return '<div class="step' + cls + '" data-step="' + n + '"><div class="sh"><span class="sic" aria-hidden="true">' + (tool === "lookup_knowledge" ? "?" : tool === "escalate_to_human" ? "!" : tool === "endCall" ? "×" : "·") + "</span><b>" + esc(STEP_TITLE[tool] || tool) + "</b>" +
+    '<code class="tn">' + esc(tool) + "</code>" + time + "</div>" + body + (btns.length ? '<div class="row">' + btns.join("") + "</div>" : "") + "</div>";
+}
+
+function flaggedBefore(steps, n) { return steps.slice(0, n).some((p) => p.tool === "escalate_to_human" && String((p.args || {}).urgency || "").toLowerCase() === "high"); }
+function stepSummary(steps) {
+  const look = steps.filter((s) => s.tool === "lookup_knowledge");
+  const miss = look.filter((s) => s.kb === null).length;
+  const parts = [];
+  if (look.length) parts.push(look.length + " lookup" + (look.length === 1 ? "" : "s") + (miss ? " (" + miss + " with no answer)" : ""));
+  const esc2 = steps.filter((s) => s.tool === "escalate_to_human").length;
+  if (esc2) parts.push(esc2 + " flagged for a person");
+  const other = steps.length - look.length - esc2;
+  if (other) parts.push(other + " other");
+  return parts.join(" · ");
+}
+
+let STEPS_ON = true;
+onClick("[data-togglesteps]", () => { STEPS_ON = !STEPS_ON; renderAll(); });
+function stepFor(el, attr) {
+  const v = el.dataset[attr].split("|");
+  const c = S.calls.find((x) => x.id === v[0]);
+  const s = c && stepsFor(c)[Number(v[1])];
+  return s ? { c: c, s: s } : null;
+}
+onClick("[data-stepadd]", (el) => {
+  const x = stepFor(el, "stepadd");
+  if (!x) return;
+  if (LIVE.on && !LIVE.trainingReady) { showTrainingSetup(); return; }
+  openAnswerEditor({ question: x.s.q, callId: x.c.id });
+});
+onClick("[data-steptest]", (el) => {
+  const x = stepFor(el, "steptest");
+  if (!x) return;
+  closeClient(); closeModal();
+  go("knowledge");
+  $("kbTestQ").value = x.s.q;
+  const steps = stepsFor(x.c);
+  testQuestion(x.s.q, { flagged: flaggedBefore(steps, steps.indexOf(x.s)) });
+  setTimeout(() => { const o = $("kbTestOut"); if (o && o.scrollIntoView) o.scrollIntoView({ block: "center", behavior: "smooth" }); }, 60);
+});
+
 /* ---------- live call through Vapi web SDK ---------- */
 
 let vapi = null;
@@ -4543,7 +4857,12 @@ function renderCallLog() {
   const log = $("callLog");
   let html = "";
   call.lines.forEach((l) => {
-    if (l.kind === "tool") { html += '<div class="tool">' + esc(l.text) + "</div>"; return; }
+    if (l.kind === "tool") {
+      const res = l.result ? String(l.result) : "";
+      html += '<div class="tool' + (l.miss ? " miss" : l.warn ? " warn" : "") + '"><b>' + esc(l.title || l.text) + "</b>" + (l.q ? ' <span class="tq">“' + esc(l.q) + "”</span>" : "") + (l.detail ? " " + esc(l.detail) : "") +
+        (res ? '<div class="tres">Told: ' + esc(res.length > 180 ? res.slice(0, 177) + "..." : res) + "</div>" : "") + "</div>";
+      return;
+    }
     html += '<div class="line ' + (l.role === "assistant" ? "agent" : "") + '"><b>' + (l.role === "assistant" ? "Agent" : "Caller") + "</b>" + esc(l.text) + "</div>";
   });
   ["assistant", "user"].forEach((r) => {
@@ -4554,6 +4873,28 @@ function renderCallLog() {
 }
 
 function setCallStatus(t) { $("callStatus").textContent = t; }
+
+// One readable line per tool step while the call is live. Which answer a lookup gets is worked out with the
+// same rules as the tool server, from the knowledge loaded here, and the server's actual reply is added when Vapi sends it.
+function toolLine(name, args, id) {
+  const l = { kind: "tool", name: name, args: args, id: id || null, result: "" };
+  if (name === "lookup_knowledge") {
+    const q = String(args.question || args.query || "");
+    const flagged = call.tools.some((t) => t.name === "escalate_to_human" && String(t.args.urgency || "").toLowerCase() === "high");
+    const r = kbResolve(q, null, { flagged: flagged });
+    l.title = "Looked up"; l.q = q;
+    l.detail = r.primary ? "→ " + r.primary.collection + " · " + r.primary.id + (r.extra ? " + " + r.extra.id : "") : "→ no approved answer, so she flags it for a person";
+    l.kb = r.primary ? r.primary.id : null;
+    l.miss = !r.primary;
+  } else if (name === "escalate_to_human") {
+    l.title = "Flagged for a person"; l.detail = String(args.urgency || "normal") + " urgency" + (args.reason ? ": " + args.reason : ""); l.warn = /high/i.test(String(args.urgency || ""));
+  } else if (name === "check_availability") { l.title = "Checked the calendar"; l.detail = args.preference ? "for " + args.preference : ""; }
+  else if (name === "book_appointment") { l.title = "Booking"; l.detail = String(args.slot || ""); }
+  else if (/^end_?call$/i.test(name)) { l.title = "Ended the call"; l.detail = ""; }
+  else { l.title = name; l.detail = ""; }
+  l.text = l.title + (l.q ? " “" + l.q + "”" : "") + (l.detail ? " " + l.detail : "");
+  return l;
+}
 
 async function startCall() {
   const key = (S.settings.vapiPublicKey || "").trim();
@@ -4607,10 +4948,23 @@ async function startCall() {
           const name = (t.function && t.function.name) || t.name || "tool";
           let args = t.function && t.function.arguments;
           if (typeof args === "string") { try { args = JSON.parse(args); } catch (e) { args = {}; } }
+          const line = toolLine(name, args || {}, t.id);
           call.tools.push({ name, args: args || {} });
-          call.lines.push({ kind: "tool", text: "Tool: " + name });
+          call.lines.push(line);
         });
         renderCallLog();
+      }
+      if (m.type === "conversation-update") {
+        let changed = false;
+        [].concat(m.messagesOpenAIFormatted || [], m.messages || [], m.conversation || []).forEach((x) => {
+          if (!x || (x.role !== "tool" && x.role !== "tool_call_result")) return;
+          const id = x.tool_call_id || x.toolCallId;
+          const res = x.content != null ? x.content : x.result;
+          if (!id || res == null) return;
+          const line = call.lines.find((l) => l.kind === "tool" && l.id === id && !l.result);
+          if (line) { line.result = typeof res === "string" ? res : JSON.stringify(res); changed = true; }
+        });
+        if (changed) renderCallLog();
       }
     });
     vapi.on("call-end", () => finishCall(false));
@@ -4660,6 +5014,10 @@ function finishCall(failed) {
 
   const asked = call.tools.filter((t) => t.name === "lookup_knowledge").map((t) => String(t.args.question || ""));
   const missed = asked.filter((q) => q && !kbMatch(q));
+  // Where each tool step happened, as the index of the last thing said before it.
+  let si = -1;
+  const toolAt = [];
+  call.lines.forEach((l) => { if (l.kind === "tool") toolAt.push({ at: si, line: l }); else si++; });
   S.calls.unshift({
     id: "v" + Date.now(),
     customer: who,
@@ -4681,9 +5039,11 @@ function finishCall(failed) {
     kbMisses: missed,
     transcript: spoken.map((l) => [l.role === "assistant" ? "Agent" : "Caller", l.text]),
     actions: call.tools.length
-      ? call.tools.map((t) => {
-          if (t.name === "lookup_knowledge") { const hit = kbMatch(String(t.args.question || "")); return { t: t.name, r: hit ? hit.collection + " · approved answer returned" : "No approved answer", ok: !!hit, ref: hit ? { kind: "kb", id: hit.id, q: t.args.question } : { kind: "gap", q: t.args.question } }; }
-          return { t: t.name, r: t.name === "book_appointment" ? "Slot: " + (t.args.slot || "unspecified") : t.name === "escalate_to_human" ? (t.args.urgency || "normal") + " · " + (t.args.reason || "") : t.name === "check_availability" ? "Checked open times" + (t.args.preference ? " for " + t.args.preference : "") : "Called", ok: true };
+      ? call.tools.map((t, i) => {
+          const pos = toolAt[i] || { at: undefined, line: {} };
+          const extra = { at: pos.at, args: t.args, result: pos.line.result || "" };
+          if (t.name === "lookup_knowledge") { const hit = (toolAt[i] && toolAt[i].line.kb !== undefined) ? kbList().find((k) => k.id === toolAt[i].line.kb) || null : kbMatch(String(t.args.question || "")); return Object.assign({ t: t.name, r: hit ? hit.collection + " · approved answer returned" : "No approved answer", ok: !!hit, kb: hit ? hit.id : null, ref: hit ? { kind: "kb", id: hit.id, q: t.args.question } : { kind: "gap", q: t.args.question } }, extra); }
+          return Object.assign({ t: t.name, r: t.name === "book_appointment" ? "Slot: " + (t.args.slot || "unspecified") : t.name === "escalate_to_human" ? (t.args.urgency || "normal") + " · " + (t.args.reason || "") : t.name === "check_availability" ? "Checked open times" + (t.args.preference ? " for " + t.args.preference : "") : "Called", ok: true }, extra);
         })
       : [{ t: "none", r: "No tools were called on this call", ok: true }]
   });
@@ -4912,6 +5272,9 @@ function buildLive(raw) {
       }
       return { t: e.tool, r: (e.result || "").slice(0, 120), ok: true };
     }) : [{ t: "none", r: "No tool calls on this call", ok: true }];
+    // Keep what the agent sent and what the tool server answered, so the transcript can show it in place.
+    if (ev.length) call.actions.forEach((x, i) => { const e = ev[i] || {}; x.args = e.args || {}; x.result = e.result || ""; x.kb = e.kb_entry_id || null; x.when = e.created_at; });
+    if (Array.isArray(st._timeline) && st._timeline.length) call.steps = stepsFromTimeline(st._timeline, call.transcript, ev, call.actions, c.started_at);
     call.reason = reasonFromStructured(st) || guessReason(call, ev, escByCall[c.id] || []);
     return call;
   });
@@ -5324,9 +5687,18 @@ function renderTranscript(c) {
   const d = trainData();
   const fbs = d.feedback.filter((f) => f.call_id === c.id);
   const canCoach = !!c.live || !LIVE.on;
+  const steps = c.transcript.length ? stepsFor(c) : [];
+  const showSteps = STEPS_ON && steps.length > 0;
+  const canEdit = canCoach;
   let html = '<div class="head" style="margin-bottom:8px;align-items:center"><h2>Transcript</h2><span class="sub" style="font-size:13px">' +
-    (!c.transcript.length ? "" : canCoach ? "Hover a line to coach it" : "Coaching opens once the full record lands") + "</span></div><div style=\"margin-bottom:18px\">";
+    (!c.transcript.length ? "" : canCoach ? "Hover a line to coach it" : "Coaching opens once the full record lands") + "</span></div>";
+  if (steps.length) html += '<div class="stepbar"><span>Tool steps: ' + esc(stepSummary(steps)) + "</span>" +
+    '<button class="btn sm ghost" data-togglesteps="1">' + (STEPS_ON ? "Hide them" : "Show them in the transcript") + "</button>" +
+    (showSteps && steps.some((s) => s.approx) ? '<span style="font-size:12px">Placed by best match. Calls from now on record exactly where each step happened.</span>' : "") + "</div>";
+  html += "<div style=\"margin-bottom:18px\">";
   if (!c.transcript.length) html += '<div class="empty" style="padding:12px 0;text-align:left">No transcript on this call.</div>';
+  const stepAt = (i) => showSteps ? steps.map((s, n) => (s.after === i ? stepCard(c, s, n, steps, canEdit) : "")).join("") : "";
+  html += stepAt(-1);
   c.transcript.forEach((l, i) => {
     const isCaller = l[0] === "Caller";
     const f = fbs.filter((x) => x.turn_index === i || (x.turn_index == null && x.quote === l[1]));
@@ -5335,6 +5707,7 @@ function renderTranscript(c) {
       '<b style="font-size:12px;color:var(--muted);display:block">' + esc(l[0]) + "</b>" + esc(l[1]) +
       (canCoach ? '<button class="cbtn" data-coach="' + esc(c.id) + "|" + i + '">' + (isCaller ? "Add answer" : "Coach") + "</button>" : "") + "</div>";
     f.forEach((x) => { html += '<div class="fbk' + (isCaller ? "" : " r") + '">' + fbLabel(x, d) + "</div>"; });
+    html += stepAt(i);
   });
   return html + "</div>";
 }
