@@ -525,6 +525,27 @@ tr.flash td{animation:flashbg 2.6s ease-out}
 .drawer .tool .tres{margin-top:3px;color:var(--muted)}
 .drawer .tool.miss{border-left-color:var(--bad)}
 .drawer .tool.warn{border-left-color:var(--bad)}
+/* clickable references: tool names and knowledge answers inside transcripts */
+button.tn.tnlink{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;background:var(--page);border:1px solid var(--blue-line);border-radius:5px;padding:1px 6px;color:var(--navy);white-space:nowrap;cursor:pointer;line-height:1.4}
+button.tn.tnlink:hover,button.tn.tnlink:focus-visible{border-color:var(--blue);color:var(--blue);text-decoration:underline}
+.step button.tn.tnlink{font-size:11px;color:var(--muted);border-radius:4px;padding:0 5px}
+.step button.tn.tnlink:hover{color:var(--blue)}
+.linkbtn.kbref{font-weight:600;color:var(--blue);font-size:inherit}
+.drawer .tool .tnlink{font-size:10.5px;padding:0 4px;margin-left:2px}
+.drawer .callas{padding:8px 16px;background:#0f3a63;color:#dbe9f5;font-size:12px;line-height:1.4}
+/* returning callers and case updates */
+.why.callerblk{border-color:#cfe2f3;border-left-color:var(--blue);background:#f7fbfe}
+.callerblk p{margin:0 0 6px}
+.callerblk .sres{margin:4px 0 8px}
+.callerblk .sres summary{cursor:pointer;color:var(--blue);font-weight:600;font-size:13px}
+.callerblk .sres div{margin-top:6px;padding:8px 10px;background:#fff;border:1px solid #d6e6f3;border-radius:8px;white-space:pre-wrap;font-size:13px;line-height:1.5;color:var(--ink)}
+.culist{list-style:none;margin:6px 0;padding:0}
+.culist li{display:flex;gap:9px;align-items:flex-start;padding:5px 0;font-size:14px}
+.culist .tl-ico{width:22px;height:22px;flex:none;font-size:11px}
+.cutext{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin:4px 0 2px;font-size:13px;color:var(--muted)}
+.tl-ico.case{background:#e8f1fb;color:var(--blue)}
+.npanel .nalert{display:flex;gap:10px;align-items:center;padding:10px 14px;background:#f2f8fd;border-bottom:1px solid var(--blue-line);font-size:13px;color:var(--navy)}
+.npanel .nalert .btn{flex:none}
 @media (max-width:760px){.step{max-width:100%}}
 @media print{.side,.topbar,.actions,.btn{display:none!important}.app{grid-template-columns:1fr}body{background:#fff}.panel{box-shadow:none}}
 </style>
@@ -754,7 +775,11 @@ tr.flash td{animation:flashbg 2.6s ease-out}
         <div class="row"><input id="kbFilter" placeholder="Filter answers" aria-label="Filter answers" style="border:1px solid var(--blue-line);border-radius:8px;padding:6px 10px;width:200px"><span class="tag neut" id="syncedAt">—</span></div>
       </div>
       <div id="collList"></div>
-      <div class="panel" style="margin-top:20px">
+      <div class="panel" style="margin-top:20px" id="toolsPanel">
+        <div class="ph"><h2>Agent tools</h2><span class="tag neut">What each one does, reads and changes</span></div>
+        <div class="pb flush"><div style="overflow-x:auto"><table id="toolTable"></table></div></div>
+      </div>
+      <div class="panel" style="margin-top:20px" id="authPanel">
         <div class="ph"><h2>System authority</h2><span class="tag neut">What the agent may do without a human</span></div>
         <div class="pb flush"><table id="authTable"></table></div>
       </div>
@@ -891,6 +916,7 @@ tr.flash td{animation:flashbg 2.6s ease-out}
 
 <div class="drawer" id="callDrawer" role="dialog" aria-label="Live call">
   <div class="dh"><div><b>Arrington Roofing Intake</b><span id="callStatus">Connecting</span></div><span id="callTimer">0:00</span></div>
+  <div class="callas hidden" id="callAs"></div>
   <div class="lvl"><i id="callLevel"></i></div>
   <div class="db" id="callLog"></div>
   <div class="derr" id="callErr"></div>
@@ -1311,10 +1337,15 @@ function seed() {
   const amyOffered = [at(0, 8, 0), at(1, 8, 0), at(2, 10, 30)];
   // Calls happened relative to now, so the timeline, texts and reminders tell one story
   const tBrian = minsAgo(58), tMichael = minsAgo(12), tAmy = minsAgo(27 * 60 + 5), tElena = minsAgo(25 * 60 + 20), tMarcus = minsAgo(143);
+  // Brian called back 20 minutes ago: the agent recognized his number, he moved the inspection to the afternoon and added details.
+  const tBrianBack = minsAgo(20), brianMoved = at(1, 13, 0), brianAlt = at(2, 8, 0);
+  const brianFrom = apptLong(brianAppt), brianTo = apptLong(brianMoved);
+  const brianAdded = "The stain has spread toward the hallway, and there's a second drip by the bedroom window now.";
+  const brianText = "Arrington Roofing: Hi Brian. Your roof inspection has moved to " + brianTo + ". We also added the details you shared to your file. The inspector will call ahead on the day. Reply STOP to opt out.";
   const dw = (iso) => dayDiff(iso) === 1 ? "tomorrow" : DAY_NAMES[zparts(new Date(iso)).wd];
   const brianLine = "I can do " + dw(brianAppt) + " at eight in the morning, or " + dw(brianAppt) + " at one. Which works better?";
   return {
-    v: 2, seededAt: Date.now(), schedulerAt: Date.now(),
+    v: 2, seededAt: Date.now(), schedulerAt: Date.now(), callbackDemo: true,
     settings: {
       assistant: "Arrington Roofing Assistant",
       coverage: "24/7 with human escalation",
@@ -1347,6 +1378,7 @@ function seed() {
       { label: "Completed", n: 141 }
     ],
     activity: [
+      { kind: "info", title: "Returning caller updated their case", sub: "Brian Arrington · inspection moved to " + dw(brianMoved) + " at 1:00 PM", when: "18 minutes ago" },
       { kind: "ok", title: "Inspection booked", sub: "Brian Arrington · storm damage", when: "57 minutes ago" },
       { kind: "warnd", title: "Urgent escalation", sub: "Possible electrical exposure · assigned to Maria", when: "9 minutes ago" },
       { kind: "info", title: "Coaching note added", sub: "Confirm the callback number before booking", when: "25 minutes ago" }
@@ -1392,8 +1424,34 @@ function seed() {
         actions: [
           { t: "lookup_knowledge", at: 5, r: "Insurance Protocols · approved answer returned", ok: true, ref: { kind: "kb", id: "insurance", q: "Is this the kind of thing insurance would cover?" } },
           { t: "check_availability", at: 7, r: "3 times offered", ok: true, ref: { kind: "slots", slots: brianOffered } },
-          { t: "book_appointment", at: 9, r: "", ok: true, ref: { kind: "appt", id: "a-brian" } },
+          { t: "book_appointment", at: 9, r: "", ok: true, args: { slot: brianFrom, type: "inspection" }, ref: { kind: "appt", id: "a-brian" } },
           { t: "send_confirmation", at: 9, r: "Email accepted without domain validation", ok: false, ref: { kind: "messages", customerId: "cust-brian" } }
+        ] },
+      { id: "c6", customerId: "cust-brian", customer: "Brian Arrington", phone: "+1 678 555 0144", intent: "Moved his inspection, added details", outcome: "Case updated", state: "booked", time: fmtWhen(tBrianBack), receivedAt: tBrianBack, duration: "1m 48s",
+        recording: "call-0143.wav", address: "4412 Northridge Drive, Dallas, GA",
+        summary: "Returning caller. Recognized from his number, confirmed it was him, and said it was about the same stain. Moved his inspection from " + brianFrom + " to " + brianTo + " and added that the stain is spreading. Said yes to a confirmation text.",
+        reason: { category: "case_update", text: "Moved his inspection to " + brianTo + " and added that the stain has spread toward the hallway.", next: "Inspector to check the hallway ceiling and the bedroom window too." },
+        structured: { returning_caller: true, same_matter: true, text_ok: true, reason_category: "case_update",
+          _caller: { name: "Brian Arrington", phone: "6785550144", file: "Name on file: Brian Arrington\nCalls on file: 1. The last one was earlier today, about: storm damage, a stain on the bedroom ceiling that started dripping.\nProperty on file: 4412 Northridge Drive, Dallas, GA.\nHow the last call ended: Booked a roof inspection for " + brianFrom + ".\nUpcoming appointment: Roof inspection on " + brianFrom + "." } },
+        transcript: [
+          ["Agent","Hi, thanks for calling Arrington Roofing. This call may be recorded for quality assurance and training purposes. Am I speaking with Brian?"],
+          ["Caller","Yes, it's Brian."],
+          ["Agent","I see you called earlier today about the stain on your bedroom ceiling. Are you calling about that today, or something else?"],
+          ["Caller","Same thing. Something came up at work, so can we move the inspection to the afternoon?"],
+          ["Agent","Sure. I have " + dw(brianMoved) + " at one, or " + dw(brianAlt) + " at eight in the morning. Which works better?"],
+          ["Caller", upperFirst(dw(brianMoved)) + " at one is great."],
+          ["Agent","Done, you're now booked for " + dw(brianMoved) + " at 1 PM, and the inspector will call ahead. Is there anything else you'd like to add to your file?"],
+          ["Caller","Yeah, the stain has spread toward the hallway, and there's a second drip by the bedroom window now."],
+          ["Agent","Got it, I've added that for the team. Is it okay if we text a confirmation to this number?"],
+          ["Caller","Yes please."],
+          ["Agent","Will do. Anything else I can help with?"],
+          ["Caller","No, that's it. Thanks."],
+          ["Agent","Thanks, Brian. Take care."]
+        ],
+        actions: [
+          { t: "check_availability", at: 3, r: "2 times offered for the afternoon", ok: true, args: { preference: "afternoon" }, result: "Open times: " + brianTo + "; " + apptLong(brianAlt) + ". Offer two or three of these.", ref: { kind: "slots", slots: [brianMoved, brianAlt] } },
+          { t: "reschedule_appointment", at: 5, r: "Moved from " + brianFrom + " to " + brianTo, ok: true, args: { slot: brianTo }, result: "Moved their roof inspection from " + brianFrom + " to " + brianTo + ". Confirm the new day and time in one sentence. Before you wrap up, ask once if it is okay to text a confirmation to the number on file. Accept a no without pushing.", ref: { kind: "appt", id: "a-brian" } },
+          { t: "add_case_details", at: 7, r: "Added: " + brianAdded, ok: true, args: { details: brianAdded, topic: "damage" }, result: "Saved to their file. The team will see it after the call. Ask if there is anything else they would like to add.", ref: { kind: "casefile", customerId: "cust-brian" } }
         ] },
       { id: "c2", customerId: "cust-michael", customer: "Michael Chen", phone: "+1 770 555 0198", intent: "Active leak", outcome: "Escalated", state: "urgent", time: fmtWhen(tMichael), receivedAt: tMichael, duration: "1m 51s",
         recording: "call-0141.wav", address: "88 Oakvale Court, Marietta, GA",
@@ -1455,7 +1513,7 @@ function seed() {
         ] }
     ],
     appointments: [
-      { id: "a-brian", customerId: "cust-brian", callId: "c1", type: "Roof inspection", startsAt: brianAppt, createdAt: minsAgo(57), duration: 60, status: "Confirmed", ref: "INS-35081H", bookedBy: "Agent, on the call", note: "Confirmation sent by text" },
+      { id: "a-brian", customerId: "cust-brian", callId: "c1", type: "Roof inspection", startsAt: brianMoved, createdAt: minsAgo(57), duration: 60, status: "Confirmed", ref: "INS-35081H", bookedBy: "Agent, on the call", note: "Moved by the agent on a call, from " + brianFrom + ". Confirmation sent by text." },
       { id: "a-marcus", customerId: "cust-marcus", callId: "c5", type: "Roof inspection", startsAt: marcusAppt, createdAt: minsAgo(142), duration: 60, status: "Confirmed", ref: "INS-35080K", bookedBy: "Agent, on the call", note: "" },
       { id: "a-michael", customerId: "cust-michael", callId: "c2", type: "Urgent leak check", startsAt: michaelAppt, createdAt: minsAgo(7), duration: 45, status: "Action needed", ref: "INS-35082P", bookedBy: "Maria", note: "Holding this time for the leak check. Confirm once Maria reaches him. Tarp on the truck." },
       { id: "a-priya", customerId: "cust-priya", callId: null, type: "Roof inspection", startsAt: priyaAppt, createdAt: minsAgo(30 * 60 + 2), duration: 60, status: "Confirmed", ref: "INS-35077Q", bookedBy: "Website form", note: "" },
@@ -1463,7 +1521,8 @@ function seed() {
       { id: "a-dana", customerId: "cust-dana", callId: null, type: "Roof repair", startsAt: at(-3, 8, 0), createdAt: minsAgo(9 * 1440), completedAt: at(-3, 11, 0), duration: 180, status: "Completed", ref: "INS-35012D", bookedBy: "Maria", note: "Ridge cap and two boots replaced" }
     ],
     messages: [
-      { id: "m1", customerId: "cust-brian", channel: "sms", dir: "out", body: "Hi Brian, this is Arrington Roofing. Your roof inspection is confirmed for {appt}. Reply here if anything changes.", at: minsAgo(55), status: "Delivered", by: "Automation: Booking confirmation", autoKey: "auto-confirm|a-brian", apptId: "a-brian" },
+      { id: "m1", customerId: "cust-brian", channel: "sms", dir: "out", body: "Hi Brian, this is Arrington Roofing. Your roof inspection is confirmed for " + brianFrom + ". Reply here if anything changes.", at: minsAgo(55), status: "Delivered", by: "Automation: Booking confirmation", autoKey: "auto-confirm|a-brian", apptId: "a-brian" },
+      { id: "m18", customerId: "cust-brian", channel: "sms", dir: "out", body: brianText, at: minsAgo(17), status: "Delivered", by: "Automation: Case update confirmation" },
       { id: "m2", customerId: "cust-brian", channel: "sms", dir: "in", body: "Thanks. The drip seems a little faster now. Should I do anything?", at: minsAgo(49) },
       { id: "m3", customerId: "cust-brian", channel: "sms", dir: "out", body: "Thanks for letting us know. Please stay clear of that part of the ceiling and put a bucket under the drip. If water reaches a light or the ceiling starts to bulge, leave the room and call us right away.", at: minsAgo(47), status: "Delivered", by: "maria@arringtonroofing.com" },
       { id: "m4", customerId: "cust-brian", channel: "email", dir: "out", subject: "What to expect at your inspection", body: "Hi Brian,\n\nAttached is a short guide to tomorrow's visit: what the inspector checks, roughly how long it takes, and what to have ready.\n\nMaria, Arrington Roofing", attachments: [{ docId: "d-brian-prep", name: "Inspection prep sheet.pdf" }], at: minsAgo(40), status: "Opened", by: "maria@arringtonroofing.com" },
@@ -1519,6 +1578,7 @@ function seed() {
       "Lost": { owner: "", notify: ["erica"], escalateAfterMin: 0, escalateTo: "", requireReason: true, reasons: ["Went with another roofer", "Price", "No damage found", "Not ready yet", "Outside service area", "Stopped responding"], steps: [] }
     },
     notifications: [
+      { id: "nt5", kind: "case_update", to: "maria", title: "Brian Arrington updated their case", body: "Moved roof inspection from " + brianFrom + " to " + brianTo + ". Added: " + brianAdded + " Confirmation text sent to (678) 555-0144.", customerId: "cust-brian", callId: "c6", preferClient: true, at: minsAgo(17), read: false },
       { id: "nt1", kind: "escalation", to: "maria", title: "Urgent: Michael Chen", body: "Water near a kitchen light. Call back now. Goes to Erica if nobody picks it up in 15 minutes.", customerId: "cust-michael", at: minsAgo(9), read: false, needsAck: true },
       { id: "nt2", kind: "library", to: "erica", title: "4 suggestions waiting for sign-off", body: "From \"Coordinator call: electrical concern\".", libraryId: "lib-1", at: minsAgo(60), read: false },
       { id: "nt3", kind: "followup", to: "maria", title: "Amy Patel hasn't replied", body: "Follow-up step 2 went out by text.", customerId: "cust-amy", at: minsAgo(120), read: false },
@@ -1530,6 +1590,10 @@ function seed() {
       safety: "99.2%", safetyNote: "1 coaching issue",
       actions: "97%", actionsNote: "3 uncertain writes"
     },
+    caseUpdates: [
+      { id: "cu-1", callId: "c6", customerId: "cust-brian", phone: "6785550144", customerName: "Brian Arrington", kind: "reschedule", summary: "Moved roof inspection from " + brianFrom + " to " + brianTo, details: { from: brianFrom, to: brianTo, type: "Roof inspection" }, appointmentId: "a-brian", confirmText: brianText, textStatus: "sent", textSentAt: minsAgo(17), createdAt: minsAgo(19) },
+      { id: "cu-2", callId: "c6", customerId: "cust-brian", phone: "6785550144", customerName: "Brian Arrington", kind: "details", summary: "Added: " + brianAdded, details: { details: brianAdded, topic: "damage" }, appointmentId: "a-brian", confirmText: brianText, textStatus: "sent", textSentAt: minsAgo(17), createdAt: minsAgo(18) }
+    ],
     reviews: [
       { id: "r1", priority: "High", callId: "c2", conversation: "Michael Chen", reason: "Possible electrical exposure", suggestion: "Confirm urgent escalation language", status: "open" },
       { id: "r2", priority: "Medium", callId: "c1", conversation: "Brian Arrington", reason: "Incomplete email accepted", suggestion: "Add full-address validation", status: "open" },
@@ -1626,7 +1690,7 @@ function seed() {
 // Demo data is dated relative to the day it was created. On a new day (Eastern), the day-to-day activity is
 // regenerated so "tomorrow at 8" is still tomorrow. Knowledge, collections, rules, training, the call library,
 // automations, playbooks, the team and settings are kept exactly as they were.
-const DAILY_KEYS = ["kpis", "funnel", "activity", "customers", "calls", "appointments", "messages", "docs", "notifications", "skipped", "reviews", "quality", "analytics", "syncedMinutes"];
+const DAILY_KEYS = ["kpis", "funnel", "activity", "customers", "calls", "appointments", "messages", "docs", "notifications", "caseUpdates", "skipped", "reviews", "quality", "analytics", "syncedMinutes"];
 function refreshDemoDay(st) {
   if (dayKey(zparts(new Date(Number(st.seededAt) || 0))) === dayKey(zparts(new Date()))) return st;
   const fresh = seed();
@@ -1651,6 +1715,15 @@ function backfill(st) {
     c.actions.forEach((a, i) => { const fa = (fc.actions || [])[i]; if (fa && fa.t === a.t) { if (a.at == null && fa.at != null) a.at = fa.at; if (!a.args && fa.args) a.args = fa.args; } });
   });
   if (!st.schedulerAt) st.schedulerAt = Date.now();
+  // The returning-caller example (Brian calls back and moves his inspection) arrives once in saved demo data.
+  if (!st.callbackDemo) {
+    DAILY_KEYS.forEach((k) => { st[k] = d[k]; });
+    st.seededAt = d.seededAt;
+    st.schedulerAt = d.schedulerAt;
+    st.callbackDemo = true;
+    st.refreshedCallbacks = true;
+  }
+  if (!Array.isArray(st.caseUpdates)) st.caseUpdates = [];
   return st;
 }
 // The fixes from the Oct 10 test call, applied once to saved demo knowledge. Entries someone has edited are left alone.
@@ -1860,7 +1933,7 @@ function outcomeDetail(c) {
 }
 
 /* ---------- conversations ---------- */
-const REASONS = { booked: "Booked", no_time_fit: "Times didn't fit", declined_details: "Wouldn't give details", safety_escalation: "Safety escalation", unanswered_question: "Question with no answer", hung_up_early: "Hung up early", wants_quote: "Wanted a price first", outside_area: "Outside service area", not_ready: "Not ready yet", other: "Other" };
+const REASONS = { booked: "Booked", case_update: "Updated their case", no_time_fit: "Times didn't fit", declined_details: "Wouldn't give details", safety_escalation: "Safety escalation", unanswered_question: "Question with no answer", hung_up_early: "Hung up early", wants_quote: "Wanted a price first", outside_area: "Outside service area", not_ready: "Not ready yet", other: "Other" };
 const CONV_FILTERS = ["All", "Not reviewed", "No booking", "Booked", "Escalated"];
 let convFilter = "All";
 let convReason = null;
@@ -1923,7 +1996,7 @@ function renderConversations() {
       '<button class="btn sm" data-copysum="' + esc(c.id) + '">Copy summary</button>' +
       (c.transcript.length ? '<button class="btn sm" data-jump="transcript">Coach this call</button>' : "") +
     "</div>" +
-    whyBlock(c) +
+    whyBlock(c) + callerBlock(c) +
     '<dl class="kv" style="margin-bottom:16px"><dt>What they called about</dt><dd>' + esc(c.intent) + "</dd>" +
     "<dt>When</dt><dd>" + esc(callTime(c)) + " · " + esc(c.duration) + (c.ended && ENDED[c.ended] ? " · " + esc(ENDED[c.ended]) : "") + "</dd>" +
     (c.phone && c.phone !== "Web call" ? "<dt>Phone</dt><dd>" + esc(c.phone) + "</dd>" : "") +
@@ -1938,7 +2011,7 @@ function renderConversations() {
     '<div style="overflow-x:auto"><table><thead><tr><th>Tool</th><th>Result</th><th>Status</th><th></th></tr></thead><tbody>' +
     (c.actions || []).map((a, i) => {
       const open = actionOpen(a);
-      return "<tr" + (open ? ' class="clickable" data-act="' + esc(c.id) + "|" + i + '"' : "") + '><td><code class="tn">' + esc(a.t) + "</code></td><td>" + esc(actionResult(a, c)) +
+      return "<tr" + (open ? ' class="clickable" data-act="' + esc(c.id) + "|" + i + '"' : "") + "><td>" + (a.t === "none" ? '<code class="tn">none</code>' : toolChip(a.t)) + "</td><td>" + esc(actionResult(a, c)) +
         (a.ref && a.ref.q ? '<span class="t2">“' + esc(String(a.ref.q).slice(0, 90)) + "”</span>" : "") + "</td><td>" +
         (a.ok ? '<span class="tag ok">Clean</span>' : '<span class="tag warnt">Flagged</span>') + '</td><td class="go">' + (open ? esc(open) + " ›" : "") + "</td></tr>";
     }).join("") +
@@ -1974,10 +2047,37 @@ function whyBlock(c, bare) {
     if (cat === "unanswered_question") btns.push('<button class="btn sm" data-go="training">Add the answer</button>');
     btns.push('<button class="btn sm ghost" data-go="analytics">What to change</button>');
   }
-  return '<div class="why ' + kind + '"><div class="whyh"><b>' + title + "</b>" + (cat !== "booked" ? '<span class="chip sm ' + (c.state === "urgent" ? "bad" : "warn") + '">' + esc(REASONS[cat] || cat) + "</span>" : "") + "</div>" +
+  return '<div class="why ' + kind + '"><div class="whyh"><b>' + title + "</b>" + (cat !== "booked" ? '<span class="chip sm ' + (c.state === "urgent" ? "bad" : cat === "case_update" ? "good" : "warn") + '">' + esc(REASONS[cat] || cat) + "</span>" : "") + "</div>" +
     (r.text ? "<p>" + esc(r.text) + "</p>" : "") +
     (r.next ? '<p class="next"><b>Next step:</b> ' + esc(r.next) + "</p>" : "") +
     (btns.length ? '<div class="row">' + btns.join("") + "</div>" : "") + "</div>";
+}
+
+/* ---------- returning callers: what the agent knew going in, and what changed on the call ---------- */
+function caseUpdatesForCall(c) { return (S.caseUpdates || []).filter((u) => u.callId === c.id).sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0)); }
+const TEXT_STATUS = {
+  sent: ["ok", "Confirmation text sent"], pending: ["neut", "Text not sent yet"], failed: ["badt", "Confirmation text failed"],
+  no_consent: ["neut", "No text: the caller wasn't asked or said no"], not_connected: ["neut", "No text yet: texting isn't connected"],
+  needs_approval: ["warnt", "Text waiting for a person to send it"], no_number: ["neut", "No text: no US mobile number on file"], off: ["neut", "No text: switched off for this call"]
+};
+function textStatusTag(st) { const x = TEXT_STATUS[st] || TEXT_STATUS.pending; return '<span class="tag ' + x[0] + '">' + esc(x[1]) + "</span>"; }
+function callerBlock(c) {
+  const cf = c.structured && c.structured._caller;
+  const ups = caseUpdatesForCall(c);
+  if (!cf && !ups.length) return "";
+  const cu = customerForCall(c);
+  const withText = ups.filter((u) => u.confirmText).pop();
+  const st = c.structured || {};
+  const sample = st._sample || (ups.length && ups.every((u) => u.details && u.details.demo));
+  return '<div class="why callerblk"><div class="whyh"><b>' + (cf ? "Returning caller" : "Changes to their file") + "</b>" + (cf ? '<span class="chip sm good">' + (st._test ? "Test callback from the Command Center" : "Recognized by their number") + "</span>" : "") +
+    (sample ? '<span class="chip sm neut">Sample customer, signed out</span>' : "") + "</div>" +
+    (sample ? '<p class="mini" style="margin:0 0 6px">This was a signed-out test with a sample customer, so no real booking changed and nobody was alerted or texted.</p>' : "") +
+    (cf ? "<p>She had " + esc(firstName(cf.name || c.customer)) + "'s file before answering, checked she was speaking with them, then asked if they were calling about the same thing.</p>" +
+      '<details class="sres"><summary>What she knew going in</summary><div>' + esc(cf.file || "") + "</div></details>" : "") +
+    (ups.length ? '<ul class="culist">' + ups.map((u) => '<li><span class="tl-ico case" aria-hidden="true">' + (u.kind === "reschedule" ? "↻" : u.kind === "details" ? "+" : "□") + "</span><span>" + esc(u.summary) + "</span></li>").join("") + "</ul>" +
+      (withText ? '<div class="cutext">' + textStatusTag(withText.textStatus) + "<span>“" + esc(withText.confirmText) + "”</span></div>" : "") : "") +
+    '<div class="row"><button class="btn sm" data-client="' + esc(cu ? cu.id : "call:" + c.id) + '" data-tab="timeline">Open their file</button>' +
+    (cu ? '<button class="btn sm ghost" data-callbackas="' + esc(cu.id) + '">Test a callback as ' + esc(firstName(cu.name)) + "</button>" : "") + "</div></div>";
 }
 
 // Vapi's analysis sometimes lists the agent's own questions as "unanswered". Keep only what the caller asked.
@@ -1993,11 +2093,11 @@ function realQuestions(c) {
 /* ---------- system actions: every row opens the thing it touched ---------- */
 function actionOpen(a) {
   const k = a.ref && a.ref.kind;
-  return { kb: "View in Knowledge", slots: "See the times", appt: "Open the booking", messages: "Open messages", review: "Open the escalation", customer: "Open customer", gap: "Add an answer" }[k] || "";
+  return { kb: "View in Knowledge", slots: "See the times", appt: "Open the booking", messages: "Open messages", review: "Open the escalation", customer: "Open customer", gap: "Add an answer", casefile: "Open their file" }[k] || "";
 }
 function actionResult(a, c) {
   const ref = a.ref || {};
-  if (ref.kind === "appt") {
+  if (ref.kind === "appt" && a.t !== "reschedule_appointment") {
     const ap = S.appointments.find((x) => x.id === ref.id);
     if (ap) return ap.type + " · " + (ap.startsAt ? apptWhen(ap.startsAt) : ap.slotLabel || "") + (ap.ref ? " · ref " + ap.ref : "") + (ap.status !== "Confirmed" ? " · " + ap.status : "");
   }
@@ -2018,6 +2118,7 @@ function openAction(callId, i) {
   if (ref.kind === "messages") { openClient(ref.customerId || (customerForCall(c) || {}).id || "call:" + c.id, "messages"); return; }
   if (ref.kind === "review") { const r = S.reviews.find((x) => x.id === ref.id); if (r) { go("quality"); openReview(r.id); } else toast("That escalation has already been handled."); return; }
   if (ref.kind === "customer") { openClient(ref.id, "timeline"); return; }
+  if (ref.kind === "casefile") { const cu = (ref.customerId && clientFor(ref.customerId)) || customerForCall(c); openClient(cu ? cu.id : "call:" + c.id, "timeline"); return; }
   if (ref.kind === "gap") { if (LIVE.on && !LIVE.trainingReady) { showTrainingSetup(); return; } openAnswerEditor({ question: ref.q, callId: c.id }); }
 }
 function showOfferedSlots(c, slots) {
@@ -3318,7 +3419,14 @@ function timelineFor(cu) {
   const W = SW();
   const ev = [];
   callsFor(cu).forEach((c) => ev.push({ at: c.receivedAt, cls: "call", ico: "☎", title: "Call · " + c.intent + " · " + c.outcome, body: (c.reason && c.reason.text) || c.summary, attr: 'data-call="' + esc(c.id) + '"' }));
-  apptsFor(cu).forEach((a) => ev.push({ at: a.createdAt || a.startsAt, cls: "appt", ico: "□", title: a.type + " booked for " + (a.startsAt ? apptWhen(a.startsAt) : a.slotLabel || "") + " · " + a.status, body: "Booked by " + (a.bookedBy || "the agent"), attr: 'data-appt="' + esc(a.id) + '"' }));
+  apptsFor(cu).forEach((a) => ev.push({ at: a.createdAt || a.startsAt, cls: "appt", ico: "□", title: a.type + " booked for " + (a.startsAt ? apptWhen(a.startsAt) : a.slotLabel || "") + " · " + a.status, body: "Booked by " + (a.bookedBy || "the agent") + (/^Moved by the agent/i.test(a.note || "") ? ". " + a.note : ""), attr: 'data-appt="' + esc(a.id) + '"' }));
+  // Changes the caller made on a call: moved a booking, added details. Each one shows whether the confirmation text went out.
+  caseUpdatesFor(cu).forEach((u) => {
+    const sample = u.details && u.details.demo;
+    ev.push({ at: u.createdAt, cls: "case", ico: u.kind === "reschedule" ? "↻" : u.kind === "details" ? "+" : "□",
+      title: (sample ? "Signed-out test with a sample customer: " : "") + (u.kind === "reschedule" ? "Moved their booking on a call" : u.kind === "details" ? "Added to their file on a call" : "Booked on a call"),
+      body: u.summary + (/[.!?]$/.test(u.summary || "") ? " " : ". ") + (sample ? "No real booking changed, and nobody was alerted or texted." : (TEXT_STATUS[u.textStatus] || TEXT_STATUS.pending)[1] + "."), attr: u.callId ? 'data-call="' + esc(u.callId) + '"' : "" });
+  });
   if (isFullClient(cu)) {
     msgsOf(cu.id, W).forEach((m) => ev.push({ at: m.at, cls: "", ico: m.channel === "email" ? "@" : "✉", title: m.dir === "in" ? chLabel(m.channel) + " from " + firstName(cu.name) : chLabel(m.channel) + " sent · " + byLabel(m.by || ""), body: (m.subject ? m.subject + ": " : "") + fillMsgBody(m, W), attr: 'data-ctab="messages"' }));
     docsOf(cu.id, W).forEach((d) => ev.push({ at: d.createdAt, cls: "doc", ico: "▤", title: "Document · " + d.title, body: d.kind || "", attr: 'data-doc="' + esc(d.id) + '"' }));
@@ -3326,6 +3434,11 @@ function timelineFor(cu) {
     (cu.history || []).forEach((h) => ev.push({ at: h.at, cls: "", ico: "•", title: h.text, body: "", attr: "" }));
   }
   return ev.filter((e) => e.at).sort((a, b) => new Date(b.at) - new Date(a.at));
+}
+function caseUpdatesFor(cu) {
+  const ids = callsFor(cu).map((c) => c.id);
+  const ph = digits(cu.phone).slice(-10);
+  return (S.caseUpdates || []).filter((u) => u.customerId === cu.id || (u.callId && ids.indexOf(u.callId) !== -1) || (ph.length >= 7 && digits(u.phone).slice(-10) === ph));
 }
 function renderClient() {
   const cu = clientFor(CLIENT.id);
@@ -3351,6 +3464,7 @@ function renderClient() {
     (cu.stage === "Lost" && cu.lossReason ? '<span class="chip static neut">Lost: ' + esc(cu.lossReason) + "</span>" : "") +
     '<span style="flex:1"></span>' +
     (tel ? '<a class="btn sm" href="tel:' + esc(tel) + '" style="text-decoration:none">Call</a>' : "") +
+    (callsFor(cu).length ? '<button class="btn sm" data-callbackas="' + esc(cu.id) + '" title="Call the agent as ' + esc(firstName(cu.name)) + ' to hear how a returning caller is greeted">Test a callback</button>' : "") +
     (full ? '<button class="btn sm" data-ctab="messages">Message</button>' : "") +
     '<button class="btn sm primary" data-bookfor="' + esc(cu.id) + '">Book a time</button></div>' +
     playbookStrip(cu) +
@@ -3432,11 +3546,38 @@ function renderBell() {
 }
 function renderNotifPanel() {
   const list = notifList();
+  const canAsk = typeof Notification !== "undefined" && Notification.permission === "default";
   $("notifPanel").innerHTML = '<div class="nh"><b>Notifications</b><div class="row"><button class="btn sm ghost" data-readall="1">Mark all read</button><button class="x" data-closenotif="1" aria-label="Close">×</button></div></div>' +
+    (canAsk ? '<div class="nalert"><span>Get a desktop alert when a client updates their case or a call is urgent, even with this tab in the background.</span><button class="btn sm primary" data-deskalerts="1">Turn on</button></div>' : "") +
     (list.length ? list.slice(0, 40).map((n) => '<div class="nitem' + (n.read ? "" : " unread") + '" data-nopen="' + esc(n.id) + '"><b>' + esc(n.title) + '</b><div class="body">' + esc(n.body || "") + '</div><div class="mini">' + (n.to ? "To " + esc(teamName(n.to)) + " · " : "") + esc(ago(n.at)) + (n.ackBy ? " · Picked up by " + esc(shortName(n.ackBy)) : "") + "</div>" +
       (n.needsAck && !n.ackBy ? '<div class="row"><button class="btn sm primary" data-nack="' + esc(n.id) + '">Acknowledge</button></div>' : "") + "</div>").join("") : '<div class="empty">Nothing new.</div>');
 }
 function closeNotif() { if ($("notifPanel")) $("notifPanel").dataset.open = "false"; }
+onClick("[data-deskalerts]", async () => {
+  try { await Notification.requestPermission(); } catch (e) {}
+  renderNotifPanel();
+  toast(typeof Notification !== "undefined" && Notification.permission === "granted" ? "Desktop alerts are on for this browser." : "Desktop alerts are off. You can allow them in the browser's site settings.");
+});
+// Desktop alerts for new case updates and urgent calls. Nothing fires for what was already there the first time each
+// source loaded, so a table that only becomes readable later (or signing in again) doesn't replay old alerts.
+let deskSeen = {};
+let deskArmed = {};
+function resetDeskAlerts() { deskSeen = {}; deskArmed = {}; }
+function deskAlert(list, ready) {
+  const fresh = (list || []).filter((n) => n.alert && n.src && ready && ready[n.src]);
+  const firstTime = {};
+  Object.keys(ready || {}).forEach((src) => { if (ready[src] && !deskArmed[src]) { firstTime[src] = true; deskArmed[src] = true; } });
+  fresh.forEach((n) => {
+    if (deskSeen[n.id]) return;
+    deskSeen[n.id] = true;
+    if (firstTime[n.src]) return;
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    try {
+      const x = new Notification(n.title, { body: n.body || "", tag: n.id });
+      x.onclick = () => { try { window.focus(); } catch (e) {} if (n.preferClient && n.customerId && clientFor(n.customerId)) openClient(n.customerId, "timeline"); else if (n.callId) openCall(n.callId); x.close(); };
+    } catch (e) {}
+  });
+}
 onClick("#bellBtn", () => { const p = $("notifPanel"); p.dataset.open = p.dataset.open === "true" ? "false" : "true"; if (p.dataset.open === "true") renderNotifPanel(); });
 onClick("[data-closenotif]", () => closeNotif());
 onClick("[data-readall]", () => {
@@ -3463,6 +3604,7 @@ onClick("[data-nopen]", (el) => {
   closeNotif();
   renderBell();
   if (n.libraryId) { libSel = n.libraryId; go("library"); return; }
+  if (n.preferClient && n.customerId && clientFor(n.customerId)) { openClient(n.customerId, "timeline"); return; }
   if (n.apptId) { openAppointment(n.apptId, true); return; }
   if (n.callId) { openCall(n.callId); return; }
   if (n.customerId) { openClient(n.customerId); return; }
@@ -3674,6 +3816,7 @@ function renderKnowledge() {
       "</div></div></details>";
   }).join("") || '<div class="empty">' + (f ? "No answers match that filter." : "No knowledge yet. Add an answer to start.") + "</div>";
   renderAuthority();
+  renderTools();
 }
 RENDER.knowledge = renderKnowledge;
 function entriesTable(list, c) {
@@ -3705,6 +3848,63 @@ function openKbEntry(id, q) {
     setTimeout(() => { kbFlash = null; }, 2600);
   }, 60);
 }
+
+/* ---------- agent tools: what each one does, what it reads, what it changes, and when it last ran ---------- */
+const TOOL_INFO = [
+  { id: "caller_lookup", when: "Before the call", title: "Recognize returning callers", does: "When someone calls the business number, the number is checked against past calls before the agent answers. If it matches, she gets their file and the greeting asks if she's speaking with them. She only brings up the last call once they say yes.", reads: "Past calls, bookings, open escalations and recent changes for that number", changes: "Nothing" },
+  { id: "lookup_knowledge", title: "Look up an answer", does: "Finds the approved answer to anything the caller asks, from the collections above. If nothing matches, she says she'd rather not guess and flags it for a person.", reads: "The knowledge collections and answers on this page", changes: "Nothing. Each lookup is logged with the answer it used.", auth: ["au1", "answer_faq"] },
+  { id: "check_availability", title: "Check the calendar", does: "Finds the next open times, matching what the caller prefers, like afternoons or next week. She only offers times this returns.", reads: "The calendar and business hours", changes: "Nothing", auth: ["au2", "book"] },
+  { id: "book_appointment", title: "Book an appointment", does: "Books the time the caller picked, with the type of visit and their details.", reads: "The calendar, to make sure the time is still free", changes: "Adds the booking to the calendar and alerts the team after the call.", auth: ["au2", "book"] },
+  { id: "reschedule_appointment", isNew: true, title: "Move a booking", does: "Moves a returning caller's upcoming booking to a time they picked from the calendar. It never books a second appointment. If nothing is booked for them, she passes it to a coordinator.", reads: "The caller's file and the calendar", changes: "Updates the booking, keeps a note of the old time, and alerts the team after the call.", auth: ["au2", "book"] },
+  { id: "add_case_details", isNew: true, title: "Add to their file", does: "Saves new details a returning caller shares, like damage spreading, access notes or an insurance update. She asks if there's anything else first, then saves it in one go.", reads: "The caller's file", changes: "Adds an update to their file and alerts the team after the call." },
+  { id: "escalate_to_human", title: "Flag for a person", does: "Hands the call to the team: high urgency for safety, normal for a question with no approved answer, a hand-off topic, or times that don't fit.", reads: "The hand-over rules in each collection", changes: "Opens an escalation in Quality. Urgent ones show on the bell straight away." },
+  { id: "endCall", title: "End the call", does: "Hangs up once the caller has said they're done, after a short goodbye.", reads: "Nothing", changes: "Nothing" },
+  { id: "send_confirmation", when: "After the call", isNew: true, title: "Confirmation text", does: "After a call that booked, moved or added something, the caller gets one text with the change, as long as they said yes when she asked.", reads: "The changes made on the call", changes: "Sends one text. Each change shows whether it went out, or why not.", auth: ["au3", "confirm"] },
+  { id: "team_alert", when: "After the call", isNew: true, title: "Team alert", does: "One alert for each call that changed a client's file, on the bell here and as a desktop alert. Phone alerts follow once they're set up.", reads: "The changes made on the call", changes: "Adds the alert to the bell" }
+];
+let toolFlash = null;
+function toolUse(id) {
+  if (id === "endCall") return null;
+  const W = S;
+  const ups = W.caseUpdates || [];
+  let calls;
+  if (id === "caller_lookup") calls = sortedCalls().filter((c) => c.structured && c.structured._caller);
+  else if (id === "team_alert") calls = sortedCalls().filter((c) => ups.some((u) => u.callId === c.id));
+  else if (id === "send_confirmation") calls = sortedCalls().filter((c) => ups.some((u) => u.callId === c.id && u.textStatus === "sent") || (c.actions || []).some((a) => a.t === id));
+  else calls = sortedCalls().filter((c) => (c.actions || []).some((a) => a.t === id));
+  const uses = /^(caller_lookup|team_alert|send_confirmation)$/.test(id) ? calls.length : calls.reduce((n, c) => n + (c.actions || []).filter((a) => a.t === id).length, 0);
+  return { n: calls.length, uses: uses, last: calls[0] || null };
+}
+function renderTools() {
+  const el = $("toolTable");
+  if (!el) return;
+  el.innerHTML = "<thead><tr><th>Tool</th><th>What it does</th><th>Reads</th><th>Changes</th><th>Allowed</th><th>Used</th></tr></thead><tbody>" + TOOL_INFO.map((t) => {
+    const au = t.auth ? (S.authority || []).find((x) => t.auth.indexOf(x.id) !== -1) : null;
+    const u = toolUse(t.id);
+    const used = u == null ? '<span class="mini">Not logged</span>'
+      : u.n ? esc(u.uses + (u.uses === 1 ? " time" : " times")) + '<span class="t2"><button class="linkbtn" data-call="' + esc(u.last.id) + '">Latest: ' + esc(u.last.customer) + ", " + esc(callTime(u.last)) + "</button></span>"
+      : '<span class="mini">' + (t.id === "caller_lookup" && LIVE.on ? "Starts once the business number is attached" : t.id === "send_confirmation" && LIVE.on ? "Starts once texting is connected" : "Not used yet") + "</span>";
+    return '<tr data-toolrow="' + esc(t.id) + '"' + (toolFlash === t.id ? ' class="flash"' : "") + '><td style="min-width:180px"><b style="color:var(--navy)">' + esc(t.title) + "</b>" + (t.isNew ? ' <span class="chip sm good">New</span>' : "") +
+      '<span class="t2">' + (t.when ? esc(t.when) : '<code class="tn">' + esc(t.id) + "</code>") + "</span></td>" +
+      '<td style="min-width:240px">' + esc(t.does) + '</td><td style="min-width:150px">' + esc(t.reads) + '</td><td style="min-width:170px">' + esc(t.changes) + "</td>" +
+      "<td>" + (au ? '<button class="linkbtn" data-authjump="1" title="Change it under System authority"><span class="tag ' + (au.level === "Allowed" ? "ok" : au.level === "Prohibited" ? "badt" : "warnt") + '">' + esc(au.level) + "</span></button>" : '<span class="mini">Always on</span>') + "</td>" +
+      '<td style="min-width:150px">' + used + "</td></tr>";
+  }).join("") + "</tbody>";
+}
+function openToolRef(name) {
+  closeClient(); closeModal();
+  if (/^end_?call$/i.test(name)) name = "endCall";
+  const known = TOOL_INFO.some((t) => t.id === name);
+  toolFlash = known ? name : null;
+  go("knowledge");
+  if (!known) toast("That tool isn't one the agent uses any more.");
+  setTimeout(() => {
+    const row = document.querySelector('[data-toolrow="' + String(name).replace(/"/g, '\\"') + '"]') || $("toolsPanel");
+    if (row && row.scrollIntoView) row.scrollIntoView({ block: "center", behavior: "smooth" });
+    setTimeout(() => { toolFlash = null; }, 2600);
+  }, 60);
+}
+onClick("[data-authjump]", () => { const p = $("authPanel"); if (p && p.scrollIntoView) p.scrollIntoView({ block: "start", behavior: "smooth" }); });
 
 function renderAuthority() {
   const levels = ["Allowed", "Requires approval", "Prohibited"];
@@ -4721,12 +4921,16 @@ function stepsFor(c) {
 }
 
 function clock(sec) { sec = Math.max(0, Math.round(Number(sec) || 0)); return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"); }
-const STEP_TITLE = { lookup_knowledge: "Looked up an answer", escalate_to_human: "Flagged for a person", check_availability: "Checked the calendar", book_appointment: "Booking", endCall: "Ended the call", send_confirmation: "Sent a confirmation" };
+const STEP_TITLE = { lookup_knowledge: "Looked up an answer", escalate_to_human: "Flagged for a person", check_availability: "Checked the calendar", book_appointment: "Booking", reschedule_appointment: "Moved a booking", add_case_details: "Added to their file", endCall: "Ended the call", send_confirmation: "Sent a confirmation" };
 
 function kbName(id) {
   const k = kbList().find((x) => x.id === id);
   return k ? k.collection + " · " + k.id : id;
 }
+// A knowledge reference you can click: opens that exact answer in its collection on the Knowledge page.
+function kbLink(id) { return '<button class="linkbtn kbref" data-openkb="' + esc(id) + '" title="Open this answer in Knowledge">' + esc(kbName(id)) + "</button>"; }
+// The tool's name, clickable: opens what the tool does, what it reads and what it changes.
+function toolChip(name) { return '<button class="tn tnlink" data-toolref="' + esc(name) + '" title="What this tool does">' + esc(name) + "</button>"; }
 function modeChip(k) { const m = (k && k.mode) || "answer"; return '<span class="mode ' + esc(m) + '">' + esc(MODE_SHORT[m] || m) + "</span>"; }
 
 function stepCard(c, s, n, steps, canEdit) {
@@ -4741,7 +4945,7 @@ function stepCard(c, s, n, steps, canEdit) {
     const flagged = flaggedBefore(steps, n);
     const k = s.kb ? kbList().find((x) => x.id === s.kb) : null;
     body += s.q ? '<div class="sq">“' + esc(s.q) + "”</div>" : "";
-    if (s.kb) body += '<div class="sm">' + (k ? modeChip(k) + " " : "") + "Answered from <b>" + esc(kbName(s.kb)) + "</b>" + (s.also && s.also.length > 1 ? ", plus <b>" + esc(s.also.filter((x) => x !== s.kb).map(kbName).join(", ")) + "</b>" : "") + "</div>";
+    if (s.kb) body += '<div class="sm">' + (k ? modeChip(k) + " " : "") + "Answered from " + kbLink(s.kb) + (s.also && s.also.length > 1 ? ", plus " + s.also.filter((x) => x !== s.kb).map(kbLink).join(", ") : "") + "</div>";
     else if (s.kb === null) { cls = " miss"; body += '<div class="sm"><span class="kind never">No approved answer</span> She said she would rather not guess and flagged it for a person.</div>'; }
     else body += '<div class="sm">The tool server did not log which answer it used.</div>';
     if (s.q) {
@@ -4749,10 +4953,10 @@ function stepCard(c, s, n, steps, canEdit) {
       const nowId = now.primary ? now.primary.id : null;
       if (s.kb !== undefined && nowId !== (s.kb || null)) {
         cls = cls || " changed";
-        body += '<div class="snow">' + (nowId ? "With today's knowledge she'd use <b>" + esc(kbName(nowId)) + "</b> instead" + (now.skipped ? ", because safety was already covered on this call" : "") + "." : "Today nothing matches this question, so she'd say she'll have someone get back to them.") + "</div>";
+        body += '<div class="snow">' + (nowId ? "With today's knowledge she'd use " + kbLink(nowId) + " instead" + (now.skipped ? ", because safety was already covered on this call" : "") + "." : "Today nothing matches this question, so she'd say she'll have someone get back to them.") + "</div>";
       }
       const others = now.hits.filter((h) => h.id !== s.kb && h.id !== nowId);
-      if (others.length) body += '<div class="sm faint">Also matches: ' + esc(others.map((h) => h.collection + " · " + h.id).join(", ")) + "</div>";
+      if (others.length) body += '<div class="sm faint">Also matches: ' + others.map((h) => kbLink(h.id)).join(", ") + "</div>";
     }
     if (s.result) body += '<details class="sres"><summary>What the agent was told</summary><div>' + esc(s.result) + "</div></details>";
     if (canEdit) {
@@ -4778,6 +4982,25 @@ function stepCard(c, s, n, steps, canEdit) {
     cls = failed ? " changed" : "";
     body += '<div class="sm">' + (failed ? "Tried " : "Booked ") + esc(a.slot || (c.actions && c.actions[s.ai] ? actionResult(c.actions[s.ai], c) : "") || "a time") + (failed ? ", not booked" : "") + "</div>";
     if (act) btns.push('<button class="btn sm" data-act="' + act + '">Open the booking</button>');
+  } else if (tool === "reschedule_appointment") {
+    const a = s.args || {};
+    const res = String(s.result || "");
+    const held = /held but/i.test(res);
+    const moved = /^moved their/i.test(res) || held || (!res && s.ok !== false);
+    const from = (/from (.+?) to /i.exec(res) || [])[1] || "";
+    cls = moved ? "" : " changed";
+    body += '<div class="sm">' + (moved ? "Moved " + (from ? "from <b>" + esc(from) + "</b> " : "") + "to <b>" + esc(a.slot || "the new time") + "</b>"
+      : /no upcoming booking/i.test(res) ? "Nothing was booked for this caller, so she passed it to a coordinator instead."
+      : /already have/i.test(res) ? "That was the time they already had." : "Tried " + esc(a.slot || "a new time") + ", not moved") + "</div>";
+    if (held) body += '<div class="sm faint">Held until a coordinator confirms it.</div>';
+    if (act) btns.push('<button class="btn sm" data-act="' + act + '">Open the booking</button>');
+  } else if (tool === "add_case_details") {
+    const a = s.args || {};
+    const saved = /^saved to their file/i.test(String(s.result || "")) || (!s.result && s.ok !== false);
+    if (!saved) cls = " changed";
+    body += (a.details ? '<div class="sq">“' + esc(a.details) + "”</div>" : "") + '<div class="sm">' + (saved ? "Saved to their file" + (a.topic && a.topic !== "other" ? " under " + esc(a.topic) : "") + ". The team gets an alert after the call." : "This didn't save. The tool server said: " + esc(String(s.result || "no reply").slice(0, 160))) + "</div>";
+    const cu = customerForCall(c);
+    btns.push('<button class="btn sm" data-client="' + esc(cu ? cu.id : "call:" + c.id) + '" data-tab="timeline">Open their file</button>');
   } else if (tool === "endCall") {
     const after = (c.transcript || []).slice(s.after + 1);
     const callerAfter = after.some((l) => l[0] === "Caller");
@@ -4789,8 +5012,8 @@ function stepCard(c, s, n, steps, canEdit) {
     if (act) btns.push('<button class="btn sm" data-act="' + act + '">' + esc(actionOpen(c.actions[s.ai])) + "</button>");
   }
   if (s.mid) body += '<div class="sm faint">This happened partway through the reply below.</div>';
-  return '<div class="step' + cls + '" data-step="' + n + '"><div class="sh"><span class="sic" aria-hidden="true">' + (tool === "lookup_knowledge" ? "?" : tool === "escalate_to_human" ? "!" : tool === "endCall" ? "×" : "·") + "</span><b>" + esc(STEP_TITLE[tool] || tool) + "</b>" +
-    '<code class="tn">' + esc(tool) + "</code>" + time + "</div>" + body + (btns.length ? '<div class="row">' + btns.join("") + "</div>" : "") + "</div>";
+  return '<div class="step' + cls + '" data-step="' + n + '"><div class="sh"><span class="sic" aria-hidden="true">' + (tool === "lookup_knowledge" ? "?" : tool === "escalate_to_human" ? "!" : tool === "endCall" ? "×" : tool === "reschedule_appointment" ? "↻" : tool === "add_case_details" ? "+" : "·") + "</span><b>" + esc(STEP_TITLE[tool] || tool) + "</b>" +
+    toolChip(tool) + time + "</div>" + body + (btns.length ? '<div class="row">' + btns.join("") + "</div>" : "") + "</div>";
 }
 
 function flaggedBefore(steps, n) { return steps.slice(0, n).some((p) => p.tool === "escalate_to_human" && String((p.args || {}).urgency || "").toLowerCase() === "high"); }
@@ -4801,7 +5024,9 @@ function stepSummary(steps) {
   if (look.length) parts.push(look.length + " lookup" + (look.length === 1 ? "" : "s") + (miss ? " (" + miss + " with no answer)" : ""));
   const esc2 = steps.filter((s) => s.tool === "escalate_to_human").length;
   if (esc2) parts.push(esc2 + " flagged for a person");
-  const other = steps.length - look.length - esc2;
+  const upd = steps.filter((s) => s.tool === "reschedule_appointment" || s.tool === "add_case_details").length;
+  if (upd) parts.push(upd + " change" + (upd === 1 ? "" : "s") + " to their file");
+  const other = steps.length - look.length - esc2 - upd;
   if (other) parts.push(other + " other");
   return parts.join(" · ");
 }
@@ -4831,6 +5056,9 @@ onClick("[data-steptest]", (el) => {
   setTimeout(() => { const o = $("kbTestOut"); if (o && o.scrollIntoView) o.scrollIntoView({ block: "center", behavior: "smooth" }); }, 60);
 });
 
+onClick("[data-openkb]", (el) => openKbEntry(el.dataset.openkb));
+onClick("[data-toolref]", (el) => openToolRef(el.dataset.toolref));
+
 /* ---------- live call through Vapi web SDK ---------- */
 
 let vapi = null;
@@ -4859,7 +5087,9 @@ function renderCallLog() {
   call.lines.forEach((l) => {
     if (l.kind === "tool") {
       const res = l.result ? String(l.result) : "";
-      html += '<div class="tool' + (l.miss ? " miss" : l.warn ? " warn" : "") + '"><b>' + esc(l.title || l.text) + "</b>" + (l.q ? ' <span class="tq">“' + esc(l.q) + "”</span>" : "") + (l.detail ? " " + esc(l.detail) : "") +
+      html += '<div class="tool' + (l.miss ? " miss" : l.warn ? " warn" : "") + '"><b>' + esc(l.title || l.text) + "</b>" + (l.q ? ' <span class="tq">“' + esc(l.q) + "”</span>" : "") +
+        (l.kb ? ' → <button class="linkbtn kbref" data-openkb="' + esc(l.kb) + '">' + esc(kbName(l.kb)) + "</button>" + (l.extra ? " + " + '<button class="linkbtn kbref" data-openkb="' + esc(l.extra) + '">' + esc(l.extra) + "</button>" : "") : l.detail ? " " + esc(l.detail) : "") +
+        (l.name && l.name !== "tool" ? ' <button class="tn tnlink" data-toolref="' + esc(l.name) + '" title="What this tool does">' + esc(l.name) + "</button>" : "") +
         (res ? '<div class="tres">Told: ' + esc(res.length > 180 ? res.slice(0, 177) + "..." : res) + "</div>" : "") + "</div>";
       return;
     }
@@ -4885,24 +5115,82 @@ function toolLine(name, args, id) {
     l.title = "Looked up"; l.q = q;
     l.detail = r.primary ? "→ " + r.primary.collection + " · " + r.primary.id + (r.extra ? " + " + r.extra.id : "") : "→ no approved answer, so she flags it for a person";
     l.kb = r.primary ? r.primary.id : null;
+    l.extra = r.extra ? r.extra.id : null;
     l.miss = !r.primary;
   } else if (name === "escalate_to_human") {
     l.title = "Flagged for a person"; l.detail = String(args.urgency || "normal") + " urgency" + (args.reason ? ": " + args.reason : ""); l.warn = /high/i.test(String(args.urgency || ""));
   } else if (name === "check_availability") { l.title = "Checked the calendar"; l.detail = args.preference ? "for " + args.preference : ""; }
   else if (name === "book_appointment") { l.title = "Booking"; l.detail = String(args.slot || ""); }
+  else if (name === "reschedule_appointment") { l.title = "Moving their booking"; l.detail = args.slot ? "to " + args.slot : ""; }
+  else if (name === "add_case_details") { l.title = "Adding to their file"; l.detail = args.details ? "“" + args.details + "”" : ""; }
   else if (/^end_?call$/i.test(name)) { l.title = "Ended the call"; l.detail = ""; }
   else { l.title = name; l.detail = ""; }
   l.text = l.title + (l.q ? " “" + l.q + "”" : "") + (l.detail ? " " + l.detail : "");
   return l;
 }
 
-async function startCall() {
+// What the caller lookup hands the agent for a known number, built here from what the dashboard already has,
+// so a test call from the dashboard is greeted the way a returning caller on the phone would be.
+function dayPhrase(iso) {
+  if (!iso) return "recently";
+  const back = -dayDiff(iso);
+  const z = zparts(new Date(iso));
+  if (back <= 0) return "earlier today";
+  if (back === 1) return "yesterday";
+  if (back < 7) return "on " + DAY_NAMES[z.wd];
+  return "on " + MON_NAMES[z.mo] + " " + z.d;
+}
+function realName(x) { const t = String(x || "").trim(); return /[a-z]/i.test(t) && !/^(unknown|n\/?a|none|caller|(web|unknown|live) (call|caller))$/i.test(t) ? t : ""; }
+function usPhone(x) { let d = digits(x); if (d.length === 11 && d.charAt(0) === "1") d = d.slice(1); return d.length === 10 ? d : ""; }
+function clipTo(t, n) { t = String(t || "").replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 3) + "..." : t; }
+function callbackFor(cu) {
+  const calls = callsFor(cu).slice().sort((a, b) => new Date(b.receivedAt || 0) - new Date(a.receivedAt || 0));
+  const last = calls[0] || null;
+  const name = realName(cu.name);
+  const first = name ? name.split(/\s+/)[0] : "";
+  const up = nextAppt(cu);
+  const openEsc = (S.reviews || []).filter((r) => r.status === "open" && calls.some((c) => c.id === r.callId));
+  const ups = caseUpdatesFor(cu).slice().sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 3);
+  const about = last && last.intent && !/not captured|live call|hung up/i.test(last.intent) ? last.intent : "";
+  const lines = ["Name on file: " + (name || "none")];
+  if (last) lines.push("Calls on file: " + calls.length + ". The last one was " + dayPhrase(last.receivedAt) + (about ? ", about: " + clipTo(about, 160) : "") + ".");
+  if (cu.address) lines.push("Property on file: " + clipTo(cu.address, 160) + ".");
+  if (last && last.reason && last.reason.text) lines.push("How the last call ended: " + clipTo(last.reason.text, 220));
+  else if (last && last.summary) lines.push("Last call summary: " + clipTo(last.summary, 260));
+  lines.push(up && up.startsAt ? "Upcoming appointment: " + up.type + " on " + apptLong(up.startsAt) + (up.status === "Action needed" ? " (waiting for a coordinator to confirm)" : "") + "." : "Upcoming appointment: none.");
+  if (openEsc.length) lines.push("Still open with the team: " + openEsc.map((r) => clipTo(r.reason, 120)).join("; ") + ".");
+  if (ups.length) lines.push("Recent changes: " + ups.map((u) => clipTo(u.summary, 140)).join("; ") + ".");
+  // Signed in, this is a real customer: their booking can really move, but the test never texts them.
+  // Signed out, it's a sample customer: the agent gets their file, and the tool server leaves real bookings alone.
+  const sample = !cu.live;
+  const vars = { caller_known: "yes", caller_name: name, caller_first_name: first, customer_phone: sample ? "" : usPhone(cu.phone),
+    last_call_when: last ? dayPhrase(last.receivedAt) : "", last_call_about: about, caller_history: lines.join("\n"),
+    appointment_id: "", appointment_label: up && up.startsAt ? apptLong(up.startsAt) : "", test_call: "yes" };
+  if (sample) vars.sample_data = "yes";
+  if (up && up.live) vars.appointment_id = String(up.id);
+  else if (up && up.startsAt) vars.demo_appointment = JSON.stringify({ label: apptLong(up.startsAt), type: up.type, ref: up.ref || "" });
+  return { customerId: cu.id, name: name || "this customer", hasName: !!name, appt: up || null,
+    overrides: { firstMessage: "Hi, thanks for calling Arrington Roofing. This call may be recorded for quality assurance and training purposes. " + (first ? "Am I speaking with " + first + "?" : "Who am I speaking with?"), variableValues: vars } };
+}
+function startCallback(id) {
+  const cu = clientFor(id);
+  if (!cu) return;
+  if (call && call.active) { toast("Finish the current call first."); $("callDrawer").dataset.open = "true"; return; }
+  closeClient(); closeModal();
+  startCall({ as: callbackFor(cu) });
+}
+onClick("[data-callbackas]", (el) => startCallback(el.dataset.callbackas));
+
+async function startCall(opts) {
+  opts = opts && opts.as ? opts : {};
   const key = (S.settings.vapiPublicKey || "").trim();
   const asst = (S.settings.vapiAssistantId || "").trim();
   if (!key || !asst) { go("settings"); return; }
   if (call && call.active) { $("callDrawer").dataset.open = "true"; return; }
 
-  call = { active: true, startedAt: null, lines: [], partial: {}, tools: [], id: null, timer: null, muted: false };
+  call = { active: true, startedAt: null, lines: [], partial: {}, tools: [], id: null, timer: null, muted: false, as: opts.as || null };
+  $("callAs").textContent = !call.as ? "" : call.as.hasName ? "Calling as " + call.as.name + ", a returning caller. She has their file and should ask if it's them." : "Calling as a returning caller with no name on file. She has their file and should ask who's calling.";
+  $("callAs").classList.toggle("hidden", !call.as);
   $("callErr").textContent = "";
   $("callMute").textContent = "Mute";
   $("callEnd").textContent = "End call";
@@ -4980,7 +5268,8 @@ async function startCall() {
 
   setCallStatus("Connecting");
   try {
-    const c = await vapi.start(asst);
+    // Plain test calls say there's no caller file, so the prompt never sees an empty placeholder.
+    const c = await vapi.start(asst, call.as ? call.as.overrides : { variableValues: { caller_history: "none", test_call: "yes" } });
     if (c && c.id) call.id = c.id;
   } catch (e) {
     $("callErr").textContent = (e && e.message) || "Vapi refused to start the call. Check the public key and assistant ID in Settings.";
@@ -5006,11 +5295,12 @@ function finishCall(failed) {
 
   const callerText = spoken.filter((l) => l.role === "user").map((l) => l.text).join(" ");
   const nameMatch = callerText.match(/(?:[Tt]his is|[Mm]y name is|[Mm]y name's|I'm|[Ii]t's)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/);
+  const as = call.as ? clientFor(call.as.customerId) : null;
   const booked = call.tools.find((t) => t.name === "book_appointment");
   const urgent = call.tools.find((t) => t.name === "escalate_to_human" && /high/i.test(String(t.args.urgency || "")));
   const dur = call.startedAt ? Math.round((Date.now() - call.startedAt) / 1000) : 0;
   const now = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  const who = nameMatch ? nameMatch[1] : "Live caller";
+  const who = as ? as.name : nameMatch ? nameMatch[1] : "Live caller";
 
   const asked = call.tools.filter((t) => t.name === "lookup_knowledge").map((t) => String(t.args.question || ""));
   const missed = asked.filter((q) => q && !kbMatch(q));
@@ -5018,11 +5308,15 @@ function finishCall(failed) {
   let si = -1;
   const toolAt = [];
   call.lines.forEach((l) => { if (l.kind === "tool") toolAt.push({ at: si, line: l }); else si++; });
+  const callId = "v" + Date.now();
+  const changes = as ? applyCallbackLocally(as, call, callId) : [];
   S.calls.unshift({
-    id: "v" + Date.now(),
+    id: callId,
+    customerId: as && !as.transient ? as.id : undefined,
     customer: who,
-    phone: "Web call",
-    intent: "Live call",
+    phone: as && as.phone ? as.phone : "Web call",
+    intent: changes.length ? "Updated their case" : "Live call",
+    structured: as ? { _caller: { name: as.name, phone: digits(as.phone).slice(-10), file: call.as.overrides.variableValues.caller_history } } : {},
     outcome: urgent ? "Escalated" : booked ? "Booked" : "No booking",
     state: urgent ? "urgent" : booked ? "booked" : "needs",
     time: now,
@@ -5031,7 +5325,8 @@ function finishCall(failed) {
     recording: "Recorded in Vapi",
     address: (booked && booked.args.address) || "Captured in transcript",
     summary: "Live call placed from the dashboard. Signed out, this is a quick local copy. Signed in, the full record arrives from Vapi through n8n.",
-    reason: urgent ? { category: "safety_escalation", text: "The agent escalated: " + (urgent.args.reason || "high urgency") + ".", next: "Call back now." }
+    reason: changes.length && !urgent ? { category: "case_update", text: changes.map((u) => u.summary).join(". ") + ".", next: "" }
+      : urgent ? { category: "safety_escalation", text: "The agent escalated: " + (urgent.args.reason || "high urgency") + ".", next: "Call back now." }
       : booked ? { category: "booked", text: "Booked " + (booked.args.slot ? "for " + booked.args.slot : "a time") + " on the call.", next: "" }
       : missed.length ? { category: "unanswered_question", text: "Asked something with no approved answer: \u201c" + missed[0] + "\u201d", next: "Add an answer in Agent training." }
       : dur < 25 ? { category: "hung_up_early", text: "The call ended after " + dur + " seconds.", next: "" }
@@ -5050,13 +5345,45 @@ function finishCall(failed) {
   S.kpis.calls += 1;
   if (booked) S.kpis.booked += 1;
   if (urgent) S.kpis.attention += 1;
-  S.activity.unshift({ kind: urgent ? "warnd" : booked ? "ok" : "info", title: urgent ? "Live call escalated" : booked ? "Inspection booked on a live call" : "Live call completed", sub: who + " · " + fmtTime(dur), when: "just now" });
+  S.activity.unshift({ kind: urgent ? "warnd" : booked ? "ok" : "info", title: urgent ? "Live call escalated" : booked ? "Inspection booked on a live call" : changes.length ? "Returning caller updated their case" : "Live call completed", sub: who + " · " + fmtTime(dur), when: "just now" });
   S.activity = S.activity.slice(0, 5);
   convSel = S.calls[0].id;
   convFilter = "All"; convReason = null;
   save();
   renderAll();
   if (LIVE.on) { setTimeout(() => loadLive(true), 8000); setTimeout(() => loadLive(true), 45000); setTimeout(() => loadLive(true), 120000); }
+}
+
+// Signed out, a test callback can still move the sample booking and add to the sample file, the same way the
+// tool server records it for a real customer. Only changes the tool server confirmed are applied.
+function applyCallbackLocally(cu, cl, callId) {
+  const out = [];
+  const W = SW();
+  const now = new Date().toISOString();
+  const appt = cl.as && cl.as.appt ? (W.appointments || []).find((a) => a.id === cl.as.appt.id) : null;
+  cl.lines.filter((l) => l.kind === "tool").forEach((l) => {
+    const res = String(l.result || "");
+    if (l.name === "reschedule_appointment" && /^moved their/i.test(res) && appt) {
+      // The new time as the tool server confirmed it ("... to Friday, October 16 at 3:30 PM."), not as the agent phrased it.
+      const to = (/ to ([A-Z][a-z]+day, [A-Z][a-z]+ \d{1,2} at \d{1,2}:\d{2} [AP]M)/.exec(res) || [])[1];
+      const iso = parseSlotLabel(to || String(l.args.slot || ""), now);
+      if (!iso) return;
+      const from = apptLong(appt.startsAt);
+      appt.startsAt = iso;
+      appt.note = ((appt.note ? appt.note + " " : "") + "Moved by the agent on a call, from " + from + ".").trim();
+      out.push({ id: "cu-" + uid().slice(0, 8), callId: callId, customerId: cu.id, phone: digits(cu.phone).slice(-10), customerName: cu.name, kind: "reschedule", summary: "Moved " + String(appt.type || "booking").toLowerCase() + " from " + from + " to " + apptLong(iso), details: { from: from, to: apptLong(iso), type: appt.type }, appointmentId: appt.id, textStatus: "not_connected", createdAt: now });
+    }
+    if (l.name === "add_case_details" && /^saved to their file/i.test(res) && l.args.details) {
+      out.push({ id: "cu-" + uid().slice(0, 8), callId: callId, customerId: cu.id, phone: digits(cu.phone).slice(-10), customerName: cu.name, kind: "details", summary: "Added: " + clipTo(l.args.details, 280), details: { details: l.args.details, topic: l.args.topic || null }, textStatus: "not_connected", createdAt: now });
+    }
+  });
+  if (out.length) {
+    W.caseUpdates = (W.caseUpdates || []).concat(out);
+    (W.notifications = W.notifications || []).unshift({ id: "nt-" + uid().slice(0, 8), kind: "case_update", to: cu.owner || "maria", title: cu.name + " updated their case", body: out.map((u) => u.summary).join(". ") + ". This was a test call, so no text went out.", customerId: cu.id, callId: callId, preferClient: true, at: now, read: false });
+    const real = custById(cu.id, W);
+    if (real) (real.history = real.history || []).push({ at: now, text: "Updated their case on a test call: " + out.map((u) => u.summary).join("; ") });
+  }
+  return out;
 }
 
 let pendingCall = null;
@@ -5084,7 +5411,7 @@ function checkPendingCall() {
   toast("Call saved: " + c.customer + ".", "Open it", () => openCall(c.id));
 }
 $("callOpen").addEventListener("click", () => openCall($("callOpen").dataset.id));
-$("callAgent").addEventListener("click", startCall);
+$("callAgent").addEventListener("click", () => startCall());
 $("callEnd").addEventListener("click", () => {
   if (call && call.active && vapi) { try { vapi.stop(); } catch (e) {} setTimeout(() => finishCall(false), 1500); }
   else $("callDrawer").dataset.open = "false";
@@ -5214,6 +5541,8 @@ function buildLive(raw) {
   raw.escalations.forEach((e) => { (escByCall[e.call_id] = escByCall[e.call_id] || []).push(e); });
   const kbById = {};
   raw.knowledge.forEach((k) => { kbById[k.id] = k; });
+  const updByCall = {};
+  (raw.caseUpdates || []).forEach((u) => { (updByCall[u.call_id] = updByCall[u.call_id] || []).push(u); });
   const callName = {};
   const apptByCall = {};
   raw.appointments.forEach((a) => { if (a.call_id && (!apptByCall[a.call_id] || a.status !== "cancelled")) apptByCall[a.call_id] = a; });
@@ -5265,6 +5594,16 @@ function buildLive(raw) {
         const slots = parseOffered(e.result, e.created_at);
         return { t: e.tool, r: slots.length ? slots.length + " times offered" + (a.preference ? " for " + a.preference : "") : "Checked open times", ok: !!slots.length, ref: slots.length ? { kind: "slots", slots: slots } : null };
       }
+      if (e.tool === "reschedule_appointment") {
+        const res = String(e.result || "");
+        const held = /held but/i.test(res);
+        const moved = /^moved their/i.test(res) || held;
+        const u = (updByCall[c.id] || []).find((x) => x.kind === "reschedule");
+        return { t: e.tool, r: held ? "Moved to " + (a.slot || "a new time") + ", held for a coordinator to confirm" : moved ? "Moved to " + (a.slot || "a new time") : /no upcoming booking/i.test(res) ? "Nothing booked for this caller, passed to a coordinator" : "Asked to move to " + (a.slot || "a new time") + ", not moved", ok: moved, ref: moved && u && u.appointment_id ? { kind: "appt", id: u.appointment_id } : null };
+      }
+      if (e.tool === "add_case_details") {
+        return { t: e.tool, r: "Added: " + String(a.details || "").slice(0, 110), ok: /^saved to their file/i.test(String(e.result || "")), ref: { kind: "casefile" } };
+      }
       if (e.tool === "escalate_to_human") {
         const list = escByCall[c.id] || [];
         const es = list.find((x) => x.reason === a.reason) || list[0];
@@ -5290,6 +5629,13 @@ function buildLive(raw) {
       ref: a.ref, bookedBy: a.call_id ? "Agent, on the call" : by ? shortName(by[1].trim()) + ", from the dashboard" : "The team", note: a.note || "", createdAt: a.created_at };
   });
   V.customers = deriveCustomers(V.calls, V.appointments, raw.escalations);
+  // Changes callers made on a call (booked, moved, added details), with whether their confirmation text went out.
+  V.caseUpdates = (raw.caseUpdates || []).map((u) => {
+    const c = V.calls.find((x) => x.id === u.call_id);
+    const cu = c ? V.customers.find((x) => x.id === c.customerId) : V.customers.find((x) => sameCaller(x, { phone: u.phone, name: u.customer_name }));
+    return { id: u.id, live: true, callId: u.call_id, customerId: cu ? cu.id : null, phone: u.phone || "", customerName: u.customer_name || (cu && cu.name) || "",
+      kind: u.kind, summary: u.summary, details: u.details || {}, appointmentId: u.appointment_id, confirmText: u.confirm_text || "", textStatus: u.text_status || "pending", textSentAt: u.text_sent_at, createdAt: u.created_at };
+  });
 
   V.reviews = raw.escalations.filter((e) => e.status === "open").map((e) => ({
     id: e.id, live: true, callId: e.call_id,
@@ -5368,7 +5714,11 @@ function buildLive(raw) {
     { name: "Supabase", note: "Signed in as " + (LIVE.user ? LIVE.user.email : "staff"), state: "Healthy" },
     { name: "Inspection calendar", note: "Shared with the agent · " + V.appointments.filter((a) => a.status !== "Cancelled").length + " bookings", state: "Healthy" },
     { name: "Call library and collections", note: LIVE.upgradeReady ? "Switched on" : "Needs vc-upgrade.sql", state: LIVE.upgradeReady ? "Healthy" : "Not connected" },
-    { name: "SMS and email", note: "Not connected yet · messages are a preview", state: "Not connected" },
+    { name: "Business phone number", note: "Not attached yet · test calls run from the dashboard. Once attached, returning callers are recognized from their number.", state: "Not connected" },
+    { name: "Returning callers and case updates", note: LIVE.callbacksReady ? "Switched on · the agent can move bookings and add to a caller's file" : "Needs vc-callbacks.sql", state: LIVE.callbacksReady ? "Healthy" : "Not connected" },
+    { name: "Confirmation texts", note: "Not connected yet · each change saves the text it would send and why it didn't go out", state: "Not connected" },
+    { name: "Team alerts", note: LIVE.callbacksReady ? "Bell and desktop alerts · phone alerts once Pushover is added in n8n" : "Needs vc-callbacks.sql", state: LIVE.callbacksReady ? "Healthy" : "Not connected" },
+    { name: "Email", note: "Not connected yet · messages are a preview", state: "Not connected" },
     { name: "CRM", note: "Not connected yet · stages are read-only", state: "Not connected" }
   ];
   const ba = V.appointments.filter((a) => a.status === "Confirmed" && a.startsAt && new Date(a.startsAt).getTime() > Date.now()).sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))[0];
@@ -5382,7 +5732,12 @@ function buildLive(raw) {
   V.library = raw.library || [];
   V.suggestions = raw.suggestions || [];
   const notes = [];
-  raw.escalations.filter((e) => e.status === "open").forEach((e) => notes.push({ id: "esc-" + e.id, kind: "escalation", title: (e.urgency === "high" ? "Urgent: " : "Escalation: ") + (callName[e.call_id] || "Caller"), body: e.reason, at: e.created_at, needsAck: e.urgency === "high", escId: e.id, callId: e.call_id }));
+  raw.escalations.filter((e) => e.status === "open").forEach((e) => notes.push({ id: "esc-" + e.id, kind: "escalation", title: (e.urgency === "high" ? "Urgent: " : "Escalation: ") + (callName[e.call_id] || "Caller"), body: e.reason, at: e.created_at, needsAck: e.urgency === "high", escId: e.id, callId: e.call_id, alert: e.urgency === "high", src: "esc" }));
+  // Team alerts written after each call that changed a client's file.
+  (raw.notifications || []).slice(0, 100).forEach((n) => {
+    const c = V.calls.find((x) => x.id === n.call_id);
+    notes.push({ id: "vn-" + n.id, kind: n.kind || "case_update", title: n.title, body: n.body || "", at: n.created_at, callId: n.call_id, customerId: c ? c.customerId : null, preferClient: !!c, alert: true, src: "vn" });
+  });
   V.appointments.filter((a) => a.status === "Action needed").forEach((a) => notes.push({ id: "appt-" + a.id, kind: "booking", title: "Booking needs confirming", body: a.customerName + (a.startsAt ? " · " + apptWhen(a.startsAt) : ""), at: a.createdAt, apptId: a.id }));
   const pend = V.suggestions.filter((s) => s.status === "pending");
   if (pend.length) notes.push({ id: "sug-" + pend.length + "-" + (pend[pend.length - 1].created_at || ""), kind: "library", title: pend.length + " suggestion" + (pend.length === 1 ? "" : "s") + " waiting for sign-off", body: "Drafted in the call library.", at: pend[pend.length - 1].created_at, libraryId: pend[0].library_id });
@@ -5417,7 +5772,9 @@ async function loadLive(quiet) {
     sb.from("vc_agent_versions").select("*").order("version", { ascending: false }).limit(50),
     sb.from("vc_collections").select("*").order("sort", { ascending: true }),
     sb.from("vc_library").select("*").order("created_at", { ascending: false }).limit(200),
-    sb.from("vc_suggestions").select("*").order("created_at", { ascending: true }).limit(1000)
+    sb.from("vc_suggestions").select("*").order("created_at", { ascending: true }).limit(1000),
+    sb.from("vc_case_updates").select("*").order("created_at", { ascending: false }).limit(500),
+    sb.from("vc_notifications").select("*").order("created_at", { ascending: false }).limit(200)
   ]);
   LIVE.trainingReady = !tr.slice(0, 3).some((r) => r.error);
   LIVE.upgradeReady = !tr[3].error;
@@ -5425,8 +5782,12 @@ async function loadLive(quiet) {
   raw.collections = tr[3].error ? [] : (tr[3].data || []);
   raw.library = tr[4].error ? [] : (tr[4].data || []);
   raw.suggestions = tr[5].error ? [] : (tr[5].data || []);
+  // Returning callers (vc-callbacks.sql) are optional too.
+  LIVE.callbacksReady = !tr[6].error && !tr[7].error;
+  raw.caseUpdates = tr[6].error ? [] : (tr[6].data || []);
+  raw.notifications = tr[7].error ? [] : (tr[7].data || []);
   const json = JSON.stringify(raw);
-  const sig = json.length + ":" + hashStr(json) + ":" + LIVE.upgradeReady + LIVE.trainingReady;
+  const sig = json.length + ":" + hashStr(json) + ":" + LIVE.upgradeReady + LIVE.trainingReady + LIVE.callbacksReady;
   const unchanged = LIVE.on && quiet && sig === LIVE.sig;
   LIVE.raw = raw;
   LIVE.sig = sig;
@@ -5436,6 +5797,7 @@ async function loadLive(quiet) {
   const keepSel = convSel;
   S = buildLive(raw);
   convSel = keepSel;
+  deskAlert(S.liveNotes, { esc: true, vn: !!LIVE.callbacksReady });
   if (quiet && isTyping()) { LIVE.pendingRender = true; renderCounts(); renderBell(); updateLiveChrome(); checkPendingCall(); return true; }
   LIVE.pendingRender = false;
   renderAll();
@@ -5483,6 +5845,7 @@ function startLiveSync() {
   const tables = ["vc_calls", "vc_escalations", "vc_appointments", "vc_missions", "vc_tool_events", "vc_knowledge", "vc_rules", "vc_feedback", "vc_agent_versions"];
   // Only listen to the upgrade tables once they exist, so a missing table can't break the others.
   if (LIVE.upgradeReady) tables.push("vc_collections", "vc_library", "vc_suggestions");
+  if (LIVE.callbacksReady) tables.push("vc_case_updates", "vc_notifications");
   tables.forEach((t) => { liveChannel.on("postgres_changes", { event: "*", schema: "public", table: t }, bump); });
   liveChannel.subscribe();
   clearInterval(livePoll);
@@ -5495,6 +5858,7 @@ function stopLive() {
   stopPlayback();
   if (LIVE.on && DEMO) { DEMO.settings = S.settings; S = DEMO; }
   LIVE.on = false; LIVE.user = null; DEMO = null;
+  resetDeskAlerts();
   convSel = null; libSel = null;
   renderAll();
   updateLiveChrome();
@@ -6061,14 +6425,17 @@ $("modePill").addEventListener("click", async () => {
 
 S = loadState();
 const refreshed = !!S.refreshedDay;
+const refreshedCallbacks = !!S.refreshedCallbacks;
 delete S.refreshedDay;
+delete S.refreshedCallbacks;
 save();
 tick();
 runScheduler(true);
 renderAll();
 updateLiveChrome();
 bootLive();
-if (refreshed) setTimeout(() => toast("New day, so the demo calls, bookings and messages were refreshed. Your knowledge, rules, playbooks and settings are kept."), 400);
+if (refreshedCallbacks) setTimeout(() => toast("The demo now has a returning caller: Brian called back and moved his inspection. Demo calls and bookings were refreshed. Your knowledge, rules and settings are kept."), 400);
+else if (refreshed) setTimeout(() => toast("New day, so the demo calls, bookings and messages were refreshed. Your knowledge, rules, playbooks and settings are kept."), 400);
 // Keep countdowns, reminders and the clock current without disturbing anything being typed
 setInterval(() => {
   tick();
