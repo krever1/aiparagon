@@ -15455,7 +15455,7 @@ async function renderAds(){
     <section class="block"><h2>Winner ads <span class="count" id="adsShownCount">${ads.length}</span></h2>
       ${ads.length?`<div id="advChips" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px"></div>`:""}
       ${adsErr || (ads.length ? `<div class="adgrid" id="adsGrid"></div>`
-      : `<div class="empty"><div class="big">No ad records yet</div>Winner ads (6+ weeks running) and swipe-file entries appear here after the next Ad Strategist run.</div>`)}
+      : `<div class="empty"><div class="big">No ad records yet</div>Winner ads (6+ weeks running) and uploaded ads appear here after the next Ad Strategist run.</div>`)}
     </section>`;
   window._winnerAds = ads;
   paintWinnerAds();
@@ -17800,7 +17800,7 @@ function paintWinnerAds(keepChips){
         <select style="font:inherit;font-size:.8rem;padding:6px 8px;border:1px solid var(--line);border-radius:8px" onchange="state.adsSource=this.value;paintWinnerAds()">
           <option value="">All sources</option>
           <option value="library_pull" ${state.adsSource==="library_pull"?"selected":""}>Library pull</option>
-          <option value="swipe_file" ${state.adsSource==="swipe_file"?"selected":""}>Swipe file</option>
+          <option value="swipe_file" ${state.adsSource==="swipe_file"?"selected":""}>Uploads</option>
         </select>
         <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--muted);cursor:pointer;white-space:nowrap"><input type="checkbox" ${state.adsActiveOnly?"checked":""} onchange="toggleAdsActive()" style="accent-color:var(--gold)"> Active only</label>
       </span>`;
@@ -21268,11 +21268,14 @@ async function apSubmitAdUpload(){
     AP_UPLOADS=null;
     if(!saved.length){return;}
     toast(saved.length+' ad'+(saved.length===1?'':'s')+' added to Ad Strategist');
-    setTimeout(function(){
+    const done=function(){
       apCloseAdUpload();
       apGo('e3ads');
       setTimeout(function(){const r=saved[saved.length-1];if(r&&r.id)apAdPopup(r);},900);
-    },900);
+    };
+    /* v111: when the advertiser is not followed yet, ask first */
+    if(typeof v111FollowAsk==='function'&&v111FollowAsk(adv,link,saved.length,done))return;
+    setTimeout(done,900);
   }catch(e){
     apUpLog('Stopped: '+esc(e.message||String(e)),'err');
   }finally{
@@ -22043,7 +22046,7 @@ const AP_SUITE=[
    runs:'On demand'},
   {agent:'ad_strategist',n:2,name:'Ad Strategist',kind:'Agent 2 \u00b7 Paid ads',view:'e3ads',
    role:'Finds the competitor ads that have run long enough to be working, and breaks down why they work.',
-   reads:'Meta Ad Library, the swipe file, ads you upload here, and the intel brief',
+   reads:'Meta Ad Library, the ads you upload, the Notion swipe file and the intel brief',
    makes:'The ads brief: hook patterns, offers, copy formula, pain points, angle',
    feeds:'Content Generation Agent',
    runs:'On demand, or from your uploads in Uploads & runs'},
@@ -23519,7 +23522,7 @@ function apCfPaid(h){
     '<div class="ap-cf-ev"><b>Ad duration · observed</b><span>A sign of continued spend, not proof of return.</span></div>'+
     '<div class="ap-cf-ev"><b>Hook effectiveness · inferred</b><span>A hypothesis until your own campaign data tests it.</span></div>'+
     '<div class="ap-cf-ev"><b>Your performance · not connected</b><span>Once connected, qualified leads and booked calls rank the hooks.</span></div>'+
-    '<div class="ap-cf-call"><b>Swiped ads are reference only.</b> Generated copy stays original and tied to your own material.</div>'+
+    '<div class="ap-cf-call"><b>Collected ads are reference only.</b> Generated copy stays original and tied to your own material.</div>'+
     '<button class="rd-btn sm" onclick="apGo(\'e3ads\')">Open the Ad Strategist →</button>'+
   '</aside></div>';
 }
@@ -31282,7 +31285,7 @@ async function v96FollowLoad(force){
   if(V96F.p&&!force)return V96F.p;
   V96F.p=(async function(){
     let rows=[];V96F.err='';
-    try{rows=(await apSb('competitors?select=id,name,handle_linkedin,handle_x,meta_page_id,website,category,status,source,added_by,created_at,follow_kind,notes&order=created_at.asc&limit=500'))||[];}
+    try{rows=(await apSb('competitors?select=id,name,handle_linkedin,handle_x,meta_page_id,website,category,status,source,added_by,created_at,follow_kind,follow_for,notes&order=created_at.asc&limit=500'))||[];}
     catch(e){V96F.err=e.message||String(e);rows=V96F.rows||[];}
     let S={};try{S=await apAiSettingsLoad(true);}catch(e){S={};}
     V96F.rows=rows;V96F.terms=v96Terms(S);V96F.ind=v96Json(S.ad_industries,{})||{};V96F.t=Date.now();V96F.p=null;
@@ -36754,7 +36757,7 @@ Object.defineProperty(E9_INFO,'ocap',{configurable:true,enumerable:true,get:func
   '<p>With a weekly run, every Monday morning for example, each brief holds the best posts from that week’s run.</p>'};}});
 Object.defineProperty(E9_INFO,'adpick',{configurable:true,enumerable:true,get:function(){const L=v111Lim();return {t:'How ads are picked for the brief',h:
   '<p>The Ad Strategist does not read every ad it pulls. It builds a short list for each brief:</p>'+
-  '<ul><li><b>Proven or emerging only.</b> Proven means it ran 6 weeks or more, or your team added it to the swipe file. Emerging means it is still running and at least 14 days in. Ads that are neither, such as ones under two weeks old, are not considered.</li>'+
+  '<ul><li><b>Proven or emerging only.</b> Proven means it ran 6 weeks or more, or your team uploaded it. Emerging means it is still running and at least 14 days in. Ads that are neither, such as ones under two weeks old, are not considered.</li>'+
   '<li><b>Each advertiser’s best first:</b> still running before stopped, then by score, which blends how long an ad ran with how recently it was seen. Ads last seen more than 45 days ago drop out, unless the advertiser has nothing newer.</li>'+
   '<li><b>Advertisers take turns:</b> each one’s best ad, then each one’s second best, and so on, at most '+L.per+' per advertiser and '+L.behind+' in all. The first '+L.top+' are the top ads.</li></ul>'+
   '<p>The limits are set in Settings, under Agent runs. Each brief lists every ad behind it, with its rule above the list, for example “24 curated · 7 advertisers · best of each advertiser first, running before stopped”. Briefs built from your uploads use every ad your team picked.</p>'};}});
@@ -37169,7 +37172,7 @@ Object.assign(E9_INFO,{
   folint:{t:'What the Intel Tracker reads',h:'<p>Each run reads new posts from the people and companies below, and searches LinkedIn and the web for your topics, technologies and industries, up to 12 searches in total.</p><p>What it finds fills the Posts tab, the replies to approve and the organic brief. Changes apply from the next run.</p><p>To follow a person or company directly, add them with their LinkedIn link.</p>'},
   handoff:{t:'What the handoff does',h:'<p>For thought leadership, newsletters and email these themes steer the topic and the opening of a draft. They are not a template to copy.</p>'},
   evid:{t:'What the evidence shows',h:'<ul><li><b>Posts read:</b> observed. Each one is linked with its author, platform and date in the Intel Tracker.</li><li><b>High value:</b> inferred. The agent scores each post for ad context. A judgment, not a measurement.</li><li><b>Engagement:</b> observed. Likes and comments are kept apart from inferred resonance.</li><li><b>Filtered out:</b> off-topic, or too little engagement to count.</li></ul><p>Each Intel Tracker run writes a dated brief. Shifts in market language between briefs are flagged.</p>'},
-  evidad:{t:'What this brief does and does not show',h:'<ul><li><b>Ad duration:</b> observed. A sign of continued spend, not proof of return.</li><li><b>Hook effectiveness:</b> inferred. A hypothesis until your own campaign data tests it.</li><li><b>Your performance:</b> not connected yet. Once connected, qualified leads and booked calls rank the hooks.</li></ul><p>Swiped advertisements are reference only. Generated copy stays original and tied to your own material.</p>'},
+  evidad:{t:'What this brief does and does not show',h:'<ul><li><b>Ad duration:</b> observed. A sign of continued spend, not proof of return.</li><li><b>Hook effectiveness:</b> inferred. A hypothesis until your own campaign data tests it.</li><li><b>Your performance:</b> not connected yet. Once connected, qualified leads and booked calls rank the hooks.</li></ul><p>Collected ads are reference only. Generated copy stays original and tied to your own material.</p>'},
   sigq:{t:'Signal quality',h:'<p>Hooks borrowed from other industries get a portability check before reuse.</p><p>Results claims, testimonials and performance framing are held for compliance review (SEC Marketing Rule, FINRA 2210).</p>'},
   joined:{t:'How the combined brief is used',h:'<p>Your facts and approved claims override every outside pattern. Once live results exist, they become the strongest signal.</p><p>Review the brief, then the draft, then mark it ready.</p>'},
   top5:{t:'How the top 5 are picked',h:'<p>Ranked by ad score, then days running. At most two per advertiser, and each advertisement is counted once.</p>'},
@@ -43294,7 +43297,7 @@ async function nwIntelOpenId(id){
    long the ad ran, 35% still running, 10% repeats, 10% reach shown.
    =================================================================== */
 const V109={pool:null,t:0,p:null,err:'',top:0,st:'all',adv:'',ind:'',run:'',cap:'',q:'',sort:'score',dir:-1,more:20,brief:'',cands:{},candP:{},openId:''};
-const NW_ADS_TABS=[['top','Top','layers'],['all','All ads','menu'],['swipe','Swipe file','image'],['takeaways','Takeaways','bulb'],['library','Run library','history']];
+const NW_ADS_TABS=[['top','Top','layers'],['all','All ads','menu'],['swipe','Uploads','upload'],['takeaways','Takeaways','bulb'],['library','Run library','history']];
 const NW_AD_FX=[['run','How long it ran',45,'Full marks at 12 weeks or more'],
   ['live','Still running',35,'Full marks if it was seen in the last 7 days, falling to zero after 60 days unseen'],
   ['rep','Repeats',10,'The same copy in two or more ads from the same pull'],
@@ -43471,7 +43474,7 @@ function nwAdsHtml(tab){
 /* ---------- Top ---------- */
 function nwAdsTopHtml(){
   const n=nwAdTopN(),top=nwAdTop(n);
-  if(!top.length)return nwEmpty('megaphone','No scored ads yet','The agent scores the ads it pulls from the Ad Library. Run it, or upload ads to the swipe file.','<button type="button" class="nw-btn nw-btn-sm" onclick="nwAdRunOpen()">Run now</button>');
+  if(!top.length)return nwEmpty('megaphone','No scored ads yet','The agent scores the ads it pulls from the Ad Library. Run it, or upload ads.','<button type="button" class="nw-btn nw-btn-sm" onclick="nwAdRunOpen()">Run now</button>');
   return '<div class="nw-toolbar"><div class="nw-seg" role="group" aria-label="How many to show">'+[5,8,10].map(function(k){return '<button type="button" aria-pressed="'+(n===k)+'" onclick="V109.top='+k+';nwRepaint()">Top '+k+'</button>';}).join('')+'</div>'+
       '<span class="nw-grow"></span><button type="button" class="nw-link" onclick="nwAdScoreHow()">'+nwIc('info',16)+'How the score works</button></div>'+
     '<div class="nw-ad-grid">'+top.map(nwAdCard).join('')+'</div>'+
@@ -43530,7 +43533,7 @@ function nwAdsAllHtml(){
         return '<tr class="is-click" data-id="'+esc(a.id)+'" onclick="nwAdOpen('+esc(nwJs(a.id))+')">'+
           '<td><b class="nw-cell-t">'+esc(nwClip(e9Clean(a.title),90))+'</b><span class="nw-cell-sub">'+esc(a.adv+(ind?' · '+ind:''))+'</span>'+
             (why?'<span class="nw-cell-why'+(c.st==='in'?' is-in':'')+'" title="'+esc(why)+'">'+esc(why)+'</span>':'')+'</td>'+
-          '<td>'+(a.up?nwTag('Uploaded',true):a.sw?nwTag('Swipe file',true):nwTag('Ad Library'))+'</td>'+
+          '<td>'+(a.up?nwTag('Uploaded',true):a.sw?nwTag('From Notion',true):nwTag('Ad Library'))+'</td>'+
           '<td class="nw-r">'+(a.days!=null&&!a.up?a.days:'<span class="nw-faint">None yet</span>')+'</td>'+
           '<td>'+(a.up?'<span class="nw-faint">Uploaded</span>':nwAdLive(a))+'</td>'+
           '<td class="nw-r">'+(a.score!=null?'<b class="nw-num">'+a.score+'</b>':'<span class="nw-faint">'+(a.pend?'Not read':'None')+'</span>')+'</td>'+
@@ -43682,7 +43685,7 @@ function nwAdOpen(id){
   const meta=[['Advertiser',a.adv],['Industry',ind||'Not set'],
     ['Funnel stage',({tof:'Top of funnel',mof:'Middle of funnel',bof:'Bottom of funnel'})[String(a.funnel_stage||'').toLowerCase()]||''],
     ['Seen',a.first_seen?nwDay(a.first_seen)+(a.last_seen?' to '+nwDay(a.last_seen):''):''],['Found in',nwAdRunLabel(a.run_id)],
-    ['Source',a.up?'Uploaded by '+String(a.uploaded_by).split('@')[0]:a.sw?'Swipe file':'Meta Ad Library']].filter(function(x){return x[1];});
+    ['Source',a.up?'Uploaded by '+String(a.uploaded_by).split('@')[0]:a.sw?'The Notion swipe file':'Meta Ad Library']].filter(function(x){return x[1];});
   nwDrawer('nwAdD','<div class="nw-d-head"><div class="nw-d-titles"><div class="nw-d-eyebrow">'+esc(a.adv+(ind?' · '+ind:''))+'</div><h2 class="nw-d-title">'+esc(nwClip(e9Clean(a.title),140))+'</h2>'+
       '<div class="nw-pc-meta">'+(a.up?nwTag('Uploaded',true):a.act?nwPill('good','Still running'):nwPill('','Stopped'))+(a.days!=null?'<span class="nw-tag">'+esc(nwPlural(a.days,'day'))+'</span>':'')+(a.pend?nwPill('warn','Not read yet'):'')+'</div></div>'+
       '<button type="button" class="nw-icon-btn nw-d-close" onclick="nwDrawerClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
@@ -43718,7 +43721,7 @@ function nwAdRunOpen(){
     '<div class="nw-pick-g">'+
       '<div class="nw-pick-c"><b>'+nwIc('megaphone',17)+'Fresh ads from the Ad Library</b><p class="nw-muted nw-small">Pulls the newest long-running ads from the advertisers it follows, then writes a new ads brief. Takes a few minutes.</p>'+
         '<button type="button" class="nw-btn nw-btn-primary nw-btn-sm" id="nwAdRunGo" onclick="nwAdRunStart()">Start a run</button></div>'+
-      '<div class="nw-pick-c"><b>'+nwIc('upload',17)+'From the ads you uploaded</b><p class="nw-muted nw-small">Builds an ads brief from the screenshots your team added to the swipe file.</p>'+
+      '<div class="nw-pick-c"><b>'+nwIc('upload',17)+'From the ads you uploaded</b><p class="nw-muted nw-small">Builds an ads brief from the screenshots your team uploaded.</p>'+
         '<button type="button" class="nw-btn nw-btn-sm" onclick="nwModalClose();apOpenBuildBrief()">Pick ads</button></div></div>'+
     '<p class="nw-faint nw-small" id="nwAdRunMsg">'+(S.ads.after_intel!==false?'It also runs after each Intel Tracker run.':'')+'</p>'+
     '<div class="nw-m-foot"><span class="nw-grow"></span><button type="button" class="nw-btn" onclick="nwModalClose()">Close</button></div>');
@@ -46022,6 +46025,1774 @@ NW_PAGES['e3.testing']=function(m,again){
   }
 })();
 
+</script>
+
+<style id="v111css">
+/* v111 · brief edits, brief layout, Ad Strategist following, insights by category */
+.v111-ed{display:grid;gap:14px}
+.v111-edhead{gap:12px}
+.v111-edhead-t{display:flex;gap:12px;align-items:flex-start}
+.v111-edhead-t b{font-size:15.5px;font-weight:600}
+.v111-edhead-t p{margin:3px 0 0;max-width:72ch}
+.v111-edhead textarea{min-height:58px}
+.v111-err{margin:0;padding:9px 12px;border-radius:var(--nw-r-md);background:var(--nw-bad-soft);color:var(--nw-ink);font-size:13.5px}
+.v111-es{gap:10px}
+.v111-es .v111-sub{margin-top:4px}
+.v111-its{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.v111-it{display:flex;align-items:flex-start;gap:12px;padding:11px 12px;border-radius:var(--nw-r-md);background:var(--nw-sunk)}
+.v111-it-b{flex:1;min-width:0;display:grid;gap:3px;font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+.v111-it-b b{font-weight:600}
+.v111-it-b span{color:var(--nw-ink-2)}
+.v111-it-b small{font-size:12.5px}
+.v111-it-a{display:flex;flex-wrap:wrap;gap:4px;flex:none}
+.v111-it.is-flag{background:var(--nw-warn-soft);box-shadow:inset 3px 0 0 var(--nw-warn)}
+.v111-flag{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--nw-ink)}
+.v111-it.is-open{display:block;background:var(--nw-panel);border:1px solid var(--nw-line-2)}
+.v111-form{display:grid;gap:10px}
+.v111-form .nw-card-foot{margin-top:2px}
+.v111-edside{gap:8px}
+.v111-edn{min-width:70px}
+.v111-edmeta{display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px;color:var(--nw-ink-2)}
+.v111-edmeta b{color:var(--nw-ink);font-weight:600}
+/* the layout editor */
+.v111-st .v111-st-r{display:flex;flex-direction:row;align-items:flex-start;gap:14px}
+.v111-st-r.is-off{background:var(--nw-sunk)}
+.v111-st-r.is-off .v111-st-m b,.v111-st-r.is-off .v111-st-m p{opacity:.6}
+.v111-st-m{flex:1;min-width:0}
+.v111-st-o{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:10px}
+.v111-st-opt{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--nw-ink-2)}
+.v111-st-opt .nw-input{width:auto;min-width:96px;padding:6px 30px 6px 10px;font-size:13.5px}
+.v111-st-a{display:flex;align-items:center;gap:4px;flex:none}
+.v111-mv{width:34px;height:34px}
+.v111-mv:disabled{opacity:.35;cursor:default}
+.v111-mv-sp{display:inline-block;width:72px;height:34px}
+.v111-lock{white-space:nowrap}
+.v111-sw{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 8px;border-radius:999px;border:1px solid var(--nw-line-2);background:var(--nw-panel);font:600 13px/1 var(--nw-body);color:var(--nw-ink);cursor:pointer;min-width:96px}
+.v111-sw-k{position:relative;width:30px;height:18px;border-radius:999px;background:var(--nw-line-2);transition:background .15s}
+.v111-sw-k::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--nw-panel);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.v111-sw[aria-checked="true"] .v111-sw-k{background:var(--nw-action)}
+.v111-sw[aria-checked="true"] .v111-sw-k::after{transform:translateX(12px)}
+.v111-sw:focus-visible,.v111-mv:focus-visible{outline:2px solid var(--nw-accent);outline-offset:2px}
+.v111-st-add{gap:10px}
+.v111-st-addrow{display:flex;gap:8px;flex-wrap:wrap}
+.v111-st-addrow .nw-input{flex:1;min-width:220px;max-width:420px}
+.v111-st-foot{margin-top:14px}
+/* sections counted from the brief's own posts and ads */
+.v111-x{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.v111-x-b{display:grid;gap:2px;width:100%;padding:10px 12px;border-radius:var(--nw-r-md);border:0;background:var(--nw-sunk);text-align:left;font:inherit;color:inherit}
+button.v111-x-b{cursor:pointer}
+button.v111-x-b:hover{background:var(--nw-line)}
+.v111-x-b b{font-weight:600;font-size:14px}
+.v111-x-b small{font-size:12.5px;color:var(--nw-ink-2)}
+@media (max-width:760px){
+  .v111-it{flex-direction:column}
+  .v111-it-a{align-self:flex-end}
+  .v111-st .v111-st-r{flex-wrap:wrap}
+  .v111-st-a{width:100%;justify-content:flex-end}
+  .v111-mv-sp{display:none}
+  .v111-edside{width:100%}
+}
+/* categories and what the briefs found, on Marketing Generation and Content Transformation */
+#nwMgTypeW,#nwCtTypeW,#nwCtAngleW,#nwMgFunnelW{display:none!important}
+.v111-cats{display:grid;gap:8px;margin-top:14px}
+.v111-cats .nw-chips{display:flex;flex-wrap:wrap;gap:6px}
+.v111-cat[aria-checked="true"]{background:var(--nw-accent-soft);border-color:var(--nw-accent);color:var(--nw-ink);font-weight:600}
+.v111-cat .nw-cnt{margin-left:2px;opacity:.75}
+.v111-cat-d{margin:0}
+.v111-ins{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-top:10px}
+.v111-in{display:grid;gap:6px;align-content:start;padding:14px;border-radius:var(--nw-r-md);border:1.5px solid var(--nw-line);background:var(--nw-panel)}
+.v111-in.is-on{border-color:var(--nw-accent);background:var(--nw-accent-soft)}
+.v111-in-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.v111-in-t{font-size:14.5px;font-weight:600;line-height:1.4;overflow-wrap:anywhere}
+.v111-in p{margin:0;line-height:1.45}
+.v111-in-a{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:4px}
+.v111-in-src{margin-left:auto;white-space:nowrap}
+.v111-ins-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:12px}
+.v111-ins-empty{margin-top:10px}
+.v111-ins-for{margin-left:auto}
+/* the Ad Strategist: Following, industries */
+.v111-fol{display:grid;gap:14px;margin-top:14px}
+.v111-accs{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.v111-acc{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:10px 12px;border-radius:var(--nw-r-md);background:var(--nw-sunk)}
+.v111-acc-m{flex:1;min-width:200px;display:grid;gap:4px}
+.v111-acc-m b{font-weight:600;font-size:14.5px}
+.v111-acc-t{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.v111-pageadd{display:flex;gap:6px;flex-wrap:wrap}
+.v111-pageadd .nw-input{width:240px;max-width:100%;padding:7px 10px}
+.v111-addacc{display:grid;gap:10px;padding:14px;border-radius:var(--nw-r-md);border:1px solid var(--nw-line-2);background:var(--nw-panel)}
+.v111-nopage{margin-top:4px}
+.v111-nopage .v111-accs{margin-top:8px}
+.v111-fchips{margin-bottom:6px}
+.v111-inds{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px}
+.v111-inds li{display:grid;gap:2px;padding:9px 12px;border-radius:var(--nw-r-md);background:var(--nw-sunk);font-size:14px}
+.v111-inds li b{font-weight:600}
+.v111-inds li small{font-size:12px}
+.v111-indact{display:flex;gap:6px;flex-wrap:wrap}
+.v111-sug{border-color:var(--nw-accent)!important;background:var(--nw-accent-soft)!important}
+.v111-sugt{display:block;grid-column:2;font-size:11.5px;color:var(--nw-accent-text);margin-top:2px}
+/* follow for: ads only, or ads and posts */
+.v111-segs{display:flex;flex-wrap:wrap;gap:8px}
+.v111-for button{padding:5px 11px;font-size:13px}
+.v111-fafor{margin:10px 0 0}
+.v111-adsonly p.v96-muted{margin:6px 0 2px}
+</style>
+<script id="v111js">
+/* ===================================================================
+   v111 · Engine 3 feedback round
+   1. Briefs: Request changes edits the brief itself. Change or remove a
+      section, a finding or a post behind it. The edited brief is what
+      drafts read, the agent's own version is kept to put back, and the
+      brief goes back for review
+   2. Briefs: the Structure tab sets which sections every brief shows,
+      in what order and how much of each, plus sections counted from its
+      own posts and ads (ai_settings.brief_structure, for the team)
+   3. Ad Strategist: a Following tab, industries suggested by an agent,
+      an offer to follow the advertiser after an upload, and Swipe file
+      is now Uploads
+   4. Marketing Generation and Content Transformation: categories for
+      what you make, with what the briefs found for each to use, drop or
+      keep for later. The picks ride in the request
+   =================================================================== */
+const V111={ed:null,adRev:null,adRevP:null,st:null,rk:null,paint:null,ins:{},insP:null,fol:null};
+Object.assign(NW_P,{
+  undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  up:'<path d="m18 15-6-6-6 6"/>',
+  down:'<path d="m6 9 6 6 6-6"/>',
+  bookmark:'<path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>'
+});
+function v111J(v){if(v&&typeof v==='object')return v;if(typeof v==='string'&&v){try{return JSON.parse(v);}catch(e){return null;}}return null;}
+/* write a value back the way it was stored: some briefs keep their JSON as a string */
+function v111Enc(like,v){return typeof like==='string'?JSON.stringify(v):v;}
+function v111Copy(v){return v==null?v:JSON.parse(JSON.stringify(v));}
+function v111One(s){return String(s==null?'':s).replace(/\s+/g,' ').replace(/\*\*/g,'').trim();}
+function v111Me(){return typeof apCfMe==='function'?apCfMe():'dashboard';}
+function v111Who(e){return String(e||'').split('@')[0];}
+
+/* ---------- the sections of each brief ---------- */
+const V111_SECS={
+  org:[
+    {k:'rec',t:'Record and scope',d:'When it was published, the period the run covers, the agent, who it is for and whether it is approved.',lock:'always'},
+    {k:'five',id:'nwBrFive',t:'Five things working',d:'The strongest points, each with what the agent saw and the posts behind it.',top:1,
+      opt:[['n','How many',[['3','3'],['4','4'],['5','5']],'5'],['why','Detail',[['full','With what it saw'],['short','Points only']],'full']]},
+    {k:'short',id:'nwBrShort',t:'The short version',d:'What changed in the conversation, in a few lines.'},
+    {k:'shift',id:'nwBrShift',t:'What changed',d:'Shifts in how the market talks, each with its evidence and how you could use it.',opt:[['n','How many',[['3','3'],['6','6'],['all','All']],'6']]},
+    {k:'dev',id:'nwBrDev',t:'Notable developments',d:'Thought leadership, product news and offers worth a closer look.',opt:[['n','Per group',[['1','1'],['2','2'],['all','All']],'2']]},
+    {k:'themes',id:'nwBrThemes',t:'Themes and topic watch',d:'Posts per theme, and the topics you watch, such as security and governance.',opt:[['tw','Topic watch',[['on','Shown'],['off','Hidden']],'on']]},
+    {k:'hand',id:'nwBrHand',t:'Content handoff',d:'How the signals feed posts, newsletters and emails, and what stays yours.'},
+    {k:'ev',id:'nwBrEv',t:'Post evidence',d:'The posts behind the brief, with engagement and why each one matters.',lock:'always',opt:[['n','Show',[['10','10'],['all','All']],'10']]},
+    {k:'review',id:'nwBrReview',t:'Review',d:'Three checks, then approve. Approved briefs shape every draft.',lock:'always'}
+  ],
+  ads:[
+    {k:'rec',t:'Record and scope',d:'When it was published, the ads it read, the agent and whether it is approved.',lock:'always'},
+    {k:'five',id:'nwBrFive',t:'Five things working',d:'The strongest hooks and offers, each with the ads behind it.',top:1,
+      opt:[['n','How many',[['3','3'],['4','4'],['5','5']],'5'],['why','Detail',[['full','With what it saw'],['short','Points only']],'full']]},
+    {k:'short',id:'nwBrShort',t:'One-minute read',d:'The angle that sets you apart from what everyone else is running.'},
+    {k:'arch',id:'nwBrArch',t:'Creative structure',d:'One body with several openings to test, built on the copy formula the winners share.',lock:'drafts',opt:[['n','Hooks',[['3','3'],['5','5'],['8','8']],'8']]},
+    {k:'offer',id:'nwBrOffer',t:'Offer ideas',d:'Offer shapes that keep running, with price points as observed.',opt:[['n','How many',[['3','3'],['6','6']],'6']]},
+    {k:'pain',id:'nwBrPain',t:'Buyer pains and objections',d:'What the ads and the organic brief say buyers worry about.'},
+    {k:'cross',id:'nwBrCross',t:'Borrowed from other markets',d:'Patterns from outside your market that travel.'},
+    {k:'test',id:'nwBrTest',t:'Test plan',d:'What stays fixed, what changes and how each version is judged.'},
+    {k:'ev',id:'nwBrEv',t:'Ad evidence',d:'Every ad behind the patterns, with how long it ran.',lock:'always'},
+    {k:'review',id:'nwBrReview',t:'Review',d:'Three checks, then approve. Approved briefs shape every ad.',lock:'always'}
+  ]
+};
+/* sections a team can add: counted from the brief's own posts or ads, no extra agent run */
+const V111_ADD={
+  org:[
+    {k:'x_formats',t:'Formats that work',d:'Which kinds of post drew the most engagement, counted from the posts in the brief.'},
+    {k:'x_accounts',t:'Who is driving it',d:'The accounts behind the most posts and engagement in the brief.'},
+    {k:'x_rising',t:'Rising themes',d:'Themes with more posts than in the brief before, and themes that went quiet.'},
+    {k:'x_reg',t:'Regulation watch',d:'Posts about rules, regulators and compliance deadlines.'},
+    {k:'x_questions',t:'Questions buyers ask',d:'Questions that come up in the posts, word for word.'}
+  ],
+  ads:[
+    {k:'x_cta',t:'Calls to action',d:'The buttons the ads behind the brief use most.'},
+    {k:'x_formats',t:'Ad formats',d:'Image, text, carousel or video, counted from the ads behind the brief.'},
+    {k:'x_prices',t:'Price points',d:'Prices the ads show, and which offers look self-liquidating.'},
+    {k:'x_landing',t:'Where the ads send people',d:'The pages behind the ads: booking, webinar, download, quiz or checkout.'},
+    {k:'x_longest',t:'Longest running',d:'The ads that have run the longest, a sign the advertiser keeps paying for them.'}
+  ]
+};
+const V111_SECID={nwBrShort:'short',nwBrShift:'shift',nwBrDev:'dev',nwBrThemes:'themes',nwBrHand:'hand',nwBrArch:'arch',nwBrOffer:'offer',nwBrPain:'pain',nwBrCross:'cross',nwBrTest:'test',nwBrEv:'ev'};
+function v111SecDef(kind,k){return V111_SECS[kind].find(function(x){return x.k===k;})||V111_ADD[kind].find(function(x){return x.k===k;})||null;}
+function v111SecName(kind,k){const d=v111SecDef(kind,k);return d?d.t:k;}
+
+/* ===================================================================
+   1. Editing a brief
+   =================================================================== */
+/* the review a person saved on a brief: sections taken out, posts or ads removed, who edited it, and the agent's own version */
+function v111RevOrg(o){const d=o?apCfIntelData(o):null;const r=d&&d.review;return r&&typeof r==='object'?r:null;}
+function v111RevAd(run){const R=V111.adRev;return (R&&R[run])||null;}
+function v111IsOrg(run){return nwBrOrgRows().some(function(x){return x.run_id===run;});}
+/* the review in force for a brief as it is painted: the one being edited, else the saved one */
+function v111Live(kind,run){
+  const e=V111.ed;if(e&&e.kind===kind&&e.run===run)return e.cur.rev;
+  if(kind==='org')return v111RevOrg(nwBrOrgRows().find(function(x){return x.run_id===run;})||null);
+  return v111RevAd(run);
+}
+function v111Hidden(kind,run,k){const r=v111Live(kind,run);return !!(r&&Array.isArray(r.hidden)&&r.hidden.indexOf(k)>=0);}
+async function v111AdRevLoad(force){
+  if(V111.adRev&&!force)return V111.adRev;
+  if(V111.adRevP&&!force)return V111.adRevP;
+  V111.adRevP=apSb('agent_outputs?select=run_id,data,created_at&agent=eq.ad_strategist&order=created_at.desc&limit=60').then(function(rows){
+    const R={};(rows||[]).forEach(function(r){if(R[r.run_id])return;const d=v111J(r.data);if(d&&d.review&&typeof d.review==='object')R[r.run_id]=d.review;});
+    V111.adRev=R;V111.adRevP=null;return R;
+  }).catch(function(){V111.adRev=V111.adRev||{};V111.adRevP=null;return V111.adRev;});
+  return V111.adRevP;
+}
+function v111EdCan(agent,id){return (agent==='intel_tracker'||agent==='ad_strategist')&&!!id&&!/^content:/.test(String(id));}
+function v111EdOn(kind,run){const e=V111.ed;return !!(e&&e.kind===kind&&e.run===run);}
+/* the fields of an ads brief a person can change, as the agents read them */
+const V111_CB=['differentiation_angle','winning_hooks','copy_formula','winning_offers','core_pain_points','objection_themes','cross_niche_sources','source_ad_ids'];
+function v111CbOf(b){const cb={};V111_CB.forEach(function(k){cb[k]=k==='copy_formula'||k==='differentiation_angle'?String(b[k]||''):apArr(b[k]);});return cb;}
+
+async function v111EdStart(agent,run){
+  const kind=agent==='ad_strategist'?'ads':'org',was=V111.ed;
+  if(was&&was.run!==run&&was.n&&!confirm('You have changes on another brief that are not saved. Drop them?'))return;
+  try{await e9SnapLoad();}catch(e){}
+  if(kind==='org'){
+    const o=nwBrOrgRows().find(function(x){return x.run_id===run;});if(!o)return;
+    const d=v111Copy(apCfIntelData(o))||{},rev=Object.assign({hidden:[],removed:[]},v111Copy(d.review)||{});
+    delete d.review;
+    const md=String(o.content_md||'').replace(/\r/g,''),snap=v111Copy(e9SnapFor(run));
+    V111.ed={kind:'org',agent:agent,run:run,base:{md:md,data:v111Copy(d),snap:v111Copy(snap)},cur:{md:md,data:d,snap:snap,rev:rev},hist:[],log:[],n:0,open:null,note:'',err:''};
+  }else{
+    try{await v111AdRevLoad();}catch(e){}
+    const b=nwAdBriefs().find(function(x){return x.run_id===run;});if(!b)return;
+    const cb=v111CbOf(b),snap=v111Copy(e9SnapFor(run)),rev=Object.assign({hidden:[],removed:[]},v111Copy(v111RevAd(run))||{});
+    V111.ed={kind:'ads',agent:agent,run:run,base:{cb:v111Copy(cb),snap:v111Copy(snap)},cur:{cb:cb,snap:snap,rev:rev},hist:[],log:[],n:0,open:null,note:'',err:''};
+  }
+  V111.ed.cur.rev.hidden=(V111.ed.cur.rev.hidden||[]).slice();V111.ed.cur.rev.removed=(V111.ed.cur.rev.removed||[]).slice();
+  V110.view='edit';V110.shAll=true;V110.devAll=true;V110.evAll=true;V110.evSort=0;V110.open={};
+  nwRepaint();window.scrollTo(0,0);
+}
+function v111EdQuit(){
+  const e=V111.ed;if(!e)return;
+  if(e.n&&!confirm('Drop your changes to this brief?'))return;
+  V111.ed=null;V110.view='brief';nwRepaint();
+}
+/* only a note, as before: the agent's next brief takes it in */
+function v111EdNoteOnly(){
+  const e=V111.ed;if(!e)return;
+  if(e.n&&!confirm('Drop your changes and only leave a note?'))return;
+  V111.ed=null;V110.view='brief';nwRepaint();
+  if(typeof apCfApprove==='function')apCfApprove(e.agent,e.run,'changes');
+}
+function v111EdPush(v,what,name){const e=V111.ed;e.hist.push(JSON.stringify(e.cur));e.log.push({v:v,w:what,n:name||''});e.n=e.log.length;e.err='';}
+function v111EdUndo(){const e=V111.ed;if(!e||!e.hist.length)return;e.cur=JSON.parse(e.hist.pop());e.log.pop();e.n=e.log.length;e.open=null;nwRepaint();}
+/* "Removed 2 posts and the What changed section. Edited 1 finding." */
+function v111Sum(log){
+  const W={post:['post','posts'],line:['line in the short version','lines in the short version'],finding:['finding','findings'],shift:['shift','shifts'],dev:['development','developments'],
+    hook:['hook','hooks'],offer:['offer','offers'],pain:['pain','pains'],obj:['objection','objections'],cross:['pattern from other markets','patterns from other markets'],ad:['ad','ads'],angle:['short version','short version'],formula:['draft skeleton','draft skeleton']};
+  const and=function(a){return a.join(', ').replace(/, ([^,]+)$/,' and $1');};
+  const part=function(v){
+    const c={};log.filter(function(x){return x.v===v&&x.w!=='section';}).forEach(function(x){c[x.w]=(c[x.w]||0)+1;});
+    const bits=Object.keys(c).map(function(w){const L=W[w]||[w,w+'s'];return (w==='angle'||w==='formula'?'the ':c[w]+' ')+(c[w]===1?L[0]:L[1]);});
+    return bits.length?(v==='removed'?'Removed ':'Edited ')+and(bits)+'.':'';
+  };
+  const secs=[];log.forEach(function(x){if(x.w==='section'&&secs.indexOf(x.n)<0)secs.push(x.n);});
+  return [part('removed'),secs.length?'Took out '+and(secs)+'.':'',part('edited')].filter(Boolean).join(' ');
+}
+
+/* ---------- reading and rewriting the organic brief's text ---------- */
+const V111_MDN={short:1,shift:3,dev:4,themes:5};
+/* where a "## N." section sits: its heading, its body and where the next one starts */
+function v111MdSec(md,num){
+  const re=new RegExp('^##\\s*'+num+'\\\\?\\.[^\\n]*\\n','m'),m=re.exec(md);if(!m)return null;
+  const b=m.index+m[0].length,rest=md.slice(b),e=rest.search(/^##\s|^---\s*$/m);
+  return {s:m.index,b:b,e:e>=0?b+e:md.length};
+}
+function v111MdDrop(md,num){
+  const S=v111MdSec(md,num);if(!S)return md;
+  let e=S.e;const sep=/^---[ \t]*\n+/.exec(md.slice(e));if(sep&&S.s>0)e+=sep[0].length;
+  return v111MdTidy(md.slice(0,S.s)+md.slice(e));
+}
+function v111MdTidy(md){return md.replace(/\n{3,}/g,'\n\n').replace(/(\n---[ \t]*\n+)(?=---[ \t]*\n)/g,'\n');}
+function v111Cut(md,s,e){if(md.charAt(e)==='\n')e++;return v111MdTidy(md.slice(0,s)+md.slice(e));}
+/* the lines the short version is read from, as apCfTldr reads them */
+function v111TlLines(md){
+  const out=[],i=md.search(/TL;DR/i);if(i<0)return out;
+  let p=md.indexOf('\n',i);if(p<0)return out;p++;
+  while(p<md.length){
+    let q=md.indexOf('\n',p);if(q<0)q=md.length;
+    const line=md.slice(p,q);
+    if(/^\s*(##|---)/.test(line)&&out.length)break;
+    if(/^\s*[-*]\s+(.*)$/.test(line))out.push({s:p,e:q,raw:line});
+    p=q+1;
+  }
+  return out;
+}
+function v111TlParse(raw){
+  const L=/\[([^\]]+)\]\((https?:[^)\s]+)\)/.exec(raw),x=apCfTldr('TL;DR\n'+raw)[0]||{title:'',text:''};
+  return {title:x.title,text:x.text,url:L?L[2]:''};
+}
+function v111TlLine(raw,title,text){
+  const L=/\*\*\s*\[([^\]]+)\]\((https?:[^)\s]+)\)\s*\*\*/.exec(raw),pre=(/^(\s*[-*]\s+)/.exec(raw)||['','- '])[1];
+  title=v111One(title).replace(/[\[\]]/g,'');text=v111One(text);
+  if(!title)return pre+text;
+  return pre+(L?'**['+title+']('+L[2]+')**':'**'+title+'**')+': '+text;
+}
+/* the blocks the brief's "what changed" is read from, in the order nwBrShifts reads them */
+function v111ShiftBlocks(md){
+  const S=v111MdSec(md,3);if(!S)return [];
+  const body=md.slice(S.b,S.e),re=/\n(?=\s*(?:\*\*)?Shift)/g,starts=[0];let m;
+  while((m=re.exec(body)))starts.push(m.index+1);
+  const out=[];
+  starts.forEach(function(st,k){
+    const en=k+1<starts.length?starts[k+1]-1:body.length,txt=body.slice(st,en);
+    let ok=false;try{ok=/^(?:\*\*)?Shift/.test(txt.trim())&&nwBrShifts({content_md:'## 3. x\n'+txt}).length===1;}catch(e){ok=false;}
+    if(ok)out.push({s:S.b+st,e:S.b+en,txt:txt});
+  });
+  return out;
+}
+function v111ShiftTxt(f){
+  const L=['**Shift: '+v111One(f.title).replace(/\*/g,'')+'**'];
+  if(f.interp)L.push('- '+v111One(f.interp));
+  if(f.obs||f.url)L.push('- **Evidence:** '+(f.url?'['+(v111One(f.who)||'Source').replace(/[\[\]]/g,'')+']('+f.url+'): ':'')+v111One(f.obs));
+  if(f.use)L.push('- **For our content:** '+v111One(f.use));
+  return L.join('\n');
+}
+/* the lines notable developments are read from, in the order nwBrDevs reads them */
+function v111DevLines(md){
+  const S=v111MdSec(md,4);if(!S)return [];
+  const out=[];let p=S.b;
+  while(p<S.e){
+    let q=md.indexOf('\n',p);if(q<0||q>S.e)q=S.e;
+    const ln=md.slice(p,q),t=ln.trim();
+    let ok=false;if(t)try{ok=nwBrDevs({content_md:'## 4. x\n'+t}).length===1;}catch(e){ok=false;}
+    if(ok)out.push({s:p,e:q,raw:ln});
+    p=q+1;
+  }
+  return out;
+}
+function v111DevTxt(f){
+  const t=v111One(f.title).replace(/\*/g,''),src=f.url?'['+(v111One(f.who)||'Source').replace(/[\[\]]/g,'')+']('+f.url+')':'';
+  const body=v111One(f.text)+(f.why?' *Why it matters:* '+v111One(f.why):'');
+  if(t)return '**'+t+'**'+(src?' · '+src+': ':' · ')+body;
+  return src?src+': '+body:'**'+v111One(f.text).split(/[.:]/)[0].slice(0,60)+'** · '+body;
+}
+/* a group heading under notable developments with nothing left under it goes too */
+function v111DevTidy(md){
+  const S=v111MdSec(md,4);if(!S)return md;
+  const lines=md.slice(S.b,S.e).split('\n'),isHead=function(t){return /^###\s+/.test(t)||/^\*\*([^*\[\]]+)\*\*\s*$/.test(t);};
+  const keep=lines.filter(function(ln,i){
+    if(!isHead(ln.trim()))return true;
+    for(let j=i+1;j<lines.length;j++){const t=lines[j].trim();if(!t)continue;return !isHead(t);}
+    return false;
+  });
+  const body=keep.join('\n');
+  if(!v111DevLines(md.slice(0,S.b)+body+md.slice(S.e)).length&&!/\w/.test(body.replace(/^###.*$/gm,'')))return v111MdDrop(md,4);
+  return v111MdTidy(md.slice(0,S.b)+body+md.slice(S.e));
+}
+
+/* ---------- the changes ---------- */
+function v111OrgRow(){
+  const e=V111.ed,o=nwBrOrgRows().find(function(x){return x.run_id===e.run;})||{};
+  return Object.assign({},o,{content_md:e.cur.md,data:Object.assign({},e.cur.data,{review:e.cur.rev})});
+}
+function v111Five(){
+  const e=V111.ed;
+  if(!e.cur.snap||!Array.isArray(e.cur.snap.items)){
+    const fb=e.kind==='org'?e9OrgFallback(e.cur.md):e9AdFallback(Object.assign({},nwAdBriefs().find(function(x){return x.run_id===e.run;})||{},e.cur.cb));
+    e.cur.snap=Object.assign({},e.cur.snap||{},{items:v111Copy(fb)});
+  }
+  return e.cur.snap.items;
+}
+function v111SecDel(k){
+  const e=V111.ed;if(!e)return;
+  if(e.kind==='ads'&&k==='arch')return;
+  v111EdPush('removed','section',v111SecName(e.kind,k));
+  if(e.kind==='org'){
+    if(V111_MDN[k])e.cur.md=v111MdDrop(e.cur.md,V111_MDN[k]);
+    if(k==='five')v111Five().length=0;
+    if(k==='shift')e.cur.data.sophistication_shifts=[];
+    if(k==='themes')e.cur.data.topic_watch={};
+  }else{
+    const cb=e.cur.cb;
+    if(k==='short')cb.differentiation_angle='';
+    if(k==='five')v111Five().length=0;
+    if(k==='offer')cb.winning_offers=[];
+    if(k==='pain'){cb.core_pain_points=[];cb.objection_themes=[];}
+    if(k==='cross')cb.cross_niche_sources=[];
+  }
+  if(e.cur.rev.hidden.indexOf(k)<0)e.cur.rev.hidden.push(k);
+  e.open=null;nwRepaint();
+  nwToast('Removed '+v111SecName(e.kind,k)+'.',function(){v111EdUndo();});
+}
+/* a post out of the organic brief: out of its evidence, its topic watch and the developments that quote it */
+function v111PostDel(url){
+  const e=V111.ed;if(!e||!url)return;
+  const d=e.cur.data;
+  ['items','high_value_items'].forEach(function(k){const a=apArr(d[k]);if(a.length)d[k]=a.filter(function(x){return !x||x.url!==url;});});
+  if(nwNum(d.keep))d.n_kept=apArr(d.items).length;
+  const tw=apJson(d.topic_watch);Object.keys(tw).forEach(function(k){tw[k]=apArr(tw[k]).filter(function(x){return !x||x.url!==url;});});d.topic_watch=tw;
+  [4,5].forEach(function(num){
+    const S=v111MdSec(e.cur.md,num);if(!S)return;
+    const body=e.cur.md.slice(S.b,S.e).split('\n').filter(function(ln){return ln.indexOf('('+url+')')<0;}).join('\n');
+    e.cur.md=e.cur.md.slice(0,S.b)+body+e.cur.md.slice(S.e);
+  });
+  e.cur.md=v111DevTidy(v111MdTidy(e.cur.md));
+  if(e.cur.rev.removed.indexOf(url)<0)e.cur.rev.removed.push(url);
+}
+function v111AdKey(x){return x?(x.ad&&x.ad.id?String(x.ad.id):x.url||''):'';}
+function v111ItDel(k,i){
+  const e=V111.ed;if(!e)return;
+  const L=v111Rows(k),r=L.find(function(x){return x.i===i;});if(!r)return;
+  if(k==='hook'&&L.length<=1){e.err='Keep at least one hook. Every ad opens with one.';nwRepaint();return;}
+  const W={short:'line',five:'finding',afive:'finding',shift:'shift',dev:'dev',post:'post',hook:'hook',offer:'offer',pain:'pain',obj:'obj',cross:'cross',ad:'ad'};
+  v111EdPush('removed',W[k]||k);
+  const md=e.cur.md,cb=e.cur.cb;
+  if(k==='short'){e.cur.md=v111Cut(md,r.span.s,r.span.e);if(!v111TlLines(e.cur.md).length){e.cur.md=v111MdDrop(e.cur.md,1);if(e.cur.rev.hidden.indexOf('short')<0)e.cur.rev.hidden.push('short');}}
+  else if(k==='five'||k==='afive')v111Five().splice(r.i,1);
+  else if(k==='shift'){
+    if(r.span)e.cur.md=v111Cut(md,r.span.s,r.span.e);else e.cur.data.sophistication_shifts=apArr(e.cur.data.sophistication_shifts).filter(function(x,j){return j!==r.i;});
+  }
+  else if(k==='dev')e.cur.md=v111DevTidy(v111Cut(md,r.span.s,r.span.e));
+  else if(k==='post')v111PostDel(r.url);
+  else if(k==='hook')cb.winning_hooks.splice(r.i,1);
+  else if(k==='offer')cb.winning_offers.splice(r.i,1);
+  else if(k==='pain')cb.core_pain_points.splice(r.i,1);
+  else if(k==='obj')cb.objection_themes.splice(r.i,1);
+  else if(k==='cross')cb.cross_niche_sources.splice(r.i,1);
+  else if(k==='ad'){
+    const key=r.key;if(key&&e.cur.rev.removed.indexOf(key)<0)e.cur.rev.removed.push(key);
+    if(r.ad&&r.ad.id)cb.source_ad_ids=apArr(cb.source_ad_ids).filter(function(id){return String(id)!==String(r.ad.id);});
+  }
+  e.open=null;nwRepaint();
+  nwToast(k==='post'?'Post removed. Findings that quoted it are flagged.':k==='ad'?'Ad removed from the brief.':'Removed.',function(){v111EdUndo();});
+}
+function v111ItOpen(k,i){
+  const e=V111.ed;if(!e)return;e.open={k:k,i:i};nwRepaint();
+  setTimeout(function(){const f=document.querySelector('.v111-it.is-open input,.v111-it.is-open textarea');if(f)try{f.focus({preventScroll:false});}catch(x){}},30);
+}
+function v111ItSave(k,i,form){
+  const e=V111.ed;if(!e)return false;
+  const r=v111Rows(k).find(function(x){return x.i===i;});if(!r)return false;
+  const v={};[].slice.call(form.elements).forEach(function(el){if(el.name)v[el.name]=String(el.value||'').trim();});
+  const same=Object.keys(v).every(function(n){return String((r.f||{})[n]==null?'':r.f[n])===v[n];});
+  if(same){e.open=null;nwRepaint();return false;}
+  if(Object.keys(v).every(function(n){return !v[n];})){e.err='That would leave it empty. Remove it instead.';nwRepaint();return false;}
+  const W={short:'line',five:'finding',afive:'finding',shift:'shift',dev:'dev',hook:'hook',offer:'offer',pain:'pain',obj:'obj',cross:'cross',angle:'angle',formula:'formula'};
+  v111EdPush('edited',W[k]||k);
+  const cb=e.cur.cb;
+  if(k==='short')e.cur.md=e.cur.md.slice(0,r.span.s)+v111TlLine(r.span.raw,v.h,v.t)+e.cur.md.slice(r.span.e);
+  else if(k==='five'||k==='afive'){const it=v111Five()[r.i]||{};v111Five()[r.i]=Object.assign({},it,{text:v.h,why:v.t,tag:v.tag||it.tag||''});}
+  else if(k==='shift'){
+    const f={title:v.h,obs:v.obs,interp:v.interp,use:v.use,who:r.who,url:r.url};
+    if(r.span)e.cur.md=e.cur.md.slice(0,r.span.s)+v111ShiftTxt(f)+'\n'+e.cur.md.slice(r.span.e).replace(/^\n?/,'\n');
+    else{const a=apArr(e.cur.data.sophistication_shifts);a[r.i]=Object.assign({},a[r.i]||{},{note:v.h+(v.interp?'. '+v.interp:''),summary:v.obs});e.cur.data.sophistication_shifts=a;}
+    e.cur.md=v111MdTidy(e.cur.md);
+  }
+  else if(k==='dev')e.cur.md=e.cur.md.slice(0,r.span.s)+v111DevTxt({title:v.h,text:v.t,why:v.why,who:r.who,url:r.url})+e.cur.md.slice(r.span.e);
+  else if(k==='angle')cb.differentiation_angle=v.t;
+  else if(k==='formula')cb.copy_formula=v.t;
+  else if(k==='hook'){const h=cb.winning_hooks[r.i];cb.winning_hooks[r.i]=h&&typeof h==='object'?Object.assign({},h,{pattern:v.t,hook:v.t,text:v.t}):v.t;}
+  else if(k==='offer'){const o=cb.winning_offers[r.i];const base=o&&typeof o==='object'?o:{};cb.winning_offers[r.i]=Object.assign({},base,{type:v.h,price_point:v.price||null,notes:v.t});}
+  else if(k==='pain')cb.core_pain_points[r.i]=v.t;
+  else if(k==='obj')cb.objection_themes[r.i]=v.t;
+  else if(k==='cross')cb.cross_niche_sources[r.i]=v.t;
+  e.open=null;nwRepaint();
+  return false;
+}
+/* every editable row of a section, from the brief as it now reads: i is its place in what is stored */
+function v111Rows(k){
+  const e=V111.ed;if(!e)return [];
+  const rm=e.cur.rev.removed||[],gone=function(u){return !!u&&rm.indexOf(u)>=0;};
+  const FLAG='The post behind it was removed. Edit or remove this.';
+  if(e.kind==='org'){
+    const o=v111OrgRow();
+    if(k==='short')return v111TlLines(e.cur.md).map(function(s,i){const p=v111TlParse(s.raw);return {i:i,span:s,h:p.title,t:p.text,url:p.url,f:{h:p.title,t:p.text},flag:gone(p.url)?FLAG:''};});
+    if(k==='five'){const S=e9SnapItems('org',e.run,e9OrgFallback(e.cur.md));
+      return (S.items||[]).map(function(x,i){return {i:i,x:x};}).filter(function(z){return z.x&&z.x.text;}).map(function(z){
+        return {i:z.i,h:e9Clean(z.x.text),t:e9Clean(z.x.why||''),meta:z.x.tag||'',f:{h:e9Clean(z.x.text),t:e9Clean(z.x.why||''),tag:z.x.tag||''}};});}
+    if(k==='shift'){
+      const B=v111ShiftBlocks(e.cur.md),L=nwBrShifts(o);
+      return L.map(function(s,i){return {i:i,span:B.length===L.length?B[i]:null,h:s.title,t:s.obs||s.interp,meta:s.who,who:s.who,url:s.url,
+        f:{h:s.title,obs:s.obs,interp:s.interp,use:s.use},flag:gone(s.url)?FLAG:''};});
+    }
+    if(k==='dev'){
+      const B=v111DevLines(e.cur.md),L=nwBrDevs(o);
+      return L.map(function(x,i){return {i:i,span:B.length===L.length?B[i]:null,h:x.title||x.who,t:x.text,meta:[x.cat,x.title?x.who:''].filter(Boolean).join(' · '),who:x.who,url:x.url,
+        f:{h:x.title,t:x.text,why:x.why},flag:gone(x.url)?FLAG:''};}).filter(function(r){return r.span;});
+    }
+    if(k==='post')return nwBrOrgEvidence(o).map(function(x,i){const it=nwBrItemByUrl(e.run,x.url);return {i:i,url:x.url,h:x.rec+' · '+(x.who||nwPlat(x.platform)),t:nwClip(x.topic,140),
+      go:it?'nwPostOpen('+nwJs(it.id)+')':x.url?'window.open('+nwJs(x.url)+',\'_blank\',\'noopener\')':'',
+      meta:[x.type,x.eng!=null?nwPlural(x.eng,'engagement').replace(/engagements$/,'engagement'):''].filter(Boolean).join(' · '),noEdit:true};}).filter(function(r){return r.url;});
+    return [];
+  }
+  const b=nwBrAd(),cb=e.cur.cb;
+  const str=function(a,key){return a.map(function(x,i){const t=e9Clean(typeof x==='string'?x:(x&&(x.pattern||x.hook||x.text))||'');return {i:i,t:t,f:{t:t}};}).filter(function(r){return r.t;});};
+  if(k==='angle')return cb.differentiation_angle?[{i:0,t:e9Clean(cb.differentiation_angle),f:{t:e9Clean(cb.differentiation_angle)},noDel:true}]:[];
+  if(k==='formula')return cb.copy_formula?[{i:0,t:e9Clean(cb.copy_formula).replace(/\s*->\s*/g,' → '),f:{t:cb.copy_formula},noDel:true}]:[];
+  if(k==='afive'){const S=e9SnapItems('ad',e.run,e9AdFallback(b));
+    return (S.items||[]).map(function(x,i){return {i:i,x:x};}).filter(function(z){return z.x&&z.x.text;}).map(function(z){
+      return {i:z.i,h:e9Clean(z.x.text),t:e9Clean(z.x.why||''),meta:z.x.tag||'',f:{h:e9Clean(z.x.text),t:e9Clean(z.x.why||''),tag:z.x.tag||''}};});}
+  if(k==='hook')return str(cb.winning_hooks);
+  if(k==='offer')return cb.winning_offers.map(function(o,i){o=typeof o==='string'?{type:o}:(o||{});
+    return {i:i,h:e9Clean(o.type||'Offer'),t:e9Clean(o.notes||''),meta:o.price_point!=null&&o.price_point!==''?'Price shown: '+String(o.price_point):'',f:{h:e9Clean(o.type||''),price:o.price_point==null?'':String(o.price_point),t:e9Clean(o.notes||'')}};})
+    .filter(function(r){return r.h||r.t;});
+  if(k==='pain')return str(cb.core_pain_points);
+  if(k==='obj')return str(cb.objection_themes);
+  if(k==='cross')return str(cb.cross_niche_sources);
+  if(k==='ad')return (b?nwBrAdEvidence(b):[]).map(function(x,i){return {i:i,key:v111AdKey(x),ad:x.ad||null,url:x.url,h:x.rec+' · '+(x.adv||'Advertiser'),t:nwClip(x.hook,140),
+    go:x.ad?'nwAdOpen('+nwJs(x.ad.id)+')':/^https?:/.test(x.url||'')?'window.open('+nwJs(x.url)+',\'_blank\',\'noopener\')':'',
+    meta:[x.days!=null?nwPlural(x.days,'day')+' running':'',x.status].filter(Boolean).join(' · '),noEdit:true};}).filter(function(r){return r.key;});
+  return [];
+}
+
+/* ---------- the editor ---------- */
+const V111_FORM={
+  short:[['h','Lead','input'],['t','What it says','area']],
+  five:[['h','The point','input'],['t','What the agent saw','area'],['tag','Tag','input']],
+  afive:[['h','The point','input'],['t','What the agent saw','area'],['tag','Tag','input']],
+  shift:[['h','The shift','input'],['obs','What it saw','area'],['interp','What it means','area'],['use','How to use it','area']],
+  dev:[['h','Headline','input'],['t','What happened','area'],['why','Why it matters','area']],
+  angle:[['t','The short version','area']],formula:[['t','Draft skeleton','input']],hook:[['t','Hook pattern','area']],
+  offer:[['h','Offer','input'],['price','Price shown','input'],['t','Notes','area']],
+  pain:[['t','Pain','input']],obj:[['t','Objection','input']],cross:[['t','Pattern','input']]
+};
+function v111EdForm(k,r){
+  return '<form class="v111-form" onsubmit="return v111ItSave(\''+k+'\','+r.i+',this)">'+(V111_FORM[k]||[]).map(function(f){const v=r.f&&r.f[f[0]]!=null?r.f[f[0]]:'';
+      return '<label class="nw-field"><span class="nw-lbl">'+esc(f[1])+'</span>'+(f[2]==='area'?'<textarea class="nw-input" name="'+f[0]+'" rows="3">'+esc(v)+'</textarea>':'<input class="nw-input" name="'+f[0]+'" value="'+esc(v)+'">')+'</label>';}).join('')+
+    '<div class="nw-card-foot"><button type="submit" class="nw-btn nw-btn-primary nw-btn-sm">Keep this change</button><button type="button" class="nw-btn nw-btn-sm" onclick="V111.ed.open=null;nwRepaint()">Cancel</button></div></form>';
+}
+function v111EsList(k,rows,empty){
+  if(!rows.length)return '<p class="nw-muted nw-small">'+esc(empty||'Nothing left in this section.')+'</p>';
+  const e=V111.ed;
+  return '<ol class="v111-its">'+rows.map(function(r){
+    if(e.open&&e.open.k===k&&e.open.i===r.i)return '<li class="v111-it is-open">'+v111EdForm(k,r)+'</li>';
+    return '<li class="v111-it'+(r.flag?' is-flag':'')+'" data-k="'+k+'" data-i="'+r.i+'"><div class="v111-it-b">'+(r.h?'<b>'+esc(r.h)+'</b>':'')+(r.t?'<span>'+esc(r.t)+'</span>':'')+
+        (r.meta?'<small class="nw-faint">'+esc(r.meta)+'</small>':'')+(r.flag?'<span class="v111-flag">'+nwIc('alert',13)+esc(r.flag)+'</span>':'')+'</div>'+
+      '<div class="v111-it-a">'+(r.go?'<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="'+esc(r.go)+'">'+nwIc('eye',14)+'Open</button>':'')+(r.noEdit?'':'<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v111ItOpen(\''+k+'\','+r.i+')">'+nwIc('pen',14)+'Edit</button>')+
+        (r.noDel?'':'<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v111ItDel(\''+k+'\','+r.i+')">'+nwIc('trash',14)+'Remove</button>')+'</div></li>';}).join('')+'</ol>';
+}
+function v111EsCard(k,title,body,o){
+  o=o||{};
+  return '<section class="nw-card v111-es" data-sec="'+k+'"><div class="nw-card-headrow"><div><div class="nw-kicker">'+esc(o.kicker||'Section')+'</div><h3 class="nw-sec-h">'+esc(title)+'</h3></div>'+
+    (o.lock?'<span class="nw-tag" title="'+esc(o.lock)+'">'+nwIc('lock',13)+esc(o.lockShort||'Stays in')+'</span>':'<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost v111-secdel" onclick="v111SecDel(\''+k+'\')">'+nwIc('trash',15)+'Remove section</button>')+'</div>'+
+    (o.note?'<p class="nw-faint nw-small">'+esc(o.note)+'</p>':'')+body+'</section>';
+}
+function v111EdHead(){
+  const e=V111.ed,rmN=(e.cur.rev.removed||[]).length;
+  return '<section class="nw-card v111-edhead"><div class="v111-edhead-t"><span class="nw-brbar-ic">'+nwIc('pen',20)+'</span><div><b>Editing this brief</b>'+
+      '<p class="nw-muted nw-small">'+(e.kind==='org'?'Change or remove anything that is off. Removing a post flags the findings that quoted it.':'Change or remove anything that is off. Removing an ad takes it out of the evidence.')+' Drafts read the brief as you save it, and the agent’s own version is kept.</p></div></div>'+
+    '<label class="nw-field"><span class="nw-lbl">Note for the record<small>optional</small></span><textarea class="nw-input" id="v111EdNote" rows="2" placeholder="'+(e.kind==='org'?'e.g. Leave job posts out. Governance should lead.':'e.g. Leave out ads for unrelated products. Lead with proof.')+'" oninput="V111.ed.note=this.value">'+esc(e.note||'')+'</textarea></label>'+
+    (e.err?'<p class="v111-err" role="alert">'+esc(e.err)+'</p>':'')+
+    '<p class="nw-faint nw-small">'+(rmN?esc(nwPlural(rmN,e.kind==='org'?'post':'ad')+' taken out of this brief so far. ')+'':'')+'Only want the agent to redo it next time? <button type="button" class="nw-link nw-small" onclick="v111EdNoteOnly()">Leave a note instead</button></p></section>';
+}
+function v111EdHtml(){
+  const e=V111.ed;if(!e)return '';
+  const hid=function(k){return e.cur.rev.hidden.indexOf(k)>=0;};
+  const out=[v111EdHead()];
+  if(e.kind==='org'){
+    if(!hid('five'))out.push(v111EsCard('five','Five things working',v111EsList('five',v111Rows('five'),'No findings left.')));
+    if(!hid('short'))out.push(v111EsCard('short','The short version',v111EsList('short',v111Rows('short'),'This brief has no short version.')));
+    if(!hid('shift'))out.push(v111EsCard('shift','What changed',v111EsList('shift',v111Rows('shift'),'No shifts in this brief.')));
+    if(!hid('dev'))out.push(v111EsCard('dev','Notable developments',v111EsList('dev',v111Rows('dev'),'No developments in this brief.')));
+    if(!hid('themes'))out.push(v111EsCard('themes','Themes and topic watch','',{note:'Counted from the posts. Removing a post takes it out of the topic watch.'}));
+    if(!hid('hand'))out.push(v111EsCard('hand','Content handoff','',{note:'Guidance for writers, the same on every brief.'}));
+    out.push(v111EsCard('post','Posts behind this brief',v111EsList('post',v111Rows('post'),'No posts listed.'),{kicker:'Evidence',lock:'The evidence stays. Remove single posts instead.',lockShort:'Remove single posts'}));
+  }else{
+    if(!hid('five'))out.push(v111EsCard('five','Five things working',v111EsList('afive',v111Rows('afive'),'No findings left.')));
+    if(!hid('short'))out.push(v111EsCard('short','One-minute read',v111EsList('angle',v111Rows('angle'),'This brief has no angle written up.')));
+    out.push(v111EsCard('arch','Creative structure','<div class="nw-kicker v111-sub">Draft skeleton</div>'+v111EsList('formula',v111Rows('formula'),'No copy formula.')+
+      '<div class="nw-kicker v111-sub">Hooks</div>'+v111EsList('hook',v111Rows('hook'),'No hooks.'),{lock:'Every ad is built on these. Edit or remove single hooks.',lockShort:'Needed for drafts'}));
+    if(!hid('offer'))out.push(v111EsCard('offer','Offer ideas',v111EsList('offer',v111Rows('offer'),'No offers in this brief.')));
+    if(!hid('pain'))out.push(v111EsCard('pain','Buyer pains and objections','<div class="nw-kicker v111-sub">Pains</div>'+v111EsList('pain',v111Rows('pain'),'No pains.')+
+      '<div class="nw-kicker v111-sub">Likely objections</div>'+v111EsList('obj',v111Rows('obj'),'No objections.')));
+    if(!hid('cross'))out.push(v111EsCard('cross','Borrowed from other markets',v111EsList('cross',v111Rows('cross'),'Nothing borrowed in this brief.')));
+    if(!hid('test'))out.push(v111EsCard('test','Test plan','',{note:'The same on every brief.'}));
+    out.push(v111EsCard('ad','Ads behind this brief',v111EsList('ad',v111Rows('ad'),V109.pool?'No ads listed.':'Loading the ads…'),{kicker:'Evidence',lock:'The evidence stays. Remove single ads instead.',lockShort:'Remove single ads'}));
+  }
+  return '<div class="v111-ed">'+out.join('')+'</div>';
+}
+function v111EdSide(){
+  const e=V111.ed,v=V110.view;
+  return '<div class="nw-brbar-side v111-edside">'+
+    '<span class="nw-seg" role="group" aria-label="View"><button type="button" aria-pressed="'+(v==='edit')+'" onclick="V110.view=\'edit\';nwRepaint()">Edit</button>'+
+      '<button type="button" aria-pressed="'+(v!=='edit')+'" onclick="V110.view=\'brief\';nwRepaint()">Preview</button></span>'+
+    '<span class="nw-faint nw-small v111-edn" aria-live="polite">'+(e.n?esc(nwPlural(e.n,'change')):'No changes yet')+'</span>'+
+    '<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v111EdUndo()"'+(e.n?'':' disabled')+'>'+nwIc('undo',15)+'Undo</button>'+
+    '<button type="button" class="nw-btn nw-btn-sm" onclick="v111EdQuit()">Discard</button>'+
+    '<button type="button" class="nw-btn nw-btn-primary nw-btn-sm" id="v111EdGo" onclick="v111EdSave()"'+(e.n&&!e.busy?'':' disabled')+'>'+(e.busy?'Saving…':'Save changes')+'</button></div>';
+}
+
+/* ---------- saving ---------- */
+async function v111EdSave(){
+  const e=V111.ed;if(!e||!e.n||e.busy)return;
+  e.busy=true;e.err='';nwRepaint();
+  try{
+    if(e.kind==='org')await v111SaveOrg(e);else await v111SaveAds(e);
+    const sum=v111Sum(e.log),note=v111One(e.note);
+    try{await apPost('agent_feedback',{agent:e.agent,target_type:'brief_approval',target_id:e.run,action:'edited',feedback:[sum,note?'Note: '+note:''].filter(Boolean).join(' ')||null,author:v111Me()});}catch(x){}
+    V111.ed=null;V110.view='brief';
+    try{await Promise.all([apCfLoad(true),e9SnapLoad(true),e.kind==='ads'?v111AdRevLoad(true):null]);}catch(x){}
+    V107D.t=Date.now();nwRepaint();window.scrollTo(0,0);
+    nwToast('Saved. Drafts now read the edited brief. Approve it when it reads right.');
+  }catch(x){e.busy=false;e.err='Could not save: '+(x&&x.message?x.message:String(x));V110.view='edit';nwRepaint();}
+}
+function v111RevNew(e,prevRev,orig){
+  const at=new Date().toISOString(),sum=v111Sum(e.log);
+  return {by:v111Me(),at:at,changes:sum,note:v111One(e.note)||'',hidden:e.cur.rev.hidden.slice(),removed:e.cur.rev.removed.slice(),original:orig,
+    history:((prevRev&&prevRev.history)||[]).concat([{by:v111Me(),at:at,changes:sum}]).slice(-12)};
+}
+async function v111SaveOrg(e){
+  const q='run_id=eq.'+encodeURIComponent(e.run)+'&agent=eq.intel_tracker';
+  const rows=(await apSb('agent_outputs?select=id,data,snapshot,output_type,created_at&'+q+'&order=created_at.desc'))||[];
+  const briefs=rows.filter(function(r){return r.output_type==='intel_brief';});
+  if(!briefs.length)throw new Error('the brief is no longer on file');
+  const like=briefs[0].data,prev=v111J(like)||{},prevRev=prev.review&&typeof prev.review==='object'?prev.review:null;
+  const orig=prevRev&&prevRev.original?prevRev.original:{content_md:e.base.md,data:e.base.data,snapshot:e.base.snap};
+  const data=Object.assign({},e.cur.data,{review:v111RevNew(e,prevRev,orig)});
+  const r=await apPatch('agent_outputs',q+'&output_type=eq.intel_brief',{content_md:e.cur.md,data:v111Enc(like,data),edited_by_human:true});
+  if(!Array.isArray(r)||!r.length)throw new Error('the brief did not take the change');
+  if(JSON.stringify(e.cur.snap)!==JSON.stringify(e.base.snap)&&e.cur.snap){
+    const sr=rows.filter(function(x){return x.snapshot!=null&&x.snapshot!=='';});
+    const sl=sr.length?sr[0].snapshot:'';
+    if(sr.length)await apPatch('agent_outputs',q+'&snapshot=not.is.null',{snapshot:v111Enc(sl,e.cur.snap)});
+    else await apPatch('agent_outputs','id=eq.'+encodeURIComponent(briefs[0].id),{snapshot:JSON.stringify(e.cur.snap)});
+  }
+}
+async function v111SaveAds(e){
+  const cq='run_id=eq.'+encodeURIComponent(e.run);
+  const rows=(await apSb('creative_briefs?select=*&'+cq+'&order=created_at.desc'))||[];
+  if(!rows.length)throw new Error('the ads brief is no longer on file');
+  const like=rows[0],body={};
+  V111_CB.forEach(function(k){
+    const cur=e.cur.cb[k];if(JSON.stringify(cur)===JSON.stringify(e.base.cb[k]))return;
+    body[k]=Array.isArray(cur)&&k!=='source_ad_ids'&&typeof like[k]==='string'?JSON.stringify(cur):cur;
+  });
+  if(Object.keys(body).length){
+    const r=await apPatch('creative_briefs',cq,body);
+    if(!Array.isArray(r)||!r.length)throw new Error('ads briefs cannot be changed from the dashboard yet');
+  }
+  const q='run_id=eq.'+encodeURIComponent(e.run)+'&agent=eq.ad_strategist';
+  const ao=(await apSb('agent_outputs?select=id,data,snapshot,created_at&'+q+'&order=created_at.desc'))||[];
+  if(!ao.length)return;
+  const prev=v111J(ao[0].data)||{},prevRev=prev.review&&typeof prev.review==='object'?prev.review:null;
+  const orig=prevRev&&prevRev.original?prevRev.original:{cb:e.base.cb,snapshot:e.base.snap};
+  const rev=v111RevNew(e,prevRev,orig);
+  for(const row of ao){
+    const d=Object.assign({},v111J(row.data)||{},{review:rev});
+    await apPatch('agent_outputs','id=eq.'+encodeURIComponent(row.id),{data:v111Enc(row.data,d)});
+  }
+  if(JSON.stringify(e.cur.snap)!==JSON.stringify(e.base.snap)&&e.cur.snap){
+    const sr=ao.filter(function(x){return x.snapshot!=null&&x.snapshot!=='';});
+    if(sr.length)await apPatch('agent_outputs',q+'&snapshot=not.is.null',{snapshot:v111Enc(sr[0].snapshot,e.cur.snap)});
+    else await apPatch('agent_outputs','id=eq.'+encodeURIComponent(ao[0].id),{snapshot:e.cur.snap});
+  }
+}
+/* put the agent's own version back */
+async function v111Restore(kind,run){
+  if(!confirm('Put back the agent’s own version of this brief? The edits are dropped.'))return;
+  try{
+    if(kind==='org'){
+      const q='run_id=eq.'+encodeURIComponent(run)+'&agent=eq.intel_tracker';
+      const rows=(await apSb('agent_outputs?select=id,data,snapshot,output_type&'+q+'&order=created_at.desc'))||[];
+      const briefs=rows.filter(function(r){return r.output_type==='intel_brief';});if(!briefs.length)return;
+      const d=v111J(briefs[0].data)||{},rev=d.review;if(!rev||!rev.original)return;
+      await apPatch('agent_outputs',q+'&output_type=eq.intel_brief',{content_md:rev.original.content_md,data:v111Enc(briefs[0].data,rev.original.data||{}),edited_by_human:false});
+      const sr=rows.filter(function(x){return x.snapshot!=null&&x.snapshot!=='';});
+      if(sr.length)await apPatch('agent_outputs',q+'&snapshot=not.is.null',{snapshot:rev.original.snapshot?v111Enc(sr[0].snapshot,rev.original.snapshot):null});
+    }else{
+      const q='run_id=eq.'+encodeURIComponent(run)+'&agent=eq.ad_strategist';
+      const ao=(await apSb('agent_outputs?select=id,data,snapshot&'+q+'&order=created_at.desc'))||[];
+      const d=ao.length?(v111J(ao[0].data)||{}):{},rev=d.review;if(!rev||!rev.original)return;
+      const cbRows=(await apSb('creative_briefs?select=*&run_id=eq.'+encodeURIComponent(run)+'&order=created_at.desc&limit=1'))||[];
+      const like=cbRows[0]||{},body={};
+      V111_CB.forEach(function(k){const v=(rev.original.cb||{})[k];if(v===undefined)return;body[k]=Array.isArray(v)&&k!=='source_ad_ids'&&typeof like[k]==='string'?JSON.stringify(v):v;});
+      if(Object.keys(body).length){const r=await apPatch('creative_briefs','run_id=eq.'+encodeURIComponent(run),body);if(!Array.isArray(r)||!r.length)throw new Error('ads briefs cannot be changed from the dashboard yet');}
+      for(const row of ao){const x=Object.assign({},v111J(row.data)||{});delete x.review;await apPatch('agent_outputs','id=eq.'+encodeURIComponent(row.id),{data:v111Enc(row.data,x)});}
+      const sr=ao.filter(function(x){return x.snapshot!=null&&x.snapshot!=='';});
+      if(sr.length&&rev.original.snapshot)await apPatch('agent_outputs',q+'&snapshot=not.is.null',{snapshot:v111Enc(sr[0].snapshot,rev.original.snapshot)});
+    }
+    try{await apPost('agent_feedback',{agent:kind==='org'?'intel_tracker':'ad_strategist',target_type:'brief_approval',target_id:run,action:'edited',feedback:'Put back the agent’s own version.',author:v111Me()});}catch(x){}
+    if(V111.ed&&V111.ed.run===run)V111.ed=null;
+    try{await Promise.all([apCfLoad(true),e9SnapLoad(true),kind==='ads'?v111AdRevLoad(true):null]);}catch(x){}
+    V110.view='brief';nwRepaint();nwToast('The agent’s own version is back.');
+  }catch(x){nwToast('Could not put it back: '+(x&&x.message?x.message:String(x)));}
+}
+/* the latest word on a brief, edits included */
+function v111LastFb(id){const C=nwCF();return C&&C.appr?C.appr.find(function(a){return String(a.target_id)===String(id);})||null:null;}
+function v111EditedLine(f){
+  const t=String(f.feedback||'').trim().slice(0,200).replace(/[.\s]+$/,'');
+  return 'Edited by '+esc(v111Who(f.author))+' '+esc(typeof apAgo==='function'?apAgo(f.created_at):'')+(t?': '+esc(t):'')+'. Approve it when it reads right.';
+}
+
+
+/* ===================================================================
+   2. The layout every brief follows
+   =================================================================== */
+function v111StSaved(){let s=(typeof AP_AISET!=='undefined'&&AP_AISET&&AP_AISET.brief_structure)||null;s=v111J(s);return s&&typeof s==='object'?s:{};}
+function v111StStd(kind){return {order:V111_SECS[kind].map(function(x){return x.k;}),off:[],opt:{}};}
+/* the layout in force for a kind: the team's, else the standard one. Record and five things lead, review closes */
+function v111St(kind){
+  const S=v111StSaved()[kind]||{},known=V111_SECS[kind].map(function(x){return x.k;}),extra=V111_ADD[kind].map(function(x){return x.k;});
+  let order=Array.isArray(S.order)?S.order.filter(function(k,i,a){return (known.indexOf(k)>=0||extra.indexOf(k)>=0)&&a.indexOf(k)===i;}):known.slice();
+  known.forEach(function(k){if(order.indexOf(k)<0)order.push(k);});
+  order=['rec','five'].concat(order.filter(function(k){return k!=='rec'&&k!=='five'&&k!=='review';})).concat(['review']);
+  const off=(Array.isArray(S.off)?S.off:[]).filter(function(k,i,a){const d=v111SecDef(kind,k);return d&&!d.lock&&order.indexOf(k)>=0&&a.indexOf(k)===i;});
+  const opt={},so=S.opt&&typeof S.opt==='object'?S.opt:{};
+  Object.keys(so).forEach(function(k){if(so[k]&&typeof so[k]==='object')opt[k]=Object.assign({},so[k]);});
+  return {order:order,off:off,opt:opt};
+}
+function v111StOpt(st,kind,k,o){
+  const d=v111SecDef(kind,k),def=d&&(d.opt||[]).find(function(x){return x[0]===o;});if(!def)return null;
+  const v=st.opt[k]&&st.opt[k][o];
+  return v!=null&&def[2].some(function(c){return c[0]===String(v);})?String(v):def[3];
+}
+function v111StK(){return typeof nwBrTab==='function'&&nwBrTab()==='ads'?'ads':'org';}
+function v111StCur(kind){
+  V111.st=V111.st||{};
+  if(!V111.st[kind])V111.st[kind]={kind:kind,cur:v111St(kind),dirty:false,msg:'',busy:false};
+  return V111.st[kind];
+}
+function v111StMov(o){return o.filter(function(k){return k!=='rec'&&k!=='five'&&k!=='review';});}
+function v111StHtml(kind){
+  const S=v111StCur(kind),cur=S.cur,name=kind==='ads'?'ads':'organic',mov=v111StMov(cur.order);
+  const row=function(k,n){
+    const d=v111SecDef(kind,k);if(!d)return '';
+    const on=cur.off.indexOf(k)<0,x=k.indexOf('x_')===0,mi=mov.indexOf(k);
+    const opts=(d.opt||[]).map(function(o){const v=v111StOpt(cur,kind,k,o[0]);
+      return '<label class="v111-st-opt"><span>'+esc(o[1])+'</span><select class="nw-input nw-sel" data-nofill="1" onchange="v111StSet(\''+kind+'\',\''+k+'\',\''+o[0]+'\',this.value)"'+(on?'':' disabled')+'>'+
+        o[2].map(function(c){return '<option value="'+c[0]+'"'+(c[0]===v?' selected':'')+'>'+esc(c[1])+'</option>';}).join('')+'</select></label>';}).join('');
+    const sw=d.lock?'<span class="nw-tag v111-lock" title="'+esc(d.lock==='drafts'?'Every ad is built on it, so it stays.':'Every brief has it.')+'">'+nwIc('lock',13)+(d.lock==='drafts'?'Needed for drafts':'Always in the brief')+'</span>'
+      :'<button type="button" class="v111-sw" role="switch" aria-checked="'+on+'" aria-label="Show '+esc(d.t)+'" onclick="v111StToggle(\''+kind+'\',\''+k+'\')"><span class="v111-sw-k" aria-hidden="true"></span>'+(on?'Shown':'Hidden')+'</button>';
+    const mv=mi>=0?'<button type="button" class="nw-icon-btn v111-mv" aria-label="Move '+esc(d.t)+' up" onclick="v111StMove(\''+kind+'\',\''+k+'\',-1)"'+(mi===0?' disabled':'')+'>'+nwIc('up',17)+'</button>'+
+        '<button type="button" class="nw-icon-btn v111-mv" aria-label="Move '+esc(d.t)+' down" onclick="v111StMove(\''+kind+'\',\''+k+'\',1)"'+(mi===mov.length-1?' disabled':'')+'>'+nwIc('down',17)+'</button>'
+      :'<span class="v111-mv-sp" title="'+esc(k==='five'?'The five things lead every brief.':k==='rec'?'The record opens every brief.':'Review closes every brief.')+'"></span>';
+    return '<li class="nw-card v111-st-r'+(on?'':' is-off')+(x?' is-x':'')+'" data-k="'+k+'"><span class="nw-struct-n">'+n+'</span>'+
+      '<div class="v111-st-m"><b>'+esc(d.t)+(x?' <span class="nw-tag">Added</span>':'')+'</b><p>'+esc(d.d)+'</p>'+(opts?'<div class="v111-st-o">'+opts+'</div>':'')+'</div>'+
+      '<div class="v111-st-a">'+sw+mv+(x?'<button type="button" class="nw-icon-btn" aria-label="Take '+esc(d.t)+' out" onclick="v111StDrop(\''+kind+'\',\''+k+'\')">'+nwIc('trash',16)+'</button>':'')+'</div></li>';
+  };
+  const avail=V111_ADD[kind].filter(function(x){return cur.order.indexOf(x.k)<0;}),saved=!!v111StSaved()[kind];
+  return '<div class="nw-banner">'+nwIc('sliders',18)+'<span><b>How every '+name+' brief is laid out.</b> Pick the sections, their order and how much of each. It is saved for the whole team, and every '+name+' brief follows it, older ones too. Sections you add are counted from the '+(kind==='ads'?'ads':'posts')+' behind each brief.</span></div>'+
+    '<ol class="nw-struct v111-st">'+cur.order.map(function(k,i){return row(k,i+1);}).join('')+'</ol>'+
+    '<section class="nw-card v111-st-add"><div class="nw-card-headrow"><div><div class="nw-kicker">Add a section</div><h3 class="nw-sec-h">More to show on every '+name+' brief</h3></div></div>'+
+      (avail.length?'<div class="v111-st-addrow"><select class="nw-input" id="v111StAdd" data-nofill="1" aria-label="Section to add" onchange="v111StAddHint(\''+kind+'\')">'+avail.map(function(x){return '<option value="'+x.k+'">'+esc(x.t)+'</option>';}).join('')+'</select>'+
+        '<button type="button" class="nw-btn nw-btn-sm" onclick="v111StAdd(\''+kind+'\')">'+nwIc('plus',15)+'Add</button></div><p class="nw-faint nw-small" id="v111StAddH">'+esc(avail[0].d)+'</p>'
+        :'<p class="nw-muted nw-small">Every section on the list is in.</p>')+'</section>'+
+    '<div class="nw-card-foot v111-st-foot"><span class="nw-faint nw-small" id="v111StMsg" role="status">'+esc(S.msg||(S.dirty?'Not saved yet.':saved?'Saved for the team.':'This is the standard layout.'))+'</span><span class="nw-grow"></span>'+
+      '<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v111StReset(\''+kind+'\')">Standard layout</button>'+
+      (S.dirty?'<button type="button" class="nw-btn nw-btn-sm" onclick="v111StCancel(\''+kind+'\')">Cancel</button>':'')+
+      '<button type="button" class="nw-btn nw-btn-primary nw-btn-sm" id="v111StGo" onclick="v111StSave(\''+kind+'\')"'+(S.dirty&&!S.busy?'':' disabled')+'>'+(S.busy?'Saving…':'Save layout')+'</button></div>';
+}
+function v111StDirty(S,msg){S.dirty=true;S.msg=msg||'';nwRepaint();}
+function v111StToggle(kind,k){const S=v111StCur(kind),i=S.cur.off.indexOf(k);if(i>=0)S.cur.off.splice(i,1);else S.cur.off.push(k);v111StDirty(S);
+  setTimeout(function(){const b=document.querySelector('.v111-st-r[data-k="'+k+'"] .v111-sw');if(b)b.focus();},20);}
+function v111StMove(kind,k,dir){
+  const S=v111StCur(kind),mov=v111StMov(S.cur.order),i=mov.indexOf(k),j=i+dir;if(i<0||j<0||j>=mov.length)return;
+  mov.splice(i,1);mov.splice(j,0,k);S.cur.order=['rec','five'].concat(mov).concat(['review']);v111StDirty(S);
+  setTimeout(function(){const r=document.querySelector('.v111-st-r[data-k="'+k+'"]');const b=r&&(r.querySelectorAll('.v111-mv')[dir<0?0:1]);const f=b&&!b.disabled?b:r&&r.querySelector('.v111-mv:not([disabled])');if(f)f.focus();},20);
+}
+function v111StSet(kind,k,o,v){const S=v111StCur(kind);S.cur.opt[k]=Object.assign({},S.cur.opt[k]||{});S.cur.opt[k][o]=v;v111StDirty(S);}
+function v111StAdd(kind){
+  const S=v111StCur(kind),s=document.getElementById('v111StAdd');if(!s||!s.value||S.cur.order.indexOf(s.value)>=0)return;
+  S.cur.order.splice(S.cur.order.length-1,0,s.value);v111StDirty(S,v111SecName(kind,s.value)+' added. Save the layout to use it.');
+}
+function v111StAddHint(kind){const s=document.getElementById('v111StAdd'),h=document.getElementById('v111StAddH');if(!s||!h)return;const d=v111SecDef(kind,s.value);h.textContent=d?d.d:'';}
+function v111StDrop(kind,k){const S=v111StCur(kind);S.cur.order=S.cur.order.filter(function(x){return x!==k;});S.cur.off=S.cur.off.filter(function(x){return x!==k;});delete S.cur.opt[k];v111StDirty(S);}
+function v111StReset(kind){const S=v111StCur(kind);S.cur=v111StStd(kind);v111StDirty(S,'The standard layout. Save it to use it.');}
+function v111StCancel(kind){if(V111.st)V111.st[kind]=null;nwRepaint();}
+async function v111StSave(kind){
+  const S=v111StCur(kind);if(S.busy)return;S.busy=true;nwRepaint();
+  try{
+    try{await apAiSettingsLoad(true);}catch(e){}
+    const all=Object.assign({},v111StSaved());
+    all[kind]={order:S.cur.order.slice(),off:S.cur.off.slice(),opt:v111Copy(S.cur.opt)};
+    all.updated_by=v111Me();all.updated_at=new Date().toISOString();
+    await v96Set('brief_structure',all);
+    S.busy=false;S.dirty=false;S.msg='Saved for the team. Every '+(kind==='ads'?'ads':'organic')+' brief follows it.';nwRepaint();
+    nwToast('Layout saved. Every brief follows it.');
+  }catch(e){S.busy=false;S.msg='Could not save: '+(e&&e.message?e.message:String(e));nwRepaint();}
+}
+/* a part the layout switched off, as a request names it: drafts are told to leave it out */
+function v111StOffNames(kind){const st=v111St(kind);return st.off.filter(function(k){return k!=='hand'&&k!=='test'&&k.indexOf('x_')!==0;}).map(function(k){return v111SecName(kind,k);});}
+
+/* ---------- the layout on a painted brief ---------- */
+const V111_NUM=['No things','One thing','Two things','Three things','Four things','Five things'];
+function v111StApply(m,kind){
+  const st=v111St(kind),main=m.querySelector('.nw-brmain');if(!main)return;
+  /* switched off */
+  st.off.forEach(function(k){const d=v111SecDef(kind,k),el=d&&d.id?m.querySelector('#'+d.id):null;if(el)el.remove();});
+  /* in order, with the added sections where they go */
+  const byK={};V111_SECS[kind].forEach(function(d){if(!d.id||d.k==='five')return;const el=document.getElementById(d.id);if(el&&el.parentNode===main)byK[d.k]=el;});
+  st.order.forEach(function(k){
+    if(byK[k]){main.appendChild(byK[k]);return;}
+    if(k.indexOf('x_')!==0||st.off.indexOf(k)>=0)return;
+    const html=v111XHtml(kind,k);if(!html)return;
+    const t=document.createElement('div');t.innerHTML=html;const el=t.firstElementChild;if(el)main.appendChild(el);
+  });
+  const rv=document.getElementById('nwBrReview');if(rv&&rv.parentNode===main)main.appendChild(rv);
+  /* how much of each */
+  const five=document.getElementById('nwBrFive');
+  if(five){
+    const n=parseInt(v111StOpt(st,kind,'five','n'),10)||5,cards=five.querySelectorAll('.nw-five-c');
+    [].slice.call(cards).slice(n).forEach(function(c){c.remove();});
+    const left=five.querySelectorAll('.nw-five-c').length,h=five.querySelector('h2');if(h&&left)h.textContent=V111_NUM[left]+' working';
+    if(v111StOpt(st,kind,'five','why')==='short')five.querySelectorAll('.nw-five-c > .nw-muted').forEach(function(x){x.remove();});
+  }
+  const cut=function(sel,n,more){
+    const L=[].slice.call(m.querySelectorAll(sel));if(L.length<=n)return 0;L.slice(n).forEach(function(x){x.remove();});return L.length-n;
+  };
+  if(kind==='org'){
+    const sn=v111StOpt(st,kind,'shift','n'),sec=document.getElementById('nwBrShift');
+    if(sec&&sn!=='all'){
+      const n=parseInt(sn,10)||6,L=sec.querySelectorAll('details.nw-acc'),btn=sec.querySelector('.nw-more-btn');
+      if(!V110.shAll&&L.length>n){let total=L.length;try{total=nwBrShifts(nwBrOrg()).length||L.length;}catch(e){}[].slice.call(L).slice(n).forEach(function(x){x.remove();});
+        if(btn)btn.remove();sec.insertAdjacentHTML('beforeend','<button type="button" class="nw-btn nw-btn-sm nw-more-btn" onclick="V110.shAll=true;nwRepaint()">Show all '+total+'</button>');}
+      else if(V110.shAll&&L.length>n&&!btn)sec.insertAdjacentHTML('beforeend','<button type="button" class="nw-btn nw-btn-sm nw-more-btn" onclick="V110.shAll=false;nwRepaint()">Show fewer</button>');
+    }
+    if(sec&&sn==='all'){const b=sec.querySelector('.nw-more-btn');if(b)b.remove();}
+    const dn=v111StOpt(st,kind,'dev','n'),dsec=document.getElementById('nwBrDev');
+    if(dsec&&dn==='1'&&!V110.devAll){const seen={};dsec.querySelectorAll('.nw-dev').forEach(function(x){const c=(x.querySelector('span')||{}).textContent||'';if(seen[c])x.remove();else seen[c]=1;});}
+    if(dsec&&dn==='all'){const b=dsec.querySelector('.nw-more-btn');if(b)b.remove();}
+    if(v111StOpt(st,kind,'themes','tw')==='off'){const t=document.getElementById('nwBrThemes');if(t){const tw=t.querySelector('.nw-tw');if(tw){const k=tw.previousElementSibling;if(k&&k.classList.contains('nw-kicker'))k.remove();tw.remove();}
+      if(!t.querySelector('.nw-bars'))t.remove();}}
+    if(v111StOpt(st,kind,'ev','n')==='all'){const e=document.getElementById('nwBrEv'),b=e&&e.querySelector('.nw-more-btn');if(b)b.remove();}
+  }else{
+    cut('#nwBrArch .nw-hook-g:not(.nw-hook-g4) .nw-hook',parseInt(v111StOpt(st,kind,'arch','n'),10)||8);
+    cut('#nwBrOffer .nw-hook',parseInt(v111StOpt(st,kind,'offer','n'),10)||6);
+  }
+  v111RailSync(m);
+}
+/* the list down the side follows what is on the page */
+function v111RailSync(m){
+  const nav=m.querySelector('.nw-railnav');if(!nav)return;
+  const main=m.querySelector('.nw-brmain'),L=[].slice.call(nav.querySelectorAll('button')),by={};
+  L.forEach(function(b){const id=(/nwBrJump\('([^']+)'\)/.exec(b.getAttribute('onclick')||'')||[])[1];if(id)by[id]=b;});
+  const ids=[];const five=document.getElementById('nwBrFive');if(five)ids.push('nwBrFive');
+  if(main)[].slice.call(main.children).forEach(function(s){if(s.id)ids.push(s.id);});
+  nav.innerHTML='';
+  ids.forEach(function(id){
+    let b=by[id];
+    if(!b){const s=document.getElementById(id),h=s&&(s.querySelector('h3.nw-sec-h')||s.querySelector('.nw-kicker'));if(!h)return;
+      b=document.createElement('button');b.type='button';b.setAttribute('onclick',"nwBrJump('"+id+"')");b.textContent=h.textContent;}
+    nav.appendChild(b);
+  });
+}
+
+/* ---------- sections counted from the brief's own posts and ads ---------- */
+/* the organic category of a post format, read the way the Intel Tracker files them, its free-text formats included */
+function v111Cat(f){
+  const s=String(f||'').toLowerCase().trim();if(!s)return '';
+  if(typeof V99_CAT_OF!=='undefined'&&V99_CAT_OF[f])return V99_CAT_OF[f];
+  if(/job|hiring|vacanc|personal update/.test(s))return '';
+  if(/podcast|video|replay|audio|episode|youtube|livestream/.test(s))return 'audio_video';
+  if(/event|webinar|conference|summit|live training|meetup|panel|recap|workshop/.test(s))return 'events';
+  if(/case stud|client result|testimonial|success|recognition|award/.test(s))return 'case_studies';
+  if(/research|report|white ?paper|survey|study|data|benchmark/.test(s))return 'research';
+  if(/newsletter|digest|roundup|magazine issue/.test(s))return 'newsletters';
+  if(/article|blog|feature|publication|magazine|op-?ed/.test(s))return 'articles';
+  if(/news|announce|launch|funding|release|product|partnership|acquisition/.test(s))return 'news';
+  if(/offer|promo|discount|sale/.test(s))return '';
+  if(/how.?to|guide|tutorial|explainer|tips|checklist|resource|list|training|educat|playbook/.test(s))return 'educational';
+  if(/opinion|framework|perspective|thought|commentary|analysis|insight|post|view/.test(s))return 'opinion';
+  return '';
+}
+function v111CatName(c){const x=(typeof NW_FOCUS_CATS!=='undefined'?NW_FOCUS_CATS:[]).find(function(y){return y[0]===c;});return x?x[1]:'Other posts';}
+function v111XPosts(o){
+  const all=V108.items[o.run_id];if(!all)return null;
+  const urls={};nwBrOrgEvidence(o).forEach(function(x){if(x.url)urls[x.url]=1;});
+  const inb=all.filter(function(i){return urls[i.url];});
+  return inb.length?inb:all.filter(function(i){return i.val==='high';});
+}
+function v111XAds(b){
+  if(!V109.pool)return null;
+  return nwBrAdEvidence(b).map(function(x){return x.ad;}).filter(Boolean);
+}
+function v111XRow(main,sub,go){return '<li class="v111-x-r">'+(go?'<button type="button" class="v111-x-b" onclick="'+esc(go)+'">':'<div class="v111-x-b">')+'<b>'+esc(main)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+(go?'</button>':'</div>')+'</li>';}
+function v111XHtml(kind,k){
+  const d=v111SecDef(kind,k);if(!d)return '';
+  let body='',note=kind==='org'?'Counted from the posts in this brief. Observed, not the agent’s reading.':'Counted from the ads behind this brief. Observed, not the agent’s reading.';
+  const wait='<p class="nw-muted nw-small">Counting…</p>';
+  if(kind==='org'){
+    const o=nwBrOrg();if(!o)return '';
+    const P=v111XPosts(o);
+    if(k==='x_rising'){
+      const L=nwBrOrgRows(),i=L.findIndex(function(x){return x.run_id===o.run_id;}),prev=i>=0?L[i+1]:null;
+      const cnt=function(r){const c={};apArr(apCfIntelData(r).top_themes).forEach(function(t){if(t&&t.theme)c[nwThemeKey(t.theme)]={n:nwNum(t.count)||0,l:nwThemeLabel(t.theme)};});return c;};
+      if(!prev)body='<p class="nw-muted nw-small">There is no earlier brief to compare with yet.</p>';
+      else{
+        const a=cnt(o),b=cnt(prev),up=[],quiet=[];
+        Object.keys(a).forEach(function(t){const was=b[t]?b[t].n:0;if(a[t].n-was>=2)up.push({l:a[t].l,n:a[t].n,was:was});});
+        Object.keys(b).forEach(function(t){if(!a[t]&&b[t].n>=3)quiet.push(b[t]);});
+        up.sort(function(x,y){return (y.n-y.was)-(x.n-x.was);});
+        body=(up.length?'<ul class="v111-x">'+up.slice(0,6).map(function(t){return v111XRow(t.l,t.n+' posts, up from '+t.was);}).join('')+'</ul>':'<p class="nw-muted nw-small">No theme grew by more than one post since the brief of '+esc(nwDay(prev.created_at))+'.</p>')+
+          (quiet.length?'<p class="nw-faint nw-small">Gone quiet: '+esc(quiet.slice(0,5).map(function(t){return t.l;}).join(', '))+'.</p>':'');
+        note='Compared with the brief of '+nwDay(prev.created_at)+'. Post counts per theme, as each brief counted them.';
+      }
+    }else if(!P)body=wait;
+    else if(!P.length)body='<p class="nw-muted nw-small">No posts to count in this brief.</p>';
+    else if(k==='x_formats'){
+      const g={};P.forEach(function(i){const c=v111Cat(i.content_format)||'other';(g[c]=g[c]||[]).push(i);});
+      const L=Object.keys(g).map(function(c){const a=g[c],sum=a.reduce(function(s,i){return s+(Number(i.engagement_total)||0);},0);
+        const best=a.slice().sort(function(x,y){return (Number(y.engagement_total)||0)-(Number(x.engagement_total)||0);})[0];
+        return {c:c,n:a.length,avg:Math.round(sum/a.length),best:best};}).sort(function(x,y){return y.avg-x.avg;});
+      body='<ul class="v111-x">'+L.slice(0,6).map(function(x){return v111XRow(v111CatName(x.c),nwPlural(x.n,'post')+' · '+nwFmtN(x.avg)+' engagement on average · best: '+nwClip(x.best.head||'',70),'nwPostOpen('+nwJs(x.best.id)+')');}).join('')+'</ul>';
+    }else if(k==='x_accounts'){
+      const g={};P.forEach(function(i){const w=nwWhoOf(i);g[w]=g[w]||{n:0,e:0,top:i};g[w].n++;g[w].e+=Number(i.engagement_total)||0;if((Number(i.engagement_total)||0)>(Number(g[w].top.engagement_total)||0))g[w].top=i;});
+      const L=Object.keys(g).map(function(w){return Object.assign({w:w},g[w]);}).sort(function(x,y){return y.n-x.n||y.e-x.e;});
+      body='<ul class="v111-x">'+L.slice(0,6).map(function(x){return v111XRow(x.w,nwPlural(x.n,'post')+' · '+nwFmtN(x.e)+' engagement · '+nwClip(x.top.head||'',70),'nwPostOpen('+nwJs(x.top.id)+')');}).join('')+'</ul>';
+    }else if(k==='x_reg'){
+      const re=/regulat|complian|\bsec\b|finra|\bfca\b|\bmas\b|esma|deadline|rulemak|supervis|\baudit/i;
+      const L=P.filter(function(i){return i.th.some(function(t){return /regulat|complian/i.test(t);})||re.test([i.headline,i.summary,i.signal].join(' '));})
+        .sort(function(x,y){return (Number(y.engagement_total)||0)-(Number(x.engagement_total)||0);});
+      body=L.length?'<ul class="v111-x">'+L.slice(0,6).map(function(i){return v111XRow(i.head,nwWhoOf(i)+(i.engagement_total!=null?' · '+nwFmtN(i.engagement_total)+' engagement':''),'nwPostOpen('+nwJs(i.id)+')');}).join('')+'</ul>'
+        :'<p class="nw-muted nw-small">No post in this brief is about rules or regulators.</p>';
+    }else if(k==='x_questions'){
+      const seen={},Q=[];
+      P.forEach(function(i){
+        String([i.raw_text,i.summary,i.headline].filter(Boolean).join('\n')).replace(/\s+/g,' ').split(/(?<=[?.!])\s+/).forEach(function(s){
+          s=s.trim();if(!/\?$/.test(s)||s.length<25||s.length>220)return;const key=s.toLowerCase().replace(/[^a-z0-9 ]/g,'').slice(0,80);if(seen[key])return;seen[key]=1;Q.push({q:s,i:i});});
+      });
+      body=Q.length?'<ul class="v111-x">'+Q.slice(0,8).map(function(x){return v111XRow('“'+x.q+'”',nwWhoOf(x.i),'nwPostOpen('+nwJs(x.i.id)+')');}).join('')+'</ul>'
+        :'<p class="nw-muted nw-small">No questions in these posts.</p>';
+      note='Questions as they appear in the posts in this brief, word for word.';
+    }
+  }else{
+    const b=nwBrAd();if(!b)return '';
+    const A=v111XAds(b);
+    if(!A)body=wait;
+    else if(!A.length)body='<p class="nw-muted nw-small">This brief did not record which ads it read.</p>';
+    else{
+      const count=function(f){const c={};A.forEach(function(a){const v=f(a);if(v)c[v]=(c[v]||0)+1;});return Object.keys(c).map(function(v){return {v:v,n:c[v]};}).sort(function(x,y){return y.n-x.n;});};
+      if(k==='x_cta'){const L=count(function(a){return e9Clean(nwAdClean(a.cta)||'');});
+        body=L.length?'<ul class="v111-x">'+L.slice(0,8).map(function(x){return v111XRow(x.v,nwPlural(x.n,'ad'));}).join('')+'</ul>':'<p class="nw-muted nw-small">None of these ads shows a button.</p>';}
+      else if(k==='x_formats'){const L=count(function(a){return NW_AD_FMT[a.format]||(a.format?e9Clean(String(a.format).replace(/_/g,' ')):'');});
+        body=L.length?'<ul class="v111-x">'+L.map(function(x){return v111XRow(x.v,nwPlural(x.n,'ad'));}).join('')+'</ul>':'<p class="nw-muted nw-small">No format recorded.</p>';}
+      else if(k==='x_prices'){const L=A.filter(function(a){return a.price_point_inferred!=null&&a.price_point_inferred!=='';}).sort(function(x,y){return Number(x.price_point_inferred)-Number(y.price_point_inferred);});
+        body=L.length?'<ul class="v111-x">'+L.slice(0,8).map(function(a){return v111XRow('$'+String(a.price_point_inferred).replace(/\.0+$/,'')+(a.self_liquidating?' · self-liquidating':''),[a.adv,nwClip(e9Clean(nwAdClean(a.offer_inferred)||''),70)].filter(Boolean).join(' · '),'nwAdOpen('+nwJs(a.id)+')');}).join('')+'</ul>'
+          :'<p class="nw-muted nw-small">None of these ads shows a price.</p>';}
+      else if(k==='x_landing'){
+        const kind2=function(u){u=String(u||'').toLowerCase();if(!u)return '';return /calendly|book|schedul|appointment|consult|call/.test(u)?'Booking a call':/webinar|event|register|live|workshop|masterclass/.test(u)?'Webinar or event':
+          /download|guide|ebook|checklist|report|playbook|template|whitepaper/.test(u)?'Download':/quiz|assessment|scorecard|diagnostic|test/.test(u)?'Quiz or assessment':/checkout|cart|buy|order|pricing|shop|pay/.test(u)?'Checkout':'Website';};
+        const L=count(function(a){return kind2(a.destination_url);});
+        body=L.length?'<ul class="v111-x">'+L.map(function(x){const ex=A.find(function(a){return kind2(a.destination_url)===x.v;});return v111XRow(x.v,nwPlural(x.n,'ad')+(ex&&ex.adv?' · for example '+ex.adv:''),ex?'nwAdOpen('+nwJs(ex.id)+')':'');}).join('')+'</ul>'
+          :'<p class="nw-muted nw-small">No landing pages recorded.</p>';}
+      else if(k==='x_longest'){const L=A.filter(function(a){return a.days!=null;}).sort(function(x,y){return y.days-x.days;});
+        body=L.length?'<ul class="v111-x">'+L.slice(0,5).map(function(a){return v111XRow(a.adv+' · '+nwPlural(a.days,'day'),nwClip(e9Clean(a.title||a.hook||''),90),'nwAdOpen('+nwJs(a.id)+')');}).join('')+'</ul>'
+          :'<p class="nw-muted nw-small">Run times were not recorded for these ads.</p>';}
+    }
+  }
+  return nwBrSec('nwBrX_'+k,'Added section',d.t,body+'<p class="nw-faint nw-small">'+esc(note)+'</p>','<span class="nw-tag">'+nwIc('sliders',13)+'From the layout</span>');
+}
+
+
+/* ---------- the briefs page: edits and the layout ---------- */
+(function(){
+  /* the brief being edited reads as it now stands */
+  const _o=nwBrOrg;nwBrOrg=function(){const r=_o.apply(this,arguments);return r&&v111EdOn('org',r.run_id)?v111OrgRow():r;};
+  const _a=nwBrAd;nwBrAd=function(){const r=_a.apply(this,arguments);return r&&v111EdOn('ads',r.run_id)?Object.assign({},r,V111.ed.cur.cb):r;};
+  /* five things taken out are out wherever the brief is used */
+  const _s=e9SnapFor;e9SnapFor=function(run){
+    const e=V111.ed;
+    if(e&&e.run===run){if(e.cur.rev.hidden.indexOf('five')>=0)return {items:[]};const s=e.cur.snap;return s&&Array.isArray(s.items)?s:_s.apply(this,arguments);}
+    if(run&&v111Hidden(v111IsOrg(run)?'org':'ads',run,'five'))return {items:[]};
+    return _s.apply(this,arguments);
+  };
+  /* posts taken out of an organic brief are not its sources any more */
+  const _f=nwIntelFive;nwIntelFive=function(run,items){
+    const r=v111Live('org',run),rm=r&&Array.isArray(r.removed)?r.removed:[];
+    if(rm.length&&Array.isArray(items))items=items.filter(function(i){return rm.indexOf(i.url)<0;});
+    return _f.call(this,run,items);
+  };
+  /* nor are ads taken out of an ads brief */
+  const _ae=nwBrAdEvidence;nwBrAdEvidence=function(b){
+    const L=_ae.apply(this,arguments);if(!b)return L;
+    const r=v111Live('ads',b.run_id),rm=r&&Array.isArray(r.removed)?r.removed:[];
+    if(!rm.length)return L;
+    return L.filter(function(x){return rm.indexOf(v111AdKey(x))<0;}).map(function(x,i){return Object.assign({},x,{rec:'P'+(i+1)});});
+  };
+  /* sections a person took out, or the layout switched off, are not painted */
+  const _sec=nwBrSec;nwBrSec=function(id){
+    const rk=V111.rk,k=V111_SECID[id];
+    if(rk&&k&&(v111Hidden(rk.kind,rk.run,k)||(V110.view==='brief'&&v111St(rk.kind).off.indexOf(k)>=0)))return '';
+    return _sec.apply(this,arguments);
+  };
+  const paint=function(kind,orig,self,args){
+    const b=kind==='org'?nwBrOrg():nwBrAd(),ed=!!(b&&v111EdOn(kind,b.run_id)),keep={sh:V110.shAll,dev:V110.devAll,ev:V110.evAll};
+    V111.rk=b?{kind:kind,run:b.run_id}:null;
+    if(V110.view==='edit'&&!ed)V110.view='brief';
+    if(V110.view==='brief'&&b&&!ed&&kind==='org'){const st=v111St(kind);
+      if(v111StOpt(st,kind,'shift','n')==='all')V110.shAll=true;if(v111StOpt(st,kind,'dev','n')==='all')V110.devAll=true;if(v111StOpt(st,kind,'ev','n')==='all')V110.evAll=true;}
+    if(ed&&V110.view==='edit'){V110.view='structure';V111.paint='edit';}
+    try{return orig.apply(self,args);}
+    finally{
+      if(V111.paint==='edit')V110.view='edit';
+      V111.paint=null;V111.rk=null;
+      if(!ed){V110.shAll=keep.sh;V110.devAll=keep.dev;V110.evAll=keep.ev;}
+    }
+  };
+  const _oh=nwBrOrgHtml;nwBrOrgHtml=function(){return paint('org',_oh,this,arguments);};
+  const _ah=nwBrAdHtml;nwBrAdHtml=function(){return paint('ads',_ah,this,arguments);};
+  /* Structure is the layout editor; while a brief is edited the same slot holds the editor */
+  const _st=nwBrStructure;nwBrStructure=function(){
+    if(V111.paint==='edit')return v111EdHtml();
+    const rk=V111.rk;if(rk)return v111StHtml(rk.kind);
+    return _st.apply(this,arguments);
+  };
+  /* the record at the top: edit controls while editing, who edited it after */
+  const _bar=nwBrBar;nwBrBar=function(o){
+    let h=_bar.apply(this,arguments);const rk=V111.rk;if(!rk||!o)return h;
+    if(v111EdOn(rk.kind,rk.run))return h.replace(/<div class="nw-brbar-side">[\s\S]*<\/div><\/section>$/,v111EdSide()+'</section>');
+    const rev=v111Live(rk.kind,rk.run);
+    if(rev&&rev.by){
+      const line='<span class="v111-edmeta">'+nwIc('pen',13)+'<b>Edited</b> by '+esc(v111Who(rev.by))+' '+esc(nwDay(rev.at))+
+        (rev.original?' · <button type="button" class="nw-link nw-small" onclick="v111Restore('+esc(nwJs(rk.kind))+','+esc(nwJs(rk.run))+')">Put back the agent’s version</button>':'')+'</span>';
+      const i=h.indexOf('<div class="nw-brmeta">'),j=i>=0?h.indexOf('</div>',i):-1;if(j>0)h=h.slice(0,j)+line+h.slice(j);
+    }
+    h=h.replace(/<option value="([^"]*)"([^>]*)>([^<]*)<\/option>/g,function(m,v,a,l){const r=v111Live(rk.kind,v.replace(/&amp;/g,'&'));return r&&r.by?'<option value="'+v+'"'+a+'>'+l+' · edited</option>':m;});
+    if(V110.view!=='structure'){
+      const agent=rk.kind==='org'?'intel_tracker':'ad_strategist';
+      h=h.replace(/<\/div><\/section>$/,'<button type="button" class="nw-btn nw-btn-sm v111-edbtn" onclick="v111EdStart('+esc(nwJs(agent))+','+esc(nwJs(rk.run))+')">'+nwIc('pen',15)+'Edit</button></div></section>');
+    }
+    return h;
+  };
+  /* Request changes opens the editor; approving waits for unsaved edits */
+  const _ap=nwBrApprove;nwBrApprove=function(agent,id,action){
+    if(action==='changes'&&v111EdCan(agent,id))return v111EdStart(agent,id);
+    if(action==='approved'){const kind=agent==='ad_strategist'?'ads':'org';if(v111EdOn(kind,id)&&V111.ed.n){nwToast('Save or discard your changes first.');return;}}
+    return _ap.apply(this,arguments);
+  };
+  const _rv=nwBrReview;nwBrReview=function(id,key,agent){
+    let h=_rv.apply(this,arguments);
+    const kind=agent==='ad_strategist'?'ads':agent==='intel_tracker'?'org':null;
+    if(kind&&v111EdOn(kind,id))return h.replace(/<div class="nw-card-foot" style="margin-top:0"><span class="nw-faint nw-small">\d+ of \d+ checks done<\/span>[\s\S]*?<\/div>/,
+      '<div class="nw-card-foot" style="margin-top:0"><span class="nw-muted nw-small">You are editing this brief. Save or discard the changes, then approve it.</span>'+
+      '<button type="button" class="nw-btn nw-btn-sm" onclick="V110.view=\'edit\';nwRepaint();window.scrollTo(0,0)">Back to editing</button></div>');
+    const f=v111LastFb(id);
+    if(f&&f.action==='edited')h=h.replace(/(<p class="nw-muted nw-small nw-dec">)[\s\S]*?(<\/p>)/,function(m,a,b){return a+v111EditedLine(f)+b;});
+    if(kind)h=h.replace(/>Request changes<\/button>/,' title="Edit the brief, or leave a note for the agent">'+nwIc('pen',15)+'Request changes</button>');
+    return h;
+  };
+  /* an edit is not a decision: the brief waits for review again */
+  const _d=apCfDecision;apCfDecision=function(id){const r=_d.apply(this,arguments);return r&&r.action==='edited'?null:r;};
+  /* after the page paints: the layout, and what it still needs */
+  const _pg=NW_PAGES['e3.briefs'];
+  NW_PAGES['e3.briefs']=function(m,again){
+    const r=_pg.apply(this,arguments);
+    try{v111BrAfter(m);}catch(e){console.error(e);}
+    if(!again&&!V111.brAsk){
+      V111.brAsk=1;
+      Promise.all([v111AdRevLoad(),typeof AP_AISET==='undefined'||!AP_AISET?apAiSettingsLoad():null]).then(function(){V111.brAsk=0;if(nwOn('e3.briefs'))nwRepaint();}).catch(function(){V111.brAsk=0;});
+    }
+    return r;
+  };
+  Object.keys(_pg).forEach(function(p){NW_PAGES['e3.briefs'][p]=_pg[p];});
+})();
+function v111BrAfter(m){
+  const tab=nwBrTab();if(tab==='combined')return;
+  const kind=tab==='ads'?'ads':'org',b=kind==='org'?nwBrOrg():nwBrAd();if(!b)return;
+  if(V110.view==='brief')v111StApply(m,kind);
+}
+
+
+/* ===================================================================
+   4. What you make, by category, with what the briefs found for it
+   =================================================================== */
+/* a video or podcast script joins the kinds of post, for the Podcasts and video category */
+if(!V105_CT.some(function(x){return x[0]==='video_script';})){
+  V105_CT.push(['video_script','Video or podcast script','thought_leadership']);
+  V105_CT_D.video_script='A short script for a video or a podcast segment: a hook, three points and a close.';
+  V105_CT_OUT.video_script='Video or podcast script · three openings';
+  V105_CT_RE.video_script=/podcast|video|episode|audio|replay|livestream/i;
+  V105_CT_TPL.video_script={sections:[['The hook','The first ten seconds: the question or claim that makes someone keep watching.'],['Three points','Three short spoken points from the material, each with one example.'],['The close','What to do next, said once.']],
+    rules:'Write it to be spoken: short sentences and plain words, about 90 seconds long. Mark [B-ROLL] where a visual would help. No headings read aloud.'};
+}
+/* the categories of each kind: [key, label, the kind of post it is written as] */
+const V111_CATS={
+  thought_leadership:[['opinion','Opinion and frameworks','thought_leadership'],['educational','Educational and how-to','educational'],['case_studies','Case studies and results','social_proof'],
+    ['research','Reports and white papers','industry_news'],['news','News and announcements','industry_news'],['events','Events and webinars','event'],['audio_video','Podcasts and video','video_script']],
+  newsletter:[['newsletters','Newsletter issue','newsletter'],['articles','Article','article']],
+  email:[],
+  ad:[['direct_to_call','Book a call'],['low_ticket','Low-ticket offer']],
+  adcopy:[['ad_image','Image ad'],['ad_text','Text ad'],['ad_carousel','Carousel ad'],['ad_video','Video ad script']]
+};
+/* the shape of the ad types the ad copy writer has no structure for */
+const V111_ADT={
+  ad_carousel:{name:'Carousel ad',d:'A carousel: one idea across five to seven slides, then the call to action.',
+    sections:[{title:'Slide 1: the hook',guidance:'One line that stops the scroll, from the hooks to test.'},{title:'Slides 2 to 5: the points',guidance:'One short point per slide, from the material, in order.'},{title:'Last slide: the ask',guidance:'The call to action and the offer, said once.'}],
+    rules:'Write it slide by slide: under 20 words a slide. Give the caption that goes with the carousel as the body.'},
+  ad_video:{name:'Video ad script',d:'A 30 to 45 second video ad: hook, problem, proof, ask.',
+    sections:[{title:'The first three seconds',guidance:'The hook, said on screen and out loud.'},{title:'The problem',guidance:'What the buyer is stuck on, in their words.'},{title:'The proof',guidance:'One fact or example from the material.'},{title:'The ask',guidance:'The call to action, said once.'}],
+    rules:'Write it to be spoken, 30 to 45 seconds. Put on-screen text in [TEXT: ...] and visuals in [SHOT: ...].'}
+};
+const V111_AFMT={ad_image:['static_image','image'],ad_text:['text'],ad_carousel:['carousel'],ad_video:['video']};
+function v111Kind(page){return page==='mg'?nwMgKind():nwCtKind();}
+function v111InsS(page){
+  if(!V111.ins[page]){let drop={};try{drop=nwLS('ap.v111.drop',{})||{};}catch(e){drop={};}V111.ins[page]={cat:{},use:{},drop:drop,saved:{},more:false,showDrop:false};}
+  return V111.ins[page];
+}
+/* the category in force: the one picked, else the one that matches the kind of post set, else the first */
+function v111CatCur(page){
+  const kind=v111Kind(page),L=V111_CATS[kind]||[];if(!L.length)return '';
+  const S=v111InsS(page);
+  if(kind==='ad'){const pk=V97.mg.pk||'direct_to_call';return L.some(function(c){return c[0]===pk;})?pk:L[0][0];}
+  const c=S.cat[kind];
+  const t=page==='mg'?nwMgType():(kind==='adcopy'?'':v105CtType());
+  if(c&&L.some(function(x){return x[0]===c&&(!x[2]||x[2]===t||kind==='adcopy');}))return c;
+  const m=L.find(function(x){return x[2]&&x[2]===t;});
+  return (m||L[0])[0];
+}
+function v111CatLabel(kind,c){const x=(V111_CATS[kind]||[]).find(function(y){return y[0]===c;});return x?x[1]:'';}
+function v111Hash(s){let h=5381;s=String(s);for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return 'i'+(h>>>0).toString(36);}
+function v111Near(a,b){const A=new Set(v96Toks(a)),B=v96Toks(b);if(!A.size||!B.length)return false;let n=0;B.forEach(function(w){if(A.has(w))n++;});return n/Math.max(A.size,B.length)>=0.6;}
+
+/* ---------- what the organic briefs found, each with its category ---------- */
+function v111OrgPool(){
+  const stamp=[(nwCF()||{}).t,E9S.t,JSON.stringify(v111St('org').off)].join('|');
+  if(V111.orgPool&&V111.orgPool.stamp===stamp)return V111.orgPool.L;
+  const out=[];
+  nwBrOrgRows().slice(0,6).forEach(function(o){
+    const run=o.run_id,d=apCfIntelData(o),rev=v111RevOrg(o)||{},hid=rev.hidden||[],off=v111St('org').off,rm=rev.removed||[];
+    const skip=function(k){return hid.indexOf(k)>=0||off.indexOf(k)>=0;};
+    const by={};apArr(d.items).concat(apArr(d.high_value_items)).forEach(function(i){if(i&&i.url&&!by[i.url]&&rm.indexOf(i.url)<0)by[i.url]=i;});
+    const toks={};Object.keys(by).forEach(function(u){const i=by[u];toks[u]=v96Toks([i.headline,i.summary,i.working,i.signal].join(' '));});
+    const near=function(t){const q=new Set(v96Toks(t));let best=null,bs=0;Object.keys(toks).forEach(function(u){let s=0;toks[u].forEach(function(w){if(q.has(w))s++;});if(s>bs){bs=s;best=by[u];}});return bs>=2?best:null;};
+    const brief={kind:'org',run:run,date:o.created_at,ok:nwBrState(run)==='ok'};
+    const push=function(x){
+      x.text=e9Clean(x.text||'');x.why=e9Clean(x.why||'');if(!x.text)return;
+      if(out.some(function(y){return y.src===x.src&&v111Near(y.text,x.text);}))return;
+      x.brief=brief;x.id=v111Hash('org|'+run+'|'+x.src+'|'+x.text);out.push(x);
+    };
+    if(!skip('five')){let S={items:[]};try{S=e9SnapItems('org',run,e9OrgFallback(o.content_md));}catch(e){}
+      (S.items||[]).forEach(function(x){if(!x||!x.text)return;const i=near(x.text+' '+(x.why||''));push({src:'Five things',text:x.text,why:x.why,url:i?i.url:'',who:i?i.competitor:'',c:i?v111Cat(i.format||i.content_format):'',w:3});});}
+    if(!skip('shift'))nwBrShifts(o).forEach(function(s){const i=(s.url&&by[s.url])||near(s.title+' '+s.obs);push({src:'What changed',text:s.title,why:s.use||s.interp||s.obs,url:s.url,who:s.who,c:i?v111Cat(i.format||i.content_format):'',w:2});});
+    if(!skip('dev'))nwBrDevs(o).forEach(function(x){const i=x.url&&by[x.url];let c=i?v111Cat(i.format||i.content_format):'';if(!c)c=/news|product|\bai\b/i.test(x.cat)?'news':/thought/i.test(x.cat)?'opinion':'';
+      push({src:'Development',text:x.title||nwClip(x.text,100),why:x.why||x.text,url:x.url,who:x.who,c:c,w:1});});
+    Object.keys(by).forEach(function(u){const i=by[u];if(!i.working||/off-topic/i.test(i.working))return;
+      push({src:'Post',text:i.working,why:i.headline||nwClip(i.summary,140),url:u,who:i.competitor||'',eng:nwNum(i.engagement_total),c:v111Cat(i.format||i.content_format),w:0});});
+  });
+  out.forEach(function(x,i){x.ord=i;});
+  V111.orgPool={stamp:stamp,L:out};return out;
+}
+/* ---------- what the ads briefs found, and the ads that fit ---------- */
+function v111AdPool(){
+  const stamp=[(nwCF()||{}).t,E9S.t,V109.t,JSON.stringify(v111St('ads').off),V111.adRev?Object.keys(V111.adRev).length:-1].join('|');
+  if(V111.adPool&&V111.adPool.stamp===stamp)return V111.adPool.L;
+  const out=[];
+  const push=function(x,run){x.text=e9Clean(x.text||'');x.why=e9Clean(x.why||'');if(!x.text)return;if(out.some(function(y){return y.src===x.src&&v111Near(y.text,x.text);}))return;
+    x.id=v111Hash('ads|'+(run||'')+'|'+x.src+'|'+x.text);out.push(x);};
+  nwAdBriefs().slice(0,3).forEach(function(b){
+    const run=b.run_id,rev=v111RevAd(run)||{},hid=rev.hidden||[],off=v111St('ads').off;
+    const skip=function(k){return hid.indexOf(k)>=0||off.indexOf(k)>=0;};
+    const brief={kind:'ads',run:run,date:b.created_at,ok:nwBrState(run)==='ok'};
+    if(!skip('five')){let S={items:[]};try{S=e9SnapItems('ad',run,e9AdFallback(b));}catch(e){}
+      (S.items||[]).forEach(function(x){if(x&&x.text)push({src:'Five things',text:x.text,why:x.why,brief:brief,w:3},run);});}
+    apArr(b.winning_hooks).forEach(function(h){push({src:'Hook pattern',text:typeof h==='string'?h:(h&&(h.pattern||h.hook||h.text))||'',why:'A pattern from the ads brief, to put in your own words',brief:brief,w:2},run);});
+    if(!skip('offer'))apArr(b.winning_offers).forEach(function(o){o=typeof o==='string'?{type:o}:(o||{});const pr=o.price_point!=null&&o.price_point!==''?Number(o.price_point):null;
+      push({src:'Offer',text:(o.type||'Offer')+(pr?' at $'+String(pr).replace(/\.0+$/,''):''),why:o.notes||'',brief:brief,lt:!!o.self_liquidating||pr>0,w:2},run);});
+    if(!skip('pain')){apArr(b.core_pain_points).forEach(function(p){push({src:'Pain',text:typeof p==='string'?p:(p&&(p.pain||p.text))||'',brief:brief,w:1},run);});
+      apArr(b.objection_themes).forEach(function(p){push({src:'Objection',text:String(p||''),why:'Answer it before the buyer raises it',brief:brief,w:1},run);});}
+    if(!skip('short')&&b.differentiation_angle)push({src:'Angle',text:nwClip(e9Clean(b.differentiation_angle),180),why:'The angle the ads brief sets',brief:brief,w:2},run);
+  });
+  (V109.pool||[]).filter(function(a){return a&&(a.hook||a.title);}).forEach(function(a){
+    push({src:'Ad',text:a.hook||a.title,why:[a.adv,a.days!=null?nwPlural(a.days,'day')+' running':'',e9Clean(nwAdClean(a.cta)||'')].filter(Boolean).join(' · '),adId:a.id,who:a.adv,
+      fmt:a.format,lt:!!a.self_liquidating||Number(a.price_point_inferred)>0,call:/book|call|schedul|calendly|consult|demo/i.test(String(a.cta||'')+' '+String(a.destination_url||'')),score:a.score||0,days:a.days||0,w:0},a.run_id);
+  });
+  V111.adPool={stamp:stamp,L:out};return out;
+}
+/* the insights for a page as it is set: kind and category */
+function v111InsAll(page){
+  const kind=v111Kind(page),cat=v111CatCur(page);
+  if(kind==='ad'||kind==='adcopy'){
+    const P=v111AdPool();let ads=P.filter(function(x){return x.src==='Ad';}),brief=P.filter(function(x){return x.src!=='Ad';});
+    if(kind==='ad'){
+      const lt=cat==='low_ticket';
+      brief=brief.filter(function(x){return x.src!=='Offer'||(lt?x.lt:!x.lt);});
+      ads=ads.filter(function(a){return lt?a.lt:a.call;});
+    }else{const f=V111_AFMT[cat]||[];ads=ads.filter(function(a){return f.indexOf(a.fmt)>=0;});}
+    ads=ads.sort(function(a,b){return (b.score-a.score)||(b.days-a.days);}).slice(0,8);
+    const wt=function(x){return kind==='ad'&&x.src==='Offer'?2.5:x.w;};
+    brief=brief.sort(function(a,b){return (wt(b)-wt(a))||(Date.parse(b.brief.date)||0)-(Date.parse(a.brief.date)||0);});
+    return kind==='adcopy'?ads.concat(brief):brief.concat(ads);
+  }
+  const P=v111OrgPool();
+  const L=!cat?P.filter(function(x){return x.w>0;}):P.filter(function(x){return x.c===cat;});
+  return L.slice().sort(function(a,b){return ((b.w>0)-(a.w>0))||(a.w>0?a.ord-b.ord:((b.eng||0)-(a.eng||0)));});
+}
+function v111InsLive(page){const S=v111InsS(page);return v111InsAll(page).filter(function(x){return !S.drop[x.id];});}
+function v111Picks(page){const S=v111InsS(page);return v111InsAll(page).filter(function(x){return S.use[x.id]&&!S.drop[x.id];});}
+function v111InsCount(page,cat){
+  const kind=v111Kind(page);if(kind==='ad'||kind==='adcopy')return null;
+  const S=v111InsS(page);return v111OrgPool().filter(function(x){return x.c===cat&&!S.drop[x.id];}).length;
+}
+
+/* ---------- painting ---------- */
+function v111CatsHtml(page){
+  const kind=v111Kind(page),L=V111_CATS[kind]||[];if(!L.length)return '';
+  const cur=v111CatCur(page);
+  const sub=kind==='ad'?(NW_MG_PK[cur]||['',''])[1]:kind==='adcopy'?((V111_ADT[cur]||{}).d||'Ad copy from your material: a body, three hooks and a call to action.'):'';
+  return '<div class="v111-cats"><span class="nw-lbl">'+(kind==='ad'?'Campaign':'Category')+'</span><div class="nw-chips" role="radiogroup" aria-label="'+(kind==='ad'?'Campaign':'Category')+'">'+
+    L.map(function(c){const on=c[0]===cur,n=v111InsCount(page,c[0]);
+      return '<button type="button" class="nw-chip nw-chip-sm v111-cat" role="radio" aria-checked="'+on+'" data-c="'+c[0]+'" onclick="v111CatPick(\''+page+'\',\''+c[0]+'\')">'+(on?nwIc('check',13):'')+esc(c[1])+
+        (n!=null?'<span class="nw-cnt">'+n+'</span>':'')+'</button>';}).join('')+'</div>'+(sub?'<p class="nw-faint nw-small v111-cat-d">'+esc(sub)+'</p>':'')+'</div>';
+}
+function v111InsCard(page,x,S){
+  const on=!!S.use[x.id],saved=!!S.saved[x.id];
+  const from=x.src==='Ad'?'From the Ad Strategist':(x.brief.kind==='org'?'Organic brief':'Ads brief')+' · '+nwDay(x.brief.date);
+  const go=x.adId?'nwAdOpen('+nwJs(x.adId)+')':x.url?'window.open('+nwJs(x.url)+',\'_blank\',\'noopener\')':'';
+  return '<article class="v111-in'+(on?' is-on':'')+'" data-id="'+x.id+'"><div class="v111-in-top">'+nwTag(x.src==='Post'?'What works in a post':x.src,x.src!=='Ad')+'<span class="nw-faint nw-small">'+esc(from)+'</span>'+
+      (go?'<button type="button" class="nw-link nw-small v111-in-src" onclick="'+esc(go)+'">'+(x.adId?'See the ad':'See the post')+nwIc('arrowUR',13)+'</button>':'')+'</div>'+
+    '<b class="v111-in-t">'+esc(x.text)+'</b>'+(x.why?'<p class="nw-muted nw-small">'+esc(nwClip(x.why,200))+(x.who&&x.src!=='Ad'?' <span class="nw-faint">· '+esc(x.who)+'</span>':'')+'</p>':'')+
+    '<div class="v111-in-a"><button type="button" class="nw-btn nw-btn-sm'+(on?' nw-btn-primary':'')+'" aria-pressed="'+on+'" onclick="v111InUse(\''+page+'\',\''+x.id+'\')">'+nwIc('check',14)+(on?'Using':'Use')+'</button>'+
+      '<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v111InDrop(\''+page+'\',\''+x.id+'\')">'+nwIc('x',14)+'Not this</button>'+
+      '<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v111InSave(\''+page+'\',\''+x.id+'\')"'+(saved?' disabled':'')+'>'+nwIc('bookmark',14)+(saved?'Saved for later':'Save for later')+'</button></div></article>';
+}
+function v111InsBody(page){
+  const kind=v111Kind(page),cat=v111CatCur(page),S=v111InsS(page),ads=kind==='ad'||kind==='adcopy';
+  if(!nwCF()||(ads&&!V109.pool))return '<p class="nw-muted nw-small">Reading the briefs…</p>';
+  const all=v111InsAll(page),L=all.filter(function(x){return !S.drop[x.id];}),nDrop=all.length-L.length,on=L.filter(function(x){return S.use[x.id];}).length;
+  const label=v111CatLabel(kind,cat);
+  const lead=ads?'From your ads briefs and the ads the Ad Strategist read. Use what fits, drop what does not, or keep one for later.'
+    :'From your last '+Math.min(6,nwBrOrgRows().length)+' organic briefs. Use what fits, drop what does not, or keep one for later. The '+(NW_CK[kind]?NW_CK[kind].noun||'piece':'piece')+' is built on what you use.';
+  let note='';
+  const wait=(function(){const seen={},L2=[];all.forEach(function(x){if(x.brief&&!x.brief.ok&&!seen[x.brief.run]){seen[x.brief.run]=1;L2.push(nwDay(x.brief.date));}});return L2;})();
+  if(wait.length)note+='<p class="nw-faint nw-small">'+esc((wait.length===1?'The brief of '+wait[0]+' is':'The briefs of '+wait.join(', ').replace(/, ([^,]+)$/,' and $1')+' are')+' not approved yet. Its findings can still be used.')+'</p>';
+  if(kind==='adcopy'&&!L.some(function(x){return x.src==='Ad';}))note='<p class="nw-faint nw-small">No '+esc(({ad_image:'image ads',ad_text:'text ads',ad_carousel:'carousel ads',ad_video:'video ads'})[cat]||'ads of this kind')+' in what the Ad Strategist read yet. The brief’s hooks and pains still apply.</p>';
+  if(!L.length)return '<p class="nw-muted nw-small">'+lead+'</p>'+note+'<div class="nw-empty v111-ins-empty"><b>'+(nwBrOrgRows().length||ads?'Nothing for '+esc(label?label.toLowerCase():'this')+' in the briefs yet':'No briefs yet')+'</b><span>'+
+      (ads?'Run the Ad Strategist for fresh ads, or write from your own angle.':'Pick another category, or say what it should focus on.')+'</span></div>'+
+    (nDrop?'<button type="button" class="nw-link nw-small" onclick="v111InUndrop(\''+page+'\')">Bring back the '+nwPlural(nDrop,'one')+' you dropped</button>':'');
+  const shown=S.more?L:L.slice(0,6);
+  return '<p class="nw-muted nw-small">'+lead+'</p>'+note+'<div class="v111-ins">'+shown.map(function(x){return v111InsCard(page,x,S);}).join('')+'</div>'+
+    '<div class="v111-ins-foot">'+(L.length>6?'<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v111InMore(\''+page+'\')">'+(S.more?'Show fewer':'Show all '+L.length)+'</button>':'')+
+      (nDrop?'<button type="button" class="nw-link nw-small" onclick="v111InUndrop(\''+page+'\')">'+nDrop+' dropped · bring '+(nDrop===1?'it':'them')+' back</button>':'')+
+      '<span class="nw-grow"></span><span class="nw-faint nw-small">'+(on?nwPlural(on,'pick')+' in use':'Nothing picked yet')+'</span>'+
+      '<button type="button" class="nw-btn nw-btn-primary nw-btn-sm" onclick="v111WriteFrom(\''+page+'\')"'+(on?'':' disabled')+'>'+nwIc('sparkle',15)+'Write it from '+(on===1?'this':'these')+'</button></div>';
+}
+function v111InsStep(page,n){
+  return '<section class="nw-wstep v111-insw" id="v111Ins_'+page+'"><div class="nw-wstep-h"><span class="nw-step-dot">'+n+'</span><h3>What the briefs found</h3><span class="nw-faint nw-small v111-ins-for" id="v111InsFor_'+page+'"></span></div>'+
+    '<div id="v111InsB_'+page+'"></div></section>';
+}
+function v111InsPaint(page){
+  const host=v97$('v111InsB_'+page);if(!host)return;
+  const kind=v111Kind(page),cat=v111CatCur(page),cats=v97$('v111Cats_'+page);
+  if(cats)cats.innerHTML=v111CatsHtml(page);
+  const f=v97$('v111InsFor_'+page);if(f)f.textContent=cat?'for '+v111CatLabel(kind,cat).toLowerCase():'across every category';
+  const a=document.activeElement,row=a&&host.contains(a)&&a.closest?a.closest('.v111-in-a'):null,keep=row?row.closest('.v111-in').dataset.id:null,idx=row?[].indexOf.call(row.children,a):-1;
+  host.innerHTML=v111InsBody(page);
+  if(keep){const card=host.querySelector('.v111-in[data-id="'+keep+'"]');const b=card&&card.querySelector('.v111-in-a').children[idx];if(b&&!b.disabled)try{b.focus({preventScroll:true});}catch(e){}}
+}
+function v111InsSide(page){
+  const ul=document.querySelector('#'+(page==='mg'?'nwMgSideB':'nwCtSideB')+' .nw-uses');if(!ul)return;
+  const old=ul.querySelector('.v111-use');if(old)old.remove();
+  const P=v111Picks(page);if(!P.length)return;
+  const t=document.createElement('ul');
+  t.innerHTML=nwUse(true,'From the briefs · '+nwPlural(P.length,'pick'),nwClip(P.map(function(x){return x.text;}).join('; '),90),
+    '<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v111InClear(\''+page+'\')" aria-label="Stop using the picks">'+nwIc('x',14)+'</button>','',"var e=document.getElementById('v111Ins_"+page+"');if(e)e.scrollIntoView({behavior:'smooth',block:'start'})");
+  const li=t.firstElementChild;if(!li)return;li.classList.add('v111-use');ul.insertBefore(li,ul.children[1]||null);
+}
+function v111InsAll2(page){v111InsPaint(page);v111InsSide(page);}
+
+/* ---------- picking ---------- */
+function v111CatPick(page,c){
+  const kind=v111Kind(page),x=(V111_CATS[kind]||[]).find(function(y){return y[0]===c;});if(!x)return;
+  v111InsS(page).cat[kind]=c;
+  if(kind==='ad'){nwMgPk(c);}
+  else if(x[2]&&kind!=='adcopy'){if(page==='mg')nwMgTypePick(x[2]);else nwCtTypePick(x[2]);}
+  v111InsAll2(page);
+  if(page==='mg')nwMgSide();else nwCtSide();
+  const b=document.querySelector('#v111Cats_'+page+' [data-c="'+c+'"]');if(b)try{b.focus({preventScroll:true});}catch(e){}
+}
+function v111InFind(page,id){return v111InsAll(page).find(function(x){return x.id===id;})||null;}
+function v111InUse(page,id){const S=v111InsS(page);if(S.use[id])delete S.use[id];else S.use[id]=1;v111InsAll2(page);if(page==='mg')nwMgSide();else nwCtSide();}
+function v111InDrop(page,id){
+  const S=v111InsS(page);S.drop[id]=1;delete S.use[id];nwLSset('ap.v111.drop',S.drop);
+  v111InsAll2(page);if(page==='mg')nwMgSide();else nwCtSide();
+  nwToast('Dropped. It will not come up again.',function(){delete S.drop[id];nwLSset('ap.v111.drop',S.drop);v111InsAll2(page);});
+}
+function v111InUndrop(page){
+  const S=v111InsS(page);v111InsAll(page).forEach(function(x){delete S.drop[x.id];});nwLSset('ap.v111.drop',S.drop);v111InsAll2(page);
+}
+function v111InMore(page){const S=v111InsS(page);S.more=!S.more;v111InsPaint(page);}
+function v111InClear(page){const S=v111InsS(page);S.use={};v111InsAll2(page);if(page==='mg')nwMgSide();else nwCtSide();}
+/* kept for later: an idea note on Content Transformation, with where it came from */
+async function v111InSave(page,id){
+  const S=v111InsS(page),x=v111InFind(page,id);if(!x||S.saved[id])return;
+  S.saved[id]=1;v111InsPaint(page);
+  const kind=v111Kind(page),cat=v111CatCur(page);
+  const from=x.src==='Ad'?'the Ad Strategist':(x.brief.kind==='org'?'the organic brief':'the ads brief')+' of '+nwDay(x.brief.date);
+  try{
+    await apPost('idea_notes',{note:x.text+(x.why?'\n'+x.why:'')+'\nFrom '+from+'.',tags:['From the briefs',v111CatLabel(kind,cat)||x.src,'insight:'+id].filter(Boolean),status:'open',created_by:v111Me()});
+    if(typeof E9X!=='undefined')E9X.ideasT=0;
+    nwToast('Saved for later. It is in Ideas on Content Transformation.');
+  }catch(e){delete S.saved[id];v111InsPaint(page);nwToast('Could not save it: '+(e.message||e));}
+}
+/* what was kept for later shows as kept */
+function v111SavedSync(){
+  const L=(typeof E9X!=='undefined'&&E9X.ideas)||[];
+  ['mg','ct'].forEach(function(p){const S=v111InsS(p);L.forEach(function(n){apArr(n.tags).forEach(function(t){const m=/^insight:(\w+)$/.exec(String(t));if(m)S.saved[m[1]]=1;});});});
+}
+/* write it now, from the picks; with no material, the picks are the idea it is written from */
+const V111_PICKED_LEAD='The point I want to make, from what the market briefs found:';
+function v111WriteFrom(page){
+  const P=v111Picks(page);if(!P.length)return;
+  if(page==='mg'){nwMgGenerate();return;}
+  if(typeof nwCtReady==='function'&&nwCtReady()){nwCtSubmit();return;}
+  /* no material yet: the picks become the idea it is written from */
+  const th=V111_PICKED_LEAD+'\n'+P.map(function(x){return '- '+x.text+(x.why?'. '+nwClip(x.why,160):'');}).join('\n');
+  nwCtSrcGo('idea');
+  const t=v97$('cfThesis');if(t){t.value=th.length<60?th+'\nWrite it from our own point of view.':th;t.dispatchEvent(new Event('input',{bubbles:true}));}
+  nwCtSync();
+  if(nwCtReady())nwCtSubmit();
+}
+
+/* ---------- the picks ride in the request ---------- */
+function v111Dress(page,b){
+  const picks=v111Picks(page),kind=v111Kind(page),cat=v111CatCur(page);
+  b.setup=Object.assign({},b.setup||{},{category:cat||null,category_name:v111CatLabel(kind,cat)||null});
+  const rules=[];
+  if(picks.length){
+    b.setup.insights=picks.map(function(x){return {text:x.text,why:x.why||'',from:x.src,brief:x.brief?x.brief.run:null,url:x.url||null,ad_id:x.adId||null};});
+    if(b.start_mode==='idea'&&typeof b.thesis==='string'&&b.thesis.indexOf(V111_PICKED_LEAD)!==0){
+      const blk='What the team picked from the briefs to build on:\n'+picks.map(function(x,i){return (i+1)+'. '+x.text+(x.why?' ('+nwClip(x.why,140)+')':'');}).join('\n');
+      let th=b.thesis.replace(/What the organic brief of [^\n]* found:\n[\s\S]*?(?=\n\nWrite it as our own perspective|$)/,'')
+        .replace('Write about the strongest finding in the organic brief, from our point of view.','Write about the findings below, from our point of view.');
+      th=/Write it as our own perspective/.test(th)?th.replace(/\n*Write it as our own perspective/,'\n\n'+blk+'\n\nWrite it as our own perspective'):th+'\n\n'+blk;
+      b.thesis=th.replace(/\n{3,}/g,'\n\n').trim();
+      if(/^From the organic brief of /.test(b.title||''))b.title=nwClip(picks[0].text,90);
+    }else if(b.start_mode!=='idea')rules.push('Build it on these findings the team picked from the market briefs (they frame it; the facts come from our material): '+picks.map(function(x){return nwClip(x.text,120);}).join('; ')+'.');
+  }
+  const off=v111StOffNames('org');
+  if(off.length)rules.push('Leave these parts of the organic brief out: '+off.join(', ')+'.');
+  if(kind==='adcopy'&&V111_ADT[cat]){const A=V111_ADT[cat];b.template=Object.assign({},b.template||{},{name:A.name,description:A.d,sections:A.sections,rules:[A.rules,(b.template||{}).rules].filter(Boolean).join(' ')});}
+  if(kind==='adcopy'&&cat){b.content_type=cat;b.setup.ad_type=cat;}
+  if(rules.length){const T=Object.assign({name:'Custom',sections:[]},b.template||{});T.rules=[rules.join(' '),T.rules].filter(Boolean).join(' ');b.template=T;}
+}
+(function(){
+  const _mp=nwMgStartPost;nwMgStartPost=async function(){V111.sending='mg';try{return await _mp.apply(this,arguments);}finally{V111.sending=null;}};
+  const _cs=nwCtSend;nwCtSend=async function(){V111.sending='ct';try{return await _cs.apply(this,arguments);}finally{V111.sending=null;}};
+  const _ma=v97MgStartAds;v97MgStartAds=async function(){V111.sending='mga';try{return await _ma.apply(this,arguments);}finally{V111.sending=null;}};
+  const _p=apPost;apPost=async function(table,body){
+    try{if(table==='content_requests'&&body&&!Array.isArray(body)&&(V111.sending==='mg'||V111.sending==='ct'))v111Dress(V111.sending,body);}catch(e){console.warn('picks',e);}
+    return _p.apply(this,arguments);
+  };
+  /* an ad campaign: the picks in the setup, and in the request inside the room it has */
+  const _f=window.fetch;
+  window.fetch=function(u,o){
+    try{
+      if(V111.sending==='mga'&&typeof u==='string'&&typeof AP_HOOKS!=='undefined'&&u===AP_HOOKS.lt_run&&o&&typeof o.body==='string'){
+        const b=JSON.parse(o.body),picks=v111Picks('mg');
+        b.setup=Object.assign({},b.setup||{},{campaign:v111CatCur('mg')||null});
+        if(picks.length){
+          b.setup.insights=picks.map(function(x){return {text:x.text,why:x.why||'',from:x.src,brief:x.brief?x.brief.run:null,ad_id:x.adId||null};});
+          const room=1150-String(b.request||'').length;
+          let line='Build the ads on these, picked from the briefs: '+picks.map(function(x){return nwClip(x.text,110);}).join('; ')+'.';
+          if(line.length>room)line=line.slice(0,Math.max(0,room-1)).replace(/[;,]?\s+\S*$/,'')+'.';
+          if(room>80)b.request=[b.request,line].filter(Boolean).join('\n');
+        }
+        o=Object.assign({},o,{body:JSON.stringify(b)});
+      }
+    }catch(e){}
+    return _f.call(this,u,o);
+  };
+})();
+
+/* ---------- on the two pages ---------- */
+(function(){
+  const step1=function(html,page,last){
+    /* the categories under the tiles, and the briefs' findings as the next step */
+    for(let n=last;n>=2;n--)html=html.replace('<span class="nw-step-dot">'+n+'</span>','<span class="nw-step-dot">'+(n+1)+'</span>');
+    const i=html.indexOf('<div class="nw-wiz">');if(i<0)return html;
+    const e=html.indexOf('</section>',i);if(e<0)return html;
+    return html.slice(0,e)+'<div id="v111Cats_'+page+'"></div>'+html.slice(e,e+10)+v111InsStep(page,2)+html.slice(e+10);
+  };
+  const _mf=nwMgFormHtml;nwMgFormHtml=function(){return step1(_mf.apply(this,arguments),'mg',2);};
+  const _cf=nwCtFormHtml;nwCtFormHtml=function(){return step1(_cf.apply(this,arguments),'ct',3);};
+  const _mk=nwMgKindGo;nwMgKindGo=function(k){const r=_mk.apply(this,arguments);try{v111InsAll2('mg');if(k==='ad'&&!V109.pool&&!V109.p)nwAdsLoad().then(function(){v111InsAll2('mg');}).catch(function(){});}catch(e){}return r;};
+  const _ck=nwCtKindGo;nwCtKindGo=function(k){const r=_ck.apply(this,arguments);try{v111InsAll2('ct');if(k==='adcopy'&&!V109.pool&&!V109.p)nwAdsLoad().then(function(){v111InsAll2('ct');}).catch(function(){});}catch(e){}return r;};
+  /* the side follows the picks; the categories follow a kind or campaign set from elsewhere (Fill it in for me) */
+  V111.lastC={};
+  const side=function(page){const c=v111Kind(page)+'|'+v111CatCur(page);if(V111.lastC[page]!==c){V111.lastC[page]=c;v111InsPaint(page);}v111InsSide(page);};
+  const _ms=nwMgSide;nwMgSide=function(){const r=_ms.apply(this,arguments);try{side('mg');}catch(e){}return r;};
+  const _cs=nwCtSide;nwCtSide=function(){const r=_cs.apply(this,arguments);try{side('ct');}catch(e){}return r;};
+  const hook=function(key,page){
+    const _pg=NW_PAGES[key];
+    NW_PAGES[key]=function(m,again){
+      const r=_pg.apply(this,arguments);
+      try{v111SavedSync();v111InsAll2(page);}catch(e){console.error(e);}
+      if(!again){
+        const k=v111Kind(page),need=[e9SnapLoad().catch(function(){}),v111AdRevLoad().catch(function(){}),e9IdeasLoad().catch(function(){})];
+        if((k==='ad'||k==='adcopy')&&!V109.pool)need.push(nwAdsLoad().catch(function(){}));
+        Promise.all(need).then(function(){if(nwOn(page==='mg'?'e3.funnel':'e3.create')){v111SavedSync();v111InsAll2(page);}}).catch(function(){});
+      }
+      return r;
+    };
+    Object.keys(_pg).forEach(function(p){NW_PAGES[key][p]=_pg[p];});
+  };
+  hook('e3.funnel','mg');hook('e3.create','ct');
+})();
+
+
+/* ===================================================================
+   3. The Ad Strategist: who it follows, what each advertiser sells
+   =================================================================== */
+AP_HOOKS.ad_industries=AP_N8N+'e3-ad-industries';
+/* the Ad Strategist reads the accounts, searches and filters below (n8n: Pick Meta Pages, Keep Chosen Ad Types) */
+const V111_ADS_LIVE=true;
+V111.indAsked={};
+function v111IndAi(){const S=(typeof AP_AISET!=='undefined'&&AP_AISET)||{};const m=v96Json(S.ad_industries_ai,{});return m&&typeof m==='object'?m:{};}
+/* an industry set by hand wins; else the one the agent worked out */
+(function(){
+  const _i=v96Ind;
+  v96Ind=function(name){const r=_i.apply(this,arguments);if(r)return r;const k=String(name||'').trim().toLowerCase();return k?(v111IndAi()[k]||''):'';};
+})();
+function v111IndFrom(name){const k=String(name||'').trim().toLowerCase();return v96IndMap()[k]?'you':v111IndAi()[k]?'agent':'';}
+function v111Host(u){const m=/^https?:\/\/(?:www\.)?([^\/?#]+)/i.exec(String(u||''));return m?m[1].toLowerCase():'';}
+function v111Advs(){
+  const by={};(V109.pool||[]).forEach(function(a){const n=String(a.adv||'').trim();if(!n||/^unknown/i.test(n))return;(by[n]=by[n]||[]).push(a);});
+  return by;
+}
+function v111IndMissing(){const by=v111Advs();return Object.keys(by).filter(function(n){return !v96Ind(n);});}
+/* ask the industry agent for the advertisers that have none yet */
+async function v111IndSuggest(all){
+  if(V111.indBusy)return 0;
+  const by=v111Advs(),miss=Object.keys(by).filter(function(n){return !v96Ind(n)&&(all||!V111.indAsked[n.toLowerCase()]);}).slice(0,30);
+  if(!miss.length){V111.indMsg='Every advertiser has an industry.';return 0;}
+  V111.indBusy=true;V111.indMsg='';miss.forEach(function(n){V111.indAsked[n.toLowerCase()]=1;});
+  try{if(nwOn('e3.ads'))nwRepaint();}catch(e){}
+  try{
+    const auth=typeof apTokenFresh==='function'?await apTokenFresh(false):null;
+    if(!auth)throw new Error('Sign in again to have industries suggested.');
+    const body={auth:auth,advertisers:miss.map(function(n){const L=by[n];
+      return {name:n,site:(L.map(function(a){return v111Host(a.destination_url);}).find(Boolean))||'',
+        ads:L.slice(0,3).map(function(a){return [e9Clean(a.hook||a.title||''),e9Clean(nwAdClean(a.offer_inferred)||'')].filter(Boolean).join(' · ');}).filter(Boolean)};})};
+    const res=await fetch(AP_HOOKS.ad_industries,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(res.status===404)throw new Error('The industry agent is not switched on in n8n yet.');
+    let j=null;try{j=await res.json();}catch(e){j=null;}
+    if(!res.ok||!j||j.ok===false)throw new Error((j&&j.message)||'The industry agent did not answer ('+res.status+').');
+    const got=j.industries&&typeof j.industries==='object'?j.industries:{},map=Object.assign({},v111IndAi());let n=0;
+    Object.keys(got).forEach(function(name){const v=e9Clean(String(got[name]||'')).slice(0,60);if(v){map[name.trim().toLowerCase()]=v;n++;}});
+    if(n){try{await apAiSettingsLoad(true);}catch(e){}Object.assign(map,v111IndAi(),map);await v96Set('ad_industries_ai',map);}
+    V111.indMsg=n?'The agent suggested '+nwPlural(n,'industry','industries')+'. Change any that are off.':'The agent could not tell the industry of these advertisers. Set them by hand.';
+    return n;
+  }catch(e){V111.indMsg=e&&e.message?e.message:String(e);miss.forEach(function(n){delete V111.indAsked[n.toLowerCase()];});return -1;}
+  finally{V111.indBusy=false;try{if(nwOn('e3.ads'))nwRepaint();if(typeof v96AdsDecorate==='function')v96AdsDecorate();}catch(e){}}
+}
+/* the banner on Top and All ads: missing industries are worked out, not typed */
+(function(){
+  nwAdsIndBanner=function(){
+    const by=v111Advs(),advs=Object.keys(by);if(!advs.length)return '';
+    const miss=advs.filter(function(n){return !v96Ind(n);});
+    if(V111.indBusy)return '<div class="nw-banner">'+nwIc('sparkle',18)+'<span><b>Working out industries</b> for '+esc(nwPlural(miss.length,'advertiser'))+'…</span></div>';
+    if(!miss.length)return V111.indMsg&&/suggested/.test(V111.indMsg)?'<div class="nw-banner">'+nwIc('checkCircle',18)+'<span>'+esc(V111.indMsg)+'</span><button type="button" class="nw-btn nw-btn-sm" onclick="v96IndEditOpen()">Review them</button></div>':'';
+    return '<div class="nw-banner is-warn">'+nwIc('alert',18)+'<span><b>'+esc(miss.length===advs.length?(advs.length===1?'The advertiser has':'None of the '+advs.length+' advertisers has'):miss.length+' of '+advs.length+' advertisers '+(miss.length===1?'has':'have'))+' no industry yet.</b> '+
+      (V111.indMsg?esc(V111.indMsg):'The agent can work them out from the ads.')+'</span>'+
+      '<button type="button" class="nw-btn nw-btn-sm" onclick="v111IndSuggest(true)">'+nwIc('sparkle',15)+'Suggest them</button>'+
+      '<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v96IndEditOpen()">Set by hand</button></div>';
+  };
+  /* the industry list shows the agent's suggestions, marked, ready to keep or change */
+  const _o=v96IndEditOpen;
+  v96IndEditOpen=async function(){
+    const r=await _o.apply(this,arguments);
+    try{
+      const ai=v111IndAi();
+      document.querySelectorAll('#v96IndE input[data-n]').forEach(function(i){
+        const k=i.dataset.n.toLowerCase();
+        if(!i.value&&ai[k]){i.value=ai[k];i.classList.add('v111-sug');const l=i.closest('label');if(l&&!l.querySelector('.v111-sugt'))l.insertAdjacentHTML('beforeend','<small class="v111-sugt">Suggested by the agent</small>');}
+      });
+      const f=document.querySelector('#v96IndE .ap-m89f');
+      if(f&&!f.querySelector('.v111-indgo')&&v111IndMissing().length)f.insertAdjacentHTML('afterbegin','<button class="rd-btn v111-indgo" onclick="apModalClose(\'v96IndE\');v111IndSuggest(true).then(function(){v96IndEditOpen();})">Suggest the missing ones</button><span style="flex:1"></span>');
+      const h=document.querySelector('#v96IndE .help');if(h)h.textContent='Shown on the top ads and on every ad, and you can filter by it. The agent suggests them; what you type here wins.';
+    }catch(e){}
+    return r;
+  };
+})();
+
+/* ---------- the Following tab ---------- */
+NW_ADS_TABS.push(['follow','Following','users']);
+const V111_ADTYPES=[['image','Image'],['video','Video'],['carousel','Carousel'],['text','Text only']];
+const V111_COUNTRY=[['US','United States'],['GB','United Kingdom'],['CA','Canada'],['AU','Australia'],['ALL','All countries']];
+function v111FolState(){
+  if(!V111.fol){
+    const S=v96Json((typeof AP_AISET!=='undefined'&&AP_AISET||{}).ads_follow,{})||{};
+    V111.fol={kw:apArr(S.keywords).map(String),ind:apArr(S.industries).map(String),types:apArr(S.types).map(String),active:S.active==='active'?'active':'all',country:S.country||'US',dirty:false,msg:'',add:false,err:''};
+  }
+  return V111.fol;
+}
+function v111FolRows(){return ((typeof V96F!=='undefined'&&V96F.rows)||[]).filter(function(c){return c&&c.status!=='denied';});}
+function v111HasPage(c){return !!String(c.meta_page_id||'').trim();}
+/* who reads an account: both agents, the Ad Strategist only (ads) or the Intel Tracker only (posts) */
+function v111For(c){const f=c&&c.follow_for;return f==='ads'||f==='posts'?f:'both';}
+function v111ForAds(c){return v111HasPage(c)&&v111For(c)!=='posts';}
+function v111Pick(b){const g=b&&b.closest('[role="radiogroup"]');if(g)g.querySelectorAll('[role="radio"]').forEach(function(x){x.setAttribute('aria-checked',String(x===b));});}
+function v111ForSeg(id,f,label,click){
+  return '<div class="nw-seg v111-for" role="radiogroup" aria-label="'+esc(label)+'"'+(id?' id="'+id+'"':'')+'>'+[['ads','Ads only'],['both','Ads and posts']].map(function(x){
+    return '<button type="button" role="radio" data-f="'+x[0]+'" aria-checked="'+(f===x[0])+'" onclick="'+(click?click.replace('$F',x[0]):'v111Pick(this)')+'">'+x[1]+'</button>';}).join('')+'</div>';
+}
+function v111FbPage(v){
+  v=String(v||'').trim();if(!v)return '';
+  let m=/view_all_page_id=(\d+)/.exec(v);if(m)return m[1];
+  m=/facebook\.com\/profile\.php\?id=(\d+)/i.exec(v);if(m)return m[1];
+  m=/facebook\.com\/(?:pg\/)?([A-Za-z0-9.\-_]+)\/?/i.exec(v);if(m&&!/^(ads|pages|profile\.php|groups|events|watch|marketplace|business|people|share)$/i.test(m[1]))return m[1];
+  if(/^[A-Za-z0-9.\-_]{3,80}$/.test(v)&&!/\s/.test(v))return v;
+  return '';
+}
+function v111LibSearch(name){return 'https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=ALL&q='+encodeURIComponent(name||'')+'&search_type=keyword_unordered';}
+function v111FolChips(key,list,ph,max){
+  return '<div class="nw-chips v111-fchips">'+(list.length?list.map(function(t,i){return '<span class="nw-chip nw-chip-sm nw-chip-own" aria-pressed="true">'+esc(t)+
+      '<button type="button" class="nw-chip-x" aria-label="Remove '+esc(t)+'" onclick="v111FolDrop(\''+key+'\','+i+')">'+nwIc('x',12)+'</button></span>';}).join(''):'<span class="nw-faint nw-small">None yet</span>')+'</div>'+
+    '<div class="nw-focus-add"><input class="nw-input" id="v111F_'+key+'" maxlength="60" placeholder="'+esc(ph)+'" aria-label="'+esc(ph)+'" onkeydown="if(event.key===\'Enter\'){event.preventDefault();v111FolAdd(\''+key+'\','+max+');}">'+
+      '<button type="button" class="nw-btn nw-btn-sm" onclick="v111FolAdd(\''+key+'\','+max+')">'+nwIc('plus',14)+'Add</button></div>';
+}
+function v111FolHtml(){
+  const F=v111FolState(),rows=v111FolRows(),on=rows.filter(v111ForAds),off=rows.filter(function(c){return !v111ForAds(c);});
+  if(typeof V96F==='undefined'||!V96F.rows)return nwEmpty('users','Loading who you follow','Getting the accounts both agents read.');
+  const ind=function(n){const v=v96Ind(n),f=v111IndFrom(n);return v?'<span class="nw-tag'+(f==='agent'?' nw-tag-gold':'')+'" title="'+(f==='agent'?'Suggested by the agent':'Set by you')+'">'+esc(v)+'</span>':'';};
+  const kindOf=function(c){return typeof v96Kind==='function'&&v96Kind(c)==='person'?'Person':'Company';};
+  const accRow=function(c){
+    return '<li class="v111-acc"><div class="v111-acc-m"><b>'+esc(c.name||'Account')+'</b><span class="v111-acc-t"><span class="nw-tag">'+kindOf(c)+'</span>'+ind(c.name)+
+        '<a class="nw-link nw-small" href="https://www.facebook.com/'+esc(encodeURIComponent(String(c.meta_page_id).trim()).replace(/%2F/g,'/'))+'" target="_blank" rel="noopener">Facebook page'+nwIc('arrowUR',13)+'</a></span></div>'+
+      v111ForSeg('',v111For(c),'What '+(c.name||'this account')+' is followed for','v111FolFor('+esc(nwJs(c.id))+',\'$F\')')+
+      '<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v111FolStop('+esc(nwJs(c.id))+')">'+(v111For(c)==='ads'?'Stop following':'Stop reading ads')+'</button></li>';
+  };
+  const add=F.add?'<div class="v111-addacc"><div class="nw-grid2">'+
+      '<label class="nw-field"><span class="nw-lbl">Name</span><input class="nw-input" id="v111AccName" placeholder="e.g. ClickFunnels" oninput="var a=document.getElementById(\'v111AccFind\');if(a)a.href=v111LibSearch(this.value)"></label>'+
+      '<label class="nw-field"><span class="nw-lbl">Facebook page<small>link or page ID</small></span><input class="nw-input" id="v111AccPage" placeholder="facebook.com/their-page"></label></div>'+
+      '<div class="v111-segs"><div class="nw-seg" role="radiogroup" aria-label="Kind" id="v111AccKind"><button type="button" role="radio" aria-checked="true" data-k="company" onclick="v111AccKind(this)">Company</button><button type="button" role="radio" aria-checked="false" data-k="person" onclick="v111AccKind(this)">Person or influencer</button></div>'+
+        v111ForSeg('v111AccFor','ads','Follow for')+'</div>'+
+      '<p class="nw-faint nw-small">Not sure of the page? <a class="nw-link nw-small" id="v111AccFind" href="'+esc(v111LibSearch(''))+'" target="_blank" rel="noopener">Find them in the Meta Ad Library'+nwIc('arrowUR',13)+'</a> and copy the page link from one of their ads.</p>'+
+      (F.err?'<p class="v111-err" role="alert">'+esc(F.err)+'</p>':'')+
+      '<div class="nw-card-foot" style="margin-top:0"><button type="button" class="nw-btn nw-btn-primary nw-btn-sm" onclick="v111AccSave()">Follow</button><button type="button" class="nw-btn nw-btn-sm" onclick="V111.fol.add=false;V111.fol.err=\'\';nwRepaint()">Cancel</button></div></div>':'';
+  const accounts='<section class="nw-card" id="v111FolAcc"><div class="nw-card-headrow"><div><div class="nw-kicker">Accounts</div><h3 class="nw-sec-h">Followed for ads <span class="nw-faint">'+on.length+'</span></h3></div>'+
+      (F.add?'':'<button type="button" class="nw-btn nw-btn-sm" onclick="V111.fol.add=true;V111.fol.err=\'\';nwRepaint();setTimeout(function(){var i=document.getElementById(\'v111AccName\');if(i)i.focus();},30)">'+nwIc('plus',15)+'Add an account</button>')+'</div>'+
+    add+(on.length?'<ul class="v111-accs">'+on.map(accRow).join('')+'</ul>':'<p class="nw-muted nw-small">No account has a Facebook page yet, so the Ad Strategist has no ads to pull. Add one above.</p>')+
+    (off.length?'<details class="nw-more-box v111-nopage"><summary><b>Followed for posts only</b> <span class="nw-faint">'+off.length+'</span>'+nwIc('chevD',16,1.75,'nw-chev')+'</summary>'+
+      '<p class="nw-faint nw-small">The Intel Tracker reads these. Add a page or switch their ads on to pull their ads too.</p><ul class="v111-accs">'+off.map(function(c){
+        return '<li class="v111-acc"><div class="v111-acc-m"><b>'+esc(c.name||'Account')+'</b><span class="v111-acc-t"><span class="nw-tag">'+kindOf(c)+'</span>'+ind(c.name)+(v111HasPage(c)?
+            '<a class="nw-link nw-small" href="https://www.facebook.com/'+esc(encodeURIComponent(String(c.meta_page_id).trim()).replace(/%2F/g,'/'))+'" target="_blank" rel="noopener">Facebook page'+nwIc('arrowUR',13)+'</a>'
+            :'<a class="nw-link nw-small" href="'+esc(v111LibSearch(c.name))+'" target="_blank" rel="noopener">Find in the Ad Library'+nwIc('arrowUR',13)+'</a>')+'</span></div>'+
+          (v111HasPage(c)?'<button type="button" class="nw-btn nw-btn-sm" onclick="v111FolFor('+esc(nwJs(c.id))+',\'both\')">Pull their ads too</button>'
+            :'<div class="v111-pageadd"><input class="nw-input" id="v111Pg_'+esc(c.id)+'" placeholder="Facebook page link" aria-label="Facebook page for '+esc(c.name)+'"><button type="button" class="nw-btn nw-btn-sm" onclick="v111FolPage('+esc(nwJs(c.id))+')">Add page</button></div>')+'</li>';}).join('')+'</ul></details>':'')+
+    '<p class="nw-faint nw-small">Ads only: just the Ad Strategist reads them. Ads and posts: the Intel Tracker reads their posts too.</p></section>';
+  const types='<div class="nw-chips">'+V111_ADTYPES.map(function(t){const p=F.types.indexOf(t[0])>=0;
+    return '<button type="button" class="nw-chip nw-chip-sm" aria-pressed="'+p+'" onclick="v111FolType(\''+t[0]+'\')">'+(p?nwIc('check',13):'')+esc(t[1])+'</button>';}).join('')+'</div>';
+  const filt='<section class="nw-card" id="v111FolFilt"><div class="nw-card-headrow"><div><div class="nw-kicker">Searches and filters</div><h3 class="nw-sec-h">What else to look for</h3></div></div>'+
+    '<div class="nw-field"><span class="nw-lbl">Topics and keywords<small>searched in the Meta Ad Library, up to 10</small></span>'+v111FolChips('kw',F.kw,'e.g. AI automation',10)+'</div>'+
+    '<div class="nw-field"><span class="nw-lbl">Industries to watch<small>up to 8</small></span>'+v111FolChips('ind',F.ind,'e.g. Wealth management',8)+'</div>'+
+    '<div class="nw-field"><span class="nw-lbl">Ad types<small>none picked means all of them</small></span>'+types+'</div>'+
+    '<div class="nw-grid2"><div class="nw-field"><span class="nw-lbl">Which ads</span><div class="nw-seg" role="radiogroup" aria-label="Which ads">'+
+        [['active','Running now'],['all','Running or stopped']].map(function(x){return '<button type="button" role="radio" aria-checked="'+(F.active===x[0])+'" onclick="V111.fol.active=\''+x[0]+'\';V111.fol.dirty=true;V111.fol.msg=\'\';nwRepaint()">'+esc(x[1])+'</button>';}).join('')+'</div></div>'+
+      '<label class="nw-field"><span class="nw-lbl">Country<small>for the searches</small></span><select class="nw-input" data-nofill="1" onchange="V111.fol.country=this.value;V111.fol.dirty=true;V111.fol.msg=\'\';nwRepaint()">'+
+        V111_COUNTRY.map(function(c){return '<option value="'+c[0]+'"'+(F.country===c[0]?' selected':'')+'>'+esc(c[1])+'</option>';}).join('')+'</select></label></div>'+
+    '<div class="nw-card-foot"><span class="nw-faint nw-small" role="status">'+esc(F.msg||(F.dirty?'Not saved yet.':V111_ADS_LIVE?'The next run follows these.':'Saved here. The Ad Strategist reads the accounts above today; searches and filters start with its next update.'))+'</span><span class="nw-grow"></span>'+
+      '<button type="button" class="nw-btn nw-btn-primary nw-btn-sm" onclick="v111FolSave()"'+(F.dirty&&!F.busy?'':' disabled')+'>'+(F.busy?'Saving…':'Save')+'</button></div></section>';
+  const by=v111Advs(),names=Object.keys(by).sort(function(a,b){return a.localeCompare(b);});
+  const inds='<section class="nw-card" id="v111FolInd"><div class="nw-card-headrow"><div><div class="nw-kicker">Industries</div><h3 class="nw-sec-h">What each advertiser sells</h3></div>'+
+      '<span class="v111-indact"><button type="button" class="nw-btn nw-btn-sm" onclick="v111IndSuggest(true)"'+(V111.indBusy||!v111IndMissing().length?' disabled':'')+'>'+nwIc('sparkle',15)+(V111.indBusy?'Working them out…':'Suggest the missing ones')+'</button>'+
+      '<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v96IndEditOpen()">Edit</button></span></div>'+
+    (V111.indMsg?'<p class="nw-muted nw-small" role="status">'+esc(V111.indMsg)+'</p>':'')+
+    (!V109.pool?'<p class="nw-muted nw-small">Loading the advertisers…</p>':names.length?'<ul class="v111-inds">'+names.map(function(n){const v=v96Ind(n),f=v111IndFrom(n);
+      return '<li><b>'+esc(n)+'</b><span>'+(v?esc(v):'<span class="nw-faint">Not worked out yet</span>')+'</span>'+(f?'<small class="nw-faint">'+(f==='agent'?'Suggested by the agent':'Set by you')+'</small>':'')+'</li>';}).join('')+'</ul>'
+      :'<p class="nw-muted nw-small">No ads yet, so no advertisers.</p>')+'</section>';
+  return '<div class="nw-banner">'+nwIc('users',18)+'<span><b>Who and what the Ad Strategist reads.</b> Each run pulls the ads of the accounts below from the Meta Ad Library, scores them and builds the ads brief.</span></div>'+
+    '<div class="v111-fol">'+accounts+filt+inds+'</div>';
+}
+function v111AccKind(b){document.querySelectorAll('#v111AccKind [data-k]').forEach(function(x){x.setAttribute('aria-checked',String(x===b));});}
+function v111FolAdd(key,max){
+  const F=v111FolState(),i=document.getElementById('v111F_'+key);if(!i)return;
+  const v=i.value.replace(/["\\]/g,'').replace(/\s+/g,' ').trim().slice(0,60);
+  if(v.length<2){i.focus();return;}
+  if(F[key].some(function(x){return x.toLowerCase()===v.toLowerCase();})){F.msg='“'+v+'” is on the list already.';nwRepaint();return;}
+  if(F[key].length>=max){F.msg='That is '+max+' already. Remove one first.';nwRepaint();return;}
+  F[key].push(v);F.dirty=true;F.msg='';nwRepaint();
+  const n=document.getElementById('v111F_'+key);if(n)n.focus();
+}
+function v111FolDrop(key,i){const F=v111FolState();F[key].splice(i,1);F.dirty=true;F.msg='';nwRepaint();}
+function v111FolType(t){const F=v111FolState(),i=F.types.indexOf(t);if(i>=0)F.types.splice(i,1);else F.types.push(t);F.types=V111_ADTYPES.map(function(x){return x[0];}).filter(function(x){return F.types.indexOf(x)>=0;});F.dirty=true;F.msg='';nwRepaint();}
+async function v111FolSave(){
+  const F=v111FolState();if(F.busy)return;F.busy=true;nwRepaint();
+  try{
+    await v96Set('ads_follow',{keywords:F.kw.slice(),industries:F.ind.slice(),types:F.types.slice(),active:F.active,country:F.country,updated_by:v111Me(),updated_at:new Date().toISOString()});
+    F.dirty=false;F.msg=V111_ADS_LIVE?'Saved. The next run follows these.':'Saved. They start with the Ad Strategist’s next update.';nwToast('Saved.');
+  }catch(e){F.msg='Could not save: '+(e&&e.message?e.message:String(e));}
+  F.busy=false;nwRepaint();
+}
+/* follow an account for ads: a new one, or a page for one already followed. forWhat: 'ads' (default) or 'both'.
+   An account the Intel Tracker already reads keeps its posts; one followed for posts only gets its ads switched on. */
+async function v111FollowSave(name,pageIn,kind,link,forWhat){
+  forWhat=forWhat==='both'?'both':'ads';
+  name=String(name||'').replace(/\s+/g,' ').trim().slice(0,80);
+  const page=v111FbPage(pageIn);
+  if(name.length<2)throw new Error('Give the account a name.');
+  if(!page)throw new Error('That does not look like a Facebook page. Paste the page link, for example facebook.com/their-page.');
+  try{await v96FollowLoad(true);}catch(e){}
+  const ex=((typeof V96F!=='undefined'&&V96F.rows)||[]).find(function(c){return String(c.name||'').trim().toLowerCase()===name.toLowerCase();});
+  if(ex){
+    const body={meta_page_id:page,updated_at:new Date().toISOString()};
+    if(ex.status==='denied'){body.status='approved';body.follow_for=forWhat;}
+    else if(v111For(ex)==='posts'||(v111For(ex)==='ads'&&forWhat==='both'))body.follow_for='both';
+    const r=await apPatch('competitors','id=eq.'+encodeURIComponent(ex.id),body);if(!Array.isArray(r)||!r.length)throw new Error('The account did not take the change.');
+  }else{
+    const site=v111Host(link);
+    const r=await apPost('competitors',{name:name,meta_page_id:page,follow_kind:kind==='person'?'person':'company',follow_for:forWhat,status:'approved',source:'manual',added_by:v111Me(),website:site?'https://'+site:null});
+    if(!r||!r[0])throw new Error('The account was not saved.');
+  }
+  try{await v96FollowLoad(true);}catch(e){}
+  if(typeof AP_COMPETITORS!=='undefined'&&Array.isArray(AP_COMPETITORS)&&V96F.rows){try{AP_COMPETITORS.length=0;V96F.rows.forEach(function(c){AP_COMPETITORS.push(c);});}catch(e){}}
+  return page;
+}
+async function v111AccSave(){
+  const F=v111FolState(),v=function(id){const e=document.getElementById(id);return e?e.value:'';};
+  const k=document.querySelector('#v111AccKind [aria-checked="true"]'),f=document.querySelector('#v111AccFor [aria-checked="true"]'),name=v('v111AccName');
+  try{await v111FollowSave(name,v('v111AccPage'),k?k.dataset.k:'company','',f?f.dataset.f:'ads');F.add=false;F.err='';nwRepaint();nwToast(name.trim()+' is followed. The next run pulls their ads.');}
+  catch(e){F.err=e.message||String(e);nwRepaint();const i=document.getElementById('v111AccName');if(i)i.value=name;}
+}
+async function v111FolPage(id){
+  const c=v111FolRows().find(function(x){return String(x.id)===String(id);}),i=document.getElementById('v111Pg_'+id);if(!c||!i)return;
+  try{await v111FollowSave(c.name,i.value,c.follow_kind,'');nwRepaint();nwToast('Page added. The next run pulls '+c.name+'’s ads.');}
+  catch(e){nwToast(e.message||String(e));}
+}
+async function v111FolStop(id){
+  const c=v111FolRows().find(function(x){return String(x.id)===String(id);});if(!c)return;
+  const only=v111For(c)==='ads';
+  if(!confirm(only?'Stop following '+c.name+'? Neither agent reads them from the next run.':'Stop pulling '+c.name+'’s ads? The Intel Tracker still reads their posts.'))return;
+  try{const r=await apPatch('competitors','id=eq.'+encodeURIComponent(id),only?{status:'denied',updated_at:new Date().toISOString()}:{follow_for:'posts',updated_at:new Date().toISOString()});if(!Array.isArray(r)||!r.length)throw new Error('The account did not take the change.');
+    await v96FollowLoad(true);nwRepaint();nwToast(only?'Stopped following '+c.name+'.':'Stopped. '+c.name+'’s ads are no longer pulled.');}
+  catch(e){nwToast('Could not change it: '+(e.message||e));}
+}
+/* ads only, ads and posts, or posts only for one account */
+async function v111FolFor(id,f){
+  const c=v111FolRows().find(function(x){return String(x.id)===String(id);});if(!c||['ads','both','posts'].indexOf(f)<0)return;
+  const was=v111For(c);if(was===f)return;
+  try{const r=await apPatch('competitors','id=eq.'+encodeURIComponent(id),{follow_for:f,updated_at:new Date().toISOString()});if(!Array.isArray(r)||!r.length)throw new Error('The account did not take the change.');
+    c.follow_for=f;try{await v96FollowLoad(true);}catch(e){}nwRepaint();
+    nwToast(f==='ads'?c.name+' is followed for ads only. The Intel Tracker leaves them out from the next run.':
+      was==='posts'?'The next run pulls '+c.name+'’s ads too.':'The Intel Tracker reads '+c.name+'’s posts too from the next run.');}
+  catch(e){nwToast('Could not change it: '+(e.message||e));}
+}
+(function(){
+  const _h=nwAdsHtml;
+  nwAdsHtml=function(tab){
+    if(tab!=='follow')return _h.apply(this,arguments);
+    return '<div class="nw-content">'+nwAdsHead()+nwAdsTabs(tab)+'<div class="nw-tabpanel" id="nwAdsPanel">'+v111FolHtml()+'</div></div>';
+  };
+  const _t=nwAdsTabs;
+  nwAdsTabs=function(tab){
+    let h=_t.apply(this,arguments);
+    const n=v111FolRows().filter(v111ForAds).length;
+    if(typeof V96F!=='undefined'&&V96F.rows)h=h.replace(/(data-tab="follow"[^>]*>[\s\S]*?Following)(<\/button>)/,'$1<span class="nw-cnt">'+n+'</span>$2');
+    return h;
+  };
+  const _pg=NW_PAGES['e3.ads'];
+  NW_PAGES['e3.ads']=function(m,again){
+    const r=_pg.apply(this,arguments);
+    if(!again){
+      const paint=function(){if(nwOn('e3.ads'))nwRepaint();};
+      if(typeof v96FollowLoad==='function')v96FollowLoad().then(paint).catch(function(){});
+      /* once a session: advertisers with no industry are worked out by the agent */
+      Promise.resolve(nwAdsLoad()).then(function(){
+        if(!V111.indAuto&&nwOn('e3.ads')&&v111IndMissing().length){V111.indAuto=1;v111IndSuggest(false);}
+      }).catch(function(){});
+    }
+    return r;
+  };
+  Object.keys(_pg).forEach(function(p){NW_PAGES['e3.ads'][p]=_pg[p];});
+})();
+
+/* ---------- after an upload: follow the advertiser too? ---------- */
+function v111FollowAsk(adv,link,n,done){
+  adv=String(adv||'').trim();if(!adv)return false;
+  const k=adv.toLowerCase(),rows=((typeof V96F!=='undefined'&&V96F.rows)||(typeof AP_COMPETITORS!=='undefined'&&AP_COMPETITORS)||[]);
+  const ex=rows.find(function(c){return String(c.name||'').trim().toLowerCase()===k;});
+  if(ex&&v111ForAds(ex)&&ex.status!=='denied')return false;
+  if(nwLS('ap.v111.nofollow',{})[k])return false;
+  const box=document.querySelector('#apUpModal .rd-prompt-c');if(!box)return false;
+  V111.folAsk={adv:adv,link:link||'',done:done};
+  box.innerHTML='<div class="k">Engine 3 · Ad Strategist</div>'+
+    '<h3 style="font-family:\'Newsreader\',serif;font-size:24px;margin:0 0 4px">Follow '+esc(adv)+' too?</h3>'+
+    '<p class="help" style="margin:0 0 14px">'+esc(nwPlural(n||1,'ad')+' from '+adv+' saved.')+' Follow '+esc(adv)+' and the Ad Strategist pulls their ads from the Meta Ad Library on every run.</p>'+
+    '<label class="l" for="v111FaPage">Their Facebook page</label><input type="text" id="v111FaPage" placeholder="facebook.com/their-page, or the page ID" value="'+esc(ex&&ex.meta_page_id?String(ex.meta_page_id):'')+'" onkeydown="if(event.key===\'Enter\'){event.preventDefault();v111FollowYes();}">'+
+    '<div class="v111-fafor">'+v111ForSeg('v111FaFor','ads','Follow for')+'</div>'+
+    '<p class="help" style="margin:8px 0 0"><a href="'+esc(v111LibSearch(adv))+'" target="_blank" rel="noopener">Find '+esc(adv)+' in the Meta Ad Library ↗</a> and copy the page link from one of their ads.</p>'+
+    '<div class="ap-cf-err" id="v111FaErr" role="alert"></div>'+
+    '<div class="acts"><button class="rd-btn" onclick="v111FollowNo()">Not now</button><button class="rd-btn pri" id="v111FaGo" onclick="v111FollowYes()">Follow '+esc(adv)+'</button></div>';
+  setTimeout(function(){const i=document.getElementById('v111FaPage');if(i)i.focus();},30);
+  return true;
+}
+async function v111FollowYes(){
+  const A=V111.folAsk;if(!A)return;
+  const i=document.getElementById('v111FaPage'),err=document.getElementById('v111FaErr'),btn=document.getElementById('v111FaGo');
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  const f=document.querySelector('#v111FaFor [aria-checked="true"]');
+  try{await v111FollowSave(A.adv,i?i.value:'','company',A.link,f?f.dataset.f:'ads');V111.folAsk=null;toast(A.adv+' is followed. The next run pulls their ads.');A.done();}
+  catch(e){if(err){err.textContent=e.message||String(e);err.classList.add('on');}if(btn){btn.disabled=false;btn.textContent='Follow '+A.adv;}}
+}
+function v111FollowNo(){
+  const A=V111.folAsk;if(!A)return;
+  const s=nwLS('ap.v111.nofollow',{});s[A.adv.toLowerCase()]=1;nwLSset('ap.v111.nofollow',s);
+  V111.folAsk=null;A.done();
+}
+
+/* ---------- the Intel Tracker leaves out the accounts followed for ads only ---------- */
+function v111IntelFolTidy(h){
+  if(!h||!h.querySelector||typeof V96F==='undefined'||!V96F.rows)return;
+  const g=h.querySelector('.v96-fol-g');if(!g)return;
+  const ads=V96F.rows.filter(function(c){return c.status!=='denied'&&v111For(c)==='ads';});
+  ads.forEach(function(c){const b=g.querySelector('[data-id="'+String(c.id).replace(/["\\]/g,'')+'"]'),li=b&&b.closest('li');if(li)li.remove();});
+  g.querySelectorAll('.v96-fol-c').forEach(function(sec){
+    const ul=sec.querySelector('ul'),n=sec.querySelector('.hd .n');if(!ul)return;
+    if(n)n.textContent=ul.children.length;
+    if(!ul.children.length)ul.outerHTML='<p class="v96-muted">None here yet.</p>';
+  });
+  const old=h.querySelector('.v111-adsonly');if(old)old.remove();
+  if(!ads.length)return;
+  g.insertAdjacentHTML('afterend','<details class="v96-fol-off v111-adsonly"><summary>Followed for ads only ('+ads.length+')</summary>'+
+    '<p class="v96-muted">The Ad Strategist pulls their ads. Their posts are left out here.</p><ul>'+ads.map(function(c){
+      return '<li><div class="who"><b>'+esc(c.name||'Unnamed')+'</b><small>'+(c.meta_page_id?'<a href="https://www.facebook.com/'+esc(c.meta_page_id)+'" target="_blank" rel="noopener">Facebook ↗</a>':'')+'</small></div>'+
+        '<button class="rd-btn sm" data-e9="folPosts" data-id="'+esc(c.id)+'">Read their posts too</button></li>';}).join('')+'</ul></details>');
+}
+(function(){
+  if(typeof v96FollowCounts!=='function'||typeof v96FollowRender!=='function'||typeof E9_ACT==='undefined')return;
+  /* the people and companies it reads, for its counts */
+  const _c=v96FollowCounts;
+  v96FollowCounts=function(){
+    const all=V96F.rows;if(!all)return _c.apply(this,arguments);
+    V96F.rows=all.filter(function(c){return v111For(c)!=='ads';});
+    try{return _c.apply(this,arguments);}finally{V96F.rows=all;}
+  };
+  const _r=v96FollowRender;
+  v96FollowRender=async function(h){const r=await _r.apply(this,arguments);try{v111IntelFolTidy(h);}catch(e){}return r;};
+  E9_ACT.folPosts=async function(t){
+    const c=(V96F.rows||[]).find(function(x){return String(x.id)===t.dataset.id;});if(!c)return;
+    try{await apPatch('competitors','id=eq.'+encodeURIComponent(c.id),{follow_for:'both',updated_at:new Date().toISOString()});c.follow_for='both';
+      toast('From the next run the Intel Tracker reads '+(c.name||'this account')+'’s posts too.');}
+    catch(e){toast('Could not save: '+e.message,false);}
+    v96FollowRepaint();
+  };
+  /* stopping here stops both agents: say so for an account whose ads are pulled too */
+  const _stop=E9_ACT.folStop;
+  E9_ACT.folStop=async function(t){
+    const c=(V96F.rows||[]).find(function(x){return String(x.id)===t.dataset.id;});
+    if(!c||!v111ForAds(c))return _stop.apply(this,arguments);
+    if(!confirm('Stop following '+(c.name||'this one')+'? From the next run neither agent reads them, posts or ads. To keep pulling only their ads, choose Ads only on the Ad Strategist’s Following tab.'))return;
+    try{await apPatch('competitors','id=eq.'+encodeURIComponent(c.id),{status:'denied',updated_at:new Date().toISOString()});c.status='denied';toast('Stopped following '+(c.name||'')+'.');}
+    catch(e){toast('Could not save: '+e.message,false);}
+    v96FollowRepaint();
+  };
+  /* following one by name that is followed for ads only reads their posts too, with no second row */
+  if(typeof v96FolSave==='function'){
+    const _s=v96FolSave;
+    v96FolSave=async function(kind){
+      const g=function(id){const e=document.getElementById(id);return e?e.value.trim():'';};
+      const name=g('v96FName'),liRaw=g('v96FLi'),li=typeof v96Li==='function'?v96Li(liRaw,kind):null;
+      if(!name||(liRaw&&!li))return _s.apply(this,arguments);
+      try{await v96FollowLoad();}catch(e){}
+      const same=(V96F.rows||[]).find(function(c){return String(c.name||'').trim().toLowerCase()===name.toLowerCase()&&c.status!=='denied'&&v111For(c)==='ads';});
+      if(!same)return _s.apply(this,arguments);
+      const btn=document.getElementById('v96FGo'),err=document.getElementById('v96FErr'),x=typeof v96Xh==='function'?v96Xh(g('v96FX')):null;
+      const body={follow_for:'both',follow_kind:kind==='person'?'person':'company',updated_at:new Date().toISOString()};
+      if(li)body.handle_linkedin=li;if(x)body.handle_x=x;if(g('v96FWeb'))body.website=g('v96FWeb');if(g('v96FNote'))body.notes=g('v96FNote');
+      if(btn){btn.disabled=true;btn.textContent='Saving…';}
+      try{await apPatch('competitors','id=eq.'+encodeURIComponent(same.id),body);apModalClose('v96FolM');
+        toast(same.name+' was followed for ads only. From the next run the Intel Tracker reads their posts too.');
+        await v96FollowLoad(true);v96FollowRepaint();}
+      catch(e){if(err){err.textContent='Could not save: '+e.message;err.classList.add('on');}if(btn){btn.disabled=false;btn.textContent='Follow';}}
+    };
+  }
+})();
 </script>
 
 <script>
