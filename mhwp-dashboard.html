@@ -13451,5 +13451,97 @@ function stageTablesHtml(docs){
 .mt-edit-hint{display:inline-block;margin:0 0 14px;line-height:1.5}
 .mt-edit-hint.hidden{display:none}
 </style>
+
+<script>
+/* ===================================================================
+   PAGE ADDRESSES
+   On Vercel the demo lives at /advisory/<page>: vercel.json sends every
+   /advisory path to this file and forwards the old /mhwp-dashboard.html
+   address to /advisory/touchpoint. Opened any other way (a local copy,
+   another static host) it keeps its address and uses #/<page> instead.
+   Before sign-in the address is only remembered; that page opens when
+   onboarding finishes. Detail pages (a client, a document, an episode,
+   the campaign) keep their parent's address. Inside a frame (the landing
+   page embed) the address is left alone.
+   Keep this block last: it wraps nav() and finishOb() after every round.
+   =================================================================== */
+(function(){
+  if(window.self!==window.top)return;
+  /* page -> address word; a new page only needs a line here */
+  var ROUTE_SLUG={home:'touchpoint',c360:'catalyst',delivs:'canvas',studio:'pipeline',kb:'atlas',
+    templates:'templates',audit:'audit',company:'company',voice:'brand-voice',learning:'ai-settings',integrations:'integrations'};
+  /* detail page -> the page whose address it keeps */
+  var ROUTE_PARENT={cdetail:'c360',editor:'delivs',episode:'studio',campaign:'studio'};
+  /* page -> the onboarding capability it needs, same rule as applyCaps; only a deep link checks it */
+  var ROUTE_CAP={c360:'c360',delivs:'delivs',studio:'studio',kb:'kb',templates:'kb'};
+  var ROUTE_BASE=/^\/advisory(\/|$)/.test(location.pathname)?'/advisory':null;
+  var live=false,quiet=false,want=null;
+  function routePage(p){return ROUTE_PARENT[p]||p;}
+  function routeOk(p){var c=ROUTE_CAP[p];return !c||(S.caps||{})[c]!==false;}
+  function routeName(word){
+    word=String(word||'').toLowerCase();
+    var pages=Object.keys(ROUTE_SLUG);
+    for(var i=0;i<pages.length;i++)if(ROUTE_SLUG[pages[i]]===word)return pages[i];
+    return pages.indexOf(word)!==-1?word:null;            /* the page's own name works too: /advisory/kb */
+  }
+  function routeWord(raw){
+    var w=String(raw||'').replace(/^\/+/,'').split('/')[0];
+    try{w=decodeURIComponent(w);}catch(e){}
+    return routeName(w);
+  }
+  function routeFromUrl(){
+    return routeWord(ROUTE_BASE?location.pathname.slice(ROUTE_BASE.length):(/^#\//.test(location.hash)?location.hash.slice(1):''));
+  }
+  function routeWrite(p,replace){
+    var slug=ROUTE_SLUG[routePage(p)];if(!slug)return;
+    if(ROUTE_BASE){
+      var path=ROUTE_BASE+'/'+slug;
+      if(location.pathname===path)return;
+      try{history[replace?'replaceState':'pushState'](null,'',path+location.search+location.hash);}catch(e){}
+      return;
+    }
+    var hash='#/'+slug;
+    if(location.hash===hash)return;
+    if(!replace){location.hash=hash;return;}
+    try{history.replaceState(history.state,'',hash);}catch(e){location.replace(hash);}
+  }
+  /* Back, Forward or an edited address: show that page without adding another history entry.
+     Open modals close first, quietly, since closing the build wizard can go back a page itself. */
+  function routeSync(){
+    var name=routeFromUrl();
+    if(!live){want=name;return;}
+    name=name||'home';
+    if(name===routePage(S.page))return;
+    quiet=true;
+    try{
+      document.querySelectorAll('.scrim.open').forEach(function(el){if(el.id)try{closeModal(el.id);}catch(e){}});
+      var pm=$('profileMenu');if(pm)pm.classList.remove('open');
+      nav(name);
+    }finally{quiet=false;}
+  }
+  var _nav=nav;
+  nav=function(p){
+    var r=_nav.apply(this,arguments);
+    if(live&&!quiet)routeWrite(S.page);
+    return r;
+  };
+  var _finishOb=finishOb;
+  finishOb=function(){
+    var r=_finishOb.apply(this,arguments);
+    if(want&&routeOk(want)&&want!==routePage(S.page))nav(want);
+    want=null;live=true;
+    if(ROUTE_BASE||/^#\//.test(location.hash))routeWrite(S.page,true);
+    return r;
+  };
+  /* the old address forwards here and the browser keeps any #/<page> on the way,
+     so on /advisory a #/<page> wins over the path and is then dropped from the address */
+  var carried=ROUTE_BASE&&/^#\//.test(location.hash)?location.hash:'';
+  if(carried){try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}
+  want=(carried&&routeWord(carried.slice(1)))||routeFromUrl();
+  if(ROUTE_BASE||/^#\//.test(location.hash))routeWrite(want||'home',true);   /* /advisory, odd words and unknown pages settle on a real page */
+  window.addEventListener('popstate',routeSync);
+  window.addEventListener('hashchange',routeSync);
+})();
+</script>
 </body>
 </html>

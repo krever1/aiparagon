@@ -7,13 +7,13 @@ Briefs for Claude sessions in this repo. Last reviewed 2026-10-15. Four projects
 |---|---|---|---|
 | 1 | AI Paragon internal dashboard | `new-aiparagon-dashboard.html` | aiparagon.vercel.app/new-aiparagon-dashboard.html |
 | 2 | Spectrum Care Advisory OS (care portal, np-demo) | `E-&-G-Home-Inc.html` | np.aiparagonconsulting.com (DigitalOcean) |
-| 3 | Paragon Advisory OS demo dashboard (Delta Advisory) | `mhwp-dashboard.html` | static deploy; this repo's copy is at aiparagon.vercel.app/mhwp-dashboard.html |
+| 3 | Paragon Advisory OS demo dashboard (Delta Advisory) | `mhwp-dashboard.html` | static deploy; this repo's copy is at aiparagon.vercel.app/advisory/touchpoint (pages at /advisory/<page>; the old file URL forwards there) |
 | 4 | Voice agent Command Center (Vapi, Arrington Roofing) | `voice-agent-client.html` | aiparagon.vercel.app/voice/overview (pages at /voice/<page>; the old file URL forwards there) |
 
 - Those are the GitHub names: update each file in place, don't add numbered copies to the repo. Kser's own deliveries use numbered names (see each project).
 - Everything else in the repo is an older build or a marketing page: older dashboards (`ai-paragon-dashboard.html`, `ai-paragon-dashboard-v40.html`, `dashboard-v1.html`), older portal builds (`np-demo-*.html`, `Demo-portal.html`, `Spectrum-Care-Advisory-OS.html`), and the solution, landing and motion pages. Don't touch them for project work.
 - Vercel project "aiparagon" serves this repo as static files, no build step. Every file in the repo is public at aiparagon.vercel.app/<file>. Vercel is becoming the dev environment: each pushed branch gets a preview deployment.
-- `vercel.json` gives apps their own path prefix on the one domain: /voice and /voice/* serve the Command Center (#4), and the old /voice-agent-client.html address forwards to /voice/overview (a temporary 307 for now). Other apps can follow the same pattern (one prefix each, one rewrite pair each, plus a forward from the old file address).
+- `vercel.json` gives apps their own path prefix on the one domain: /voice and /voice/* serve the Command Center (#4), /advisory and /advisory/* serve the Advisory OS demo (#3), and each old file address forwards to its app's first page (/voice-agent-client.html to /voice/overview, /mhwp-dashboard.html to /advisory/touchpoint; temporary 307s for now). Other apps can follow the same pattern (one prefix each, one rewrite pair each, plus a forward from the old file address).
 - The repo is public. Keep secrets and security details out of commits and this file.
 
 ## Shared services
@@ -285,6 +285,13 @@ Touchpoint (Home and calendar) / Catalyst (Clients and meetings) / Canvas (Clien
 ## How it's built
 The redesign is an overlay: rd.css and rd.js appended last on top of the legacy build; legacy pages wrapped in .rd-legacy with new #rd-<page> containers. CSS cascade order matters: the newest block goes right before </style>. `</body>` appears 3 times in the file (twice inside Word-export JS strings), so anchor patches on `</style>\n</body>\n</html>`. Use \U0001F399-style escapes, never surrogate pairs. When replacing the last property of an object literal, keep the closing `},`.
 
+## Page addresses
+- On Vercel each page has its own address: /advisory/touchpoint, /advisory/catalyst, /advisory/canvas, /advisory/pipeline, /advisory/atlas, /advisory/templates, /advisory/audit, plus the profile menu pages /advisory/company, /advisory/brand-voice, /advisory/ai-settings and /advisory/integrations. `vercel.json` sends /advisory and /advisory/* to `mhwp-dashboard.html`. The old /mhwp-dashboard.html address forwards to /advisory/touchpoint (a temporary 307 for now; switch `permanent` to true once it's settled), and a #/<page> carried through the forward still opens that page.
+- Sign-in and onboarding come first. The address is remembered and that page opens when onboarding finishes. If its capability was switched off in onboarding, Touchpoint opens instead.
+- Client pages, the document editor, episodes and the campaign keep their parent's address (not routed yet). Back and Forward close open modals.
+- A copy opened anywhere else (a local file, the separate static deploy) keeps its address and uses #/<page>. Inside a frame (the landing page embed) it leaves the address alone.
+- In the file: the PAGE ADDRESSES script is the last block. `ROUTE_SLUG` maps page names to address words (a new page only needs a line there). It wraps `nav()` and `finishOb()`, so it must stay after every other round. If a newer build replaces the file (v152 lives outside this repo), carry that block over.
+
 ## Landing page (Sep 9 workstream)
 Standalone sales page: Cluely-style hero with the demo embedded below. Free roam, front-end only, no lead capture, nothing saved from a visitor's session, all-new sample data (Ep 42 and its real clip excluded), design follows the dashboard. Shipped paragon-landing-v1.html + paragon-demo-embed-v1.html (must sit in the same folder) and a one-file standalone; those files aren't in this repo. The embed boots straight into the app, rdSave/rdLoad are no-ops, hash routes #brief / #build / #content / #ask, firm renamed to placeholder Northlake Advisory (glyph N). Two-file version recommended for the live site so the demo lazy-loads.
 Gotchas: the HTML tokenizer turns U+0000 into U+FFFD, so never use a null-byte sentinel; a srcdoc iframe has no useful location.hash, so the boot reads window.__FLOW.
@@ -305,7 +312,7 @@ Gotchas: the HTML tokenizer turns U+0000 into U+FFFD, so never use a null-byte s
 - v145 to v152 were built in another chat; check the file itself for those changes.
 
 ## Shipping
-- Ship each round as paragon-demo-dashboard-vNNN.html. In GitHub the file is `mhwp-dashboard.html`: update it in place.
+- Ship each round as paragon-demo-dashboard-vNNN.html. In GitHub the file is `mhwp-dashboard.html`: update it in place, keeping the PAGE ADDRESSES block (see Page addresses).
 - Before every ship: parse check, the smoke suites, the full demo-path walkthrough (qa.js, also runs with a simulated date) and audit.js clicking every control.
 
 ---
