@@ -1189,8 +1189,58 @@ function go(name) {
   document.querySelectorAll(".nav").forEach((n) => n.setAttribute("aria-current", String(n.dataset.go === name)));
   window.scrollTo({ top: 0, behavior: "auto" });
   renderAll();
+  if (!routeQuiet) routeWrite(name);
 }
 onClick("[data-go]", (el) => { closeNotif(); if (el.closest("#clientPanel")) closeClient(); go(el.dataset.go); });
+
+/* ---------- page addresses ----------
+   On Vercel the dashboard lives at /voice/<page>; vercel.json sends every /voice path to this file.
+   Opened any other way (the old file address, a local copy) it keeps its address and uses #/<page>.
+   A new page only needs adding to SECTIONS, plus ROUTE_SLUG if its address word differs from its name. */
+const ROUTE_SLUG = { appointments: "calendar" };                // page name -> address word, where they differ
+const ROUTE_BASE = /^\/voice(\/|$)/.test(location.pathname) ? "/voice" : null;
+let routeQuiet = false;                                         // true while the page follows the address bar
+function routeSlug(name) { return ROUTE_SLUG[name] || name; }
+function routeName(word) {
+  word = String(word || "").toLowerCase();
+  const named = Object.keys(ROUTE_SLUG).find((k) => ROUTE_SLUG[k] === word);
+  return named || (SECTIONS.indexOf(word) !== -1 ? word : null);
+}
+function routeFromUrl() {
+  const raw = ROUTE_BASE ? location.pathname.slice(ROUTE_BASE.length) : (/^#\//.test(location.hash) ? location.hash.slice(1) : "");
+  let word = raw.replace(/^\/+/, "").split("/")[0];
+  try { word = decodeURIComponent(word); } catch (e) {}
+  return routeName(word);
+}
+function routeWrite(name, replace) {
+  const slug = routeSlug(name);
+  if (ROUTE_BASE) {
+    const path = ROUTE_BASE + "/" + slug;
+    if (location.pathname === path) return;
+    try { history[replace ? "replaceState" : "pushState"](null, "", path + location.search + location.hash); } catch (e) {}
+    return;
+  }
+  const hash = "#/" + slug;
+  if (location.hash === hash) return;
+  if (!replace) { location.hash = hash; return; }
+  try { history.replaceState(history.state, "", hash); } catch (e) { location.replace(hash); }
+}
+// Back, Forward or an edited address: show that page without adding another history entry
+function routeSync() {
+  const name = routeFromUrl() || "overview";
+  if (name === current) return;
+  closeNotif();
+  closeClient();
+  routeQuiet = true;
+  try { go(name); } finally { routeQuiet = false; }
+}
+function routeStart() {
+  const name = routeFromUrl();
+  if (name && name !== current) { routeQuiet = true; try { go(name); } finally { routeQuiet = false; } }
+  if (ROUTE_BASE || /^#\//.test(location.hash)) routeWrite(current, true);   // /voice, old words and unknown pages settle on a real page
+  window.addEventListener("popstate", routeSync);
+  window.addEventListener("hashchange", routeSync);
+}
 
 const RENDER = {};
 // Re-rendering keeps each scrolling list where the reader left it
@@ -6431,6 +6481,7 @@ delete S.refreshedCallbacks;
 save();
 tick();
 runScheduler(true);
+routeStart();
 renderAll();
 updateLiveChrome();
 bootLive();

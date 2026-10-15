@@ -8,11 +8,12 @@ Briefs for Claude sessions in this repo. Last reviewed 2026-10-15. Four projects
 | 1 | AI Paragon internal dashboard | `new-aiparagon-dashboard.html` | aiparagon.vercel.app/new-aiparagon-dashboard.html |
 | 2 | Spectrum Care Advisory OS (care portal, np-demo) | `E-&-G-Home-Inc.html` | np.aiparagonconsulting.com (DigitalOcean) |
 | 3 | Paragon Advisory OS demo dashboard (Delta Advisory) | `mhwp-dashboard.html` | static deploy; this repo's copy is at aiparagon.vercel.app/mhwp-dashboard.html |
-| 4 | Voice agent Command Center (Vapi, Arrington Roofing) | `voice-agent-client.html` | aiparagon.vercel.app/voice-agent-client.html |
+| 4 | Voice agent Command Center (Vapi, Arrington Roofing) | `voice-agent-client.html` | aiparagon.vercel.app/voice/overview (pages at /voice/<page>; the old file URL still works) |
 
 - Those are the GitHub names: update each file in place, don't add numbered copies to the repo. Kser's own deliveries use numbered names (see each project).
 - Everything else in the repo is an older build or a marketing page: older dashboards (`ai-paragon-dashboard.html`, `ai-paragon-dashboard-v40.html`, `dashboard-v1.html`), older portal builds (`np-demo-*.html`, `Demo-portal.html`, `Spectrum-Care-Advisory-OS.html`), and the solution, landing and motion pages. Don't touch them for project work.
-- Vercel project "aiparagon" serves this repo as static files, no build step. Every file in the repo is public at aiparagon.vercel.app/<file>.
+- Vercel project "aiparagon" serves this repo as static files, no build step. Every file in the repo is public at aiparagon.vercel.app/<file>. Vercel is becoming the dev environment: each pushed branch gets a preview deployment.
+- `vercel.json` gives apps their own path prefix on the one domain: /voice and /voice/* serve the Command Center (#4). Other apps can follow the same pattern (one prefix each, one rewrite pair each).
 - The repo is public. Keep secrets and security details out of commits and this file.
 
 ## Shared services
@@ -327,6 +328,12 @@ Caller (or the dashboard's "Call the agent" button) → Vapi runs the live call 
 | Hosting | The dashboard must be served over https for the mic (Vercel is fine). The Vapi web SDK loads from jsDelivr with no pinned version (esm.sh fallback); pin one. |
 | Twilio (planned) | Business phone number imported into Vapi; A2P 10DLC registration for US texting. The Send Text node is disabled until then. |
 | Pushover (planned) | Push alerts to staff phones. The Push to Phones node is disabled until then. |
+
+## Page addresses
+- On Vercel each page has its own address: /voice/overview, /voice/conversations, /voice/messages, /voice/opportunities, /voice/calendar (the appointments page), /voice/quality, /voice/training, /voice/knowledge, /voice/library, /voice/analytics, /voice/portal, /voice/tiers, /voice/settings. `vercel.json` sends /voice and /voice/* to `voice-agent-client.html`.
+- Opened any other way (the old /voice-agent-client.html address, a local copy) the page keeps its address and uses #/<page> instead, so links and local testing still work without the rewrite.
+- In the file: `SECTIONS` and `go(name)` switch pages; `ROUTE_SLUG` maps a page to its address word where they differ; `routeWrite`, `routeSync` and `routeStart` keep the address bar and the page in step (Back and Forward close the customer drawer). A new page only needs adding to `SECTIONS`, plus `ROUTE_SLUG` if its address word differs. Unknown or old words settle on a real page, so a bad link never shows a blank screen.
+- Not routed yet: the customer drawer, conversation detail and modals.
 
 ## Agent tools (all served by the n8n tool server)
 check_availability, book_appointment, lookup_knowledge, escalate_to_human, plus reschedule_appointment and add_case_details for returning callers. If lookup_knowledge says a topic belongs to a person, the agent says what it's told and escalates. If it says to ask questions first, the agent asks only the ones it still needs, one at a time.
