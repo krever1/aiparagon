@@ -8,12 +8,12 @@ Briefs for Claude sessions in this repo. Last reviewed 2026-10-15. Four projects
 | 1 | AI Paragon internal dashboard | `new-aiparagon-dashboard.html` | aiparagon.vercel.app/new-aiparagon-dashboard.html |
 | 2 | Spectrum Care Advisory OS (care portal, np-demo) | `E-&-G-Home-Inc.html` | np.aiparagonconsulting.com (DigitalOcean) |
 | 3 | Paragon Advisory OS demo dashboard (Delta Advisory) | `mhwp-dashboard.html` | static deploy; this repo's copy is at aiparagon.vercel.app/mhwp-dashboard.html |
-| 4 | Voice agent Command Center (Vapi, Arrington Roofing) | `voice-agent-client.html` | aiparagon.vercel.app/voice/overview (pages at /voice/<page>; the old file URL still works) |
+| 4 | Voice agent Command Center (Vapi, Arrington Roofing) | `voice-agent-client.html` | aiparagon.vercel.app/voice/overview (pages at /voice/<page>; the old file URL forwards there) |
 
 - Those are the GitHub names: update each file in place, don't add numbered copies to the repo. Kser's own deliveries use numbered names (see each project).
 - Everything else in the repo is an older build or a marketing page: older dashboards (`ai-paragon-dashboard.html`, `ai-paragon-dashboard-v40.html`, `dashboard-v1.html`), older portal builds (`np-demo-*.html`, `Demo-portal.html`, `Spectrum-Care-Advisory-OS.html`), and the solution, landing and motion pages. Don't touch them for project work.
 - Vercel project "aiparagon" serves this repo as static files, no build step. Every file in the repo is public at aiparagon.vercel.app/<file>. Vercel is becoming the dev environment: each pushed branch gets a preview deployment.
-- `vercel.json` gives apps their own path prefix on the one domain: /voice and /voice/* serve the Command Center (#4). Other apps can follow the same pattern (one prefix each, one rewrite pair each).
+- `vercel.json` gives apps their own path prefix on the one domain: /voice and /voice/* serve the Command Center (#4), and the old /voice-agent-client.html address forwards to /voice/overview (a temporary 307 for now). Other apps can follow the same pattern (one prefix each, one rewrite pair each, plus a forward from the old file address).
 - The repo is public. Keep secrets and security details out of commits and this file.
 
 ## Shared services
@@ -331,7 +331,8 @@ Caller (or the dashboard's "Call the agent" button) → Vapi runs the live call 
 
 ## Page addresses
 - On Vercel each page has its own address: /voice/overview, /voice/conversations, /voice/messages, /voice/opportunities, /voice/calendar (the appointments page), /voice/quality, /voice/training, /voice/knowledge, /voice/library, /voice/analytics, /voice/portal, /voice/tiers, /voice/settings. `vercel.json` sends /voice and /voice/* to `voice-agent-client.html`.
-- Opened any other way (the old /voice-agent-client.html address, a local copy) the page keeps its address and uses #/<page> instead, so links and local testing still work without the rewrite.
+- The old /voice-agent-client.html address forwards to /voice/overview (a temporary 307 for now; switch `permanent` to true in `vercel.json` once it's settled). Browsers keep a #/<page> through the forward, so an old link like voice-agent-client.html#/calendar still opens Calendar: on /voice a #/<page> wins over the path and is then dropped from the address.
+- A copy opened anywhere else (a local file, a host without `vercel.json`) keeps its address and uses #/<page> instead, so local testing still works without the rewrite.
 - In the file: `SECTIONS` and `go(name)` switch pages; `ROUTE_SLUG` maps a page to its address word where they differ; `routeWrite`, `routeSync` and `routeStart` keep the address bar and the page in step (Back and Forward close the customer drawer). A new page only needs adding to `SECTIONS`, plus `ROUTE_SLUG` if its address word differs. Unknown or old words settle on a real page, so a bad link never shows a blank screen.
 - Not routed yet: the customer drawer, conversation detail and modals.
 

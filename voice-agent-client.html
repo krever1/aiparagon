@@ -1235,7 +1235,11 @@ function routeSync() {
   try { go(name); } finally { routeQuiet = false; }
 }
 function routeStart() {
-  const name = routeFromUrl();
+  // The old /voice-agent-client.html address forwards to /voice/overview and the browser keeps any #/<page>
+  // on the way, so on /voice a #/<page> wins over the path and is then dropped from the address.
+  const carried = ROUTE_BASE && /^#\//.test(location.hash) ? location.hash : "";
+  if (carried) { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} }
+  const name = (carried && routeName(carried.slice(2).split("/")[0])) || routeFromUrl();
   if (name && name !== current) { routeQuiet = true; try { go(name); } finally { routeQuiet = false; } }
   if (ROUTE_BASE || /^#\//.test(location.hash)) routeWrite(current, true);   // /voice, old words and unknown pages settle on a real page
   window.addEventListener("popstate", routeSync);
