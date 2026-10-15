@@ -46034,10 +46034,12 @@ NW_PAGES['e3.testing']=function(m,again){
    A bare /dashboard resumes the saved workspace as before. A page in the
    address opens once sign-in and the resume are done, then the address
    follows every page change. A lead keeps the Lead pipeline address.
-   Signing out drops the page from the address, so whoever signs in next
-   resumes their own workspace. Inside a frame the address is left alone.
-   Keep this block last: it wraps apNavSync(), apAfterLogin() and
-   apSignOut() after every round.
+   The sign-in screen has its own address, /dashboard/login; a page asked
+   for before sign-in is kept in memory and opens after it. Signing out
+   goes back to /dashboard/login, so whoever signs in next resumes their
+   own workspace. Inside a frame the address is left alone.
+   Keep this block last: it wraps apNavSync(), apAfterLogin(),
+   apEnsureSession() and apSignOut() after every round.
    =================================================================== */
 (function(){
   if(window.self!==window.top)return;
@@ -46052,7 +46054,7 @@ NW_PAGES['e3.testing']=function(m,again){
   /* words that open the Overview of the engine you are in, as Home does */
   var ROUTE_HOME=['home','overview'];
   var ROUTE_BASE=/^\/dashboard(\/|$)/.test(location.pathname)?'/dashboard':null;
-  var live=false,quiet=false,want=null;
+  var live=false,quiet=false,want=null,atLogin=false;
   function routeView(v){
     if(v==='home')return (typeof V107!=='undefined'&&V107.eng==='e1')?'e1overview':'e3overview';
     if(v==='e1lead')return 'e1pipeline';
@@ -46087,11 +46089,21 @@ NW_PAGES['e3.testing']=function(m,again){
     if(!replace){location.hash=hash;return;}
     try{history.replaceState(history.state,'',hash);}catch(e){location.replace(hash);}
   }
+  /* the sign-in screen's own address; the page asked for stays in want until sign-in */
+  function routeLogin(){
+    atLogin=true;
+    if(ROUTE_BASE){
+      var path=ROUTE_BASE+'/login';
+      if(location.pathname!==path)try{history.replaceState(null,'',path+location.search+location.hash);}catch(e){}
+      return;
+    }
+    if(location.hash!=='#/login')try{history.replaceState(history.state,'','#/login');}catch(e){}
+  }
   /* Back, Forward or an edited address: show that page without adding another history entry.
      Open popups close first, quietly; apGo closes the side panels itself. */
   function routeSync(){
     var name=routeFromUrl();
-    if(!live){want=name;return;}
+    if(!live){if(name)want=name;if(atLogin)routeLogin();return;}
     if(!name)return;                                       /* an address without a page leaves the page alone */
     var v=routeView(name);
     if(v===routeView(apCurrentView()))return;
@@ -46116,7 +46128,7 @@ NW_PAGES['e3.testing']=function(m,again){
     if(!app||app.classList.contains('hidden'))return;      /* still on the sign-in screen */
     var v=want&&routeView(want);want=null;
     if(v&&v!==routeView(apCurrentView())){try{apGo(v);}catch(e){}}
-    live=true;
+    live=true;atLogin=false;
     routeWrite(apCurrentView(),true);
   }
   var _after=apAfterLogin;
@@ -46124,10 +46136,17 @@ NW_PAGES['e3.testing']=function(m,again){
     try{return await _after.apply(this,arguments);}
     finally{routeEnter();}
   };
+  /* the boot found no session, so the sign-in screen is up */
+  var _ens=apEnsureSession;
+  apEnsureSession=async function(){
+    var s=await _ens.apply(this,arguments);
+    if(!s&&!live)routeLogin();
+    return s;
+  };
   var _out=apSignOut;
   apSignOut=function(){
-    live=false;
-    try{history.replaceState(null,'',(ROUTE_BASE||location.pathname)+location.search);}catch(e){}
+    live=false;want=null;
+    routeLogin();
     return _out.apply(this,arguments);
   };
   /* the old address forwards here and the browser keeps any #/<page> on the way,
@@ -46135,7 +46154,7 @@ NW_PAGES['e3.testing']=function(m,again){
   var carried=ROUTE_BASE&&/^#\//.test(location.hash)?location.hash:'';
   if(carried){try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}
   want=(carried&&routeWord(carried.slice(1)))||routeFromUrl();
-  if(want&&want!=='home')routeWrite(want,true);            /* odd spellings settle now; a bare or unknown address waits for the resume */
+  if(want&&want!=='home')routeWrite(want,true);            /* odd spellings settle now; a bare or unknown address waits for sign-in or the resume */
   window.addEventListener('popstate',routeSync);
   window.addEventListener('hashchange',routeSync);
 })();
