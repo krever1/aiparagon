@@ -102,6 +102,7 @@ Five agents in sequence: sector-adaptive Lead Research (RIA / other company / no
 | HubSpot Contact Sync | gdxNQjx5Q5gEuaIO | every 6h |
 | Lead File Text Ingest | bhHHlPRqTJixv7TC | /webhook/file-ingest |
 | Low-Ticket Ads Content Agent | xdsadklZ0DXdjW5X | manual + webhook e3-low-ticket-run |
+| Engine 3 · Advertiser Industries | 8OabFoF9l3DOWqCs | /webhook/e3-ad-industries. Names each advertiser's industry for the Ad Strategist; the dashboard saves it. |
 
 The Low-Ticket Agent always builds from the newest creative brief.
 
@@ -135,10 +136,12 @@ Other live workflows the dashboard uses. The dashboard's webhook URLs are in `AP
 | Lead File → HubSpot Sync | RRsnr3H4Vo8fTPaU | Dashboard upload → HubSpot file + note. |
 
 ## Supabase tables
-e1_leads, agent_outputs, competitors, lead_files, guide_files, hubspot_contacts, company_profile, runs, intel_items, winner_creatives (a view), engagement_drafts, test_results, funnel_packages, offers, creative_briefs, ad_records, ap_profiles, ap_prefs, ap_allowed_emails.
+e1_leads, agent_outputs, competitors, lead_files, guide_files, hubspot_contacts, company_profile, runs, intel_items, winner_creatives (a view), engagement_drafts, test_results, funnel_packages, offers, creative_briefs, ad_records, ap_profiles, ap_prefs, ap_allowed_emails, ai_settings (team settings by key, among them brief_structure, ads_follow, ad_industries and ad_industries_ai), idea_notes.
 
 ## Where it stands (as of 2026-10-15)
-- Latest file: `new-aiparagon-dashboard.html` in this repo. Its patch markers go up to v110.
+- Latest file: `new-aiparagon-dashboard.html` in this repo. Its patch markers go up to v111.
+- v111 (Oct 15, Erica's feedback round): Request changes opens an editor on the organic and ads briefs (edit or remove sections, findings and posts or ads; the edited brief is what drafts read; the agent's version is kept in the brief's data and can be put back; an `edited` row in agent_feedback sends it back to Needs review). The Structure tab is a layout editor per brief kind (on or off, order, counts, added sections counted from the posts or ads), saved as `brief_structure`. Marketing Generation and Content Transformation have categories (the Intel Tracker's organic categories, the two campaign kinds, four ad types) and a "What the briefs found" step: use, drop or save for later (idea_notes), and the picks ride in the request. The Ad Strategist has a Following tab (accounts with a Facebook page, searches and filters saved as `ads_follow`), industries suggested by the Advertiser Industries workflow (`ad_industries_ai`; one typed by hand in `ad_industries` wins), a follow step after an upload, and Swipe file is now Uploads (Notion swipe-file ads say From Notion).
+- Not live yet from v111: the Ad Strategist does not read `ads_follow` until two hand edits in n8n ("Pick Meta Pages" and "Normalize Library Ads"; edit by hand, a rebuild drops the Apify credential). Then set `V111_ADS_LIVE` to true. A follow-for-ads-only option needs one filter line in the Intel Tracker's "Get Competitors". Content from Source counts any past approval, so an edited brief keeps its approval for the agent.
 - Next build: User 2's own-content path (content upload, extraction, its own workflow). Most of the intake already exists: Content from Source, Read a Link, Transcribe, Learn Voice, Doc Reader, Auto-fill, plus mammoth.js in the page. The new piece is mainly the run: own content + organic brief → organic posts + ad funnel. Check what Content from Source already covers before building a new workflow.
 - Agreed redesign: merge Content Transformation into Marketing Generation; Client profile becomes its own page like the shared mockup. An `e3client` view already exists (Settings, "Company profile"); check it against the mockup first.
 - Sidebar today vs Navigation above (the v107 shell, built at runtime by `nwShell`; the older sidebar markup is still in the file but replaced): an engine switcher (Engine 1, Engine 3, Engine 2 greyed out). Engine 3: Overview, Intel Tracker, Ad Strategist, Market Intelligence Briefs, Content Transformation, Marketing Generation, Ad Testing, Approvals, Runs & uploads. Engine 1: Overview, Lead pipeline, Calls, Tasks, Approvals. Settings: Company profile, Integrations, Knowledge base, Files, Templates, AI settings, Audit log. The account menu has Your account, Company profile, AI settings and Sign out. Home is no longer a page: it opens the current engine's Overview. The browser tab still says "AI Paragon · Demo".
@@ -164,6 +167,7 @@ Search by name; line numbers move every round.
 - `apSb`: shell Supabase helper. Later rounds wrap it (search `apSb=`) so calls go out with the user's token, with a refresh and one retry on 401. `apToken()` returns the session token.
 - `sb`, `sbPost`, `sbPatch`, `sbInsert`: v60 Supabase helpers. Not wrapped like `apSb`.
 - `AP_AUTH`: Supabase Auth endpoints.
+- v111 is the `v111js` script just above PAGE ADDRESSES: `V111_SECS` / `V111_ADD` (brief sections and the ones a layout can add), `v111EdStart` (the brief editor), `v111St` (the layout in force), `V111_CATS` and `v111InsAll` (categories and insights), `v111FolHtml` (Following), `v111IndSuggest` (industries).
 
 ---
 

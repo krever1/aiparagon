@@ -71,8 +71,19 @@ async function newPage(browser, BASE, opts) {
       }
       if (p.startsWith('/rest/v1/ap_prefs')) { log.prefsPosts++; return route.fulfill({ status: 201, headers: { 'access-control-allow-origin': '*' } }); }
       if (p.startsWith('/rest/v1/ap_profiles') && req.method() === 'GET') return json(200, [{ id: USER.id, display_name: 'QA Tester', email: USER.email }]);
+      if (opts.rest && p.startsWith('/rest/v1/')) {                                         // the Engine 3 suites: an in-memory store (lib/rest-stub.js)
+        const r = opts.rest.handle(req.method(), p, req.postData(), req.headers());
+        if (r.status === 204 || r.body == null) return route.fulfill({ status: r.status, headers: { 'access-control-allow-origin': '*' } });
+        return json(r.status, r.body);
+      }
       if (req.method() === 'GET') return json(200, []);
       return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*' } });
+    }
+    if (opts.hooks && u.startsWith('https://n8n.aiparagonconsulting.com/')) {           // n8n webhooks, answered by the suite (nothing reaches n8n)
+      const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' };
+      if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+      const r = opts.hooks(u, req.method(), req.postData());
+      if (r) return route.fulfill({ status: r.status || 200, contentType: 'application/json', headers: cors, body: JSON.stringify(r.body == null ? {} : r.body) });
     }
     return route.abort();
   });
