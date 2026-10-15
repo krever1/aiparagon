@@ -31285,7 +31285,7 @@ async function v96FollowLoad(force){
   if(V96F.p&&!force)return V96F.p;
   V96F.p=(async function(){
     let rows=[];V96F.err='';
-    try{rows=(await apSb('competitors?select=id,name,handle_linkedin,handle_x,meta_page_id,website,category,status,source,added_by,created_at,follow_kind,notes&order=created_at.asc&limit=500'))||[];}
+    try{rows=(await apSb('competitors?select=id,name,handle_linkedin,handle_x,meta_page_id,website,category,status,source,added_by,created_at,follow_kind,follow_for,notes&order=created_at.asc&limit=500'))||[];}
     catch(e){V96F.err=e.message||String(e);rows=V96F.rows||[];}
     let S={};try{S=await apAiSettingsLoad(true);}catch(e){S={};}
     V96F.rows=rows;V96F.terms=v96Terms(S);V96F.ind=v96Json(S.ad_industries,{})||{};V96F.t=Date.now();V96F.p=null;
@@ -46130,6 +46130,11 @@ button.v111-x-b:hover{background:var(--nw-line)}
 .v111-indact{display:flex;gap:6px;flex-wrap:wrap}
 .v111-sug{border-color:var(--nw-accent)!important;background:var(--nw-accent-soft)!important}
 .v111-sugt{display:block;grid-column:2;font-size:11.5px;color:var(--nw-accent-text);margin-top:2px}
+/* follow for: ads only, or ads and posts */
+.v111-segs{display:flex;flex-wrap:wrap;gap:8px}
+.v111-for button{padding:5px 11px;font-size:13px}
+.v111-fafor{margin:10px 0 0}
+.v111-adsonly p.v96-muted{margin:6px 0 2px}
 </style>
 <script id="v111js">
 /* ===================================================================
@@ -47425,8 +47430,8 @@ function v111Dress(page,b){
    3. The Ad Strategist: who it follows, what each advertiser sells
    =================================================================== */
 AP_HOOKS.ad_industries=AP_N8N+'e3-ad-industries';
-/* the searches and filters below are saved now; the Ad Strategist reads them once its next update is published */
-const V111_ADS_LIVE=false;
+/* the Ad Strategist reads the accounts, searches and filters below (n8n: Pick Meta Pages, Keep Chosen Ad Types) */
+const V111_ADS_LIVE=true;
 V111.indAsked={};
 function v111IndAi(){const S=(typeof AP_AISET!=='undefined'&&AP_AISET)||{};const m=v96Json(S.ad_industries_ai,{});return m&&typeof m==='object'?m:{};}
 /* an industry set by hand wins; else the one the agent worked out */
@@ -47509,6 +47514,14 @@ function v111FolState(){
 }
 function v111FolRows(){return ((typeof V96F!=='undefined'&&V96F.rows)||[]).filter(function(c){return c&&c.status!=='denied';});}
 function v111HasPage(c){return !!String(c.meta_page_id||'').trim();}
+/* who reads an account: both agents, the Ad Strategist only (ads) or the Intel Tracker only (posts) */
+function v111For(c){const f=c&&c.follow_for;return f==='ads'||f==='posts'?f:'both';}
+function v111ForAds(c){return v111HasPage(c)&&v111For(c)!=='posts';}
+function v111Pick(b){const g=b&&b.closest('[role="radiogroup"]');if(g)g.querySelectorAll('[role="radio"]').forEach(function(x){x.setAttribute('aria-checked',String(x===b));});}
+function v111ForSeg(id,f,label,click){
+  return '<div class="nw-seg v111-for" role="radiogroup" aria-label="'+esc(label)+'"'+(id?' id="'+id+'"':'')+'>'+[['ads','Ads only'],['both','Ads and posts']].map(function(x){
+    return '<button type="button" role="radio" data-f="'+x[0]+'" aria-checked="'+(f===x[0])+'" onclick="'+(click?click.replace('$F',x[0]):'v111Pick(this)')+'">'+x[1]+'</button>';}).join('')+'</div>';
+}
 function v111FbPage(v){
   v=String(v||'').trim();if(!v)return '';
   let m=/view_all_page_id=(\d+)/.exec(v);if(m)return m[1];
@@ -47525,30 +47538,35 @@ function v111FolChips(key,list,ph,max){
       '<button type="button" class="nw-btn nw-btn-sm" onclick="v111FolAdd(\''+key+'\','+max+')">'+nwIc('plus',14)+'Add</button></div>';
 }
 function v111FolHtml(){
-  const F=v111FolState(),rows=v111FolRows(),on=rows.filter(v111HasPage),off=rows.filter(function(c){return !v111HasPage(c);});
+  const F=v111FolState(),rows=v111FolRows(),on=rows.filter(v111ForAds),off=rows.filter(function(c){return !v111ForAds(c);});
   if(typeof V96F==='undefined'||!V96F.rows)return nwEmpty('users','Loading who you follow','Getting the accounts both agents read.');
   const ind=function(n){const v=v96Ind(n),f=v111IndFrom(n);return v?'<span class="nw-tag'+(f==='agent'?' nw-tag-gold':'')+'" title="'+(f==='agent'?'Suggested by the agent':'Set by you')+'">'+esc(v)+'</span>':'';};
   const kindOf=function(c){return typeof v96Kind==='function'&&v96Kind(c)==='person'?'Person':'Company';};
   const accRow=function(c){
     return '<li class="v111-acc"><div class="v111-acc-m"><b>'+esc(c.name||'Account')+'</b><span class="v111-acc-t"><span class="nw-tag">'+kindOf(c)+'</span>'+ind(c.name)+
         '<a class="nw-link nw-small" href="https://www.facebook.com/'+esc(encodeURIComponent(String(c.meta_page_id).trim()).replace(/%2F/g,'/'))+'" target="_blank" rel="noopener">Facebook page'+nwIc('arrowUR',13)+'</a></span></div>'+
-      '<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v111FolStop('+esc(nwJs(c.id))+')">Stop reading ads</button></li>';
+      v111ForSeg('',v111For(c),'What '+(c.name||'this account')+' is followed for','v111FolFor('+esc(nwJs(c.id))+',\'$F\')')+
+      '<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v111FolStop('+esc(nwJs(c.id))+')">'+(v111For(c)==='ads'?'Stop following':'Stop reading ads')+'</button></li>';
   };
   const add=F.add?'<div class="v111-addacc"><div class="nw-grid2">'+
       '<label class="nw-field"><span class="nw-lbl">Name</span><input class="nw-input" id="v111AccName" placeholder="e.g. ClickFunnels" oninput="var a=document.getElementById(\'v111AccFind\');if(a)a.href=v111LibSearch(this.value)"></label>'+
       '<label class="nw-field"><span class="nw-lbl">Facebook page<small>link or page ID</small></span><input class="nw-input" id="v111AccPage" placeholder="facebook.com/their-page"></label></div>'+
-      '<div class="nw-seg" role="radiogroup" aria-label="Kind" id="v111AccKind"><button type="button" role="radio" aria-checked="true" data-k="company" onclick="v111AccKind(this)">Company</button><button type="button" role="radio" aria-checked="false" data-k="person" onclick="v111AccKind(this)">Person or influencer</button></div>'+
+      '<div class="v111-segs"><div class="nw-seg" role="radiogroup" aria-label="Kind" id="v111AccKind"><button type="button" role="radio" aria-checked="true" data-k="company" onclick="v111AccKind(this)">Company</button><button type="button" role="radio" aria-checked="false" data-k="person" onclick="v111AccKind(this)">Person or influencer</button></div>'+
+        v111ForSeg('v111AccFor','ads','Follow for')+'</div>'+
       '<p class="nw-faint nw-small">Not sure of the page? <a class="nw-link nw-small" id="v111AccFind" href="'+esc(v111LibSearch(''))+'" target="_blank" rel="noopener">Find them in the Meta Ad Library'+nwIc('arrowUR',13)+'</a> and copy the page link from one of their ads.</p>'+
       (F.err?'<p class="v111-err" role="alert">'+esc(F.err)+'</p>':'')+
       '<div class="nw-card-foot" style="margin-top:0"><button type="button" class="nw-btn nw-btn-primary nw-btn-sm" onclick="v111AccSave()">Follow</button><button type="button" class="nw-btn nw-btn-sm" onclick="V111.fol.add=false;V111.fol.err=\'\';nwRepaint()">Cancel</button></div></div>':'';
   const accounts='<section class="nw-card" id="v111FolAcc"><div class="nw-card-headrow"><div><div class="nw-kicker">Accounts</div><h3 class="nw-sec-h">Followed for ads <span class="nw-faint">'+on.length+'</span></h3></div>'+
       (F.add?'':'<button type="button" class="nw-btn nw-btn-sm" onclick="V111.fol.add=true;V111.fol.err=\'\';nwRepaint();setTimeout(function(){var i=document.getElementById(\'v111AccName\');if(i)i.focus();},30)">'+nwIc('plus',15)+'Add an account</button>')+'</div>'+
     add+(on.length?'<ul class="v111-accs">'+on.map(accRow).join('')+'</ul>':'<p class="nw-muted nw-small">No account has a Facebook page yet, so the Ad Strategist has no ads to pull. Add one above.</p>')+
-    (off.length?'<details class="nw-more-box v111-nopage"><summary><b>Followed without a Facebook page</b> <span class="nw-faint">'+off.length+'</span>'+nwIc('chevD',16,1.75,'nw-chev')+'</summary>'+
-      '<p class="nw-faint nw-small">The Intel Tracker reads these. Add a page to pull their ads too.</p><ul class="v111-accs">'+off.map(function(c){
-        return '<li class="v111-acc"><div class="v111-acc-m"><b>'+esc(c.name||'Account')+'</b><span class="v111-acc-t"><span class="nw-tag">'+kindOf(c)+'</span>'+ind(c.name)+'<a class="nw-link nw-small" href="'+esc(v111LibSearch(c.name))+'" target="_blank" rel="noopener">Find in the Ad Library'+nwIc('arrowUR',13)+'</a></span></div>'+
-          '<div class="v111-pageadd"><input class="nw-input" id="v111Pg_'+esc(c.id)+'" placeholder="Facebook page link" aria-label="Facebook page for '+esc(c.name)+'"><button type="button" class="nw-btn nw-btn-sm" onclick="v111FolPage('+esc(nwJs(c.id))+')">Add page</button></div></li>';}).join('')+'</ul></details>':'')+
-    '<p class="nw-faint nw-small">Both agents read the accounts you follow: the Ad Strategist pulls their ads, the Intel Tracker reads their posts.</p></section>';
+    (off.length?'<details class="nw-more-box v111-nopage"><summary><b>Followed for posts only</b> <span class="nw-faint">'+off.length+'</span>'+nwIc('chevD',16,1.75,'nw-chev')+'</summary>'+
+      '<p class="nw-faint nw-small">The Intel Tracker reads these. Add a page or switch their ads on to pull their ads too.</p><ul class="v111-accs">'+off.map(function(c){
+        return '<li class="v111-acc"><div class="v111-acc-m"><b>'+esc(c.name||'Account')+'</b><span class="v111-acc-t"><span class="nw-tag">'+kindOf(c)+'</span>'+ind(c.name)+(v111HasPage(c)?
+            '<a class="nw-link nw-small" href="https://www.facebook.com/'+esc(encodeURIComponent(String(c.meta_page_id).trim()).replace(/%2F/g,'/'))+'" target="_blank" rel="noopener">Facebook page'+nwIc('arrowUR',13)+'</a>'
+            :'<a class="nw-link nw-small" href="'+esc(v111LibSearch(c.name))+'" target="_blank" rel="noopener">Find in the Ad Library'+nwIc('arrowUR',13)+'</a>')+'</span></div>'+
+          (v111HasPage(c)?'<button type="button" class="nw-btn nw-btn-sm" onclick="v111FolFor('+esc(nwJs(c.id))+',\'both\')">Pull their ads too</button>'
+            :'<div class="v111-pageadd"><input class="nw-input" id="v111Pg_'+esc(c.id)+'" placeholder="Facebook page link" aria-label="Facebook page for '+esc(c.name)+'"><button type="button" class="nw-btn nw-btn-sm" onclick="v111FolPage('+esc(nwJs(c.id))+')">Add page</button></div>')+'</li>';}).join('')+'</ul></details>':'')+
+    '<p class="nw-faint nw-small">Ads only: just the Ad Strategist reads them. Ads and posts: the Intel Tracker reads their posts too.</p></section>';
   const types='<div class="nw-chips">'+V111_ADTYPES.map(function(t){const p=F.types.indexOf(t[0])>=0;
     return '<button type="button" class="nw-chip nw-chip-sm" aria-pressed="'+p+'" onclick="v111FolType(\''+t[0]+'\')">'+(p?nwIc('check',13):'')+esc(t[1])+'</button>';}).join('')+'</div>';
   const filt='<section class="nw-card" id="v111FolFilt"><div class="nw-card-headrow"><div><div class="nw-kicker">Searches and filters</div><h3 class="nw-sec-h">What else to look for</h3></div></div>'+
@@ -47557,7 +47575,7 @@ function v111FolHtml(){
     '<div class="nw-field"><span class="nw-lbl">Ad types<small>none picked means all of them</small></span>'+types+'</div>'+
     '<div class="nw-grid2"><div class="nw-field"><span class="nw-lbl">Which ads</span><div class="nw-seg" role="radiogroup" aria-label="Which ads">'+
         [['active','Running now'],['all','Running or stopped']].map(function(x){return '<button type="button" role="radio" aria-checked="'+(F.active===x[0])+'" onclick="V111.fol.active=\''+x[0]+'\';V111.fol.dirty=true;V111.fol.msg=\'\';nwRepaint()">'+esc(x[1])+'</button>';}).join('')+'</div></div>'+
-      '<label class="nw-field"><span class="nw-lbl">Country</span><select class="nw-input" data-nofill="1" onchange="V111.fol.country=this.value;V111.fol.dirty=true;V111.fol.msg=\'\';nwRepaint()">'+
+      '<label class="nw-field"><span class="nw-lbl">Country<small>for the searches</small></span><select class="nw-input" data-nofill="1" onchange="V111.fol.country=this.value;V111.fol.dirty=true;V111.fol.msg=\'\';nwRepaint()">'+
         V111_COUNTRY.map(function(c){return '<option value="'+c[0]+'"'+(F.country===c[0]?' selected':'')+'>'+esc(c[1])+'</option>';}).join('')+'</select></label></div>'+
     '<div class="nw-card-foot"><span class="nw-faint nw-small" role="status">'+esc(F.msg||(F.dirty?'Not saved yet.':V111_ADS_LIVE?'The next run follows these.':'Saved here. The Ad Strategist reads the accounts above today; searches and filters start with its next update.'))+'</span><span class="nw-grow"></span>'+
       '<button type="button" class="nw-btn nw-btn-primary nw-btn-sm" onclick="v111FolSave()"'+(F.dirty&&!F.busy?'':' disabled')+'>'+(F.busy?'Saving…':'Save')+'</button></div></section>';
@@ -47592,8 +47610,10 @@ async function v111FolSave(){
   }catch(e){F.msg='Could not save: '+(e&&e.message?e.message:String(e));}
   F.busy=false;nwRepaint();
 }
-/* follow an account for ads: a new one, or a page for one already followed */
-async function v111FollowSave(name,pageIn,kind,link){
+/* follow an account for ads: a new one, or a page for one already followed. forWhat: 'ads' (default) or 'both'.
+   An account the Intel Tracker already reads keeps its posts; one followed for posts only gets its ads switched on. */
+async function v111FollowSave(name,pageIn,kind,link,forWhat){
+  forWhat=forWhat==='both'?'both':'ads';
   name=String(name||'').replace(/\s+/g,' ').trim().slice(0,80);
   const page=v111FbPage(pageIn);
   if(name.length<2)throw new Error('Give the account a name.');
@@ -47601,11 +47621,13 @@ async function v111FollowSave(name,pageIn,kind,link){
   try{await v96FollowLoad(true);}catch(e){}
   const ex=((typeof V96F!=='undefined'&&V96F.rows)||[]).find(function(c){return String(c.name||'').trim().toLowerCase()===name.toLowerCase();});
   if(ex){
-    const body={meta_page_id:page,updated_at:new Date().toISOString()};if(ex.status==='denied')body.status='approved';
+    const body={meta_page_id:page,updated_at:new Date().toISOString()};
+    if(ex.status==='denied'){body.status='approved';body.follow_for=forWhat;}
+    else if(v111For(ex)==='posts'||(v111For(ex)==='ads'&&forWhat==='both'))body.follow_for='both';
     const r=await apPatch('competitors','id=eq.'+encodeURIComponent(ex.id),body);if(!Array.isArray(r)||!r.length)throw new Error('The account did not take the change.');
   }else{
     const site=v111Host(link);
-    const r=await apPost('competitors',{name:name,meta_page_id:page,follow_kind:kind==='person'?'person':'company',status:'approved',source:'manual',added_by:v111Me(),website:site?'https://'+site:null});
+    const r=await apPost('competitors',{name:name,meta_page_id:page,follow_kind:kind==='person'?'person':'company',follow_for:forWhat,status:'approved',source:'manual',added_by:v111Me(),website:site?'https://'+site:null});
     if(!r||!r[0])throw new Error('The account was not saved.');
   }
   try{await v96FollowLoad(true);}catch(e){}
@@ -47614,8 +47636,8 @@ async function v111FollowSave(name,pageIn,kind,link){
 }
 async function v111AccSave(){
   const F=v111FolState(),v=function(id){const e=document.getElementById(id);return e?e.value:'';};
-  const k=document.querySelector('#v111AccKind [aria-checked="true"]'),name=v('v111AccName');
-  try{await v111FollowSave(name,v('v111AccPage'),k?k.dataset.k:'company','');F.add=false;F.err='';nwRepaint();nwToast(name.trim()+' is followed. The next run pulls their ads.');}
+  const k=document.querySelector('#v111AccKind [aria-checked="true"]'),f=document.querySelector('#v111AccFor [aria-checked="true"]'),name=v('v111AccName');
+  try{await v111FollowSave(name,v('v111AccPage'),k?k.dataset.k:'company','',f?f.dataset.f:'ads');F.add=false;F.err='';nwRepaint();nwToast(name.trim()+' is followed. The next run pulls their ads.');}
   catch(e){F.err=e.message||String(e);nwRepaint();const i=document.getElementById('v111AccName');if(i)i.value=name;}
 }
 async function v111FolPage(id){
@@ -47625,9 +47647,20 @@ async function v111FolPage(id){
 }
 async function v111FolStop(id){
   const c=v111FolRows().find(function(x){return String(x.id)===String(id);});if(!c)return;
-  if(!confirm('Stop pulling '+c.name+'’s ads? The Intel Tracker still reads their posts.'))return;
-  try{const r=await apPatch('competitors','id=eq.'+encodeURIComponent(id),{meta_page_id:null,updated_at:new Date().toISOString()});if(!Array.isArray(r)||!r.length)throw new Error('The account did not take the change.');
-    await v96FollowLoad(true);nwRepaint();nwToast('Stopped. '+c.name+'’s ads are no longer pulled.');}
+  const only=v111For(c)==='ads';
+  if(!confirm(only?'Stop following '+c.name+'? Neither agent reads them from the next run.':'Stop pulling '+c.name+'’s ads? The Intel Tracker still reads their posts.'))return;
+  try{const r=await apPatch('competitors','id=eq.'+encodeURIComponent(id),only?{status:'denied',updated_at:new Date().toISOString()}:{follow_for:'posts',updated_at:new Date().toISOString()});if(!Array.isArray(r)||!r.length)throw new Error('The account did not take the change.');
+    await v96FollowLoad(true);nwRepaint();nwToast(only?'Stopped following '+c.name+'.':'Stopped. '+c.name+'’s ads are no longer pulled.');}
+  catch(e){nwToast('Could not change it: '+(e.message||e));}
+}
+/* ads only, ads and posts, or posts only for one account */
+async function v111FolFor(id,f){
+  const c=v111FolRows().find(function(x){return String(x.id)===String(id);});if(!c||['ads','both','posts'].indexOf(f)<0)return;
+  const was=v111For(c);if(was===f)return;
+  try{const r=await apPatch('competitors','id=eq.'+encodeURIComponent(id),{follow_for:f,updated_at:new Date().toISOString()});if(!Array.isArray(r)||!r.length)throw new Error('The account did not take the change.');
+    c.follow_for=f;try{await v96FollowLoad(true);}catch(e){}nwRepaint();
+    nwToast(f==='ads'?c.name+' is followed for ads only. The Intel Tracker leaves them out from the next run.':
+      was==='posts'?'The next run pulls '+c.name+'’s ads too.':'The Intel Tracker reads '+c.name+'’s posts too from the next run.');}
   catch(e){nwToast('Could not change it: '+(e.message||e));}
 }
 (function(){
@@ -47639,7 +47672,7 @@ async function v111FolStop(id){
   const _t=nwAdsTabs;
   nwAdsTabs=function(tab){
     let h=_t.apply(this,arguments);
-    const n=v111FolRows().filter(v111HasPage).length;
+    const n=v111FolRows().filter(v111ForAds).length;
     if(typeof V96F!=='undefined'&&V96F.rows)h=h.replace(/(data-tab="follow"[^>]*>[\s\S]*?Following)(<\/button>)/,'$1<span class="nw-cnt">'+n+'</span>$2');
     return h;
   };
@@ -47664,14 +47697,15 @@ function v111FollowAsk(adv,link,n,done){
   adv=String(adv||'').trim();if(!adv)return false;
   const k=adv.toLowerCase(),rows=((typeof V96F!=='undefined'&&V96F.rows)||(typeof AP_COMPETITORS!=='undefined'&&AP_COMPETITORS)||[]);
   const ex=rows.find(function(c){return String(c.name||'').trim().toLowerCase()===k;});
-  if(ex&&v111HasPage(ex)&&ex.status!=='denied')return false;
+  if(ex&&v111ForAds(ex)&&ex.status!=='denied')return false;
   if(nwLS('ap.v111.nofollow',{})[k])return false;
   const box=document.querySelector('#apUpModal .rd-prompt-c');if(!box)return false;
   V111.folAsk={adv:adv,link:link||'',done:done};
   box.innerHTML='<div class="k">Engine 3 · Ad Strategist</div>'+
     '<h3 style="font-family:\'Newsreader\',serif;font-size:24px;margin:0 0 4px">Follow '+esc(adv)+' too?</h3>'+
-    '<p class="help" style="margin:0 0 14px">'+esc(nwPlural(n||1,'ad')+' from '+adv+' saved.')+' Follow '+esc(adv)+' and the Ad Strategist pulls their ads from the Meta Ad Library on every run. The Intel Tracker reads their posts too.</p>'+
-    '<label class="l" for="v111FaPage">Their Facebook page</label><input type="text" id="v111FaPage" placeholder="facebook.com/their-page, or the page ID" onkeydown="if(event.key===\'Enter\'){event.preventDefault();v111FollowYes();}">'+
+    '<p class="help" style="margin:0 0 14px">'+esc(nwPlural(n||1,'ad')+' from '+adv+' saved.')+' Follow '+esc(adv)+' and the Ad Strategist pulls their ads from the Meta Ad Library on every run.</p>'+
+    '<label class="l" for="v111FaPage">Their Facebook page</label><input type="text" id="v111FaPage" placeholder="facebook.com/their-page, or the page ID" value="'+esc(ex&&ex.meta_page_id?String(ex.meta_page_id):'')+'" onkeydown="if(event.key===\'Enter\'){event.preventDefault();v111FollowYes();}">'+
+    '<div class="v111-fafor">'+v111ForSeg('v111FaFor','ads','Follow for')+'</div>'+
     '<p class="help" style="margin:8px 0 0"><a href="'+esc(v111LibSearch(adv))+'" target="_blank" rel="noopener">Find '+esc(adv)+' in the Meta Ad Library ↗</a> and copy the page link from one of their ads.</p>'+
     '<div class="ap-cf-err" id="v111FaErr" role="alert"></div>'+
     '<div class="acts"><button class="rd-btn" onclick="v111FollowNo()">Not now</button><button class="rd-btn pri" id="v111FaGo" onclick="v111FollowYes()">Follow '+esc(adv)+'</button></div>';
@@ -47682,7 +47716,8 @@ async function v111FollowYes(){
   const A=V111.folAsk;if(!A)return;
   const i=document.getElementById('v111FaPage'),err=document.getElementById('v111FaErr'),btn=document.getElementById('v111FaGo');
   if(btn){btn.disabled=true;btn.textContent='Saving…';}
-  try{await v111FollowSave(A.adv,i?i.value:'','company',A.link);V111.folAsk=null;toast(A.adv+' is followed. The next run pulls their ads.');A.done();}
+  const f=document.querySelector('#v111FaFor [aria-checked="true"]');
+  try{await v111FollowSave(A.adv,i?i.value:'','company',A.link,f?f.dataset.f:'ads');V111.folAsk=null;toast(A.adv+' is followed. The next run pulls their ads.');A.done();}
   catch(e){if(err){err.textContent=e.message||String(e);err.classList.add('on');}if(btn){btn.disabled=false;btn.textContent='Follow '+A.adv;}}
 }
 function v111FollowNo(){
@@ -47690,6 +47725,74 @@ function v111FollowNo(){
   const s=nwLS('ap.v111.nofollow',{});s[A.adv.toLowerCase()]=1;nwLSset('ap.v111.nofollow',s);
   V111.folAsk=null;A.done();
 }
+
+/* ---------- the Intel Tracker leaves out the accounts followed for ads only ---------- */
+function v111IntelFolTidy(h){
+  if(!h||!h.querySelector||typeof V96F==='undefined'||!V96F.rows)return;
+  const g=h.querySelector('.v96-fol-g');if(!g)return;
+  const ads=V96F.rows.filter(function(c){return c.status!=='denied'&&v111For(c)==='ads';});
+  ads.forEach(function(c){const b=g.querySelector('[data-id="'+String(c.id).replace(/["\\]/g,'')+'"]'),li=b&&b.closest('li');if(li)li.remove();});
+  g.querySelectorAll('.v96-fol-c').forEach(function(sec){
+    const ul=sec.querySelector('ul'),n=sec.querySelector('.hd .n');if(!ul)return;
+    if(n)n.textContent=ul.children.length;
+    if(!ul.children.length)ul.outerHTML='<p class="v96-muted">None here yet.</p>';
+  });
+  const old=h.querySelector('.v111-adsonly');if(old)old.remove();
+  if(!ads.length)return;
+  g.insertAdjacentHTML('afterend','<details class="v96-fol-off v111-adsonly"><summary>Followed for ads only ('+ads.length+')</summary>'+
+    '<p class="v96-muted">The Ad Strategist pulls their ads. Their posts are left out here.</p><ul>'+ads.map(function(c){
+      return '<li><div class="who"><b>'+esc(c.name||'Unnamed')+'</b><small>'+(c.meta_page_id?'<a href="https://www.facebook.com/'+esc(c.meta_page_id)+'" target="_blank" rel="noopener">Facebook ↗</a>':'')+'</small></div>'+
+        '<button class="rd-btn sm" data-e9="folPosts" data-id="'+esc(c.id)+'">Read their posts too</button></li>';}).join('')+'</ul></details>');
+}
+(function(){
+  if(typeof v96FollowCounts!=='function'||typeof v96FollowRender!=='function'||typeof E9_ACT==='undefined')return;
+  /* the people and companies it reads, for its counts */
+  const _c=v96FollowCounts;
+  v96FollowCounts=function(){
+    const all=V96F.rows;if(!all)return _c.apply(this,arguments);
+    V96F.rows=all.filter(function(c){return v111For(c)!=='ads';});
+    try{return _c.apply(this,arguments);}finally{V96F.rows=all;}
+  };
+  const _r=v96FollowRender;
+  v96FollowRender=async function(h){const r=await _r.apply(this,arguments);try{v111IntelFolTidy(h);}catch(e){}return r;};
+  E9_ACT.folPosts=async function(t){
+    const c=(V96F.rows||[]).find(function(x){return String(x.id)===t.dataset.id;});if(!c)return;
+    try{await apPatch('competitors','id=eq.'+encodeURIComponent(c.id),{follow_for:'both',updated_at:new Date().toISOString()});c.follow_for='both';
+      toast('From the next run the Intel Tracker reads '+(c.name||'this account')+'’s posts too.');}
+    catch(e){toast('Could not save: '+e.message,false);}
+    v96FollowRepaint();
+  };
+  /* stopping here stops both agents: say so for an account whose ads are pulled too */
+  const _stop=E9_ACT.folStop;
+  E9_ACT.folStop=async function(t){
+    const c=(V96F.rows||[]).find(function(x){return String(x.id)===t.dataset.id;});
+    if(!c||!v111ForAds(c))return _stop.apply(this,arguments);
+    if(!confirm('Stop following '+(c.name||'this one')+'? From the next run neither agent reads them, posts or ads. To keep pulling only their ads, choose Ads only on the Ad Strategist’s Following tab.'))return;
+    try{await apPatch('competitors','id=eq.'+encodeURIComponent(c.id),{status:'denied',updated_at:new Date().toISOString()});c.status='denied';toast('Stopped following '+(c.name||'')+'.');}
+    catch(e){toast('Could not save: '+e.message,false);}
+    v96FollowRepaint();
+  };
+  /* following one by name that is followed for ads only reads their posts too, with no second row */
+  if(typeof v96FolSave==='function'){
+    const _s=v96FolSave;
+    v96FolSave=async function(kind){
+      const g=function(id){const e=document.getElementById(id);return e?e.value.trim():'';};
+      const name=g('v96FName'),liRaw=g('v96FLi'),li=typeof v96Li==='function'?v96Li(liRaw,kind):null;
+      if(!name||(liRaw&&!li))return _s.apply(this,arguments);
+      try{await v96FollowLoad();}catch(e){}
+      const same=(V96F.rows||[]).find(function(c){return String(c.name||'').trim().toLowerCase()===name.toLowerCase()&&c.status!=='denied'&&v111For(c)==='ads';});
+      if(!same)return _s.apply(this,arguments);
+      const btn=document.getElementById('v96FGo'),err=document.getElementById('v96FErr'),x=typeof v96Xh==='function'?v96Xh(g('v96FX')):null;
+      const body={follow_for:'both',follow_kind:kind==='person'?'person':'company',updated_at:new Date().toISOString()};
+      if(li)body.handle_linkedin=li;if(x)body.handle_x=x;if(g('v96FWeb'))body.website=g('v96FWeb');if(g('v96FNote'))body.notes=g('v96FNote');
+      if(btn){btn.disabled=true;btn.textContent='Saving…';}
+      try{await apPatch('competitors','id=eq.'+encodeURIComponent(same.id),body);apModalClose('v96FolM');
+        toast(same.name+' was followed for ads only. From the next run the Intel Tracker reads their posts too.');
+        await v96FollowLoad(true);v96FollowRepaint();}
+      catch(e){if(err){err.textContent='Could not save: '+e.message;err.classList.add('on');}if(btn){btn.disabled=false;btn.textContent='Follow';}}
+    };
+  }
+})();
 </script>
 
 <script>

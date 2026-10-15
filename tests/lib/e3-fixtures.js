@@ -161,8 +161,13 @@ function tables() {
     agent_feedback: [],
     ai_settings: [],
     competitors: [
-      { id: '00000000-0000-4000-8000-0000000000e1', name: 'Northwind Advisory', handle_linkedin: 'company/northwind-qa', meta_page_id: null, status: 'approved', source: 'manual', follow_kind: 'company', created_at: '2026-09-01T00:00:00Z' },
-      { id: '00000000-0000-4000-8000-0000000000e2', name: 'Ledgerline', handle_linkedin: null, meta_page_id: '1000001', status: 'approved', source: 'manual', follow_kind: 'company', created_at: '2026-09-02T00:00:00Z' },
+      { id: '00000000-0000-4000-8000-0000000000e1', name: 'Northwind Advisory', handle_linkedin: 'company/northwind-qa', meta_page_id: null, status: 'approved', source: 'manual', follow_kind: 'company', follow_for: 'both', created_at: '2026-09-01T00:00:00Z' },
+      { id: '00000000-0000-4000-8000-0000000000e2', name: 'Ledgerline', handle_linkedin: null, meta_page_id: '1000001', status: 'approved', source: 'manual', follow_kind: 'company', follow_for: 'both', created_at: '2026-09-02T00:00:00Z' },
+      // followed for ads only: the Intel Tracker leaves them out
+      { id: '00000000-0000-4000-8000-0000000000e3', name: 'Harbor Funnels', handle_linkedin: null, meta_page_id: 'harborfunnels', status: 'approved', source: 'manual', follow_kind: 'company', follow_for: 'ads', created_at: '2026-09-03T00:00:00Z' },
+      { id: '00000000-0000-4000-8000-0000000000e5', name: 'Pine Street Media', handle_linkedin: null, meta_page_id: 'pinestreetmedia', status: 'approved', source: 'manual', follow_kind: 'company', follow_for: 'ads', created_at: '2026-09-05T00:00:00Z' },
+      // followed for posts only: a page on file, but the Ad Strategist leaves their ads out
+      { id: '00000000-0000-4000-8000-0000000000e4', name: 'Quill Partners', handle_linkedin: 'in/quill-qa', meta_page_id: 'quillpartners', status: 'approved', source: 'manual', follow_kind: 'person', follow_for: 'posts', created_at: '2026-09-04T00:00:00Z' },
     ],
     content_requests: [],
     idea_notes: [],

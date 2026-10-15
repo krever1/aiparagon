@@ -1,6 +1,7 @@
 // Engine 3 tests for new-aiparagon-dashboard.html (#1): editing a brief (Request changes), the brief layout
 // (Structure), categories and brief insights on Marketing Generation and Content Transformation, and the
-// Ad Strategist's Following tab, industries and the follow step after an upload. Supabase answers from an
+// Ad Strategist's Following tab (ads only, or ads and posts), industries, the follow step after an upload, and
+// the Intel Tracker leaving out the accounts followed for ads only. Supabase answers from an
 // in-memory store (lib/rest-stub.js) filled with synthetic data (lib/e3-fixtures.js), and n8n webhooks
 // answer from stubs, so no real account, data or workflow is touched. See tests/README.md.
 // Usage: node tests/dashboard-e3.test.js
@@ -253,13 +254,35 @@ const J = (v) => (typeof v === 'string' ? JSON.parse(v) : v);
     await page.fill('.v111-nopage input', 'https://www.facebook.com/ads/library/?active_status=all&view_all_page_id=123456789');
     await page.click('.v111-nopage button:has-text("Add page")'); await wait(page, 800);
     await page.click('#v111FolAcc .v111-acc:has-text("Ledgerline") button:has-text("Stop reading ads")'); await wait(page, 800);
-    const c = Object.fromEntries(store.db.competitors.map((x) => [x.name, x.meta_page_id]));
-    check('follow, add a page, stop: the accounts change as asked', c['Cobalt CRM'] === 'cobaltcrm' && c['Northwind Advisory'] === '123456789' && c.Ledgerline === null, JSON.stringify(c));
+    // page / who reads it / status, per account
+    const fc = () => Object.fromEntries(store.db.competitors.map((x) => [x.name, (x.meta_page_id || '-') + '/' + (x.follow_for || 'both') + '/' + (x.status || '')]));
+    let c = fc();
+    check('follow, add a page, stop reading ads: the accounts change as asked (the page stays for the Intel Tracker)',
+      c['Cobalt CRM'] === 'cobaltcrm/ads/approved' && c['Northwind Advisory'] === '123456789/both/approved' && c.Ledgerline === '1000001/posts/approved', JSON.stringify(c));
+    const lists = await ev(page, () => ({ on: [...document.querySelectorAll('#v111FolAcc > .v111-accs .v111-acc-m > b')].map((b) => b.textContent).sort(),
+      off: [...document.querySelectorAll('.v111-nopage .v111-acc-m > b')].map((b) => b.textContent).sort(), cnt: (document.querySelector('.nw-tabs button[data-tab="follow"] .nw-cnt') || {}).textContent }));
+    check('accounts read for posts only sit apart from the ones followed for ads', lists.on.join() === 'Cobalt CRM,Harbor Funnels,Northwind Advisory,Pine Street Media' && lists.off.join() === 'Ledgerline,Quill Partners' && lists.cnt === '4', JSON.stringify(lists));
+    const harbor = await ev(page, () => { const li = [...document.querySelectorAll('#v111FolAcc > .v111-accs .v111-acc')].find((x) => /Harbor Funnels/.test(x.textContent));
+      return li ? (li.querySelector('[role="radio"][aria-checked="true"]') || {}).textContent + '|' + [...li.querySelectorAll('button')].pop().textContent : ''; });
+    check('an account followed for ads only says so, and its stop button stops following', harbor === 'Ads only|Stop following', harbor);
+    await page.click('#v111FolAcc .v111-acc:has-text("Harbor Funnels") [role="radio"]:has-text("Ads and posts")'); await wait(page, 800);
+    await page.click('.v111-nopage summary'); await wait(page, 100);
+    await page.click('.v111-nopage .v111-acc:has-text("Quill Partners") button:has-text("Pull their ads too")'); await wait(page, 800);
+    await page.click('#v111FolAcc .v111-acc:has-text("Pine Street Media") button:has-text("Stop following")'); await wait(page, 800);
+    c = fc();
+    check('ads and posts, pull their ads too, stop following: each is saved', c['Harbor Funnels'] === 'harborfunnels/both/approved' && c['Quill Partners'] === 'quillpartners/both/approved' && c['Pine Street Media'] === 'pinestreetmedia/ads/denied', JSON.stringify(c));
+    await page.click('#v111FolAcc button:has-text("Add an account")'); await wait(page, 200);
+    await page.fill('#v111AccName', 'Mesa Ledger'); await page.fill('#v111AccPage', 'mesaledger');
+    await page.click('#v111AccFor [role="radio"]:has-text("Ads and posts")');
+    await page.click('.v111-addacc button:has-text("Follow")'); await wait(page, 800);
+    check('a new account is followed for ads only unless the team picks ads and posts', fc()['Mesa Ledger'] === 'mesaledger/both/approved' && fc()['Cobalt CRM'] === 'cobaltcrm/ads/approved', JSON.stringify(fc()));
     await page.fill('#v111F_kw', 'AI automation'); await page.press('#v111F_kw', 'Enter'); await wait(page, 100);
     await page.click('#v111FolFilt button:has-text("Video")'); await page.click('#v111FolFilt [role="radio"]:has-text("Running now")'); await wait(page, 100);
     await page.click('#v111FolFilt button:has-text("Save")'); await wait(page, 800);
     const af = (store.db.ai_settings.find((r) => r.key === 'ads_follow') || {}).value || {};
     check('searches and filters are saved for the Ad Strategist', af.keywords && af.keywords[0] === 'AI automation' && af.types.join() === 'video' && af.active === 'active', JSON.stringify(af));
+    const ft = await ev(page, () => document.getElementById('v111FolFilt').textContent);
+    check('the tab says the next run follows them, and what the country is for', /Saved\. The next run follows these\./.test(ft) && /Country\s*for the searches/.test(ft), ft.slice(-200));
     // after an upload: follow the advertiser too?
     const up = async (adv) => {
       await page.click('#main button:has-text("Upload ads")'); await wait(page, 300);
@@ -268,8 +291,14 @@ const J = (v) => (typeof v === 'string' ? JSON.parse(v) : v);
     };
     await up('Scribewell');
     check('after an upload, an advertiser not followed yet is offered', /Follow Scribewell too\?/.test(await ev(page, () => (document.querySelector('#apUpModal h3') || {}).textContent || '')));
-    await page.fill('#v111FaPage', 'scribewell'); await page.click('#v111FaGo'); await wait(page, 2500);
-    check('Follow saves the account and carries on to the ad', store.db.competitors.some((x) => x.name === 'Scribewell' && x.meta_page_id === 'scribewell') && (await ev(page, () => document.getElementById('apUpModal').style.display === 'none' && !!document.querySelector('.nw-drawer'))));
+    await page.fill('#v111FaPage', 'scribewell'); await page.click('#v111FaFor [role="radio"]:has-text("Ads and posts")'); await page.click('#v111FaGo'); await wait(page, 2500);
+    check('Follow saves the account, for what the team picked, and carries on to the ad', store.db.competitors.some((x) => x.name === 'Scribewell' && x.meta_page_id === 'scribewell' && x.follow_for === 'both') && (await ev(page, () => document.getElementById('apUpModal').style.display === 'none' && !!document.querySelector('.nw-drawer'))));
+    await page.keyboard.press('Escape'); await wait(page, 300);
+    await up('Ledgerline');
+    const lp = await ev(page, () => ({ h: (document.querySelector('#apUpModal h3') || {}).textContent || '', v: (document.getElementById('v111FaPage') || {}).value || '', f: (document.querySelector('#v111FaFor [aria-checked="true"]') || {}).textContent }));
+    check('an advertiser read for posts only is asked, with its page filled in and ads only picked', /Follow Ledgerline too\?/.test(lp.h) && lp.v === '1000001' && lp.f === 'Ads only', JSON.stringify(lp));
+    await page.click('#v111FaGo'); await wait(page, 2500);
+    check('following it switches its ads on and keeps its posts', fc().Ledgerline === '1000001/both/approved', fc().Ledgerline);
     await page.keyboard.press('Escape'); await wait(page, 300);
     await up('Cobalt CRM');
     check('an advertiser already followed is not asked', await ev(page, () => !/Follow/.test((document.querySelector('#apUpModal h3') || {}).textContent || '')));
@@ -278,6 +307,34 @@ const J = (v) => (typeof v === 'string' ? JSON.parse(v) : v);
     await page.click('#apUpModal button:has-text("Not now")'); await wait(page, 2200); await page.keyboard.press('Escape'); await wait(page, 300);
     await up('Gray Hollis Media');
     check('Not now is remembered', await ev(page, () => document.getElementById('apUpModal').style.display === 'none' || !/Follow/.test((document.querySelector('#apUpModal h3') || {}).textContent || '')));
+    await ctx.close();
+  }
+
+  // ---------------- 6. the Intel Tracker leaves out the accounts followed for ads only ----------------
+  {
+    const { ctx, page, store } = await open('/dashboard/intel-tracker');
+    const said = []; page.on('dialog', (d) => said.push(d.message()));
+    await wait(page, 1200);
+    const reads = await ev(page, () => (document.getElementById('main').textContent.match(/Reads \d+ accounts?/) || [''])[0]);
+    check('the header counts only the accounts it reads', reads === 'Reads 3 accounts', reads);
+    await page.click('.nw-tabs button[data-tab="follow"]'); await wait(page, 1500);
+    const s = await ev(page, () => { const t = (sel) => [...document.querySelectorAll(sel)].map((b) => b.textContent.trim());
+      return { lists: t('.v96-fol-g .who > b').sort(), ads: t('.v111-adsonly .who > b').sort(), sum: (document.querySelector('.v111-adsonly summary') || {}).textContent || '',
+        cnt: (document.querySelector('.nw-tabs button[data-tab="follow"] .nw-cnt') || {}).textContent, n: t('.v96-fol-g .hd .n') }; });
+    check('accounts followed for ads only sit apart, out of its lists and counts', s.lists.join() === 'Ledgerline,Northwind Advisory,Quill Partners' && s.ads.join() === 'Harbor Funnels,Pine Street Media' &&
+      /Followed for ads only \(2\)/.test(s.sum) && s.cnt === '3' && s.n.join() === '1,2', JSON.stringify(s));
+    await page.click('.v111-adsonly summary'); await wait(page, 100);
+    await page.click('.v111-adsonly li:has-text("Harbor Funnels") button:has-text("Read their posts too")'); await wait(page, 1500);
+    const hf = store.db.competitors.find((x) => x.name === 'Harbor Funnels');
+    check('Read their posts too puts it on the list', hf.follow_for === 'both' && (await ev(page, () => [...document.querySelectorAll('.v96-fol-g .who > b')].some((b) => /Harbor Funnels/.test(b.textContent)))), hf.follow_for);
+    await page.click('button[data-e9="folAdd"][data-k="company"]'); await wait(page, 300);
+    await page.fill('#v96FName', 'Pine Street Media'); await page.fill('#v96FLi', 'https://www.linkedin.com/company/pine-street-qa');
+    await page.click('#v96FGo'); await wait(page, 1500);
+    const pines = store.db.competitors.filter((x) => x.name === 'Pine Street Media');
+    check('following an ads-only account by name reads its posts too, with no second row', pines.length === 1 && pines[0].follow_for === 'both' && pines[0].handle_linkedin === 'company/pine-street-qa', JSON.stringify(pines));
+    await page.click('.v96-fol-g li:has-text("Ledgerline") button[data-e9="folStop"]'); await wait(page, 1200);
+    const lg = store.db.competitors.find((x) => x.name === 'Ledgerline');
+    check('stopping an account whose ads are pulled too says neither agent reads it', lg.status === 'denied' && said.some((m) => /neither agent reads them, posts or ads/.test(m)), said.join(' | '));
     await ctx.close();
   }
 
