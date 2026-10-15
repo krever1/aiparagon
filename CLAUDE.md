@@ -5,7 +5,7 @@ Briefs for Claude sessions in this repo. Last reviewed 2026-10-15. Four projects
 ## Projects and files
 | # | Project | File in GitHub | Live at |
 |---|---|---|---|
-| 1 | AI Paragon internal dashboard | `new-aiparagon-dashboard.html` | aiparagon.vercel.app/new-aiparagon-dashboard.html |
+| 1 | AI Paragon internal dashboard | `new-aiparagon-dashboard.html` | aiparagon.vercel.app/dashboard (pages at /dashboard/<page>; the old file URL forwards there) |
 | 2 | Spectrum Care Advisory OS (care portal, np-demo) | `E-&-G-Home-Inc.html` | np.aiparagonconsulting.com (DigitalOcean) |
 | 3 | Paragon Advisory OS demo dashboard (Delta Advisory) | `mhwp-dashboard.html` | static deploy; this repo's copy is at aiparagon.vercel.app/advisory/touchpoint (pages at /advisory/<page>; the old file URL forwards there) |
 | 4 | Voice agent Command Center (Vapi, Arrington Roofing) | `voice-agent-client.html` | aiparagon.vercel.app/voice/overview (pages at /voice/<page>; the old file URL forwards there) |
@@ -13,7 +13,7 @@ Briefs for Claude sessions in this repo. Last reviewed 2026-10-15. Four projects
 - Those are the GitHub names: update each file in place, don't add numbered copies to the repo. Kser's own deliveries use numbered names (see each project).
 - Everything else in the repo is an older build or a marketing page: older dashboards (`ai-paragon-dashboard.html`, `ai-paragon-dashboard-v40.html`, `dashboard-v1.html`), older portal builds (`np-demo-*.html`, `Demo-portal.html`, `Spectrum-Care-Advisory-OS.html`), and the solution, landing and motion pages. Don't touch them for project work.
 - Vercel project "aiparagon" serves this repo as static files, no build step. Every file in the repo is public at aiparagon.vercel.app/<file>. Vercel is becoming the dev environment: each pushed branch gets a preview deployment.
-- `vercel.json` gives apps their own path prefix on the one domain: /voice and /voice/* serve the Command Center (#4), /advisory and /advisory/* serve the Advisory OS demo (#3), and each old file address forwards to its app's first page (/voice-agent-client.html to /voice/overview, /mhwp-dashboard.html to /advisory/touchpoint; temporary 307s for now). Other apps can follow the same pattern (one prefix each, one rewrite pair each, plus a forward from the old file address).
+- `vercel.json` gives apps their own path prefix on the one domain: /dashboard and /dashboard/* serve the internal dashboard (#1), /voice and /voice/* serve the Command Center (#4), /advisory and /advisory/* serve the Advisory OS demo (#3), and each old file address forwards to its app (/new-aiparagon-dashboard.html to /dashboard, /voice-agent-client.html to /voice/overview, /mhwp-dashboard.html to /advisory/touchpoint; temporary 307s for now). Other apps can follow the same pattern (one prefix each, one rewrite pair each, plus a forward from the old file address).
 - The repo is public. Keep secrets and security details out of commits and this file.
 
 ## Shared services
@@ -76,6 +76,13 @@ Target layout. The current sidebar differs; see Where it stands.
 - Engine 3, "Lead Generation & Marketing": Intel Tracker (Agent 1), Ad Strategist (Agent 2), Market Intelligence Briefs, Marketing Generation (the Low-Ticket Agent), Ad Testing, Uploads & runs history
 - System: Knowledge base, Notion, Audit log, one Integrations page
 
+## Page addresses
+- On Vercel each page has its own address under /dashboard. Engine 3: /dashboard/engine-3 (its Overview), /intel-tracker, /ad-strategist, /briefs, /content-transformation, /marketing-generation, /ad-testing, /approvals, /runs. Engine 1: /dashboard/engine-1 (its Overview), /lead-pipeline, /calls, /tasks. Settings and account: /company-profile, /integrations, /knowledge-base, /files, /templates, /ai-settings, /audit-log, /account, /hubspot, /notion. /dashboard/overview opens the Overview of the engine you are in, as Home does.
+- `vercel.json` sends /dashboard and /dashboard/* to `new-aiparagon-dashboard.html`. The old /new-aiparagon-dashboard.html address forwards to a bare /dashboard (a temporary 307 for now), so old links and bookmarks still resume the saved workspace.
+- A bare /dashboard resumes the saved workspace (`ap_prefs`) as before. A page in the address opens after sign-in and the resume, then the address follows every page change, including the engines' own (a lead keeps /dashboard/lead-pipeline). Sign out drops the page from the address, so whoever signs in next resumes their own workspace.
+- A copy opened anywhere else (a local file) uses #/<page>. Inside a frame it leaves the address alone.
+- In the file: the PAGE ADDRESSES script is the last block. `ROUTE_SLUG` maps `AP_VIEWS` keys to address words (a new view only needs a line there). It wraps `apNavSync()`, `apAfterLogin()` and `apSignOut()`, so keep it the last script: later rounds go above it. Not routed yet: a lead's own page, drawers and modals.
+
 ## Engine 1
 Five agents in sequence: sector-adaptive Lead Research (RIA / other company / nonprofit), Prequalification Call Guide, Discovery Call Framework, Strategic AI Growth Plan (split into two agents to avoid timeouts). An anonymization sub-workflow swaps prospect PII for fake firm names before any external call. Agents use [ASSUMED:] and [FILL IN before call:] instead of pausing for missing data. A full prospect package went from about 2 hours of manual prep to about 15 minutes.
 
@@ -132,8 +139,8 @@ e1_leads, agent_outputs, competitors, lead_files, guide_files, hubspot_contacts,
 ## Where it stands (as of 2026-10-15)
 - Latest file: `new-aiparagon-dashboard.html` in this repo. Its patch markers go up to v110.
 - Next build: User 2's own-content path (content upload, extraction, its own workflow). Most of the intake already exists: Content from Source, Read a Link, Transcribe, Learn Voice, Doc Reader, Auto-fill, plus mammoth.js in the page. The new piece is mainly the run: own content + organic brief → organic posts + ad funnel. Check what Content from Source already covers before building a new workflow.
-- Agreed redesign: merge Content Transformation into Marketing Generation; Client profile becomes its own page like the shared mockup. An `e3client` view already exists (not in the sidebar); check it against the mockup first.
-- Sidebar today vs Navigation above: Engine 3 has 8 items (Overview, Create content, Intelligence briefs, Competitor Intel Tracker, Ad Strategist, Content Generation, Ad Testing, Uploads & runs). Marketing Generation goes by three names: sidebar "Content Generation", breadcrumb "Content Generation Agent", in-page "Marketing Generation". Integrations isn't in the sidebar. The browser tab still says "AI Paragon · Demo".
+- Agreed redesign: merge Content Transformation into Marketing Generation; Client profile becomes its own page like the shared mockup. An `e3client` view already exists (Settings, "Company profile"); check it against the mockup first.
+- Sidebar today vs Navigation above (the v107 shell, built at runtime by `nwShell`; the older sidebar markup is still in the file but replaced): an engine switcher (Engine 1, Engine 3, Engine 2 greyed out). Engine 3: Overview, Intel Tracker, Ad Strategist, Market Intelligence Briefs, Content Transformation, Marketing Generation, Ad Testing, Approvals, Runs & uploads. Engine 1: Overview, Lead pipeline, Calls, Tasks, Approvals. Settings: Company profile, Integrations, Knowledge base, Files, Templates, AI settings, Audit log. The account menu has Your account, Company profile, AI settings and Sign out. Home is no longer a page: it opens the current engine's Overview. The browser tab still says "AI Paragon · Demo".
 - Low-Ticket webhook node: checked, in place. POST `e3-low-ticket-run`, published. It checks the caller is an AI Paragon user, then "Respond Started" replies and hands off to Run Context.
 - Asana: the Integrations · Asana Proxy workflow is unpublished, so Asana on the Tasks page fails. Publish it or hide Asana.
 - Before tightening RLS (see the shared open decision), switch the ported v60 Supabase helpers (`sb`, `sbPost`, `sbPatch`, `sbInsert`, and the file upload/delete functions) to send the signed-in user's token (`apToken()`), like the shell code does.

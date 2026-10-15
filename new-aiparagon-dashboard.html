@@ -46024,5 +46024,122 @@ NW_PAGES['e3.testing']=function(m,again){
 
 </script>
 
+<script>
+/* ===================================================================
+   PAGE ADDRESSES
+   On Vercel the dashboard lives at /dashboard/<page>: vercel.json sends
+   every /dashboard path to this file and forwards the old
+   /new-aiparagon-dashboard.html address to /dashboard. Opened any other
+   way (a local copy) it keeps its address and uses #/<page> instead.
+   A bare /dashboard resumes the saved workspace as before. A page in the
+   address opens once sign-in and the resume are done, then the address
+   follows every page change. A lead keeps the Lead pipeline address.
+   Signing out drops the page from the address, so whoever signs in next
+   resumes their own workspace. Inside a frame the address is left alone.
+   Keep this block last: it wraps apNavSync(), apAfterLogin() and
+   apSignOut() after every round.
+   =================================================================== */
+(function(){
+  if(window.self!==window.top)return;
+  /* view -> address word; a new page only needs a line here */
+  var ROUTE_SLUG={
+    e3overview:'engine-3',e3intel:'intel-tracker',e3ads:'ad-strategist',e3briefs:'briefs',
+    e3create:'content-transformation',e3funnel:'marketing-generation',e3testing:'ad-testing',
+    approvals:'approvals',e3history:'runs',
+    e1overview:'engine-1',e1pipeline:'lead-pipeline',calls:'calls',tasks:'tasks',
+    e3client:'company-profile',integrations:'integrations',kb:'knowledge-base',files:'files',
+    templates:'templates',learning:'ai-settings',audit:'audit-log',profile:'account',hubspot:'hubspot',notion:'notion'};
+  /* words that open the Overview of the engine you are in, as Home does */
+  var ROUTE_HOME=['home','overview'];
+  var ROUTE_BASE=/^\/dashboard(\/|$)/.test(location.pathname)?'/dashboard':null;
+  var live=false,quiet=false,want=null;
+  function routeView(v){
+    if(v==='home')return (typeof V107!=='undefined'&&V107.eng==='e1')?'e1overview':'e3overview';
+    if(v==='e1lead')return 'e1pipeline';
+    return v;
+  }
+  function routeName(word){
+    word=String(word||'').toLowerCase();
+    if(ROUTE_HOME.indexOf(word)!==-1)return 'home';
+    var views=Object.keys(ROUTE_SLUG);
+    for(var i=0;i<views.length;i++)if(ROUTE_SLUG[views[i]]===word)return views[i];
+    return views.indexOf(word)!==-1?word:null;            /* the view's own name works too: /dashboard/e3intel */
+  }
+  function routeWord(raw){
+    var w=String(raw||'').replace(/^\/+/,'').split('/')[0];
+    try{w=decodeURIComponent(w);}catch(e){}
+    return routeName(w);
+  }
+  function routeFromUrl(){
+    return routeWord(ROUTE_BASE?location.pathname.slice(ROUTE_BASE.length):(/^#\//.test(location.hash)?location.hash.slice(1):''));
+  }
+  /* a new page drops any #anchor from the last one; settling the address in place keeps it */
+  function routeWrite(v,replace){
+    var slug=ROUTE_SLUG[routeView(v)];if(!slug)return;
+    if(ROUTE_BASE){
+      var path=ROUTE_BASE+'/'+slug;
+      if(location.pathname===path)return;
+      try{history[replace?'replaceState':'pushState'](null,'',path+location.search+(replace?location.hash:''));}catch(e){}
+      return;
+    }
+    var hash='#/'+slug;
+    if(location.hash===hash)return;
+    if(!replace){location.hash=hash;return;}
+    try{history.replaceState(history.state,'',hash);}catch(e){location.replace(hash);}
+  }
+  /* Back, Forward or an edited address: show that page without adding another history entry.
+     Open popups close first, quietly; apGo closes the side panels itself. */
+  function routeSync(){
+    var name=routeFromUrl();
+    if(!live){want=name;return;}
+    if(!name)return;                                       /* an address without a page leaves the page alone */
+    var v=routeView(name);
+    if(v===routeView(apCurrentView()))return;
+    quiet=true;
+    try{
+      document.querySelectorAll('.scrim.open').forEach(function(el){if(el.id)try{closeModal(el.id);}catch(e){}});
+      var pm=document.getElementById('profileMenu');if(pm)pm.classList.remove('open');
+      try{nwMenuClose();}catch(e){}
+      apGo(v);
+    }finally{quiet=false;}
+  }
+  /* the sidebar syncs after every page change, including the engines' own (opening a lead, switching a run) */
+  var _sync=apNavSync;
+  apNavSync=function(){
+    var r=_sync.apply(this,arguments);
+    if(live&&!quiet)routeWrite(apCurrentView());
+    return r;
+  };
+  /* sign-in and the saved-workspace resume come first; then a page in the address wins */
+  function routeEnter(){
+    var app=document.getElementById('view-app');
+    if(!app||app.classList.contains('hidden'))return;      /* still on the sign-in screen */
+    var v=want&&routeView(want);want=null;
+    if(v&&v!==routeView(apCurrentView())){try{apGo(v);}catch(e){}}
+    live=true;
+    routeWrite(apCurrentView(),true);
+  }
+  var _after=apAfterLogin;
+  apAfterLogin=async function(){
+    try{return await _after.apply(this,arguments);}
+    finally{routeEnter();}
+  };
+  var _out=apSignOut;
+  apSignOut=function(){
+    live=false;
+    try{history.replaceState(null,'',(ROUTE_BASE||location.pathname)+location.search);}catch(e){}
+    return _out.apply(this,arguments);
+  };
+  /* the old address forwards here and the browser keeps any #/<page> on the way,
+     so on /dashboard a #/<page> wins over the path and is then dropped from the address */
+  var carried=ROUTE_BASE&&/^#\//.test(location.hash)?location.hash:'';
+  if(carried){try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}
+  want=(carried&&routeWord(carried.slice(1)))||routeFromUrl();
+  if(want&&want!=='home')routeWrite(want,true);            /* odd spellings settle now; a bare or unknown address waits for the resume */
+  window.addEventListener('popstate',routeSync);
+  window.addEventListener('hashchange',routeSync);
+})();
+</script>
+
 </body>
 </html>
