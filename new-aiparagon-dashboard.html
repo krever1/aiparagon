@@ -15896,7 +15896,7 @@ async function submitE1Run(){
   }
 }
 
-function openE1Lead(email){ closeE1Panel(); state.e1Lead=email; state.view="e1lead"; render(); }
+function openE1Lead(email){ closeE1Panel(); if(typeof apOpenLead60==="function"&&!(state.engine==="e1"&&/^e1/.test(state.view))){ apOpenLead60(email); return; } state.e1Lead=email; state.view="e1lead"; render(); }
 function openE1LeadStage(email, i){
   openE1Lead(email);
   setTimeout(()=>{ const sec = document.querySelectorAll("#main section.block")[i];
@@ -27478,11 +27478,12 @@ function apFileRow(r,ctx){
     '<span class="dt">'+esc(apDate(r.at))+'</span>'+
     '<span class="ac">'+acts.join('')+'</span></div>';
 }
-const AP_FV={q:'',cat:'',src:'',kb:'',lim:40};
+const AP_FV={q:'',cat:'',src:'',kb:'',read:'',lim:40};
 function apFilesFiltered(rows,only){
   const q=AP_FV.q.toLowerCase();
   return rows.filter(function(r){
     if(only==='kb'&&!r.kb)return false;
+    if(only==='kb'&&AP_FV.read==='yes'&&!r.text)return false;if(only==='kb'&&AP_FV.read==='no'&&r.text)return false;
     if(AP_FV.cat&&r.cat!==AP_FV.cat)return false;
     if(AP_FV.src&&r.src!==AP_FV.src)return false;
     if(AP_FV.kb==='in'&&!r.kb)return false;if(AP_FV.kb==='out'&&r.kb)return false;
@@ -27515,8 +27516,8 @@ function apFilesStrip(rows,page){
   if(page==='kb')return '<div class="rd-strip">'+
     b(c(function(r){return r.kb&&r.table==='guide_files';}),'Firm-wide','guides and saved pages',AP_FV.src==='guide',"AP_FV.src=AP_FV.src==='guide'?'':'guide';apRenderKb2()")+
     b(c(function(r){return r.kb&&r.table==='lead_files';}),'Client documents','attached to a lead',AP_FV.cat==='Lead documents',"AP_FV.cat=AP_FV.cat==='Lead documents'?'':'Lead documents';apRenderKb2()")+
-    b(c(function(r){return r.kb&&r.text;}),'Readable','text the agents can read',false,"")+
-    b(c(function(r){return r.kb&&!r.text;}),'Waiting to be read','press Read again on these',false,"")+'</div>';
+    b(c(function(r){return r.kb&&r.text;}),'Readable','text the agents can read',AP_FV.read==='yes',"AP_FV.read=AP_FV.read==='yes'?'':'yes';apRenderKb2()")+
+    b(c(function(r){return r.kb&&!r.text;}),'Waiting to be read','press Read again on these',AP_FV.read==='no',"AP_FV.read=AP_FV.read==='no'?'':'no';apRenderKb2()")+'</div>';
   return '<div class="rd-strip">'+
     b(rows.length,'All documents','every file in the workspace',!AP_FV.cat&&!AP_FV.kb,"AP_FV.cat='';AP_FV.kb='';apRenderFiles2()")+
     b(c(function(r){return r.cat==='Lead documents';}),'Lead documents','written by the Engine 1 agents',AP_FV.cat==='Lead documents',"AP_FV.cat=AP_FV.cat==='Lead documents'?'':'Lead documents';apRenderFiles2()")+
@@ -27671,7 +27672,7 @@ async function apFileUpload(where){
     '<p class="help">PDF, Word, text or markdown. The text is read once so the agents and the assistant can use it.</p>'+
     '<label class="l" for="apUpF">File</label><input type="file" id="apUpF" accept=".pdf,.docx,.txt,.md,.csv,.html,.json">'+
     '<label class="l" for="apUpWhere">Where it belongs</label><select id="apUpWhere" data-nofill="1" onchange="document.getElementById(\'apUpLeadW\').hidden=this.value!==\'lead\'"><option value="firm">Firm-wide</option><option value="lead">A specific lead</option></select>'+
-    '<div id="apUpLeadW" hidden><label class="l" for="apUpLead">Lead</label><select id="apUpLead" data-nofill="1"><option value="">Loading…</option></select></div>'+
+    '<div id="apUpLeadW" hidden><label class="l" for="apUpLead">Lead</label><select id="apUpLead" data-nofill="1"><option value="">Loading…</option></select><p class="help">It is also attached to the lead’s contact in HubSpot.</p></div>'+
     '<label class="l" for="apUpCat">Category</label><select id="apUpCat" data-nofill="1">'+AP_FCAT.map(function(x){return '<option'+(x==='Firm guides'?' selected':'')+'>'+esc(x)+'</option>';}).join('')+'</select>'+
     '<label class="ap-chk"><input type="checkbox" id="apUpKb" checked> Add it to the knowledge base</label>'+
     '<div class="ap-cf-err" id="apUpErr"></div>'+
@@ -27696,6 +27697,7 @@ async function apFileUploadGo(){
     const row=where==='lead'?{lead_email:lead,file_name:f.name,file_url:url,file_path:path,stage:'manual',source:'upload',uploaded_by:AP_ME(),category:cat,in_kb:kb}
       :{engine:'all',file_name:f.name,file_url:url,file_path:path,uploaded_by:AP_ME(),category:cat,source:'upload',in_kb:kb};
     const created=await apPost(table,row);const id=created&&created[0]&&created[0].id;
+    if(where==='lead')v112HsMirror(url,f.name,lead);
     btn.textContent='Reading the text…';
     if(id){try{if(isDocx(f.name)){const t=await docxToText(await f.arrayBuffer());await apPatch(table,'id=eq.'+id,{file_text:t||null,indexed_at:t?new Date().toISOString():null});}
       else await e1IngestFile(id,url,f.name,table);}catch(e){toast('Uploaded. The text could not be read yet, try “Read the text again” later.',false);}}
@@ -27917,21 +27919,21 @@ async function apTplLoad(force){
   try{AP_TPLS=(await apSb('doc_templates?select=*&order=created_at.asc')||[]).map(function(t){t.sections=Array.isArray(t.sections)?t.sections:apArr(t.sections);return t;});}catch(e){AP_TPLS=AP_TPLS||[];}
   return AP_TPLS;
 }
-async function apRenderTemplates2(){
+async function apRenderTemplates2(quick){
   const el=document.getElementById('rd-templates');if(!el)return;
-  el.innerHTML='<div class="loading">Loading templates…</div>';
-  const T=await apTplLoad(true);
+  if(!quick||!AP_TPLS)el.innerHTML='<div class="loading">Loading templates…</div>';
+  const T=quick&&AP_TPLS?AP_TPLS:await apTplLoad(true);
   if(S.page!=='templates')return;
   const on=T.filter(function(t){return t.active!==false;});
   const by=function(f){return T.filter(function(t){return t.format===f;}).length;};
   el.innerHTML=rdHeadHtml('SYSTEM','Templates','Structures the Content Generation Agent follows. Pick one in Create content and the draft is built section by section in that shape.')+
     '<div class="ap-fhead-acts"><button class="rd-btn pri" onclick="apTplEdit()">'+RD_ICON.plus+'New template</button><button class="rd-btn" onclick="apGo(\'e3create\')">Go to Create content '+RD_ICON.chev+'</button></div>'+
     '<div class="rd-strip">'+
-      '<button><span class="n">'+on.length+'</span><span class="rd-sl">Active templates<small>shown in Create content</small></span></button>'+
-      '<button><span class="n">'+by('ad')+'</span><span class="rd-sl">Paid ads<small>Meta and LinkedIn</small></span></button>'+
-      '<button><span class="n">'+(by('thought_leadership')+by('newsletter'))+'</span><span class="rd-sl">Posts and newsletters<small>organic</small></span></button>'+
-      '<button><span class="n">'+T.reduce(function(a,t){return a+(t.uses||0);},0)+'</span><span class="rd-sl">Drafts built<small>from a template</small></span></button></div>'+
-    '<div class="ap-tpl-grid">'+(T.length?T.map(apTplCard).join(''):'<div class="rd-card rd-empty">No templates yet. Create one and it appears in Create content.</div>')+'</div>'+
+      v112TplTile('on',on.length,'Active templates','shown in Create content')+
+      v112TplTile('ad',by('ad'),'Paid ads','Meta and LinkedIn')+
+      v112TplTile('org',by('thought_leadership')+by('newsletter'),'Posts and newsletters','organic')+
+      '<button onclick="apGo(\'e3create\')"><span class="n">'+T.reduce(function(a,t){return a+(t.uses||0);},0)+'</span><span class="rd-sl">Drafts built<small>from a template</small></span></button></div>'+
+    '<div class="ap-tpl-grid">'+(T.length?(v112TplShow(T).map(apTplCard).join('')||'<div class="rd-card rd-empty">No templates of this kind yet. Press the tile again to see them all.</div>'):'<div class="rd-card rd-empty">No templates yet. Create one and it appears in Create content.</div>')+'</div>'+
     '<div class="rd-card" style="margin-top:18px"><div class="rd-sec-h gold"><div><div class="k">Agent output formats</div><h3>Fixed formats in n8n</h3></div></div>'+
       '<div class="rd-blank">The Engine 1 documents (research brief, interview script, discovery call, growth plan) and the Engine 3 briefs have their formats set inside their n8n workflows. House rules in <a onclick="navPm(\'learning\')">Dashboard AI settings</a> are how you steer those today.</div></div>';
 }
@@ -30231,8 +30233,8 @@ apRenderIntegrations=async function(){
     purpose:{tag:'n8n',bold:'Connections run through the team’s n8n',small:'Keys and logins live in n8n, not in anyone’s browser. The dashboard reads from these tools, and only writes when you press a button: a Notion entry, a HubSpot meeting, Asana tasks or a Slack post.'},
     strip:function(){return [
       {n:live,l:'Working',s:'of '+cards.length+' connections',tab:'inuse'},
-      {n:hub.n||0,l:'HubSpot contacts',s:hub.last?'synced '+apAgo(hub.last):'not synced yet'},
-      {n:slOk?sl.channels.length:0,l:'Slack channels',s:slOk?'visible to n8n':'not reachable'},
+      {n:hub.n||0,l:'HubSpot contacts',s:hub.last?'synced '+apAgo(hub.last):'not synced yet',go:"apGo('hubspot')"},
+      {n:slOk?sl.channels.length:0,l:'Slack channels',s:slOk?'visible to n8n':'not reachable',go:"v112IntCard('slack')"},
       {n:later.length+linkCards.length,l:'More tools',s:'links and planned',tab:'later'}];},
     tabs:[{key:'inuse',label:'In use',count:cards.length,render:function(h){h.innerHTML='<div class="ap-int-grid">'+cards.map(card).join('')+'</div>';}},
       {key:'later',label:'More tools',count:later.length+linkCards.length,render:function(h){h.innerHTML=laterHtml();}}]});
@@ -42709,7 +42711,8 @@ async function nwSchedSave(){
    =================================================================== */
 function nwIntelRuns(){
   const seen={},out=[];
-  nwRuns().filter(function(r){return r.agent==='intel_tracker';}).forEach(function(r){
+  /* v112: the built-in sample runs have no posts in Supabase, so only live runs count */
+  (typeof AP!=='undefined'&&AP.live?nwRuns():[]).filter(function(r){return r.agent==='intel_tracker';}).forEach(function(r){
     if(seen[r.run_id])return;seen[r.run_id]=1;out.push({run_id:r.run_id,at:nwRunAt(r),status:r.status,stats:apJson(r.stats)||{}});});
   ((nwCF()||{}).intel||[]).forEach(function(o){if(seen[o.run_id])return;seen[o.run_id]=1;out.push({run_id:o.run_id,at:o.created_at,status:'success',stats:{}});});
   out.sort(function(a,b){return (Date.parse(b.at)||0)-(Date.parse(a.at)||0);});
@@ -42719,7 +42722,7 @@ function nwIntelBrief(run){const C=nwCF();return C?(C.intel.find(function(o){ret
 function nwIntelRun(){
   const R=nwIntelRuns();
   let r=(typeof state!=='undefined'&&state.intelRun)||V108.run||'';
-  if(r&&!R.some(function(x){return x.run_id===r;})&&!V108.items[r])r='';
+  if(r&&!R.some(function(x){return x.run_id===r;})&&!(V108.items[r]||[]).length)r='';
   if(!r){const b=((nwCF()||{}).intel||[])[0];r=(R.find(function(x){return (x.stats.items||0)>0;})||{}).run_id||(b&&b.run_id)||(R[0]&&R[0].run_id)||'';}
   V108.run=r;if(typeof state!=='undefined')state.intelRun=r;
   return r;
@@ -43207,7 +43210,7 @@ async function nwFocusSave(){
 
 /* ---------- the page ---------- */
 function nwIntelHtml(run,items,tab){
-  const wait=run&&!V108.items[run]&&(tab==='posts'||tab==='replies'||tab==='takeaways');
+  const wait=(run?!V108.items[run]:!V107D.t)&&(tab==='posts'||tab==='replies'||tab==='takeaways');
   return '<div class="nw-content">'+nwIntelHead(run,items)+nwIntelTabs(run,items,tab)+
     '<div class="nw-tabpanel" id="nwIntelPanel"'+(wait?' aria-busy="true"':'')+'>'+(
       wait?nwEmpty('radar','Loading this run','Getting the posts the tracker read.')
@@ -47794,6 +47797,64 @@ function v111IntelFolTidy(h){
   }
 })();
 </script>
+
+<script id="v112js">
+/* ===================================================================
+   v112 · QA round: helpers for the fixes above
+   =================================================================== */
+const V112={tpl:''};
+/* Integrations: a tile opens its card */
+function v112IntCard(k){
+  try{apTab('inuse');}catch(e){}
+  setTimeout(function(){const c=document.querySelector('.ap-int-card[data-k="'+k+'"]');if(!c)return;
+    c.scrollIntoView({behavior:'smooth',block:'center'});c.classList.add('v112-flash');setTimeout(function(){c.classList.remove('v112-flash');},1600);},60);
+}
+/* Templates: the tiles filter the list */
+function v112TplShow(T){
+  const f=V112.tpl;if(!f)return T;
+  return T.filter(function(t){return f==='on'?t.active!==false:f==='ad'?t.format==='ad':(t.format==='thought_leadership'||t.format==='newsletter');});
+}
+function v112TplTile(k,n,l,s){
+  return '<button class="'+(V112.tpl===k?'on':'')+'" aria-pressed="'+(V112.tpl===k)+'" onclick="V112.tpl=V112.tpl===\''+k+'\'?\'\':\''+k+'\';apRenderTemplates2(true)"><span class="n">'+n+'</span><span class="rd-sl">'+esc(l)+'<small>'+esc(s)+'</small></span></button>';
+}
+/* a lead file from Files or the knowledge base is attached in HubSpot too (Lead File \u2192 HubSpot Sync) */
+function v112HsMirror(url,name,email){
+  try{if(typeof hsSyncHook!=='function'||!email)return;
+    fetch(hsSyncHook(),{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({fileUrl:url,fileName:name,leadEmail:email,note:'',uploadedBy:typeof whoAmI==='function'?whoAmI():''})}).catch(function(){});
+  }catch(e){}
+}
+/* the older parts of the page name people with whoAmI(), which reads a name only the old login saved, so since
+   the Supabase sign-in comments, feedback and uploads from them said "Team". Save the signed-in name the same way. */
+(function(){
+  if(typeof apAfterLogin==='function'){
+    const _a=apAfterLogin;
+    apAfterLogin=async function(){
+      const r=await _a.apply(this,arguments);
+      try{if(typeof AP_USER!=='undefined'&&AP_USER){const n=(typeof S!=='undefined'&&S.user)||String(AP_USER.email||'').split('@')[0];
+        if(n){sessionStorage.setItem('aip_user',n);sessionStorage.setItem('aip_email',AP_USER.email||'');}}}catch(e){}
+      return r;
+    };
+  }
+  if(typeof apSignOut==='function'){
+    const _o=apSignOut;
+    apSignOut=function(){try{['aip_user','aip_email'].forEach(function(k){sessionStorage.removeItem(k);});}catch(e){}return _o.apply(this,arguments);};
+  }
+})();
+/* the assistant greets whoever is signed in (the greeting was set before sign-in, so it always said Kaeser) */
+(function(){
+  if(typeof toggleChat!=='function')return;
+  const _t=toggleChat;
+  toggleChat=function(){
+    try{const g=document.querySelector('#chatBody .msg.bot');const first=typeof nwFirstName==='function'?nwFirstName():'';
+      if(g&&/^Hi\b/.test(g.textContent))g.textContent='Hi'+(first?' '+first:'')+'. Ask about your leads, the intel and ad briefs, content drafts, or anything in the knowledge base.';}catch(e){}
+    return _t.apply(this,arguments);
+  };
+})();
+</script>
+<style id="v112css">
+.ap-int-card.v112-flash{box-shadow:0 0 0 3px var(--gold,#c9a227);transition:box-shadow .3s}
+</style>
 
 <script>
 /* ===================================================================
