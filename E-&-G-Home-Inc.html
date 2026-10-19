@@ -3,7 +3,7 @@
 <head>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,300;6..72,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,300;6..72,400&display=swap" rel="stylesheet">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Spectrum Care Advisory OS — Beta</title>
@@ -2399,6 +2399,430 @@ body{font-size:15px}
 @media (prefers-reduced-motion:reduce){#welRoot .field i{animation:none;opacity:.85}}
 @media (max-width:560px){#welRoot .card-w{padding:32px 24px 28px;border-radius:16px}
 #welRoot .field{padding:16px;gap:6px}}
+/* ══ v12.23: the sign-in page, split screen (Erica's design, Option A) ══
+   Values follow her design file: white form side, deep green side panel, Hanken Grotesk. */
+#login{zoom:1;padding:0;display:flex;flex-direction:row-reverse;flex-wrap:wrap;align-items:stretch;justify-content:flex-start;
+  background:#FFFFFF;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#14211C}
+#login a{color:#1F6B52}#login a:hover{color:#123F31}
+#login svg.lg-ic{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;width:20px;height:20px;flex:none}
+#login button:focus-visible,#login a:focus-visible{outline:2px solid #1F6B52;outline-offset:2px}
+#login .lg-main{flex:1 1 560px;min-width:0;display:flex;flex-direction:column;padding:28px 40px;box-sizing:border-box;background:#FFFFFF}
+#login .lg-top{display:flex;justify-content:flex-end;align-items:center;gap:8px;font-size:14px;color:#5A6A63;flex-wrap:wrap;min-height:20px}
+#login .lg-top a{font-weight:600;text-decoration:none}
+#login .lg-center{flex:1;display:flex;align-items:center;justify-content:center;padding:48px 0}
+#login .login-box,#login.credmode .login-box{width:100%;max-width:400px;background:none;border:0;box-shadow:none;padding:0;border-radius:0}
+#login:not(.credmode) .login-box{max-width:560px}
+#login .login-box .login-mark{display:none;justify-content:flex-start;margin:0 0 18px}
+#login .login-box h1,#login.credmode #loginTitle{margin:0;font-size:36px;line-height:1.1;font-weight:700;letter-spacing:-.02em;color:#14211C;text-align:left}
+#login .login-box p.sub,#login.credmode #loginSub{margin:10px 0 32px;font-size:16px;line-height:1.5;color:#5A6A63;text-align:left}
+#login #credBox,#login #forgotBox,#login #resetBox{max-width:none!important;margin:0!important;text-align:left}
+#login .field{margin:0 0 20px}
+#login .field label{display:block;margin:0 0 8px;font-size:14px;font-weight:600;color:#26332D;text-transform:none;letter-spacing:0}
+#login .lg-lrow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 8px}
+#login .lg-lrow label{margin:0}
+#login .lg-lrow a{font-size:14px;font-weight:600;text-decoration:none}
+#login .lg-inp{position:relative}
+#login .lg-inp>.lg-ic{position:absolute;left:15px;top:15px;color:#6F7C76;pointer-events:none}
+#login .inp{width:100%;box-sizing:border-box;height:50px;padding:0 16px;border:1px solid #CBD5D0;border-radius:12px;font-family:inherit;font-size:15px;color:#14211C;background:#FFFFFF}
+#login .lg-inp>.inp{padding-left:46px}
+#login #liPw{padding-right:52px}
+#login .inp::placeholder{color:#6F7C76}
+#login .inp:focus{outline:none;border-color:#1F6B52;box-shadow:0 0 0 4px rgba(31,107,82,.14)}
+#login .lg-eye{position:absolute;right:3px;top:3px;width:44px;height:44px;border:0;border-radius:10px;background:transparent;color:#5A6A63;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+#login .lg-eye .lg-ic{position:static}
+#login .lg-rem{display:flex;align-items:center;gap:10px;min-height:44px;margin:-6px 0 14px;font-size:14px;font-weight:400;color:#3F4D47;cursor:pointer}
+#login .lg-rem input{width:18px;height:18px;margin:0;accent-color:#1F6B52}
+#login #liGo,#login #fpGo,#login #rsGo{width:100%;height:52px;border:0;border-radius:12px;background:#1C4236;color:#FFFFFF;font-family:inherit;font-size:16px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;box-shadow:0 1px 2px rgba(20,33,28,.12),0 6px 16px rgba(28,66,54,.18)}
+#login #liGo .lg-ic{width:18px;height:18px}
+#login #liGo:disabled,#login #fpGo:disabled,#login #rsGo:disabled{opacity:.6;cursor:default}
+#login .lg-note{display:flex;gap:12px;align-items:flex-start;padding:16px 18px;border-radius:14px;background:#F1F5F3;font-size:14px;line-height:1.5;color:#3F4D47;text-align:left;margin-top:32px}
+#login .lg-note .lg-ic{color:#1F6B52;margin-top:1px}
+#login .lg-note p{margin:0}
+#login .lg-note strong{font-weight:600;color:#14211C}
+#login .lg-other{margin-top:16px;font-size:14px;color:#5A6A63;text-align:left}
+#login #fpBack a{font-size:14px;font-weight:600;text-decoration:none}
+#login #regSwap{text-align:left!important;font-size:14px;color:#5A6A63;margin-top:20px!important}
+#login .lg-foot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px 24px;font-size:13px;color:#5A6A63}
+#login .lg-foot-l{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#login .lg-ver{padding:3px 10px;border-radius:999px;background:#F5EDD6;color:#6B5417;font-weight:600;font-size:12px}
+#login .lg-ver:empty{display:none}
+#login .lg-foot nav{display:flex;gap:20px}
+#login .lg-foot nav a{color:#5A6A63;text-decoration:none}
+#login .lg-side{flex:1 1 440px;min-width:0;position:relative;overflow:hidden;background:#1C4236;color:#FFFFFF;padding:44px 56px;box-sizing:border-box;
+  display:flex;flex-direction:column;justify-content:space-between;gap:56px}
+#login .lg-deco{position:absolute;right:-56px;bottom:-56px;width:340px;height:340px}
+#login .lg-deco rect{fill:none;stroke:rgba(255,255,255,.09);stroke-width:1}
+#login .lg-deco rect.soft{fill:rgba(255,255,255,.04)}
+#login .lg-deco rect.on{fill:rgba(201,167,90,.32);stroke:none}
+#login .lg-brand{position:relative;display:flex;align-items:center;gap:12px;font-size:17px;font-weight:700;letter-spacing:-.01em}
+#login .lg-mark{width:38px;height:38px;border-radius:10px;background:#3C6B5A;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+#login .lg-mark i{width:14px;height:14px;border-radius:4px;background:#C9A75A}
+#login .lg-pitch{position:relative;display:flex;flex-direction:column;gap:36px;max-width:480px}
+#login .lg-copy{display:flex;flex-direction:column;gap:16px}
+#login .lg-kick{font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#D9BE7C}
+#login .lg-side h2{margin:0;font-size:40px;line-height:1.15;font-weight:600;letter-spacing:-.02em;color:#FFFFFF}
+#login .lg-copy p{margin:0;font-size:16px;line-height:1.6;color:#C9DBD2}
+#login .lg-feats{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:20px}
+#login .lg-feats li{display:flex;gap:14px;align-items:flex-start}
+#login .lg-fi{width:40px;height:40px;flex-shrink:0;border-radius:10px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#D9BE7C}
+#login .lg-feats li>div{display:flex;flex-direction:column;gap:2px}
+#login .lg-feats b{font-size:15px;font-weight:600}
+#login .lg-feats li>div>span{font-size:14px;line-height:1.5;color:#C9DBD2}
+#login .lg-bottom{position:relative;display:flex;flex-direction:column;gap:6px;margin:0;font-size:13px;color:#9FBDB0}
+.tpe-meta{margin:0 0 12px}.tpe-meta .field{margin:0;max-width:520px}
+#tpeName.err{border-color:var(--bad);box-shadow:0 0 0 3px rgba(178,58,46,.14)}
+.tpe-val{cursor:default}
+#login .lg-tag{display:flex;align-items:center;gap:10px;color:#D9BE7C;font-weight:500}
+#login .lg-tag:before{content:"";width:24px;height:1px;background:#D9BE7C}
+#login .role-grid{grid-template-columns:1fr;gap:12px}
+#login .role-card{border-radius:14px}
+/* a narrow window: the form first, the green panel under it, the brand mark above the form */
+@media (max-width:999px){
+  #login .login-box .login-mark{display:flex}
+  #login .lg-center{padding:36px 0}
+  #login .lg-side{padding:40px 32px;gap:40px}
+}
+@media (max-width:560px){
+  #login .lg-main{padding:20px 16px 24px}
+  #login .lg-center{padding:28px 0}
+  #login .login-box h1,#login.credmode #loginTitle{font-size:30px}
+  #login .lg-side{padding:32px 20px;gap:32px}
+  #login .lg-side h2{font-size:32px}
+  #login .lg-foot{justify-content:flex-start}
+}
+/* ══ v12.24: the home page, in Erica's two looks (HomeA / HomeB). Sizes are her design file's,
+   a touch smaller because the app is shown at 109%. ══ */
+.hm{font-family:'Hanken Grotesk',system-ui,sans-serif;color:#14211C;display:flex;flex-direction:column;gap:20px;margin-bottom:20px}
+.hm h1,.hm h2,.hm h3{font-family:inherit;color:#14211C}
+.hm svg.hm-ic,.hm-cust svg.hm-ic{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.hm button{font-family:inherit}
+.hm a{color:#1F6B52}.hm a:hover{color:#123F31}
+.hm button:focus-visible,.hm a:focus-visible,.hm [role=button]:focus-visible{outline:2px solid #1F6B52;outline-offset:2px}
+.hm-card{background:#FFFFFF;border:1px solid #E4E6E0;border-radius:17px;min-width:0}
+.hm-muted{font-size:13.5px;color:#5A6A63}
+.hm-pad{padding:0 22px 18px}
+/* buttons */
+.hm-btn{height:41px;padding:0 15px;border:0;border-radius:11px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:7px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.hm-btn.green{background:#1C4236;color:#FFFFFF}.hm-btn.green:hover{background:#163629}
+.hm-btn.line{background:#FFFFFF;border:1px solid #CBD5D0;color:#14211C}.hm-btn.line:hover{border-color:#9FB0A8}
+.hm-btn.soft{background:#E3F0EA;color:#17533F}
+.hm-btn.text{background:transparent;color:#1F6B52;padding:0 10px}
+.hm-btn.gold{background:#D9BE7C;color:#1C2A22;font-weight:700}.hm-btn.gold:hover{background:#E2CA8F}
+.hm-btn.ghostw{background:transparent;border:1px solid rgba(255,255,255,.35);color:#FFFFFF}.hm-btn.ghostw:hover{background:rgba(255,255,255,.08)}
+.hm-btn.text.w{color:#FFFFFF}
+.hm-btn.icon{width:41px;padding:0;justify-content:center}
+.hm-btn.sm{height:38px;font-size:13px;padding:0 12px}
+.hm a.hm-btn.line{color:#14211C}
+.hm-btn.pulse{animation:hmPulse 2.4s ease-in-out 3}
+@keyframes hmPulse{0%,100%{box-shadow:0 0 0 0 rgba(31,107,82,0)}50%{box-shadow:0 0 0 6px rgba(31,107,82,.16)}}
+.hm-link{display:inline-flex;align-items:center;gap:5px;min-height:40px;font-size:13.5px;font-weight:600;text-decoration:none}
+.hm-link.top{border-top:1px solid #EEF0EB;align-self:stretch}
+.hm-ibtn{width:36px;height:36px;border:1px solid #E0E3DD;border-radius:10px;background:#FFFFFF;color:#3F4D47;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+/* header, look A */
+.hm-hero{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:18px}
+.hm-hero-l{display:flex;flex-direction:column;gap:5px;min-width:0}
+.hm-eyebrow{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:500;color:#5A6A63}
+.hm-eyebrow #heroClock{font-variant-numeric:tabular-nums}
+.hm h1{margin:0;font-size:29px;line-height:1.15;font-weight:700;letter-spacing:-.02em}
+.hm-sum{margin:0;font-size:15px;color:#3F4D47}
+.hm-sum strong{font-weight:700;color:#9A3412}
+.hm-acts{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.hm-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px}
+.hm-tile{all:unset;box-sizing:border-box;cursor:pointer;background:#FFFFFF;border:1px solid #E4E6E0;border-radius:15px;padding:18px;display:flex;flex-direction:column;gap:11px;min-width:0;transition:border-color .12s,box-shadow .12s}
+.hm-tile:hover{border-color:#C9D3CE;box-shadow:0 4px 14px rgba(20,33,28,.06)}
+.hm-tile:focus-visible{outline:2px solid #1F6B52;outline-offset:2px}
+.hm-tile.bad{border-color:#F1C9C3}
+.hm-tile-h{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:#3F4D47}
+.hm-tile-ic{width:33px;height:33px;border-radius:9px;background:#E3F0EA;color:#1F6B52;display:flex;align-items:center;justify-content:center;flex:none}
+.hm-tile-ic.blue{background:#E6EEF7;color:#2D5F93}.hm-tile-ic.red{background:#FBE9E6;color:#A3261B}
+.hm-tile-v{font-size:33px;line-height:1;font-weight:700;letter-spacing:-.02em}
+.hm-tile-v small{font-size:16px;font-weight:500;color:#5A6A63;letter-spacing:0}
+.hm-tile.bad .hm-tile-v{color:#A3261B}
+.hm-tile-s{display:flex;align-items:center;gap:7px;font-size:13px;color:#5A6A63}
+.hm-tile.bad .hm-tile-s{font-weight:600;color:#A3261B}
+.hm-dot{width:8px;height:8px;border-radius:999px;background:#C2410C;flex:none}
+/* next up */
+.hm-next{background:#FFFFFF;border:1px solid #E4E6E0;border-left:4px solid #C9A75A;border-radius:15px;padding:16px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px}
+.hm-next-k{flex-basis:100%;font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8A6A1F}
+.hm-next>b{font-size:18px;font-weight:700;line-height:1.2}
+.hm-next-l{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:#3F4D47;flex:1 1 auto}
+.hm-next-l span{display:inline-flex;align-items:center;gap:8px}
+.hm-next a{display:inline-flex;align-items:center;gap:5px;min-height:38px;font-size:13.5px;font-weight:700;text-decoration:none}
+.hm-next.bold{flex:1 1 300px;max-width:380px;min-width:0;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:17px;padding:18px;flex-direction:column;flex-wrap:nowrap;align-items:flex-start;gap:11px;color:#FFFFFF}
+.hm-next.bold .hm-next-k{flex-basis:auto;color:#D9BE7C}
+.hm-next.bold>b{font-size:19px}
+.hm-next.bold .hm-next-l{flex-direction:column;gap:7px;color:#E3EDE8;flex:none}
+.hm-next.bold a{color:#FFFFFF}
+/* header, look B */
+.hm-hero-b{position:relative;overflow:hidden;background:#1C4236;color:#FFFFFF;border-radius:20px;padding:26px 30px;display:flex;flex-direction:column;gap:24px}
+.hm-hero-b h1{color:#FFFFFF;font-size:34px;line-height:1.1}
+.hm-hero-b .hm-eyebrow{color:#C9DBD2}
+.hm-hero-b .hm-sum{font-size:15.5px;line-height:1.5;color:#C9DBD2}
+.hm-hero-b .hm-sum strong{color:#FFFFFF}
+.hm-hero-b .hm-acts{margin-top:9px}
+.hm-deco{position:absolute;right:-20px;top:-40px;width:340px;height:160px;pointer-events:none}
+.hm-deco rect{fill:none;stroke:rgba(255,255,255,.09);stroke-width:1}
+.hm-deco rect.on{fill:rgba(201,167,90,.3);stroke:none}
+.hm-hb-top{position:relative;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:22px}
+.hm-hb-l{flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:9px}
+.hm-hb-tiles{position:relative;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px 22px;padding-top:20px;border-top:1px solid rgba(255,255,255,.14)}
+.hm-bt{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:4px;border-radius:10px;min-width:0}
+.hm-bt:focus-visible{outline:2px solid #D9BE7C;outline-offset:4px}
+.hm-bt-l,.hm-bt-s{font-size:12.5px;color:#C9DBD2}
+.hm-bt-v{font-size:28px;line-height:1.1;font-weight:700}
+.hm-bt-v small{font-size:15px;font-weight:500;color:#C9DBD2}
+.hm-bt-pill{align-self:flex-start;padding:2px 8px;border-radius:999px;background:#F7D4CD;color:#7A1B12;font-size:11.5px;font-weight:700}
+.hm-bt:hover .hm-bt-l{color:#FFFFFF}
+/* the two layouts below the header */
+.hm-cols{display:flex;flex-wrap:wrap;align-items:flex-start;gap:22px}
+.hm-main{flex:2 1 520px;min-width:0;display:flex;flex-direction:column;gap:22px}
+.hm-side{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:22px}
+.hm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:18px;align-items:start}
+.hm-old>.card{margin:0}
+/* schedule */
+.hm-sched{overflow:hidden}
+.hm-sh{padding:18px 22px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px 18px;border-bottom:1px solid #EEF0EB}
+.hm-sh>div:first-child{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hm-sh h2,.hm-ch h2,.hm-ask h2{margin:0;font-size:17.5px;font-weight:700;letter-spacing:-.01em}
+.hm-sh>div>span{font-size:13px;color:#5A6A63}
+.hm-chips{display:flex;flex-wrap:wrap;gap:7px;padding:12px 22px;border-bottom:1px solid #EEF0EB}
+.hm-chip{height:34px;padding:0 13px;border:1px solid #E0E3DD;border-radius:999px;background:#FFFFFF;color:#26332D;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px;cursor:pointer}
+.hm-chip i{width:8px;height:8px;border-radius:999px}
+.hm-chip.on{background:#1C4236;border-color:#1C4236;color:#FFFFFF}
+.hm-list{list-style:none;margin:0;padding:0}
+.hm-row{display:flex;align-items:center;gap:15px;padding:13px 22px;border-bottom:1px solid #EEF0EB;cursor:pointer}
+.hm-row:last-child{border-bottom:0}
+.hm-row:hover{background:#FAFAF7}
+.hm-row.next{background:#FBF7EC;padding-top:15px;padding-bottom:15px}
+.hm-row.next .hm-what b{font-size:15.5px;font-weight:700}
+.hm-time{width:70px;flex:none;font-size:13px;font-weight:600;color:#26332D;font-variant-numeric:tabular-nums}
+.hm-row.past .hm-time{color:#66746D}
+.hm-row.next .hm-time{font-weight:700;color:#14211C}
+.hm-kic{width:36px;height:36px;flex:none;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.hm-what{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.hm-what b{font-size:14.5px;font-weight:600;overflow-wrap:anywhere}
+.hm-what>span{font-size:12.5px;color:#5A6A63;overflow-wrap:anywhere}
+.hm-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:#EEF0EB;color:#3F4D47;font-size:11.5px;font-weight:600;white-space:nowrap;flex:none}
+.hm-pill.on{background:#1F6B52;color:#FFFFFF}
+.hm-pill.on i{width:7px;height:7px;border-radius:999px;background:#A7E3C4}
+.hm-pill.soon{background:#FBEFD9;color:#8A5300;font-weight:700}
+.hm-pill.due{background:transparent;border:1px solid #E8C98C;color:#8A5300;padding:3px 10px}
+.hm-now{display:flex;align-items:center;gap:11px;padding:4px 22px;list-style:none}
+.hm-now span{padding:4px 10px;border-radius:999px;background:#C9A75A;color:#2B2007;font-size:11.5px;font-weight:700;white-space:nowrap}
+.hm-now i{flex:1;height:2px;border-radius:2px;background:#C9A75A}
+.hm-empty{display:flex;align-items:center;gap:13px;padding:18px 22px 6px}
+.hm-empty-ic{width:38px;height:38px;border-radius:10px;background:#E3F0EA;color:#1F6B52;display:flex;align-items:center;justify-content:center;flex:none}
+.hm-empty b{display:block;font-size:14.5px}.hm-empty span{font-size:13px;color:#5A6A63}
+.hm-empty-acts{display:flex;gap:8px;flex-wrap:wrap;padding:10px 22px 18px 73px}
+/* timeline */
+.hm-legend{display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+.hm-legend>span{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:#3F4D47}
+.hm-legend i,.hm-tl-ln i{width:10px;height:10px;border-radius:3px;flex:none}
+.hm-tl-wrap{overflow-x:auto;padding:4px 22px 18px}
+.hm-tl{display:flex}
+.hm-tl-lab{width:170px;flex:none}
+.hm-tl-sp{height:30px}
+.hm-tl-ln{display:flex;align-items:center;gap:10px;border-top:1px solid #EEF0EB}
+.hm-tl-ln:last-of-type{border-bottom:1px solid #EEF0EB}
+.hm-tl-ln div{display:flex;flex-direction:column}
+.hm-tl-ln b{font-size:13px;font-weight:600}.hm-tl-ln span{font-size:11.5px;color:#5A6A63}
+.hm-tl-body{flex:1;min-width:0;position:relative}
+.hm-tl-hours{position:relative;height:30px;font-size:11.5px;font-weight:600;color:#5A6A63}
+.hm-tl-hours span{position:absolute;top:6px;transform:translateX(-50%);white-space:nowrap}
+.hm-tl-hours span.first{transform:none}
+.hm-tl-row{position:relative;border-top:1px solid #EEF0EB;background-image:linear-gradient(to right,#EEF0EB 1px,transparent 1px)}
+.hm-tl-row:last-of-type{border-bottom:1px solid #EEF0EB}
+.hm-bar{position:absolute;height:36px;padding:0 10px;box-sizing:border-box;border-radius:8px;background:var(--b);border:1px solid color-mix(in srgb,var(--c) 30%,#FFFFFF);color:color-mix(in srgb,var(--c) 75%,#000000);font-size:11.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px;cursor:pointer;max-width:100%}
+.hm-bar.solid{background:var(--c);border-color:var(--c);color:#FFFFFF;font-weight:700;box-shadow:0 4px 12px color-mix(in srgb,var(--c) 30%,transparent)}
+.hm-bar.past{opacity:.75}
+.hm-bar .hm-live{width:7px;height:7px;border-radius:999px;background:#A7E3C4;flex:none}
+.hm-bar:hover{filter:brightness(.97)}
+.hm-tl-now{position:absolute;top:26px;bottom:26px;width:2px;margin-left:-1px;background:#C9A75A;pointer-events:none}
+.hm-tl-nowlab{position:relative;height:30px}
+.hm-tl-nowlab span{position:absolute;top:4px;transform:translateX(-50%);padding:3px 10px;border-radius:999px;background:#C9A75A;color:#2B2007;font-size:11.5px;font-weight:700;white-space:nowrap}
+/* month */
+.hm-mon-h{display:flex;align-items:center;gap:10px;padding:14px 22px 6px}
+.hm-mon-h b{font-size:15px;min-width:150px;text-align:center}
+.hm-mon{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;padding:6px 22px 14px}
+.hm-mon-w{font-size:11.5px;font-weight:600;color:#66746D;text-align:center;padding:4px 0}
+.hm-day{all:unset;box-sizing:border-box;cursor:pointer;min-height:54px;border-radius:10px;border:1px solid #EEF0EB;padding:6px;display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600}
+.hm-day:hover{border-color:#C9D3CE}
+.hm-day:focus-visible{outline:2px solid #1F6B52;outline-offset:1px}
+.hm-day.past{color:#8A968F}
+.hm-day.today{border-color:#1F6B52;box-shadow:inset 0 0 0 1px #1F6B52}
+.hm-day.sel{background:#1C4236;border-color:#1C4236;color:#FFFFFF}
+.hm-dots{display:flex;gap:3px;align-items:center;flex-wrap:wrap}
+.hm-dots i{width:6px;height:6px;border-radius:999px}
+.hm-dots em{font-style:normal;font-size:10px;font-weight:700}
+.hm-day.sel .hm-dots i{box-shadow:0 0 0 1.5px #FFFFFF}
+.hm-mon-day{border-top:1px solid #EEF0EB}
+.hm-mon-day>b{display:block;padding:12px 22px 4px;font-size:14px}
+.hm-mon-day .hm-muted{padding:4px 22px 16px}
+/* section cards */
+.hm-side>.hm-card,.hm-grid>.hm-card{padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.hm-ch{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hm-ch h2{flex:1}
+.hm-n{min-width:24px;height:24px;padding:0 8px;border-radius:999px;background:#9A3412;color:#FFFFFF;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.hm-n.zero{background:#E3F0EA;color:#17533F}
+.hm-range{font-size:12.5px;color:#5A6A63}
+.hm-stack{display:flex;flex-direction:column;gap:10px}
+.hm-acard{display:flex;gap:11px;padding:13px;border-radius:13px;background:#FBF3E3;cursor:pointer}
+.hm-acard.bad{background:#FBE9E6}.hm-acard.info{background:#EEF3F8}
+.hm-acard .hm-aic{width:32px;height:32px;flex:none;border-radius:9px;background:#FFFFFF;color:#8A5300;display:flex;align-items:center;justify-content:center;font-size:15px}
+.hm-acard.bad .hm-aic{color:#A3261B}.hm-acard.info .hm-aic{color:#2D5F93}
+.hm-acard .hm-what b{font-size:14px;font-weight:700}
+.hm-acard .hm-what>span{font-size:12.5px;line-height:1.45;color:#3F4D47}
+.hm-acard .hm-what em{font-style:normal;margin-top:3px;font-size:13px;font-weight:700;color:#8A5300}
+.hm-acard.bad .hm-what em{color:#A3261B}.hm-acard.info .hm-what em{color:#2D5F93}
+.hm-acard:hover{filter:brightness(.985)}
+.hm-arow{display:flex;align-items:center;gap:13px;padding:11px 0;border-bottom:1px solid #EEF0EB;cursor:pointer}
+.hm-arow:last-child{border-bottom:0}
+.hm-arow .hm-aic{width:38px;height:38px;flex:none;border-radius:11px;background:#FBEFD9;color:#8A5300;display:flex;align-items:center;justify-content:center;font-size:16px}
+.hm-arow .hm-aic.bad{background:#FBE9E6;color:#A3261B}.hm-arow .hm-aic.info{background:#E6EEF7;color:#2D5F93}
+.hm-arow .hm-what b{font-size:14px;font-weight:700}
+.hm-abtn{display:inline-flex;align-items:center;min-height:38px;padding:0 13px;border-radius:10px;border:1px solid #E0E3DD;color:#14211C;font-size:13px;font-weight:700;white-space:nowrap;flex:none}
+.hm-abtn.bad{background:#A3261B;border-color:#A3261B;color:#FFFFFF}
+.hm-clear{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:6px 0}
+.hm-clear>span{width:34px;height:34px;border-radius:10px;background:#E3F0EA;color:#1F6B52;display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+.hm-clear b{font-size:14.5px}.hm-clear p{margin:0;font-size:13px;color:#5A6A63}
+.hm-week-top{display:flex;flex-wrap:wrap;align-items:center;gap:18px}
+.hm-week-top p{margin:0;flex:1 1 160px;font-size:13.5px;line-height:1.5;color:#3F4D47}
+.hm-ring{position:relative;flex:none}
+.hm-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.hm-ring>div{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.hm-ring b{font-size:21px;font-weight:700;line-height:1}.hm-grid .hm-ring b{font-size:28px}
+.hm-ring span{font-size:11px;color:#5A6A63}
+.hm-wlist{display:flex;flex-direction:column;gap:12px}
+.hm-wrow{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.hm-wrow>span{display:flex;justify-content:space-between;gap:10px;font-size:13.5px}
+.hm-wrow b{font-weight:600}.hm-wrow em{font-style:normal;color:#3F4D47;white-space:nowrap}
+.hm-wrow i,.hm-wtile i{display:block;height:8px;border-radius:999px;background:#ECEFEA;overflow:hidden}
+.hm-wrow i em,.hm-wtile i em{display:block;height:100%;border-radius:999px;background:#1F6B52}
+.hm-wrow.due em{font-weight:700;color:#8A5300}.hm-wrow.due i{background:#F5E6C8}
+.hm-wrow:focus-visible,.hm-wtile:focus-visible{outline:2px solid #1F6B52;outline-offset:3px;border-radius:6px}
+.hm-wgrid{flex:1 1 200px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.hm-wtile{all:unset;box-sizing:border-box;cursor:pointer;padding:11px;border-radius:11px;background:#F4F3EE;display:flex;flex-direction:column;gap:6px;min-width:0}
+.hm-wtile>span{font-size:12.5px;font-weight:600;color:#3F4D47;overflow-wrap:anywhere}
+.hm-wtile>b{font-size:18px;font-weight:700}.hm-wtile>b small{font-size:12px;font-weight:500;color:#5A6A63}
+.hm-wtile i{height:6px;background:#E2E6E0}
+.hm-wtile.due{background:#FBF3E3}.hm-wtile.due>b{color:#8A5300}.hm-wtile.due>b small{color:#8A5300;font-weight:600}.hm-wtile.due i{background:#F0DDB6}
+.hm-people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
+.hm-people li{display:flex;align-items:center;gap:11px}
+.hm-people li div,.hm-pcard div{display:flex;flex-direction:column;min-width:0}
+.hm-people b,.hm-pcard b{font-size:13.5px;font-weight:600}
+.hm-people span:not(.hm-av),.hm-pcard span:not(.hm-av){font-size:12.5px;color:#5A6A63}
+.hm-av{width:34px;height:34px;flex:none;border-radius:999px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.hm-pgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.hm-pcard{display:flex;align-items:center;gap:11px;padding:11px;border-radius:11px;border:1px solid #EEF0EB;min-width:0}
+.hm-pcard .hm-av{width:38px;height:38px;font-size:13px}
+.hm-pcard b{font-weight:700}
+.hm-onpill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#E3F0EA;color:#17533F;font-size:11.5px;font-weight:700}
+.hm-onpill i{width:7px;height:7px;border-radius:999px;background:#1F6B52}
+.hm-nextshift{display:flex;align-items:center;gap:9px;padding:11px 13px;border-radius:11px;background:#F4F3EE;font-size:13px;color:#3F4D47}
+.hm-nextshift b{color:#14211C}
+.hm-up{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.hm-up li{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #EEF0EB;cursor:pointer;color:#5A6A63}
+.hm-up li:last-child{border-bottom:0}
+.hm-up li:hover .hm-what b{color:#1F6B52}
+.hm-up .hm-what b{color:#14211C}
+.hm-ask{background:#F7F1E1!important;border-color:#EADBB5!important}
+.hm-ask-h{display:flex;align-items:center;gap:11px}
+.hm-ask-h>div{display:flex;flex-direction:column}
+.hm-ask-h span:not(.hm-ask-ic){font-size:12.5px;color:#5C4A1A}
+.hm-ask-ic{width:38px;height:38px;flex:none;border-radius:11px;background:#1C4236;color:#D9BE7C;display:flex;align-items:center;justify-content:center}
+.hm-ask-in{position:relative}
+.hm-ask-in input{width:100%;box-sizing:border-box;height:46px;padding:0 52px 0 15px;border:1px solid #E2CF9F;border-radius:11px;background:#FFFFFF;font-family:inherit;font-size:14.5px;color:#14211C}
+.hm-ask-in input:focus{outline:none;border-color:#1F6B52;box-shadow:0 0 0 4px rgba(31,107,82,.14)}
+.hm-ask-in button{position:absolute;right:4px;top:4px;width:38px;height:38px;border:0;border-radius:9px;background:#1C4236;color:#FFFFFF;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+.hm-ask-sug{display:flex;flex-wrap:wrap;gap:7px}
+.hm-ask-sug button{min-height:34px;padding:6px 12px;border:1px solid #E2CF9F;border-radius:999px;background:#FFFFFF;color:#3D3112;font-size:12.5px;font-weight:600;cursor:pointer;text-align:left}
+/* Customize your home page */
+.modal.hm-cust-md{width:min(680px,calc(100% - 32px))}
+.hm-cust{font-family:'Hanken Grotesk',system-ui,sans-serif;color:#14211C}
+.hm-cust h3{margin:18px 0 9px;font-size:14.5px;font-weight:700;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.hm-cust h3 span{font-size:12.5px;font-weight:500;color:#5A6A63}
+.hm-cust-note{margin:0 0 6px;font-size:13px;line-height:1.5;color:#5A6A63}
+.hm-tgt{margin-top:-4px;align-items:center}
+.hm-tgt-l{margin-left:auto;padding-left:10px;font-size:12px;font-weight:600;color:#66746D;white-space:nowrap}
+.hm-opts{display:grid;gap:9px}
+.hm-opts.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.hm-opts.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.hm-opt{all:unset;box-sizing:border-box;cursor:pointer;border:1.5px solid #E0E3DD;border-radius:13px;padding:12px;display:flex;flex-direction:column;gap:4px;background:#FFFFFF;min-width:0}
+.hm-opt b{font-size:14px}.hm-opt>span:not(.hm-mini){font-size:12px;line-height:1.4;color:#5A6A63}
+.hm-opt:hover{border-color:#9FB0A8}
+.hm-opt.on{border-color:#1F6B52;background:#F2F8F5;box-shadow:inset 0 0 0 1px #1F6B52}
+.hm-opt:focus-visible{outline:2px solid #1F6B52;outline-offset:2px}
+.hm-mini{display:grid;height:52px;margin-bottom:6px;gap:4px;padding:5px;border-radius:8px;background:#F4F3EE}
+.hm-mini i{border-radius:4px;background:#FFFFFF;border:1px solid #E4E6E0}
+.hm-mini.a{grid-template-columns:2fr 1fr;grid-template-rows:9px 1fr}
+.hm-mini.a i:nth-child(1),.hm-mini.a i:nth-child(2){background:#E3F0EA;border:0}
+.hm-mini.b{grid-template-columns:1fr 1fr;grid-template-rows:16px 1fr}
+.hm-mini.b i:nth-child(1),.hm-mini.b i:nth-child(2){background:#1C4236;border:0}
+.hm-tpick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px}
+.hm-tpick label,.hm-secs label{display:flex;align-items:center;gap:8px;min-height:36px;font-size:13.5px;cursor:pointer}
+.hm-tpick label.off{color:#8A968F;cursor:not-allowed}
+.hm-tpick input,.hm-secs input,.hm-switch input{width:18px;height:18px;accent-color:#1F6B52;flex:none;margin:0}
+.hm-switch{display:flex;align-items:flex-start;gap:10px;margin-top:12px;padding:12px;border-radius:12px;background:#F4F3EE;cursor:pointer}
+.hm-switch input{margin-top:2px}
+.hm-switch span{display:flex;flex-direction:column;font-size:12.5px;color:#5A6A63}
+.hm-switch b{font-size:14px;color:#14211C}
+.hm-secs{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:6px}
+.hm-secs li{display:flex;align-items:center;gap:8px;padding:4px 6px 4px 8px;border:1px solid #E4E6E0;border-radius:11px;background:#FFFFFF}
+.hm-secs li label{flex:1;min-width:0}
+.hm-secs em{font-style:normal;font-size:11px;font-weight:700;color:#6B4FA0;background:#EFEAF7;border-radius:999px;padding:2px 7px}
+.hm-grip{color:#9AA79F;cursor:grab;display:flex}
+.hm-mv{display:flex;gap:4px}
+.hm-mv button{width:36px;height:36px;border:1px solid #E0E3DD;border-radius:9px;background:#FFFFFF;color:#3F4D47;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.hm-mv button:disabled{opacity:.35;cursor:default}
+.hm-secdel{border:0;background:transparent;color:#A3261B;font-weight:600;font-size:12.5px;cursor:pointer;padding:6px}
+.hm-foot-l{display:flex;gap:8px;margin-right:auto;flex-wrap:wrap}
+@media(max-width:700px){
+  .hm{gap:16px}
+  .hm h1{font-size:25px}.hm-hero-b h1{font-size:27px}
+  .hm-hero-b{padding:22px 18px;border-radius:18px}
+  .hm-acts{width:100%}
+  .hm-acts .hm-btn.text{order:9}
+  .hm-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .hm-tile{padding:14px;gap:8px}.hm-tile-v{font-size:27px}
+  .hm-hb-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .hm-sh,.hm-chips{padding-left:16px;padding-right:16px}
+  .hm-row{padding:12px 16px;gap:11px;flex-wrap:wrap}
+  .hm-row .hm-what{flex:1 1 150px}
+  .hm-row .hm-pill{margin-left:calc(62px + 47px)}
+  .hm-time{width:62px}
+  .hm-now{padding:4px 16px}
+  .hm-tl-wrap{padding:4px 16px 16px}
+  .hm-mon{padding:6px 12px 12px;gap:3px}.hm-day{min-height:44px;padding:4px}
+  .hm-side>.hm-card,.hm-grid>.hm-card{padding:16px}
+  .hm-pgrid,.hm-wgrid{grid-template-columns:minmax(0,1fr)}
+  .hm-opts.two,.hm-opts.three,.hm-tpick{grid-template-columns:minmax(0,1fr)}
+  .hm-empty-acts{padding-left:22px}
+  .hm-next{padding:14px 16px}
+}
+@media(max-width:340px){.hm-tiles,.hm-hb-tiles{grid-template-columns:minmax(0,1fr)}}
+/* the older cards that sit on the home page (training, your own sections) wear the same frame */
+.hm-old>.card{border:1px solid #E4E6E0;border-radius:17px;box-shadow:none;overflow:hidden}
+.hm-old>.card>.card-h{background:#FFFFFF;border-bottom:1px solid #EEF0EB;padding:16px 20px}
+.hm-old>.card>.card-h h2{font-family:'Hanken Grotesk',system-ui,sans-serif;font-size:17.5px}
+/* Customize home opens beside the page on a wide screen, so the changes show as they are made */
+@media(min-width:1100px){
+  .modal.hm-cust-md{left:auto;right:20px;top:20px;bottom:20px;max-height:none;width:min(560px,40vw);transform:translateX(16px)}
+  .modal.hm-cust-md.on{transform:none}
+  body:has(.modal.hm-cust-md.on) #scrim{background:rgba(20,33,28,.10);backdrop-filter:none}
+  .hm-cust .hm-opts.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+/* v12.25: tables on uploaded forms */
+.ov-e.ov-intbl{background:rgba(58,110,165,.05);border-color:rgba(58,110,165,.45)}
+.ov-e.ov-incol,.ov-e.ov-inrow{background:rgba(201,167,90,.16);border-color:#B8913A}
+.ov-tbl-frame{position:absolute;border:2px solid rgba(58,110,165,.55);border-radius:4px;pointer-events:none;box-shadow:0 0 0 4px rgba(58,110,165,.08)}
+.ov-tbl-p{margin:2px 0 14px;padding:12px;border:1px solid #CFDCEB;border-radius:10px;background:#F5F8FC}
+.ov-modal .ov-side{max-height:calc(100vh - 230px);overflow:auto}
+@media(max-width:900px){.ov-modal .ov-side{max-height:none;overflow:visible}}
+.ov-tbl-h{font:700 13.5px var(--sans);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.ov-tbl-h>span:first-child{color:#3A6EA5}
+.ov-tbl-acts{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.ov-li-tbl .ov-li-t{font-weight:600}
 </style>
 </head>
 <body>
@@ -2654,19 +3078,24 @@ body{font-size:15px}
 
 </div>
 <div id="login">
+  <!-- v12.23: the sign-in page is a split screen (Erica's design, Option A). The form is on the right,
+       what the portal is for on the left; on a phone the form comes first. -->
+  <main class="lg-main">
+    <div class="lg-top" id="lgTop"></div>
+    <div class="lg-center">
   <div class="login-box">
     <div class="login-mark"><span class="dot"></span><span>Spectrum Care Advisory OS</span></div>
-    <h1 id="loginTitle">Sign in</h1>
+    <h1 id="loginTitle">Welcome back</h1>
     <p class="sub" id="loginSub"></p>
 
-    <div id="credBox" style="display:none;text-align:left;max-width:360px;margin:0 auto 6px">
-      <div class="field"><label>Email</label><input class="inp" id="liEmail" type="email" placeholder="you@example.org" onkeydown="if(event.key==='Enter')el('liPw').focus()"></div>
-      <div class="field"><label>Password</label><input class="inp" id="liPw" type="password" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()"></div>
-      <div id="liForgotWrap" class="tiny" style="display:none;text-align:right;margin:-6px 0 10px"><a href="#" id="liForgot" onclick="event.preventDefault();forgotOpen()" style="color:var(--navy);font-weight:700">Forgot password?</a></div>
-      <div id="liErr" class="tiny" style="display:none;color:var(--bad);margin:-4px 0 10px"></div>
-      <button class="btn navy" id="liGo" style="width:100%;justify-content:center" onclick="doLogin()">Sign in</button>
-      <div class="tiny muted" style="margin-top:10px;text-align:center">
-        </div>
+    <div id="credBox" style="display:none">
+      <div class="field"><label for="liEmail">Work email</label><div class="lg-inp"><svg class="lg-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg><input class="inp" id="liEmail" type="email" autocomplete="email" placeholder="name@agency.org" onkeydown="if(event.key==='Enter')el('liPw').focus()"></div></div>
+      <div class="field"><div class="lg-lrow"><label for="liPw">Password</label><a href="#" id="liForgotWrap" style="display:none" onclick="event.preventDefault();forgotOpen()">Forgot password?</a></div>
+        <div class="lg-inp"><svg class="lg-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg><input class="inp" id="liPw" type="password" autocomplete="current-password" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()">
+          <button type="button" class="lg-eye" id="liEye" aria-label="Show password" onclick="lgEye()"><svg class="lg-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></button></div></div>
+      <label class="lg-rem" id="liRemWrap"><input type="checkbox" id="liRemember" checked> Remember my email on this device</label>
+      <div id="liErr" class="tiny" style="display:none;color:var(--bad);margin:-4px 0 12px"></div>
+      <button class="btn navy" id="liGo" onclick="doLogin()"><span id="liGoT">Sign in</span><svg class="lg-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
     </div>
 
     <div class="role-grid" id="roleGrid" style="display:none">
@@ -2693,6 +3122,29 @@ body{font-size:15px}
     </div>
 
   </div>
+    </div>
+    <footer class="lg-foot">
+      <div class="lg-foot-l"><span>Powered by Spectrum Care Advisory OS</span><span class="lg-ver" id="lgVer"></span></div>
+      <nav aria-label="Help"><a href="mailto:support@aiparagonconsulting.com">Support</a></nav>
+    </footer>
+  </main>
+  <aside class="lg-side" aria-label="About the portal">
+    <svg class="lg-deco" viewBox="0 0 272 272" aria-hidden="true"><rect x="0.5" y="0.5" width="56" height="56" rx="14"></rect><rect x="72.5" y="0.5" width="56" height="56" rx="14"></rect><rect x="144.5" y="0.5" width="56" height="56" rx="14" class="soft"></rect><rect x="216.5" y="0.5" width="56" height="56" rx="14"></rect><rect x="0.5" y="72.5" width="56" height="56" rx="14" class="soft"></rect><rect x="72.5" y="72.5" width="56" height="56" rx="14"></rect><rect x="144.5" y="72.5" width="56" height="56" rx="14"></rect><rect x="216.5" y="72.5" width="56" height="56" rx="14" class="soft"></rect><rect x="0.5" y="144.5" width="56" height="56" rx="14"></rect><rect x="72.5" y="144.5" width="56" height="56" rx="14" class="on"></rect><rect x="144.5" y="144.5" width="56" height="56" rx="14"></rect><rect x="216.5" y="144.5" width="56" height="56" rx="14"></rect><rect x="0.5" y="216.5" width="56" height="56" rx="14"></rect><rect x="72.5" y="216.5" width="56" height="56" rx="14"></rect><rect x="144.5" y="216.5" width="56" height="56" rx="14" class="soft"></rect><rect x="216.5" y="216.5" width="56" height="56" rx="14"></rect></svg>
+    <div class="lg-brand"><span class="lg-mark"><i></i></span><span>Spectrum Care Advisory OS</span></div>
+    <div class="lg-pitch">
+      <div class="lg-copy">
+        <span class="lg-kick">Your agency, connected</span>
+        <h2>Care, with clarity.</h2>
+        <p>A shared workspace for your agency, your team and the people you support, across community and residential services.</p>
+      </div>
+      <ul class="lg-feats">
+        <li><span class="lg-fi"><svg class="lg-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.4 8.3 8 9 4.6-.7 8-4 8-9V6l-8-3z"></path><path d="m9 12 2 2 4-4"></path></svg></span><div><b>Role-based access</b><span>Directors, staff and caregivers each see what their role needs.</span></div></li>
+        <li><span class="lg-fi"><svg class="lg-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="12" height="17" rx="2"></rect><path d="M9 4V3h6v1"></path><path d="m9 13 2 2 4-4"></path></svg></span><div><b>Inspection ready</b><span>Checklists and binders that keep your records ready for licensing visits.</span></div></li>
+        <li><span class="lg-fi"><svg class="lg-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg></span><div><b>One shared calendar</b><span>One shared calendar to coordinate important events, meetings and appointments for your organization’s team and clients.</span></div></li>
+      </ul>
+    </div>
+    <div class="lg-bottom"><span class="lg-tag">People at the center. Every day.</span><span>© <span id="lgYear">2026</span> Spectrum Care Advisory OS</span></div>
+  </aside>
 </div>
 
 <!-- ═══ APP ═══ -->
@@ -2712,7 +3164,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" id="demoNote" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.22 beta</span></span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.25 beta</span></span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -4160,7 +4612,7 @@ const NP_WS=(()=>{                                                   // one name
    one inherited that agency's name, its owner's name, its deletions and its layout.
    The sign-in itself stays at dashboard level, because it is how we know whose it is. */
 var NP_ACCT='';
-const NP_DEVICE_KEYS={auth:1};
+const NP_DEVICE_KEYS={auth:1,noremember:1};   // v12.23: noremember = 'Remember my email' was unticked here
 const acctSlug=e=>String(e||'').trim().toLowerCase().replace(/[^a-z0-9@._+-]/g,'');
 const LSK=k=>{ const kk=String(k).replace(/^np_/,'');
   return 'np__'+NP_WS+'__'+((NP_ACCT&&!NP_DEVICE_KEYS[kk])?NP_ACCT+'__':'')+kk; };
@@ -4926,6 +5378,7 @@ function clockTick(){
     if(dayRoll()) return;
     const hm=nowHM();
     const hc=el('heroClock'); if(hc) hc.textContent=hm12(hm);
+    try{ hmTick(hm); }catch(e){}                                    // v12.24
     let moved=false;
     document.querySelectorAll('.tl[data-track]').forEach(tl=>{
       const chip=tl.querySelector('.tl-nowchip'), nl=tl.querySelector('.tl-nowline'); if(!chip) return;
@@ -5111,7 +5564,7 @@ function openModal(title,body,foot){
     }
     MD_CUR=nav;
   } else if(!wasOpen && !MD_BACKING){ MD_STACK=[]; MD_CUR=null; }
-  el('modal').classList.remove('tpe-wide','ov-modal');
+  el('modal').classList.remove('tpe-wide','ov-modal','hm-cust-md');
   el('mdTitle').innerHTML=(MD_STACK.length?`<button type="button" class="md-back" onclick="mdBack()" title="Back to the previous screen">‹ Back</button>`:'')+title;
   el('mdBody').innerHTML=body; el('mdFoot').innerHTML=foot||'';
   el('mdFoot').style.display=foot?'flex':'none';
@@ -5255,7 +5708,7 @@ function brandName(){
 }
 function applySetup(){
   const lt=el('loginTitle');
-  if(lt) lt.textContent=greetName()?('Welcome back, '+String(greetName()).split(' ')[0]):'Sign in';
+  if(lt) lt.textContent=greetName()?('Welcome back, '+String(greetName()).split(' ')[0]+'.'):'Welcome back';   // v12.23
   const NAME=brandName();
   const b=document.querySelector('.brand b'); if(b) b.textContent=NAME;
   const lm=document.querySelector('#login .login-mark span:last-child'); if(lm) lm.textContent=NAME;
@@ -5549,6 +6002,7 @@ async function signOut(){
   try{ const base='np__'+NP_WS+'__', accts=[NP_ACCT,acctSlug(AUTH.email)].filter(Boolean);
     Object.keys(localStorage).filter(k=>accts.some(a=>k.indexOf(base+a+'__')===0)).forEach(k=>localStorage.removeItem(k)); }catch(e){}            // v12.18: the next person starts on this computer's own zone
   try{ gcalClear(); }catch(e){}                                      // v12.14: this tab forgets the token; the connection itself stays
+  if(lgNoRemember()&&AUTH.mode==='supabase'){ AUTH.email=''; saveAuth(); }   // v12.23: 'Remember my email' was unticked
   if(typeof tourEnd==='function') tourEnd();
   const f=el('tlFull'); if(f) f.remove();
   const i=el('inspFull'); if(i){ i.remove(); inspRun=null; }
@@ -5663,7 +6117,8 @@ function lineCount(tid,qid){                                          // how man
   return INSP_DONE.filter(x=>x.tid===tid&&x.date&&inWeek(x.date)&&x.responses&&x.responses[qid]&&
     (x.responses[qid].v!=null||x.responses[qid].note)).length;
 }
-function sideProg(){
+/* v12.24: the rows of This week, shared by the sidebar and the home page's progress card */
+function weekRows(){
   const cl=visibleClients().map(c=>c.id);
   let due=0,rec=0;
   MEDS.filter(m=>m.status==='active'&&!m.times.includes('PRN')&&cl.includes(m.cid))
@@ -5727,6 +6182,10 @@ function sideProg(){
     const appl=TRAINING.filter(x=>!hid('course',x.id)&&(x.req||(x.asg||[]).includes(meSid())));
     rows.push({l:'Training complete', a:appl.filter(x=>x.done.includes(meSid())).length, b:appl.length, go:'training', plain:true});
   }
+  return rows;
+}
+function sideProg(){
+  const rows=weekRows();
   el('sideProg').innerHTML = (rows.length&&!(state.role==='family'&&famEmpty()))?`<div class="sprog"><div class="sp-t" style="display:flex;align-items:center;justify-content:space-between">${state.role==='family'?"4023180 today":"This week"}${state.role==='director'?`<button class="gear sm" title="Choose which metrics show here" onclick="weeklyCfgOpen()">${ico('settings',14)}</button>`:''}</div>
     ${rows.map(r=>{
       const pct=r.b?Math.round(r.a/r.b*100):100;
@@ -6072,7 +6531,7 @@ function clientEditGate(){
 function layoutApply(){
   const page=layPage();
   layoutFab(page);
-  if(!page) return;
+  if(!page||page==='home') return;                                 // v12.24: home has Customize home instead
   const cols=layCols(); if(!cols.length) return;
   // 1) my own sections join the page
   laySections(page).forEach(cs=>{
@@ -6324,6 +6783,7 @@ function pageSettings(page){ return settingsHub('display',page); }
 function homeSettings(){ return settingsHub('display','home'); }
 function calendarSettings(){ return settingsHub('display','calendar'); }
 function pageEditStart(){
+  if(state.view==='home'&&!state.client){ closeAll(); return hmCustomize(); }   // v12.24
   closeAll(); state.layoutEdit=true; render();
   toast('Editing this page. Click a title or description to rename it, drag sections to rearrange them. Tap Done when you are happy.');
 }
@@ -6342,7 +6802,8 @@ function settingsHub(tab,page,sub){
   if(tab==='edit'){
     const editable=page==='client'||page==='home'||!!LAYOUT_PAGES[page];
     body=`<div class="tiny muted" style="margin-bottom:10px">Make changes to ${SET_PAGE_LBL[page]||'this page'}. How a page is laid out is yours alone; names are shared with the team.</div>
-      ${editable?setRow('pen','Edit this page','Rename titles and descriptions, drag sections to rearrange them, hide what you do not use, add your own','pageEditStart()')
+      ${editable?(page==='home'?setRow('pen','Customize your home page','Choose the look, how today shows, the numbers at the top and the sections below','hmCustomize()')
+        :setRow('pen','Edit this page','Rename titles and descriptions, drag sections to rearrange them, hide what you do not use, add your own','pageEditStart()'))
         :`<div class="sec-note" style="margin:0 0 8px"><span>\u2139\ufe0f</span><div><b>This page has a fixed layout</b>Its colors, types and calendars are under the other two tabs.</div></div>`}
       ${page==='tasks'?setRow('palette','Task colors','Due dates, categories, priorities and stages',"manageTasksConfig('due')"):''}
       ${dir?setRow('bookmark','Rename menus and binders','Call things what your team calls them','labelsForm()'):''}`;
@@ -6911,146 +7372,455 @@ function staffGuidesCard(){
       </div>`;}).join('')}</div>
   </section>`;
 }
-function viewHome(){
-  const m=ME[state.role];
-  const cl=visibleClients();
-  const attn=attentionItems(); window._attn=attn;
-  const apptsToday=APPTS.filter(a=>a.date===T&&cl.some(c=>c.id===a.cid)&&calMine(a));
-  const upcoming=APPTS.filter(a=>a.date>T&&cl.some(c=>c.id===a.cid)&&calMine(a)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).slice(0,5);
-
-  // stats per role
-  let stats;
-  if(state.role==='director'){
-    const od=myTasks().filter(t=>t.stage==='Overdue'||(t.stage!=='Done'&&t.due<T)).length;   // v12.18: the same tasks the tile counts (hidden sample ones never show as overdue)
-    stats=[
-      {lb:'Open tasks',vl:myTasks().filter(t=>t.stage!=='Done').length,ft:od?od+' overdue':'None overdue',c:od?'warn':'ok',go:"go('tasks')"},
-      {lb:'Staff on shift now',vl:shiftsNow().length,ft:`${visShifts().length} scheduled today`,c:'',go:"go('team')"},   // v12.22: overnight shifts count
-      {lb:'Open incidents',vl:visIncidents().filter(i=>i.status!=='Closed').length,ft:visIncidents().filter(i=>i.status!=='Closed').length?'Follow-up required':'None open',c:visIncidents().filter(i=>i.status!=='Closed').length?'bad':'ok',go:"openIncidentsList()"}
-    ];
-  } else if(state.role==='staff'){
-    const sid=meSid();
-    const mine=myTasks().filter(t=>t.stage!=='Done');
-    const my=visShifts().find(x=>x.sid===sid);
-    const strip=t=>hm12(t).replace(/ (AM|PM)/,'');
-    const mates=my?visShifts().filter(x=>x.sid!==sid&&(x.home===my.home||x.home==='All homes')).map(x=>(staff(x.sid)||{}).init||'').filter(Boolean).join(', '):'';
-    const myCl=visibleClients().filter(c=>!my||c.home===my.home||my.home==='All homes');
-    const myAp=visAppts().filter(a=>a.date===T&&!a.cancelled);
-    stats=[
-      my?{lb:'Your shift',vl:`${hm12(my.start)}<small> – ${hm12(my.end)}${shiftOvernight(my)?' next day':''}</small>`,ft:`${esc(my.home)}${mates?' · with '+mates:''}`,c:'',go:'tlExpand()'}   // v12.22: with AM/PM
-        :{lb:'Your shift',vl:'—',ft:'No shift scheduled today',c:'',go:"go('calendar')"},
-      {lb:'Clients today',vl:myCl.length,ft:myCl.length?myCl.slice(0,2).map(c=>c.uci).join(', '):'None assigned',c:'',go:"go('clients')"},
-      {lb:'Open tasks',vl:mine.length,ft:`${mine.filter(t=>t.due<=T).length} due today`,c:mine.filter(t=>t.due<=T).length?'warn':'ok',go:"go('tasks')"},
-      {lb:'Appointments today',vl:myAp.length,ft:myAp.length?'Tap to open the calendar':'Nothing scheduled',c:'',go:"go('calendar')"}
-    ];
-  } else {
-    const nxA=APPTS.filter(a=>a.cid==='c1'&&a.date>=T).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time))[0];
-    const withJ=SHIFTS.find(x=>x.home==='Maple House'&&x.start<=nowHM()&&x.end>=nowHM())||SHIFTS.find(x=>x.home==='Maple House');
-    stats=[
-      {lb:'Shared documents',vl:DOCS.filter(d=>d.cid==='c1').length,ft:'Reports and consents',c:'',go:"go('docs')"},
-      {lb:'Next appointment',vl:nxA?`${hm12(nxA.time).replace(/ (AM|PM)/,'')}<small> ${hm12(nxA.time).slice(-2)}</small>`:'—',ft:nxA?esc(nxA.title):'Nothing scheduled',c:'',go:nxA?`openAppt('${nxA.id}')`:"go('calendar')"},
-      {lb:'On shift with 4023180',vl:withJ?staff(withJ.sid).init:'—',ft:withJ?`Maple House · until ${hm12(withJ.end)}`:'See timeline',c:'',go:'tlExpand()'},
-      {lb:'Unread messages',vl:0,ft:'Care team replies within a day',c:'',go:"go('messages')"}
-    ];
+/* ══════════════ v12.24: HOME, in Erica's two looks ══════════════
+   A, "clear agenda": a light header, the numbers in tiles, today's schedule as a list beside the
+   sections. B, "bold overview": a green header holding the numbers and what is next, today across a
+   timeline, the sections in a grid below. Each person chooses the look, how today shows (a list, a
+   timeline or the month), which numbers sit at the top (up to four), whether the next appointment is
+   pinned there, and which sections show below and in what order. That is saved with their account
+   (usersettings.home, one setup per role), so it follows them to any device. A director also sets
+   the agency default for each role (np_demo_program 'homedefault'); anyone who has not set up their
+   own home gets the default for their role. Customize home replaces the generic page editor here. */
+let HOME_DEFAULT=null;                                                // {director:{..}, staff:{..}, family:{..}}
+const HM={filter:'all',day:null,month:0,edit:null,tgt:'me',tickAt:null};
+const HM_SEC={attention:'Needs your attention',week:'This week’s progress',working:'Who’s working',coming:'Coming up',
+  mytasks:'Your tasks',training:'Your training',ask:'Ask Spectrum'};
+const HM_SEC_ROLES={director:['attention','week','working','coming','ask'],staff:['attention','mytasks','training','week','working','coming','ask'],family:['attention','coming','ask']};
+const HM_TILE_ROLES={director:['tasks','staff','appts','incidents','due','clients','week','certs','attention'],
+  staff:['myshift','clients','tasks','appts','due','week','attention'],family:['docs','nextappt','onshift','messages','appts']};
+const HM_TILE_DEF={director:['tasks','staff','appts','incidents'],staff:['myshift','clients','tasks','appts'],family:['docs','nextappt','onshift','messages']};
+const HM_TILE_NAME={tasks:'Open tasks',staff:'Staff on shift now',appts:'Appointments today',incidents:'Open incidents',due:'Tasks due today',
+  clients:'Clients',week:'Weekly progress',certs:'Certifications to renew',attention:'Needs your attention',myshift:'Your shift',
+  docs:'Shared documents',nextappt:'Next appointment',onshift:'On shift now',messages:'Unread messages'};
+const HM_KIND={appt:['Appointments','#2D5F93','#E6EEF7'],shift:['Shifts','#1F6B52','#E3F0EA'],event:['Meetings and events','#6B4FA0','#EFEAF7'],rem:['Reminders','#9A5B07','#FBEFD9']};
+const HM_IC={check:'<rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="m8.5 12 2.5 2.5 4.5-5"></path>',
+  users:'<circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"></path>',
+  cal:'<rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path>',
+  alert:'<path d="M12 4 2.5 20h19z"></path><path d="M12 10v4M12 17h.01"></path>',
+  clock:'<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>',
+  heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path>',
+  mail:'<rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path>',
+  file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 13h6M9 17h4"></path>',
+  award:'<circle cx="12" cy="9" r="5"></circle><path d="m9 13.5-1.5 7.5 4.5-2.5 4.5 2.5-1.5-7.5"></path>',
+  bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"></path><path d="M10 21h4"></path>',
+  sun:'<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>',
+  pin:'<path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"></path><circle cx="12" cy="9" r="2.5"></circle>',
+  person:'<circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path>',
+  spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"></path><path d="M19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7z"></path>',
+  plus:'<path d="M12 5v14M5 12h14"></path>',chev:'<path d="m9 6 6 6-6 6"></path>',left:'<path d="m15 6-6 6 6 6"></path>',
+  tick:'<path d="m5 12 4.5 4.5L19 7"></path>',compass:'<circle cx="12" cy="12" r="9"></circle><path d="m15.5 8.5-2 5-5 2 2-5z"></path>',
+  gear:'<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path>',
+  grip:'<circle cx="9" cy="6" r="1.2"></circle><circle cx="15" cy="6" r="1.2"></circle><circle cx="9" cy="12" r="1.2"></circle><circle cx="15" cy="12" r="1.2"></circle><circle cx="9" cy="18" r="1.2"></circle><circle cx="15" cy="18" r="1.2"></circle>',
+  up:'<path d="m6 15 6-6 6 6"></path>',down:'<path d="m6 9 6 6 6-6"></path>',send:'<path d="M5 12h14M13 6l6 6-6 6"></path>'};
+const hmI=(k,s)=>`<svg class="hm-ic" viewBox="0 0 24 24" aria-hidden="true" style="width:${s||20}px;height:${s||20}px">${HM_IC[k]||''}</svg>`;
+const hmRole=()=>['director','staff','family'].includes(state.role)?state.role:'director';
+const hmIn=m=>m<60?m+' min':Math.floor(m/60)+' hr'+(m%60?' '+(m%60)+' min':'');
+function hmShiftName(st,en){ const h=toMin(st)/60; return h>=4&&h<11?'Day shift':h>=11&&h<19?'Evening shift':'Overnight shift'; }
+const hmEditing=()=>!!(HM.edit&&el('modal')&&el('modal').classList.contains('on')&&el('modal').classList.contains('hm-cust-md'));
+/* the setup in force: the person's own, else the agency default for their role, else the standard one */
+function hmBase(r){ return {look:'a',sched:'list',next:r!=='family',tiles:HM_TILE_DEF[r].slice(),order:HM_SEC_ROLES[r].slice(),hidden:['ask']}; }
+function hmCfgFor(r,own,extra){
+  const mine=own?((((USER_SET[userKey()]||{}).home)||{})[r])||null:null, agency=(HOME_DEFAULT&&HOME_DEFAULT[r])||null;
+  const c=Object.assign(hmBase(r),agency||{},mine||{},extra||{});
+  c.tiles=(Array.isArray(c.tiles)?c.tiles:[]).filter((t,i,a)=>HM_TILE_ROLES[r].includes(t)&&a.indexOf(t)===i).slice(0,4);
+  const avail=HM_SEC_ROLES[r].concat(own?laySections('home').map(x=>'cs:'+x.id):[]);
+  c.order=(Array.isArray(c.order)?c.order:[]).filter((s,i,a)=>avail.includes(s)&&a.indexOf(s)===i); avail.forEach(s=>{ if(!c.order.includes(s)) c.order.push(s); });
+  c.hidden=(Array.isArray(c.hidden)?c.hidden:[]).filter(s=>avail.includes(s));
+  if(!['a','b'].includes(c.look)) c.look='a'; if(!['list','timeline','month'].includes(c.sched)) c.sched='list';
+  c.next=c.next!==false; c.own=!!mine; c.agency=!!agency;
+  return c;
+}
+function hmCfg(raw){ return hmCfgFor(hmRole(),true,(!raw&&hmEditing()&&HM.tgt==='me')?HM.edit:null); }
+const hmIsEvent=a=>/meet|event|outing|huddle|day program|activit|visit|family|communit|training|party|celebrat|church|\bclass\b/i.test((a.type||'')+' '+(a.title||''));
+/* today, worked out once per draw: what is on, what is next, and the numbers */
+function hmData(){
+  const nm=toMin(nowHM()), r=hmRole(), items=[];
+  const apptsToday=visAppts().filter(a=>a.date===T);
+  apptsToday.forEach(a=>{ const ev=hmIsEvent(a), s=a.time?toMin(a.time):-1, c=client(a.cid)||{};
+    items.push({k:ev?'event':'appt',id:a.id,t:a.time||'',s,e:s<0?-1:s+(+a.dur||60),title:a.title||a.type||'Appointment',
+      meta:[ev?(a.type||'Event'):'Appointment',c.uci?'UCI '+c.uci:'',a.ride&&!/^on site$/i.test(a.ride)?a.ride:(a.loc||'')].filter(Boolean),
+      cancelled:!!a.cancelled,go:`openAppt('${a.id}')`}); });
+  if(r!=='family'){
+    /* shifts are grouped the way a team talks about them: the day, evening and overnight shift */
+    const groups={};
+    visShifts().forEach(s=>{ const k=hmShiftName(s.start,s.end); (groups[k]=groups[k]||[]).push(s); });
+    Object.keys(groups).forEach(k=>{ const g=groups[k], st=g.map(x=>x.start).sort((a,b)=>toMin(a)-toMin(b))[0];
+      const ends=g.map(x=>toMin(x.end)+(shiftOvernight(x)?1440:0)), e=Math.max(...ends), en=g[ends.indexOf(e)].end, n=new Set(g.map(x=>x.sid)).size;
+      items.push({k:'shift',t:st,s:toMin(st),e,title:k,meta:['Shift',n+' staff','Until '+hm12(en)+(e>1440?' tomorrow':'')],on:g.some(shiftOnNow),go:"go('team')"}); });
+    const late=visShiftsOn(iso(addDays(TODAY,-1))).filter(shiftOvernight).filter(shiftOnNow);
+    if(late.length){ const en=late[0].end; items.push({k:'shift',t:'',late:1,s:0,e:toMin(en),title:'Overnight shift',meta:['Shift',new Set(late.map(x=>x.sid)).size+' staff','Until '+hm12(en)],on:true,go:"go('team')"}); }
+    myTasks().filter(t=>t.stage!=='Done'&&t.due===T).forEach(t=>{ const st=staff(t.sid);
+      items.push({k:'rem',t:'',s:1441,e:1441,title:t.title,meta:['Reminder',st?'For '+stName(st):''].filter(Boolean),go:`openTask('${t.id}')`}); });
+    if(r==='director'){ const wr=hmWeekRows().find(x=>/water temps/i.test(x.l));
+      if(wr&&wr.a<wr.b&&!WATERTEMP.some(w=>w.date===T)) items.push({k:'rem',t:'',s:1441,e:1441,title:'Log water temperatures',meta:['Reminder',wr.a+' of '+wr.b+' logged this week'],go:"go('safety')"}); }
   }
-
-  return `
-  <section class="hero">
-    <div class="hero-row page-hd" style="margin-bottom:0">
-      <div class="title-ic">${ico('sun',20)}</div>
-      <div class="hero-main title-copy" style="flex:1;min-width:0">
-        <h1>${greeting()}, ${esc(m.name.split(' ')[0])}.</h1>
-        <p class="hsub">${fmtLong(T)} <span id="heroClock">${hm12(nowHM())}</span> · ${homeSub(attn.length).replace(/\.$/,'')}</p>
-      </div>
-      <div class="hero-acts" style="display:flex;gap:8px;flex:none;align-items:center">
-        ${state.role==='director'?`<button class="btn navy sm" onclick="openShiftForm()">＋ Add shift</button>`:''}
-        ${state.role!=='family'?`<button class="btn navy sm" onclick="openApptForm()">＋ Add appointment</button>`:''}
-        <button class="btn ghost sm ${state.tourSeen[state.role]?'':'pulse'}" onclick="tourStart()">◉ Show me around</button>
-        ${/* v9.96: editing the home page is reached from the cog like every other page */''}
-        ${(state.role==='director'&&state.layoutEdit)?`<button class="btn gold sm" onclick="pageEdit()">✓ Done editing</button>`:''}
-        ${state.role==='director'?`<button class="gear" title="Settings" onclick="homeSettings()">${ico('settings',17)}</button>`:''}
-      </div>
-    </div>
-  </section>
-
-  ${state.role==='staff'?actionStrip():''}
-  <div class="grid${state.role==='family'?'2':'3'}" style="margin-bottom:14px">
-    ${stats.map(s=>{const m={'Open tasks':'list-todo','Staff on shift now':'clock','Open incidents':'shield-alert','Clients in service':'heart','Next appointment':'calendar','Unread messages':'mail'}[s.lb];
-      return `<button class="stat" onclick="${s.go||''}"><span class="sarr">${ico('arrow-up-right',14)}</span><div class="lb">${m?ico(m,14):''}${s.lb}</div><div class="vl">${s.vl}</div><div class="ft ${s.c}">${s.ft}</div></button>`;}).join('')}
-  </div>
-
-  ${dayRail()}
-
-
-  <div class="grid-side">
-    <div>
-      <section class="card">
-        <div class="sec-head soft-peach"><h2>Needs your attention</h2><span class="hd-n ${attn.length?'rose':'sage'}">${attn.length}</span><p>${attn.length?'waiting on someone':'all clear'}</p></div>
-        <div class="card-b flush">
-          ${attn.length? attn.map((a,i)=>`
-            <div class="lrow" onclick="_attn[${i}].go()">
-              <span class="row-ic" ${a.col?`style="background:${a.col}1A;color:${a.col}"`:''}>${a.ic}</span>
-              <span class="row-copy"><strong>${a.t}</strong><span>${a.s}</span></span>
-              <span class="go-sq" title="${esc(a.a)}">${ico('arrow-up-right',15)}</span>
-            </div>`).join('')
-          : `<div class="empty"><b>Nothing outstanding</b>Appointments, tasks and reports are all current.</div>`}
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="sec-head soft-blue"><h2>Today's appointments</h2><span class="hd-n blue">${apptsToday.length}</span><p>scheduled</p><div class="right head-act"><button class="btn ghost sm" onclick="go('calendar')">Open calendar</button></div></div>
-        <div class="card-b flush">
-          ${apptsToday.length? `<table class="tb"><tbody>${apptsToday.sort((a,b)=>a.time.localeCompare(b.time)).map(a=>`
-            <tr class="click" onclick="openAppt('${a.id}')">
-              <td style="width:96px"><b>${hm12(a.time)}</b></td>
-              <td><div class="tb-name"><span class="av-sm" style="background:${apptColor(a)}1F;color:${apptColor(a)};font-size:15px">${apptIcon(a)}</span><div><div>${esc(a.title)}</div><div class="tiny muted">${esc((client(a.cid)||{}).uci||'')}${a.loc?' · '+esc(a.loc):''}</div></div></div></td>
-              <td style="text-align:right">${a.cancelled?'<span class="pill neutral">✕ Canceled</span>':a.flag?`<span class="pill warn">⚑ Review</span>`:catChip(a.type)}${a.ride!==undefined&&!a.cancelled?(a.ride?`<div class="tiny muted" style="margin-top:3px">🚐 ${esc(a.ride)}</div>`:'<div class="tiny" style="color:var(--bad);font-weight:700;margin-top:3px">🚐 No ride arranged</div>'):''}</td>
-            </tr>`).join('')}</tbody></table>`
-          : `<div class="empty"><b>No appointments today</b>Next one is ${upcoming.length?relDay(upcoming[0].date).toLowerCase():'not scheduled'}.</div>`}
-        </div>
-      </section>
-    </div>
-
-    <div>
-      ${state.role!=='family'? `
-      <section class="card">
-        <div class="sec-head soft-sage"><h2>Who's working today</h2><p>Shifts and cover</p></div>
-        <div class="card-b flush">
-          ${visShifts().length?'':`<div class="empty"><b>No shifts scheduled today</b>${state.role==='director'?'Add one with \u201c+ Add shift\u201d above.':'Your director adds shifts here.'}</div>`}
-          <table class="tb ww"><tbody>${pageOf((()=>{const seen={};return visShifts().filter(x=>{const k=x.sid+'|'+(x.home||'');if(seen[k])return false;seen[k]=1;return true;});})(),'work').map(s=>{
-            const on = shiftOnNow(s);
-            return `<tr><td><div class="tb-name">${stAv(staff(s.sid),on?'gr':'')}<div><div style="font-weight:600">${esc(stName(staff(s.sid)))}</div><div class="tiny muted" style="display:flex;align-items:center;gap:5px">${homeDot(s.home,7)}${esc(s.home)}</div></div></div></td>
-            <td style="text-align:right"><div>${esc(shiftHours(s))}</div>${on?'<span class="pill ok"><i></i>On shift</span>':'<span class="tiny muted">Scheduled</span>'}</td></tr>`;
-          }).join('')}</tbody></table>
-        </div>
-        ${(()=>{const seen={};const rows=visShifts().filter(x=>{const k=x.sid+'|'+(x.home||'');if(seen[k])return false;seen[k]=1;return true;});return pager(rows.length,'work');})()}
-      </section>`:''}
-
-      <section class="card">
-        <div class="card-h"><h2>Coming up</h2></div>
-        <div class="card-b flush">
-          ${upcoming.map(a=>`
-          <div class="lrow" onclick="openAppt('${a.id}')">
-            <span class="row-ic" style="background:${apptColor(a)}1A;color:${apptColor(a)}">${apptIcon(a)}</span>
-            <span class="row-copy"><strong>${esc(a.title)}</strong><span>${esc((client(a.cid)||{}).uci||'')} · ${relDay(a.date)} ${hm12(a.time)}</span></span>
-            <span class="go-sq">${ico('arrow-up-right',15)}</span>
-          </div>`).join('') || `<div class="empty">Nothing coming up.</div>`}
-        </div>
-      </section>
-
-      ${state.role==='staff'? `
-      ${trainCard(meSid())}
-      <section class="card">
-        <div class="card-h"><h2>Your tasks</h2><div class="right"><button class="btn ghost sm" onclick="go('tasks')">See all</button></div></div>
-        <div class="card-b flush">
-          ${myTasks().filter(t=>t.stage!=='Done').slice(0,4).map(t=>`
-          <div class="attn" onclick="openTask('${t.id}')">
-            <div class="ai ${t.stage==='Overdue'?'bad':'warn'}">☑</div>
-            <div class="at"><b>${esc(t.title)}</b><span>Due ${relDay(t.due)} · ${t.stage}</span></div>
-          </div>`).join('')}
-        </div>
-      </section>`:''}
-    </div>
+  items.sort((a,b)=>a.s-b.s||a.e-b.e);
+  let ni=-1;
+  items.forEach((it,i)=>{
+    if(it.k==='rem'){ it.st='due'; return; }
+    if(it.cancelled){ it.st='cancel'; return; }
+    if(it.k==='shift'){ it.st=it.on?'on':(it.e<=nm?'done':'sched'); return; }
+    if(it.s<0){ it.st='sched'; return; }
+    if(it.e<=nm) it.st='done'; else if(it.s<=nm) it.st='on'; else { it.st='sched'; if(ni<0) ni=i; }
+  });
+  let next=null;
+  if(ni>=0){ const it=items[ni], m=it.s-nm; it.next=true; if(m<=180) it.st='soon'; it.mins=m;
+    const a=APPTS.find(x=>x.id===it.id)||{}; next={a,when:'in '+hmIn(m),today:true}; }
+  else { const a=visAppts().filter(x=>x.date>T&&!x.cancelled).sort((x,y)=>(x.date+(x.time||'')).localeCompare(y.date+(y.time||'')))[0]; if(a) next={a,when:relDay(a.date).toLowerCase()+(a.time?' at '+hm12(a.time):''),today:false}; }
+  let change=null;
+  visShifts().forEach(s=>{ [s.start,s.end].forEach(t=>{ const m=toMin(t); if(m>nm&&(change==null||m<toMin(change))) change=t; }); });
+  return {items,next,nm,change,apptsToday:apptsToday.filter(a=>!a.cancelled),attn:attentionItems()};
+}
+/* the rows of the weekly progress card: the same ones the sidebar shows */
+function hmWeekRows(){ try{ return weekRows(); }catch(e){ return []; } }
+function hmTile(id,d){
+  const r=hmRole(), open=myTasks().filter(t=>t.stage!=='Done');
+  if(id==='tasks'){ const od=open.filter(t=>t.stage==='Overdue'||t.due<T).length, dt=open.filter(t=>t.due===T).length;
+    return {lb:HM_TILE_NAME.tasks,ic:'check',vl:open.length,sub:od?od+' overdue':dt?dt+' due today':'None overdue',dot:od||dt?'warn':'',go:"go('tasks')"}; }
+  if(id==='staff'){ const n=shiftsNow().length, tot=visShifts().length;
+    return {lb:HM_TILE_NAME.staff,ic:'users',vl:n,of:tot?'of '+tot+' today':'',sub:tot?(d.change?'Next change at '+hm12(d.change):'No more changes today'):'No shifts scheduled',go:"go('team')"}; }
+  if(id==='appts'){ const n=d.apptsToday.length, left=d.apptsToday.filter(a=>a.time&&toMin(a.time)>d.nm).length, nx=d.next&&d.next.today?d.next:null;
+    return {lb:HM_TILE_NAME.appts,ic:'cal',tint:'blue',vl:n,of:n&&left!==n?left+' left':'',sub:nx?'Next at '+hm12(nx.a.time)+', '+nx.when:(n?'None left today':'Nothing scheduled'),go:"go('calendar')"}; }
+  if(id==='incidents'){ const n=visIncidents().filter(i=>i.status!=='Closed').length;
+    return {lb:HM_TILE_NAME.incidents,ic:'alert',tint:'red',vl:n,sub:n?'Follow-up required':'None open',tone:n?'bad':'',go:'openIncidentsList()'}; }
+  if(id==='due'){ const dt=open.filter(t=>t.due===T).length, ws=weekStart(), we=iso(addDays(new Date(ws+'T12:00:00'),6)), later=open.filter(t=>t.due>T&&t.due<=we).length;
+    return {lb:HM_TILE_NAME.due,ic:'check',vl:dt,of:'of '+open.length+' open',sub:later+' due later this week',go:"go('tasks')"}; }
+  if(id==='clients'){
+    if(r==='staff'){ const my=visShifts().find(x=>x.sid===meSid()), cl=visibleClients().filter(c=>!my||c.home===my.home||my.home==='All homes');
+      return {lb:'Clients today',ic:'heart',vl:cl.length,sub:cl.length?cl.slice(0,2).map(c=>c.uci).join(', '):'None assigned',go:"go('clients')"}; }
+    const n=visibleClients().length; return {lb:'Clients in service',ic:'heart',vl:n,sub:HOMES.length?HOMES.length+' home'+(HOMES.length===1?'':'s'):'',go:"go('clients')"}; }
+  if(id==='week'){ const rows=hmWeekRows(), a=rows.reduce((s,x)=>s+Math.min(x.a,x.b),0), b=rows.reduce((s,x)=>s+x.b,0);
+    return {lb:HM_TILE_NAME.week,ic:'check',vl:b?Math.round(a/b*100)+'%':'—',sub:b?a+' of '+b+' weekly items done':'Nothing set up for this week',go:"go('weekly')"}; }
+  if(id==='certs'){ const all=visibleStaff().flatMap(st=>CREDS[st.id]||[]), bad=all.filter(c=>c.s==='bad').length, warn=all.filter(c=>c.s==='warn').length;
+    return {lb:HM_TILE_NAME.certs,ic:'award',vl:bad+warn,sub:bad?bad+' expired'+(warn?', '+warn+' due soon':''):warn?warn+' due soon':'All current',tone:bad?'bad':'',go:"go('team')"}; }
+  if(id==='attention'){ const n=d.attn.length; return {lb:HM_TILE_NAME.attention,ic:'bell',vl:n,sub:n?'Waiting on someone':'All clear',tone:n?'warn':'',go:'hmToSec(\'attention\')'}; }
+  if(id==='myshift'){ const my=visShifts().find(x=>x.sid===meSid());
+    if(!my) return {lb:'Your shift',ic:'clock',vl:'—',sub:'No shift scheduled today',go:"go('calendar')"};
+    const mates=visShifts().filter(x=>x.sid!==my.sid&&(x.home===my.home||x.home==='All homes')).map(x=>(staff(x.sid)||{}).init||'').filter(Boolean).join(', ');
+    return {lb:'Your shift',ic:'clock',vl:hm12(my.start).replace(/ (AM|PM)/,''),of:hm12(my.start).slice(-2)+' to '+hm12(my.end)+(shiftOvernight(my)?' next day':''),sub:esc(my.home)+(mates?' · with '+mates:''),go:"go('team')"}; }
+  if(id==='docs') return {lb:'Shared documents',ic:'file',vl:DOCS.filter(x=>x.cid==='c1').length,sub:'Reports and consents',go:"go('docs')"};
+  if(id==='nextappt'){ const a=APPTS.filter(x=>x.cid==='c1'&&!x.cancelled&&(x.date>T||(x.date===T&&x.time&&toMin(x.time)>d.nm))).sort((x,y)=>(x.date+x.time).localeCompare(y.date+y.time))[0];
+    return {lb:'Next appointment',ic:'cal',tint:'blue',vl:a?hm12(a.time).replace(/ (AM|PM)/,''):'—',of:a?hm12(a.time).slice(-2):'',sub:a?esc(a.title)+' · '+relDay(a.date):'Nothing scheduled',go:a?`openAppt('${a.id}')`:"go('calendar')"}; }
+  if(id==='onshift'){ const w=SHIFTS.find(x=>x.home==='Maple House'&&x.start<=nowHM()&&x.end>=nowHM())||SHIFTS.find(x=>x.home==='Maple House');
+    return {lb:'On shift with 4023180',ic:'users',vl:w&&staff(w.sid)?staff(w.sid).init:'—',sub:w?'Maple House · until '+hm12(w.end):'See the calendar',go:"go('calendar')"}; }
+  if(id==='messages') return {lb:'Unread messages',ic:'mail',vl:0,sub:'Care team replies within a day',go:"go('messages')"};
+  return null;
+}
+function hmTileHtml(t,bold){
+  if(!t) return '';
+  if(bold) return `<button type="button" class="hm-bt" onclick="${t.go}"><span class="hm-bt-l">${esc(t.lb)}</span>
+    <span class="hm-bt-v">${t.vl}${t.of?` <small>${esc(t.of)}</small>`:''}</span>${t.tone==='bad'?`<span class="hm-bt-pill">${esc(t.sub)}</span>`:`<span class="hm-bt-s">${t.sub}</span>`}</button>`;
+  return `<button type="button" class="hm-tile ${t.tone==='bad'?'bad':''}" onclick="${t.go}">
+    <span class="hm-tile-h"><span class="hm-tile-ic ${t.tint||''}">${hmI(t.ic,20)}</span><span>${esc(t.lb)}</span></span>
+    <span class="hm-tile-v">${t.vl}${t.of?` <small>${esc(t.of)}</small>`:''}</span>
+    <span class="hm-tile-s">${t.dot?'<i class="hm-dot"></i>':''}${t.sub}</span></button>`;
+}
+function hmToSec(id){ const s=document.querySelector(`#view [data-hm="${id}"]`); if(s) s.scrollIntoView({behavior:'smooth',block:'start'}); }
+/* ── today's schedule ── */
+function hmPill(it){
+  if(it.st==='done') return `<span class="hm-pill">${hmI('tick',14)}Done</span>`;
+  if(it.st==='on') return `<span class="hm-pill on"><i></i>On now</span>`;
+  if(it.st==='soon') return `<span class="hm-pill soon">In ${hmIn(it.mins)}</span>`;
+  if(it.st==='due') return `<span class="hm-pill due">Due today</span>`;
+  if(it.st==='cancel') return `<span class="hm-pill">Canceled</span>`;
+  return `<span class="hm-pill">Scheduled</span>`;
+}
+function hmItemIc(it){ return it.k==='appt'?'cal':it.k==='shift'?'clock':it.k==='rem'?'bell':(/family|visit/i.test(it.meta[0]||'')?'heart':/outing|communit|day program/i.test(it.meta[0]+it.title)?'pin':'users'); }
+function hmSchedHead(title,sub){
+  return `<div class="hm-sh"><div><h2>${title}</h2><span>${sub}</span></div>
+    <a href="#" class="hm-link" onclick="event.preventDefault();go('calendar')">Open calendar${hmI('chev',16)}</a></div>`;
+}
+function hmEmptyDay(){
+  const add=state.role!=='family'?`<div class="hm-empty-acts"><button type="button" class="hm-btn soft" onclick="openApptForm()">${hmI('plus',16)}Appointment</button>
+    ${state.role==='director'?`<button type="button" class="hm-btn line" onclick="openShiftForm()">${hmI('plus',16)}Shift</button>`:''}</div>`:'';
+  return `<div class="hm-empty"><span class="hm-empty-ic">${hmI('cal',20)}</span><div><b>Your schedule is open.</b><span>No appointments or shifts scheduled for today.</span></div></div>${add}`;
+}
+function hmSchedList(d){
+  const kinds=['appt','shift','event','rem'].filter(k=>d.items.some(x=>x.k===k));
+  const f=kinds.includes(HM.filter)?HM.filter:'all';
+  const list=d.items.filter(x=>f==='all'||x.k===f);
+  let nowAt=list.findIndex(x=>x.k==='rem'||x.s>d.nm); if(nowAt<0) nowAt=list.length;   // the Now line sits between what has started and what has not
+  const showNow=list.some(x=>x.k!=='rem'&&x.s>=0);
+  const row=it=>`<li class="hm-row ${it.next?'next':''} ${it.st==='done'?'past':''}" onclick="${it.go}" role="button" tabindex="0" onkeydown="if(event.key==='Enter')this.click()">
+      <span class="hm-time">${it.t?hm12(it.t):it.late?'Last night':it.k==='rem'?'Today':''}</span>
+      <span class="hm-kic" style="background:${HM_KIND[it.k][2]};color:${HM_KIND[it.k][1]}">${hmI(hmItemIc(it),18)}</span>
+      <span class="hm-what"><b>${esc(it.title)}</b><span>${it.meta.map(esc).join(' · ')}</span></span>${hmPill(it)}</li>`;
+  const nowRow=`<li class="hm-now" aria-label="Now, ${hm12(nowHM())}"><span>Now ${hm12(nowHM())}</span><i></i></li>`;
+  return `<section class="hm-card hm-sched" data-hm="schedule" data-sched="list">${hmSchedHead('Today’s schedule','Appointments, shifts, meetings and reminders')}
+    ${kinds.length?`<div class="hm-chips">${[['all','All',d.items.length]].concat(kinds.map(k=>[k,HM_KIND[k][0],d.items.filter(x=>x.k===k).length])).map(([k,l,n])=>
+      `<button type="button" class="hm-chip ${f===k?'on':''}" aria-pressed="${f===k}" onclick="HM.filter='${k}';render()">${k==='all'?'':`<i style="background:${HM_KIND[k][1]}"></i>`}${l} · ${n}</button>`).join('')}</div>`:''}
+    ${list.length?`<ol class="hm-list">${list.map((it,i)=>(showNow&&i===nowAt?nowRow:'')+row(it)).join('')}${showNow&&nowAt===list.length?nowRow:''}</ol>`:hmEmptyDay()}
+  </section>`;
+}
+/* Today across the hours. Bars that would run into each other drop to a second line in their lane,
+   worked out at the narrowest the timeline gets (it scrolls sideways below that), so labels never overlap. */
+const HM_TL_MINPX=820;
+function hmSchedGlance(d){
+  const timed=d.items.filter(x=>x.k!=='rem'&&x.s>=0);
+  const first=timed.length?Math.min(7,Math.floor(Math.min(...timed.map(x=>x.s))/60)):7, a0=first*60, a1=24*60, span=a1-a0;
+  const pct=m=>Math.max(0,Math.min(100,(m-a0)/span*100));
+  const lanes=['appt','shift','event','rem'];
+  const hours=[]; for(let h=first;h<24;h+=2) hours.push(h);
+  const label=h=>(h%12||12)+' '+(h<12?'AM':'PM');
+  let rems=d.items.filter(x=>x.k==='rem');
+  if(rems.length>2) rems=[{k:'rem',t:'',s:a0,e:a0,st:'due',title:rems.length+' reminders due today',meta:['Reminder'],go:"go('tasks')"}];
+  const lane=k=>{
+    const its=(k==='rem'?rems:d.items.filter(x=>x.k===k)).map(it=>{
+      const x0=it.k==='rem'?(it.t?pct(toMin(it.t)):0):pct(it.s), x1=it.k==='rem'?x0:pct(Math.min(it.e,a1));
+      const txt=(it.k!=='shift'&&it.t?hm12(it.t).replace(/ (AM|PM)/,'')+' ':'')+it.title+(it.k==='shift'?' · '+(it.meta[1]||'')+(it.st==='on'?' · On now':''):'');
+      const est=(txt.length*6.6+(it.st==='done'||it.k==='rem'?44:26))/HM_TL_MINPX*100;   // the label's width, as a share of the narrowest timeline
+      const w=Math.max(x1-x0,0), ext=Math.max(w,est), right=x0+ext>100;
+      return {it,x0,w,ext,txt,right,a:right?100-ext:x0,b:right?100:x0+ext};
+    });
+    const tracks=[];
+    its.sort((p,q)=>p.a-q.a).forEach(b=>{ let t=tracks.findIndex(end=>end<=b.a+0.3); if(t<0){ t=tracks.length; tracks.push(0); } tracks[t]=b.b; b.tr=t; });
+    const html=its.map(b=>{ const it=b.it, solid=it.st==='on'||it.st==='soon', long=b.w>=b.ext-0.5;
+      const pos=b.right?`right:${Math.max(0,100-b.x0-b.w)}%`:`left:${b.x0}%`;
+      return `<button type="button" class="hm-bar ${solid?'solid':''} ${it.st==='done'?'past':''}" style="${pos};${long?`width:calc(${b.w}% - 4px);`:''}top:${12+b.tr*42}px;--c:${HM_KIND[it.k][1]};--b:${HM_KIND[it.k][2]}" onclick="${it.go}" title="${esc(it.title)}">
+        ${it.st==='done'?hmI('tick',13):''}${it.k==='rem'?hmI('bell',13):''}${solid&&it.k==='shift'?'<i class="hm-live"></i>':''}${esc(b.txt)}</button>`; }).join('');
+    return {html,h:60+Math.max(0,tracks.length-1)*42,n:its.length};
+  };
+  const L={}; lanes.forEach(k=>L[k]=lane(k));
+  const sub=k=>{ const n=d.items.filter(x=>x.k===k).length, on=d.items.filter(x=>x.k==='shift'&&x.on).length;
+    return k==='shift'?(on?on+' on now':n+' today'):k==='rem'?n+' due':n+' today'; };
+  const nowP=pct(d.nm), showNow=d.nm>=a0;
+  return `<section class="hm-card hm-sched" data-hm="schedule" data-sched="timeline">
+    <div class="hm-sh"><div><h2>Today at a glance</h2><span>Appointments, shifts, meetings and reminders from ${label(first)} to midnight</span></div>
+      <div class="hm-legend">${lanes.map(k=>`<span><i style="background:${HM_KIND[k][1]}"></i>${HM_KIND[k][0]}</span>`).join('')}
+      <a href="#" class="hm-btn line sm" onclick="event.preventDefault();go('calendar')">Open calendar</a></div></div>
+    ${d.items.length?`<div class="hm-tl-wrap"><div class="hm-tl" style="min-width:${HM_TL_MINPX+170}px">
+      <div class="hm-tl-lab"><div class="hm-tl-sp"></div>${lanes.map(k=>`<div class="hm-tl-ln" style="height:${L[k].h}px"><i style="background:${HM_KIND[k][1]}"></i><div><b>${HM_KIND[k][0]}</b><span>${sub(k)}</span></div></div>`).join('')}<div class="hm-tl-sp"></div></div>
+      <div class="hm-tl-body"><div class="hm-tl-hours">${hours.map((h,i)=>`<span style="left:${pct(h*60)}%" class="${i?'':'first'}">${label(h)}</span>`).join('')}</div>
+        ${lanes.map(k=>`<div class="hm-tl-row" style="height:${L[k].h}px;background-size:calc(100% / ${(24-first)/2}) 100%">${L[k].html}</div>`).join('')}
+        ${showNow?`<div class="hm-tl-now" style="left:${nowP}%"></div><div class="hm-tl-nowlab"><span style="left:${nowP}%">Now ${hm12(nowHM())}</span></div>`:'<div class="hm-tl-sp"></div>'}
+      </div></div></div>`:`<div class="hm-pad">${hmEmptyDay()}</div>`}
+  </section>`;
+}
+function hmSchedMonth(d){
+  const base=new Date(T+'T12:00:00'); base.setDate(1); base.setMonth(base.getMonth()+HM.month);
+  const y=base.getFullYear(), m=base.getMonth(), first=new Date(y,m,1,12), lead=(first.getDay()+6)%7, days=new Date(y,m+1,0).getDate();
+  const ap=visAppts().filter(a=>!a.cancelled&&a.date&&a.date.slice(0,7)===iso(first).slice(0,7));
+  const cells=[]; for(let i=0;i<lead;i++) cells.push(null); for(let dd=1;dd<=days;dd++) cells.push(iso(new Date(y,m,dd,12)));
+  const sel=HM.day&&HM.day.slice(0,7)===iso(first).slice(0,7)?HM.day:(HM.month===0?T:null);
+  const dayItems=dd=>dd===T?d.items:visAppts().filter(a=>a.date===dd&&!a.cancelled).sort((a,b)=>(a.time||'').localeCompare(b.time||'')).map(a=>({k:hmIsEvent(a)?'event':'appt',t:a.time||'',title:a.title||a.type,meta:[a.type||'Appointment',(client(a.cid)||{}).uci?'UCI '+client(a.cid).uci:''].filter(Boolean),go:`openAppt('${a.id}')`,st:'sched'}));
+  const pick=sel?dayItems(sel):[];
+  return `<section class="hm-card hm-sched" data-hm="schedule" data-sched="month">${hmSchedHead('This month','Appointments and events, day by day')}
+    <div class="hm-mon-h"><button type="button" class="hm-ibtn" aria-label="Previous month" onclick="HM.month--;HM.day=null;render()">${hmI('left',18)}</button>
+      <b>${first.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</b>
+      <button type="button" class="hm-ibtn" aria-label="Next month" onclick="HM.month++;HM.day=null;render()">${hmI('chev',18)}</button>
+      ${HM.month?`<button type="button" class="hm-btn line sm" onclick="HM.month=0;HM.day=null;render()">Today</button>`:''}</div>
+    <div class="hm-mon">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(w=>`<span class="hm-mon-w">${w}</span>`).join('')}
+      ${cells.map(dd=>{ if(!dd) return '<span></span>'; const n=ap.filter(a=>a.date===dd);
+        return `<button type="button" class="hm-day ${dd===T?'today':''} ${dd===sel?'sel':''} ${dd<T?'past':''}" onclick="HM.day='${dd}';render()" aria-label="${fmtLong(dd)}, ${n.length} item${n.length===1?'':'s'}">
+          <span>${+dd.slice(8)}</span><span class="hm-dots">${n.slice(0,3).map(a=>`<i style="background:${HM_KIND[hmIsEvent(a)?'event':'appt'][1]}"></i>`).join('')}${n.length>3?`<em>+${n.length-3}</em>`:''}</span></button>`; }).join('')}</div>
+    ${sel?`<div class="hm-mon-day"><b>${sel===T?'Today':fmtLong(sel)}</b>${pick.length?`<ol class="hm-list">${pick.map(it=>`<li class="hm-row" onclick="${it.go}" role="button" tabindex="0">
+      <span class="hm-time">${it.t?hm12(it.t):''}</span><span class="hm-kic" style="background:${HM_KIND[it.k][2]};color:${HM_KIND[it.k][1]}">${hmI(hmItemIc(it),18)}</span>
+      <span class="hm-what"><b>${esc(it.title)}</b><span>${(it.meta||[]).map(esc).join(' · ')}</span></span></li>`).join('')}</ol>`:'<div class="hm-muted">Nothing scheduled.</div>'}</div>`:''}
+  </section>`;
+}
+/* ── the sections below ── */
+function hmSecAttention(d,bold){
+  const a=d.attn; window._attn=a;
+  const tone=k=>k==='bad'?'bad':k==='info'?'info':'warn';
+  const ic=x=>x.col?`style="color:${x.col}${bold?`;background:${x.col}1A`:''}"`:'';     // the director's own icon colors, from Settings
+  const body=!a.length?`<div class="hm-clear"><span>${hmI('tick',18)}</span><b>Nothing needs you right now.</b><p>Tasks, incidents and flagged appointments will show here when they come up.</p></div>`
+    :bold?a.map((x,i)=>`<div class="hm-arow" onclick="_attn[${i}].go()" role="button" tabindex="0" onkeydown="if(event.key==='Enter')this.click()"><span class="hm-aic ${tone(x.k)}" ${ic(x)}>${x.ic}</span>
+        <span class="hm-what"><b>${x.t}</b><span>${x.s}</span></span><span class="hm-abtn ${x.k==='bad'?'bad':''}">${esc(x.a||'Open')}</span></div>`).join('')
+    :a.map((x,i)=>`<div class="hm-acard ${tone(x.k)}" onclick="_attn[${i}].go()" role="button" tabindex="0" onkeydown="if(event.key==='Enter')this.click()"><span class="hm-aic" ${ic(x)}>${x.ic}</span>
+        <span class="hm-what"><b>${x.t}</b><span>${x.s}</span><em>${esc(x.a||'Open')}</em></span></div>`).join('');
+  return `<section class="hm-card hm-attn" data-hm="attention"><div class="hm-ch"><h2>Needs your attention</h2><span class="hm-n ${a.length?'':'zero'}">${a.length}</span></div>
+    <div class="hm-stack">${body}</div></section>`;
+}
+function hmSecWeek(d,bold){
+  const rows=hmWeekRows(); const a=rows.reduce((s,x)=>s+Math.min(x.a,x.b),0), b=rows.reduce((s,x)=>s+x.b,0), pct=b?Math.round(a/b*100):0;
+  const ws=new Date(weekStart()+'T12:00:00'), we=addDays(ws,6), fm=x=>x.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  const R=bold?56:40, C=2*Math.PI*R, sz=bold?132:96, sw=bold?14:10;
+  const behind=rows.filter(x=>x.a<x.b);
+  const ring=`<div class="hm-ring" style="width:${sz}px;height:${sz}px"><svg viewBox="0 0 ${sz} ${sz}" role="img" aria-label="${pct} percent of weekly items complete">
+      <circle cx="${sz/2}" cy="${sz/2}" r="${R}" style="fill:none;stroke:#ECEFEA;stroke-width:${sw}"></circle>
+      ${pct?`<circle cx="${sz/2}" cy="${sz/2}" r="${R}" style="fill:none;stroke:#1F6B52;stroke-width:${sw};stroke-linecap:round;stroke-dasharray:${(C*pct/100).toFixed(1)} ${C.toFixed(1)}"></circle>`:''}</svg>
+      <div><b>${pct}%</b><span>${bold?a+' of '+b+' done':'complete'}</span></div></div>`;
+  const rowsHtml=rows.map(x=>{ const p=x.b?Math.round(Math.min(x.a,x.b)/x.b*100):0, due=x.a<x.b&&x.a===0;   // nothing to count yet is an empty bar, not a full one
+    return bold?`<button type="button" class="hm-wtile ${due?'due':''}" onclick="go('${x.go}')"><span>${esc(x.l)}</span><b>${x.a} <small>of ${x.b}${due?' · Due':''}</small></b><i><em style="width:${p}%"></em></i></button>`
+      :`<button type="button" class="hm-wrow ${due?'due':''}" onclick="go('${x.go}')"><span><b>${esc(x.l)}</b><em>${x.a} of ${x.b}${due?' · Due':''}</em></span><i><em style="width:${p}%"></em></i></button>`; }).join('');
+  return `<section class="hm-card hm-week" data-hm="week"><div class="hm-ch"><h2>This week’s progress</h2><span class="hm-range">${fm(ws)} to ${fm(we)}</span></div>
+    ${rows.length?`<div class="hm-week-top">${ring}${bold?`<div class="hm-wgrid">${rowsHtml}</div>`:`<p>${a} of ${b} weekly items done.${behind.length?' '+esc(behind[0].l)+(behind.length>1?' and '+(behind.length-1)+' more are':' is')+' still to do.':' Everything is done.'}</p>`}</div>
+    ${bold?'':`<div class="hm-wlist">${rowsHtml}</div>`}`
+    :`<div class="hm-muted">Nothing is counted for this week yet.${state.role==='director'?' Choose what to count with the cog on This week in the sidebar.':''}</div>`}</section>`;
+}
+const HM_AV=[['#E3F0EA','#1F6B52'],['#E6EEF7','#2D5F93'],['#EFEAF7','#6B4FA0'],['#FBEFD9','#8A5300']];
+function hmSecWorking(d,bold){
+  const on=shiftsNow(), seen={}, people=on.filter(s=>{ if(seen[s.sid]) return false; seen[s.sid]=1; return true; });
+  const up=visShifts().filter(s=>toMin(s.start)>d.nm).sort((a,b)=>toMin(a.start)-toMin(b.start)), nx=up[0], nxN=nx?up.filter(s=>s.start===nx.start).length:0;
+  const person=(s,i)=>{ const st=staff(s.sid)||{}, c=HM_AV[i%HM_AV.length], ini=String(st.init||'').replace(/\./g,'').slice(0,2)||'?';
+    return bold?`<div class="hm-pcard"><span class="hm-av" style="background:${c[1]};color:#fff">${esc(ini)}</span><div><b>${esc(stName(st))}</b><span>${esc(st.role||'')}</span></div></div>`
+      :`<li><span class="hm-av" style="background:${c[0]};color:${c[1]}">${esc(ini)}</span><div><b>${esc(stName(st))}</b><span>${esc([st.role,s.home].filter(Boolean).join(' · '))}</span></div></li>`; };
+  const until=on.length?on.map(s=>s.end).sort((a,b)=>toMin(a)-toMin(b))[0]:null;
+  return `<section class="hm-card hm-work" data-hm="working"><div class="hm-ch"><h2>${bold?'Who’s working':'On shift now'}</h2>
+      ${bold?`<span class="hm-onpill"><i></i>${people.length} on shift</span>`:`<span class="hm-range">${until?'Until '+hm12(until):''}</span>`}</div>
+    ${people.length?(bold?`<div class="hm-pgrid">${people.map(person).join('')}</div>`:`<ul class="hm-people">${people.map(person).join('')}</ul>`)
+      :`<div class="hm-muted">No one is on shift right now.</div>`}
+    ${nx?`<div class="hm-nextshift">${hmI('clock',18)}<span><b>${hmShiftName(nx.start,nx.end)}</b> starts at ${hm12(nx.start)} with ${nxN} staff</span></div>`:''}
+    <a href="#" class="hm-link top" onclick="event.preventDefault();go('team')">View full staffing${hmI('chev',16)}</a></section>`;
+}
+function hmSecComing(){
+  const up=visAppts().filter(a=>a.date>T&&!a.cancelled).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||''))).slice(0,5);
+  return `<section class="hm-card hm-coming" data-hm="coming"><div class="hm-ch"><h2>Coming up</h2></div>
+    ${up.length?`<ul class="hm-up">${up.map(a=>{ const k=hmIsEvent(a)?'event':'appt'; return `<li onclick="openAppt('${a.id}')" role="button" tabindex="0">
+      <span class="hm-kic" style="background:${HM_KIND[k][2]};color:${HM_KIND[k][1]}">${hmI(k==='event'?'users':'cal',18)}</span>
+      <span class="hm-what"><b>${esc(a.title)}</b><span>${esc((client(a.cid)||{}).uci||'')}${(client(a.cid)||{}).uci?' · ':''}${relDay(a.date)}${a.time?' '+hm12(a.time):''}</span></span>${hmI('chev',16)}</li>`; }).join('')}</ul>`
+      :`<div class="hm-muted">Nothing coming up.</div>`}</section>`;
+}
+function hmSecMyTasks(){
+  const ts=myTasks().filter(t=>t.stage!=='Done').slice(0,5);
+  return `<section class="hm-card" data-hm="mytasks"><div class="hm-ch"><h2>Your tasks</h2><a href="#" class="hm-link" onclick="event.preventDefault();go('tasks')">See all${hmI('chev',16)}</a></div>
+    ${ts.length?`<ul class="hm-up">${ts.map(t=>`<li onclick="openTask('${t.id}')" role="button" tabindex="0"><span class="hm-kic" style="background:${t.stage==='Overdue'?'#FBE9E6':'#FBEFD9'};color:${t.stage==='Overdue'?'#A3261B':'#8A5300'}">${hmI('check',18)}</span>
+      <span class="hm-what"><b>${esc(t.title)}</b><span>Due ${relDay(t.due)} · ${esc(t.stage)}</span></span></li>`).join('')}</ul>`:'<div class="hm-muted">No open tasks.</div>'}</section>`;
+}
+function hmSecAsk(){
+  const sug=hmRole()==='family'?['When is the next appointment?','What changed today?']:hmRole()==='staff'?['What do I do if a client refuses a medication?','What is due on my shift?']
+    :['Which certifications expire this month?','What is still due before inspection?','Summarize this week’s incidents'];
+  return `<section class="hm-card hm-ask" data-hm="ask"><div class="hm-ask-h"><span class="hm-ask-ic">${hmI('spark',20)}</span><div><h2>Ask Spectrum</h2><span>Plain-language answers from your agency’s records</span></div></div>
+    <div class="hm-ask-in"><input type="text" id="hmAskQ" aria-label="Ask Spectrum a question" placeholder="Ask about clients, staff or compliance" onkeydown="if(event.key==='Enter')hmAsk(this.value)">
+      <button type="button" aria-label="Send question" onclick="hmAsk(el('hmAskQ').value)">${hmI('send',18)}</button></div>
+    <div class="hm-ask-sug">${sug.map(q=>`<button type="button" onclick="hmAsk(this.textContent)">${esc(q)}</button>`).join('')}</div></section>`;
+}
+function hmAsk(q){ q=String(q||'').trim(); if(!q) return; const p=el('askPanel'); if(p&&!p.classList.contains('on')) toggleAsk(); setTimeout(()=>askSend(q),60); const i=el('hmAskQ'); if(i) i.value=''; }
+function hmSection(id,d,bold){
+  if(id==='attention') return hmSecAttention(d,bold);
+  if(id==='week') return hmSecWeek(d,bold);
+  if(id==='working') return hmSecWorking(d,bold);
+  if(id==='coming') return hmSecComing();
+  if(id==='mytasks') return hmSecMyTasks();
+  if(id==='training'){ const h=trainCard(meSid()); return h?`<div class="hm-old" data-hm="training">${h}</div>`:''; }
+  if(id==='ask') return hmSecAsk();
+  if(id.indexOf('cs:')===0){ const cs=laySections('home').find(x=>'cs:'+x.id===id); return cs?`<div class="hm-old" data-hm="${esc(id)}">${customSectionHtml('home',cs)}</div>`:''; }
+  return '';
+}
+function hmNextUp(d,bold){
+  if(!d.next) return '';
+  const a=d.next.a, c=client(a.cid)||{}, end=a.time?hm12(String(Math.floor((toMin(a.time)+(+a.dur||60))/60)%24).padStart(2,'0')+':'+String((toMin(a.time)+(+a.dur||60))%60).padStart(2,'0')):'';
+  const lines=[a.time?[hmI('clock',16),hm12(a.time)+(end?' to '+end:'')]:null,c.uci?[hmI('heart',16),'Client UCI '+esc(c.uci)]:null,
+    a.ride&&!/^on site$/i.test(a.ride)?[hmI('person',16),esc(a.ride)]:a.loc?[hmI('pin',16),esc(a.loc)]:null].filter(Boolean);
+  return `<div class="hm-next ${bold?'bold':''}"><span class="hm-next-k">Next up · ${esc(d.next.when)}</span><b>${esc(a.title||a.type||'Appointment')}</b>
+    <div class="hm-next-l">${lines.map(l=>`<span>${l[0]}${l[1]}</span>`).join('')}</div>
+    <a href="#" onclick="event.preventDefault();openAppt('${a.id}')">View details${hmI('chev',16)}</a></div>`;
+}
+function viewHome(){
+  const c=hmCfg(), d=hmData(), r=hmRole(), m=ME[state.role]||{name:''}, bold=c.look==='b';
+  const n=d.attn.length;
+  const sum=r==='family'?esc(homeSub(n)):(bold&&shiftsNow().length?`${shiftsNow().length} staff on shift now. `:'')+(n?`<strong>${n} item${n===1?' needs':'s need'} your attention</strong> today. Everything else is on track.`:'Nothing needs you right now. Everything is on track.');
+  const acts=`${state.role!=='family'?`<button type="button" class="hm-btn ${bold?'gold':'green'}" onclick="openApptForm()">${hmI('plus',18)}Add appointment</button>`:''}
+    ${state.role==='director'?`<button type="button" class="hm-btn ${bold?'ghostw':'line'}" onclick="openShiftForm()">${hmI('plus',18)}Add shift</button>`:''}
+    <button type="button" class="hm-btn text ${bold?'w':''} ${state.tourSeen[state.role]?'':'pulse'}" onclick="tourStart()">${hmI('compass',18)}Show me around</button>
+    <button type="button" class="hm-btn icon ${bold?'ghostw':'line'}" onclick="hmCustomize()" title="Customize your home page" aria-label="Customize your home page">${hmI('gear',18)}</button>`;
+  const tiles=c.tiles.map(t=>hmTile(t,d)).filter(Boolean);
+  const head=`<div class="hm-eyebrow">${hmI('sun',18)}${fmtLong(T)} · <span id="heroClock">${hm12(nowHM())}</span></div>
+      <h1>${greeting()}, ${esc(String(m.name||'').split(' ')[0]||'there')}.</h1><p class="hm-sum">${sum}</p>`;
+  const hero=bold
+    ?`<section class="hm-hero-b"><svg class="hm-deco" viewBox="0 0 272 128" aria-hidden="true">${[0,72,144,216].map(x=>[0,72].map(y=>`<rect x="${x+.5}" y="${y+.5}" width="56" height="56" rx="14" ${x===144&&y===0?'class="on"':''}></rect>`).join('')).join('')}</svg>
+        <div class="hm-hb-top"><div class="hm-hb-l">${head}<div class="hm-acts">${acts}</div></div>${c.next?hmNextUp(d,true):''}</div>
+        ${tiles.length?`<div class="hm-hb-tiles">${tiles.map(t=>hmTileHtml(t,true)).join('')}</div>`:''}</section>`
+    :`<section class="hm-hero"><div class="hm-hero-l">${head}</div><div class="hm-acts">${acts}</div></section>
+      ${c.next?hmNextUp(d,false):''}
+      ${tiles.length?`<div class="hm-tiles">${tiles.map(t=>hmTileHtml(t,false)).join('')}</div>`:''}`;
+  const sched=c.sched==='timeline'?hmSchedGlance(d):c.sched==='month'?hmSchedMonth(d):hmSchedList(d);
+  const secs=c.order.filter(s=>!c.hidden.includes(s)).map(s=>hmSection(s,d,bold)).join('');
+  return `<div class="hm hm-${c.look}">${hero}
+    ${state.role==='staff'?actionStrip():''}
+    ${bold?`${sched}<div class="hm-grid">${secs}</div>`:`<div class="hm-cols"><div class="hm-main">${sched}</div><div class="hm-side">${secs}</div></div>`}
   </div>`;
+}
+/* ── Customize home ──
+   Everyone sets up their own home page. A director can also set the agency default for each role:
+   what directors, staff or families see until they set up their own. A real sign-in only ever shows
+   its own role, so the default for staff and families is chosen here, without a preview. */
+const hmTgtRole=()=>HM.tgt&&HM.tgt!=='me'?HM.tgt:hmRole();
+const hmDraft=c=>{ const x=JSON.parse(JSON.stringify(c)); delete x.own; delete x.agency; return x; };
+function hmCustomize(){ HM.tgt='me'; HM.edit=hmDraft(hmCfg(true)); hmCustDraw(); }
+function hmCustTarget(t){
+  if(state.role!=='director') t='me';
+  HM.tgt=t; HM.edit=hmDraft(t==='me'?hmCfg(true):hmCfgFor(t,false)); render(); hmCustDraw();
+}
+function hmCustRedraw(){ if(HM.tgt==='me') render(); hmCustDraw(); }
+function hmCustSet(k,v){ HM.edit[k]=v; hmCustRedraw(); }
+function hmCustTile(id,on){ const t=HM.edit.tiles.filter(x=>x!==id); if(on&&t.length<4) t.push(id); HM.edit.tiles=t; hmCustRedraw(); }
+function hmCustSec(id,on){ HM.edit.hidden=(HM.edit.hidden||[]).filter(x=>x!==id); if(!on) HM.edit.hidden.push(id); hmCustRedraw(); }
+function hmCustMove(id,dir){ const o=hmCfgFor(hmTgtRole(),HM.tgt==='me',HM.edit).order, i=o.indexOf(id), j=i+dir; if(i<0||j<0||j>=o.length) return;
+  o.splice(i,1); o.splice(j,0,id); HM.edit.order=o; hmCustRedraw(); }
+function hmCustDrop(id,to){ const o=hmCfgFor(hmTgtRole(),HM.tgt==='me',HM.edit).order, i=o.indexOf(id), j=o.indexOf(to); if(i<0||j<0||i===j) return;
+  o.splice(i,1); o.splice(j,0,id); HM.edit.order=o; hmCustRedraw(); }
+function hmSecName(id){ if(id.indexOf('cs:')===0){ const cs=laySections('home').find(x=>'cs:'+x.id===id); return cs?cs.title:'Your section'; } return HM_SEC[id]||id; }
+function hmTileLabel(t,r){ return t==='clients'?(r==='staff'?'Clients today':'Clients in service'):t==='onshift'?'Who is on shift with your family member':HM_TILE_NAME[t]; }
+const HM_ROLE_PL={director:'directors',staff:'staff',family:'families'};
+function hmCustDraw(){
+  const me=HM.tgt==='me', R=hmTgtRole(), c=hmCfgFor(R,me,HM.edit), e=HM.edit, full=c.tiles.length>=4, dir=state.role==='director';
+  const opt=(k,v,t,dsc,extra)=>`<button type="button" class="hm-opt ${c[k]===v?'on':''}" aria-pressed="${c[k]===v}" onclick="hmCustSet('${k}',${typeof v==='string'?`'${v}'`:v})">${extra||''}<b>${t}</b><span>${dsc}</span></button>`;
+  const mini=v=>`<span class="hm-mini ${v}" aria-hidden="true"><i></i><i></i><i></i><i></i></span>`;
+  const tgtBtn=(t,l)=>`<button type="button" role="tab" aria-selected="${HM.tgt===t}" class="set-tab ${HM.tgt===t?'on':''}" onclick="hmCustTarget('${t}')">${l}</button>`;
+  openModal('Customize your home page',`
+    <div class="hm-cust">
+      ${dir?`<div class="set-tabs hm-tgt" role="tablist">${tgtBtn('me','Your home page')}<span class="hm-tgt-l">Agency default for</span>${tgtBtn('director','Directors')}${tgtBtn('staff','Staff')}${tgtBtn('family','Families')}</div>`:''}
+      <p class="hm-cust-note">${me?'Changes show behind this window as you make them. Saved to your account, so your home page looks the same on every device you sign in on.'
+        :`What ${HM_ROLE_PL[R]} see until they set up their own home page. Anyone who has set up their own keeps theirs.${c.agency?'':' Right now they get the standard layout.'}`}</p>
+      <h3>Look</h3><div class="hm-opts two">${opt('look','a','Clear agenda','A light header, the numbers in tiles, today as a list beside the sections',mini('a'))}${opt('look','b','Bold overview','A green header with the numbers and what’s next, the sections in a grid',mini('b'))}</div>
+      <h3>Today’s schedule</h3><div class="hm-opts three">${opt('sched','list','List','Everything today in time order, with what’s next')}${opt('sched','timeline','Timeline','Today across the hours, one line per kind')}${opt('sched','month','Month','The whole month, tap a day to see it')}</div>
+      <h3>Numbers at the top <span>Pick up to 4 · ${c.tiles.length} chosen</span></h3>
+      <div class="hm-tpick">${HM_TILE_ROLES[R].map(t=>{ const on=c.tiles.includes(t); return `<label class="${!on&&full?'off':''}"><input type="checkbox" ${on?'checked':''} ${!on&&full?'disabled':''} onchange="hmCustTile('${t}',this.checked)"><span>${esc(hmTileLabel(t,R))}</span></label>`; }).join('')}</div>
+      <label class="hm-switch"><input type="checkbox" ${c.next?'checked':''} onchange="hmCustSet('next',this.checked)"><span><b>Pin what’s next at the top</b>The next appointment, with its time, client and ride</span></label>
+      <h3>Sections <span>Tick to show, drag or use the arrows to change the order</span></h3>
+      <ol class="hm-secs">${c.order.map((s,i)=>{ const own=s.indexOf('cs:')===0, sid=esc(s); return `<li draggable="true" data-sec="${sid}" ondragstart="window._hmDrag='${sid}'" ondragover="event.preventDefault()" ondrop="event.preventDefault();hmCustDrop(window._hmDrag,'${sid}')">
+        <span class="hm-grip" aria-hidden="true">${hmI('grip',16)}</span><label><input type="checkbox" ${c.hidden.includes(s)?'':'checked'} onchange="hmCustSec('${sid}',this.checked)"> ${esc(hmSecName(s))}${own?' <em>your own</em>':''}</label>
+        ${own?`<button type="button" class="hm-secdel" onclick="hmCustDelOwn('${esc(s.slice(3))}')">Remove</button>`:''}
+        <span class="hm-mv"><button type="button" aria-label="Move ${esc(hmSecName(s))} up" ${i?'':'disabled'} onclick="hmCustMove('${sid}',-1)">${hmI('up',16)}</button><button type="button" aria-label="Move ${esc(hmSecName(s))} down" ${i<c.order.length-1?'':'disabled'} onclick="hmCustMove('${sid}',1)">${hmI('down',16)}</button></span></li>`; }).join('')}</ol>
+      ${me?`<button type="button" class="btn ghost sm" onclick="hmCustAddOwn()">＋ Add your own section</button>`:''}
+      ${dir?`<p class="hm-cust-note" style="margin-top:14px">House colors, appointment types and attention icons are under <a href="#" onclick="event.preventDefault();HM.edit=null;closeAll();render();homeSettings()">Settings</a>.</p>`:''}
+    </div>`,
+    `<span class="hm-foot-l">${me&&c.own?`<button class="btn ghost" onclick="hmCustReset()">${c.agency?'Use the agency default':'Back to the standard layout'}</button>`:''}
+      ${!me&&c.agency?`<button class="btn ghost" onclick="hmCustDefReset()">Back to the standard layout</button>`:''}</span>
+     <button class="btn ghost" onclick="HM.edit=null;closeAll();render()">Cancel</button>
+     <button class="btn navy" onclick="hmCustSave()">${me?'Save':'Save the default for '+HM_ROLE_PL[R]}</button>`);
+  el('modal').classList.add('hm-cust-md');
+}
+const hmClean=e=>({look:e.look,sched:e.sched,next:e.next!==false,tiles:e.tiles.slice(0,4),order:e.order.slice(),hidden:e.hidden.slice()});
+function hmOwnSave(cfg){ const r=hmRole(); userSetSave({home:Object.assign({},((USER_SET[userKey()]||{}).home)||{},{[r]:cfg})}); }
+function hmDefSave(r,cfg){
+  if(state.role!=='director') return;
+  HOME_DEFAULT=Object.assign({},HOME_DEFAULT||{}); if(cfg) HOME_DEFAULT[r]=cfg; else delete HOME_DEFAULT[r];
+  if(realSession()) programMerge('homedefault',v=>{ if(cfg) v[r]=cfg; else delete v[r]; return v; });
+  else sbUpsert('np_demo_program',{key:'homedefault',value:HOME_DEFAULT,updated_by:auditActor()});
+}
+function hmCustSave(){
+  if(!HM.edit) return;
+  const me=HM.tgt==='me', R=hmTgtRole(), cfg=hmClean(hmCfgFor(R,me,HM.edit));
+  if(me){ hmOwnSave(cfg); logAudit('Customized their home page',R); toast('Saved. Your home page looks like this on every device you sign in on.'); }
+  else { hmDefSave(R,cfg); logAudit('Set the agency home page default',HM_ROLE_PL[R]);
+    toast('Saved. '+HM_ROLE_PL[R].charAt(0).toUpperCase()+HM_ROLE_PL[R].slice(1)+' who have not set up their own home page now see this layout.'); }
+  HM.edit=null; HM.tgt='me'; closeAll(); render();
+}
+function hmCustReset(){
+  const r=hmRole(), h=Object.assign({},((USER_SET[userKey()]||{}).home)||{}); delete h[r];
+  userSetSave({home:h}); HM.edit=null; closeAll(); render(); logAudit('Reset their home page',r);
+  toast((HOME_DEFAULT&&HOME_DEFAULT[r])?'Your home page now follows the agency default.':'Your home page is back to the standard layout.');
+}
+function hmCustDefReset(){
+  const R=hmTgtRole(); hmDefSave(R,null); logAudit('Removed the agency home page default',HM_ROLE_PL[R]);
+  HM.edit=hmDraft(hmCfgFor(R,false)); hmCustDraw(); toast(HM_ROLE_PL[R].charAt(0).toUpperCase()+HM_ROLE_PL[R].slice(1)+' get the standard layout again.');
+}
+/* adding or removing one of your own sections leaves this window, so what you changed here is kept first */
+function hmCustKeep(){
+  if(HM.edit&&HM.tgt==='me'){ const now=hmClean(hmCfg()), was=hmClean(hmCfg(true)); if(JSON.stringify(now)!==JSON.stringify(was)) hmOwnSave(now); }
+  HM.edit=null; HM.tgt='me'; closeAll(); render();
+}
+function hmCustAddOwn(){ hmCustKeep(); csAddMenu('home'); }
+function hmCustDelOwn(id){ hmCustKeep(); csDel('home',id); }
+/* the page keeps itself current: "On now", "In 20 min" and the Now line move with the clock */
+function hmTick(hm){
+  if(HM.tickAt===hm) return; HM.tickAt=hm;
+  if(state.view!=='home'||state.client||!el('app')||!el('app').classList.contains('on')||!document.querySelector('#view .hm')) return;
+  if(['modal','drawer'].some(i=>el(i)&&el(i).classList.contains('on'))||el('tourCard')) return;
+  const a=document.activeElement; if(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable)) return;   // never under someone typing
+  render();
 }
 
 function actionStrip(){
@@ -7856,7 +8626,7 @@ function tpeThen(a){
     try{ const o=JSON.parse(window._tplSnap||'{}'); if(o.fields){ t.name=o.name; t.fields=o.fields; t.subtitle=o.subtitle; t.foot=o.foot; t.sysNote=o.sysNote; if(o.dest) t.dest=o.dest; } }catch(e){}
     window._tplEd=null; closeAll(); return delTemplate(t.id);
   }
-  if(!String(t.name||'').trim()) return toast('Name the form first — click the title at the top of the page.');
+  if(!String(t.name||'').trim()) return tpeNoName();
   tplPersist(t); docAct(window._tplNew?'template added':'template changed',t.name,FOLDER_NAMES[t.dest]||t.dest||'',null);
   logAudit('Edited template',t.name);
   window._tplEd=null; window._tplNew=null; window._tplCleared=0; closeAll(); render();
@@ -14987,7 +15757,7 @@ function openDocStructEditor(id){
 }
 function tpeSave(){
   const t=tpeT(); if(!t) return;
-  if(!String(t.name||'').trim()) return toast('Name the form first \u2014 click the title at the top of the page.');
+  if(!String(t.name||'').trim()) return tpeNoName();
   if(tpeIsDoc()){
     const id=window._tplEd; window._tplEd=null; window._tpeReturnDoc=null;
     const d=USER_DOCS[id], f=d&&d.filedId&&FILED_DOCS[d.filedId];
@@ -15003,6 +15773,18 @@ function tpeSave(){
   }
   tplSave(t.id);
 }
+/* v12.23: the template's name, typed in the box at the top or on the page title (each follows the other) */
+function tpeNameSet(v,from){
+  const t=tpeT(); if(!t) return; t.name=String(v||'').trim();
+  const n=el('tpeName'); if(n){ n.classList.remove('err'); if(from!=='box') n.value=t.name; }
+  if(from!=='title'){ const s=document.querySelector('#mdBody .tpe-title .tpe-ce'); if(s) s.textContent=t.name; }
+}
+function tpeNoName(){
+  const n=el('tpeName'); if(n){ n.classList.add('err'); n.focus(); n.scrollIntoView({block:'center'}); }
+  return toast('Give the template a name first, in Template name at the top.');
+}
+function tpeValHint(){ if(window._tpeValHinted) return; window._tpeValHinted=1;
+  toast('This box stays blank on the template. It is filled in on each copy: use \u201cFill it in\u201d to try it.'); }
 /* keep every table's preset cells the same shape as its rows and columns */
 function tpeShape(fd){
   fd.cols=fd.cols&&fd.cols.length?fd.cols:['Column 1','Column 2'];
@@ -15020,18 +15802,19 @@ function tpeDraw(){
     <div class="tpe-bar">
       <button class="btn ghost sm tpe-undo" onclick="tpeUndo()" ${TPE_UNDO.length?'':'disabled'} title="Undo the last change (Ctrl or \u2318 + Z)">\u21b6 Undo</button>
       <div class="tiny muted" style="flex:1;min-width:200px">This is the blank form as it prints. Click a label to rename it, click a block to change, move or remove it, and add more below. Answers and signatures go on each copy, with \u201cFill it in\u201d.</div>
-      ${window._tplNew?`<button class="btn ghost sm" onclick="tplUpload()">⇧ Upload the original form</button>`:''}
       ${src?`<button class="btn ghost sm" onclick="${orig?'window._tplOrig=!window._tplOrig;tpeDraw()':`tplUpload()`}">
         ${orig?(showOrig?'Hide the original':'Show the original'):'Attach the original again'}</button>`:''}
     </div>
     ${window._tplCleared?`<div class="sec-note" style="margin:0 0 12px"><span>\u2139\ufe0f</span><div><b>This template is blank again</b>Answers or a signature had been typed into the template itself, so they printed on every copy. They are cleared here and go when you save. To fill the form in, use \u201cFill it in\u201d.</div></div>`:''}
+    <div class="tpe-meta"><div class="field"><label for="tpeName">Template name</label>
+      <input class="inp" id="tpeName" value="${esc(t.name||'')}" placeholder="e.g. Medication reason for use" oninput="tpeNameSet(this.value,'box')"></div></div>
     <div class="tpe-wrap ${showOrig?'with-orig':''}">
       ${showOrig?`<div class="tpe-orig">${storedEmbed(orig)}
         <div class="tiny muted" style="padding:6px 2px">${esc(orig.file||'Uploaded form')}</div></div>`:''}
       <div class="tpe-paper">
         <div class="tpe-dock" id="tpeDock">${tpeDockHtml()}</div>
         <h2 class="tpe-title"><span class="tpe-ce" contenteditable="true" spellcheck="false" data-ph="Name this form"
-          oninput="tpeT().name=this.textContent.trim()">${esc(t.name||'')}</span></h2>
+          oninput="tpeNameSet(this.textContent.trim(),'title')">${esc(t.name||'')}</span></h2>
         <div class="tpe-sub"><span class="tpe-ce" contenteditable="true" spellcheck="false" data-ph="A line under the title"
           oninput="tpeT().subtitle=this.textContent.trim()">${esc(t.subtitle!=null?t.subtitle:'Spectrum Care \u00b7 blank form \u00b7 clients identified by client ID only')}</span></div>
         <div class="tpe-dest">Files to
@@ -15239,8 +16022,8 @@ function tpeBlock(fd,i,t){
       :ty==='time'?'<span class="tpe-muted">– : –</span>':'';
     /* v12.19: the answer cell is blank on the template. Answers are typed on each copy when it is
        filled in ("Fill it in"), so a template always opens, prints and fills in as a blank form. */
-    const blank=ty==='long text'?'<div class="tpe-ph tall"></div>':ph?ph:'<span class="tpe-blank">answered on each copy</span>';
-    const val=`<div class="tpe-val ${ty==='long text'?'tall':''}">${blank}</div>`;
+    const blank=ty==='long text'?'<div class="tpe-ph tall"></div>':ph?ph:'<span class="tpe-blank">filled in on each copy</span>';
+    const val=`<div class="tpe-val ${ty==='long text'?'tall':''}" title="Answers are typed on each copy, with \u201cFill it in\u201d" onclick="tpeValHint()">${blank}</div>`;
     body=`<div class="tpe-row"><div class="tpe-lab">${tpeCe(fd.l,`tpeT().fields[${i}].l=this.textContent.trim()`,'Label')}</div>${val}</div>`;
   }
   /* v11.2: only the grip drags. A draggable block swallowed clicks on anything inside it that
@@ -15292,7 +16075,10 @@ function tpeAdd(k,at){
   if(k==='choice'){ fd.opts=['Option 1','Option 2','Option 3']; }
   if(k==='scale') fd.max=5;
   if(k==='person') fd.who='staff';
-  const pos=at==null?t.fields.length:Math.max(0,Math.min(t.fields.length,at));
+  /* v12.23: "Add" puts a new question at the end of the questions, above the signature lines,
+     which stay at the bottom of the form. It used to land under them, as a grid of its own. */
+  let end=t.fields.length; if(k!=='signature') while(end>0&&t.fields[end-1].ty==='signature') end--;
+  const pos=at==null?end:Math.max(0,Math.min(t.fields.length,at));
   t.fields.splice(pos,0,fd); window._tpeAct=pos; tpeDraw();
   setTimeout(()=>{ const b=document.querySelectorAll('#tpeBlocks .tpe-b'); const last=b[pos];
     if(last){ last.scrollIntoView({block:'nearest'}); const ce=last.querySelector('.tpe-ce'); if(ce){ ce.focus(); document.execCommand&&document.execCommand('selectAll',false,null); } } },30);
@@ -15405,7 +16191,7 @@ function tplUpload(){
 function tplSave(id){
   const t=tplById(id);
   const nEl=el('tpName'); if(nEl) t.name=nEl.value.trim()||t.name;
-  if(!String(t.name||'').trim()) return toast('Name the form first \u2014 click the title at the top of the page.');
+  if(!String(t.name||'').trim()) return tpeNoName();
   window._tplEd=null;
   docAct(window._tplNew?'template added':'template changed',t.name,FOLDER_NAMES[t.dest]||t.dest||'',null);
   window._tplNew=null; delete t._cleared; window._tplCleared=0;      // v12.19: saved blank now
@@ -15550,7 +16336,7 @@ function ovTextW(s,px){ try{ _ovMeasure=_ovMeasure||document.createElement('canv
 async function ovAnalyzePdf(buf){
   const lib=await loadPdfjs(); if(!lib) return null;
   const pdf=await lib.getDocument({data:new Uint8Array(buf.slice(0))}).promise;
-  const pages=[], fields=[];
+  const pages=[], fields=[], slots=[];
   for(let pi=0;pi<Math.min(pdf.numPages,OV_MAX_PAGES);pi++){
     const pg=await pdf.getPage(pi+1), v=pg.getViewport({scale:1}), W=v.width, H=v.height;
     pages.push({w:ovRound(W),h:ovRound(H)});
@@ -15569,7 +16355,10 @@ async function ovAnalyzePdf(buf){
       box(x,y,w,h,l||'Field',ty);
     });
     if(widgets.length) continue;
-    /* a flat PDF: a box over each blank line */
+    /* v12.23: a flat PDF is looked at as a picture: blank lines, drawn or typed, and table cells */
+    let found=null; try{ found=await ovScanPage(lib,pg,pi); }catch(e){ console.warn('[np-demo] page scan',e); }
+    if(found) found.forEach(s=>{ slots.push(s); fields.push(ovSlotField(s)); });
+    /* the older finder (a box over each ____ in the text) only runs when the picture could not be made */
     let tc=null; try{ tc=await pg.getTextContent(); }catch(e){}
     const items=((tc&&tc.items)||[]).filter(it=>it.str).map(it=>{
       const tr=lib.Util.transform(v.transform,it.transform);
@@ -15577,6 +16366,7 @@ async function ovAnalyzePdf(buf){
       return {s:it.str,x:tr[4],y:tr[5],w:it.width,fh};
     });
     items.forEach((it,ii)=>{
+      if(!found){
       const re=/_{3,}/g; let m, prevEnd=0;
       const total=ovTextW(it.s,it.fh)||1, k=it.w/total;
       while((m=re.exec(it.s))){
@@ -15592,22 +16382,266 @@ async function ovAnalyzePdf(buf){
         box(x0,it.y-hh+it.fh*0.22,Math.max(12,x1-x0),hh,ovPretty(lab)||'Field',ty);
         prevEnd=m.index+m[0].length;
       }
+      }
       /* ☐ Yes ☐ No: a tick box on each square */
       const bre=/[☐□☒]/g; let b;
       const total2=ovTextW(it.s,it.fh)||1, k2=it.w/total2;
       while((b=bre.exec(it.s))){
         const bx=it.x+ovTextW(it.s.slice(0,b.index),it.fh)*k2;
-        const after=it.s.slice(b.index+1).split(/[☐□☒]/)[0].replace(/_+/g,' ').trim();
-        box(bx-1,it.y-it.fh*0.95,it.fh*1.05,it.fh*1.05,ovPretty(after)||'Tick box','check');
+        let after=it.s.slice(b.index+1).split(/[☐□☒]/)[0].replace(/_+/g,' ').trim();
+        /* v12.23: the square is often its own piece of text; its word is then the next piece on the line,
+           and the question before the first square names the pair ("Attends day program: Yes") */
+        const same=o=>Math.abs(o.y-it.y)<it.fh*0.3;
+        if(!after){ const nx=items.filter(o=>o!==it&&o.s.trim()&&same(o)&&o.x>=bx).sort((a,c)=>a.x-c.x)[0]; if(nx) after=String(nx.s.split(/[☐□☒]/)[0]).replace(/_+/g,' ').trim(); }
+        const boxX=o=>{ const j=o.s.search(/[☐□☒]/); return o.x+ovTextW(o.s.slice(0,j),o.fh)*(o.w/(ovTextW(o.s,o.fh)||1)); };
+        const first=Math.min(...items.filter(o=>same(o)&&/[☐□☒]/.test(o.s)).map(boxX));
+        const q=ovLabelOf(items.filter(o=>same(o)&&!/[☐□☒]/.test(o.s)&&o.x+o.w<=first+2).sort((a,c)=>a.x-c.x).map(o=>o.s).join(' ')).replace(/\?$/,'');
+        const lb=(q&&after)?q+': '+ovPretty(after):(ovPretty(after)||q||'Tick box');
+        box(bx-1,it.y-it.fh*0.95,it.fh*1.05,it.fh*1.05,lb,'check');
       }
     });
   }
-  return {kind:'pdf',pages,fields:ovUniq(fields).slice(0,300),numPages:pdf.numPages};
+  return {kind:'pdf',pages,fields:ovUniq(ovOrder(fields)).slice(0,300),numPages:pdf.numPages,slots};
 }
 function ovAnalyzeImage(url){
   return new Promise(res=>{ const im=new Image();
     im.onload=()=>res({kind:'image',pages:[{w:im.naturalWidth||850,h:im.naturalHeight||1100}],fields:[]});
     im.onerror=()=>res(null); im.src=url; });
+}
+
+/* ══════════════ v12.23: finding the blanks on an uploaded form ══════════════
+   Each page is looked at as a picture, so a blank line is found whether the PDF typed it as ____ or
+   drew it. A line with nothing written just above it is a place to fill in. Its name is the words
+   right before it on the same line ("Date:", "Your Patient,") or, when there are none, the caption
+   under it ("Physician's Signature"). Lines that cross make a table: every empty cell is a box,
+   named from its column's heading and its row ("Drug, row 1"). The PDF's own words give the names.
+   Everything happens in this browser. Every place found is also kept as a "slot", so a box placed by
+   hand snaps onto the line or cell under the click. */
+const OV_SCAN_W=1275;                                                 // a page is looked at 1275 px wide (150 dpi on US letter)
+let OV_SLOTS={};                                                      // template id -> every place to fill in that was found
+function ovGuess(l){                                                  // the kind of box a name asks for
+  const s=String(l||'').toLowerCase();
+  if(/signature|sign here|signed by|\bsigner\b/.test(s)) return 'signature';
+  if(/\bdate\b|d\.?o\.?b\b|birth/.test(s)) return 'date';
+  if(/\btime\b/.test(s)) return 'time';
+  if(/^(phone|tel|telephone|zip|age|amount|qty|quantity|total)\b/.test(s)) return 'text';
+  return guessType(s)==='long text'?'long text':'text';
+}
+/* a name made from the words around a blank: no underscores, no trailing punctuation, a few words at most */
+function ovLabelOf(s){
+  s=String(s||'').replace(/_+/g,' ').replace(/\s+/g,' ').trim();
+  const cut=s.split(/[.;!?]\s+/); s=cut[cut.length-1];                 // the last sentence only
+  const np=s.replace(/\([^)]*\)?/g,' ').replace(/\s+/g,' ').trim(); if(np) s=np;   // "(Physician to fill out ...)" is a note, not a name
+  s=s.replace(/^[\s,:;.\-\u2013\u2014]+|[\s,:;.\-\u2013\u2014]+$/g,'').trim();
+  const w=s.split(' '); if(w.length>6) s=w.slice(-6).join(' ');
+  return ovPretty(s);
+}
+/* the dark pixels of a page, and its ruled lines: runs of dark pixels long enough not to be letters */
+function ovRules(dk,W,H,HMIN,VMIN){
+  const seg=(runs,along)=>{                                           // join runs on neighbouring rows (or columns) into one line
+    const out=[], open=new Map();
+    runs.forEach(r=>{
+      let hit=null;
+      for(const s of (open.get(r.k-1)||[]).concat(open.get(r.k-2)||[])){
+        const ov=Math.min(s.b,r.b)-Math.max(s.a,r.a);
+        if(ov>0.6*Math.min(s.b-s.a,r.b-r.a)){ hit=s; break; }
+      }
+      if(hit){ hit.k1=r.k; hit.a=Math.min(hit.a,r.a); hit.b=Math.max(hit.b,r.b); }
+      else{ hit={a:r.a,b:r.b,k0:r.k,k1:r.k}; out.push(hit); }
+      if(!open.has(r.k)) open.set(r.k,[]); open.get(r.k).push(hit);
+      open.delete(r.k-3);
+    });
+    return out.filter(s=>s.k1-s.k0<=6).map(s=>along==='h'?{x0:s.a,x1:s.b,y0:s.k0,y1:s.k1}:{y0:s.a,y1:s.b,x0:s.k0,x1:s.k1});
+  };
+  const hr=[], vr=[];
+  for(let y=0;y<H;y++){ const o=y*W; let x=0;
+    while(x<W){ if(!dk[o+x]){ x++; continue; } let s=x,e=x,gap=0; x++;
+      while(x<W){ if(dk[o+x]){ e=x; gap=0; } else if(++gap>1) break; x++; }
+      if(e-s+1>=HMIN) hr.push({k:y,a:s,b:e}); x=e+1; } }
+  for(let x=0;x<W;x++){ let y=0;
+    while(y<H){ if(!dk[y*W+x]){ y++; continue; } let s=y,e=y,gap=0; y++;
+      while(y<H){ if(dk[y*W+x]){ e=y; gap=0; } else if(++gap>1) break; y++; }
+      if(e-s+1>=VMIN) vr.push({k:x,a:s,b:e}); y=e+1; } }
+  return {hs:seg(hr,'h'),vs:seg(vr,'v')};
+}
+function ovFindSlots(px,W,H,items,pi){
+  const N=W*H, dk=new Uint8Array(N);
+  for(let i=0,j=0;i<N;i++,j+=4) dk[i]=(px[j]*299+px[j+1]*587+px[j+2]*114)<175000?1:0;   // light grey rules count too
+  const fhs=items.map(t=>t.fh).sort((a,b)=>a-b);
+  const th=fhs.length?fhs[Math.floor(fhs.length/2)]:W*0.019;          // the body text's height, in pixels
+  const HMIN=Math.max(30,Math.round(W*0.03)), VMIN=Math.max(24,Math.round(th*1.5));
+  const {hs,vs}=ovRules(dk,W,H,HMIN,VMIN);
+  const ink=(x0,y0,x1,y1)=>{ x0=Math.max(0,Math.round(x0)); y0=Math.max(0,Math.round(y0)); x1=Math.min(W-1,Math.round(x1)); y1=Math.min(H-1,Math.round(y1));
+    if(x1<=x0||y1<=y0) return 0; let n=0; for(let y=y0;y<=y1;y++){ const o=y*W; for(let x=x0;x<=x1;x++) n+=dk[o+x]; } return n/((x1-x0+1)*(y1-y0+1)); };
+  const hy=h=>(h.y0+h.y1)/2, vx=v=>(v.x0+v.x1)/2;
+  /* lines that touch each other belong together: two or more across and two or more down is a table */
+  const all=hs.map((h,i)=>({t:'h',i,s:h})).concat(vs.map((v,i)=>({t:'v',i,s:v}))), par=all.map((_,i)=>i);
+  const root=i=>{ while(par[i]!==i) i=par[i]=par[par[i]]; return i; };
+  hs.forEach((h,a)=>vs.forEach((v,b)=>{ if(v.x0-4<=h.x1&&v.x1+4>=h.x0&&v.y0-4<=h.y1&&v.y1+4>=h.y0) par[root(a)]=root(hs.length+b); }));
+  const groups={}; all.forEach((n,i)=>{ (groups[root(i)]=groups[root(i)]||[]).push(n); });
+  const slots=[], inGrid=new Set();
+  const textIn=(x0,y0,x1,y1)=>items.filter(t=>{ const cx=t.x+t.w/2, cy=t.y-t.fh*0.35; return cx>x0&&cx<x1&&cy>y0&&cy<y1; })
+    .sort((a,b)=>(Math.abs(a.y-b.y)>a.fh*0.5?a.y-b.y:a.x-b.x)).map(t=>t.s).join(' ').replace(/\s+/g,' ').trim();
+  const cluster=vals=>{ const s=vals.slice().sort((a,b)=>a-b), out=[]; s.forEach(v=>{ if(out.length&&v-out[out.length-1].v<=5){ const c=out[out.length-1]; c.v=(c.v*c.n+v)/(c.n+1); c.n++; } else out.push({v,n:1}); }); return out.map(c=>c.v); };
+  let tn=0;
+  Object.values(groups).forEach(g=>{
+    const gh=g.filter(n=>n.t==='h').map(n=>n.s), gv=g.filter(n=>n.t==='v').map(n=>n.s);
+    if(gh.length<2||gv.length<2) return;
+    g.filter(n=>n.t==='h').forEach(n=>inGrid.add(n.i));
+    const ys=cluster(gh.map(hy)), xs=cluster(gv.map(vx));
+    const hasV=(x,ya,yb)=>gv.some(v=>Math.abs(vx(v)-x)<=5&&v.y0<=ya+4&&v.y1>=yb-4);
+    const hasH=(y,xa,xb)=>gh.some(h=>Math.abs(hy(h)-y)<=5&&h.x0<=xa+4&&h.x1>=xb-4);
+    const cells=[];
+    for(let r=0;r<ys.length-1;r++){
+      const ya=ys[r], yb=ys[r+1]; if(yb-ya<th*0.6) continue;
+      for(let c=0;c<xs.length-1;){
+        if(!hasV(xs[c],ya,yb)){ c++; continue; }
+        let c2=c+1; while(c2<xs.length&&!hasV(xs[c2],ya,yb)) c2++;
+        if(c2>=xs.length) break;
+        const xa=xs[c], xb=xs[c2];
+        if(xb-xa>=th*0.8&&hasH(ya,xa,xb)&&hasH(yb,xa,xb)){
+          const txt=textIn(xa,ya,xb,yb);
+          cells.push({r,c,xa,xb,ya,yb,txt,full:!!txt||ink(xa+4,ya+4,xb-4,yb-4)>0.004});
+        }
+        c=c2;
+      }
+    }
+    if(!cells.length) return;
+    tn++;
+    const rowsOf=[...new Set(cells.map(c=>c.r))].sort((a,b)=>a-b);
+    const head=rowsOf.find(r=>{ const rc=cells.filter(c=>c.r===r); return rc.filter(c=>c.full).length>=Math.max(1,rc.length*0.5); });
+    const cols=head==null?[]:cells.filter(c=>c.r===head&&c.txt).map(c=>({xa:c.xa,xb:c.xb,n:ovLabelOf(c.txt)}));
+    const colOf=c=>{ const m=(c.xa+c.xb)/2, k=cols.find(h=>m>h.xa&&m<h.xb); return k?k.n:''; };
+    const one=cells.length===1;
+    let n=0;
+    rowsOf.forEach(r=>{
+      if(head!=null&&r<=head) return;
+      const rc=cells.filter(c=>c.r===r).sort((a,b)=>a.xa-b.xa);
+      const empty=rc.filter(c=>!c.full); if(!empty.length) return;
+      n++;
+      const rowLab=rc[0]&&rc[0].full&&rc[0].txt?ovLabelOf(rc[0].txt):'';
+      empty.forEach(c=>{
+        const col=colOf(c), tall=(c.yb-c.ya)>th*2.4;
+        let l, ty;
+        if(one){                                                      // a framed box: named by the words just above or before it
+          l=ovLabelOf(textIn(c.xa-W*0.4,c.ya-th*2.2,c.xb,c.ya+2)||'')||'Notes'; ty=tall?'long text':ovGuess(l);
+        } else {
+          l=rowLab?(rowLab+(col?': '+col:'')):((col||('Column '+(c.c+1)))+', row '+n);
+          ty=ovGuess(col||rowLab); if(ty==='long text'&&!tall) ty='text';
+        }
+        slots.push({p:pi,src:'cell',tb:'t'+pi+'-'+tn,r:n,c:c.c,col,l,ty,x0:c.xa+3,y0:c.ya+3,x1:c.xb-3,y1:c.yb-3});
+      });
+    });
+  });
+  /* blank lines: not part of a table, and nothing written just above them */
+  const lines=hs.map((h,i)=>({h,i})).filter(({h,i})=>!inGrid.has(i)&&h.y1-h.y0<=4&&ink(h.x0+3,h.y0-th*0.85,h.x1-3,h.y0-3)<0.015)
+    .map(({h})=>h).sort((a,b)=>hy(a)-hy(b)||a.x0-b.x0);
+  /* the words near a blank, as pieces with where each starts and ends. A piece ends at ____ or at a
+     wide gap, so "Physician's Signature          Date Signed" is two captions. */
+  const piecesIn=(ya,yb)=>{
+    const out=[];
+    items.filter(t=>t.y>ya&&t.y<yb).forEach(t=>{
+      const re=/_{2,}|[\s\u00a0]{3,}/g; let m, prev=0; const tot=ovTextW(t.s,t.fh)||1, k=t.w/tot;
+      const put=(a,b)=>{ const s=t.s.slice(a,b); if(s.trim()) out.push({s,xs:t.x+ovTextW(t.s.slice(0,a),t.fh)*k,xe:t.x+ovTextW(t.s.slice(0,b),t.fh)*k}); };
+      while((m=re.exec(t.s))){ put(prev,m.index); prev=m.index+m[0].length; }
+      put(prev,t.s.length);
+    });
+    return out.sort((a,b)=>a.xs-b.xs);
+  };
+  const out=[];
+  lines.forEach(h=>{
+    const y=hy(h), len=h.x1-h.x0;
+    const before=lines.filter(o=>o!==h&&Math.abs(hy(o)-y)<=th*0.4&&o.x1<h.x0).reduce((m,o)=>Math.max(m,o.x1),-1e9);
+    let l=ovLabelOf(piecesIn(y-th*0.95,y+th*0.4).filter(p=>p.xe<=h.x0+th*0.5&&p.xs>=before-th*0.5).map(p=>p.s).join(' '));
+    let from='left';
+    if(!l){                                                           // a caption under the line, starting where the line starts
+      l=ovLabelOf(piecesIn(h.y1+th*0.4,h.y1+th*1.9).filter(p=>p.xs>=h.x0-th*0.5&&p.xs<=h.x0+Math.max(th*1.5,len*0.35)&&p.xe<=h.x1+th*2).map(p=>p.s).join(' '));
+      from='below';
+    }
+    if(!l) from='';
+    out.push({h,l,from,long:!l&&len>W*0.55});
+  });
+  /* a few blank lines stacked under a named one are one space to write in */
+  const merged=[];
+  out.forEach(o=>{
+    const last=merged[merged.length-1];
+    if(!o.l&&last&&Math.abs(o.h.x1-last.y1x1)<=W*0.04&&o.h.x0>=last.x0-W*0.15&&hy(o.h)-last.yb<=th*2.6&&hy(o.h)-last.yb>th*0.8){
+      last.yb=hy(o.h); last.rows++; last.x0=Math.min(last.x0,o.h.x0); return; }
+    if(o.long) return;                                                // a long rule with no name is a divider, not a blank
+    merged.push({l:o.l,from:o.from,x0:o.h.x0,x1:o.h.x1,y1x1:o.h.x1,ya:hy(o.h),yb:hy(o.h),rows:1});
+  });
+  merged.forEach(m=>{
+    let ty=ovGuess(m.l); if(m.rows>1) ty='long text'; else if(ty==='long text') ty='text';
+    const hgt=ty==='signature'?th*2.0:th*1.3;
+    slots.push({p:pi,src:'line',l:m.l,ty,x0:m.x0,x1:m.x1,y0:m.ya-hgt+2,y1:m.rows>1?m.yb:m.ya+1});
+  });
+  /* in page percent, the unit boxes are kept in */
+  return slots.map(s=>{
+    const w=s.x1-s.x0, hh=s.y1-s.y0;
+    const fs=Math.max(0.95,Math.min(OV_FS.m,(s.src==='cell'?Math.min(hh*0.62,th*0.85):th*0.85)/W*100));
+    const o={p:s.p,src:s.src,l:s.l||'',ty:s.ty,x:ovRound(s.x0/W*100),y:ovRound(s.y0/H*100),w:ovRound(w/W*100),h:ovRound(hh/H*100),fs:ovRound(fs)};
+    if(s.src==='cell'){ o.tb=s.tb; o.r=s.r; o.c=s.c; o.col=s.col; }
+    return o;
+  }).filter(s=>s.w>0.8&&s.h>0.4);
+}
+/* one page of a PDF: drawn, read and searched */
+async function ovScanPage(lib,pg,pi){
+  const v1=pg.getViewport({scale:1}), sc=OV_SCAN_W/v1.width, v=pg.getViewport({scale:sc});
+  const W=Math.round(v.width), H=Math.round(v.height);
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const g=cv.getContext('2d',{willReadFrequently:true}); g.fillStyle='#fff'; g.fillRect(0,0,W,H);
+  await pg.render({canvasContext:g,viewport:v}).promise;
+  let tc=null; try{ tc=await pg.getTextContent(); }catch(e){}
+  const items=((tc&&tc.items)||[]).filter(it=>it.str&&it.str.trim()).map(it=>{
+    const tr=lib.Util.transform(v.transform,it.transform);
+    return {s:it.str,x:tr[4],y:tr[5],w:it.width*sc,fh:Math.max(4,Math.hypot(tr[2],tr[3]))};
+  });
+  return ovFindSlots(g.getImageData(0,0,W,H).data,W,H,items,pi);
+}
+/* a box for a place that was found */
+const ovSlotField=s=>({l:s.l||(s.ty==='signature'?'Signature':s.ty==='date'?'Date':'Field'),ty:s.ty,
+  ov:Object.assign({p:s.p,x:s.x,y:s.y,w:s.w,h:s.h,fs:s.fs},s.tb?{tb:s.tb,r:s.r,c:s.c}:{})});
+/* how much two boxes cover each other, as a share of the smaller one */
+function ovOverlap(a,b){
+  if(a.p!==b.p) return 0;
+  const w=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x), h=Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y);
+  return (w<=0||h<=0)?0:(w*h)/Math.min(a.w*a.h,b.w*b.h);
+}
+
+/* the places to fill in on a template's original, found once per session (Find boxes, and snapping) */
+let OV_SLOTS_P={};
+async function ovSlotsLoad(t){
+  if(!t) return null; if(OV_SLOTS[t.id]) return OV_SLOTS[t.id];
+  const o=ovFresh(ovDocOf(t)); if(o.kind!=='pdf') return null;
+  if(!OV_SLOTS_P[t.id]) OV_SLOTS_P[t.id]=(async()=>{
+    let url=TPL_SRC_URL[t.id]||''; if(!url&&o.path) url=(await ovSigned(o.path))||'';
+    if(!url) return null;
+    const r=await fetch(url); if(!r.ok) return null;
+    const a=await ovAnalyzePdf(await r.arrayBuffer());
+    return (a&&a.slots)||null;
+  })().catch(e=>{ console.warn('[np-demo] find boxes',e); return null; });
+  const s=await OV_SLOTS_P[t.id]; delete OV_SLOTS_P[t.id]; if(s) OV_SLOTS[t.id]=s; return s;
+}
+/* reading order: page, then top to bottom, then left to right */
+const ovOrder=fields=>fields.sort((a,b)=>(a.ov&&b.ov)?(a.ov.p-b.ov.p||(Math.abs(a.ov.y-b.ov.y)>0.6?a.ov.y-b.ov.y:a.ov.x-b.ov.x)):0);
+async function ovFindAgain(){
+  const t=ovT(); if(!t) return;
+  const btn=document.querySelector('.ov-find'); if(btn){ btn.disabled=true; btn.textContent='Looking\u2026'; }
+  const s=await ovSlotsLoad(t);
+  const b2=document.querySelector('.ov-find'); if(b2){ b2.disabled=false; b2.textContent='\u2315 Find boxes'; }
+  if(window._tplEd!==t.id) return;
+  if(!s) return toast('The original form could not be read. Check your connection and try again.');
+  const add=s.filter(x=>!t.fields.some(f=>f.ov&&ovOverlap(f.ov,x)>0.4));
+  if(!add.length) return toast('Every blank that was found already has a box.');
+  ovSnap(); add.forEach(x=>t.fields.push(ovSlotField(x))); ovOrder(t.fields);
+  [...new Set(add.filter(x=>x.tb).map(x=>x.tb))].forEach(tb=>ovTblRenumber(t,tb));   // v12.25
+  ovUniq(t.fields); OV.sel=null; ovPaint();
+  toast('Added '+add.length+' box'+(add.length===1?'':'es')+'. Check them, then save. Undo takes them away again.');
+}
+/* a box placed by hand lands on the blank line or empty cell under (or just below) the click */
+function ovSlotAt(tid,pi,px,py){
+  const c=(OV_SLOTS[tid]||[]).filter(s=>s.p===pi&&px>=s.x-0.6&&px<=s.x+s.w+0.6&&py>=s.y-s.h*0.9&&py<=s.y+s.h*1.7);
+  return c.sort((a,b)=>Math.abs(py-(a.y+a.h/2))-Math.abs(py-(b.y+b.h/2)))[0]||null;
 }
 
 /* ── starting a template from an uploaded form ── */
@@ -15624,7 +16658,7 @@ function ovUploadStart(bk){
     <div id="ovWordNote"></div>
     <div class="row2">
       <div class="field"><label>Template name</label><input class="inp" id="ovName" placeholder="e.g. Physician visit report"></div>
-      <div class="field"><label>Completed copies file to</label><select class="inp" id="ovDest" data-list="binder" onchange="if(this.value==='__add__')return fillSelectChange(this)">
+      <div class="field"><label>Filled-in copies are saved to</label><select class="inp" id="ovDest" data-list="binder" onchange="if(this.value==='__add__')return fillSelectChange(this)">
         ${binderKeys().map(k=>`<option value="${k}" ${k===dest?'selected':''}>${esc(FOLDER_NAMES[k]||k)}</option>`).join('')}${addOpt('binder')}</select></div>
     </div>
     <div class="sec-note"><span>\u{1F512}</span><div><b>Upload the blank form</b>Not a filled-in copy. Client names and dates of birth never go in a template.</div></div>`,
@@ -15661,6 +16695,7 @@ async function ovUploadGo(){
   const t={id,name,dest,sub:'',desc:'Uploaded form',fields:a.fields,
     overlay:{kind:a.kind,pages:a.pages,file:f.name,size:f.size},source:{file:f.name,size:f.size,at:nowStamp()}};
   if(url) TPL_SRC_URL[id]=url;
+  if(a.slots) OV_SLOTS[id]=a.slots;                                   // v12.23
   TEMPLATES5.push(t); unhide('template',id);
   ovStoreOriginal(t,f);
   if(a.kind==='pdf'){ const k=ovKey(ovDocOf(t)); OV_CACHE[k]=ovRenderPdf(await f.arrayBuffer()).then(v=>{ if(v) OV_READY[k]=v; else delete OV_CACHE[k]; return v; }).catch(()=>{ delete OV_CACHE[k]; return null; }); }
@@ -15722,6 +16757,8 @@ function ovEdit(id,isNew){
   window._tplSnap=JSON.stringify({name:t.name,fields:t.fields,dest:t.dest});
   OV_UNDO=[]; OV.sel=null; OV.place=null; OV.preview=false;
   TPE_UNDO=[]; window._tplOrig=false; window._ovNoBoxOk=0;
+  if(!isNew&&!t.fields.length) window._ovIntro='none';             // v12.23
+  if(!isNew) ovSlotsLoad(t);                                          // v12.23: so a box placed by hand can snap
   ovDraw();
 }
 function ovState(t){ return JSON.stringify({name:t.name,fields:t.fields,dest:t.dest}); }
@@ -15748,12 +16785,13 @@ function ovIntroHtml(){
   const n=window._ovIntroN||0, more=window._ovMore;
   const msg=k==='found'?`<b>Found ${n} place${n===1?'':'s'} to fill in</b>Each blue box is where people will type, tick or sign. Check each one: drag to move it, pull its corner to resize it, and name it on the right. Add any that were missed from the bar above.`
     :k==='empty'?`<b>No blanks were found on this form</b>Add a box for each place people fill in: pick the kind of box above, then click on the page where it goes.`
+    :k==='none'?`<b>This form has no fill-in boxes yet</b>Press \u201cFind boxes\u201d to look for its blank lines and tables, or pick the kind of box above and click on the page where it goes.`
     :`<b>Place the fill-in boxes</b>A photo or scan has no fields to read. Pick the kind of box above, then click on the page where it goes.`;
   return `<div class="sec-note ov-intro" style="margin:0 0 10px"><span>✨</span><div>${msg}${more?` <br><span class="tiny">This PDF has ${more} pages; the first ${OV_MAX_PAGES} are kept.</span>`:''}</div></div>`;
 }
-function ovBoxEd(fd,i){
+function ovBoxEd(fd,i,x){
   const on=OV.sel===i, ty=fd.ty;
-  return `<div class="ov-f ov-e ${on?'on':''} ov-t-${ty.replace(' ','-')}" data-i="${i}" style="${ovPos(fd.ov)}" title="${esc(fd.l)}">
+  return `<div class="ov-f ov-e ${on?'on':''}${x||''} ov-t-${ty.replace(' ','-')}" data-i="${i}" style="${ovPos(fd.ov)}" title="${esc(fd.l)}">
     <span class="ov-lb">${ty==='check'?'':esc(fd.l)}</span>
     ${on?`<span class="ov-rs" data-rs="1" title="Drag to resize"></span>`:''}</div>`;
 }
@@ -15764,7 +16802,8 @@ function ovBoxTry(fd,i){
   if(fd.ty==='long text') return `<textarea class="ov-f ov-in" style="${p};${fs}" placeholder="${esc(fd.l)}"></textarea>`;
   return `<input class="ov-f ov-in" style="${p};${fs}" type="${fd.ty==='date'?'date':fd.ty==='time'?'time':fd.ty==='number'?'number':'text'}" placeholder="${esc(fd.l)}">`;
 }
-function ovLayerEd(t,pi){ return t.fields.map((fd,i)=>fd.ov&&fd.ov.p===pi?(OV.preview?ovBoxTry(fd,i):ovBoxEd(fd,i)):'').join(''); }
+function ovLayerEd(t,pi){ const sel=OV.sel!=null&&t.fields[OV.sel];   // v12.25: with the picked box's table marked
+  return ovTblFrame(t,pi)+t.fields.map((fd,i)=>fd.ov&&fd.ov.p===pi?(OV.preview?ovBoxTry(fd,i):ovBoxEd(fd,i,ovTblMarks(t,fd,sel))):'').join(''); }
 function ovSideHtml(){
   const t=ovT(); if(!t) return '';
   if(OV.preview) return `<div class="ov-side-h">Trying it out</div><div class="tiny muted">Type, tick and sign as the people filling it in will. Nothing you enter here is kept. Turn “Try it” off to go back to placing boxes.</div>`;
@@ -15775,17 +16814,17 @@ function ovSideHtml(){
         <button type="button" class="ov-x" title="Done with this box" onclick="ovSelect(null)">✕</button></div>
       <div class="field"><label>What goes here?</label><input class="inp" id="ovLabel" value="${esc(fd.l)}" placeholder="e.g. Date of visit"
         data-i="${i}" onfocus="ovSnap()" oninput="ovLabelLive(this.value,${i})" onchange="ovLabelSet(this.value,${i})" onkeydown="if(event.key==='Enter')this.blur()"></div>
-      <div class="field"><label>Kind of box</label><div class="ov-kinds">${OV_KINDS.map(([k,l])=>`<button type="button" class="${fd.ty===k?'on':''}" onclick="ovSetKind('${k}')"><span>${OV_KIND_ICON[k]}</span>${l}</button>`).join('')}</div></div>
+      ${ovIsTbl(t,fd)?ovTblPanel(t,fd):''}
+      <div class="field"><label>${ovIsTbl(t,fd)?'Kind of box (this box only)':'Kind of box'}</label><div class="ov-kinds">${OV_KINDS.map(([k,l])=>`<button type="button" class="${fd.ty===k?'on':''}" onclick="ovSetKind('${k}')"><span>${OV_KIND_ICON[k]}</span>${l}</button>`).join('')}</div></div>
       ${['check','signature'].includes(fd.ty)?'':`<div class="field"><label>Text size</label><div class="ov-seg">${[['s','Small'],['m','Medium'],['l','Large']].map(([k,l])=>`<button type="button" class="${Math.abs(sz-OV_FS[k])<0.01?'on':''}" onclick="ovSetSize('${k}')">${l}</button>`).join('')}</div></div>`}
       <div class="ov-side-acts">
         <button type="button" class="btn ghost sm" onclick="ovDup()">⧉ Duplicate</button>
         <button type="button" class="btn ghost sm ov-del" onclick="ovDel()">✕ Remove</button></div>
-      <div class="tiny muted" style="margin-top:10px">Drag the box to move it, pull its corner to resize it. Arrow keys nudge it; hold Shift to move further.</div>`;
+      <div class="tiny muted" style="margin-top:10px">Drag the box to move it, pull its corner to resize it. Arrow keys nudge it; hold Shift to move further. Tab goes to the next box.</div>`;
   }
   const byPage=t.fields.map((x,i)=>[x,i]).filter(([x])=>x.ov);
   return `<div class="ov-side-h">${t.fields.length} box${t.fields.length===1?'':'es'} on this form</div>
-    ${byPage.length?`<div class="ov-list">${byPage.map(([x,i])=>`<button type="button" class="ov-li" onclick="ovSelect(${i},true)">
-      <span class="ov-li-ic">${OV_KIND_ICON[x.ty]||'T'}</span><span class="ov-li-t">${esc(x.l)}</span><span class="tiny muted">p${x.ov.p+1}</span></button>`).join('')}</div>`
+    ${byPage.length?`<div class="ov-list">${ovListHtml(t)}</div>`
       :`<div class="tiny muted">No boxes yet. Pick the kind of box from the bar above, then click on the page where it goes.</div>`}
     <div class="tiny muted" style="margin-top:12px">Click a box on the page to change it.</div>`;
 }
@@ -15798,11 +16837,11 @@ function ovDraw(){
     <div class="ov-bar" id="ovBar">
       <button type="button" class="btn ghost sm ov-undo" onclick="ovUndo()" ${OV_UNDO.length?'':'disabled'} title="Undo the last change (Ctrl or ⌘ + Z)">↶ Undo</button>
       <button type="button" class="btn ghost sm ov-revert" onclick="ovRevert()" title="${isNew?'Go back to the boxes found when it was uploaded':'Go back to the last saved version'}">⟲ Revert</button>
+      ${o.kind==='pdf'?`<button type="button" class="btn ghost sm ov-find" onclick="ovFindAgain()" title="Look for blank lines and table cells, and add a box on each one that has none">\u2315 Find boxes</button>`:''}
       <span class="ov-sep"></span>
       <span class="tiny muted ov-add-l">Add a box</span>
       ${OV_KINDS.map(([k,l])=>`<button type="button" class="ov-tool ${OV.place===k?'on':''}" ${OV.preview?'disabled':''} onclick="ovTool('${k}')" title="Then click on the page where it goes"><span>${OV_KIND_ICON[k]}</span>${l}</button>`).join('')}
       <span style="flex:1"></span>
-      <label class="ov-try"><input type="checkbox" ${OV.preview?'checked':''} onchange="ovPreview(this.checked)"> Try it</label>
     </div>
     <div class="ov-hint tiny" id="ovHint">${OV.place?`Click on the page where the <b>${esc((OV_KINDS.find(x=>x[0]===OV.place)||[])[1]||'')}</b> box goes. Esc to stop.`:''}</div>
     <div class="ov-ed">
@@ -15810,7 +16849,7 @@ function ovDraw(){
         <div class="ov-meta">
           <div class="field" style="flex:1;min-width:200px;margin:0"><label>Template name</label>
             <input class="inp" id="ovTplName" value="${esc(t.name||'')}" placeholder="Name this form" onfocus="ovSnap()" oninput="ovT().name=this.value"></div>
-          <div class="field" style="min-width:180px;margin:0"><label>Completed copies file to</label>
+          <div class="field" style="min-width:180px;margin:0"><label>Filled-in copies are saved to</label>
             <select class="inp" data-list="binder" onchange="if(this.value==='__add__')return fillSelectChange(this);ovSnap();ovT().dest=this.value">
               ${binderKeys().map(k=>`<option value="${k}" ${k===(t.dest||'Agency')?'selected':''}>${esc(FOLDER_NAMES[k]||k)}</option>`).join('')}
               <option value="__client__" ${t.dest==='__client__'?'selected':''}>A client’s file</option>
@@ -15857,8 +16896,14 @@ function ovPlaceAt(pi,px,py){
   const w=Math.min(96,sz[0]*unit/pg.w*100), h=Math.min(60,sz[1]*unit/pg.h*100);
   const x=Math.max(0,Math.min(100-w,px-(OV.place==='check'?w/2:1))), y=Math.max(0,Math.min(100-h,py-h/2));
   ovSnap();
-  const kind=OV.place, l=ovUniq(t.fields.concat([{l:(OV_KINDS.find(z=>z[0]===kind)||[])[1]||'Field'}])).pop().l;
-  t.fields.push({l,ty:kind,ov:{p:pi,x:ovRound(x),y:ovRound(y),w:ovRound(w),h:ovRound(h),fs:OV_FS.m}});
+  const kind=OV.place, sl=ovSlotAt(t.id,pi,px,py);                    // v12.23: onto the line or cell under the click, named after it
+  const l=ovUniq(t.fields.concat([{l:(sl&&sl.l)||(OV_KINDS.find(z=>z[0]===kind)||[])[1]||'Field'}])).pop().l;
+  let box={p:pi,x:ovRound(x),y:ovRound(y),w:ovRound(w),h:ovRound(h),fs:OV_FS.m};
+  if(sl){ box={p:pi,x:sl.x,y:sl.y,w:sl.w,h:sl.h,fs:sl.fs};
+    if(kind==='check'){ box.w=Math.min(sl.w,w); box.h=Math.min(sl.h,h); box.x=ovRound(Math.max(sl.x,Math.min(sl.x+sl.w-box.w,px-box.w/2))); }
+    else if(kind==='signature'&&sl.ty!=='signature'){ const g=ovRound(sl.h*1.55); box.y=ovRound(Math.max(0,sl.y+sl.h-g)); box.h=g; }
+    if(sl.tb){ box.tb=sl.tb; box.r=sl.r; box.c=sl.c; if(kind==='check') box.cell={x:sl.x,y:sl.y,w:sl.w,h:sl.h}; } }   // v12.25: it joins the table
+  t.fields.push({l,ty:kind,ov:box});
   OV.place=null; OV.sel=t.fields.length-1; ovPaint();
   setTimeout(()=>{ const n=el('ovLabel'); if(n){ n.focus(); n.select(); } },20);
 }
@@ -15875,14 +16920,12 @@ function ovLabelSet(v,i,quiet){
   fd.l=v; if(!quiet) ovPaint();
 }
 function ovSetKind(k){ const t=ovT(), fd=t&&t.fields[OV.sel]; if(!fd||fd.ty===k) return; ovSnap();
-  const pg=ovDocOf(t).pages[fd.ov.p];
-  if(k==='check'){ const s=13*(pg.w/612); fd.ov.w=ovRound(s/pg.w*100); fd.ov.h=ovRound(s/pg.h*100); }
-  else if(fd.ty==='check'){ const sz=OV_NEW[k]||OV_NEW.text, u=pg.w/612; fd.ov.w=ovRound(sz[0]*u/pg.w*100); fd.ov.h=ovRound(sz[1]*u/pg.h*100); }
-  fd.ty=k; ovPaint(); }
+  ovKindTo(fd,k,ovDocOf(t).pages[fd.ov.p]); ovPaint(); }                // v12.25: a tick box in a table cell sits in the middle of it
 function ovSetSize(k){ const fd=ovT()&&ovT().fields[OV.sel]; if(!fd) return; ovSnap(); fd.ov.fs=OV_FS[k]; ovPaint(); }
 function ovDel(){ const t=ovT(); if(!t||OV.sel==null) return; ovSnap(); const l=t.fields[OV.sel].l; t.fields.splice(OV.sel,1); OV.sel=null; ovPaint(); toast(`Removed “${l}”. Undo brings it back.`); }
 function ovDup(){ const t=ovT(); if(!t||OV.sel==null) return; ovSnap();
-  const c=JSON.parse(JSON.stringify(t.fields[OV.sel])); c.ov.y=ovRound(Math.min(100-c.ov.h,c.ov.y+c.ov.h+0.6));
+  const c=JSON.parse(JSON.stringify(t.fields[OV.sel])); ['tb','r','c','cell'].forEach(k=>delete c.ov[k]);   // v12.25: a copy is not part of the table
+  c.ov.y=ovRound(Math.min(100-c.ov.h,c.ov.y+c.ov.h+0.6));
   c.l=ovUniq(t.fields.concat([{l:c.l}])).pop().l; t.fields.splice(OV.sel+1,0,c); OV.sel=OV.sel+1; ovPaint(); }
 /* moving and resizing, with a mouse or a finger */
 function ovWire(){
@@ -15919,6 +16962,8 @@ document.addEventListener('keydown',e=>{
   if(!el('modal')||!el('modal').classList.contains('ov-modal')||!el('modal').classList.contains('on')||!ovT()) return;
   if(el('sigOv')) return;
   const a=document.activeElement, typing=a&&(a.isContentEditable||/INPUT|TEXTAREA|SELECT/.test(a.tagName));
+  if(e.key==='Tab'&&!e.altKey&&!e.ctrlKey&&!e.metaKey&&OV.sel!=null&&!OV.preview&&(!a||a===document.body||a.id==='ovLabel'||(a.closest&&a.closest('.ov-doc')))){
+    e.preventDefault(); e.stopPropagation(); return ovStep(e.shiftKey?-1:1); }   // v12.25
   if(e.key==='Escape'&&(OV.place||OV.sel!=null)&&!typing){ e.preventDefault(); e.stopPropagation(); OV.place=null; OV.sel=null; return ovPaint(); }
   if(typing) return;
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!e.shiftKey){ e.preventDefault(); e.stopPropagation(); return ovUndo(); }
@@ -15965,6 +17010,155 @@ function ovCancel(){
   if(back&&docById(back)) openDocEditor(back,true);
 }
 
+/* ══════════════ v12.25: TABLES ON UPLOADED FORMS ══════════════
+   The box finder (v12.23) marks every box it puts in a table cell with its table, row and column
+   (ov.tb, ov.r, ov.c). Picking any of those boxes now shows the table it belongs to, and the table is
+   changed as a whole: a column's kind of box (a column of dates that was read as text, a column of
+   tick boxes), a column's name, a row or a column taken out, or the whole table. Rows named
+   "Drug, row 3" stay numbered in order when one goes. ov.r itself never changes, so Find boxes still
+   recognizes a row that was taken out and can put it back. Tab steps from box to box while setting
+   the form up; filling it in, Enter goes down a table column (and on to the next box elsewhere). */
+const ovTblCells=(t,tb)=>t.fields.map((f,i)=>[f,i]).filter(([f])=>f.ov&&f.ov.tb===tb);
+const OV_ROWLAB=/^(.*), row (\d+)$/;                                  // "Drug, row 3": a column name and the row's place
+/* a column's name, read from its boxes' names (the most common one wins, so one box renamed by hand
+   does not rename the column) */
+function ovTblColName(t,tb,c){
+  const n={}; ovTblCells(t,tb).filter(([f])=>f.ov.c===c).forEach(([f])=>{
+    const m=OV_ROWLAB.exec(f.l), k=m?m[1]:(f.l.lastIndexOf(': ')>0?f.l.slice(f.l.lastIndexOf(': ')+2):''); if(k) n[k]=(n[k]||0)+1; });
+  const best=Object.keys(n).sort((a,b)=>n[b]-n[a])[0];
+  return best||('Column '+(ovTblInfo(t,tb).cols.indexOf(c)+1));
+}
+function ovTblInfo(t,tb){
+  const cells=ovTblCells(t,tb);
+  return {cells,rows:[...new Set(cells.map(([f])=>f.ov.r))].sort((a,b)=>a-b),cols:[...new Set(cells.map(([f])=>f.ov.c))].sort((a,b)=>a-b)};
+}
+function ovTblRowName(t,tb,r){
+  const info=ovTblInfo(t,tb), cs=info.cells.filter(([f])=>f.ov.r===r).map(([f])=>f.l);
+  const named=cs.map(l=>!OV_ROWLAB.test(l)&&l.lastIndexOf(': ')>0?l.slice(0,l.lastIndexOf(': ')):'').find(Boolean);
+  return named||('row '+(info.rows.indexOf(r)+1));
+}
+/* rows named by their place ("Drug, row 3") are renumbered to where they now sit */
+function ovTblRenumber(t,tb){
+  const info=ovTblInfo(t,tb);
+  info.cells.forEach(([f])=>{ const m=OV_ROWLAB.exec(f.l); if(m) f.l=m[1]+', row '+(info.rows.indexOf(f.ov.r)+1); });
+  ovUniq(t.fields);
+}
+/* a box changes kind; in a table cell a tick box sits in the middle of its cell, and goes back to
+   filling the cell when it changes again */
+function ovKindTo(fd,k,pg){
+  if(!fd||fd.ty===k) return;
+  const o=fd.ov, u=pg.w/612;
+  if(k==='check'){
+    if(o.tb&&!o.cell) o.cell={x:o.x,y:o.y,w:o.w,h:o.h};
+    let w=ovRound(13*u/pg.w*100), h=ovRound(13*u/pg.h*100);
+    if(o.cell){ w=Math.min(w,o.cell.w); h=Math.min(h,o.cell.h); o.x=ovRound(o.cell.x+(o.cell.w-w)/2); o.y=ovRound(o.cell.y+(o.cell.h-h)/2); }
+    o.w=w; o.h=h;
+  } else if(fd.ty==='check'){
+    if(o.cell){ o.x=o.cell.x; o.y=o.cell.y; o.w=o.cell.w; o.h=o.cell.h; delete o.cell; }
+    else { const sz=OV_NEW[k]||OV_NEW.text; o.w=ovRound(sz[0]*u/pg.w*100); o.h=ovRound(sz[1]*u/pg.h*100); }
+  }
+  fd.ty=k;
+}
+/* a framed box is found as a table of one cell: it is not a table to anyone using it */
+const ovIsTbl=(t,fd)=>!!(fd&&fd.ov&&fd.ov.tb&&ovTblCells(t,fd.ov.tb).length>1);
+const ovSelTbl=()=>{ const t=ovT(), fd=t&&OV.sel!=null&&t.fields[OV.sel]; return ovIsTbl(t,fd)?{t,fd}:null; };
+function ovTblKind(k){
+  const s=ovSelTbl(); if(!s) return;
+  const {t,fd}=s, pg=ovDocOf(t).pages[fd.ov.p], col=ovTblCells(t,fd.ov.tb).filter(([f])=>f.ov.c===fd.ov.c);
+  if(col.every(([f])=>f.ty===k)) return;
+  ovSnap(); col.forEach(([f])=>ovKindTo(f,k,pg)); ovPaint();
+  toast('Every box in the “'+ovTblColName(t,fd.ov.tb,fd.ov.c)+'” column is now '+((OV_KINDS.find(x=>x[0]===k)||[])[1]||k).toLowerCase()+'.');
+}
+function ovTblRename(v){
+  const s=ovSelTbl(); if(!s) return;
+  const {t,fd}=s, old=ovTblColName(t,fd.ov.tb,fd.ov.c); v=String(v||'').replace(/\s+/g,' ').trim();
+  if(!v||v===old) return;
+  ovSnap();
+  ovTblCells(t,fd.ov.tb).filter(([f])=>f.ov.c===fd.ov.c).forEach(([f])=>{
+    const m=OV_ROWLAB.exec(f.l);
+    if(m&&m[1]===old) f.l=v+', row '+m[2];
+    else if(f.l.endsWith(': '+old)) f.l=f.l.slice(0,f.l.length-old.length)+v;
+    else if(!m&&f.l===old) f.l=v;
+  });
+  ovUniq(t.fields); ovPaint();
+}
+/* take out the selected box's row, its column, or the whole table */
+function ovTblDel(what){
+  const s=ovSelTbl(); if(!s) return;
+  const {t,fd}=s, tb=fd.ov.tb, r=fd.ov.r, c=fd.ov.c, info=ovTblInfo(t,tb);
+  const hit=f=>f.ov&&f.ov.tb===tb&&(what==='table'||(what==='row'?f.ov.r===r:f.ov.c===c));
+  const n=t.fields.filter(hit).length; if(!n) return;
+  const say=what==='table'?'the table':what==='row'?(/^row /.test(ovTblRowName(t,tb,r))?ovTblRowName(t,tb,r):'the “'+ovTblRowName(t,tb,r)+'” row'):'the “'+ovTblColName(t,tb,c)+'” column';
+  ovSnap();
+  /* the box picked next: the same column in the row below (or above), or the same row one column on */
+  let next=null;
+  if(what==='row'){ const k=info.rows.indexOf(r), rr=info.rows[k+1]!=null?info.rows[k+1]:info.rows[k-1]; next=t.fields.find(f=>f.ov&&f.ov.tb===tb&&f.ov.r===rr&&f.ov.c===c)||null; }
+  if(what==='col'){ const k=info.cols.indexOf(c), cc=info.cols[k+1]!=null?info.cols[k+1]:info.cols[k-1]; next=t.fields.find(f=>f.ov&&f.ov.tb===tb&&f.ov.c===cc&&f.ov.r===r)||null; }
+  t.fields=t.fields.filter(f=>!hit(f));
+  if(what==='row') ovTblRenumber(t,tb);
+  OV.sel=next?t.fields.indexOf(next):null; ovPaint();
+  toast('Took out '+say+' ('+n+' box'+(n===1?'':'es')+'). Undo brings '+(n===1?'it':'them')+' back.');
+}
+/* the table panel, under the box's own settings */
+function ovTblPanel(t,fd){
+  const tb=fd.ov.tb, info=ovTblInfo(t,tb), col=info.cells.filter(([f])=>f.ov.c===fd.ov.c).map(([f])=>f);
+  const kinds=[...new Set(col.map(f=>f.ty))], cn=ovTblColName(t,tb,fd.ov.c), rn=ovTblRowName(t,tb,fd.ov.r);
+  return `<div class="ov-tbl-p">
+    <div class="ov-tbl-h"><span>▦</span>Table <span class="tiny muted">· ${info.rows.length} row${info.rows.length===1?'':'s'} × ${info.cols.length} column${info.cols.length===1?'':'s'}</span></div>
+    <div class="tiny muted" style="margin-bottom:10px">This box is in the “${esc(cn)}” column, ${/^row /.test(rn)?esc(rn):'the “'+esc(rn)+'” row'}. Change the whole column, row or table at once.</div>
+    <div class="field"><label for="ovColName">Column name</label><input class="inp" id="ovColName" value="${esc(cn)}" onchange="ovTblRename(this.value)" onkeydown="if(event.key==='Enter')this.blur()"></div>
+    <div class="field"><label>Every box in this column is${kinds.length>1?' <span class="tiny muted">(now mixed)</span>':''}</label>
+      <div class="ov-kinds ov-tbl-kinds">${OV_KINDS.map(([k,l])=>`<button type="button" class="${kinds.length===1&&kinds[0]===k?'on':''}" onclick="ovTblKind('${k}')"><span>${OV_KIND_ICON[k]}</span>${l}</button>`).join('')}</div></div>
+    <div class="ov-tbl-acts">
+      <button type="button" class="btn ghost sm ov-del" onclick="ovTblDel('row')">✕ Remove this row</button>
+      <button type="button" class="btn ghost sm ov-del" onclick="ovTblDel('col')">✕ Remove this column</button>
+      <button type="button" class="btn ghost sm ov-del" onclick="ovTblDel('table')">✕ Remove the whole table</button></div>
+  </div>`;
+}
+/* the other boxes of the picked box's table, its row and its column, and a frame round the table */
+function ovTblMarks(t,fd,sel){
+  if(!ovIsTbl(t,sel)||!fd.ov||fd.ov.tb!==sel.ov.tb||fd===sel) return '';
+  return ' ov-intbl'+(fd.ov.c===sel.ov.c?' ov-incol':'')+(fd.ov.r===sel.ov.r?' ov-inrow':'');
+}
+function ovTblFrame(t,pi){
+  const sel=OV.sel!=null&&t.fields[OV.sel]; if(!ovIsTbl(t,sel)||OV.preview) return '';
+  const cs=ovTblCells(t,sel.ov.tb).filter(([f])=>f.ov.p===pi).map(([f])=>f.ov.cell||f.ov); if(!cs.length) return '';
+  const x0=Math.min(...cs.map(b=>b.x)), y0=Math.min(...cs.map(b=>b.y)), x1=Math.max(...cs.map(b=>b.x+b.w)), y1=Math.max(...cs.map(b=>b.y+b.h));
+  return `<div class="ov-tbl-frame" style="${ovPos({x:ovRound(x0-0.5),y:ovRound(y0-0.5),w:ovRound(x1-x0+1),h:ovRound(y1-y0+1)})}" aria-hidden="true"></div>`;
+}
+/* the list of boxes, with each table as one line */
+function ovListHtml(t){
+  const seen={}, rows=[];
+  t.fields.forEach((x,i)=>{ if(!x.ov) return;
+    if(ovIsTbl(t,x)){ if(seen[x.ov.tb]) return; seen[x.ov.tb]=1; const info=ovTblInfo(t,x.ov.tb);
+      rows.push(`<button type="button" class="ov-li ov-li-tbl" onclick="ovSelect(${i},true)"><span class="ov-li-ic">▦</span><span class="ov-li-t">Table · ${info.rows.length} row${info.rows.length===1?'':'s'} × ${info.cols.length} column${info.cols.length===1?'':'s'}</span><span class="tiny muted">${info.cells.length} boxes · p${x.ov.p+1}</span></button>`); return; }
+    rows.push(`<button type="button" class="ov-li" onclick="ovSelect(${i},true)"><span class="ov-li-ic">${OV_KIND_ICON[x.ty]||'T'}</span><span class="ov-li-t">${esc(x.l)}</span><span class="tiny muted">p${x.ov.p+1}</span></button>`); });
+  return rows.join('');
+}
+/* Tab and Shift+Tab step through the boxes while setting the form up, name field to name field */
+function ovStep(dir){
+  const t=ovT(); if(!t||!t.fields.length) return;
+  ovLabelCommit();
+  const idx=t.fields.map((f,i)=>f.ov?i:-1).filter(i=>i>=0); if(!idx.length) return;
+  const k=OV.sel==null?-1:idx.indexOf(OV.sel), nk=OV.sel==null?(dir>0?0:idx.length-1):(k+dir+idx.length)%idx.length;
+  ovSelect(idx[nk],true);
+  const n=el('ovLabel'); if(n){ n.focus({preventScroll:true}); n.select(); }
+}
+/* filling it in on the form: Enter goes down a table column, or on to the next box */
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'||e.isComposing||e.altKey||e.ctrlKey||e.metaKey) return;
+  const a=e.target; if(!a||a.tagName!=='INPUT'||!a.closest||!a.closest('.ov-doc.ov-fill')) return;
+  const d=docById(window._ovFillDoc); if(!d) return;
+  const i=+String(a.id).replace(/^dg/,''), fd=d.fields[i]; if(!fd||!fd.ov) return;
+  e.preventDefault();
+  const order=d.fields.map((f,j)=>[f,j]).filter(([f])=>f.ov&&f.ty!=='signature');
+  let to=null;
+  if(fd.ov.tb){ const col=order.filter(([f])=>f.ov.tb===fd.ov.tb&&f.ov.c===fd.ov.c).sort((p,q)=>p[0].ov.r-q[0].ov.r), k=col.findIndex(([,j])=>j===i);
+    const step=col[k+(e.shiftKey?-1:1)]; if(step) to=step[1]; }
+  if(to==null){ const k=order.findIndex(([,j])=>j===i), step=order[k+(e.shiftKey?-1:1)]; if(step) to=step[1]; }
+  const n=to!=null&&document.getElementById('dg'+to); if(n){ n.focus(); if(n.select&&/text|number/.test(n.type)) n.select(); }
+},true);
+
 /* ── filling it in, on the original page ── */
 function ovSigInner(v){ return v?`<span class="ov-sigimg">${sigShow(v,40)}</span>`:`<span class="ov-sigph">✍ Sign here</span>`; }
 function ovFillBox(fd,i,v){
@@ -15980,7 +17174,7 @@ function ovFillBox(fd,i,v){
 function ovFillOpen(id,saved,filedOf){
   const d=docById(id); if(!d) return;
   const view=window._ovView||(window.innerWidth<720?'list':'page');
-  const o=d.overlay;
+  const o=d.overlay; window._ovFillDoc=id;                          // v12.25
   const top=`${filedOf?`<div class="tiny muted" style="margin-bottom:8px">${filedPill(filedOf)} ${(filedOf.refs||[]).map(r=>r.b?('in '+esc(FOLDER_NAMES[r.b]||r.b)):('in '+esc(((client(r.cid)||staff(r.cid)||{}).uci)||((staff(r.cid)||{}).name)||'a file')+'’s files')).join(' · ')}</div>`:''}
     <div class="ov-viewbar"><span class="tiny muted">${view==='page'?'Type straight onto the form. Each box is one answer.':'The same answers as a list, easier on a small screen.'}</span>
       <span class="ov-seg"><button type="button" class="${view==='page'?'on':''}" onclick="ovFillView('${id}','page')">On the form</button><button type="button" class="${view==='list'?'on':''}" onclick="ovFillView('${id}','list')">As a list</button></span></div>`;
@@ -17440,7 +18634,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.22 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.25 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -17908,17 +19102,45 @@ async function saveCredentials(){
 function showLoginForm(){
   bootReveal();
   el('login').classList.add('credmode'); loginGoLabel('Sign in');
-  { const fw=el('liForgotWrap'); if(fw) fw.style.display=sbOn()?'block':'none'; }   // v12.17: forgot password
-  el('loginTitle').textContent=greetName()?('Welcome back, '+String(greetName()).split(' ')[0]+'.'):'Sign in';
-  el('loginSub').innerHTML=(ONB.org&&ONB.org!=='Spectrum')?'Sign in to the '+esc(ONB.org)+' dashboard portal.':'Sign in to your agency\u2019s care portal.';
-  const cb0=el('credBox');
-  if(!el('loginBrand')) cb0.insertAdjacentHTML('beforeend','<div id="loginBrand" class="tiny muted" style="text-align:center;margin-top:16px;border-top:1px solid var(--line);padding-top:12px">Powered by Spectrum Care Advisory OS · <span class="demo-tag" style="margin-left:4px">'+APP_VERSION+'</span></div>');
+  { const fw=el('liForgotWrap'); if(fw) fw.style.display=sbOn()?'':'none'; }   // v12.17: forgot password
+  el('loginTitle').textContent=greetName()?('Welcome back, '+String(greetName()).split(' ')[0]+'.'):'Welcome back';
+  el('loginSub').innerHTML=(ONB.org&&ONB.org!=='Spectrum')?'Sign in to the <b>'+esc(ONB.org)+'</b> workspace.':'Sign in to your agency\u2019s workspace.';
+  lgChrome('signin');                                                // v12.23: the version sits in the page footer now
   el('roleGrid').style.display='none';
   el('credBox').style.display='block';
-  const e=el('liEmail'); if(e){ e.value=AUTH.email||''; setTimeout(()=>el('liPw').focus(),60); }
+  { const rw=el('liRemWrap'), rb=el('liRemember'); if(rw) rw.style.display=''; if(rb) rb.checked=!lgNoRemember(); }
+  { const em=el('liEmail'), pw=el('liPw'); if(em) em.placeholder='name@agency.org';   // the new-agency screen changes these
+    if(pw){ pw.placeholder='Enter your password'; pw.autocomplete='current-password'; if(pw.type!=='password') lgEye(); } }
+  const e=el('liEmail'); if(e){ e.value=lgNoRemember()?'':(AUTH.email||''); setTimeout(()=>el(e.value?'liPw':'liEmail').focus(),60); }
 }
 function loginMark(t){ const lm=document.querySelector('#login .login-mark span:last-child'); if(lm) lm.textContent=t; }
-function loginGoLabel(t){ const b=el('liGo'); if(b) b.textContent=t; }
+function loginGoLabel(t){ const b=el('liGoT')||el('liGo'); if(b) b.textContent=t; }   // v12.23: the label, so the arrow stays
+/* ── v12.23: the split-screen sign-in page ──
+   lgChrome sets what changes with the screen: the link at the top right and the version in the footer.
+   "Remember my email on this device" is on by default, as before; unticked, the email is not offered
+   again on this computer and is not kept after signing out. */
+const lgNoRemember=()=>{ try{ return localStorage.getItem('np__'+NP_WS+'__noremember')==='1'; }catch(e){ return false; } };
+function lgRememberSave(){
+  const rb=el('liRemember'); if(!rb) return;
+  try{ const k='np__'+NP_WS+'__noremember'; if(rb.checked) localStorage.removeItem(k); else localStorage.setItem(k,'1'); }catch(e){}
+}
+function lgChrome(mode){
+  const top=el('lgTop');
+  if(top) top.innerHTML=mode==='register'
+    ?'<span>Already have an account?</span><a href="#" onclick="event.preventDefault();showLoginPage()">Sign in</a>'
+    :'<span>New agency?</span><a href="#" onclick="event.preventDefault();showRegisterGate()">Create an agency account</a>';
+  const v=el('lgVer'); if(v) v.textContent=APP_VERSION;
+  const y=el('lgYear'); if(y) y.textContent=String(new Date().getFullYear());
+}
+function lgEye(){
+  const p=el('liPw'), b=el('liEye'); if(!p||!b) return;
+  const show=p.type==='password'; p.type=show?'text':'password';
+  b.setAttribute('aria-label',show?'Hide password':'Show password');
+  b.innerHTML=show
+    ?'<svg class="lg-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"></path><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1"></path><path d="M6.6 6.6C3.9 8.3 2 12 2 12s3.5 7 10 7a10.6 10.6 0 0 0 5.4-1.6"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path></svg>'
+    :'<svg class="lg-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+  p.focus();
+}
 function showRegisterGate(){
   bootReveal();
   hideOnboarding(); const wr=el('welRoot'); if(wr) wr.classList.remove('on');
@@ -17928,6 +19150,7 @@ function showRegisterGate(){
      wears the name of whichever agency last used this browser. */
   loginMark('Spectrum Care Advisory OS');
   el('loginTitle').textContent='Set up a new agency';
+  lgChrome('register'); { const rw=el('liRemWrap'); if(rw) rw.style.display='none'; }   // v12.23
   el('loginSub').innerHTML='Your agency gets its own private workspace \u2014 its own clients, staff, documents and settings. Nobody outside it can see any of it.';
   el('roleGrid').style.display='none';
   const cb=el('credBox'); cb.style.display='block';
@@ -17938,7 +19161,7 @@ function showRegisterGate(){
     <div class="field"><label>Your name</label><input class="inp" id="regName" placeholder="e.g. Jordan Lee" autocomplete="name"></div>
     <div class="field"><label>Your role</label><input class="inp" id="regRole" placeholder="e.g. Executive Director"></div></div>`);
   const em=el('liEmail'); if(em){ em.value=''; em.placeholder='you@youragency.org'; }
-  const pw=el('liPw'); if(pw){ pw.value=''; pw.placeholder='At least 8 characters'; }
+  const pw=el('liPw'); if(pw){ pw.value=''; pw.placeholder='At least 8 characters'; pw.autocomplete='new-password'; }
   loginGoLabel('Create agency account');
   { const fw=el('liForgotWrap'); if(fw) fw.style.display='none'; }
   { const er=el('liErr'); if(er){ er.style.display='none'; er.textContent=''; } }   // v12.17: a sign-in message from before does not carry over
@@ -17958,10 +19181,11 @@ function showLoginPage(){
   showLoginForm();
   const cb=el('credBox');
   const lf0=el('loginFresh'); if(lf0) lf0.remove();
-  if(!el('loginFresh')) cb.insertAdjacentHTML('beforeend','<div id="loginFresh" class="tiny muted" style="text-align:center;margin-top:10px">'
-    +(AUTH.email?'Not '+esc(AUTH.email)+'? <a href="#" onclick="event.preventDefault();loginOtherAccount()">Use a different account</a><br>':'')
-    +'Setting up a new agency? <a href="#" onclick="event.preventDefault();showRegisterGate()">Create an agency account</a>'
-    +'<div style="margin-top:6px">Joining your agency\u2019s team? Use the invite link your director sends you \u2014 it sets up your sign-in.</div></div>');
+  /* v12.23: starting an agency is the link at the top right; joining a team is the note under the form */
+  if(!el('loginFresh')) cb.insertAdjacentHTML('beforeend','<div id="loginFresh">'
+    +(AUTH.email&&!lgNoRemember()?'<div class="lg-other">Not '+esc(AUTH.email)+'? <a href="#" onclick="event.preventDefault();loginOtherAccount()">Use a different account</a></div>':'')
+    +'<div class="lg-note"><svg class="lg-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"></path></svg>'
+    +'<p><strong>Joining your agency\u2019s team?</strong> Open the invitation link your director sent you. It sets up your sign-in.</p></div></div>');
   { const ls0=el('loginSwap'); if(ls0) ls0.remove(); }                // v12.13: one link to start an agency, not two
 }
 async function finishRegister(){
@@ -18073,7 +19297,8 @@ async function newAgencyContinue(){
 }
 function loginOtherAccount(){
   const e=el('liEmail'); if(e){ e.value=''; e.focus(); } const p=el('liPw'); if(p) p.value='';
-  el('loginTitle').textContent='Sign in'; el('loginSub').textContent='Sign in to your agency\u2019s workspace.';
+  el('loginTitle').textContent='Welcome back'; el('loginSub').textContent='Sign in to your agency\u2019s workspace.';   // v12.23
+  { const o=document.querySelector('#loginFresh .lg-other'); if(o) o.remove(); }
   loginMark('Spectrum Care Advisory OS');
 }
 function startFresh(){
@@ -18088,6 +19313,7 @@ function startFresh(){
 }
 function showRolePicker(){
   el('login').classList.remove('credmode');
+  { const t=el('lgTop'); if(t) t.innerHTML=''; const v=el('lgVer'); if(v) v.textContent=APP_VERSION; }   // v12.23
   el('loginTitle').textContent=greetName()?('Welcome back, '+String(greetName()).split(' ')[0]+'.'):'Choose a view';
   el('loginSub').innerHTML=(ONB.org&&ONB.org!=='Spectrum'?'<b>'+esc(ONB.org)+'</b> · ':'')+'pick the view to open — everyone sees only what their role allows. Powered by Spectrum Care Advisory OS · Beta.';
   el('credBox').style.display='none';
@@ -18105,6 +19331,7 @@ async function doLogin(){
   const r=await authLogin(el('liEmail').value, el('liPw').value);
   if(!r.ok){ loginErr(r.msg,r.noAgency); return; }
   el('liErr').style.display='none';
+  lgRememberSave();                                                  // v12.23
   try{ lsSet('np_resume','1'); }catch(e){}
   /* v12.9: this page still holds whatever the last account loaded. Another account starts
      from a clean page, so nothing of one agency can show in, or be saved into, another. */
@@ -19936,18 +21163,18 @@ function saveShiftTL(sid){
 /* ══════════════ GUIDED TOUR ══════════════ */
 const TOURS={
   director:[
-    {sel:'.rail-card', t:'The floor at a glance', p:'Med passes, appointments and who is on shift, laid over the day. The gold line is right now. Anything red needs someone.'},
-    {sel:'.attn', t:'Your morning list', p:'Everything that needs a decision, worst first. Tap any line to jump straight to it. When this is empty, the agency is clean.'},
+    {sel:'.hm-sched', t:'The day at a glance', p:'Appointments, shifts, meetings and reminders, in order. The gold line is right now. Change how it shows with the cog at the top.'},
+    {sel:'.hm-attn', t:'Your morning list', p:'Everything that needs a decision, worst first. Tap any line to jump straight to it. When this is empty, the agency is clean.'},
     {sel:'#nav', t:'One place per job', p:'Clients, med pass, billing, compliance — each lives in its own section so nothing is buried in a mega-menu.'},
     {sel:'.search', t:'Search anything', p:'A client, a staff member, an appointment. Type a name and go.'},
     {sel:'.ask-fab', t:'Or just ask', p:'Ask Spectrum answers from your own records and policies — "which med passes are late", "who is behind on training".'}],
   staff:[
     {sel:'.act-strip', t:'Your three buttons', p:'Record a med pass, check your tasks, report an incident. Most shifts never need more than this row.'},
-    {sel:'.rail-card', t:'Your day on one line', p:'When each med pass is due and where you need to be. The gold line is right now.'},
-    {sel:'.attn', t:'What needs you', p:'If something is late or flagged it shows here. Tap it and the portal takes you to the exact spot.'},
+    {sel:'.hm-sched', t:'Your day at a glance', p:'Where you need to be and when, with your shift. The gold line is right now.'},
+    {sel:'.hm-attn', t:'What needs you', p:'If something is late or flagged it shows here. Tap it and the portal takes you to the exact spot.'},
     {sel:'.ask-fab', t:'Stuck? Ask', p:'"A client refused a medication" — Ask Spectrum tells you exactly what to do, from your agency\'s own policy.'}],
   family:[
-    {sel:'.rail-card', t:"4023180's day", p:'His medications and appointments as they happen. Staff record things live, so this is always current.'},
+    {sel:'.hm-sched', t:"4023180's day", p:'His appointments and visits as they happen. Staff record things live, so this is always current.'},
     {sel:'#nav', t:'Everything about 4023180', p:'Medications, appointments, documents and messages — only for 4023180. Other residents are never visible to you.'},
     {sel:'.ask-fab', t:'Questions any time', p:'Ask about medications or the next appointment and get an answer from his actual record. For anything else, Messages reaches the care team.'}]
 };
@@ -19957,7 +21184,7 @@ function tourShow(){
   tourEnd(false);
   const steps=TOURS[state.role], s=steps[tourI];
   const target=document.querySelector(s.sel);
-  if(!target){ tourEnd(); return; }
+  if(!target){ if(tourI<steps.length-1){ tourI++; return tourShow(); } tourEnd(); return; }   // v12.24: a section someone hid is skipped
   target.scrollIntoView({block:'center',behavior:'auto'});
   const r=target.getBoundingClientRect(), sx=window.scrollX, sy=window.scrollY;
   const ring=document.createElement('div'); ring.className='tour-ring'; ring.id='tourRing';
@@ -20197,6 +21424,7 @@ async function sbHydrate(){
       if(r.key==='clienttypes'&&r.value&&Array.isArray(r.value.list)){ CLIENT_TYPES=r.value.list; }   // v12.22: an empty list is the agency's choice
       if(r.key==='taskcats'&&r.value&&Array.isArray(r.value.list)){ TASK_CATS=r.value.list; }   // v12.22: an empty list is the agency's choice
       if(r.key==='weeklycfg'&&r.value&&Array.isArray(r.value.metrics)){ WEEKLY_CFG=r.value; }
+      if(r.key==='homedefault'&&r.value&&typeof r.value==='object'){ HOME_DEFAULT=r.value; }   // v12.24
       if(r.key==='taskpris'&&r.value&&Array.isArray(r.value.list)){ TASK_PRIS=r.value.list; }   // v12.22: an empty list is the agency's choice
       if(r.key==='customopts'&&r.value&&r.value.map&&typeof r.value.map==='object'){ CUSTOM_OPTS=r.value.map; }
       if(r.key==='logshidden'&&r.value&&Array.isArray(r.value.list)){ LOGS_HIDDEN=r.value.list; }
