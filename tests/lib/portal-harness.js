@@ -27,6 +27,20 @@ function pdfjsBuild() {
   return build;
 }
 
+// the in-browser word reader (tesseract.js, its engine and the English data), the versions the portal loads
+// from jsDelivr, kept in tests/.cache the same way
+const OCR_PKGS = { 'tesseract.js@5.1.1': 'tesseract.js@5.1.1', 'tesseract.js-core@5.1.1': 'tesseract.js-core@5.1.1', '@tesseract.js-data/eng@1.0.0': '@tesseract.js-data/eng@1.0.0' };
+function ocrPkg(spec) {
+  const dir = path.join(__dirname, '..', '.cache', 'ocr', spec.replace(/[@/]/g, '_'));
+  if (!fs.existsSync(path.join(dir, 'package', 'package.json'))) {
+    fs.mkdirSync(dir, { recursive: true });
+    const tgz = execFileSync('npm', ['pack', spec], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim().split('\n').pop();
+    execFileSync('tar', ['xzf', tgz], { cwd: dir });
+  }
+  return path.join(dir, 'package');
+}
+const OCR_TYPES = { '.js': 'application/javascript', '.wasm': 'application/wasm', '.gz': 'application/gzip' };
+
 function makeServer(file) {
   return http.createServer((req, res) => {
     const u = new URL(req.url, 'http://local');
@@ -46,7 +60,8 @@ async function start(file) {
   return { srv, BASE, browser, close: async () => { await browser.close(); srv.close(); } };
 }
 
-// opts: viewport, bucket (page errors), calls (array that records Supabase calls), session (a stub account, below)
+// opts: viewport, bucket (page errors), calls (array that records Supabase calls), session (a stub account, below),
+// noOcr (the word reader cannot be fetched)
 async function newPage(env, opts) {
   opts = opts || {};
   const build = pdfjsBuild();
@@ -58,6 +73,14 @@ async function newPage(env, opts) {
     if (u.startsWith(env.BASE) || u.startsWith('data:') || u.startsWith('blob:')) return route.continue();
     const m = u.match(/pdf\.js\/3\.11\.174\/(pdf(?:\.worker)?\.min\.js)$/);
     if (m) return route.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(build, m[1])) });
+    // opts.noOcr: the word reader cannot be fetched (offline, or blocked)
+    const o = u.match(/^https:\/\/cdn\.jsdelivr\.net\/npm\/((?:@tesseract\.js-data\/eng|tesseract\.js-core|tesseract\.js)@[\d.]+)\/(.+)$/);
+    if (o && OCR_PKGS[o[1]]) {
+      if (opts.noOcr) return route.fulfill({ status: 404, body: 'not found' });
+      const f = path.join(ocrPkg(OCR_PKGS[o[1]]), o[2].split('?')[0]);
+      if (!fs.existsSync(f)) return route.fulfill({ status: 404, body: 'not found' });
+      return route.fulfill({ status: 200, contentType: OCR_TYPES[path.extname(f)] || 'application/octet-stream', headers: { 'access-control-allow-origin': '*' }, body: fs.readFileSync(f) });
+    }
     if (u.startsWith(SB)) {
       const p = u.slice(SB.length);
       calls.push(req.method() + ' ' + p);
