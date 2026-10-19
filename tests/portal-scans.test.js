@@ -52,8 +52,9 @@ const CELL = /^(Drug|Dose|Frequency Given|Reason for Use), row ([1-9]|1[0-5])$/;
     const a = await upload(page, path.join(H.FORMS, 'med-photo.jpg'));
     check('photo: the button says what is happening (straightening, then reading the words)', a.says.some((t) => /Straightening the photo/.test(t)) && a.says.some((t) => /Reading the words/.test(t)), a.says.join(' | '));
     check('photo: it is read as a picture of a form', a.kind === 'image');
-    check('photo: the editor says it was cut out, turned straight (2.4°) and evened out, and to check the names',
-      /Read from a photo on this computer/.test(a.intro) && /the sheet was cut out/.test(a.intro) && /turned straight \((2\.[3-6])°\)/.test(a.intro) && /Check each name/.test(a.intro), a.intro);
+    // v12.28: a sheet that leans (2.4° here) is pulled flat from its four corners rather than cut out and turned
+    check('photo: the editor says it was pulled flat from its corners and evened out, and to check the names',
+      /Read from a photo on this computer/.test(a.intro) && /pulled flat from its four corners/.test(a.intro) && /evened out/.test(a.intro) && /Check each name/.test(a.intro), a.intro);
     const b = by(a);
     const lines = Object.keys(MED).filter((l) => b[l] && b[l].ty === MED[l]);
     check('photo: every blank line is found and named from the words on the page (Date, Consumer, DOB, Dear Doctor, Your Patient, Is a resident of, the signature and Date Signed)', lines.length === 8, 'missing: ' + Object.keys(MED).filter((l) => !lines.includes(l)).join(', ') + ' | got: ' + a.fields.filter((f) => !CELL.test(f.l)).map((f) => f.l).join(', '));
@@ -149,7 +150,7 @@ const CELL = /^(Drug|Dose|Frequency Given|Reason for Use), row ([1-9]|1[0-5])$/;
   {
     const { ctx, page } = await open({ noOcr: true });
     const a = await upload(page, path.join(H.FORMS, 'med-photo.jpg'));
-    check('no reader: the photo is still cleaned up and its boxes found', a.kind === 'image' && a.fields.length >= 60 && /turned straight/.test(a.intro), a.fields.length + '');
+    check('no reader: the photo is still cleaned up and its boxes found', a.kind === 'image' && a.fields.length >= 60 && /pulled flat/.test(a.intro), a.fields.length + '');
     check('no reader: the editor says the words could not be read, and what to do', /The words could not be read/.test(a.intro) && /Name them on the right, or press Find boxes once you are online/.test(a.intro), a.intro);
     check('no reader: the table cells are still named by place (“Column 2, row 3”)', a.fields.some((f) => /^Column \d, row \d+$/.test(f.l) && f.ov.tb), a.fields.slice(8, 11).map((f) => f.l).join(', '));
     await ctx.close();
