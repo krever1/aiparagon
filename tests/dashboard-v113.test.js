@@ -233,6 +233,14 @@ const RESULTS = [
     await page.click('#v113FunD .nw-d-foot button:has-text("Send back")'); await wait(page, 600);
     const sb = store.writes.filter((w) => w.method === 'PATCH' && w.table === 'funnel_packages').pop(), fbk = store.db.agent_feedback.pop();
     check('Send back puts it back to draft, a status the table takes, and records why', sb.body.status === 'draft' && fbk && fbk.action === 'rejected' && fbk.agent === 'funnel_builder', JSON.stringify(sb.body));
+    // a funnel is named by the builder's title first; a failed Funnel Builder run stops the wait and says why
+    const nm = await ev(page, () => ({ got: v113FunName({ funnel_type: 'webinar', setup: { title: 'Named by the builder', details: { Title: 'Other' } } }) + '|' + v113FunName({ funnel_type: 'download', setup: {} }), want: 'Named by the builder|' + (NW_MG_PK.download || ['Funnel'])[0] }));
+    check('a funnel takes the Funnel Builder title first, else its type', nm.got === nm.want, JSON.stringify(nm));
+    store.db.runs.push({ run_id: 'funnel_qa_fail', agent: 'funnel_builder', status: 'failed', run_date: '2026-10-19', started_at: '2026-10-19T16:00:00Z', stats: JSON.stringify({ error: 'The model returned nothing', funnel_type: 'webinar' }) });
+    await ev(page, () => { V113.fun.running = { run_id: 'funnel_qa_fail', type: 'webinar', t0: Date.now() }; v113FunPoll(); });
+    await wait(page, 6900);
+    const fl = await ev(page, () => ({ run: V113.fun.running, toast: (document.getElementById('nwToast') || {}).textContent || '', bar: !!document.querySelector('.v113-funs .nw-watch.is-run') }));
+    check('a failed Funnel Builder run stops the wait and says why', fl.run === null && !fl.bar && /The funnel could not be written this time \(The model returned nothing\)\. Try again\./.test(fl.toast), JSON.stringify(fl));
     // posts, newsletters and emails: the goal and the next step
     await ev(page, () => nwMgGoTab('new')); await wait(page, 500);
     await page.click('#nwMgForm .nw-tile[data-k="newsletter"]'); await wait(page, 500);
@@ -297,6 +305,13 @@ const RESULTS = [
     const plat = await ev(page, () => V98_PLAT.ad.slice(0, 3).join('|'));
     check('Facebook ads and Instagram ads are platforms to log against', plat === 'Meta ads|Facebook ads|Instagram ads', plat);
     check('the tab names the page', (await page.title()) === 'Ad Testing · AI Paragon', await page.title());
+    // the daily strategy read says so, instead of "asked by Daily read"
+    const rd = await ev(page, () => { const row = (d) => ({ created_at: '2026-10-20T14:20:00Z', title: 'Lead with governance', d: Object.assign({ insights: { headline: 'Lead with governance', summary: 's', recommendations: [], vision_fit: {} }, refs: {} }, d) });
+      const a = v98ReadHtml(row({ daily: true, requested_by: 'Daily read' })), b = v98ReadHtml(row({ requested_by: 'qa@aiparagonconsulting.com' }));
+      return { daily: /Strategy read · [^<]+ · Daily read</.test(a) && !/asked by Daily read/.test(a), asked: /asked by qa</.test(b) }; });
+    check('the daily strategy read is labelled Daily read; one someone asked for keeps who asked', rd.daily && rd.asked, JSON.stringify(rd));
+    const li = await ev(page, () => V113_INT.linkedin_ads.help);
+    check('LinkedIn needs both ad permissions: r_ads for the campaigns, r_ads_reporting for the numbers', /r_ads and r_ads_reporting permissions/.test(li), li);
     await ctx.close();
   }
   {

@@ -48778,6 +48778,14 @@ function v113FunPoll(){
     if(!V113.fun.running)return;
     let rows=[];try{rows=await apSb('funnel_packages?select=id,run_id,status&run_id=eq.'+encodeURIComponent(R.run_id)+'&limit=1');}catch(e){rows=[];}
     if(rows&&rows.length){V113.fun.running=null;V113.fun.rows=null;if(typeof nwToast==='function')nwToast('Your funnel is ready in Campaigns');v113FunPaint();return;}
+    /* the Funnel Builder records a failed run; stop waiting and say why */
+    let run=[];try{run=await apSb('runs?select=status,stats&run_id=eq.'+encodeURIComponent(R.run_id)+'&limit=1');}catch(e){run=[];}
+    if(run&&run[0]&&run[0].status==='failed'){
+      let st=apJson(run[0].stats);if(typeof st==='string')st=apJson(st);st=st||{};
+      V113.fun.running=null;v113FunPaint();
+      if(typeof nwToast==='function')nwToast('The funnel could not be written this time'+(st.error?' ('+String(st.error).slice(0,120)+')':'')+'. Try again.');
+      return;
+    }
     if(Date.now()-R.t0>9*60e3){V113.fun.running=null;v113FunPaint();return;}
     v113FunPoll();
   },6000);
@@ -48787,7 +48795,7 @@ async function v113FunLoad(force){
   try{V113.fun.rows=(await apSb('funnel_packages?select=*&funnel_type=not.is.null&order=created_at.desc&limit=30'))||[];}catch(e){V113.fun.rows=V113.fun.rows||[];}
   V113.fun.t=Date.now();return V113.fun.rows;
 }
-function v113FunName(f){const S=apJson(f.setup)||{};return (S.details&&(S.details.Title||S.details['The resource']||S.details['Newsletter name']))||(NW_MG_PK[f.funnel_type]||['Funnel'])[0];}
+function v113FunName(f){const S=apJson(f.setup)||{};return S.title||(S.details&&(S.details.Title||S.details['The resource']||S.details['Newsletter name']))||(NW_MG_PK[f.funnel_type]||['Funnel'])[0];}
 /* funnel_packages.status: the Funnel Builder saves pending_approval; Send back puts it back to draft */
 function v113FunPill(f){return f.status==='approved'?nwPill('good','Approved'):f.status==='launched'?nwPill('good','Launched'):f.status==='draft'?nwPill('bad','Sent back'):nwPill('warn','Waiting for review');}
 function v113FunListHtml(){
@@ -48954,7 +48962,7 @@ function v113Working(ads){
 const V113_INT={
   calendly:{name:'Calendly',dom:'calendly.com',g:'C',col:'#006BFF',p:'Booking links for book-a-call campaigns, picked from your event types.',key:'Personal access token',help:'In Calendly: Integrations, then API and webhooks, then Personal access tokens.'},
   meta_ads:{name:'Meta Ads',dom:'facebook.com',g:'M',col:'#1877F2',p:'Daily numbers for your Facebook and Instagram ads in Ad Testing.',key:'Access token',acct:'Ad account ID',acctPh:'act_1234567890',help:'A system user token from Meta Business Settings with the ads_read permission.'},
-  linkedin_ads:{name:'LinkedIn Ads',dom:'linkedin.com',g:'in',col:'#0A66C2',p:'Daily numbers for your LinkedIn ads in Ad Testing.',key:'Access token',acct:'Ad account ID',acctPh:'508123456',help:'A token from a LinkedIn app with the r_ads_reporting permission. LinkedIn tokens last 60 days, so reconnect when this card says so.'}
+  linkedin_ads:{name:'LinkedIn Ads',dom:'linkedin.com',g:'in',col:'#0A66C2',p:'Daily numbers for your LinkedIn ads in Ad Testing.',key:'Access token',acct:'Ad account ID',acctPh:'508123456',help:'A token from a LinkedIn app with the r_ads and r_ads_reporting permissions. LinkedIn tokens last 60 days, so reconnect when this card says so.'}
 };
 function v113IntState(k){
   if(k==='calendly'){const C=V113.cal;return C.st===null?{t:'Checking…'}:C.st==='on'?{ok:true,t:'Connected',m:(C.user&&C.user.name?'Connected as '+C.user.name:'Connected')+(C.types.length?' · '+nwPlural(C.types.length,'event type'):'')}:
@@ -49221,6 +49229,15 @@ function v113Title(){
   apNavSync=function(){const r=_s.apply(this,arguments);v113Title();return r;};
   const _o=apSignOut;
   apSignOut=function(){document.title='Sign in · AI Paragon';return _o.apply(this,arguments);};
+})();
+/* the daily strategy read runs on its own each morning: it says so instead of "asked by Daily read" */
+(function(){
+  if(typeof v98ReadHtml!=='function')return;
+  const _r=v98ReadHtml;
+  v98ReadHtml=function(row){
+    const h=_r.apply(this,arguments),d=(row&&row.d)||{};
+    return d.daily?String(h).replace(' · asked by Daily read',' · Daily read'):h;
+  };
 })();
 </script>
 
