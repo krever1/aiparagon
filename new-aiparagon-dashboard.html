@@ -27245,7 +27245,7 @@ function apOpenIntelRun(){
   const c=apModal('apIntelRun',
     '<div class="k">Engine 3 · Competitor Intelligence Tracker</div>'+
     '<h3 class="ap-m89h">Run the tracker with new competitors</h3>'+
-    '<p class="help">Add the competitors you want tracked. They join the watchlist and the tracker runs now, reading their LinkedIn, X and Facebook posts plus recent news about them. The brief is marked as a custom run so you can tell it apart from the daily 6am run.</p>'+
+    '<p class="help">Add the competitors you want tracked. They join the watchlist and the tracker runs now, reading their LinkedIn, X and Facebook posts plus recent news about them. The brief is marked as a custom run so you can tell it apart from the scheduled runs.</p>'+
     '<div class="ap-ir-rows" id="apIrRows"></div>'+
     '<div class="ap-ir-add"><button type="button" class="rd-btn sm" onclick="apIrAdd()">+ Add another competitor</button>'+
       '<button type="button" class="rd-btn sm" onclick="apIrPasteToggle()">Paste a list</button></div>'+
@@ -27316,7 +27316,7 @@ async function apIrSubmit(){
     if(!j||j.ok===false)throw new Error((j&&j.message)||'The tracker did not start.');
     const p=apIrPending();p.unshift({run_id:j.run_id,names:j.tracking||comps.map(function(o){return o.name;}),t:Date.now(),by:AP_ME(),cascade:AP_IR.cascade});apIrPendingSave(p.slice(0,10));
     apModalClose('apIntelRun');
-    toast('Intel run started. The brief lands in 5 to 10 minutes, marked as a custom run.');
+    toast('Intel run started. The brief lands in 5 to 15 minutes, marked as a custom run.');
     AP_HIST=null;AP_COMP=null;
     if(state.view==='uploads')apRenderHistory();
   }catch(e){fail(e.message);}
@@ -27331,7 +27331,7 @@ function apIntelSource(o,runsBy){
 }
 function apIntelSourceLine(s){
   if(s.src==='custom')return 'Custom run'+(s.by?' by '+String(s.by).split('@')[0]:'')+(s.names&&s.names.length?' · for '+s.names.slice(0,4).join(', ')+(s.names.length>4?' +'+(s.names.length-4):''):'');
-  return s.legacy?'Run by the agent':'Scheduled daily run';
+  return s.legacy?'Run by the agent':'Scheduled run';
 }
 
 /* Uploads & runs: intel runs as their own kind */
@@ -27361,7 +27361,7 @@ AP_KIND.intel='Intel run';
   const _b=apHistBody;
   apHistBody=function(r){
     if(r.kind!=='intel')return _b.apply(this,arguments);
-    if(r.pending)return '<p class="txt">The tracker is reading '+esc((r.src.names||[]).join(', '))+' now. This row turns into the brief when it finishes, usually 5 to 10 minutes.</p>';
+    if(r.pending)return '<p class="txt">The tracker is reading '+esc((r.src.names||[]).join(', '))+' now. This row turns into the brief when it finishes, usually 5 to 15 minutes.</p>';
     const tl=(typeof apCfTldr==='function'?apCfTldr(r.out.content_md):[]).slice(0,3);
     return '<div class="ap-src-chip '+(r.src.src==='custom'?'c':'s')+'">'+(r.src.src==='custom'?'Custom run':'Agent run')+'</div>'+
       (tl.length?'<ul class="ap-ir-tl">'+tl.map(function(t){return '<li>'+(t.title?'<b>'+esc(t.title)+'.</b> ':'')+esc(t.text)+'</li>';}).join('')+'</ul>':'')+
@@ -31550,7 +31550,7 @@ V96.after.intel=function(){
     try{
       const m=document.getElementById('apIntelRun');if(m){
         const h=m.querySelector('.ap-m89h');if(h)h.textContent='Run now with new names';
-        const p=m.querySelector('.help');if(p)p.textContent='Add the people or companies you want read now. They join your follow list and Social Listening runs straight away, reading their LinkedIn, X and Facebook posts plus recent news about them. The result is marked as a custom run so you can tell it apart from the daily run.';
+        const p=m.querySelector('.help');if(p)p.textContent='Add the people or companies you want read now. They join your follow list and Social Listening runs straight away, reading their LinkedIn, X and Facebook posts plus recent news about them. The result is marked as a custom run so you can tell it apart from the scheduled runs.';
         m.querySelectorAll('button').forEach(function(b){if(/Add another competitor/.test(b.textContent))b.textContent='+ Add another name';});
         m.querySelectorAll('.ap-ir-opts b').forEach(function(b){if(/^Only these competitors/.test(b.textContent))b.textContent='Only these names this run';});
         m.querySelectorAll('.ap-ir-opts small').forEach(function(s){if(/full watchlist/.test(s.textContent))s.textContent='Untick to read everyone you follow too. Faster and cheaper when ticked.';});

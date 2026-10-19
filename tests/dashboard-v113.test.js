@@ -386,6 +386,20 @@ const RESULTS = [
     await ctx.close();
   }
 
+  // ---------------- H. the Intel Tracker's run wording ----------------
+  {
+    const { ctx, page, hooks } = await open('/dashboard/intel-tracker');
+    const line = await ev(page, () => apIntelSourceLine({ src: 'schedule', legacy: false }));
+    check('a scheduled intel run is called a scheduled run, not a daily one', line === 'Scheduled run', line);
+    await ev(page, () => apOpenIntelRun()); await wait(page, 300);
+    const help = await ev(page, () => (document.querySelector('#apIntelRun .help') || {}).textContent || '');
+    check('the custom run form tells it apart from the scheduled runs', /apart from the scheduled runs/.test(help) && !/daily 6am/.test(help), help.slice(-90));
+    await ev(page, () => { AP_IR.rows = [{ name: 'QA Advisory', website: 'qa-advisory.example.com' }]; return apIrSubmit(); }); await wait(page, 400);
+    const msg = await ev(page, () => ((document.getElementById('toastMsg') || {}).textContent || '') + ' ' + ((document.getElementById('nwToast') || {}).textContent || ''));
+    check('starting a custom run says the brief lands in 5 to 15 minutes', hooks.some((h) => /\/intel-run/.test(h.u)) && /5 to 15 minutes/.test(msg), msg.trim());
+    await ctx.close();
+  }
+
   check('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
   await browser.close();
   server.close();
