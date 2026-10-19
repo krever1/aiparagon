@@ -2812,6 +2812,17 @@ body{font-size:15px}
   body:has(.modal.hm-cust-md.on) #scrim{background:rgba(20,33,28,.10);backdrop-filter:none}
   .hm-cust .hm-opts.three{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
+/* v12.25: tables on uploaded forms */
+.ov-e.ov-intbl{background:rgba(58,110,165,.05);border-color:rgba(58,110,165,.45)}
+.ov-e.ov-incol,.ov-e.ov-inrow{background:rgba(201,167,90,.16);border-color:#B8913A}
+.ov-tbl-frame{position:absolute;border:2px solid rgba(58,110,165,.55);border-radius:4px;pointer-events:none;box-shadow:0 0 0 4px rgba(58,110,165,.08)}
+.ov-tbl-p{margin:2px 0 14px;padding:12px;border:1px solid #CFDCEB;border-radius:10px;background:#F5F8FC}
+.ov-modal .ov-side{max-height:calc(100vh - 230px);overflow:auto}
+@media(max-width:900px){.ov-modal .ov-side{max-height:none;overflow:visible}}
+.ov-tbl-h{font:700 13.5px var(--sans);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.ov-tbl-h>span:first-child{color:#3A6EA5}
+.ov-tbl-acts{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.ov-li-tbl .ov-li-t{font-weight:600}
 </style>
 </head>
 <body>
@@ -3153,7 +3164,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" id="demoNote" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.24 beta</span></span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.25 beta</span></span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -16622,7 +16633,9 @@ async function ovFindAgain(){
   if(!s) return toast('The original form could not be read. Check your connection and try again.');
   const add=s.filter(x=>!t.fields.some(f=>f.ov&&ovOverlap(f.ov,x)>0.4));
   if(!add.length) return toast('Every blank that was found already has a box.');
-  ovSnap(); add.forEach(x=>t.fields.push(ovSlotField(x))); ovUniq(ovOrder(t.fields)); OV.sel=null; ovPaint();
+  ovSnap(); add.forEach(x=>t.fields.push(ovSlotField(x))); ovOrder(t.fields);
+  [...new Set(add.filter(x=>x.tb).map(x=>x.tb))].forEach(tb=>ovTblRenumber(t,tb));   // v12.25
+  ovUniq(t.fields); OV.sel=null; ovPaint();
   toast('Added '+add.length+' box'+(add.length===1?'':'es')+'. Check them, then save. Undo takes them away again.');
 }
 /* a box placed by hand lands on the blank line or empty cell under (or just below) the click */
@@ -16776,9 +16789,9 @@ function ovIntroHtml(){
     :`<b>Place the fill-in boxes</b>A photo or scan has no fields to read. Pick the kind of box above, then click on the page where it goes.`;
   return `<div class="sec-note ov-intro" style="margin:0 0 10px"><span>✨</span><div>${msg}${more?` <br><span class="tiny">This PDF has ${more} pages; the first ${OV_MAX_PAGES} are kept.</span>`:''}</div></div>`;
 }
-function ovBoxEd(fd,i){
+function ovBoxEd(fd,i,x){
   const on=OV.sel===i, ty=fd.ty;
-  return `<div class="ov-f ov-e ${on?'on':''} ov-t-${ty.replace(' ','-')}" data-i="${i}" style="${ovPos(fd.ov)}" title="${esc(fd.l)}">
+  return `<div class="ov-f ov-e ${on?'on':''}${x||''} ov-t-${ty.replace(' ','-')}" data-i="${i}" style="${ovPos(fd.ov)}" title="${esc(fd.l)}">
     <span class="ov-lb">${ty==='check'?'':esc(fd.l)}</span>
     ${on?`<span class="ov-rs" data-rs="1" title="Drag to resize"></span>`:''}</div>`;
 }
@@ -16789,7 +16802,8 @@ function ovBoxTry(fd,i){
   if(fd.ty==='long text') return `<textarea class="ov-f ov-in" style="${p};${fs}" placeholder="${esc(fd.l)}"></textarea>`;
   return `<input class="ov-f ov-in" style="${p};${fs}" type="${fd.ty==='date'?'date':fd.ty==='time'?'time':fd.ty==='number'?'number':'text'}" placeholder="${esc(fd.l)}">`;
 }
-function ovLayerEd(t,pi){ return t.fields.map((fd,i)=>fd.ov&&fd.ov.p===pi?(OV.preview?ovBoxTry(fd,i):ovBoxEd(fd,i)):'').join(''); }
+function ovLayerEd(t,pi){ const sel=OV.sel!=null&&t.fields[OV.sel];   // v12.25: with the picked box's table marked
+  return ovTblFrame(t,pi)+t.fields.map((fd,i)=>fd.ov&&fd.ov.p===pi?(OV.preview?ovBoxTry(fd,i):ovBoxEd(fd,i,ovTblMarks(t,fd,sel))):'').join(''); }
 function ovSideHtml(){
   const t=ovT(); if(!t) return '';
   if(OV.preview) return `<div class="ov-side-h">Trying it out</div><div class="tiny muted">Type, tick and sign as the people filling it in will. Nothing you enter here is kept. Turn “Try it” off to go back to placing boxes.</div>`;
@@ -16800,17 +16814,17 @@ function ovSideHtml(){
         <button type="button" class="ov-x" title="Done with this box" onclick="ovSelect(null)">✕</button></div>
       <div class="field"><label>What goes here?</label><input class="inp" id="ovLabel" value="${esc(fd.l)}" placeholder="e.g. Date of visit"
         data-i="${i}" onfocus="ovSnap()" oninput="ovLabelLive(this.value,${i})" onchange="ovLabelSet(this.value,${i})" onkeydown="if(event.key==='Enter')this.blur()"></div>
-      <div class="field"><label>Kind of box</label><div class="ov-kinds">${OV_KINDS.map(([k,l])=>`<button type="button" class="${fd.ty===k?'on':''}" onclick="ovSetKind('${k}')"><span>${OV_KIND_ICON[k]}</span>${l}</button>`).join('')}</div></div>
+      ${ovIsTbl(t,fd)?ovTblPanel(t,fd):''}
+      <div class="field"><label>${ovIsTbl(t,fd)?'Kind of box (this box only)':'Kind of box'}</label><div class="ov-kinds">${OV_KINDS.map(([k,l])=>`<button type="button" class="${fd.ty===k?'on':''}" onclick="ovSetKind('${k}')"><span>${OV_KIND_ICON[k]}</span>${l}</button>`).join('')}</div></div>
       ${['check','signature'].includes(fd.ty)?'':`<div class="field"><label>Text size</label><div class="ov-seg">${[['s','Small'],['m','Medium'],['l','Large']].map(([k,l])=>`<button type="button" class="${Math.abs(sz-OV_FS[k])<0.01?'on':''}" onclick="ovSetSize('${k}')">${l}</button>`).join('')}</div></div>`}
       <div class="ov-side-acts">
         <button type="button" class="btn ghost sm" onclick="ovDup()">⧉ Duplicate</button>
         <button type="button" class="btn ghost sm ov-del" onclick="ovDel()">✕ Remove</button></div>
-      <div class="tiny muted" style="margin-top:10px">Drag the box to move it, pull its corner to resize it. Arrow keys nudge it; hold Shift to move further.</div>`;
+      <div class="tiny muted" style="margin-top:10px">Drag the box to move it, pull its corner to resize it. Arrow keys nudge it; hold Shift to move further. Tab goes to the next box.</div>`;
   }
   const byPage=t.fields.map((x,i)=>[x,i]).filter(([x])=>x.ov);
   return `<div class="ov-side-h">${t.fields.length} box${t.fields.length===1?'':'es'} on this form</div>
-    ${byPage.length?`<div class="ov-list">${byPage.map(([x,i])=>`<button type="button" class="ov-li" onclick="ovSelect(${i},true)">
-      <span class="ov-li-ic">${OV_KIND_ICON[x.ty]||'T'}</span><span class="ov-li-t">${esc(x.l)}</span><span class="tiny muted">p${x.ov.p+1}</span></button>`).join('')}</div>`
+    ${byPage.length?`<div class="ov-list">${ovListHtml(t)}</div>`
       :`<div class="tiny muted">No boxes yet. Pick the kind of box from the bar above, then click on the page where it goes.</div>`}
     <div class="tiny muted" style="margin-top:12px">Click a box on the page to change it.</div>`;
 }
@@ -16887,7 +16901,8 @@ function ovPlaceAt(pi,px,py){
   let box={p:pi,x:ovRound(x),y:ovRound(y),w:ovRound(w),h:ovRound(h),fs:OV_FS.m};
   if(sl){ box={p:pi,x:sl.x,y:sl.y,w:sl.w,h:sl.h,fs:sl.fs};
     if(kind==='check'){ box.w=Math.min(sl.w,w); box.h=Math.min(sl.h,h); box.x=ovRound(Math.max(sl.x,Math.min(sl.x+sl.w-box.w,px-box.w/2))); }
-    else if(kind==='signature'&&sl.ty!=='signature'){ const g=ovRound(sl.h*1.55); box.y=ovRound(Math.max(0,sl.y+sl.h-g)); box.h=g; } }
+    else if(kind==='signature'&&sl.ty!=='signature'){ const g=ovRound(sl.h*1.55); box.y=ovRound(Math.max(0,sl.y+sl.h-g)); box.h=g; }
+    if(sl.tb){ box.tb=sl.tb; box.r=sl.r; box.c=sl.c; if(kind==='check') box.cell={x:sl.x,y:sl.y,w:sl.w,h:sl.h}; } }   // v12.25: it joins the table
   t.fields.push({l,ty:kind,ov:box});
   OV.place=null; OV.sel=t.fields.length-1; ovPaint();
   setTimeout(()=>{ const n=el('ovLabel'); if(n){ n.focus(); n.select(); } },20);
@@ -16905,14 +16920,12 @@ function ovLabelSet(v,i,quiet){
   fd.l=v; if(!quiet) ovPaint();
 }
 function ovSetKind(k){ const t=ovT(), fd=t&&t.fields[OV.sel]; if(!fd||fd.ty===k) return; ovSnap();
-  const pg=ovDocOf(t).pages[fd.ov.p];
-  if(k==='check'){ const s=13*(pg.w/612); fd.ov.w=ovRound(s/pg.w*100); fd.ov.h=ovRound(s/pg.h*100); }
-  else if(fd.ty==='check'){ const sz=OV_NEW[k]||OV_NEW.text, u=pg.w/612; fd.ov.w=ovRound(sz[0]*u/pg.w*100); fd.ov.h=ovRound(sz[1]*u/pg.h*100); }
-  fd.ty=k; ovPaint(); }
+  ovKindTo(fd,k,ovDocOf(t).pages[fd.ov.p]); ovPaint(); }                // v12.25: a tick box in a table cell sits in the middle of it
 function ovSetSize(k){ const fd=ovT()&&ovT().fields[OV.sel]; if(!fd) return; ovSnap(); fd.ov.fs=OV_FS[k]; ovPaint(); }
 function ovDel(){ const t=ovT(); if(!t||OV.sel==null) return; ovSnap(); const l=t.fields[OV.sel].l; t.fields.splice(OV.sel,1); OV.sel=null; ovPaint(); toast(`Removed “${l}”. Undo brings it back.`); }
 function ovDup(){ const t=ovT(); if(!t||OV.sel==null) return; ovSnap();
-  const c=JSON.parse(JSON.stringify(t.fields[OV.sel])); c.ov.y=ovRound(Math.min(100-c.ov.h,c.ov.y+c.ov.h+0.6));
+  const c=JSON.parse(JSON.stringify(t.fields[OV.sel])); ['tb','r','c','cell'].forEach(k=>delete c.ov[k]);   // v12.25: a copy is not part of the table
+  c.ov.y=ovRound(Math.min(100-c.ov.h,c.ov.y+c.ov.h+0.6));
   c.l=ovUniq(t.fields.concat([{l:c.l}])).pop().l; t.fields.splice(OV.sel+1,0,c); OV.sel=OV.sel+1; ovPaint(); }
 /* moving and resizing, with a mouse or a finger */
 function ovWire(){
@@ -16949,6 +16962,8 @@ document.addEventListener('keydown',e=>{
   if(!el('modal')||!el('modal').classList.contains('ov-modal')||!el('modal').classList.contains('on')||!ovT()) return;
   if(el('sigOv')) return;
   const a=document.activeElement, typing=a&&(a.isContentEditable||/INPUT|TEXTAREA|SELECT/.test(a.tagName));
+  if(e.key==='Tab'&&!e.altKey&&!e.ctrlKey&&!e.metaKey&&OV.sel!=null&&!OV.preview&&(!a||a===document.body||a.id==='ovLabel'||(a.closest&&a.closest('.ov-doc')))){
+    e.preventDefault(); e.stopPropagation(); return ovStep(e.shiftKey?-1:1); }   // v12.25
   if(e.key==='Escape'&&(OV.place||OV.sel!=null)&&!typing){ e.preventDefault(); e.stopPropagation(); OV.place=null; OV.sel=null; return ovPaint(); }
   if(typing) return;
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!e.shiftKey){ e.preventDefault(); e.stopPropagation(); return ovUndo(); }
@@ -16995,6 +17010,155 @@ function ovCancel(){
   if(back&&docById(back)) openDocEditor(back,true);
 }
 
+/* ══════════════ v12.25: TABLES ON UPLOADED FORMS ══════════════
+   The box finder (v12.23) marks every box it puts in a table cell with its table, row and column
+   (ov.tb, ov.r, ov.c). Picking any of those boxes now shows the table it belongs to, and the table is
+   changed as a whole: a column's kind of box (a column of dates that was read as text, a column of
+   tick boxes), a column's name, a row or a column taken out, or the whole table. Rows named
+   "Drug, row 3" stay numbered in order when one goes. ov.r itself never changes, so Find boxes still
+   recognizes a row that was taken out and can put it back. Tab steps from box to box while setting
+   the form up; filling it in, Enter goes down a table column (and on to the next box elsewhere). */
+const ovTblCells=(t,tb)=>t.fields.map((f,i)=>[f,i]).filter(([f])=>f.ov&&f.ov.tb===tb);
+const OV_ROWLAB=/^(.*), row (\d+)$/;                                  // "Drug, row 3": a column name and the row's place
+/* a column's name, read from its boxes' names (the most common one wins, so one box renamed by hand
+   does not rename the column) */
+function ovTblColName(t,tb,c){
+  const n={}; ovTblCells(t,tb).filter(([f])=>f.ov.c===c).forEach(([f])=>{
+    const m=OV_ROWLAB.exec(f.l), k=m?m[1]:(f.l.lastIndexOf(': ')>0?f.l.slice(f.l.lastIndexOf(': ')+2):''); if(k) n[k]=(n[k]||0)+1; });
+  const best=Object.keys(n).sort((a,b)=>n[b]-n[a])[0];
+  return best||('Column '+(ovTblInfo(t,tb).cols.indexOf(c)+1));
+}
+function ovTblInfo(t,tb){
+  const cells=ovTblCells(t,tb);
+  return {cells,rows:[...new Set(cells.map(([f])=>f.ov.r))].sort((a,b)=>a-b),cols:[...new Set(cells.map(([f])=>f.ov.c))].sort((a,b)=>a-b)};
+}
+function ovTblRowName(t,tb,r){
+  const info=ovTblInfo(t,tb), cs=info.cells.filter(([f])=>f.ov.r===r).map(([f])=>f.l);
+  const named=cs.map(l=>!OV_ROWLAB.test(l)&&l.lastIndexOf(': ')>0?l.slice(0,l.lastIndexOf(': ')):'').find(Boolean);
+  return named||('row '+(info.rows.indexOf(r)+1));
+}
+/* rows named by their place ("Drug, row 3") are renumbered to where they now sit */
+function ovTblRenumber(t,tb){
+  const info=ovTblInfo(t,tb);
+  info.cells.forEach(([f])=>{ const m=OV_ROWLAB.exec(f.l); if(m) f.l=m[1]+', row '+(info.rows.indexOf(f.ov.r)+1); });
+  ovUniq(t.fields);
+}
+/* a box changes kind; in a table cell a tick box sits in the middle of its cell, and goes back to
+   filling the cell when it changes again */
+function ovKindTo(fd,k,pg){
+  if(!fd||fd.ty===k) return;
+  const o=fd.ov, u=pg.w/612;
+  if(k==='check'){
+    if(o.tb&&!o.cell) o.cell={x:o.x,y:o.y,w:o.w,h:o.h};
+    let w=ovRound(13*u/pg.w*100), h=ovRound(13*u/pg.h*100);
+    if(o.cell){ w=Math.min(w,o.cell.w); h=Math.min(h,o.cell.h); o.x=ovRound(o.cell.x+(o.cell.w-w)/2); o.y=ovRound(o.cell.y+(o.cell.h-h)/2); }
+    o.w=w; o.h=h;
+  } else if(fd.ty==='check'){
+    if(o.cell){ o.x=o.cell.x; o.y=o.cell.y; o.w=o.cell.w; o.h=o.cell.h; delete o.cell; }
+    else { const sz=OV_NEW[k]||OV_NEW.text; o.w=ovRound(sz[0]*u/pg.w*100); o.h=ovRound(sz[1]*u/pg.h*100); }
+  }
+  fd.ty=k;
+}
+/* a framed box is found as a table of one cell: it is not a table to anyone using it */
+const ovIsTbl=(t,fd)=>!!(fd&&fd.ov&&fd.ov.tb&&ovTblCells(t,fd.ov.tb).length>1);
+const ovSelTbl=()=>{ const t=ovT(), fd=t&&OV.sel!=null&&t.fields[OV.sel]; return ovIsTbl(t,fd)?{t,fd}:null; };
+function ovTblKind(k){
+  const s=ovSelTbl(); if(!s) return;
+  const {t,fd}=s, pg=ovDocOf(t).pages[fd.ov.p], col=ovTblCells(t,fd.ov.tb).filter(([f])=>f.ov.c===fd.ov.c);
+  if(col.every(([f])=>f.ty===k)) return;
+  ovSnap(); col.forEach(([f])=>ovKindTo(f,k,pg)); ovPaint();
+  toast('Every box in the “'+ovTblColName(t,fd.ov.tb,fd.ov.c)+'” column is now '+((OV_KINDS.find(x=>x[0]===k)||[])[1]||k).toLowerCase()+'.');
+}
+function ovTblRename(v){
+  const s=ovSelTbl(); if(!s) return;
+  const {t,fd}=s, old=ovTblColName(t,fd.ov.tb,fd.ov.c); v=String(v||'').replace(/\s+/g,' ').trim();
+  if(!v||v===old) return;
+  ovSnap();
+  ovTblCells(t,fd.ov.tb).filter(([f])=>f.ov.c===fd.ov.c).forEach(([f])=>{
+    const m=OV_ROWLAB.exec(f.l);
+    if(m&&m[1]===old) f.l=v+', row '+m[2];
+    else if(f.l.endsWith(': '+old)) f.l=f.l.slice(0,f.l.length-old.length)+v;
+    else if(!m&&f.l===old) f.l=v;
+  });
+  ovUniq(t.fields); ovPaint();
+}
+/* take out the selected box's row, its column, or the whole table */
+function ovTblDel(what){
+  const s=ovSelTbl(); if(!s) return;
+  const {t,fd}=s, tb=fd.ov.tb, r=fd.ov.r, c=fd.ov.c, info=ovTblInfo(t,tb);
+  const hit=f=>f.ov&&f.ov.tb===tb&&(what==='table'||(what==='row'?f.ov.r===r:f.ov.c===c));
+  const n=t.fields.filter(hit).length; if(!n) return;
+  const say=what==='table'?'the table':what==='row'?(/^row /.test(ovTblRowName(t,tb,r))?ovTblRowName(t,tb,r):'the “'+ovTblRowName(t,tb,r)+'” row'):'the “'+ovTblColName(t,tb,c)+'” column';
+  ovSnap();
+  /* the box picked next: the same column in the row below (or above), or the same row one column on */
+  let next=null;
+  if(what==='row'){ const k=info.rows.indexOf(r), rr=info.rows[k+1]!=null?info.rows[k+1]:info.rows[k-1]; next=t.fields.find(f=>f.ov&&f.ov.tb===tb&&f.ov.r===rr&&f.ov.c===c)||null; }
+  if(what==='col'){ const k=info.cols.indexOf(c), cc=info.cols[k+1]!=null?info.cols[k+1]:info.cols[k-1]; next=t.fields.find(f=>f.ov&&f.ov.tb===tb&&f.ov.c===cc&&f.ov.r===r)||null; }
+  t.fields=t.fields.filter(f=>!hit(f));
+  if(what==='row') ovTblRenumber(t,tb);
+  OV.sel=next?t.fields.indexOf(next):null; ovPaint();
+  toast('Took out '+say+' ('+n+' box'+(n===1?'':'es')+'). Undo brings '+(n===1?'it':'them')+' back.');
+}
+/* the table panel, under the box's own settings */
+function ovTblPanel(t,fd){
+  const tb=fd.ov.tb, info=ovTblInfo(t,tb), col=info.cells.filter(([f])=>f.ov.c===fd.ov.c).map(([f])=>f);
+  const kinds=[...new Set(col.map(f=>f.ty))], cn=ovTblColName(t,tb,fd.ov.c), rn=ovTblRowName(t,tb,fd.ov.r);
+  return `<div class="ov-tbl-p">
+    <div class="ov-tbl-h"><span>▦</span>Table <span class="tiny muted">· ${info.rows.length} row${info.rows.length===1?'':'s'} × ${info.cols.length} column${info.cols.length===1?'':'s'}</span></div>
+    <div class="tiny muted" style="margin-bottom:10px">This box is in the “${esc(cn)}” column, ${/^row /.test(rn)?esc(rn):'the “'+esc(rn)+'” row'}. Change the whole column, row or table at once.</div>
+    <div class="field"><label for="ovColName">Column name</label><input class="inp" id="ovColName" value="${esc(cn)}" onchange="ovTblRename(this.value)" onkeydown="if(event.key==='Enter')this.blur()"></div>
+    <div class="field"><label>Every box in this column is${kinds.length>1?' <span class="tiny muted">(now mixed)</span>':''}</label>
+      <div class="ov-kinds ov-tbl-kinds">${OV_KINDS.map(([k,l])=>`<button type="button" class="${kinds.length===1&&kinds[0]===k?'on':''}" onclick="ovTblKind('${k}')"><span>${OV_KIND_ICON[k]}</span>${l}</button>`).join('')}</div></div>
+    <div class="ov-tbl-acts">
+      <button type="button" class="btn ghost sm ov-del" onclick="ovTblDel('row')">✕ Remove this row</button>
+      <button type="button" class="btn ghost sm ov-del" onclick="ovTblDel('col')">✕ Remove this column</button>
+      <button type="button" class="btn ghost sm ov-del" onclick="ovTblDel('table')">✕ Remove the whole table</button></div>
+  </div>`;
+}
+/* the other boxes of the picked box's table, its row and its column, and a frame round the table */
+function ovTblMarks(t,fd,sel){
+  if(!ovIsTbl(t,sel)||!fd.ov||fd.ov.tb!==sel.ov.tb||fd===sel) return '';
+  return ' ov-intbl'+(fd.ov.c===sel.ov.c?' ov-incol':'')+(fd.ov.r===sel.ov.r?' ov-inrow':'');
+}
+function ovTblFrame(t,pi){
+  const sel=OV.sel!=null&&t.fields[OV.sel]; if(!ovIsTbl(t,sel)||OV.preview) return '';
+  const cs=ovTblCells(t,sel.ov.tb).filter(([f])=>f.ov.p===pi).map(([f])=>f.ov.cell||f.ov); if(!cs.length) return '';
+  const x0=Math.min(...cs.map(b=>b.x)), y0=Math.min(...cs.map(b=>b.y)), x1=Math.max(...cs.map(b=>b.x+b.w)), y1=Math.max(...cs.map(b=>b.y+b.h));
+  return `<div class="ov-tbl-frame" style="${ovPos({x:ovRound(x0-0.5),y:ovRound(y0-0.5),w:ovRound(x1-x0+1),h:ovRound(y1-y0+1)})}" aria-hidden="true"></div>`;
+}
+/* the list of boxes, with each table as one line */
+function ovListHtml(t){
+  const seen={}, rows=[];
+  t.fields.forEach((x,i)=>{ if(!x.ov) return;
+    if(ovIsTbl(t,x)){ if(seen[x.ov.tb]) return; seen[x.ov.tb]=1; const info=ovTblInfo(t,x.ov.tb);
+      rows.push(`<button type="button" class="ov-li ov-li-tbl" onclick="ovSelect(${i},true)"><span class="ov-li-ic">▦</span><span class="ov-li-t">Table · ${info.rows.length} row${info.rows.length===1?'':'s'} × ${info.cols.length} column${info.cols.length===1?'':'s'}</span><span class="tiny muted">${info.cells.length} boxes · p${x.ov.p+1}</span></button>`); return; }
+    rows.push(`<button type="button" class="ov-li" onclick="ovSelect(${i},true)"><span class="ov-li-ic">${OV_KIND_ICON[x.ty]||'T'}</span><span class="ov-li-t">${esc(x.l)}</span><span class="tiny muted">p${x.ov.p+1}</span></button>`); });
+  return rows.join('');
+}
+/* Tab and Shift+Tab step through the boxes while setting the form up, name field to name field */
+function ovStep(dir){
+  const t=ovT(); if(!t||!t.fields.length) return;
+  ovLabelCommit();
+  const idx=t.fields.map((f,i)=>f.ov?i:-1).filter(i=>i>=0); if(!idx.length) return;
+  const k=OV.sel==null?-1:idx.indexOf(OV.sel), nk=OV.sel==null?(dir>0?0:idx.length-1):(k+dir+idx.length)%idx.length;
+  ovSelect(idx[nk],true);
+  const n=el('ovLabel'); if(n){ n.focus({preventScroll:true}); n.select(); }
+}
+/* filling it in on the form: Enter goes down a table column, or on to the next box */
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'||e.isComposing||e.altKey||e.ctrlKey||e.metaKey) return;
+  const a=e.target; if(!a||a.tagName!=='INPUT'||!a.closest||!a.closest('.ov-doc.ov-fill')) return;
+  const d=docById(window._ovFillDoc); if(!d) return;
+  const i=+String(a.id).replace(/^dg/,''), fd=d.fields[i]; if(!fd||!fd.ov) return;
+  e.preventDefault();
+  const order=d.fields.map((f,j)=>[f,j]).filter(([f])=>f.ov&&f.ty!=='signature');
+  let to=null;
+  if(fd.ov.tb){ const col=order.filter(([f])=>f.ov.tb===fd.ov.tb&&f.ov.c===fd.ov.c).sort((p,q)=>p[0].ov.r-q[0].ov.r), k=col.findIndex(([,j])=>j===i);
+    const step=col[k+(e.shiftKey?-1:1)]; if(step) to=step[1]; }
+  if(to==null){ const k=order.findIndex(([,j])=>j===i), step=order[k+(e.shiftKey?-1:1)]; if(step) to=step[1]; }
+  const n=to!=null&&document.getElementById('dg'+to); if(n){ n.focus(); if(n.select&&/text|number/.test(n.type)) n.select(); }
+},true);
+
 /* ── filling it in, on the original page ── */
 function ovSigInner(v){ return v?`<span class="ov-sigimg">${sigShow(v,40)}</span>`:`<span class="ov-sigph">✍ Sign here</span>`; }
 function ovFillBox(fd,i,v){
@@ -17010,7 +17174,7 @@ function ovFillBox(fd,i,v){
 function ovFillOpen(id,saved,filedOf){
   const d=docById(id); if(!d) return;
   const view=window._ovView||(window.innerWidth<720?'list':'page');
-  const o=d.overlay;
+  const o=d.overlay; window._ovFillDoc=id;                          // v12.25
   const top=`${filedOf?`<div class="tiny muted" style="margin-bottom:8px">${filedPill(filedOf)} ${(filedOf.refs||[]).map(r=>r.b?('in '+esc(FOLDER_NAMES[r.b]||r.b)):('in '+esc(((client(r.cid)||staff(r.cid)||{}).uci)||((staff(r.cid)||{}).name)||'a file')+'’s files')).join(' · ')}</div>`:''}
     <div class="ov-viewbar"><span class="tiny muted">${view==='page'?'Type straight onto the form. Each box is one answer.':'The same answers as a list, easier on a small screen.'}</span>
       <span class="ov-seg"><button type="button" class="${view==='page'?'on':''}" onclick="ovFillView('${id}','page')">On the form</button><button type="button" class="${view==='list'?'on':''}" onclick="ovFillView('${id}','list')">As a list</button></span></div>`;
@@ -18470,7 +18634,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.24 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.25 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
