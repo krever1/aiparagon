@@ -46,7 +46,7 @@ async function start(file) {
   return { srv, BASE, browser, close: async () => { await browser.close(); srv.close(); } };
 }
 
-// opts: viewport, bucket (page errors), calls (array that records Supabase calls)
+// opts: viewport, bucket (page errors), calls (array that records Supabase calls), session (a stub account, below)
 async function newPage(env, opts) {
   opts = opts || {};
   const build = pdfjsBuild();
@@ -68,6 +68,31 @@ async function newPage(env, opts) {
         return json(200, b.p_token === INVITE.token ? [INVITE] : []);
       }
       if (p.startsWith('/rest/v1/rpc/np_invite_access')) return json(200, 'staff');
+      // opts.session: one stub account ({email, password, role, program}) that signs in for real. Its agency's
+      // settings rows live in session.program, so a second browser context with the same session object is
+      // the same account on another device. Writes to them are recorded in session.writes.
+      const S = opts.session;
+      if (S) {
+        S.writes = S.writes || [];
+        if (p.startsWith('/auth/v1/token')) {
+          const b = JSON.parse(req.postData() || '{}');
+          if (b.email === S.email && b.password === S.password) return json(200, { access_token: 'qa-access-token', refresh_token: 'qa-refresh-token', expires_in: 3600, token_type: 'bearer', user: { id: 'qa-user', email: S.email } });
+        }
+        if (p.startsWith('/rest/v1/rpc/np_my_org')) return json(200, 'org-qa');
+        if (p.startsWith('/rest/v1/rpc/np_my_role')) return json(200, S.role || 'director');
+        if (p.startsWith('/rest/v1/np_demo_program')) {
+          S.program = S.program || [];
+          if (req.method() === 'GET') {
+            const k = (p.match(/[?&]key=eq\.([^&]+)/) || [])[1];
+            return json(200, S.program.filter((r) => !k || r.key === decodeURIComponent(k)));
+          }
+          if (req.method() === 'POST') {
+            let b = JSON.parse(req.postData() || '[]'); if (!Array.isArray(b)) b = [b];
+            b.forEach((row) => { S.writes.push(row); const i = S.program.findIndex((r) => r.key === row.key); if (i >= 0) S.program[i] = Object.assign({}, S.program[i], row); else S.program.push(row); });
+            return json(201, []);
+          }
+        }
+      }
       if (p.startsWith('/auth/v1/token')) return json(400, { error_description: 'Invalid login credentials' });
       if (p.startsWith('/functions/v1/np-password')) return json(200, { ok: true });
       if (req.method() === 'GET') return json(200, []);

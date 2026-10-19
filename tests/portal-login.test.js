@@ -47,7 +47,7 @@ function check(label, ok, detail) {
     check('sign-in: the panel says Care, with clarity. and its three features', /Care, with clarity\./.test(side) && /Role-based access/.test(side) && /Inspection ready/.test(side) && /One shared calendar to coordinate important events, meetings and appointments for your organization’s team and clients\./.test(side), side.slice(0, 200));
     check('sign-in: the wording is general (no day programs or residential care teams)', !/day programs|residential care teams/i.test(side), side);
     check('sign-in: New agency? Create an agency account at the top right', /New agency\?\s*Create an agency account/.test(s.top), s.top);
-    check('sign-in: the version sits in the footer', s.ver === (await page.evaluate(() => APP_VERSION)) && /v12\.23/.test(s.ver), s.ver);
+    check('sign-in: the version sits in the footer', s.ver === (await page.evaluate(() => APP_VERSION)) && /^v12\.(2[3-9]|[3-9]\d) beta$/.test(s.ver), s.ver);
     check('sign-in: Support writes to support@aiparagonconsulting.com, and there are no dead Privacy or Terms links',
       await page.evaluate(() => { const a = [...document.querySelectorAll('#login .lg-foot a')]; return a.length === 1 && a[0].href === 'mailto:support@aiparagonconsulting.com'; }));
     check('sign-in: Forgot password? sits beside the Password label', s.forgot && s.forgot.vis, JSON.stringify(s.forgot));
