@@ -49241,6 +49241,48 @@ function v113Title(){
 })();
 </script>
 
+<script id="v114js">
+/* ===================================================================
+   v114: THE SIGN-IN TOKEN ON EVERY n8n CALL
+   The n8n workflows the dashboard starts check who is asking: the request
+   carries the signed-in user's token in "auth", and a workflow answers 401
+   without a good one. The older calls never sent it, so it is added here to
+   any POST to an n8n webhook whose JSON body has none. A 401 gets one more
+   try with a refreshed token. A token with under 20 minutes left is
+   refreshed first, so a run that hands it on (an Intel Tracker run passes it
+   to the Custom Ad Strategy) still holds a good one when it gets there.
+   =================================================================== */
+const V114_HOOK='https://n8n.aiparagonconsulting.com/webhook/';
+const V114_LEFT=20*60*1000;
+async function v114Tok(force){
+  try{
+    const s=typeof apSess==='function'?apSess():null;
+    if(!s||typeof apTokenFresh!=='function')return null;
+    return await apTokenFresh(force||!s.expires_at||s.expires_at-Date.now()<V114_LEFT);
+  }catch(e){return null;}
+}
+(function(){
+  const _f=window.fetch;
+  window.fetch=function(u,o){
+    const url=typeof u==='string'?u:(u&&u.url)||'';
+    if(url.indexOf(V114_HOOK)!==0||!o||String(o.method||'GET').toUpperCase()!=='POST'||typeof o.body!=='string')return _f.apply(this,arguments);
+    let b=null;try{b=JSON.parse(o.body);}catch(e){b=null;}
+    if(!b||typeof b!=='object'||Array.isArray(b))return _f.apply(this,arguments);
+    const self=this;
+    const send=function(t){return _f.call(self,u,t&&t!==b.auth?Object.assign({},o,{body:JSON.stringify(Object.assign({},b,{auth:t}))}):o);};
+    /* turned away: once more with a refreshed token (a refresh that fails puts up the signed-out bar) */
+    const again=function(res){
+      if(!res||res.status!==401)return res;
+      return v114Tok(true).then(function(t){return t?send(t):res;});
+    };
+    let s=null;try{s=typeof apSess==='function'?apSess():null;}catch(e){s=null;}
+    const fresh=!!(s&&s.access_token&&s.expires_at&&s.expires_at-Date.now()>=V114_LEFT);
+    if(fresh)return send(b.auth||s.access_token).then(again);
+    return v114Tok(false).then(function(t){return send(t||null);}).then(again);
+  };
+})();
+</script>
+
 <script>
 /* ===================================================================
    PAGE ADDRESSES
