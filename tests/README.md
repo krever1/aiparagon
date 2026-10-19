@@ -1,6 +1,6 @@
 # Browser tests
 
-Tests for the three apps Vercel serves from this repo. They check the page addresses, sign-in, Back and Forward, and that every page still opens without errors. Run them before merging a change to one of these files. `.vercelignore` keeps this folder off the live site.
+Tests for the apps in this repo: the three Vercel serves and the care portal (deployed to DigitalOcean from main). They check the page addresses, sign-in, Back and Forward, and that every page still opens without errors. Run them before merging a change to one of these files. `.vercelignore` keeps this folder off the live site.
 
 | Suite | File | What it covers |
 |---|---|---|
@@ -10,6 +10,8 @@ Tests for the three apps Vercel serves from this repo. They check the page addre
 | `advisory-routes.test.js` | `mhwp-dashboard.html` (#3) | /advisory/<page> addresses, the demo sign-in and onboarding, capabilities, detail pages, modals, the old-address forward. |
 | `advisory-smoke.test.js` | `mhwp-dashboard.html` (#3) | Signs in and opens every sidebar page at three dates; fails on any JS error. |
 | `voice-routes.test.js` | `voice-agent-client.html` (#4) | /voice/<page> addresses, deep links, the customer drawer, the old-address forward. |
+| `portal-login.test.js` | `E-&-G-Home-Inc.html` (#2) | The split-screen sign-in page at desktop, tablet and phone width with real clicks (nothing drawn over the button or fields, no sideways scrolling), the new-agency, invite, forgot-password and choose-a-view screens, the show-password eye and "Remember my email". Supabase is stubbed (`lib/portal-harness.js`), including an invite. |
+| `portal-templates.test.js` | `E-&-G-Home-Inc.html` (#2) | The box finder on made-up forms in `fixtures/forms` (drawn lines, typed ____ lines, a Word-style export, a form with tick boxes, a framed box, stacked comment lines and a table with row names), uploading a form, Find boxes, a box placed by hand snapping onto its line, and the template builder. Runs in the demo view, so nothing is saved. pdf.js (the version the portal loads) is fetched from npm into `tests/.cache` the first time. |
 
 Each routes suite also checks local copies (#/<page>), other hosts, frames and odd addresses.
 
@@ -19,7 +21,7 @@ Needs Node and Playwright with Chromium. Claude Code cloud sessions already have
 
 ```
 bash tests/run.sh                                   # every suite
-bash tests/run.sh dashboard                         # one app: dashboard, advisory or voice
+bash tests/run.sh dashboard                         # one app: dashboard, advisory, voice or portal
 bash tests/run.sh dashboard --against origin/main   # also compare every page with main
 ```
 

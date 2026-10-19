@@ -14,7 +14,7 @@ Briefs for Claude sessions in this repo. Last reviewed 2026-10-16. Four projects
 - Everything else in the repo is an older build or a marketing page: older dashboards (`ai-paragon-dashboard.html`, `ai-paragon-dashboard-v40.html`, `dashboard-v1.html`), older portal builds (`np-demo-*.html`, `Demo-portal.html`, `Spectrum-Care-Advisory-OS.html`), and the solution, landing and motion pages. Don't touch them for project work.
 - Vercel project "aiparagon" serves this repo as static files, no build step. Every file in the repo is public at aiparagon.vercel.app/<file>. Vercel is becoming the dev environment: each pushed branch gets a preview deployment.
 - `vercel.json` gives apps their own path prefix on the one domain: /dashboard and /dashboard/* serve the internal dashboard (#1), /voice and /voice/* serve the Command Center (#4), /advisory and /advisory/* serve the Advisory OS demo (#3), and each old file address forwards to its app (/new-aiparagon-dashboard.html to /dashboard, /voice-agent-client.html to /voice/overview, /mhwp-dashboard.html to /advisory/touchpoint; temporary 307s for now). Other apps can follow the same pattern (one prefix each, one rewrite pair each, plus a forward from the old file address).
-- Browser tests for #1, #3 and #4 live in `tests/` (kept off the live site by `.vercelignore`). Run `bash tests/run.sh` before merging a change to those files, and update a suite in the same PR when a page is added, renamed or moved; tests/README.md has the details.
+- Browser tests for #1, #2, #3 and #4 live in `tests/` (kept off the live site by `.vercelignore`). Run `bash tests/run.sh` before merging a change to those files, and update a suite in the same PR when a page is added, renamed or moved; tests/README.md has the details.
 - The repo is public. Keep secrets and security details out of commits and this file.
 
 ## Shared services
@@ -240,8 +240,10 @@ Erica's onboarding design system: paper background, deep green, Inter Tight + IB
 ## Beta bar (Kser's words)
 Each user sees only their own agency's data and actions; a new agency gets a blank dashboard tied to nothing else; nobody using it as intended sees Ezra's or anyone else's data. Holding at v12.13 on that basis.
 
-## Where it stands (as of 2026-10-15)
-- The GitHub copy is v12.22 beta (the brief said v12.13 live). Confirm what's deployed on DigitalOcean.
+## Where it stands (as of 2026-10-19)
+- DigitalOcean deploys `E-&-G-Home-Inc.html` from `main` on every push, so a merge to main is a release: work on a branch, run `bash tests/run.sh portal`, then merge. v12.22 beta was live on Oct 19.
+- v12.23 (Oct 19, Erica's Loom on the login page and templates): the sign-in page is her split-screen design (Option A, Hanken Grotesk, her colours) with softer, general wording; every sign-in screen (new agency, invite, forgot/reset password, choose a view) uses it. "Remember my email on this device" works (unticked, the email is not offered again and is dropped on sign-out; device key `noremember`). Footer links: Support only (no Privacy or Terms pages exist yet). Templates: the box finder looks at each page as a picture (`ovScanPage` / `ovFindSlots`), so blank lines drawn or typed, captions under signature lines, table cells ("Drug, row 1"), framed boxes and stacked comment lines are found; tick boxes are named from their question. "Find boxes" re-runs it on a saved template; a box placed by hand snaps onto the line or cell under the click (`OV_SLOTS`). Builder: no "Upload the original form", a Template name box, new questions land above the signature lines, cells say "filled in on each copy". "Try it" is gone. Tests: `tests/portal-login.test.js`, `tests/portal-templates.test.js` (fixture forms in `tests/fixtures/forms`). Erica's real medication form PDF has not been tested yet.
+- Queued from the same feedback: home page in her Home A/B style with a Customize home panel (schedule as list, timeline or month; pick the tiles; Next up; reorder sections; per person, director sets the agency default; staff and family too); table-wide edits on uploaded forms (delete a row, change a column's kind); a field bar and a Word-like format bar in both template editors; reading scans and photos in the browser. The app frame (sidebar and top bar in her style) comes after those.
 - E and G's original workspace (org_mtgiv1ao_9fwoky) was removed in an Oct 5 cleanup. Its rows are kept in a backup table in the np_private schema. Open: restore them into the new agency, or purge. The backup still holds med data.
 - As of 2026-10-15 the live agencies hold settings only: no client, staff, document or incident records. One non-AI Paragon agency was created Oct 7; check whether it's Ezra's.
 - Both n8n calendar workflows are hard-coded to the removed org, so the n8n Google sync does nothing for current agencies. The per-person `np-gcal` connection is built and the page uses it (waiting on the Google OAuth origin and test users).
@@ -254,7 +256,7 @@ Each user sees only their own agency's data and actions; a new agency gets a bla
 - Parked: binder cover form content, PWA/native app, duplicate np_demo_shifts rows cleanup.
 
 ## Shipping
-Ship each round as a new numbered file (np-demo-pilot-vX-Y-beta.html) with its regression suite. In GitHub the file is `E-&-G-Home-Inc.html`: update it in place.
+Ship each round as a new numbered file (np-demo-pilot-vX-Y-beta.html) with its regression suite. In GitHub the file is `E-&-G-Home-Inc.html`: update it in place. A merge to `main` deploys it to np.aiparagonconsulting.com.
 
 ## Gotchas
 - Seeded records aren't DB rows, so deletes are tombstones.

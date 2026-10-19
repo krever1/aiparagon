@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs the browser test suites (see tests/README.md).
 #   bash tests/run.sh                                  every suite
-#   bash tests/run.sh dashboard advisory               some of them: dashboard, advisory, voice
+#   bash tests/run.sh dashboard advisory               some of them: dashboard, advisory, voice, portal
 #   bash tests/run.sh dashboard --against origin/main  also compare every page's text with the file at that git ref
 cd "$(dirname "$0")/.." || exit 2
 export NODE_PATH="${NODE_PATH:-$(npm root -g 2>/dev/null)}"
@@ -14,7 +14,7 @@ while [ $# -gt 0 ]; do
     *) suites="$suites $1"; shift ;;
   esac
 done
-[ -z "$suites" ] && suites="dashboard advisory voice"
+[ -z "$suites" ] && suites="dashboard advisory voice portal"
 
 status=0
 for s in $suites; do
@@ -22,7 +22,8 @@ for s in $suites; do
     dashboard) file=new-aiparagon-dashboard.html ;;
     advisory) file=mhwp-dashboard.html ;;
     voice) file=voice-agent-client.html ;;
-    *) echo "unknown suite: $s (use dashboard, advisory or voice)"; exit 2 ;;
+    portal) file='E-&-G-Home-Inc.html' ;;
+    *) echo "unknown suite: $s (use dashboard, advisory, voice or portal)"; exit 2 ;;
   esac
   base=""
   if [ -n "$ref" ]; then
