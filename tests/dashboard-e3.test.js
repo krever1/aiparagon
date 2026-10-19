@@ -173,8 +173,8 @@ const J = (v) => (typeof v === 'string' ? JSON.parse(v) : v);
   // ---------------- 4. categories and insights ----------------
   {
     const { ctx, page, store, hooks } = await open('/dashboard/marketing-generation');
-    const s0 = await ev(page, () => ({ steps: [...document.querySelectorAll('#nwMgForm .nw-wstep-h h3')].map((h) => h.textContent).join('|'), chips: [...document.querySelectorAll('#v111Cats_mg .v111-cat')].map((b) => b.textContent).join('|') }));
-    check('Marketing Generation: the briefs’ findings are step 2, the ad campaign has its two kinds', s0.steps === 'What are you making?|What the briefs found|Details' && s0.chips === 'Book a call|Low-ticket offer', JSON.stringify(s0));
+    const s0 = await ev(page, () => ({ steps: [...document.querySelectorAll('#nwMgForm .nw-wstep-h h3')].map((h) => h.textContent).join('|'), chips: [...document.querySelectorAll('#v111Cats_mg .v111-cat')].map((b) => b.dataset.c).join('|') }));
+    check('Marketing Generation: the briefs’ findings are step 2, the ad campaign has its kinds (v113: six)', s0.steps === 'What are you making?|What the briefs found|Details' && s0.chips === 'direct_to_call|low_ticket|webinar|download|newsletter_signup|landing', JSON.stringify(s0));
     await page.click('#nwMgForm .nw-tile[data-k="thought_leadership"]'); await wait(page, 400);
     const chips = await ev(page, () => [...document.querySelectorAll('#v111Cats_mg .v111-cat')].map((b) => b.dataset.c + ':' + (b.querySelector('.nw-cnt') || {}).textContent));
     check('a LinkedIn post has the Intel Tracker’s categories, each with what the briefs found', chips.length === 7 && chips[0] === 'opinion:6' && chips.indexOf('case_studies:3') >= 0, chips.join(' '));
