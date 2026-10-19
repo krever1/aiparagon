@@ -2823,6 +2823,43 @@ body{font-size:15px}
 .ov-tbl-h>span:first-child{color:#3A6EA5}
 .ov-tbl-acts{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
 .ov-li-tbl .ov-li-t{font-weight:600}
+/* v12.26: the field bar and the format bar (both template editors) */
+.tpe-top{position:sticky;top:0;z-index:8;margin:-34px -40px 18px;border-radius:6px 6px 0 0;box-shadow:0 6px 14px rgba(20,25,35,.05);font-family:system-ui,sans-serif}
+.tpe-top .tpe-dock{position:static;margin:0;border-radius:0;box-shadow:none}
+.tpe-ribbon{background:#fff;border-bottom:1px solid #EAE2C8;padding:8px 10px;border-radius:6px 6px 0 0}
+.fb-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.fb-row.fmt-row{margin-top:6px}
+.fb-l{font:600 11.5px system-ui,sans-serif;color:#6b6f78;margin-right:3px;white-space:nowrap}
+.fb-k{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 9px;border:1px solid var(--line);border-radius:8px;background:#fff;font:600 12px system-ui,sans-serif;color:var(--ink);cursor:grab;white-space:nowrap}
+.fb-k:hover{border-color:#3A6EA5}.fb-k.on{background:#3A6EA5;border-color:#3A6EA5;color:#fff}
+.fb-k svg{flex:none}
+.fb-more,.fmt-size{height:30px;border:1px solid var(--line);border-radius:8px;background:#fff;font:12px system-ui,sans-serif;padding:0 6px;color:var(--ink)}
+.fb-hint{font:12px system-ui,sans-serif;color:#2C5680}
+.fb-hint:not(:empty){margin-top:6px}
+.fmt-grp{display:inline-flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--line);border-radius:9px;background:#fff}
+.fmt-btn{width:28px;height:26px;border:0;border-radius:6px;background:none;display:inline-grid;place-items:center;font:14px Georgia,serif;color:#222;cursor:pointer;padding:0}
+.fmt-btn:hover:not(:disabled){background:var(--surface-2)}
+.fmt-btn.on{background:#E1EBF6;color:#1F4E80;box-shadow:inset 0 0 0 1px #9DB8D6}
+.fmt-sw{width:20px;height:20px;margin:1px 2px;border-radius:999px;border:2px solid #fff;box-shadow:0 0 0 1px #c9ced6;background:var(--sw);cursor:pointer;padding:0}
+.fmt-sw.on{box-shadow:0 0 0 2px #1F4E80}
+.fmt-clear{height:30px;border:1px solid var(--line);border-radius:8px;background:#fff;font:600 12px system-ui,sans-serif;color:#555;padding:0 9px;cursor:pointer}
+.fmt-row :disabled{opacity:.4;cursor:default}
+.fmt-why{font:12px system-ui,sans-serif;color:#8a8478;margin-left:4px}
+.tpe-slot{height:0;overflow:hidden}
+.tpe-paper.placing .tpe-slot,.tpe-paper.dragnew .tpe-slot{height:26px;display:flex;align-items:center;cursor:copy}
+.tpe-slot span{flex:1;text-align:center;font:600 11px/18px system-ui,sans-serif;color:#3A6EA5;border:1.5px dashed #9DB8D6;border-radius:6px;opacity:.75}
+.tpe-slot:hover span,.tpe-slot.over span{background:#E1EBF6;border-color:#3A6EA5;opacity:1}
+.tpe-paper.placing .tpe-b{cursor:copy}
+.ov-fmt{flex-basis:100%;padding-top:6px;border-top:1px dashed var(--line);margin-top:2px}
+.fmtv.fz :is(.inp,textarea,.opt-chip){font-size:var(--fz)}
+.fmtv.fwb :is(.inp,textarea,.opt-chip){font-weight:700}
+.fmtv.fwn :is(.inp,textarea,.opt-chip){font-weight:400}
+.fmtv.fi :is(.inp,textarea,.opt-chip){font-style:italic}
+.fmtv.fu :is(.inp,textarea){text-decoration:underline}
+.fmtv.fc :is(.inp,textarea,.opt-chip){color:var(--fc)}
+.fmtv.fal :is(.inp,textarea){text-align:var(--fal)}
+@media(max-width:900px){.tpe-top{margin:-20px -14px 14px}}
+@media(max-width:700px){.tpe-top{position:static}.fmt-why{flex-basis:100%;margin:2px 0 0}}
 </style>
 </head>
 <body>
@@ -3164,7 +3201,7 @@ body{font-size:15px}
       </div>
       <div class="side-foot">
         <span class="tiny" id="demoNote" style="display:block;color:var(--muted);margin-bottom:4px">Demo preview includes sample data only.</span>
-        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.25 beta</span></span>
+        <span><b>Spectrum Care Advisory OS</b> · built by <a href="https://aiparagonconsulting.com" target="_blank">AI Paragon Consulting</a> · <span id="verStamp" title="Build">v12.26 beta</span></span>
         <a href="#" onclick="event.preventDefault();openPilotAgreement()" id="pilotLink">✎ Pilot agreement</a>
         <a href="#" onclick="event.preventDefault();supportCompose()">Help &amp; support</a>
       </div>
@@ -14378,9 +14415,9 @@ function libRowHtml(fl,key){
 }
 function docFieldInput(fd,i,v){
   const val=v==null?(fd.def||''):v;
-  if(fd.ty==='head') return `<div style="margin:18px 0 6px;padding-bottom:5px;border-bottom:1.5px solid var(--line);font-size:14px;font-weight:700">${esc(fd.l)}</div>`;
-  if(fd.ty==='h1') return `<div style="margin:14px 0 8px;font-size:19px;font-weight:700;letter-spacing:-.01em">${esc(fd.l)}</div>`;
-  if(fd.ty==='para') return `<div style="margin:6px 0 12px;font-size:13px;line-height:1.55;color:#3A3F4B;white-space:pre-wrap">${esc(fd.l)}</div>`;
+  if(fd.ty==='head') return `<div style="margin:18px 0 6px;padding-bottom:5px;border-bottom:1.5px solid var(--line);font-size:14px;font-weight:700${fmtX(fd.fmt)}">${esc(fd.l)}</div>`;
+  if(fd.ty==='h1') return `<div style="margin:14px 0 8px;font-size:19px;font-weight:700;letter-spacing:-.01em${fmtX(fd.fmt)}">${esc(fd.l)}</div>`;
+  if(fd.ty==='para') return `<div style="margin:6px 0 12px;font-size:13px;line-height:1.55;color:#3A3F4B;white-space:pre-wrap${fmtX(fd.fmt)}">${esc(fd.l)}</div>`;
   if(fd.ty==='divider') return `<div style="margin:14px 0;border-top:1px solid var(--line)"></div>`;
   if(fd.ty==='choice'){
     const opts=fd.opts&&fd.opts.length?fd.opts:['Option 1'];
@@ -14509,8 +14546,9 @@ function openDocEditor(id,withCarry){
        ${d.fields.length?d.fields.map((fd,i)=>{
          const block=['h1','head','para','divider'].includes(fd.ty);
          if(block) return `<div class="fp-block">${docFieldInput(fd,i,saved[fd.l])}</div>`;
-         if(fd.ty==='table'||fd.ty==='checklist'||fd.ty==='signature') return `<div class="fp-wide">${docFieldInput(fd,i,saved[fd.l])}</div>`;
-         return `<div class="fp-row"><div class="fp-lab">${esc(fd.l)}</div><div class="fp-val">${docFieldInput(fd,i,saved[fd.l])}</div></div>`;
+         const ff=fmtFill(fd.fmt);                                    // v12.26: the answers take the field's look
+         if(fd.ty==='table'||fd.ty==='checklist'||fd.ty==='signature') return `<div class="fp-wide ${ff.cls}" style="${ff.style}${fmtX(fd.fmt)}">${docFieldInput(fd,i,saved[fd.l])}</div>`;
+         return `<div class="fp-row"><div class="fp-lab" style="${fmtCss(fd.fmt)}">${esc(fd.l)}</div><div class="fp-val ${ff.cls}" style="${ff.style}">${docFieldInput(fd,i,saved[fd.l])}</div></div>`;
        }).join(''):'<div class="empty">No fields yet — use “Edit the form” to add some.</div>'}
        ${d.foot?`<div class="fp-foot">${esc(d.foot)}</div>`:''}
      </div>`,
@@ -14751,33 +14789,33 @@ function docSheet(id,vals){
   if(ovIs(d)) return ovSheet(d,vals||{});                         // the original pages, with the answers on them
   const cellB='border:1px solid #999;padding:5px 7px;font-size:11.5px;text-align:left';
   const rows=d.fields.filter(fd=>fd.ty!=='signature').map(fd=>{
-    const v=vals[fd.l];
-    if(fd.ty==='h1') return `<tr><td colspan="2" style="padding:14px 2px 6px;font-size:18px;font-weight:700;border:none">${esc(fd.l)}</td></tr>`;
-    if(fd.ty==='para') return `<tr><td colspan="2" style="padding:6px 2px;font-size:11.5px;line-height:1.5;border:none;white-space:pre-wrap">${esc(fd.l)}</td></tr>`;
+    const v=vals[fd.l], fx=fmtX(fd.fmt);                           // v12.26: the field's look
+    if(fd.ty==='h1') return `<tr><td colspan="2" style="padding:14px 2px 6px;font-size:18px;font-weight:700;border:none${fx}">${esc(fd.l)}</td></tr>`;
+    if(fd.ty==='para') return `<tr><td colspan="2" style="padding:6px 2px;font-size:11.5px;line-height:1.5;border:none;white-space:pre-wrap${fx}">${esc(fd.l)}</td></tr>`;
     if(fd.ty==='divider') return `<tr><td colspan="2" style="padding:8px 0;border:none"><div style="border-top:1px solid #999"></div></td></tr>`;
-    if(fd.ty==='head') return `<tr><td colspan="2" style="padding:12px 2px 4px;font-size:13px;font-weight:700;border:none;border-bottom:1.5px solid #333">${esc(fd.l)}</td></tr>`;
+    if(fd.ty==='head') return `<tr><td colspan="2" style="padding:12px 2px 4px;font-size:13px;font-weight:700;border:none;border-bottom:1.5px solid #333${fx}">${esc(fd.l)}</td></tr>`;
     if(fd.ty==='table'){
       const cols=fd.cols||[];
       const data=Array.isArray(v)?v:[];
       const blank=Math.max(3, 8-data.length);                       // spare lines for handwriting
-      const body=data.map(r=>`<tr>${cols.map((c,ci)=>`<td style="${cellB}">${esc((r&&r[ci])||'')}</td>`).join('')}</tr>`).join('')
+      const body=data.map(r=>`<tr>${cols.map((c,ci)=>`<td style="${cellB}${fx}">${esc((r&&r[ci])||'')}</td>`).join('')}</tr>`).join('')
         + Array.from({length:blank},()=>`<tr>${cols.map(()=>`<td style="${cellB}">&nbsp;</td>`).join('')}</tr>`).join('');
-      return `<tr><th style="width:240px;vertical-align:top">${esc(fd.l)}</th><td style="padding:6px 4px">
-        <table style="width:100%;border-collapse:collapse"><thead><tr>${cols.map(c=>`<th style="${cellB};background:#f2f0ea">${esc(c)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></td></tr>`;
+      return `<tr><th style="width:240px;vertical-align:top${fx}">${esc(fd.l)}</th><td style="padding:6px 4px">
+        <table style="width:100%;border-collapse:collapse"><thead><tr>${cols.map(c=>`<th style="${cellB};background:#f2f0ea${fx}">${esc(c)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></td></tr>`;
     }
     if(fd.ty==='checklist'){
       const items=Array.isArray(v)?v:(fd.items||[]).map((t,ii)=>({t,on:!!(fd.on&&fd.on[ii])}));
-      return `<tr><th style="width:240px;vertical-align:top">${esc(fd.l)}</th><td><div style="line-height:1.9">${items.map(it=>`${it.on?'☑':'☐'} ${esc(it.t)}`).join('<br>')}</div></td></tr>`;
+      return `<tr><th style="width:240px;vertical-align:top${fx}">${esc(fd.l)}</th><td style="${fx.slice(1)}"><div style="line-height:1.9">${items.map(it=>`${it.on?'☑':'☐'} ${esc(it.t)}`).join('<br>')}</div></td></tr>`;
     }
     if(fd.ty==='choice'||fd.ty==='checkbox'||fd.ty==='check'){
       const opts=fd.opts&&fd.opts.length?fd.opts:['Yes','No'];
       const picked=String(v||'').split(' · ');
-      return `<tr><th style="width:240px">${esc(fd.l)}</th><td>${opts.map(o=>(picked.includes(o)?'☑':'☐')+' '+esc(o)).join(' &nbsp;&nbsp; ')}</td></tr>`;
+      return `<tr><th style="width:240px${fx}">${esc(fd.l)}</th><td style="${fx.slice(1)}">${opts.map(o=>(picked.includes(o)?'☑':'☐')+' '+esc(o)).join(' &nbsp;&nbsp; ')}</td></tr>`;
     }
-    if(fd.ty==='file'&&v&&vals[fd.l+' \u2014 file']) return `<tr><th style="width:240px">${esc(fd.l)}</th><td>${docFileLink(v,vals[fd.l+' \u2014 file'])}</td></tr>`;   // v12.22: opens the attached file
+    if(fd.ty==='file'&&v&&vals[fd.l+' \u2014 file']) return `<tr><th style="width:240px${fx}">${esc(fd.l)}</th><td style="${fx.slice(1)}">${docFileLink(v,vals[fd.l+' \u2014 file'])}</td></tr>`;   // v12.22: opens the attached file
     const sv=v==null?'':fd.ty==='date'?ovDateTxt(v):fd.ty==='time'?ovTimeTxt(v):String(v);   // v12.22: 10/12/2026 and 2:30 PM, as on the uploaded forms
     const cell=fd.ty==='long text'?`<div style="white-space:pre-wrap;min-height:48px">${esc(sv)}</div>`:esc(sv);
-    return `<tr><th style="width:240px">${esc(fd.l)}</th><td>${cell||'&nbsp;'}</td></tr>`;
+    return `<tr><th style="width:240px${fx}">${esc(fd.l)}</th><td style="${fx.slice(1)}">${cell||'&nbsp;'}</td></tr>`;
   }).join('');
   const sg=DOC_SIGS[d.name];
   const sigs=d.fields.filter(fd=>fd.ty==='signature').map(fd=>{
@@ -14785,9 +14823,9 @@ function docSheet(id,vals){
     const nm=vals[fd.l+' \u2014 printed name']||'', dt=vals[fd.l+' \u2014 date']||'';
     const extra=(fd.sigName!==undefined||fd.sigDate!==undefined);
     /* v12.22: the value above, the caption at the bottom of each box, so every caption lines up */
-    return `<div class="sig"><span class="sig-v">${sigShow(v)||'&nbsp;'}</span><span class="sig-cap">${esc(fd.l)}${extra?'':(v?' \u00b7 '+(sg?sg.at:nowStamp()):' / date')}</span></div>`
-      +(extra&&fd.sigName?`<div class="sig"><span class="sig-v">${esc(nm)||'&nbsp;'}</span><span class="sig-cap">${esc(fd.nameLabel||'Printed name')}</span></div>`:'')
-      +(extra&&fd.sigDate!==false?`<div class="sig"><span class="sig-v">${dt?esc(fmtLong(dt)):'&nbsp;'}</span><span class="sig-cap">${esc(fd.dateLabel||'Date')}</span></div>`:'');
+    return `<div class="sig"><span class="sig-v">${sigShow(v)||'&nbsp;'}</span><span class="sig-cap" style="${fmtCss(fd.fmt)}">${esc(fd.l)}${extra?'':(v?' \u00b7 '+(sg?sg.at:nowStamp()):' / date')}</span></div>`
+      +(extra&&fd.sigName?`<div class="sig"><span class="sig-v">${esc(nm)||'&nbsp;'}</span><span class="sig-cap" style="${fmtCss(fd.fmt)}">${esc(fd.nameLabel||'Printed name')}</span></div>`:'')
+      +(extra&&fd.sigDate!==false?`<div class="sig"><span class="sig-v">${dt?esc(fmtLong(dt)):'&nbsp;'}</span><span class="sig-cap" style="${fmtCss(fd.fmt)}">${esc(fd.dateLabel||'Date')}</span></div>`:'');
   }).join('');
   const badge=sg?` · signed by ${esc(sg.by)} · ${esc(sg.at)}`:'';
   return `<h2>${esc(d.name)}</h2><div class="p-sub">Spectrum Care · ${esc(FOLDER_NAMES[d.key]||d.key)}${badge} · clients identified by client ID only · printed ${fmtLong(T)}</div>
@@ -15742,7 +15780,7 @@ function openTplEditor(id){
   window._tplEd=t.id;
   window._tplCleared=tplBlank(t)+(t._cleared||0);                    // v12.19: blank, even if answers were typed into it before
   window._tplSnap=JSON.stringify({name:t.name,fields:t.fields,subtitle:t.subtitle,foot:t.foot,sysNote:t.sysNote,dest:t.dest,source:t.source||null,src:TPL_SRC_URL[t.id]||null});
-  window._tplOrig=false; window._tpeAct=null; state.tpeKind=null; TPE_UNDO=[]; tpeWrapUndo();
+  window._tplOrig=false; window._tpeAct=null; state.tpeKind=null; TPE_PLACE=null; TPE_UNDO=[]; tpeWrapUndo();
   tpeDraw();
 }
 const tpeT=()=>tplById(window._tplEd)||USER_DOCS[window._tplEd]||null;
@@ -15752,7 +15790,7 @@ function openDocStructEditor(id){
   const d=USER_DOCS[id]; if(!d) return;
   window._tplEd=id; window._tplNew=null; window._tplOrig=false; window._tplCleared=tplBlank(d)+(d._cleared||0);
   window._tplSnap=JSON.stringify({name:d.name,fields:d.fields,subtitle:d.subtitle,foot:d.foot,sysNote:d.sysNote});
-  window._tpeAct=null; state.tpeKind=null; TPE_UNDO=[]; tpeWrapUndo();
+  window._tpeAct=null; state.tpeKind=null; TPE_PLACE=null; TPE_UNDO=[]; tpeWrapUndo();
   tpeDraw();
 }
 function tpeSave(){
@@ -15801,7 +15839,7 @@ function tpeDraw(){
   openModal(window._tplNew?'New template':isDoc?'Edit document layout':'Edit template',`
     <div class="tpe-bar">
       <button class="btn ghost sm tpe-undo" onclick="tpeUndo()" ${TPE_UNDO.length?'':'disabled'} title="Undo the last change (Ctrl or \u2318 + Z)">\u21b6 Undo</button>
-      <div class="tiny muted" style="flex:1;min-width:200px">This is the blank form as it prints. Click a label to rename it, click a block to change, move or remove it, and add more below. Answers and signatures go on each copy, with \u201cFill it in\u201d.</div>
+      <div class="tiny muted" style="flex:1;min-width:200px">This is the blank form as it prints. Click a label to rename it, click a block to change, format, move or remove it, and add fields from the bar above the form. Answers and signatures go on each copy, with \u201cFill it in\u201d.</div>
       ${src?`<button class="btn ghost sm" onclick="${orig?'window._tplOrig=!window._tplOrig;tpeDraw()':`tplUpload()`}">
         ${orig?(showOrig?'Hide the original':'Show the original'):'Attach the original again'}</button>`:''}
     </div>
@@ -15811,8 +15849,8 @@ function tpeDraw(){
     <div class="tpe-wrap ${showOrig?'with-orig':''}">
       ${showOrig?`<div class="tpe-orig">${storedEmbed(orig)}
         <div class="tiny muted" style="padding:6px 2px">${esc(orig.file||'Uploaded form')}</div></div>`:''}
-      <div class="tpe-paper">
-        <div class="tpe-dock" id="tpeDock">${tpeDockHtml()}</div>
+      <div class="tpe-paper${TPE_PLACE?' placing':''}">
+        <div class="tpe-top">${tpeRibbonHtml()}<div class="tpe-dock" id="tpeDock">${tpeDockHtml()}</div></div>
         <h2 class="tpe-title"><span class="tpe-ce" contenteditable="true" spellcheck="false" data-ph="Name this form"
           oninput="tpeNameSet(this.textContent.trim(),'title')">${esc(t.name||'')}</span></h2>
         <div class="tpe-sub"><span class="tpe-ce" contenteditable="true" spellcheck="false" data-ph="A line under the title"
@@ -15824,7 +15862,8 @@ function tpeDraw(){
             <option value="__staff__" ${destKey==='__staff__'?'selected':''}>A staff member\u2019s file</option>`}
             ${addOpt('binder')}
           </select></div>
-        <div id="tpeBlocks">${t.fields.map((fd,i)=>tpeBlock(fd,i,t)+(tpeIsRow(t.fields[i])&&!tpeIsRow(t.fields[i+1])?tpeRowBar(i):'')).join('')||'<div class="empty">Add the first block below.</div>'}</div>
+        <div id="tpeBlocks">${t.fields.length?t.fields.map((fd,i)=>tpeSlot(i)+tpeBlock(fd,i,t)+(tpeIsRow(t.fields[i])&&!tpeIsRow(t.fields[i+1])?tpeRowBar(i):'')).join('')+tpeSlot(t.fields.length)
+          :tpeSlot(0)+'<div class="empty">Add the first block from the bar at the top.</div>'}</div>
         <div class="tpe-foot"><span class="tpe-ce" contenteditable="true" spellcheck="false" data-ph="A note printed at the bottom of the page (optional)"
           oninput="tpeT().foot=this.textContent.trim()">${esc(t.foot||'')}</span></div>
         <label class="tpe-chk tpe-sysnote"><input type="checkbox" ${t.sysNote===false?'':'checked'} onchange="tpeSnap();tpeT().sysNote=this.checked?undefined:false">
@@ -15917,7 +15956,7 @@ document.addEventListener('keydown',e=>{
    a multiple choice), remove extras, and tick one to have it pre-selected on every copy. */
 function tpeOptsHtml(fd,i){
   const opts=fd.opts&&fd.opts.length?fd.opts:(fd.opts=['Yes','No']);
-  return `<span class="tpe-opts">${opts.map((o,oi)=>`<span class="tpe-opt">
+  return `<span class="tpe-opts" style="${fmtCss(fd.fmt)}">${opts.map((o,oi)=>`<span class="tpe-opt">
       <span class="tpe-box" aria-hidden="true"></span>
       ${tpeCe(o,`tpeOptRename(${i},${oi},this.textContent.trim())`,'Option')}
       ${opts.length>2?`<button type="button" class="tpe-x" title="Remove this option" onclick="tpeOptDel(${i},${oi})">\u2715</button>`:''}</span>`).join('')}
@@ -15939,11 +15978,11 @@ function tpeScroller(){
 }
 function tpeAsTick(){
   const v=window._tpeAsV||0;
-  if(!v||window._tpeDrag==null){ TPE_AS=null; return; }
+  if(!v||(window._tpeDrag==null&&!window._tpeNew)){ TPE_AS=null; return; }
   tpeScroller().scrollTop+=v; TPE_AS=requestAnimationFrame(tpeAsTick);
 }
 document.addEventListener('dragover',e=>{
-  if(window._tpeDrag==null) return;
+  if(window._tpeDrag==null&&!window._tpeNew) return;
   const sc=tpeScroller(), r=sc===document.scrollingElement?{top:0,bottom:innerHeight}:sc.getBoundingClientRect();
   const zone=Math.min(110,(r.bottom-r.top)/4); let v=0;
   if(e.clientY<r.top+zone) v=-Math.ceil((r.top+zone-e.clientY)/5)-2;
@@ -15951,7 +15990,8 @@ document.addEventListener('dragover',e=>{
   window._tpeAsV=v;
   if(v&&!TPE_AS) TPE_AS=requestAnimationFrame(tpeAsTick);
 });
-['dragend','drop'].forEach(t=>document.addEventListener(t,()=>{ window._tpeAsV=0; setTimeout(()=>{ window._tpeDrag=null; },0); }));
+['dragend','drop'].forEach(t=>document.addEventListener(t,()=>{ window._tpeAsV=0; setTimeout(()=>{ window._tpeDrag=null; window._tpeNew=null;
+  const p=document.querySelector('#mdBody .tpe-paper'); if(p) p.classList.remove('dragnew'); },0); }));
 /* and the quick way: straight to the top or the bottom */
 function tpeMoveTo(i,where){
   const f=tpeT().fields; const [it]=f.splice(i,1);
@@ -15965,25 +16005,25 @@ function tpeCe(txt,on,ph){
     onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" oninput="${on}">${esc(txt||'')}</span>`;
 }
 function tpeBlock(fd,i,t){
-  const ty=fd.ty||'text';
+  const ty=fd.ty||'text', fs=fmtCss(fd.fmt);                       // v12.26: the block's look
   let body='';
   if(ty==='h1'){
-    body=`<div class="tpe-h1">${tpeCe(fd.l,`tpeT().fields[${i}].l=this.textContent.trim()`,'Title')}</div>`;
+    body=`<div class="tpe-h1" style="${fs}">${tpeCe(fd.l,`tpeT().fields[${i}].l=this.textContent.trim()`,'Title')}</div>`;
   } else if(ty==='para'){
-    body=`<div class="tpe-para"><span class="tpe-ce tpe-ce-para" contenteditable="true" spellcheck="true" data-ph="Write the body text: instructions, policy wording, anything that should print as-is"
+    body=`<div class="tpe-para" style="${fs}"><span class="tpe-ce tpe-ce-para" contenteditable="true" spellcheck="true" data-ph="Write the body text: instructions, policy wording, anything that should print as-is"
       oninput="tpeT().fields[${i}].l=this.innerText.replace(/\\n{3,}/g,'\\n\\n').trim()">${esc(fd.l||'').replace(/\n/g,'<br>')}</span></div>`;
   } else if(ty==='divider'){
     body=`<div class="tpe-divider"></div>`;
   } else if(ty==='head'){
-    body=`<div class="tpe-head">${tpeCe(fd.l,`tpeT().fields[${i}].l=this.textContent.trim()`,'Section heading')}</div>`;
+    body=`<div class="tpe-head" style="${fs}">${tpeCe(fd.l,`tpeT().fields[${i}].l=this.textContent.trim()`,'Section heading')}</div>`;
   } else if(ty==='signature'){
     /* v12.19: the template keeps the signature lines and their labels. Signing, the printed name
        and the date happen on each copy when it is filled in, so the template stays blank. */
     const nm=fd.sigName!==false&&fd.sigName!==undefined?true:!!fd.sigName, dt=fd.sigDate!==false;
     body=`<div class="tpe-sigs">
-        <div class="tpe-sig"><div class="tpe-sigspace"></div><div class="tpe-sigline"></div>${tpeCe(fd.l,`tpeT().fields[${i}].l=this.textContent.trim()`,'Who signs')}</div>
-        ${nm?`<div class="tpe-sig sm"><div class="tpe-sigspace"></div><div class="tpe-sigline"></div>${tpeCe(fd.nameLabel||'Printed name',`tpeT().fields[${i}].nameLabel=this.textContent.trim()`,'Printed name')}</div>`:''}
-        ${dt?`<div class="tpe-sig sm"><div class="tpe-sigspace"></div><div class="tpe-sigline"></div>${tpeCe(fd.dateLabel||'Date',`tpeT().fields[${i}].dateLabel=this.textContent.trim()`,'Date')}</div>`:''}
+        <div class="tpe-sig" style="${fs}"><div class="tpe-sigspace"></div><div class="tpe-sigline"></div>${tpeCe(fd.l,`tpeT().fields[${i}].l=this.textContent.trim()`,'Who signs')}</div>
+        ${nm?`<div class="tpe-sig sm" style="${fs}"><div class="tpe-sigspace"></div><div class="tpe-sigline"></div>${tpeCe(fd.nameLabel||'Printed name',`tpeT().fields[${i}].nameLabel=this.textContent.trim()`,'Printed name')}</div>`:''}
+        ${dt?`<div class="tpe-sig sm" style="${fs}"><div class="tpe-sigspace"></div><div class="tpe-sigline"></div>${tpeCe(fd.dateLabel||'Date',`tpeT().fields[${i}].dateLabel=this.textContent.trim()`,'Date')}</div>`:''}
       </div>
       <div class="tpe-rows">
         <label class="tpe-chk"><input type="checkbox" ${nm?'checked':''} onchange="tpeSet(${i},'sigName',this.checked)"> Printed name line</label>
@@ -15993,12 +16033,12 @@ function tpeBlock(fd,i,t){
   } else if(ty==='table'){
     tpeShape(fd);
     const cols=fd.cols;
-    body=`<div class="tpe-tt">${tpeCe(fd.l,`tpeT().fields[${i}].l=this.textContent.trim()`,'Table title')}</div>
+    body=`<div class="tpe-tt" style="${fs}">${tpeCe(fd.l,`tpeT().fields[${i}].l=this.textContent.trim()`,'Table title')}</div>
       <div class="tpe-twrap"><table class="tpe-t"><thead><tr>
-        ${cols.map((c,ci)=>`<th>${tpeCe(c,`tpeT().fields[${i}].cols[${ci}]=this.textContent.trim()`,'Column')}
+        ${cols.map((c,ci)=>`<th style="${fs}">${tpeCe(c,`tpeT().fields[${i}].cols[${ci}]=this.textContent.trim()`,'Column')}
           ${cols.length>1?`<button type="button" class="tpe-x" title="Remove this column" onclick="tpeColDel(${i},${ci})">\u2715</button>`:''}</th>`).join('')}
         <th class="tpe-colplus"><button type="button" onclick="tpeColAdd(${i})" title="Add a column">\uff0b Column</button></th></tr></thead>
-        <tbody>${fd.preset.map((r,ri)=>`<tr>${cols.map((c,ci)=>`<td>${tpeCe(r[ci],`tpeT().fields[${i}].preset[${ri}][${ci}]=this.textContent.trim()`,'')}</td>`).join('')}
+        <tbody>${fd.preset.map((r,ri)=>`<tr>${cols.map((c,ci)=>`<td style="${fs}">${tpeCe(r[ci],`tpeT().fields[${i}].preset[${ri}][${ci}]=this.textContent.trim()`,'')}</td>`).join('')}
           <td class="tpe-colplus">${fd.rows>1?`<button type="button" class="tpe-x" title="Remove this row" onclick="tpeRowDel(${i},${ri})">\u2715</button>`:''}</td></tr>`).join('')}</tbody></table></div>
       <div class="tpe-rows"><button type="button" class="tpe-link" onclick="tpeRowAdd(${i})">\uff0b Row</button>
         <button type="button" class="tpe-link" onclick="tpeColAdd(${i})">\uff0b Column</button>
@@ -16006,8 +16046,8 @@ function tpeBlock(fd,i,t){
         <span class="tpe-muted">\u00b7 type in a cell to print it on every copy, like \u201cGoal 1\u201d \u00b7 blank rows stay blank \u00b7 people filling it in on screen can add more</span></div>`;
   } else if(ty==='checklist'){
     const items=fd.items&&fd.items.length?fd.items:(fd.items=['First item']);
-    body=`<div class="tpe-tt">${tpeCe(fd.l,`tpeT().fields[${i}].l=this.textContent.trim()`,'Checklist title')}</div>
-      ${items.map((it,ii)=>`<div class="tpe-ci"><span class="tpe-box" aria-hidden="true"></span>${tpeCe(it,`tpeT().fields[${i}].items[${ii}]=this.textContent.trim()`,'Item')}
+    body=`<div class="tpe-tt" style="${fs}">${tpeCe(fd.l,`tpeT().fields[${i}].l=this.textContent.trim()`,'Checklist title')}</div>
+      ${items.map((it,ii)=>`<div class="tpe-ci" style="${fs}"><span class="tpe-box" aria-hidden="true"></span>${tpeCe(it,`tpeT().fields[${i}].items[${ii}]=this.textContent.trim()`,'Item')}
         ${items.length>1?`<button type="button" class="tpe-x" title="Remove item" onclick="tpeItemDel(${i},${ii})">✕</button>`:''}</div>`).join('')}
       <button type="button" class="tpe-link" onclick="tpeItemAdd(${i})">＋ Item</button>`;
   } else {
@@ -16023,8 +16063,8 @@ function tpeBlock(fd,i,t){
     /* v12.19: the answer cell is blank on the template. Answers are typed on each copy when it is
        filled in ("Fill it in"), so a template always opens, prints and fills in as a blank form. */
     const blank=ty==='long text'?'<div class="tpe-ph tall"></div>':ph?ph:'<span class="tpe-blank">filled in on each copy</span>';
-    const val=`<div class="tpe-val ${ty==='long text'?'tall':''}" title="Answers are typed on each copy, with \u201cFill it in\u201d" onclick="tpeValHint()">${blank}</div>`;
-    body=`<div class="tpe-row"><div class="tpe-lab">${tpeCe(fd.l,`tpeT().fields[${i}].l=this.textContent.trim()`,'Label')}</div>${val}</div>`;
+    const val=`<div class="tpe-val ${ty==='long text'?'tall':''}" style="${fs}" title="Answers are typed on each copy, with \u201cFill it in\u201d" onclick="tpeValHint()">${blank}</div>`;
+    body=`<div class="tpe-row"><div class="tpe-lab" style="${fs}">${tpeCe(fd.l,`tpeT().fields[${i}].l=this.textContent.trim()`,'Label')}</div>${val}</div>`;
   }
   /* v11.2: only the grip drags. A draggable block swallowed clicks on anything inside it that
      is not plain text, which is why the date pickers could not be opened. */
@@ -16058,16 +16098,21 @@ function tpeDockHtml(){
     ${state.tpeKind===i?tpeKindPanel(i,ty):''}`;
 }
 function tpeAct(i){
+  if(TPE_PLACE) return tpePut(i+1);                                  // v12.26: placing a field: it goes under this block
   if(window._tpeAct===i&&document.querySelector('#tpeBlocks .tpe-b.on')) return;
   window._tpeAct=i;
   document.querySelectorAll('#tpeBlocks .tpe-b.on').forEach(b=>b.classList.remove('on'));
   const b=document.querySelector(`#tpeBlocks .tpe-b[data-i="${i}"]`); if(b) b.classList.add('on');
   const d=el('tpeDock'); if(d) d.innerHTML=tpeDockHtml();
+  const fm=el('tpeFmt'); if(fm) fm.innerHTML=tpeFmtHtml();          // v12.26
 }
 function tpeAdd(k,at){
   const t=tpeT(); const lab={text:'New question','long text':'New question',date:'Date',time:'Time',checkbox:'New yes / no question',
     table:'New table',checklist:'New checklist',head:'New section',signature:'Signature',h1:'Title',para:'',divider:'Divider'};
-  const lab2=(k in lab)?lab[k]:'New field';
+  let lab2=(k in lab)?lab[k]:'New field';
+  /* v12.26: a new field gets a name of its own ("Date 2"): answers are kept by name, so two fields
+     called "Date" would share one answer */
+  if(lab2&&!['divider','para'].includes(k)){ const base=lab2; let n=2; const has=x=>t.fields.some(f=>String(f.l||'').trim().toLowerCase()===x.toLowerCase()); while(has(lab2)) lab2=base+' '+(n++); }
   const fd={l:lab2,ty:k};
   if(k==='table'){ fd.cols=['Column 1','Column 2','Column 3']; fd.rows=3; }
   if(k==='checklist') fd.items=['First item','Second item'];
@@ -16104,7 +16149,8 @@ function tpeType(i,k){
   tpeDraw();
 }
 function tpeMove(i,d){ const f=tpeT().fields, j=i+d; if(j<0||j>=f.length) return; [f[i],f[j]]=[f[j],f[i]]; window._tpeAct=j; tpeDraw(); }
-function tpeDrop(to){ const from=window._tpeDrag; window._tpeDrag=null; if(from==null||from===to) return;
+function tpeDrop(to){ if(window._tpeNew) return tpePut(to);          // v12.26: a field dragged in from the bar
+  const from=window._tpeDrag; window._tpeDrag=null; if(from==null||from===to) return;
   const f=tpeT().fields; const [it]=f.splice(from,1); f.splice(to,0,it); window._tpeAct=to; tpeDraw(); }
 function tpeDel(i){ const x=tpeT().fields[i]; tpeT().fields.splice(i,1);
   window._tpeAct=tpeT().fields.length?Math.min(i,tpeT().fields.length-1):null; tpeDraw();
@@ -16207,25 +16253,26 @@ function tplPrintHtml(id,preview){
   if(ovIs(t)) return ovSheet({overlay:t.overlay.tid?t.overlay:ovDocOf(t),fields:t.fields},{},true);
   const cellB='border:1px solid #999;padding:6px 7px;font-size:11.5px;text-align:left';
   const rows=t.fields.filter(fd=>fd.ty!=='signature').map(fd=>{
-    if(fd.ty==='h1') return `<tr><td colspan="2" style="padding:14px 2px 6px;font-size:18px;font-weight:700;border:none">${esc(fd.l)}</td></tr>`;
-    if(fd.ty==='para') return `<tr><td colspan="2" style="padding:6px 2px;font-size:11.5px;line-height:1.5;border:none;white-space:pre-wrap">${esc(fd.l)}</td></tr>`;
+    const fx=fmtX(fd.fmt);                                           // v12.26: the field's look
+    if(fd.ty==='h1') return `<tr><td colspan="2" style="padding:14px 2px 6px;font-size:18px;font-weight:700;border:none${fx}">${esc(fd.l)}</td></tr>`;
+    if(fd.ty==='para') return `<tr><td colspan="2" style="padding:6px 2px;font-size:11.5px;line-height:1.5;border:none;white-space:pre-wrap${fx}">${esc(fd.l)}</td></tr>`;
     if(fd.ty==='divider') return `<tr><td colspan="2" style="padding:8px 0;border:none"><div style="border-top:1px solid #999"></div></td></tr>`;
-    if(fd.ty==='head') return `<tr><td colspan="2" style="padding:12px 2px 4px;font-size:13px;font-weight:700;border:none;border-bottom:1.5px solid #333">${esc(fd.l)}</td></tr>`;
+    if(fd.ty==='head') return `<tr><td colspan="2" style="padding:12px 2px 4px;font-size:13px;font-weight:700;border:none;border-bottom:1.5px solid #333${fx}">${esc(fd.l)}</td></tr>`;
     if(fd.ty==='table'){
       tpeShape(fd); const cols=fd.cols;
-      return `<tr><td colspan="2" style="padding:10px 0 4px;border:none"><div style="font-weight:700;font-size:12.5px;margin-bottom:4px">${esc(fd.l)}</div>
-        <table style="width:100%;border-collapse:collapse"><thead><tr>${cols.map(c=>`<th style="${cellB};background:#f3f3f3">${esc(c)}</th>`).join('')}</tr></thead>
-        <tbody>${fd.preset.map(r=>`<tr>${cols.map((c,ci)=>`<td style="${cellB};height:22px">${r[ci]?esc(r[ci]):'&nbsp;'}</td>`).join('')}</tr>`).join('')}</tbody></table></td></tr>`;
+      return `<tr><td colspan="2" style="padding:10px 0 4px;border:none"><div style="font-weight:700;font-size:12.5px;margin-bottom:4px${fx}">${esc(fd.l)}</div>
+        <table style="width:100%;border-collapse:collapse"><thead><tr>${cols.map(c=>`<th style="${cellB};background:#f3f3f3${fx}">${esc(c)}</th>`).join('')}</tr></thead>
+        <tbody>${fd.preset.map(r=>`<tr>${cols.map((c,ci)=>`<td style="${cellB};height:22px${fx}">${r[ci]?esc(r[ci]):'&nbsp;'}</td>`).join('')}</tr>`).join('')}</tbody></table></td></tr>`;
     }
-    if(fd.ty==='checklist') return `<tr><th style="width:220px;vertical-align:top">${esc(fd.l)}</th><td>${(fd.items||[]).map((it,ii)=>`${fd.on&&fd.on[ii]?'☒':'☐'} ${esc(it)}`).join('<br>')}</td></tr>`;
-    if(fd.ty==='checkbox'||fd.ty==='choice') return `<tr><th style="width:220px">${esc(fd.l)}</th><td>${(fd.opts&&fd.opts.length?fd.opts:['Yes','No']).map(o=>(fd.def===o?'☒':'☐')+' '+esc(o)).join(' &nbsp;&nbsp; ')}</td></tr>`;
-    if(fd.ty==='scale') return `<tr><th style="width:220px">${esc(fd.l)}</th><td>${Array.from({length:fd.max||5}).map((_,n)=>'☐ '+(n+1)).join(' &nbsp; ')}</td></tr>`;
-    if(fd.def) return `<tr><th style="width:220px">${esc(fd.l)}</th><td>${esc(fd.ty==='date'&&/^\d{4}-\d{2}-\d{2}$/.test(fd.def)?fmtLong(fd.def):fd.ty==='time'?hm12(fd.def):fd.def)}</td></tr>`;
-    if(fd.ty==='long text') return `<tr><th style="width:220px">${esc(fd.l)}</th><td style="height:64px"></td></tr>`;
-    return `<tr><th style="width:220px">${esc(fd.l)}</th><td></td></tr>`;
+    if(fd.ty==='checklist') return `<tr><th style="width:220px;vertical-align:top${fx}">${esc(fd.l)}</th><td style="${fx.slice(1)}">${(fd.items||[]).map((it,ii)=>`${fd.on&&fd.on[ii]?'☒':'☐'} ${esc(it)}`).join('<br>')}</td></tr>`;
+    if(fd.ty==='checkbox'||fd.ty==='choice') return `<tr><th style="width:220px${fx}">${esc(fd.l)}</th><td style="${fx.slice(1)}">${(fd.opts&&fd.opts.length?fd.opts:['Yes','No']).map(o=>(fd.def===o?'☒':'☐')+' '+esc(o)).join(' &nbsp;&nbsp; ')}</td></tr>`;
+    if(fd.ty==='scale') return `<tr><th style="width:220px${fx}">${esc(fd.l)}</th><td style="${fx.slice(1)}">${Array.from({length:fd.max||5}).map((_,n)=>'☐ '+(n+1)).join(' &nbsp; ')}</td></tr>`;
+    if(fd.def) return `<tr><th style="width:220px${fx}">${esc(fd.l)}</th><td style="${fx.slice(1)}">${esc(fd.ty==='date'&&/^\d{4}-\d{2}-\d{2}$/.test(fd.def)?fmtLong(fd.def):fd.ty==='time'?hm12(fd.def):fd.def)}</td></tr>`;
+    if(fd.ty==='long text') return `<tr><th style="width:220px${fx}">${esc(fd.l)}</th><td style="height:64px"></td></tr>`;
+    return `<tr><th style="width:220px${fx}">${esc(fd.l)}</th><td></td></tr>`;
   }).join('');
   const sigs=t.fields.filter(fd=>fd.ty==='signature').map(fd=>
-    `<div class="sig" style="position:relative">${fd.sig?`<div style="position:absolute;left:0;bottom:100%;margin-bottom:2px">${sigShow(fd.sig,36)}</div>`:''}${esc(fd.l)}</div>${fd.sigName?`<div class="sig" style="position:relative">${fd.nameVal?`<div style="position:absolute;left:0;bottom:100%;margin-bottom:3px;font-size:12px">${esc(fd.nameVal)}</div>`:''}${esc(fd.nameLabel||'Printed name')}</div>`:''}${fd.sigDate!==false?`<div class="sig" style="position:relative">${fd.dateVal?`<div style="position:absolute;left:0;bottom:100%;margin-bottom:3px;font-size:12px">${esc(fmtLong(fd.dateVal))}</div>`:''}${esc(fd.dateLabel||'Date')}</div>`:''}`).join('');
+    `<div class="sig" style="position:relative${fmtX(fd.fmt)}">${fd.sig?`<div style="position:absolute;left:0;bottom:100%;margin-bottom:2px">${sigShow(fd.sig,36)}</div>`:''}${esc(fd.l)}</div>${fd.sigName?`<div class="sig" style="position:relative${fmtX(fd.fmt)}">${fd.nameVal?`<div style="position:absolute;left:0;bottom:100%;margin-bottom:3px;font-size:12px">${esc(fd.nameVal)}</div>`:''}${esc(fd.nameLabel||'Printed name')}</div>`:''}${fd.sigDate!==false?`<div class="sig" style="position:relative${fmtX(fd.fmt)}">${fd.dateVal?`<div style="position:absolute;left:0;bottom:100%;margin-bottom:3px;font-size:12px">${esc(fmtLong(fd.dateVal))}</div>`:''}${esc(fd.dateLabel||'Date')}</div>`:''}`).join('');
   return `<h2>${esc(t.name)}</h2><div class="p-sub">${esc(t.subtitle!=null?t.subtitle:'Spectrum Care · blank form · clients identified by client ID only')}</div>
     <table>${rows}</table>${sigs?`<div class="siglines" style="${t.fields.some(f=>f.ty==='signature'&&(f.sig||f.nameVal||f.dateVal))?'margin-top:52px':''}">${sigs}</div>`:''}
     ${t.foot?`<div class="p-note">${esc(t.foot)}</div>`:''}
@@ -16792,7 +16839,7 @@ function ovIntroHtml(){
 function ovBoxEd(fd,i,x){
   const on=OV.sel===i, ty=fd.ty;
   return `<div class="ov-f ov-e ${on?'on':''}${x||''} ov-t-${ty.replace(' ','-')}" data-i="${i}" style="${ovPos(fd.ov)}" title="${esc(fd.l)}">
-    <span class="ov-lb">${ty==='check'?'':esc(fd.l)}</span>
+    <span class="ov-lb" style="${ovFmtCss(fd.ov)}">${ty==='check'?'':esc(fd.l)}</span>
     ${on?`<span class="ov-rs" data-rs="1" title="Drag to resize"></span>`:''}</div>`;
 }
 function ovBoxTry(fd,i){
@@ -16809,14 +16856,13 @@ function ovSideHtml(){
   if(OV.preview) return `<div class="ov-side-h">Trying it out</div><div class="tiny muted">Type, tick and sign as the people filling it in will. Nothing you enter here is kept. Turn “Try it” off to go back to placing boxes.</div>`;
   const fd=OV.sel!=null&&t.fields[OV.sel];
   if(fd){
-    const i=OV.sel, sz=ovFs(fd);
+    const i=OV.sel;                                                   // v12.26: size and style are on the format bar now
     return `<div class="ov-side-h">Box ${i+1} of ${t.fields.length} <span class="tiny muted">· page ${fd.ov.p+1}</span>
         <button type="button" class="ov-x" title="Done with this box" onclick="ovSelect(null)">✕</button></div>
       <div class="field"><label>What goes here?</label><input class="inp" id="ovLabel" value="${esc(fd.l)}" placeholder="e.g. Date of visit"
         data-i="${i}" onfocus="ovSnap()" oninput="ovLabelLive(this.value,${i})" onchange="ovLabelSet(this.value,${i})" onkeydown="if(event.key==='Enter')this.blur()"></div>
       ${ovIsTbl(t,fd)?ovTblPanel(t,fd):''}
       <div class="field"><label>${ovIsTbl(t,fd)?'Kind of box (this box only)':'Kind of box'}</label><div class="ov-kinds">${OV_KINDS.map(([k,l])=>`<button type="button" class="${fd.ty===k?'on':''}" onclick="ovSetKind('${k}')"><span>${OV_KIND_ICON[k]}</span>${l}</button>`).join('')}</div></div>
-      ${['check','signature'].includes(fd.ty)?'':`<div class="field"><label>Text size</label><div class="ov-seg">${[['s','Small'],['m','Medium'],['l','Large']].map(([k,l])=>`<button type="button" class="${Math.abs(sz-OV_FS[k])<0.01?'on':''}" onclick="ovSetSize('${k}')">${l}</button>`).join('')}</div></div>`}
       <div class="ov-side-acts">
         <button type="button" class="btn ghost sm" onclick="ovDup()">⧉ Duplicate</button>
         <button type="button" class="btn ghost sm ov-del" onclick="ovDel()">✕ Remove</button></div>
@@ -16842,6 +16888,7 @@ function ovDraw(){
       <span class="tiny muted ov-add-l">Add a box</span>
       ${OV_KINDS.map(([k,l])=>`<button type="button" class="ov-tool ${OV.place===k?'on':''}" ${OV.preview?'disabled':''} onclick="ovTool('${k}')" title="Then click on the page where it goes"><span>${OV_KIND_ICON[k]}</span>${l}</button>`).join('')}
       <span style="flex:1"></span>
+      <div class="fb-row fmt-row ov-fmt" id="ovFmt">${ovFmtHtml()}</div>
     </div>
     <div class="ov-hint tiny" id="ovHint">${OV.place?`Click on the page where the <b>${esc((OV_KINDS.find(x=>x[0]===OV.place)||[])[1]||'')}</b> box goes. Esc to stop.`:''}</div>
     <div class="ov-ed">
@@ -16877,6 +16924,7 @@ function ovPaint(){
   const t=ovT(); if(!t) return;
   document.querySelectorAll('#mdBody .ov-doc .ov-page').forEach(pg=>{ const pi=+pg.dataset.pg; pg.querySelector('.ov-layer').innerHTML=ovLayerEd(t,pi); });
   const s=el('ovSide'); if(s) s.innerHTML=ovSideHtml();
+  const fm=el('ovFmt'); if(fm) fm.innerHTML=ovFmtHtml();            // v12.26
   const dv=document.querySelector('#mdBody .ov-doc'); if(dv){ dv.classList.toggle('placing',!!OV.place); dv.classList.toggle('trying',!!OV.preview); }
   document.querySelectorAll('.ov-tool').forEach(b=>{ const k=b.getAttribute('onclick').match(/'([^']+)'/)[1]; b.classList.toggle('on',OV.place===k); b.disabled=!!OV.preview; });
   const h=el('ovHint'); if(h) h.innerHTML=OV.place?`Click on the page where the <b>${esc((OV_KINDS.find(x=>x[0]===OV.place)||[])[1]||'')}</b> box goes. Esc to stop.`:'';
@@ -16921,7 +16969,6 @@ function ovLabelSet(v,i,quiet){
 }
 function ovSetKind(k){ const t=ovT(), fd=t&&t.fields[OV.sel]; if(!fd||fd.ty===k) return; ovSnap();
   ovKindTo(fd,k,ovDocOf(t).pages[fd.ov.p]); ovPaint(); }                // v12.25: a tick box in a table cell sits in the middle of it
-function ovSetSize(k){ const fd=ovT()&&ovT().fields[OV.sel]; if(!fd) return; ovSnap(); fd.ov.fs=OV_FS[k]; ovPaint(); }
 function ovDel(){ const t=ovT(); if(!t||OV.sel==null) return; ovSnap(); const l=t.fields[OV.sel].l; t.fields.splice(OV.sel,1); OV.sel=null; ovPaint(); toast(`Removed “${l}”. Undo brings it back.`); }
 function ovDup(){ const t=ovT(); if(!t||OV.sel==null) return; ovSnap();
   const c=JSON.parse(JSON.stringify(t.fields[OV.sel])); ['tb','r','c','cell'].forEach(k=>delete c.ov[k]);   // v12.25: a copy is not part of the table
@@ -17110,6 +17157,7 @@ function ovTblPanel(t,fd){
     <div class="field"><label>Every box in this column is${kinds.length>1?' <span class="tiny muted">(now mixed)</span>':''}</label>
       <div class="ov-kinds ov-tbl-kinds">${OV_KINDS.map(([k,l])=>`<button type="button" class="${kinds.length===1&&kinds[0]===k?'on':''}" onclick="ovTblKind('${k}')"><span>${OV_KIND_ICON[k]}</span>${l}</button>`).join('')}</div></div>
     <div class="ov-tbl-acts">
+      ${['check','signature'].includes(fd.ty)?'':`<button type="button" class="btn ghost sm" onclick="ovTblFmtCol()" title="The same size, style and colour for every box in this column">\u2398 Format the whole column like this box</button>`}
       <button type="button" class="btn ghost sm ov-del" onclick="ovTblDel('row')">✕ Remove this row</button>
       <button type="button" class="btn ghost sm ov-del" onclick="ovTblDel('col')">✕ Remove this column</button>
       <button type="button" class="btn ghost sm ov-del" onclick="ovTblDel('table')">✕ Remove the whole table</button></div>
@@ -17159,6 +17207,184 @@ document.addEventListener('keydown',e=>{
   const n=to!=null&&document.getElementById('dg'+to); if(n){ n.focus(); if(n.select&&/text|number/.test(n.type)) n.select(); }
 },true);
 
+/* ══════════════ v12.26: FIELD BAR AND FORMAT BAR, in both template editors ══════════════
+   Create new template gets the upload editor's kind of bar at the top: pick a field, then click
+   where it goes on the form, or drag it there. Both editors get a format bar like Word's: text
+   size, bold, italic, underline, colour and alignment, for the block or box that is picked.
+   A builder block keeps its look in fd.fmt {pt, b, i, u, c, al}; it styles the block's words and
+   the answers typed into it, on screen, while filling in and on paper. A box on an uploaded form
+   keeps it on the box (fd.ov: fs, b, it, u, col, al) and it styles the answers written on the
+   original page. Nothing here changes a template until it is saved, and Undo takes it back. */
+const FMT_PT=[8,9,10,11,12,14,16,18,20,24,28];
+const FMT_COLORS=[['','Standard'],['#1F6B52','Green'],['#2D5F93','Blue'],['#A3261B','Red'],['#8A5300','Amber'],['#6B4FA0','Purple'],['#5A6A63','Grey']];
+const FMT_AL={left:'Align left',center:'Center',right:'Align right'};
+const fmtColOk=c=>FMT_COLORS.some(x=>x[0]&&x[0]===c);
+/* a block's look as inline CSS; only the values this editor can set get through */
+function fmtCss(f){
+  if(!f||typeof f!=='object') return '';
+  const s=[], pt=+f.pt;
+  if(pt>=6&&pt<=72) s.push('font-size:'+pt+'pt');
+  if(f.b===true) s.push('font-weight:700'); else if(f.b===false) s.push('font-weight:400');
+  if(f.i) s.push('font-style:italic'); if(f.u) s.push('text-decoration:underline');
+  if(fmtColOk(f.c)) s.push('color:'+f.c);
+  if(f.al==='center'||f.al==='right') s.push('text-align:'+f.al);
+  return s.join(';');
+}
+const fmtX=f=>{ const s=fmtCss(f); return s?';'+s:''; };
+/* the answer boxes on a form being filled in take the same look (classes say which parts are set) */
+function fmtFill(f){
+  if(!fmtCss(f)) return {cls:'',style:''};
+  const c=['fmtv'], st=[], pt=+f.pt;
+  if(pt>=6&&pt<=72){ c.push('fz'); st.push('--fz:'+pt+'pt'); }
+  if(f.b===true) c.push('fwb'); if(f.b===false) c.push('fwn'); if(f.i) c.push('fi'); if(f.u) c.push('fu');
+  if(fmtColOk(f.c)){ c.push('fc'); st.push('--fc:'+f.c); }
+  if(f.al==='center'||f.al==='right'){ c.push('fal'); st.push('--fal:'+f.al); }
+  return {cls:c.join(' '),style:st.join(';')};
+}
+function fmtAlIc(a){
+  const L={left:[[4,20],[4,14],[4,18]],center:[[4,20],[7,17],[5,19]],right:[[4,20],[10,20],[6,20]]}[a];
+  return `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round">${L.map(([x0,x1],k)=>`<path d="M${x0} ${6+k*6}h${x1-x0}"></path>`).join('')}</svg>`;
+}
+/* the bar itself; fn names the function each control calls, std is the colour "Standard" stands for */
+function fmtBarHtml(cur,fn,std,why,clearTitle){
+  const on=!!cur, c=cur||{}, dis=on?'':'disabled';
+  const pts=FMT_PT.slice(); if(c.pt&&!pts.includes(c.pt)) pts.push(c.pt); pts.sort((a,b)=>a-b);
+  const btn=(k,lab,title,pressed)=>`<button type="button" class="fmt-btn ${on&&pressed?'on':''}" ${dis} aria-pressed="${on&&!!pressed}" title="${title}" aria-label="${title}" onclick="${fn}('${k}')">${lab}</button>`;
+  return `<span class="fb-l">Format</span>
+    <select class="fmt-size" ${dis} aria-label="Text size" title="Text size" onchange="${fn}('pt',this.value)">
+      <option value="" ${c.pt?'':'selected'}>Default size</option>${pts.map(p=>`<option value="${p}" ${c.pt===p?'selected':''}>${p} pt</option>`).join('')}</select>
+    <span class="fmt-grp">${btn('b','<b>B</b>','Bold (Ctrl+B)',c.b)}${btn('i','<i>I</i>','Italic (Ctrl+I)',c.i)}${btn('u','<u>U</u>','Underline (Ctrl+U)',c.u)}</span>
+    <span class="fmt-grp" role="group" aria-label="Text colour">${FMT_COLORS.map(([v,n])=>{ const p=on&&(c.c||'')===v;
+      return `<button type="button" class="fmt-sw ${p?'on':''}" ${dis} title="${n}" aria-label="${n} text" aria-pressed="${p}" style="--sw:${v||std}" onclick="${fn}('c','${v}')"></button>`; }).join('')}</span>
+    <span class="fmt-grp" role="group" aria-label="Alignment">${['left','center','right'].map(a=>{ const p=on&&(c.al||'left')===a;
+      return `<button type="button" class="fmt-btn ${p?'on':''}" ${dis} title="${FMT_AL[a]}" aria-label="${FMT_AL[a]}" aria-pressed="${p}" onclick="${fn}('al','${a}')">${fmtAlIc(a)}</button>`; }).join('')}</span>
+    <button type="button" class="fmt-clear" ${dis} title="${clearTitle||'Back to the standard look'}" onclick="${fn}('clear')">Clear formatting</button>
+    ${why?`<span class="fmt-why">${why}</span>`:''}`;
+}
+/* one change to a look: a size, a toggle, a colour, an alignment, or all of it cleared */
+function fmtApply(f,k,v,bDef){
+  f=Object.assign({},f||{});
+  if(k==='pt'){ if(+v) f.pt=+v; else delete f.pt; }
+  else if(k==='b'){ const now=f.b!=null?f.b:bDef; f.b=!now; if(f.b===bDef) delete f.b; }
+  else if(k==='i'||k==='u'){ if(f[k]) delete f[k]; else f[k]=true; }
+  else if(k==='c'){ if(fmtColOk(v)) f.c=v; else delete f.c; }
+  else if(k==='al'){ if(v==='center'||v==='right') f.al=v; else delete f.al; }
+  else if(k==='clear') f={};
+  return f;
+}
+
+/* ── Create new template: the field bar ── */
+const TPE_BAR_KINDS=['text','long text','date','time','number','checkbox','choice','table','checklist','head','para','signature'];
+let TPE_PLACE=null;
+const tpeKindName=k=>(TPL_KINDS.find(x=>x[0]===k)||[,k])[1];
+function tpeRibbonHtml(){
+  const more=TPL_KINDS.filter(([k])=>!TPE_BAR_KINDS.includes(k));
+  return `<div class="tpe-ribbon" id="tpeRibbon">
+    <div class="fb-row"><span class="fb-l">Add a field</span>
+      ${TPE_BAR_KINDS.map(k=>`<button type="button" class="fb-k ${TPE_PLACE===k?'on':''}" data-k="${esc(k)}" draggable="true" aria-pressed="${TPE_PLACE===k}"
+        title="Click, then click where it goes on the form. Or drag it there." onclick="tpePlace('${k}')"
+        ondragstart="tpeNewDrag(event,'${k}')" ondragend="tpeNewDragEnd()">${ico(TPL_KIND_ICON[k]||'file-text',13)}<span>${esc(tpeKindName(k))}</span></button>`).join('')}
+      <select class="fb-more" aria-label="More kinds of field" onchange="if(this.value){tpePlace(this.value);this.value=''}">
+        <option value="">More…</option>${more.map(([k,l])=>`<option value="${esc(k)}">${esc(l)}</option>`).join('')}</select>
+    </div>
+    <div class="fb-hint" id="tpeHint" aria-live="polite">${tpeHintHtml()}</div>
+    <div class="fb-row fmt-row" id="tpeFmt">${tpeFmtHtml()}</div>
+  </div>`;
+}
+const tpeHintHtml=()=>TPE_PLACE?`Click where the <b>${esc(tpeKindName(TPE_PLACE))}</b> goes: on a gap between two blocks, or on a block to put it underneath. Esc to stop.`:'';
+function tpeRibbonPaint(){
+  document.querySelectorAll('#tpeRibbon .fb-k').forEach(b=>{ const on=b.dataset.k===TPE_PLACE; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on); });
+  const h=el('tpeHint'); if(h) h.innerHTML=tpeHintHtml();
+  const p=document.querySelector('#mdBody .tpe-paper'); if(p) p.classList.toggle('placing',!!TPE_PLACE);
+  const f=el('tpeFmt'); if(f) f.innerHTML=tpeFmtHtml();
+}
+function tpePlace(k){ TPE_PLACE=TPE_PLACE===k?null:k; tpeRibbonPaint(); }
+function tpePut(at){ const k=TPE_PLACE||window._tpeNew; TPE_PLACE=null; window._tpeNew=null; if(!k) return; tpeAdd(k,at); }
+/* the gaps between blocks, where a new field can go */
+function tpeSlot(at){
+  return `<div class="tpe-slot" data-at="${at}" onclick="tpePut(${at})" ondragover="if(window._tpeNew){event.preventDefault();this.classList.add('over')}"
+    ondragleave="this.classList.remove('over')" ondrop="event.preventDefault();this.classList.remove('over');if(window._tpeNew)tpePut(${at})"><span>＋ Put it here</span></div>`;
+}
+function tpeNewDrag(e,k){
+  window._tpeNew=k; TPE_PLACE=null;
+  try{ e.dataTransfer.setData('text/plain',k); e.dataTransfer.effectAllowed='copy'; }catch(_){}
+  const p=document.querySelector('#mdBody .tpe-paper'); if(p) p.classList.add('dragnew');
+}
+function tpeNewDragEnd(){ const p=document.querySelector('#mdBody .tpe-paper'); if(p) p.classList.remove('dragnew'); setTimeout(()=>{ window._tpeNew=null; },0); }
+
+/* ── Create new template: the format bar ── */
+const tpeBoldDef=fd=>(fd.ty||'text')!=='para';
+function tpeFmtCur(fd){ const f=fd.fmt||{}; return {pt:+f.pt||0,b:f.b!=null?f.b:tpeBoldDef(fd),i:!!f.i,u:!!f.u,c:f.c||'',al:f.al||'left'}; }
+function tpeFmtHtml(){
+  const t=tpeT(), fd=t&&t.fields&&t.fields[window._tpeAct];
+  if(!fd) return fmtBarHtml(null,'tpeFmt','#14211C','Click a block on the form to format it.');
+  if(fd.ty==='divider') return fmtBarHtml(null,'tpeFmt','#14211C','A divider has no words to format.');
+  return fmtBarHtml(tpeFmtCur(fd),'tpeFmt','#14211C','',"Back to the form's standard look");
+}
+function tpeFmt(k,v){
+  const t=tpeT(), i=window._tpeAct, fd=t&&t.fields&&t.fields[i]; if(!fd||fd.ty==='divider') return;
+  tpeSnap();
+  const f=fmtApply(fd.fmt,k,v,tpeBoldDef(fd));
+  if(Object.keys(f).length) fd.fmt=f; else delete fd.fmt;
+  const sc=el('modal'), top=sc?sc.scrollTop:0;
+  tpeDraw(); if(sc) sc.scrollTop=top;
+}
+
+/* ── Upload a form: the format bar, for the picked box's answers ── */
+function ovFmtCss(o){
+  if(!o) return '';
+  const s=[]; if(o.b) s.push('font-weight:700'); if(o.it) s.push('font-style:italic'); if(o.u) s.push('text-decoration:underline');
+  if(fmtColOk(o.col)) s.push('color:'+o.col);
+  if(o.al==='center'||o.al==='right') s.push('text-align:'+o.al);
+  return s.join(';');
+}
+const ovFmtX=o=>{ const s=ovFmtCss(o); return s?';'+s:''; };
+const ovPtOf=(fs,pg)=>Math.round((fs||OV_FS.m)*((pg&&pg.w)||612)/100);
+function ovFmtHtml(){
+  const t=ovT(), fd=t&&OV.sel!=null&&t.fields[OV.sel];
+  if(OV.preview) return '';
+  if(!fd) return fmtBarHtml(null,'ovFmt','#0B2A63','Pick a box to format the answers written in it.');
+  if(fd.ty==='check'||fd.ty==='signature') return fmtBarHtml(null,'ovFmt','#0B2A63',(fd.ty==='check'?'A tick box':'A signature')+' has no text to format.');
+  const o=fd.ov, pg=ovDocOf(t).pages[o.p];
+  return fmtBarHtml({pt:ovPtOf(o.fs,pg),b:!!o.b,i:!!o.it,u:!!o.u,c:o.col||'',al:o.al||'left'},'ovFmt','#0B2A63','',
+    'Takes off bold, italic, underline, colour and alignment; the size stays');
+}
+function ovFmt(k,v){
+  const t=ovT(), fd=t&&OV.sel!=null&&t.fields[OV.sel]; if(!fd||fd.ty==='check'||fd.ty==='signature') return;
+  const o=fd.ov, pg=ovDocOf(t).pages[o.p];
+  ovSnap();
+  if(k==='pt') o.fs=+v?ovRound(+v/((pg&&pg.w)||612)*100):OV_FS.m;
+  else if(k==='clear'){ ['b','it','u','col','al'].forEach(x=>delete o[x]); }
+  else {
+    const f=fmtApply({b:o.b,i:o.it,u:o.u,c:o.col,al:o.al},k,v,false);
+    ['b','it','u','col','al'].forEach(x=>delete o[x]);
+    if(f.b) o.b=true; if(f.i) o.it=true; if(f.u) o.u=true; if(f.c) o.col=f.c; if(f.al) o.al=f.al;
+  }
+  ovPaint();
+}
+/* in a table, one box's look can go to its whole column */
+function ovTblFmtCol(){
+  const s=ovSelTbl(); if(!s) return;
+  const {t,fd}=s, src=fd.ov, col=ovTblCells(t,src.tb).filter(([f])=>f.ov.c===src.c&&f!==fd&&f.ty!=='check'&&f.ty!=='signature');
+  if(!col.length) return;
+  ovSnap();
+  col.forEach(([f])=>{ ['fs','b','it','u','col','al'].forEach(x=>{ if(src[x]!=null) f.ov[x]=src[x]; else delete f.ov[x]; }); });
+  ovPaint(); toast('The “'+ovTblColName(t,src.tb,src.c)+'” column now looks like this box.');
+}
+
+/* Ctrl+B, I and U act on the picked block or box, and Esc stops placing a field */
+document.addEventListener('keydown',e=>{
+  const m=el('modal'); if(!m||!m.classList.contains('on')) return;
+  if(e.key==='Escape'&&TPE_PLACE&&el('tpeBlocks')){ e.preventDefault(); e.stopPropagation(); TPE_PLACE=null; return tpeRibbonPaint(); }
+  if(!(e.ctrlKey||e.metaKey)||e.altKey||e.shiftKey) return;
+  const k={b:'b',i:'i',u:'u'}[e.key.toLowerCase()]; if(!k) return;
+  if(m.classList.contains('ov-modal')&&ovT()){
+    const a=document.activeElement; if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&a.id!=='ovLabel') return;
+    if(OV.sel==null) return; e.preventDefault(); e.stopPropagation(); return ovFmt(k);
+  }
+  if(el('tpeBlocks')&&window._tpeAct!=null&&tpeT()){ e.preventDefault(); e.stopPropagation(); return tpeFmt(k); }   // not the browser's own bold, which the label would drop
+},true);
+
 /* ── filling it in, on the original page ── */
 function ovSigInner(v){ return v?`<span class="ov-sigimg">${sigShow(v,40)}</span>`:`<span class="ov-sigph">✍ Sign here</span>`; }
 function ovFillBox(fd,i,v){
@@ -17167,9 +17393,9 @@ function ovFillBox(fd,i,v){
   if(fd.ty==='signature') return `<div class="ov-f ov-sig sigfield" data-sig="dg${i}" style="${p}">
       <button type="button" class="sig-slot ov-sigbtn ${val?'has':''}" data-label="${lab}" title="${lab}" onclick="sigOpen('dg${i}',this.dataset.label)">${ovSigInner(val)}</button>
       <input type="hidden" id="dg${i}" value="${esc(val)}"></div>`;
-  if(fd.ty==='long text') return `<textarea class="ov-f ov-in" id="dg${i}" style="${p};${fs}" title="${lab}" placeholder="${lab}" aria-label="${lab}">${esc(val)}</textarea>`;
+  if(fd.ty==='long text') return `<textarea class="ov-f ov-in" id="dg${i}" style="${p};${fs}${ovFmtX(fd.ov)}" title="${lab}" placeholder="${lab}" aria-label="${lab}">${esc(val)}</textarea>`;
   const ty=fd.ty==='date'?'date':fd.ty==='time'?'time':fd.ty==='number'?'number':'text';
-  return `<input class="ov-f ov-in" id="dg${i}" type="${ty}" style="${p};${fs}" value="${esc(val)}" title="${lab}" placeholder="${lab}" aria-label="${lab}">`;
+  return `<input class="ov-f ov-in" id="dg${i}" type="${ty}" style="${p};${fs}${ovFmtX(fd.ov)}" value="${esc(val)}" title="${lab}" placeholder="${lab}" aria-label="${lab}">`;
 }
 function ovFillOpen(id,saved,filedOf){
   const d=docById(id); if(!d) return;
@@ -17206,7 +17432,8 @@ function ovValHtml(fd,v){
   if(fd.ty==='signature') return v?`<div class="ov-v ov-vsig" style="${p}">${isSigImg(v)?`<img src="${esc(v)}" alt="Signature">`:`<span style="${fs};font-family:'Brush Script MT','Segoe Script','Lucida Handwriting',cursive;font-size:${(ovFs(fd)*1.5).toFixed(2)}cqw">${esc(v)}</span>`}</div>`:'';
   if(v==null||String(v)==='') return '';
   const s=fd.ty==='date'?ovDateTxt(v):fd.ty==='time'?ovTimeTxt(v):String(v);
-  return `<div class="ov-v ${fd.ty==='long text'?'ov-vlong':''}" style="${p};${fs}">${esc(s)}</div>`;
+  const al=fd.ov&&fd.ov.al, jc=al==='center'?';justify-content:center':al==='right'?';justify-content:flex-end':'';   // v12.26
+  return `<div class="ov-v ${fd.ty==='long text'?'ov-vlong':''}" style="${p};${fs}${ovFmtX(fd.ov)}${jc}">${esc(s)}</div>`;
 }
 function ovSheet(d,vals,blank){
   const o=d.overlay; vals=vals||{};
@@ -18634,7 +18861,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.25 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.26 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────

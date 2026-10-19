@@ -100,7 +100,9 @@ function check(label, ok, detail) {
   const placed2 = await page.evaluate(() => ovT().fields[1]);
   check('a box placed in a table cell fits the cell and takes the cell’s name', placed2 && placed2.l === 'Drug, row 2' && placed2.ov.x === pt2.s.x && placed2.ov.w === pt2.s.w, JSON.stringify(placed2));
   await page.click('.ov-tool:has-text("Text")');
-  const pt3 = await page.evaluate(() => { const pg = document.querySelector('.ov-modal .ov-page'); pg.scrollIntoView({ block: 'start' }); const r = pg.getBoundingClientRect(); return { x: r.left + r.width * 0.9, y: r.top + r.height * 0.05 }; });
+  const pt3 = await page.evaluate(() => { const pg = document.querySelector('.ov-modal .ov-page'); pg.scrollIntoView({ block: 'start' });
+    el('modal').scrollTop -= document.querySelector('.ov-bar').getBoundingClientRect().height + 12;   // the top of the page, just below the toolbar that stays at the top
+    const r = pg.getBoundingClientRect(); return { x: r.left + r.width * 0.9, y: r.top + r.height * 0.05 }; });
   await page.mouse.click(pt3.x, pt3.y);
   await page.waitForTimeout(300);
   const free = await page.evaluate(() => ovT().fields[2]);
