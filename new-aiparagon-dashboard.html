@@ -16165,8 +16165,8 @@ function hsRowsHtml(rows){
       </div>
       ${c.lifecycle_stage?`<span class="pill">${esc(c.lifecycle_stage)}</span>`:""}
       ${c.lead_status?`<span class="chip">${esc(c.lead_status)}</span>`:""}
-      <button class="chip hs-cta" title="Start an Engine 1 client-delivery run for this contact" onclick="hsRunE1('${esc(c.email)}')">▶ Engine 1</button>
-      <button class="chip hs-cta" title="Add this company to the Engine 3 scrape watchlist" onclick="hsTrackE3('${esc(c.email)}')">◎ Engine 3</button>
+      <button class="chip hs-cta" title="Start a Catalyst run for this contact, from lead research to the growth plan" onclick="hsRunE1('${esc(c.email)}')">▶ Run Catalyst</button>
+      <button class="chip hs-cta" title="Follow this company: the Intel Tracker reads its posts and the Ad Strategist its Meta ads" onclick="hsTrackE3('${esc(c.email)}')">◎ Follow</button>
       ${isLead?`<button class="chip" style="cursor:pointer" onclick="openE1Lead('${esc(c.email)}')">Open lead →</button>`:""}
     </div>`;
   }).join("");
@@ -16209,11 +16209,11 @@ function openE3TrackModal(prefill){
   const site = p.website ? (/^https?:/.test(p.website) ? p.website : "https://" + p.website) : "";
   const guess = p.company || [p.first_name, p.last_name].filter(Boolean).join(" ");
   m.innerHTML = `
-    <div class="e1p-head"><div class="e1p-name">Track in Engine 3</div>
+    <div class="e1p-head"><div class="e1p-name">Follow this company</div>
       <button class="e1p-x" onclick="closeE3TrackModal()">✕</button></div>
     <div class="e1p-body">
       <div style="font-size:.78rem;color:var(--muted);margin-bottom:14px;line-height:1.5">
-        Adds this company to the <b>competitors</b> watchlist. Agent 1 scrapes their posts on its next daily run; Agent 2 pulls their Meta ads on the next weekly run. Each field below is a scrape target — whatever you leave blank simply is not scraped.</div>
+        Adds this company to the accounts you follow. The Intel Tracker reads their posts on its next run, and the Ad Strategist pulls their Meta ads right after it. Each field below is a scrape target — whatever you leave blank simply is not scraped.</div>
       <div class="e1p-sec">Who are we tracking?</div>
       ${fld("Company / advertiser name","e3Name","e.g. Summit Ridge Wealth Advisors", guess)}
       ${fld("Website","e3Site","https://…", site)}
@@ -16257,9 +16257,9 @@ async function submitE3Track(){
     }]);
     delete cache["competitors?select=name&limit=500"];
     closeE3TrackModal();
-    showAlert(name + " is on the Engine 3 watchlist. Agent 1 picks them up on its next daily run"
-      + (meta ? "; Agent 2 pulls their Meta ads on the next weekly run." : ". No Meta page ID was given, so no ads will be pulled for them."),
-      "Tracking started");
+    showAlert(name + " is followed now. The Intel Tracker picks them up on its next run"
+      + (meta ? ", and the Ad Strategist pulls their Meta ads right after it." : ". No Meta page ID was given, so no ads will be pulled for them."),
+      "Following");
   }catch(e){
     btn.disabled = false;
     msg.textContent = (e.status===401 || e.status===403)
@@ -22767,7 +22767,8 @@ function apE1ColsSync(){
 (function(){const _t=apTab;apTab=function(){_t.apply(this,arguments);apE1ColsSync();};})();
 
 /* ---------------- Lead pipeline ---------------- */
-const AP_E1_TABS=[['all','All',''],['s0','At Research','0'],['s1','At Interview','1'],['s2','At Assessment','2'],['s3','At Discovery','3'],['done','Completed','done']];
+/* v117: New holds the leads with nothing run yet; each At tab holds the leads whose last finished step is that one */
+const AP_E1_TABS=[['all','All',''],['new','New','-1'],['s0','At Research','0'],['s1','At Interview','1'],['s2','At Assessment','2'],['s3','At Discovery','3'],['done','Completed','done']];
 function apE1Count(v){
   const d=window._e1;if(!d)return '';
   const L=d.leads,O=d.outs;
@@ -24962,8 +24963,8 @@ function apHomeRunsCard(){
 })();
 
 /* ---------- Engine 1 pipeline: heading follows the tab, empty Fit column hidden ---------- */
-const AP_E1_HEAD={all:['All','Every prospect in Engine 1'],s0:['At Research','Waiting on lead research'],s1:['At Interview','Ready for the interview script'],
-  s2:['At Assessment','Waiting on the assessment'],s3:['At Discovery','Ready for the discovery call'],done:['Completed','Fully delivered, growth plan written']};
+const AP_E1_HEAD={all:['All','Every prospect in Engine 1'],new:['New','Nothing run yet, lead research is next'],s0:['At Research','Researched, the interview script is next'],s1:['At Interview','Interview script ready, the assessment is next'],
+  s2:['At Assessment','Assessment ready, the discovery call is next'],s3:['At Discovery','Discovery framework ready, the growth plan is next'],done:['Completed','Fully delivered, growth plan written']};
 function apE1Tidy(){
   const sec=document.getElementById('apE1List');if(sec){const t=(RD.aptab&&RD.aptab.e1pipeline)||'all',h=sec.querySelector('h2'),m=AP_E1_HEAD[t]||AP_E1_HEAD.all;
     if(h){h.dataset.k=m[0];if(h.firstChild&&h.firstChild.nodeType===3)h.firstChild.textContent=m[1]+' ';}}
@@ -33383,6 +33384,8 @@ section.e9-made[data-v100fold] .e9-made-h h3{font-size:18px}
 .v105-pc.on{border-color:var(--rd-navy);background:#F2F4F8;color:var(--rd-ink);box-shadow:inset 0 0 0 1px var(--rd-navy)}
 .v105-pc.add{border-style:dashed;color:var(--rd-blue);font-weight:600}
 .v105-pc:focus-visible{outline:2px solid var(--rd-blue);outline-offset:2px}
+/* v117: on a phone a long persona name wraps instead of pushing the page sideways */
+@media (max-width:600px){.v105-pc{white-space:normal;text-align:left;overflow-wrap:anywhere}}
 .v105-sum{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:var(--rd-muted)}
 .v105-none{margin:6px 0 0;font-size:13px;color:var(--rd-muted)}
 .v105-none .v97-link{font-size:13px}
@@ -42213,7 +42216,8 @@ function nwApprovalsHtml(){
   const seg='<div class="nw-seg" role="tablist" aria-label="Filter">'+
     '<button type="button" role="tab" aria-selected="'+(f==='all')+'" onclick="nwFilter(\'all\')">All<span class="nw-cnt">'+n+'</span></button>'+
     NW_KINDS.filter(function(k){return cnt[k[0]]!=null;}).map(function(k){
-      const c=k[0]==='reply'?live.filter(function(x){return x.kind==='reply';}).length:cnt[k[0]];
+      /* v117: like All, the count leaves out replies older than a week; they sit in the box below with their own count */
+      const c=cnt[k[0]];
       return '<button type="button" role="tab" aria-selected="'+(f===k[0])+'" onclick="nwFilter(\''+k[0]+'\')">'+esc(k[1])+'<span class="nw-cnt">'+c+'</span></button>';}).join('')+
     (skipped.length?'<button type="button" role="tab" aria-selected="'+(f==='skipped')+'" onclick="nwFilter(\'skipped\')">Skipped<span class="nw-cnt">'+skipped.length+'</span></button>':'')+
   '</div>';
@@ -44377,9 +44381,10 @@ function nwWatchHtml(scope){
   if((r&&r.status==='error')||kick)return '<div class="nw-watch is-bad">'+nwIc('alert',18)+'<div><b>“'+esc(t)+'” did not finish</b><span>'+esc((r&&r.error)||('The workflow did not start: '+kick))+'</span></div>'+
     '<button type="button" class="nw-btn nw-btn-sm" onclick="apCfRetry('+esc(nwJs(w.id))+',this)">Try again</button></div>';
   const pct={queued:15,extracting:45,drafting:75}[(r&&r.status)||'queued']||15;
-  return '<div class="nw-watch is-run" role="status"><div class="nw-progress"><i style="width:'+pct+'%"></i></div><span>Writing “'+esc(t)+'”. Started '+esc(nwAgo(w.t0))+'. About a minute.</span></div>';
+  return '<div class="nw-watch is-run" role="status"><div class="nw-progress"><i style="width:'+pct+'%"></i></div><span>Writing “'+esc(t)+'”. Started '+esc(nwAgoMin(w.t0))+'. About a minute.</span></div>';
 }
-function nwAgo(t){const m=Math.round((Date.now()-(+t||Date.now()))/60000);return m<1?'just now':m===1?'a minute ago':m<60?m+' minutes ago':Math.round(m/60)+' h ago';}
+/* v117: minutes since a timestamp. It was also called nwAgo and replaced the day-based one the agent tiles use */
+function nwAgoMin(t){const m=Math.round((Date.now()-(+t||Date.now()))/60000);return m<1?'just now':m===1?'a minute ago':m<60?m+' minutes ago':Math.round(m/60)+' h ago';}
 
 /* ---------- must use: chips over a hidden field the senders read ---------- */
 const NW_MUST={ct:'nwCtMust',mg:'v97MgMust'};
@@ -45293,7 +45298,7 @@ function nwMgOfferUse(){
 function nwMgWatch(){
   if(nwMgKind()!=='ad')return nwWatchHtml('brief');
   const lt=typeof apLtState==='function'?apLtState():null,run1=typeof v97LtRunning==='function'&&v97LtRunning();
-  if(run1)return '<div class="nw-watch is-run" role="status"><div class="nw-progress"><i style="width:45%"></i></div><span>Writing the ads and pages. Started '+esc(nwAgo(run1.t0))+'. About five minutes. You can leave this page.</span></div>';
+  if(run1)return '<div class="nw-watch is-run" role="status"><div class="nw-progress"><i style="width:45%"></i></div><span>Writing the ads and pages. Started '+esc(nwAgoMin(run1.t0))+'. About five minutes. You can leave this page.</span></div>';
   if(lt&&lt.status==='done'&&lt.run&&Date.now()-(lt.t1||0)<60*60e3)return '<div class="nw-watch is-good">'+nwIc('checkCircle',18)+'<div><b>Campaign ready'+(lt.title?': “'+esc(nwClip(lt.title,50))+'”':'')+'</b><span>Its ads are waiting in Approvals.</span></div>'+
     '<button type="button" class="nw-btn nw-btn-sm nw-btn-primary" onclick="v97OpenCamp('+esc(nwJs(lt.run))+')">Open it</button></div>';
   if(lt&&lt.status==='setup')return '<div class="nw-watch is-bad">'+nwIc('alert',18)+'<div><b>The funnel builder is not switched on in n8n yet</b><span>Once its webhook is live, campaigns start from here.</span></div></div>';
@@ -45425,7 +45430,7 @@ function nwMgCampsHtml(){
   const tog='<div class="nw-view-toggle" role="group" aria-label="View">'+
     '<button type="button" aria-pressed="'+(view==='list')+'" aria-label="List" title="List" onclick="nwMgView(\'list\')">'+nwIc('list',16)+'</button>'+
     '<button type="button" aria-pressed="'+(view==='grid')+'" aria-label="Cards" title="Cards" onclick="nwMgView(\'grid\')">'+nwIc('grid',16)+'</button></div>';
-  const runCard=run1?'<div class="nw-watch is-run nw-camp-run" role="status"><div class="nw-progress"><i style="width:45%"></i></div><span>A new campaign is being written. Started '+esc(nwAgo(run1.t0))+'. It lands here in about five minutes.</span></div>':'';
+  const runCard=run1?'<div class="nw-watch is-run nw-camp-run" role="status"><div class="nw-progress"><i style="width:45%"></i></div><span>A new campaign is being written. Started '+esc(nwAgoMin(run1.t0))+'. It lands here in about five minutes.</span></div>':'';
   const go=function(o){return 'v97OpenCamp('+esc(nwJs(o.run_id))+')';};
   const body=view==='list'?'<div class="nw-list">'+L.outs.map(function(o){const c=nwMgCampOk(L,o),b=o.d&&o.d.source_brief_run&&e9RunDay(o.d.source_brief_run);
       return '<div class="nw-row is-click" role="button" tabindex="0" onclick="'+go(o)+'" onkeydown="if(event.key===\'Enter\')this.click()"><span class="nw-row-ic">'+nwIc('megaphone',18)+'</span>'+
@@ -48809,7 +48814,7 @@ function v113FunListHtml(){
   const L=(V113.fun.rows||[]).filter(function(f){return v113FunNew(f.funnel_type);}),R=V113.fun.running;
   if(!L.length&&!R)return '';
   return '<section class="v113-funs"><div class="nw-toolbar"><b class="nw-small">Webinar, download, sign-up and landing page funnels</b><span class="nw-grow"></span></div>'+
-    (R?'<div class="nw-watch is-run" role="status"><div class="nw-progress"><i style="width:45%"></i></div><span>A '+esc((NW_MG_PK[R.type]||[''])[0].toLowerCase())+' funnel is being written. Started '+esc(nwAgo(R.t0))+'.</span></div>':'')+
+    (R?'<div class="nw-watch is-run" role="status"><div class="nw-progress"><i style="width:45%"></i></div><span>A '+esc((NW_MG_PK[R.type]||[''])[0].toLowerCase())+' funnel is being written. Started '+esc(nwAgoMin(R.t0))+'.</span></div>':'')+
     '<div class="nw-list">'+L.map(function(f){
       return '<div class="nw-row is-click" role="button" tabindex="0" onclick="v113FunOpen('+esc(nwJs(f.id))+')" onkeydown="if(event.key===\'Enter\')this.click()"><span class="nw-row-ic">'+nwIc('rocket',18)+'</span>'+
         '<div class="nw-row-main"><b class="nw-row-title">'+esc(v113FunName(f))+'</b><span class="nw-row-prev">'+esc(nwDay(f.created_at)+' · '+(NW_MG_PK[f.funnel_type]||['Funnel'])[0])+'</span></div>'+
