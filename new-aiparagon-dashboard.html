@@ -9713,8 +9713,8 @@ function renderVoicePage(){
   $('voiceChips2').innerHTML=S.voice.map((v,i)=>`<span class="vchip">${esc(v)} <button onclick="S.voice.splice(${i},1);renderVoicePage()" title="Remove">✕</button></span>`).join('');
   $('voiceFields').innerHTML=VOICE_FIELDS.map(([l,v],i)=>`<div class="vf-wrap"><label class="lbl">${l}<span class="vf-count" id="vfc${i}">${v.length} chars</span></label><textarea class="field auto vf" data-i="${i}" rows="${vfRows(v)}" oninput="vfGrow(this)" onblur="toast('Voice profile updated — applied to future writing')">${esc(v)}</textarea></div>`).join('');
   $('voiceApplied').innerHTML=[
-   ['Engine 1 documents','Research, interview scripts, assessments, discovery frameworks and growth plans'],
-   ['Engine 3 briefs','The daily intel brief and every ad creative brief'],
+   ['Catalyst documents','Research, interview scripts, assessments, discovery frameworks and growth plans'],
+   ['Pipeline briefs','The daily intel brief and every ad creative brief'],
    ['Funnel copy','Ad hooks, landing and booking pages in the Content Generation Agent'],
    ['Engagement replies','The comments and quote posts the Competitor Intelligence Tracker drafts']
   ].map(([b,s])=>`<div class="ai-item" style="cursor:default"><span style="color:var(--green)">✓</span><div style="flex:1"><b>${b}</b><span>${s}</span></div></div>`).join('');
@@ -15808,7 +15808,7 @@ function openE1RunModal(prefill){
   const fld = (label, id, ph, type) => `<div class="e1p-field"><label>${label}</label>
     <input id="${id}" type="${type||"text"}" placeholder="${ph||""}"></div>`;
   m.innerHTML = `
-    <div class="e1p-head"><div class="e1p-name">New Engine 1 run</div>
+    <div class="e1p-head"><div class="e1p-name">New Catalyst run</div>
       <button class="e1p-x" onclick="closeE1RunModal()">✕</button></div>
     <div class="e1p-body">
       <div class="e1p-sec">Where should the pipeline start?</div>
@@ -17392,7 +17392,7 @@ async function renderProfile(){
       <button class="btn ghost" onclick="pCompSet('${c.id}','approved',this)">Re-approve</button></div>`).join("")}</div></details>`:""}`;
 }
 
-const GUIDE_ENGINES = [["e1","Engine 1 · Client Delivery"],["e3","Engine 3 · Lead Generation & Marketing"],["all","Company-wide"]];
+const GUIDE_ENGINES = [["e1","Catalyst · Clients and meetings"],["e3","Pipeline · Content and ads"],["all","Company-wide"]];
 function pGuidesPanel(guides){
   return `<div class="panel" style="margin-bottom:18px">
     <b style="color:var(--navy)">Output format guides</b>
@@ -20533,8 +20533,8 @@ function apAuditSync(){
   if(typeof INTEGRATIONS==='undefined')return;
   const swap={
     'LinkedIn / Meta':'Publish approved Content Generation Agent creatives directly',
-    'Fathom — Transcription':'Call recordings become sources for Engine 1',
-    'Google Calendar':'Meetings feed Engine 1 prep',
+    'Fathom — Transcription':'Call recordings become sources for Catalyst',
+    'Google Calendar':'Meetings feed Catalyst prep',
     'HubSpot CRM':'Contacts and deals, two-way with the lead pipeline',
     'Microsoft Outlook':'Client emails become sources; sent documents log back',
     'Slack':'Route approvals and comments to a channel'
@@ -20561,9 +20561,15 @@ function apAuditSync(){
     [/\bAdebayo\b|\bLindgren\b|\bVance Family( Trust)?\b|\bWhitfield\b|\bRaman\b|\bMarchetti\b|\bOkafor\b/g,'\u2014']
   ];
   const DEMO=/Delta Advisory|Delta[- ]Report[- ]Shell|Delta[- ]Deck[- ]Shell|Delta[- ]Letterhead|deltaadvisory|Rita[- ]Voice[- ]Samples|\bRita\b|\bOkafor\b|\bMarchetti\b|\bEllison\b|\bBoone\b|\bHollis\b|\bEverly\b|\bMarisol\b|\bAdebayo\b|\bLindgren\b|\bVance Family\b|\bWhitfield\b|\bRaman\b/;
+  /* v118: the live pages show real names, and a real lead, contact or file can share a name with a demo client
+     (Ellison, Rita) or carry an anonymized alias like Delta Advisory, so the sweep stays out of them: the live app,
+     the old containers the live Knowledge base, Templates, AI settings and Audit log draw into, and the shell.
+     The old demo pages still reachable (Brand voice from Your account) are swept as before. */
+  const LIVE='#page-ap60,#page-kb,#page-templates,#page-learning,#page-audit,.nw-side,.nw-topbar,.app-foot';
   function sweepNode(root){
     if(!root)return;
-    const wk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null);
+    const wk=document.createTreeWalker(root,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT,{acceptNode:function(n){
+      return n.nodeType!==1?NodeFilter.FILTER_ACCEPT:n.matches(LIVE)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_SKIP;}});
     const hits=[];
     let n;while((n=wk.nextNode())){if(DEMO.test(n.nodeValue||''))hits.push(n);}
     hits.forEach(function(t){
@@ -20573,6 +20579,7 @@ function apAuditSync(){
     });
     /* attributes that surface as tooltips or values */
     root.querySelectorAll('[title],[value],[placeholder],[alt]').forEach(function(el){
+      if(el.closest(LIVE))return;
       ['title','value','placeholder','alt'].forEach(function(k){
         const v=el.getAttribute&&el.getAttribute(k);
         if(!v||!DEMO.test(v))return;
@@ -21189,7 +21196,7 @@ function apOpenAdUpload(){
   if(!m){m=document.createElement('div');m.id='apUpModal';m.className='rd-prompt';document.body.appendChild(m);}
   const advs=[...new Set([].concat((AP_COMPETITORS||[]).map(function(c){return c.name;}),(window._winnerAds||[]).map(function(a){return (a.advertiser_name||'').trim();})).filter(Boolean))].sort();
   m.innerHTML='<div class="rd-prompt-c ap-up" style="width:min(680px,100%);max-height:90vh;overflow:auto" onclick="event.stopPropagation()">'+
-    '<div class="k">Engine 3 \u00b7 Ad Strategist</div>'+
+    '<div class="k">Pipeline \u00b7 Ad Strategist</div>'+
     '<h3 style="font-family:\'Newsreader\',serif;font-size:24px;margin:0 0 4px">Add competitor ads</h3>'+
     '<p class="help" style="margin:0 0 14px">Screenshots are read for the hook, the copy and what the image does. Each ad is also used as proven evidence in the next Ad Strategist run.</p>'+
     '<div class="drop" id="apUpDrop"><b>Drop screenshots here, click to choose, or paste one</b><small>PNG or JPG. Several screenshots of the same ad are read together as a carousel.</small>'+
@@ -21525,7 +21532,7 @@ async function apOpenAdCopy(){
   const pool=done.length?done:(window._winnerAds||[]).filter(function(a){return a.hook&&!apAdIsDynamic(a);}).slice(0,12);
   window.__apCopyPool=pool;
   const c=m.querySelector('.rd-prompt-c');
-  c.innerHTML='<div class="k">Engine 3 \u00b7 Ad copy</div>'+
+  c.innerHTML='<div class="k">Pipeline \u00b7 Ad copy</div>'+
     '<h3 style="font-family:\'Newsreader\',serif;font-size:24px;margin:0 0 4px">Write ad copy from these ads</h3>'+
     '<p class="help" style="margin:0 0 12px">Original copy for '+esc((AP_OFFER&&AP_OFFER.name)||'our offer')+'. The ads are pattern evidence only; wording comes from our guidelines and brand voice.</p>'+
     '<label class="l">Ads to learn from ('+pool.length+')</label>'+
@@ -21558,7 +21565,7 @@ async function apRunAdCopy(){
     if(!(r&&r.ok))throw new Error((r&&r.error)||'No copy came back.');
     window.__apCopyResult={r:r,ads:picked.map(function(a){return a.id;}),platform:body.platform};
     prog.innerHTML='<div class="ok">'+r.variants.length+' variants written.</div>';
-    out.innerHTML=apCopyHtml(r)+'<div class="acts" style="justify-content:flex-start"><button class="rd-btn pri" onclick="apSaveAdCopy(this)">Save to Engine 3</button>'+
+    out.innerHTML=apCopyHtml(r)+'<div class="acts" style="justify-content:flex-start"><button class="rd-btn pri" onclick="apSaveAdCopy(this)">Save to Pipeline</button>'+
       '<button class="rd-btn" onclick="apCopy(apCopyAllText(),this)">Copy all</button></div>';
   }catch(e){prog.innerHTML='<div class="err">'+esc(e.message||String(e))+'</div>';}
   finally{btn.disabled=false;btn.textContent='Write the copy';}
@@ -21603,10 +21610,10 @@ async function apSaveAdCopy(btn){
       body:JSON.stringify({run_id:'adcopy_'+stamp.slice(0,16).replace(/[-:T]/g,''),agent:'ad_copywriter',output_type:'ad_copy',
         title:'Ad copy from uploaded ads \u2014 '+stamp.slice(0,10),content_md:apCopyMd(x),
         data:{variants:x.r.variants,takeaways:x.r.takeaways,guideline_notes:x.r.guideline_notes,source_ads:x.ads,platform:x.platform}})});
-    btn.textContent='\u2713 Saved';toast('Saved to Engine 3');
+    btn.textContent='\u2713 Saved';toast('Saved to Pipeline');
     AP_COPYSETS=null;
     if(S.page==='ap60'&&state.view==='ads')apCopySets();
-  }catch(e){btn.disabled=false;btn.textContent='Save to Engine 3';toast('Could not save: '+e.message,false);}
+  }catch(e){btn.disabled=false;btn.textContent='Save to Pipeline';toast('Could not save: '+e.message,false);}
 }
 /* saved copy sets live on the Ad Strategist page */
 let AP_COPYSETS=null;
@@ -21843,7 +21850,7 @@ async function apOpenBuildBrief(){
   const ups=(await apLoadUploads()).filter(function(a){return a.upload_analysis&&a.upload_analysis.status==='done';});
   window.__apBriefPool=ups;
   const c=m.querySelector('.rd-prompt-c');
-  c.innerHTML='<div class="k">Engine 3 \u00b7 Custom run</div>'+
+  c.innerHTML='<div class="k">Pipeline \u00b7 Custom run</div>'+
     '<h3 style="font-family:\'Newsreader\',serif;font-size:24px;margin:0 0 4px">Build an ad strategy from your uploads</h3>'+
     '<p class="help" style="margin:0 0 12px">Creates an Ad Strategist creative brief from the ads you pick. It becomes the newest brief, so the Content Generation Agent builds from it next.</p>'+
     '<label class="l">Uploaded ads ('+ups.length+')</label>'+
@@ -22744,7 +22751,7 @@ function apDemoE1Overview(){
   apDemo({page:'e1overview',eyebrow:'ENGINE 1 \u00b7 CLIENT DELIVERY',title:'Overview',
     sub:'Lead-to-proposal pipeline. One run per prospect, five agents deep.',
     cta:{label:'New run',go:'openE1RunModal()'},
-    purpose:{tag:'Engine 1',bold:'From first research to the growth plan',small:'Each lead is one run. Every stage produces a document your team reviews before it goes anywhere.',
+    purpose:{tag:'Catalyst',bold:'From first research to the growth plan',small:'Each lead is one run. Every stage produces a document your team reviews before it goes anywhere.',
       alt:'<span>Every prospect lives in the lead pipeline.</span><button class="rd-btn sm" onclick="apGo(\'e1pipeline\')">Open</button>'},
     strip:function(){return [
       {n:leads.length,l:'Leads',s:'in the pipeline',tab:'leads'},
@@ -22780,7 +22787,7 @@ function apDemoE1Pipeline(){
   const body=document.getElementById('e1Body');if(!body)return;
   const search=main.querySelector('.page-head input[type=search]');
   const sec=document.createElement('section');sec.className='block';sec.id='apE1List';
-  sec.innerHTML='<h2 data-k="Lead list">Every prospect in Engine 1 <span class="count" id="apE1Cnt"></span></h2><div class="ap-e1tools"></div>';
+  sec.innerHTML='<h2 data-k="Lead list">Every prospect in Catalyst <span class="count" id="apE1Cnt"></span></h2><div class="ap-e1tools"></div>';
   main.insertBefore(sec,body);sec.appendChild(body);
   if(search){search.placeholder='Search prospect, company or email\u2026';sec.querySelector('.ap-e1tools').appendChild(search);}
   const d=window._e1||{leads:[],outs:[]};
@@ -22792,7 +22799,7 @@ function apDemoE1Pipeline(){
   apDemo({page:'e1pipeline',eyebrow:'ENGINE 1 \u00b7 CLIENT DELIVERY',title:'Lead pipeline',
     sub:'Every prospect that entered Engine 1, stage by stage, with each document linked.',
     cta:{label:'New run',go:'openE1RunModal()'},
-    purpose:{tag:'Engine 1',bold:'One row per prospect',small:'Click a row to edit it in the side panel, or Full view for every stage\u2019s document.'},
+    purpose:{tag:'Catalyst',bold:'One row per prospect',small:'Click a row to edit it in the side panel, or Full view for every stage\u2019s document.'},
     strip:function(){return [
       {n:d.leads.length,l:'Leads',s:'all prospects',tab:'all'},
       {n:inProg,l:'In progress',s:'mid-pipeline',tab:'s0'},
@@ -24173,7 +24180,7 @@ function apSearchResults(q){
   const has=function(){for(let i=0;i<arguments.length;i++){if(String(arguments[i]||'').toLowerCase().indexOf(q)>-1)return true;}return false;};
   const R=[];
   Object.keys(AP_VIEWS).forEach(function(k){const c=AP_VIEWS[k];if(c.hidden)return;if(has(c.title,c.tag))R.push({g:'Pages',t:c.title,s:(c.tag?c.tag.replace('ENGINE','Engine'):'Workspace'),go:"apGo('"+k+"')"});});
-  AP_LEADS.forEach(function(l){if(has(l.prospect_name,l.company_name,l.email,(l.emails||[]).join(' ')))R.push({g:'Engine 1 leads',t:l.prospect_name||l.email,s:[l.company_name,l.email].filter(Boolean).join(' \u00b7 '),go:"apOpenLead60('"+l.email+"')"});});
+  AP_LEADS.forEach(function(l){if(has(l.prospect_name,l.company_name,l.email,(l.emails||[]).join(' ')))R.push({g:'Leads',t:l.prospect_name||l.email,s:[l.company_name,l.email].filter(Boolean).join(' \u00b7 '),go:"apOpenLead60('"+l.email+"')"});});
   AP_INTEL.forEach(function(i){if(has(i.summary,i.competitor,i.signal))R.push({g:'Intel',t:String(i.summary||'').slice(0,90),s:(i.competitor||i.platform||'')+(i.published_at?' \u00b7 '+aplDate(i.published_at):''),go:"apGo('e3intel');setTimeout(function(){apTab('posts')},900)"});});
   AP_ADS.forEach(function(a){if(has(a.hook,a.advertiser,a.body))R.push({g:'Ads',t:String(a.hook||'').slice(0,90)||'Ad',s:a.advertiser||'',go:"apGo('e3ads');setTimeout(function(){apTab('winners')},900)"});});
   if(typeof AP_CF!=='undefined'&&AP_CF)AP_CF.drafts.forEach(function(o){if(has(apCfDraftTitle(o),o.d.body))R.push({g:'Content drafts',t:apCfDraftTitle(o),s:AP_CF_FMT[o.d.format]||'',go:"apCfOpenDraft('"+o.id+"')"});});
@@ -24862,6 +24869,25 @@ async function apBriefStructPaint(){
 .ap-doc-t b{display:block;font-size:14.5px;color:var(--rd-ink)}
 .ap-doc-t small{display:block;font-size:12.5px;color:var(--rd-muted);margin-top:2px}
 #e1Body td:nth-child(3){padding-right:14px}
+/* v118: on a computer screen the stage bar and its count stay inside their cell, on one line (the count ran into
+   the next column: the date when no lead on the tab had a fit). The stages column is wider, and the five segments
+   narrow before the count can overflow (under 1024 wide the count goes under the bar). Phones and small tablets
+   keep their wider table that scrolls sideways. */
+@media(min-width:861px){
+  #e1Body th:nth-child(1),#e1Body td:nth-child(1){width:28%}
+  #e1Body th:nth-child(2),#e1Body td:nth-child(2){width:17%}
+  #e1Body th:nth-child(3),#e1Body td:nth-child(3){width:23%}
+  #e1Body table.nofit th:nth-child(1),#e1Body table.nofit td:nth-child(1){width:32%}
+  #e1Body table.nofit th:nth-child(2),#e1Body table.nofit td:nth-child(2){width:21%}
+  #e1Body .ap-e1bar{display:flex}
+  #e1Body .ap-e1bar .seg{flex:0 1 22px;min-width:10px}
+  #e1Body .ap-e1bar .n{flex:none}
+}
+@media(min-width:861px) and (max-width:1023px){
+  #e1Body .ap-e1bar{flex-wrap:wrap;row-gap:4px}
+  #e1Body .ap-e1bar .seg{flex-basis:14px}
+  #e1Body .ap-e1bar .n{flex-basis:100%;margin-left:0}
+}
 /* closed side panels stay fully out of view at every width */
 .drawer:not(.open){visibility:hidden;pointer-events:none}
 /* ---------- phone and small tablet: sidebar becomes a drawer ---------- */
@@ -24963,7 +24989,7 @@ function apHomeRunsCard(){
 })();
 
 /* ---------- Engine 1 pipeline: heading follows the tab, empty Fit column hidden ---------- */
-const AP_E1_HEAD={all:['All','Every prospect in Engine 1'],new:['New','Nothing run yet, lead research is next'],s0:['At Research','Researched, the interview script is next'],s1:['At Interview','Interview script ready, the assessment is next'],
+const AP_E1_HEAD={all:['All','Every prospect in Catalyst'],new:['New','Nothing run yet, lead research is next'],s0:['At Research','Researched, the interview script is next'],s1:['At Interview','Interview script ready, the assessment is next'],
   s2:['At Assessment','Assessment ready, the discovery call is next'],s3:['At Discovery','Discovery framework ready, the growth plan is next'],done:['Completed','Fully delivered, growth plan written']};
 function apE1Tidy(){
   const sec=document.getElementById('apE1List');if(sec){const t=(RD.aptab&&RD.aptab.e1pipeline)||'all',h=sec.querySelector('h2'),m=AP_E1_HEAD[t]||AP_E1_HEAD.all;
@@ -27249,7 +27275,7 @@ function apIrPendingSave(a){try{localStorage.setItem('ap.intelPending',JSON.stri
 function apOpenIntelRun(){
   AP_IR.rows=[{}];AP_IR.only=true;AP_IR.cascade=false;
   const c=apModal('apIntelRun',
-    '<div class="k">Engine 3 · Competitor Intelligence Tracker</div>'+
+    '<div class="k">Pipeline · Intel Tracker</div>'+
     '<h3 class="ap-m89h">Run the tracker with new competitors</h3>'+
     '<p class="help">Add the competitors you want tracked. They join the watchlist and the tracker runs now, reading their LinkedIn, X and Facebook posts plus recent news about them. The brief is marked as a custom run so you can tell it apart from the scheduled runs.</p>'+
     '<div class="ap-ir-rows" id="apIrRows"></div>'+
@@ -27444,7 +27470,7 @@ async function apFilesLoad(force){
       by:f.uploaded_by,at:f.created_at,kb:f.in_kb!==false&&!!f.in_kb,text:!!f.indexed_at,stage:f.stage});});
   gf.forEach(function(f){const src=f.source==='notion'?'notion':'guide';
     rows.push({key:'g:'+f.id,table:'guide_files',id:f.id,name:f.file_name,url:f.file_url,path:f.file_path,src:src,
-      cat:f.category||'Firm guides',lead:'',who:({e1:'Engine 1',e3:'Engine 3',all:'Company-wide'})[f.engine]||'Company-wide',
+      cat:f.category||'Firm guides',lead:'',who:({e1:'Catalyst',e3:'Pipeline',all:'Company-wide'})[f.engine]||'Company-wide',
       by:f.uploaded_by,at:f.created_at,kb:f.in_kb!==false,text:!!f.indexed_at,engine:f.engine});});
   const ver={};
   outs.forEach(function(o){
@@ -27526,7 +27552,7 @@ function apFilesStrip(rows,page){
     b(c(function(r){return r.kb&&!r.text;}),'Waiting to be read','press Read again on these',AP_FV.read==='no',"AP_FV.read=AP_FV.read==='no'?'':'no';apRenderKb2()")+'</div>';
   return '<div class="rd-strip">'+
     b(rows.length,'All documents','every file in the workspace',!AP_FV.cat&&!AP_FV.kb,"AP_FV.cat='';AP_FV.kb='';apRenderFiles2()")+
-    b(c(function(r){return r.cat==='Lead documents';}),'Lead documents','written by the Engine 1 agents',AP_FV.cat==='Lead documents',"AP_FV.cat=AP_FV.cat==='Lead documents'?'':'Lead documents';apRenderFiles2()")+
+    b(c(function(r){return r.cat==='Lead documents';}),'Lead documents','written by the Catalyst agents',AP_FV.cat==='Lead documents',"AP_FV.cat=AP_FV.cat==='Lead documents'?'':'Lead documents';apRenderFiles2()")+
     b(c(function(r){return r.kb;}),'In knowledge base','the agents can read these',AP_FV.kb==='in',"AP_FV.kb=AP_FV.kb==='in'?'':'in';apRenderFiles2()")+
     b(c(function(r){return !r.kb;}),'Not synced yet','add them in one click',AP_FV.kb==='out',"AP_FV.kb=AP_FV.kb==='out'?'':'out';apRenderFiles2()")+'</div>';
 }
@@ -27782,7 +27808,7 @@ async function apNtSaveGo(id,mode){
    =================================================================== */
 let AP_RULES=null,AP_AISET=null;
 if(typeof AP_VIEWS!=='undefined'&&!AP_VIEWS.learning)AP_VIEWS.learning={page:'learning',title:'Dashboard AI settings'};
-const AP_SCOPES=[['all','Everything'],['engine1','Engine 1 agents'],['engine3','Engine 3 agents'],['intel_tracker','Intel Tracker'],['ad_strategist','Ad Strategist'],['content_generation','Content Generation'],['ask_bot','Assistant']];
+const AP_SCOPES=[['all','Everything'],['engine1','Catalyst agents'],['engine3','Pipeline agents'],['intel_tracker','Intel Tracker'],['ad_strategist','Ad Strategist'],['content_generation','Content Generation'],['ask_bot','Assistant']];
 const AP_RCAT=['Voice and tone','Format','Compliance','Facts and claims','Other'];
 async function apRulesLoad(force){
   if(AP_RULES&&!force)return AP_RULES;
@@ -27827,7 +27853,7 @@ const AP_WHERE=[
   ['Ad Strategist (Build ad strategy)','Rules','live'],
   ['Competitor Intel Tracker','Rules, on every daily and custom run','ready'],
   ['Assistant (Ask)','Rules, sent with each question','live'],
-  ['Engine 1 agents (research, interview, anonymizer, discovery, growth plan)','Not yet. Their prompts are set inside their n8n workflows','no'],
+  ['Catalyst agents (research, interview, anonymizer, discovery, growth plan)','Not yet. Their prompts are set inside their n8n workflows','no'],
   ['Ad upload analyzer and the funnel builder','Not yet','no']];
 async function apRenderAiSettings(){
   const pg=document.getElementById('page-learning');if(!pg)return;
@@ -27941,7 +27967,7 @@ async function apRenderTemplates2(quick){
       '<button onclick="apGo(\'e3create\')"><span class="n">'+T.reduce(function(a,t){return a+(t.uses||0);},0)+'</span><span class="rd-sl">Drafts built<small>from a template</small></span></button></div>'+
     '<div class="ap-tpl-grid">'+(T.length?(v112TplShow(T).map(apTplCard).join('')||'<div class="rd-card rd-empty">No templates of this kind yet. Press the tile again to see them all.</div>'):'<div class="rd-card rd-empty">No templates yet. Create one and it appears in Create content.</div>')+'</div>'+
     '<div class="rd-card" style="margin-top:18px"><div class="rd-sec-h gold"><div><div class="k">Agent output formats</div><h3>Fixed formats in n8n</h3></div></div>'+
-      '<div class="rd-blank">The Engine 1 documents (research brief, interview script, discovery call, growth plan) and the Engine 3 briefs have their formats set inside their n8n workflows. House rules in <a onclick="navPm(\'learning\')">Dashboard AI settings</a> are how you steer those today.</div></div>';
+      '<div class="rd-blank">The Catalyst documents (research brief, interview script, discovery call, growth plan) and the Pipeline briefs have their formats set inside their n8n workflows. House rules in <a onclick="navPm(\'learning\')">Dashboard AI settings</a> are how you steer those today.</div></div>';
 }
 function apTplCard(t){
   const secs=t.sections||[];
@@ -28740,7 +28766,7 @@ function e9IndHtml(){
 async function e9IndEdit(){
   await Promise.all([apCfLoad(),apAiSettingsLoad()]);
   const p=AP_CF.prof||{},kw=Array.isArray(AP_AISET.intel_keywords)?AP_AISET.intel_keywords:[];
-  apModal('e9IndM','<div class="k">Engine 3 · market reading</div><h3 class="ap-m89h">What industry is this run for?</h3>'+
+  apModal('e9IndM','<div class="k">Pipeline · market reading</div><h3 class="ap-m89h">What industry is this run for?</h3>'+
     '<p class="help">The Competitor Intel Tracker and the Ad Strategist read the market through this. Changes apply from the next run.</p>'+
     '<div class="e9-ind-m"><label>Industry<input id="e9IndI" value="'+esc(p.industry||'')+'" placeholder="e.g. AI consulting for wealth management firms"></label>'+
       '<label>Who you sell to<textarea id="e9IndA" rows="2" placeholder="e.g. Growth-stage RIAs and independent advisory firms">'+esc(p.target_market||'')+'</textarea></label>'+
@@ -29882,9 +29908,9 @@ function apCxPostPaint(box,c){
         (ext.length?'<a class="rd-btn sm" href="'+esc('mailto:'+ext.map(function(g){return g.email;}).join(',')+'?subject='+encodeURIComponent(fu.subject||'')+'&body='+encodeURIComponent(fu.body||''))+'">Open in email</a>':'')+'</div>'+
       (fu.subject?'<div class="ap-cx-subj">Subject: '+esc(fu.subject)+'</div>':'')+'<div class="ap-cx-mail">'+esc(fu.body)+'</div></section>':'')+
     (e1?'<section class="ap-cx-card ap-cx-e1"><div><h4>'+(type==='interview'?'Next: the Assessment':'Next: the Growth Plan')+'</h4>'+
-        '<p>'+(type==='interview'?'Start Engine 1 at the Assessment with this call as the source. Discovery and the Growth Plan follow automatically.'
-          :'Start Engine 1 from this call. It runs from the Assessment, then Discovery and the Growth Plan follow, using this call as the source.')+'</p></div>'+
-        '<button class="rd-btn pri" onclick="apCxE1(\''+ide+'\',this)">Start Engine 1 from this call</button></section>':'');
+        '<p>'+(type==='interview'?'Run Catalyst from the Assessment with this call as the source. Discovery and the Growth Plan follow automatically.'
+          :'Run Catalyst from this call. It runs from the Assessment, then Discovery and the Growth Plan follow, using this call as the source.')+'</p></div>'+
+        '<button class="rd-btn pri" onclick="apCxE1(\''+ide+'\',this)">Run Catalyst from this call</button></section>':'');
 }
 function apCxAuto(on){apAiSettingsLoad().then(function(){apAiSet('call_auto_actions',!!on);});}
 async function apCxGen(id,btn,typeArg){
@@ -29957,7 +29983,7 @@ function apCxEdit(id){
   id=String(id);const c=apFtCall(id);if(!c)return;
   const m=apCm(id)||{},t=m.meeting_type||'',g=apCmGuests(c),tags=apCxArr(m.tags);
   const ide=esc(id);
-  apModal('apCxEditM','<h3 class="ap-m89h">Call details</h3><p class="help">Saved for the whole team in the dashboard. Fathom is not changed. These details feed the post-call actions, the HubSpot sync and Engine 1.</p>'+
+  apModal('apCxEditM','<h3 class="ap-m89h">Call details</h3><p class="help">Saved for the whole team in the dashboard. Fathom is not changed. These details feed the post-call actions, the HubSpot sync and Catalyst.</p>'+
     '<label class="f"><span>Title</span><input id="cxTitle" maxlength="200" value="'+esc(m.title||'')+'" placeholder="'+esc(c._ftTitle||c.title)+'"></label>'+
     '<div class="ap-row2"><label class="f"><span>Folder</span><input id="cxFolder" list="cxFolders" maxlength="80" value="'+esc(m.folder||'')+'" placeholder="e.g. Northwind or Sales calls">'+
       '<datalist id="cxFolders">'+apCxFolders().map(function(f){return '<option value="'+esc(f)+'">';}).join('')+'</datalist></label>'+
@@ -30195,7 +30221,7 @@ apRenderIntegrations=async function(){
         :'<button class="rd-btn sm pri" onclick="apFathomModal()">Connect Fathom</button>'},
     {k:'slack',name:'Slack',lg:apLogo('slack.com','S','#4A154B'),
       ok:!!slOk,st:slOk?'Connected':sl.code==='off'?'Switched off':'Needs attention',
-      p:'Share a call’s summary and next steps to a channel. Engine 3 already posts its review messages here.',
+      p:'Share a call’s summary and next steps to a channel. Pipeline already posts its review messages here.',
       meta:slOk?sl.channels.length+' channel'+(sl.channels.length===1?'':'s')+' visible · '+sl.channels.filter(function(c){return c.member;}).length+' with the n8n app in them':sl.code==='off'?'Turn on “Integrations · Slack Proxy” in n8n.':(sl.message||'Slack did not answer.'),
       acts:'<a class="rd-btn sm" href="https://app.slack.com/client" target="_blank" rel="noopener">Open Slack ↗</a>'},
     {k:'asana',name:'Asana',lg:apLogo('asana.com','A','#F06A6A'),
@@ -30575,7 +30601,7 @@ function apCxLead(c){
     try{
       const L=apCxLead(c);
       if(L){const l=L.lead;
-        h+='<div class="ap-cx-lead"><span>Engine 1 lead: <b>'+esc(l.prospect_name||l.email)+'</b>'+(l.company_name?' · '+esc(l.company_name):'')+(L.stage==='not started'?' · no stages run yet':L.stage?' · done up to '+esc(L.stage):'')+'</span>'+
+        h+='<div class="ap-cx-lead"><span>Catalyst lead: <b>'+esc(l.prospect_name||l.email)+'</b>'+(l.company_name?' · '+esc(l.company_name):'')+(L.stage==='not started'?' · no stages run yet':L.stage?' · done up to '+esc(L.stage):'')+'</span>'+
           '<button class="rd-btn sm" onclick="apOpenLead60(\''+esc(l.email)+'\')">Open lead</button></div>';}
     }catch(e){}
     return h;
@@ -31334,7 +31360,7 @@ function v96IndRepaint(){document.querySelectorAll('#e9Ind').forEach(function(x)
 e9IndEdit=async function(){
   await apCfLoad();
   const p=AP_CF.prof||{};
-  apModal('e9IndM','<div class="k">Engine 3 · market reading</div><h3 class="ap-m89h">What industry is this run for?</h3>'+
+  apModal('e9IndM','<div class="k">Pipeline · market reading</div><h3 class="ap-m89h">What industry is this run for?</h3>'+
     '<p class="help">Social Listening and the Ad Strategist judge what matters through this. Changes apply from the next run.</p>'+
     '<div class="e9-ind-m"><label>Industry<input id="e9IndI" value="'+esc(p.industry||'')+'" placeholder="e.g. AI consulting for wealth management firms"></label>'+
       '<label>Who you sell to<textarea id="e9IndA" rows="2" placeholder="e.g. Growth-stage RIAs and independent advisory firms">'+esc(p.target_market||'')+'</textarea></label></div>'+
@@ -36001,7 +36027,7 @@ function v98CtxOpen(focus){
         (o.rows?'<textarea id="'+id+'" rows="'+o.rows+'" placeholder="'+esc(ph||'')+'">'+esc(val||'')+'</textarea>':'<input id="'+id+'" value="'+esc(val||'')+'" placeholder="'+esc(ph||'')+'">')+
         (o.hint?'<small class="hint">'+o.hint+'</small>':'')+'</label>';};
     const sec=function(n,title,to,help,body){return '<section class="v98-cx-s"><h4><span class="n">'+n+'</span>'+esc(title)+'<span class="to">→ '+esc(to)+'</span></h4>'+(help?'<p class="help">'+esc(help)+'</p>':'')+body+'</section>';};
-    apModal('v98CxM','<div class="k">Engine 3 · knowledge base</div><h3 class="ap-m89h">Your voice and context</h3>'+
+    apModal('v98CxM','<div class="k">Pipeline · knowledge base</div><h3 class="ap-m89h">Your voice and context</h3>'+
       '<p class="help">Every draft and brief reads these. A change shows up from the next brief.</p>'+
       '<div class="v98-cx">'+
         sec(1,'Your voice','Content Transformation and Marketing Generation','',
@@ -37817,7 +37843,7 @@ function v102Ed(){
 })();
 function v102EdHtml(){
   const S=v102S(),vid=S.kind==='video';
-  const head='<div class="k">Engine 3 · Content Transformation</div><h3 class="ap-m89h">'+(vid?'Edit video':'Edit audio')+'</h3>'+
+  const head='<div class="k">Pipeline · Content Transformation</div><h3 class="ap-m89h">'+(vid?'Edit video':'Edit audio')+'</h3>'+
     '<p class="v102-meta" id="v102Meta">'+esc(S.name)+(S.dur?' · '+v102T(S.dur):'')+' · '+v102Size(S.size)+'</p>';
   if(S.loading)return '<div class="v102" id="v102">'+head+'<div class="v102-load"><span class="v102-spin" aria-hidden="true"></span>Opening '+esc(S.name)+'…</div></div>';
   if(S.err)return '<div class="v102" id="v102">'+head+'<div class="v102-bad" role="alert"><p>'+esc(S.err)+'</p>'+
@@ -47716,7 +47742,7 @@ function v111FollowAsk(adv,link,n,done){
   if(nwLS('ap.v111.nofollow',{})[k])return false;
   const box=document.querySelector('#apUpModal .rd-prompt-c');if(!box)return false;
   V111.folAsk={adv:adv,link:link||'',done:done};
-  box.innerHTML='<div class="k">Engine 3 · Ad Strategist</div>'+
+  box.innerHTML='<div class="k">Pipeline · Ad Strategist</div>'+
     '<h3 style="font-family:\'Newsreader\',serif;font-size:24px;margin:0 0 4px">Follow '+esc(adv)+' too?</h3>'+
     '<p class="help" style="margin:0 0 14px">'+esc(nwPlural(n||1,'ad')+' from '+adv+' saved.')+' Follow '+esc(adv)+' and the Ad Strategist pulls their ads from the Meta Ad Library on every run.</p>'+
     '<label class="l" for="v111FaPage">Their Facebook page</label><input type="text" id="v111FaPage" placeholder="facebook.com/their-page, or the page ID" value="'+esc(ex&&ex.meta_page_id?String(ex.meta_page_id):'')+'" onkeydown="if(event.key===\'Enter\'){event.preventDefault();v111FollowYes();}">'+
@@ -49547,7 +49573,7 @@ function v115Card(w,title,body,cls){return '<section class="nw-card nw-w nw-w-'+
 function v115OvQuick(){
   const q=function(icon,b,s,go){return '<button type="button" onclick="'+esc(go)+'"><span class="nw-qi">'+nwIc(icon,19)+'</span><span><b>'+esc(b)+'</b><small>'+esc(s)+'</small></span></button>';};
   return v115Card(1,'Quick start','<div class="nw-quick">'+
-    q('users','Run Engine 1 for a lead','Catalyst · Lead pipeline',"v115RunE1()")+
+    q('users','Run Catalyst for a lead','Catalyst · Lead pipeline',"v115RunE1()")+
     q('rocket','Make an ad campaign','Pipeline · Marketing Generation',"v97Start('marketing')")+
     q('repeat','Turn content into a post','Pipeline · Content Transformation',"v97Start('source')")+
     q('layout','Put a landing page live','Pipeline · Landing pages',"v115LpNew()")+'</div>');
@@ -49556,7 +49582,7 @@ function v115RunE1(){apGo('e1pipeline');setTimeout(function(){try{openE1RunModal
 function v115ProdLine(k){
   if(k==='touch'){const n=nwApprovalItems().length;return n?nwPlural(n,'thing')+' waiting for you':'Nothing waiting for you';}
   if(k==='cat'){const L=typeof AP_LEADS!=='undefined'?AP_LEADS:[],w=nwBadgeN('e1pipeline');return nwPlural(L.length,'lead')+(w?' · '+w+' waiting on a next stage':'');}
-  if(k==='canvas'){const R=V115.dl.rows;return R?nwPlural(R.length,'document'):'Engine 1 documents and call write-ups';}
+  if(k==='canvas'){const R=V115.dl.rows;return R?nwPlural(R.length,'document'):'Lead documents and call write-ups';}
   if(k==='pipe'){
     const b=nwBadgeN('e3briefs'),P=V115.lp.pages,live=P?P.filter(function(p){return p.status==='live';}).length:null;
     return [b?nwKindLabel('brief',b)+' to review':'No briefs waiting',live!=null?nwPlural(live,'live landing page'):''].filter(Boolean).join(' · ');
@@ -49627,7 +49653,7 @@ async function v115DlLoad(force){
         let url=l[s.urlCol]||(o&&(o.pdf||o.pdf2))||null;
         if(url&&!/^https?:\/\//i.test(String(url)))url=null;
         if(!o&&!url)return;
-        rows.push({key:'e1:'+l.email+':'+s.agent,src:'e1',title:s.label,kind:'Engine 1 · '+(String(s.kind||'').split(' · ')[1]||s.short),who:l.prospect_name||l.email,org:l.company_name||'',
+        rows.push({key:'e1:'+l.email+':'+s.agent,src:'e1',title:s.label,kind:'Catalyst · '+(String(s.kind||'').split(' · ')[1]||s.short),who:l.prospect_name||l.email,org:l.company_name||'',
           when:(o&&o.created_at)||l.updated_at,url:url,open:'openE1LeadStage('+nwJs(l.email)+','+i+')'});
       });
     });
@@ -49657,7 +49683,7 @@ function v115DlRow(r){
 }
 function v115DlListHtml(){
   const D=V115.dl,rows=v115DlRows();
-  if(!rows.length)return '<div class="nw-card">'+nwEmpty('layers',D.q?'Nothing matches':'No documents yet',D.q?'Try another search.':'Engine 1 documents and call write-ups land here as they are made.','')+'</div>';
+  if(!rows.length)return '<div class="nw-card">'+nwEmpty('layers',D.q?'Nothing matches':'No documents yet',D.q?'Try another search.':'Lead documents and call write-ups land here as they are made.','')+'</div>';
   return '<div class="nw-list v115-list">'+rows.slice(0,D.more).map(v115DlRow).join('')+'</div>'+
     (rows.length>D.more?'<div class="v115-more"><button type="button" class="nw-btn" onclick="V115.dl.more+=40;v115DlPaint()">Show more</button></div>':'');
 }
@@ -49665,9 +49691,9 @@ function v115DlHtml(){
   const D=V115.dl,R=D.rows||[],n1=R.filter(function(r){return r.src==='e1';}).length,n2=R.length-n1;
   const head=nwHead({eyebrow:'Canvas · Client deliverables',title:'Deliverables',
     status:D.rows?[[D.err?'bad':'good',D.err?(R.length?'Some could not load: ':'Could not load: ')+D.err:nwPlural(R.length,'document')]]:[['info','Loading']],
-    caps:[['users','Engine 1 documents for each lead'],['msg','Write-ups from your calls']],
-    stats:D.rows?[nwStat(R.length,'documents',"v115DlF('all')"),nwStat(n1,'from Engine 1',"v115DlF('e1')"),nwStat(n2,'from calls',"v115DlF('call')")]:[]});
-  const tabs=[['all','All',R.length],['e1','Engine 1',n1],['call','Calls',n2]];
+    caps:[['users','Catalyst documents for each lead'],['msg','Write-ups from your calls']],
+    stats:D.rows?[nwStat(R.length,'documents',"v115DlF('all')"),nwStat(n1,'from Catalyst',"v115DlF('e1')"),nwStat(n2,'from calls',"v115DlF('call')")]:[]});
+  const tabs=[['all','All',R.length],['e1','Catalyst',n1],['call','Calls',n2]];
   return '<div class="nw-content v115-dl">'+head+
     '<div class="nw-toolbar"><div class="nw-seg" role="tablist" aria-label="Show">'+tabs.map(function(t){
       return '<button type="button" role="tab" aria-selected="'+(D.f===t[0])+'" onclick="v115DlF(\''+t[0]+'\')">'+esc(t[1])+' <span class="nw-faint">'+t[2]+'</span></button>';}).join('')+'</div>'+
@@ -50027,7 +50053,7 @@ function v115LpEdit(id){
       v115In('v115E-thb','Text',th.body,{area:1,rows:2})+
       v115In('v115E-thc','Button',th.cta,{hint:'optional'})+
       v115In('v115E-thu','Button link',th.url,{ph:p.kind==='book_call'?'https://calendly.com/...':'https://...',hint:p.kind==='book_call'?'your booking link, needed to go live':p.kind==='download'?'the file they get, needed to go live':'optional'})+
-      '<label class="nw-switch-row"><span><b>Add sign-ups to the lead pipeline</b><small>As New leads in Catalyst, ready for Engine 1. Everyone also goes to HubSpot.</small></span>'+
+      '<label class="nw-switch-row"><span><b>Add sign-ups to the lead pipeline</b><small>As New leads in Catalyst, ready for lead research. Everyone also goes to HubSpot.</small></span>'+
         '<button type="button" class="nw-switch" role="switch" id="v115E-pipe" aria-checked="'+(p.add_to_pipeline!==false)+'" onclick="this.setAttribute(\'aria-checked\',this.getAttribute(\'aria-checked\')!==\'true\')"></button></label>'+
       (flags.length?'<div class="nw-hint v115-flags">'+nwIc('alert',17)+'<span><b>Check before it goes live:</b><ul>'+flags.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>'+
         '<label class="v115-chk"><input type="checkbox" id="v115E-ok"'+(was?' checked':'')+'>I checked these</label></span></div>':'')+

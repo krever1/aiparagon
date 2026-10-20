@@ -93,7 +93,7 @@ function tables(withLive) {
     const cards = await page.evaluate(() => [...document.querySelectorAll('#main .nw-widgets > section .nw-kicker:first-child')].map((k) => k.textContent));
     check('Today has Needs you, Quick start, Your workspace, Recent runs and Latest sign-ups', ['Needs you', 'Quick start', 'Your workspace', 'Recent runs', 'Latest sign-ups'].every((k) => cards.includes(k)), JSON.stringify(cards));
     const quick = await page.evaluate(() => [...document.querySelectorAll('#main .nw-quick button b')].map((b) => b.textContent));
-    check('quick starts reach both engines and the landing pages', JSON.stringify(quick) === JSON.stringify(['Run Engine 1 for a lead', 'Make an ad campaign', 'Turn content into a post', 'Put a landing page live']), JSON.stringify(quick));
+    check('quick starts reach both engines and the landing pages', JSON.stringify(quick) === JSON.stringify(['Run Catalyst for a lead', 'Make an ad campaign', 'Turn content into a post', 'Put a landing page live']), JSON.stringify(quick));
     const chips = await page.evaluate(() => [...document.querySelectorAll('#main .v115-prod')].map((p) => p.querySelector('b').textContent + ':' + p.querySelectorAll('.v115-prod-l button').length));
     check('Your workspace lists each product with its pages', JSON.stringify(chips) === JSON.stringify(['Touchpoint:3', 'Catalyst:4', 'Canvas:1', 'Pipeline:9', 'Atlas:4']), JSON.stringify(chips));
     await page.click('#main .v115-prod:nth-child(4) .v115-prod-l button:has-text("Landing pages")'); await wait(page, 700);
@@ -138,7 +138,7 @@ function tables(withLive) {
     const pdfs = await page.evaluate(() => [...document.querySelectorAll('#v115DlList a')].map((a) => a.getAttribute('href')));
     check('PDF links are only ever web addresses', pdfs.length > 0 && pdfs.every((h) => /^https?:\/\//.test(h)), JSON.stringify(pdfs));
     check('every document made for a client: 6 from Engine 1 and 1 call write-up', r.length === 7 && r.filter((x) => /Pat QA|Robin Test/.test(x)).length === 6 && r.some((x) => /QA weekly sync/.test(x)), JSON.stringify(r));
-    check('the header counts them', /7\s*documents/.test(await txt(page, '#main .nw-stats')) && /6\s*from Engine 1/.test(await txt(page, '#main .nw-stats')), await txt(page, '#main .nw-stats'));
+    check('the header counts them', /7\s*documents/.test(await txt(page, '#main .nw-stats')) && /6\s*from Catalyst/.test(await txt(page, '#main .nw-stats')), await txt(page, '#main .nw-stats'));
     await page.click('#main .nw-seg button:has-text("Calls")'); await wait(page);
     r = await rows();
     check('the Calls filter shows the call write-up only', r.length === 1 && /QA weekly sync/.test(r[0]), JSON.stringify(r));
