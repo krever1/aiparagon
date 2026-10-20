@@ -3703,7 +3703,11 @@ async function gcalFetch(quiet){
   }catch(e){ console.warn('[np-demo] gcal fetch failed',e); toast('Could not load Google Calendar events.'); }
   GCAL.loading=false; render();
 }
-function gcalPush(a){ // portal appointment → user's Google Calendar (UCI only, browser-side)
+/* v12.33: what an event on Google says: the appointment, with no client's name, initials or UCI (the portal knows
+   its own events by their Google id, kept on the appointment) */
+const GCAL_NOTE='From the care portal. Client details stay in the portal.';
+const gcalTitle=a=>extScrub(a.title)||a.type||'Appointment';
+function gcalPush(a){ // portal appointment → user's Google Calendar (browser-side)
   if(!GCAL.token&&!GCAL.kept) return;
   const startIso=a.date+'T'+a.time+':00';
   const end=new Date(new Date(startIso).getTime()+(a.dur||30)*60000);
@@ -3713,8 +3717,7 @@ function gcalPush(a){ // portal appointment → user's Google Calendar (UCI only
   const tz=tzEff();
   gcalApi('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
     method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ summary:a.title+' — '+client(a.cid).init+' ('+client(a.cid).uci+')',
-      location:a.loc||'', description:'Created by Spectrum Care Advisory OS · client identified by ID only',
+    body:JSON.stringify({ summary:gcalTitle(a), location:extScrub(a.loc), description:GCAL_NOTE,
       start:{dateTime:startIso,timeZone:tz}, end:{dateTime:endIso,timeZone:tz} })
   },true).then(async r=>{
     if(r.skipped) return toast('Saved here, but Google Calendar couldn\u2019t be reached, so it isn\u2019t on your Google Calendar yet.');
@@ -3751,8 +3754,8 @@ async function gcalUpdate(a){
   try{
     const r=await gcalApi('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+encodeURIComponent(a.gid),{
       method:'PATCH', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ summary:a.title+' — '+client(a.cid).init+' ('+client(a.cid).uci+')',
-        location:a.loc||'', start:{dateTime:startIso,timeZone:tz}, end:{dateTime:endIso,timeZone:tz} })},true);
+      body:JSON.stringify({ summary:gcalTitle(a), location:extScrub(a.loc), description:GCAL_NOTE,
+        start:{dateTime:startIso,timeZone:tz}, end:{dateTime:endIso,timeZone:tz} })},true);
     if(!r.ok){ console.warn('[np-demo] gcal update failed',r.status); return false; }
     const g=GCAL.events.find(x=>x.id==='g_'+a.gid);
     if(g){ g.date=a.date; g.time=a.time; g.dur=a.dur||30; g.loc=a.loc||''; }
@@ -3786,6 +3789,10 @@ function gcalLabel(a){ return a.gcal ? (a.cid?'Google · '+esc(client(a.cid).uci
 /* ── v5.3: map Google events to clients + anonymize + dedup ── */
 function gcalMapClient(ev){
   const escRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  /* v12.33: one the portal put there is known by its Google id, or (opened from the portal without a connection) by
+     its title, day and time, since its title no longer names the client */
+  const own=APPTS.find(a=>!a.cancelled&&(a.gid?'g_'+a.gid===ev.id:(a.date===ev.date&&a.time===ev.time&&gcalTitle(a)===ev.title)));
+  if(own){ ev.cid=own.cid; ev.dup=true; return ev; }
   let mapped=null;
   CLIENTS.forEach(c=>{
     // UCI in the title or location is the strongest signal (portal-pushed events carry it)
@@ -3804,16 +3811,15 @@ function gcalMapClient(ev){
 }
 /* zero-auth path: open Google Calendar prefilled (no OAuth consent needed) */
 function gcalTemplateOpen(a){
-  const c=client(a.cid);
   const d=a.date.replace(/-/g,''), t=a.time.replace(':','');
   const end=new Date(new Date(a.date+'T'+a.time+':00').getTime()+(a.dur||30)*60000);
   const pad=n=>String(n).padStart(2,'0');
   const e=end.getFullYear()+pad(end.getMonth()+1)+pad(end.getDate())+'T'+pad(end.getHours())+pad(end.getMinutes())+'00';
   const url='https://calendar.google.com/calendar/render?action=TEMPLATE'
-    +'&text='+encodeURIComponent(a.title+' — '+c.init+' ('+c.uci+')')
+    +'&text='+encodeURIComponent(gcalTitle(a))
     +'&dates='+d+'T'+t+'00/'+e
-    +'&location='+encodeURIComponent(a.loc||'')
-    +'&details='+encodeURIComponent('Created by Spectrum Care Advisory OS · client identified by ID only');
+    +'&location='+encodeURIComponent(extScrub(a.loc))
+    +'&details='+encodeURIComponent(GCAL_NOTE);
   window.open(url,'_blank');
 }
 
@@ -4236,21 +4242,32 @@ const relayOn=()=>!!(BACKEND.url&&BACKEND.anon&&!DEMO_VIEW);       // v12.22: th
 const relayUrl=()=>String(BACKEND.url).replace(/\/+$/,'')+'/functions/v1/np-relay';
 const relayHeaders=()=>({'Content-Type':'application/json',apikey:BACKEND.anon,Authorization:'Bearer '+(sbTok()||BACKEND.anon)});
 /* one call to a workflow, through the relay; a session that has run out is refreshed once */
+/* v12.33: what goes out through the relay is scrubbed on the way, every field but the addresses it goes to (Ask
+   swaps in its own labels before it gets here, and an email is the relay's own fixed wording) */
+const RELAY_KEEP={to:1,attendees:1,prefs:1,channel:1,id:1,event:1,kind:1,ev:1,link:1,at:1,date:1,time:1,due:1};
+function relayClean(v,k){
+  if(k&&RELAY_KEEP[k]) return v;
+  if(typeof v==='string') return extScrub(v);
+  if(Array.isArray(v)) return v.map(x=>relayClean(x));
+  if(v&&typeof v==='object'){ const o={}; Object.keys(v).forEach(kk=>{ o[kk]=relayClean(v[kk],kk); }); return o; }
+  return v;
+}
 async function relayCall(action,payload){
   if(!relayOn()) throw new Error('relay off');
+  if(action!=='ask') payload=relayClean(payload||{});
   const send=()=>fetch(relayUrl(),{method:'POST',headers:relayHeaders(),body:JSON.stringify({action,payload})});
   let r=await send();
   if(r.status===401&&sbTok()&&await sbRefresh()) r=await send();
   return r;
 }
 function relayFire(action,payload){ relayCall(action,payload).catch(()=>{}); }   // a notification: nothing waits on it
-function n8nPost(payload){ relayFire('incident',payload); }
+function n8nPost(payload){ const p=Object.assign({},payload); delete p.uci; relayFire('incident',p); }   // v12.33: an incident goes out without the client's ID
 function apptInvitees(a){                                             // staff listed on the appointment, by their sign-in email
   if(!a||!a.acl||a.acl.mode!=='listed') return [];
   return (a.acl.sids||[]).map(sid=>{ const st=staff(sid); if(!st) return ''; if(st.email) return st.email;
     const u=Object.entries(USERS).find(([em,b])=>b&&b.sid===sid); return u?u[0]:''; }).filter(Boolean);
 }
-function n8nCal(payload){ relayFire('calendar',payload); }
+function n8nCal(payload){ const p=Object.assign({},payload); delete p.uci; delete p.init; relayFire('calendar',p); }   // v12.33: and an appointment too
 /* v12.22: an appointment goes to the calendar workflow only when "Also send to Google Calendar" is
    ticked and it is not on a personal calendar. Which ones were sent is kept for the agency, so an
    edit, a cancellation or a restore follows only those. */
@@ -9077,7 +9094,7 @@ function notifyRule(ev,title,body,opts){
     /* v12.20: the email names the kind of event only. The notice itself (client ID, titles, names)
        stays in the portal, the same as every other email the portal sends. */
     const lbl=(NOTIF_EVENTS.find(x=>x[0]===ev)||[ev,'Something new'])[1];
-    emails.forEach(to=>sendPortalEmail(to,'[Care portal] '+lbl,`<div style="font-family:sans-serif;font-size:14px;line-height:1.6"><p>There is something new in the care portal: <b>${esc(lbl.toLowerCase())}</b>.</p><p>Open the portal to see it.</p><p style="color:#777;font-size:12px">Client details stay in the portal. Sent by the portal’s notification settings.</p></div>`).catch(()=>{}));
+    emails.forEach(to=>sendPortalEmail(to,'notify',{ev}).catch(()=>{}));   // v12.33: the relay writes it from the event's name
   }
   if(r.sms) console.info('[np-demo] text routing is set for '+ev+' — connect a texting provider in n8n to deliver');
 }
@@ -9248,8 +9265,7 @@ function notifyTaskAssigned(t,byMe){
     const emails=new Set(), me=String(AUTH.email||'').toLowerCase();
     who.forEach(w=>{ (w==='director'?directorEmails():sidEmails(w)).forEach(e=>emails.add(String(e).toLowerCase())); });
     emails.delete(me);
-    const due=t.due?` It is due ${fmtLong(t.due)}.`:'';
-    emails.forEach(to=>sendPortalEmail(to,'[Care portal] You have a new task',`<div style="font-family:sans-serif;font-size:14px;line-height:1.6"><p>A new task was assigned in the care portal.${esc(due)}</p><p>Open the portal to see it.</p><p style="color:#777;font-size:12px">Sent by the portal’s notification settings.</p></div>`).catch(()=>{}));
+    emails.forEach(to=>sendPortalEmail(to,'task',{due:t.due||''}).catch(()=>{}));   // v12.33: the relay writes it, with the day it is due
   }
   renderNav();
 }
@@ -9357,7 +9373,7 @@ function digestDataHere(){
     recipient:{name:actorName(), role:isDir?'director':'staff', sid:me},
     appts:visAppts().filter(a=>!(isDir&&apptCalKey(a)==='personal')).map(a=>({date:a.date,time:a.time,cancelled:!!a.cancelled})),
     incidents:(INCIDENTS||[]).map(i=>({date:i.date,type:i.type})), notes, docs,
-    tasks:TASKS.filter(t=>!hid('task',t.id)).map(t=>({title:t.title,due:t.due,stage:t.stage,sid:t.sid})),
+    tasks:TASKS.filter(t=>!hid('task',t.id)).map(t=>({due:t.due,stage:t.stage,sid:t.sid})),   // v12.33: counted, never named, so the title stays here
     dlogsMissing:dl, msgsWaiting:(visThreads()||[]).filter(t=>{ const w=msgWaiting(t); return w&&w.ageH>=Math.max(1,+NOTIF_REMIND.msg.after||4)&&w.ageH<=336&&(isDir||!w.mine); }).length, certsExpiring:certs,
     portalUrl:portalUrlNow()||NOTIF_URL||''};
 }
@@ -9370,8 +9386,7 @@ function digestPreview(){
 function digestTestSend(){
   const to=String(AUTH.email||'').toLowerCase()||(directorEmails()[0]||'');
   if(!to) return toast('There is no email address on this login to send it to.');
-  const d=npDigest(digestDataHere());
-  sendPortalEmail(to,d.subject+' (test copy)',d.html)
+  sendPortalEmail(to,'digest',{data:digestDataHere()})               // v12.33: the relay builds it with the same npDigest
     .then(r=>{ if(r&&r.ok===false) throw new Error('relay '+r.status); toast('Test copy sent to '+to+'.'); })
     .catch(()=>toast('The test copy could not be sent right now. Try again in a moment.'));
 }
@@ -19746,7 +19761,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.32 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.33 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -20521,14 +20536,44 @@ const EXT_ALERT_TEXT={
   reminder:     c=>'You have reminders waiting in your dashboard portal.',
   document:     c=>'A document needs your attention in your dashboard portal.'
 };
-/* last line of defence: strip anything that looks like a client identifier or a name */
+/* v12.33: the last line of defence before anything leaves the portal. It used to look for a UCI with a letter and a
+   dash (J-402318), which the portal's 7-digit UCIs never have, and nothing called it. Now it knows every client's UCI,
+   name and initials, and also takes out any other 7-digit number, email addresses and phone numbers. */
+const EXT_COMMON=new Set(['Client','Clients','The','And','For','With','Home','House','None','File','Guardian','Doctor',
+  'January','February','March','April','May','June','July','August','September','October','November','December',
+  'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday','Will','Grace','Joy','Hope','Faith','Rose','Mark','Bill','Art']);
+const extRe=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+let EXT_IDS=null, EXT_SIG='';
+function extIds(){                                                    // [order, pattern, client]: the longest forms first
+  const sig=(typeof CLIENTS!=='undefined'?CLIENTS:[]).map(c=>c.id+'|'+c.uci+'|'+c.name+'|'+c.init).join('\n');
+  if(EXT_IDS&&sig===EXT_SIG) return EXT_IDS;
+  const out=[];
+  (typeof CLIENTS!=='undefined'?CLIENTS:[]).forEach(c=>{
+    const u=String(c.uci||''), i=String(c.init||'').trim(), n=String(c.name||'').trim();
+    if(i&&u){ out.push([0,new RegExp('(^|[^\\w#])'+extRe(i)+'\\s*\\(\\s*'+extRe(u)+'\\s*\\)','g'),c]);
+      out.push([0,new RegExp('(^|[^\\w#])'+extRe(i)+'\\s*\u00b7\\s*'+extRe(u)+'(?!\\w)','g'),c]); }
+    if(n.length>=3) out.push([1,new RegExp('(^|[^\\w])'+extRe(n)+'(?!\\w)','gi'),c]);
+    if(u.length>=5) out.push([2,new RegExp('(^|[^\\w-])'+extRe(u)+'(?!\\w)','g'),c]);
+    if(/^[A-Z]{2,3}$/.test(i)) out.push([3,new RegExp('(^|[^\\w])'+i.split('').join('\\.?\\s?')+'\\.?(?!\\w)','g'),c]);
+    else if(/^#\d+$/.test(i)) out.push([3,new RegExp('(^|[^\\w#])'+extRe(i)+'(?!\\w)','g'),c]);
+    n.split(/\s+/).filter(p=>/^[A-Z][a-z'\u2019-]{2,}$/.test(p)&&!EXT_COMMON.has(p))
+      .forEach(p=>out.push([4,new RegExp('(^|[^\\w])'+extRe(p)+'(?!\\w)','g'),c]));
+  });
+  EXT_SIG=sig; return EXT_IDS=out.sort((a,b)=>a[0]-b[0]);
+}
+/* each mention of a client becomes fn(client) (held aside so a label is never matched again); the generic ones go */
+function extSwap(t,fn){
+  let s=String(t==null?'':t); const hold=[];
+  extIds().forEach(([k,r,c])=>{ s=s.replace(r,(m,p)=>{ hold.push(fn(c)); return p+'\uE000'+(hold.length-1)+'\uE001'; }); });
+  s=s.replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g,'[email]')
+    .replace(/(^|[^\w-])(\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}(?!\w)/g,(m,p)=>p+'[phone]')
+    .replace(/(^|[^\w-])\d{3}-\d{2}-\d{4}(?!\w)/g,(m,p)=>p+'[number]')
+    .replace(/(^|[^\w-])([A-Z]-?\d{5,}|\d{7})(?!\w)/g,(m,p)=>p+'[ID]');
+  return s.replace(/\uE000(\d+)\uE001/g,(m,i)=>hold[+i]);
+}
 function extScrub(t){
-  return String(t||'')
-    .replace(/\b[A-Z]-\d{5,}\b/g,'')                 // UCI, e.g. 4023180
-    .replace(/\b[A-Z]\.[A-Z]\.?\b/g,'')               // initials, e.g. M.R.
-    .replace(/\b[A-Z]{2}\b/g,'')                      // bare initials, e.g. 4023180
-    .replace(/\b[A-Z][a-z]+\s+[A-Z][a-z]+\b/g,'')     // two-word proper names
-    .replace(/\s{2,}/g,' ').trim();
+  return extSwap(t,()=>'').replace(/\(\s*\)/g,'').replace(/[ \t]{2,}/g,' ').replace(/\s+([,.;:])/g,'$1')
+    .replace(/^[\s\u2014\u2013\u00b7,-]+|[\s\u2014\u2013\u00b7,-]+$/g,'');
 }
 function extAlert(kind,count){
   const f=EXT_ALERT_TEXT[kind]||EXT_ALERT_TEXT.reminder;
@@ -20759,21 +20804,16 @@ function inviteStaff(sid){
     <div class="tiny muted">They get a link to a registration page already set up as <b>${esc(st.name)}</b> — they choose a password and land straight in the staff view, with their own settings.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="inviteCreate('${sid}')">Create invite link</button>`);
 }
-function sendPortalEmail(to,subject,html){
+/* v12.33: the page says which email and to whom; the relay writes it from its own fixed wording (it used to take
+   any subject and HTML from the page, so a signed-in person could send anything through it) */
+function sendPortalEmail(to,kind,fields){
   if(!relayOn()) return Promise.reject(new Error('no relay'));
-  return relayCall('email',{to,subject,html});                         // the email token is added on the server
+  return relayCall('email',Object.assign({},fields||{},{kind,to}));     // the email token is added on the server
 }
 function inviteSendNow(sid,email,link,nm,rl,isDir){
   const st=sid?staff(sid):{name:nm||'there',role:rl||''}; if(!st) return;
   const org=(ONB.org&&ONB.org!=='Spectrum')?ONB.org:'the team';
-  const html=`<div style="font-family:sans-serif;font-size:14px;line-height:1.6;color:#222">
-    <h2 style="margin:0 0 10px">You\u2019re invited to the ${esc(org)} dashboard</h2>
-    <p>Hi ${esc(st.name.split(' ')[0])},</p>
-    <p>You\u2019ve been invited to the care portal as <b>${esc(st.name)}</b>${st.role?' · '+esc(st.role):''}. Create your account here:</p>
-    <p><a href="${esc(link)}" style="background:#152B47;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;display:inline-block">Create my account</a></p>
-    <p style="font-size:12px;color:#666">Or paste this link into your browser:<br>${esc(link)}</p>
-    <p style="font-size:12px;color:#666">${isDir?'The link sets up your director sign-in and works once.':'The link signs you up in the staff view and works once.'}</p></div>`;
-  sendPortalEmail(email,'You\u2019re invited to the '+org+' dashboard',html)
+  sendPortalEmail(email,'invite',{org,name:st.name,role:st.role||'',link,dir:!!isDir})   // v12.33: the relay writes the invite
     .then(async r=>{
       if(r&&r.ok===false){ const d=await r.json().catch(()=>({})); return toast((d&&d.error?d.error+' ':'')+'The invite was not sent \u2014 use Copy link or Gmail instead.'); }
       logAudit('Emailed portal invite',`${st.name} · ${email}`); toast('Invite emailed to '+email+'.'); })
@@ -21722,11 +21762,11 @@ function askDocLines(d,vals){
   });
   return out.slice(0,12);
 }
-function askContext(){
+function askContext(lbl){
   const L=[]; const sec=(t,lines)=>{ if(lines&&lines.length){ L.push('## '+t); lines.forEach(x=>L.push(x)); L.push(''); } };
   const role=state.role, cl=visibleClients(), clIds=cl.map(c=>c.id);
   const ci=id=>{ const c=client(id); return c?`${c.init} (${c.uci})`:id; };
-  L.push(`Spectrum Care Advisory OS — live data snapshot for the assistant. Today is ${fmtLong(T)}. Viewer: ${ME[role].name} (${ME[role].label}). Clients are identified by initials + UCI only.`);
+  L.push(`Spectrum Care Advisory OS — live data snapshot for the assistant. Today is ${fmtLong(T)}. Viewer: ${ME[role].name} (${ME[role].label}). ${lbl?'Clients are named Client 1, Client 2 and so on, and homes Home A, Home B and so on: use exactly those names.':'Clients are identified by initials + UCI only.'}`);
   L.push('When a document below carries a token like [open:ex-seizure], repeat that exact token in your answer and the portal turns it into a button that opens the document. Page tokens you may also use: [go:documents] [go:safety] [go:calendar] [go:tasks] [go:clients] [go:staff] [go:incidents] [go:messages].');
   L.push('');
 
@@ -21932,13 +21972,40 @@ function askTour(){
   log.insertAdjacentHTML('beforeend',`<div class="msg bot">Here is the quick tour — tap any section to jump straight there:<br><br>${stops.map(s=>`<button class="btn ghost sm" style="margin:2px 4px 2px 0" onclick="toggleAsk();go('${s[0]}')">${s[1]}</button> <span class="tiny muted">${s[2]}</span><br>`).join('')}<br>You can also press <b>◉ Show me around</b> on the Home page for the guided walkthrough with highlights.</div>`);
   log.scrollTop=log.scrollHeight;
 }
+/* v12.33: Ask never sends a client's UCI, name or initials, a home's name, an email address or a phone number.
+   Clients go out as Client 1, Client 2 (the same number all session) and homes as Home A, Home B, and the answer
+   comes back with the portal's own names put back. Identity boxes on forms (name, date of birth, address and the
+   like) go out as [withheld]. */
+let ASK_LBL={}, ASK_HOME={};
+const askLabel=c=>{ if(!ASK_LBL[c.id]) ASK_LBL[c.id]=Object.keys(ASK_LBL).length+1; return 'Client '+ASK_LBL[c.id]; };
+const askHomeLabel=h=>{ if(!(h in ASK_HOME)) ASK_HOME[h]=Object.keys(ASK_HOME).length; const n=ASK_HOME[h]; return 'Home '+(n<26?String.fromCharCode(65+n):n+1); };
+function askHomes(){
+  const hs=new Set(typeof HOMES!=='undefined'?HOMES:[]);
+  CLIENTS.forEach(c=>{ if(c.home) hs.add(c.home); }); STAFF.forEach(s=>{ if(s.home) hs.add(s.home); });
+  return [...hs].map(h=>String(h).trim()).filter(h=>h.length>=3&&!/^all\b/i.test(h)).sort((a,b)=>b.length-a.length);
+}
+const ASK_IDBOX=/^\s*name\s*$|\b(client|resident|consumer|individual|patient|person|participant|guardian|parent|full|first|last|legal|preferred|maiden)\s*'?s?\s+name\b|date of birth|birth\s*date|\bd\.?o\.?b\b|\baddress|\bstreet\b|\bzip\b|postal code|\bphone|telephone|\bcell\b|mobile|e-?mail|\bssn\b|social security|medi-?cal|medicaid|medicare|insurance|member (id|no|number)|policy (no|number)|\buci\b|client id|case (no|number)|emergency contact|resident of/i;
+function askOut(t){                                                   // what goes to Ask: labels for the portal's own names
+  let s=String(t==null?'':t).split('\n').map(l=>{ const m=l.match(/^(\s{2,})([^:\n]{1,80}?):\s(.+)$/); return m&&ASK_IDBOX.test(m[2])?m[1]+m[2]+': [withheld]':l; }).join('\n');
+  s=extSwap(s,askLabel);
+  askHomes().forEach(h=>{ s=s.replace(new RegExp('(^|[^\\w])'+extRe(h)+'(?!\\w)','g'),(m,p)=>p+askHomeLabel(h)); });
+  return s;
+}
+function askIn(t){                                                    // what comes back: the portal's own names again
+  const byN={}, byH={};
+  Object.keys(ASK_LBL).forEach(id=>{ byN[ASK_LBL[id]]=id; });
+  Object.keys(ASK_HOME).forEach(h=>{ byH[askHomeLabel(h)]=h; });
+  return String(t==null?'':t).replace(/\bClient (\d+)\b/g,(m,n)=>{ const c=byN[n]&&client(byN[n]); return c?`${c.init} (${c.uci})`:m; })
+    .replace(/\bHome ([A-Z]|\d+)\b/g,m=>byH[m]||m);
+}
 async function askViaBackend(q){
   try{
-    const r=await relayCall('ask',{question:q, role:state.role, user:actorName(),
-        context:askContext(), history:ASK_HIST.slice(-6)});
+    const r=await relayCall('ask',{question:askOut(q), role:state.role, user:actorName(),
+        context:askOut(askContext(true)), history:ASK_HIST.slice(-6).map(h=>({q:askOut(h.q),a:askOut(h.a)}))});
     if(!r.ok) return null;
     const d=await r.json();
-    return d.reply||d.answer||null;
+    const rep=d.reply||d.answer||null;
+    return rep?askIn(rep):null;
   }catch(e){ console.warn('[np-demo] ask backend failed',e); return null; }
 }
 let ASK_CHATS=[];                                                    // [{id,title,at,msgs:[{who,text}]}]
