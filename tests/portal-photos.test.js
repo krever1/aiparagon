@@ -246,8 +246,11 @@ const SPANISH = `<!doctype html><html><head><meta charset="utf-8"><style>
     const shoot = async (o) => { const b = await photo(page, realB64, Object.assign({ scale: 150 / 72, pad: 1, quad: [[0, 0], [1, 0], [1, 1], [0, 1]] }, o));   // a scan: the sheet only, at 150 dpi
       const jpg = Buffer.from(b, 'base64'); const d = await page.evaluate((b) => new Promise((r) => { const i = new Image(); i.onload = () => r([i.naturalWidth, i.naturalHeight]); i.src = 'data:image/jpeg;base64,' + b; }), b);
       return { jpg, w: d[0], h: d[1] }; };
+    // v12.31: which turned pages keep their full-size picture (only a one-page scan uses it)
+    await page.evaluate(() => { window.__kept = []; const o = ovReadScannedPage; window.ovReadScannedPage = async function () { const r = await o.apply(this, arguments); if (r && r.scan && r.scan.turn) window.__kept.push(r.scan.cv ? r.scan.cv.width : 0); return r; }; });
     const one = scanPdf([await shoot({ turn: 180 })]);
     const a = await upload(page, { name: 'scan upside down.pdf', mimeType: 'application/pdf', buffer: one });
+    const keptOne = await page.evaluate(() => window.__kept.splice(0));
     check('one-page scan upside down: turned and kept as a clean picture, like a photo', a.kind === 'image', a.kind);
     same(a, 'one-page scan upside down', true);
     check('one-page scan upside down: the editor says it was a scan, turned the right way up', /This PDF is a scan/.test(a.intro) && /turned the right way up \(it was upside down\)/.test(a.intro), a.intro);
@@ -255,6 +258,8 @@ const SPANISH = `<!doctype html><html><head><meta charset="utf-8"><style>
     const b = await upload(page, { name: 'two pages.pdf', mimeType: 'application/pdf', buffer: two });
     check('two-page scan, page 2 on its side: kept as the PDF, page 1 boxed, page 2 left alone', b.kind === 'pdf' && b.fields.some((f) => f.ov.p === 0) && !b.fields.some((f) => f.ov.p === 1), b.kind + ' ' + b.fields.length);
     check('two-page scan: the editor says page 2 is on its side and to turn it in the scanner app', /Page 2 of this scan is on its side or upside down/.test(b.intro) && /scanner app/.test(b.intro), b.intro);
+    const keptTwo = await page.evaluate(() => window.__kept.splice(0));
+    check('scans on their side: a one-page scan keeps its page to make the picture, a longer one lets go of it at once (no 20 MB page held per turned page)', keptOne.length === 1 && keptOne[0] > 0 && keptTwo.length === 1 && keptTwo[0] === 0, JSON.stringify({ keptOne, keptTwo }));
     await ctx.close();
   }
 

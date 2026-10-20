@@ -175,6 +175,43 @@ function photoGen() {
       JSON.stringify(r.filled.slots.filter((s) => s.hand)) + ' wipe ' + r.filled.wipe);
     check('filled in: the page the template keeps is blank inside the framed box and the written-in cell', r.kept.comments >= 0 && r.kept.comments < 0.005 && r.kept.diag >= 0 && r.kept.diag < 0.01, JSON.stringify(r.kept));
 
+    // v12.31: ticks and crosses that run out over their boxes are cleared whole, and the boxes drawn back
+    const tk = await page.evaluate(async () => {
+      const W = 1275, Hh = 1650;
+      const mk = (marked) => { const c = ovCanvas(W, Hh), g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, W, Hh); g.fillStyle = '#000'; g.strokeStyle = '#000'; g.font = '24px Arial';
+        g.fillText('Quarterly progress review', 420, 100); g.fillText('Please answer each question about the client.', 120, 170);
+        [['Does the client attend day program?', 260], ['Was the care plan reviewed this quarter?', 340], ['Any changes to medication?', 420]].forEach(([t, y]) => {
+          g.fillText(t, 120, y); g.lineWidth = 2; g.strokeRect(640, y - 22, 26, 26); g.fillText('Yes', 678, y); g.strokeRect(760, y - 22, 26, 26); g.fillText('No', 798, y); });
+        if (marked) { g.lineWidth = 4; g.lineCap = 'round';
+          g.beginPath(); g.moveTo(646, 250); g.lineTo(655, 262); g.lineTo(684, 214); g.stroke();                      // a tick running up over the box's corner
+          g.beginPath(); g.moveTo(752, 308); g.lineTo(794, 350); g.moveTo(794, 308); g.lineTo(752, 350); g.stroke(); // a cross out over every corner
+          g.beginPath(); g.moveTo(640, 395); g.lineTo(652, 412); g.lineTo(676, 378); g.stroke(); }                    // a tick starting on the box's side
+        return c; };
+      const out = {};
+      for (const marked of [false, true]) {
+        const a = await ovAnalyzeImage(URL.createObjectURL(await new Promise((r) => mk(marked).toBlob(r, 'image/png'))), { lang: 'eng' });
+        const im = new Image(); im.src = URL.createObjectURL(a.blob); await im.decode();
+        const c = ovCanvas(im.naturalWidth, im.naturalHeight), g = c.getContext('2d'); g.drawImage(im, 0, 0); const k = c.width / W;
+        const px = g.getImageData(0, 0, c.width, c.height).data, dk = (x, y) => px[(Math.round(y * k) * c.width + Math.round(x * k)) * 4] < 130;
+        const dark = (x, y, w, h) => { let n = 0, a = 0; for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) { a++; if (dk(xx, yy)) n++; } return n / a; };
+        // each side of each box: the share of its length with ink within 3 px of where it was drawn
+        const sideOk = (x, y) => { const cov = (pts) => pts.filter(([u, v]) => [-2, -1, 0, 1, 2].some((d) => dk(u + (v === null ? d : 0), v === null ? 0 : v))).length / pts.length;
+          const run = (f) => Array.from({ length: 24 }, (_, i) => f(i + 1));
+          const h = (yy) => run((i) => [x + i, yy]).filter(([u, v]) => [-2, -1, 0, 1, 2].some((d) => dk(u, v + d))).length / 24;
+          const v = (xx) => run((i) => [xx, y + i]).filter(([u, w]) => [-2, -1, 0, 1, 2].some((d) => dk(u + d, w))).length / 24;
+          return Math.min(h(y), h(y + 26), v(x), v(x + 26)); };
+        out[marked ? 'marked' : 'blank'] = { hand: a.photo.hand || 0, ticks: a.fields.filter((f) => f.ty === 'check').length,
+          outside: Math.max(dark(670, 206, 16, 16), dark(744, 300, 8, 6), dark(790, 348, 8, 6), dark(746, 346, 8, 6), dark(792, 302, 8, 6), dark(632, 374, 6, 6)),
+          inside: Math.max(dark(645, 243, 16, 16), dark(765, 323, 16, 16), dark(645, 403, 16, 16)),
+          sides: Math.min(...[238, 318, 398].flatMap((y) => [sideOk(640, y), sideOk(760, y)])),
+          labels: Math.min(dark(678, 242, 40, 20), dark(798, 322, 30, 20), dark(678, 402, 40, 20)) };
+      }
+      return out;
+    });
+    check('a filled-in copy with a tick and a cross running out over their boxes: all three marked boxes are found and cleared', tk.marked.hand === 3 && tk.marked.ticks === tk.blank.ticks && tk.marked.inside === 0, JSON.stringify(tk.marked));
+    check('nothing of a mark is left outside its box', tk.marked.outside === 0, JSON.stringify(tk.marked));
+    check('every box is drawn back whole, all four sides, and the Yes and No beside them are kept', tk.marked.sides >= 0.95 && tk.blank.sides >= 0.95 && tk.marked.labels > 0.15, JSON.stringify(tk));
+
     // print the reader is unsure of, and pen writing read as junk, side by side in a table
     const u = await page.evaluate(() => {
       const W = 1275, H = 600, c = ovCanvas(W, H), g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.strokeStyle = '#000'; g.lineWidth = 2; g.fillStyle = '#000'; g.font = '22px Arial';
