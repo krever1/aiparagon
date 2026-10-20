@@ -15899,8 +15899,13 @@ async function submitE1Run(){
 function openE1Lead(email){ closeE1Panel(); if(typeof apOpenLead60==="function"&&!(state.engine==="e1"&&/^e1/.test(state.view))){ apOpenLead60(email); return; } state.e1Lead=email; state.view="e1lead"; render(); }
 function openE1LeadStage(email, i){
   openE1Lead(email);
-  setTimeout(()=>{ const sec = document.querySelectorAll("#main section.block")[i];
-    if(sec) sec.scrollIntoView({behavior:"smooth", block:"start"}); }, 600);
+  /* v116: the lead page shows its stages as tabs, so open the stage's own tab once the page is up */
+  let n=0;
+  const go=()=>{ if(typeof apTab==='function'&&document.querySelector('#apChrome .rd-tab[data-tab="s'+i+'"]')){apTab('s'+i);return;}
+    if(++n<12){setTimeout(go,200);return;}
+    const sec = document.querySelectorAll("#main section.block")[i];
+    if(sec) sec.scrollIntoView({behavior:"smooth", block:"start"}); };
+  setTimeout(go,300);
 }
 
 /* ---------- Lead side panel (HubSpot-style preview, editable) ---------- */
@@ -24058,7 +24063,7 @@ function apBuildNotifs(){
     when:apWhen(pend[0].created_at),k:'amber',go:"apGo('e3intel');setTimeout(function(){apTab('queue')},900)"});
   const wait=AP_LEADS.filter(function(l){return apNextStage(l)&&l.fit_rating!=='Weak';});
   if(wait.length)items.push({key:'leads:'+wait.map(function(l){return l.email+apStageIx(l);}).join(','),t:wait.length+' lead'+(wait.length===1?'':'s')+' waiting on a next stage',
-    s:'Engine 1 \u00b7 '+wait.slice(0,3).map(function(l){return apShort(l.prospect_name||l.email);}).join(', ')+(wait.length>3?' and more':''),when:'',k:'blue',go:"apGo('e1pipeline')"});
+    s:'Catalyst \u00b7 '+wait.slice(0,3).map(function(l){return apShort(l.prospect_name||l.email);}).join(', ')+(wait.length>3?' and more':''),when:'',k:'blue',go:"apGo('e1pipeline')"});
   if(typeof AP_CF!=='undefined'&&AP_CF){
     const C=AP_CF;
     [['organic',C.intel[0],'Organic intelligence brief'],['paid',C.ads[0],'Ad strategy brief']].forEach(function(x){
@@ -24074,7 +24079,7 @@ function apBuildNotifs(){
   AP_RUNS.slice(0,3).forEach(function(r){
     const a=AP_AGENTS[r.agent]||{label:r.agent,engine:'e3'};
     const view={intel_tracker:'e3intel',ad_strategist:'e3ads',low_ticket_content:'e3funnel',content_generation:'e3funnel'}[r.agent]||'e3overview';
-    items.push({key:'run:'+r.run_id,t:a.label+(r.status==='success'?' finished a run':' run '+r.status),s:(a.engine==='e1'?'Engine 1':'Engine 3')+' \u00b7 '+r.run_id,
+    items.push({key:'run:'+r.run_id,t:a.label+(r.status==='success'?' finished a run':' run '+r.status),s:a.engine==='e1'?'Catalyst':'Pipeline',
       when:apWhen(r.finished_at||r.started_at),k:r.status==='success'?'green':'red',go:"apGo('"+view+"')"});
   });
   const oc=apOpenComments();
@@ -24924,14 +24929,14 @@ function apActivity(){
   const out=[];
   (AP_RUNS||[]).forEach(function(r){const a=AP_AGENTS[r.agent]||{label:r.agent};
     const view=r.agent==='intel_tracker'?'e3intel':r.agent==='ad_strategist'?'e3ads':'e3funnel';
-    out.push({e:'e3',label:a.label,sub:'Engine 3 · '+(r.status==='success'?'finished':r.status),at:r.finished_at||r.started_at,go:"apGo('"+view+"')"});});
+    out.push({e:'e3',label:a.label,sub:'Pipeline · '+(r.status==='success'?'finished':r.status),at:r.finished_at||r.started_at,go:"apGo('"+view+"')"});});
   const seen={};
   (window.__apE1Outs||[]).forEach(function(o){
     const key=o.run_id+'|'+o.agent;if(seen[key])return;seen[key]=1;
     const st=(typeof E1_STAGES!=='undefined'?E1_STAGES:[]).find(function(s){return s.agent===o.agent;});
     const lead=(typeof AP_LEADS!=='undefined'?AP_LEADS:[]).find(function(l){return l.email===o.run_id||(l.emails||[]).indexOf(o.run_id)>=0;});
     const who=(lead&&lead.prospect_name)||o.prospectName||o.run_id;
-    out.push({e:'e1',label:(st?st.label:o.agent),sub:'Engine 1 · '+who,at:o.created_at,go:"apOpenLead60('"+esc(lead?lead.email:o.run_id)+"')"});});
+    out.push({e:'e1',label:(st?st.label:o.agent),sub:'Catalyst · '+who,at:o.created_at,go:"apOpenLead60('"+esc(lead?lead.email:o.run_id)+"')"});});
   return out.sort(function(a,b){return String(b.at||'').localeCompare(String(a.at||''));});
 }
 function apHomeRunsCard(){
@@ -29278,7 +29283,7 @@ function e9IdeaApply(){
     let h=_h.apply(this,arguments);
     const add='<div class="ap-cf-row2"><label class="f">What you stand for<input id="vVals" value="'+esc(v.values||'')+'" oninput="apVoiceSet(\'values\',this.value)" placeholder="e.g. Governance before speed. Honest about what AI cannot do."></label>'+
       '<label class="f">Your mission<input id="vMis" value="'+esc(v.mission||'')+'" oninput="apVoiceSet(\'mission\',this.value)" placeholder="e.g. Get advisory firms past the AI pilot stage safely."></label></div>';
-    h=h.replace(/(<div class="f"><span class="fl">Tone)/,add+'$1');
+    h=h.replace(/(<div class="f"><span class="fl">Tone)/,function(m){return add+m;});
     return e9VoiceTop()+h;
   };
 })();
@@ -45129,7 +45134,8 @@ function nwMgHead(tab){
     caps:[['file','Writes from the briefs'],['image','Ads with images'],['panel','Survey, landing and booking pages']]});
 }
 function nwMgTabs(tab){
-  const L=nwLT(),n={campaigns:L?L.outs.length:'',library:nwCF()?v97Drafts('brief').length:''};
+  const L=nwLT(),fun=((typeof V113!=='undefined'&&V113.fun&&V113.fun.rows)||[]).filter(function(f){return typeof v113FunNew==='function'&&v113FunNew(f.funnel_type);}).length;
+  const n={campaigns:L?L.outs.length+fun:(fun||''),library:nwCF()?v97Drafts('brief').length:''};
   return '<div class="nw-tabs" role="tablist" aria-label="Marketing Generation">'+NW_MG_TABS.map(function(t){
     const c=n[t[0]];
     return '<button type="button" role="tab" data-tab="'+t[0]+'" aria-selected="'+(t[0]===tab)+'" onclick="nwMgGoTab(\''+t[0]+'\')">'+nwIc(t[2],16)+esc(t[1])+(c!==''&&c!=null?'<span class="nw-cnt">'+c+'</span>':'')+'</button>';}).join('')+'</div>';
@@ -45857,8 +45863,9 @@ function nwTsActs(r){
 function nwTsWhat(r,acts){
   const day=v98D(r.posted_on||r.period_start||r.created_at,true);
   return '<b class="nw-res-t">'+esc(nwClip(v98NoDash(r.title),90))+'</b>'+(r.url&&/^https?:\/\//i.test(r.url)?' <a class="nw-ext" href="'+esc(r.url)+'" target="_blank" rel="noopener" aria-label="Open it">'+nwIc('arrowUR',14)+'</a>':'')+
-    '<span class="nw-cell-sub">'+esc([day,r.platform].filter(Boolean).join(' · ')+(r.attribution==='csv'?' · imported':r.attribution==='crm'?' · from a CRM export':''))+'</span>'+
-    (r.notes?'<span class="nw-cell-sub">'+esc(nwClip(r.notes,120))+'</span>':'')+(acts?nwTsActs(r):'');
+    '<span class="nw-cell-sub">'+esc([day,r.platform].filter(Boolean).join(' · ')+(r.attribution==='csv'?' · imported':r.attribution==='crm'?' · from a CRM export':
+      r.attribution==='api'?' · synced from '+({meta:'Meta',facebook:'Meta',instagram:'Meta',linkedin:'LinkedIn'}[String(r.source||r.platform||'').toLowerCase()]||'the ad platform'):''))+'</span>'+
+    (r.notes?'<span class="nw-cell-sub">'+esc(nwClip(r.notes,120))+'</span>':'')+(acts&&r.attribution!=='api'?nwTsActs(r):'');
 }
 function nwTsTable(cols,rows,cls){
   return '<div class="nw-table-wrap"><table class="nw-tbl nw-res-tbl '+(cls||'')+'"><thead><tr>'+cols.map(function(c,i){return '<th scope="col"'+(i?' class="r"':'')+'>'+esc(c)+'</th>';}).join('')+'</tr></thead><tbody>'+
@@ -48936,7 +48943,8 @@ async function v113AdsSync(btn){
       const T=nwTsRes(),api=T.all.filter(function(r){return r.attribution==='api';}).length;
       if(api)h=h.replace(/(<div class="nw-toolbar"><span class="nw-faint nw-small">)([^<]*)/,function(m,a,b){return a+[b,esc(api+' synced from the ad platforms')].filter(Boolean).join(' · ');});
       const w=v113Working(T.ads);
-      if(w)h=h.replace(/(<div class="nw-sec-title"><h2>Ads )/,w+'$1');
+      /* v116: a function, so money in the text ("$120 spent") is not read as "$1" */
+      if(w)h=h.replace(/(<div class="nw-sec-title"><h2>Ads )/,function(m){return w+m;});
     }catch(e){}
     return h;
   };
@@ -49562,6 +49570,7 @@ function v115OvSignups(){
   const L=V115.lp,P=L.pages||[];
   const all=function(){return '<div class="nw-card-foot"><button type="button" class="nw-link" onclick="v115LpTab(\'signups\',1)">All sign-ups'+nwIc('arrowR',15)+'</button></div>';};
   if(!L.pages)return v115Card(1,'Latest sign-ups','<p class="nw-faint nw-small">Loading…</p>');
+  if(L.err&&!L.su.length)return v115Card(1,'Latest sign-ups','<p class="nw-faint nw-small">Could not load the sign-ups: '+esc(L.err)+'</p>');
   if(!L.su.length)return v115Card(1,'Latest sign-ups',nwEmpty('layout','No sign-ups yet','They show up here from your live landing pages.',
     '<button type="button" class="nw-btn nw-btn-sm" onclick="apGo(\'e3landing\')">Landing pages</button>'));
   return v115Card(1,'Latest sign-ups','<div class="nw-mini-list">'+L.su.slice(0,4).map(function(s){
@@ -49602,11 +49611,11 @@ async function v115DlLoad(force){
     const ag=ST.map(function(s){return s.agent;}).join(',');
     const [leads,outs,calls]=await Promise.all([
       safe(apSb('e1_leads?select=*&order=updated_at.desc&limit=300')),
-      ag?safe(apSb('agent_outputs?select=id,run_id,agent,title,created_at,pdf:data->>pdfUrl,pdf2:data->>pdf_url&agent=in.('+ag+')&order=created_at.desc&limit=1000')):Promise.resolve([]),
+      ag?safe(apSb('agent_outputs?select=id,run_id,agent,title,created_at,pdf:data->>pdfUrl,pdf2:data->>pdf_url,prospectName:data->>prospectName,companyName:data->>companyName&agent=in.('+ag+')&order=created_at.desc&limit=3000')):Promise.resolve([]),
       safe(apSb('call_outputs?select=id,call_id,call_title,call_start,meeting_type,deliverable,status,created_at&order=created_at.desc&limit=300'))
     ]);
     const rows=[];
-    (typeof mergeE1Leads==='function'?mergeE1Leads(leads):leads).forEach(function(l){
+    (typeof apE1Unify==='function'?apE1Unify(leads,outs):typeof mergeE1Leads==='function'?mergeE1Leads(leads):leads).forEach(function(l){
       const emails=l.emails&&l.emails.length?l.emails:[l.email];
       ST.forEach(function(s,i){
         const o=outs.find(function(x){return emails.indexOf(x.run_id)>=0&&x.agent===s.agent;});
@@ -49625,7 +49634,7 @@ async function v115DlLoad(force){
         when:c.created_at||c.call_start,open:'apCxOpenCall('+nwJs(c.call_id)+')'});
     });
     rows.sort(function(a,b){return String(b.when||'').localeCompare(String(a.when||''));});
-    D.rows=rows;D.err=errs.length===3?errs[0]:'';D.t=Date.now();
+    D.rows=rows;D.err=errs.length?errs[0]:'';D.t=Date.now();
     return D;
   })().finally(function(){D.p=null;});
   return D.p;
@@ -49650,7 +49659,7 @@ function v115DlListHtml(){
 function v115DlHtml(){
   const D=V115.dl,R=D.rows||[],n1=R.filter(function(r){return r.src==='e1';}).length,n2=R.length-n1;
   const head=nwHead({eyebrow:'Canvas · Client deliverables',title:'Deliverables',
-    status:D.rows?[[D.err?'bad':'good',D.err?'Could not load: '+D.err:nwPlural(R.length,'document')]]:[['info','Loading']],
+    status:D.rows?[[D.err?'bad':'good',D.err?(R.length?'Some could not load: ':'Could not load: ')+D.err:nwPlural(R.length,'document')]]:[['info','Loading']],
     caps:[['users','Engine 1 documents for each lead'],['msg','Write-ups from your calls']],
     stats:D.rows?[nwStat(R.length,'documents',"v115DlF('all')"),nwStat(n1,'from Engine 1',"v115DlF('e1')"),nwStat(n2,'from calls',"v115DlF('call')")]:[]});
   const tabs=[['all','All',R.length],['e1','Engine 1',n1],['call','Calls',n2]];
@@ -49685,7 +49694,7 @@ const V115_DEF_FIELDS={book_call:['name','email','company','job_title'],webinar:
 const V115_CTA={book_call:'Book my call',webinar:'Save my seat',download:'Send it to me',newsletter_signup:'Subscribe',landing:'Get in touch'};
 const V115_THANKS={book_call:['Thanks. Pick a time that works.','We read your answers before the call, so it starts with your firm.'],
   webinar:['You are registered.','We will email you the details and a reminder before it starts.'],
-  download:['It is on its way.','Check your inbox for the link.'],
+  download:['Here it is.','Get it with the button below.'],
   newsletter_signup:['You are in.','The next issue comes to your inbox.'],
   landing:['Thanks. We will be in touch.','Someone from our team will reach out shortly.']};
 const V115_RE_PH=/\[(?:ADD|FILL IN)[^\]]*\]/gi;
@@ -49699,7 +49708,7 @@ async function v115LpLoad(force){
     try{
       const r=await Promise.all([
         apSb('landing_pages?select=*&order=updated_at.desc&limit=200'),
-        apSb('lp_signups?select=*&order=created_at.desc&limit=500'),
+        apSb('lp_signups?select=*&order=created_at.desc&limit=1000'),
         apSb('lp_views?select=page_id,day,ad_code,views&day=gte.'+since+'&limit=5000')
       ]);
       L.pages=r[0]||[];L.su=r[1]||[];L.views=r[2]||[];L.err='';L.t=Date.now();
@@ -49711,14 +49720,21 @@ async function v115LpLoad(force){
 function v115LpPage(id){return (V115.lp.pages||[]).find(function(p){return String(p.id)===String(id);})||null;}
 function v115Me(){try{return (typeof AP_USER!=='undefined'&&AP_USER&&AP_USER.email)||apCfMe();}catch(e){return 'dashboard';}}
 function v115Str(v){return v==null?'':String(v).trim();}
-function v115Dash(v){return typeof v==='string'?v.replace(/\s*[—–]\s*/g,', '):Array.isArray(v)?v.map(v115Dash):(v&&typeof v==='object')?Object.keys(v).reduce(function(o,k){o[k]=v115Dash(v[k]);return o;},{}):v;}
+/* v116: a range like 11am–12pm or 20–30 keeps a hyphen; any other dash becomes a comma */
+function v115Dash(v){return typeof v==='string'?v.replace(/(\d(?:\s?[ap]\.?m\.?)?)\s*[—–]\s*(?=\d)/gi,'$1-').replace(/\s*[—–]\s*/g,', '):Array.isArray(v)?v.map(v115Dash):(v&&typeof v==='object')?Object.keys(v).reduce(function(o,k){o[k]=v115Dash(v[k]);return o;},{}):v;}
+/* v116: only the boxes the editor shows count (each named), so every one can be cleared. The review
+   flags are what "I checked these" covers, and a qualifying question that is switched off is not on the page. */
 function v115Holes(c){
-  const out=[];
-  (function walk(v){
-    if(typeof v==='string'){(v.match(V115_RE_PH)||[]).forEach(function(x){if(out.indexOf(x)<0)out.push(x);});}
-    else if(Array.isArray(v))v.forEach(walk);
-    else if(v&&typeof v==='object')Object.keys(v).forEach(function(k){walk(v[k]);});
-  })(c);
+  c=c||{};const out=[],th=c.thanks||{};
+  const walk=function(v,where){
+    if(typeof v==='string')(v.match(V115_RE_PH)||[]).forEach(function(x){const t=x+' ('+where+')';if(out.indexOf(t)<0)out.push(t);});
+    else if(Array.isArray(v))v.forEach(function(x){walk(x,where);});
+    else if(v&&typeof v==='object')Object.keys(v).forEach(function(k){walk(v[k],where);});
+  };
+  [[c.headline,'Headline'],[c.subheadline,'Under the headline'],[c.when,'When'],[c.presenter,'Who presents'],[c.how_often,'How often'],[c.who,'Who it is for'],
+   [c.bullets,'Points'],[c.sections,'Sections'],[c.faq,'Questions people ask'],[c.proof,'Proof'],[c.cta,'Button'],
+   [th.headline,'After sign-up headline'],[th.body,'After sign-up text'],[th.cta,'After sign-up button'],[th.url,'Button link']].forEach(function(x){walk(x[0],x[1]);});
+  apArr(c.questions).forEach(function(q){if(q&&!q.off)walk([q.label,q.options],'a qualifying question: untick it or fix it in the campaign');});
   return out;
 }
 function v115Slug(t){
@@ -49760,16 +49776,29 @@ function v115LpFrom(pkg){
   const questions=t==='book_call'?apArr(sv.questions).map(function(q,i){
     const o=apArr(q&&q.options).map(v115Str).filter(Boolean);
     return {key:'q'+(i+1),label:v115Str(q&&(q.question||q.label)),options:o.slice(0,8)};}).filter(function(q){return q.label;}).slice(0,6):[];
-  const content=v115Dash({headline:v115Str(main.headline),subheadline:v115Str(main.subheadline),who:v115Str(main.who),when:v115Str(main.when||det.When||det.Date),
-    presenter:v115Str(main.presenter),how_often:v115Str(main.how_often),bullets:list(main.bullets).concat(list(main.benefit_bullets)).slice(0,8),
+  const content=v115Dash({headline:v115Str(main.headline),subheadline:v115Str(main.subheadline),who:v115Str(main.who),when:v115Str(main.when||det['Date and time']||det.When||det.Date),
+    presenter:v115Str(main.presenter||det.Presenter),how_often:v115Str(main.how_often||det['How often']),bullets:list(main.bullets).concat(list(main.benefit_bullets)).slice(0,8),
     sections:sections.slice(0,8),faq:faq.slice(0,8),proof:list(main.proof).slice(0,6),cta:v115Str(main.cta||S.cta)||V115_CTA[t],
     fields:v115FieldKeys(main.fields,t),questions:questions,
     thanks:{headline:v115Str(after.headline)||V115_THANKS[t][0],body:v115Str(after.body||after.reassurance_subhead||after.confirmation_microcopy)||V115_THANKS[t][1],
-      cta:v115Str(after.cta||after.primary_action),url:v115Str(det['Booking link']||det['Calendly link']||det['Link to the resource']||S.booking_url||'')}});
-  const av=apJson(pkg.ad_variations),ads=apArr(av&&av.variants?av.variants:pkg.ad_variations).filter(function(a){return a&&typeof a==='object';}).slice(0,6)
+      cta:v115Str(after.cta||after.primary_action),url:v116Link(t,S,det)}});
+  /* v116: the Funnel Builder's ads (variants or a list) or the Low-Ticket Agent's hooks (hook_variations, plain lines) */
+  const av=apJson(pkg.ad_variations);
+  const rawAds=Array.isArray(av)?av:av&&Array.isArray(av.variants)?av.variants:av&&Array.isArray(av.hook_variations)?av.hook_variations:[];
+  const ads=rawAds.map(function(a){return typeof a==='string'?{hook:a}:a;}).filter(function(a){return a&&typeof a==='object'&&v115Str(a.hook||a.headline||a.primary_text);}).slice(0,6)
     .map(function(a,i){return {n:i+1,hook:v115Str(a.hook||a.headline||a.primary_text).slice(0,160),headline:v115Str(a.headline).slice(0,80)};});
   const title=v115Str(S.title||det.Title||det['The resource']||det['Newsletter name'])||((t==='book_call'?'Book a call':V115_KINDS[t])+' · '+nwDay(pkg.created_at));
   return {kind:t,title:title.slice(0,120),content:content,ads:ads,flags:apArr(S.review_flags).map(v115Str).filter(Boolean)};
+}
+/* v116: the link after sign-up, from where Marketing Generation saved it: the booking link (setup.booking),
+   or the campaign detail of that kind (saved by its label) */
+function v116Link(t,S,det){
+  S=S||{};det=det&&typeof det==='object'?det:{};
+  const ok=function(u){u=v115Str(u).replace(/[.,;)]+$/,'');return /^https?:\/\/\S+$/i.test(u)?u:'';};
+  const said=function(label){const m=new RegExp(label+':\\s*(https?:\\/\\/\\S+)','i').exec(typeof S.details==='string'?S.details:'');return m?m[1]:'';};
+  const by={book_call:[S.booking&&S.booking.url,det['Booking link'],det['Calendly link'],S.booking_url,said('Checkout link'),det['Checkout link']],
+    webinar:[det['Registration link']],download:[det['File link'],det['Link to the resource']],newsletter_signup:[det['Sign-up link']],landing:[det['Page link']]};
+  return (by[t]||[]).map(ok).find(Boolean)||'';
 }
 function v115GoUrl(slug,preview){
   const o=/^https:\/\/[a-z0-9.-]+\.vercel\.app$/i.test(location.origin)?location.origin:V115_SITE;
@@ -49814,13 +49843,17 @@ function v115SuTable(){
   const rows=v115SuRows(),P=V115.lp.pages||[];
   if(!rows.length)return '<div class="nw-card">'+nwEmpty('user',V115.lp.q?'Nothing matches':'No sign-ups yet',V115.lp.q?'Try another search.':'Sign-ups from your live pages show up here.','')+'</div>';
   return '<div class="nw-table-wrap"><table class="nw-tbl v115-su"><thead><tr><th>When</th><th>Name</th><th>Email</th><th>Company</th><th>Page</th><th>From</th><th>HubSpot</th><th>Lead</th></tr></thead><tbody>'+
-    rows.slice(0,200).map(function(s){
+    rows.slice(0,V115.lp.more||200).map(function(s){
       const pg=P.find(function(p){return p.id===s.page_id;});
       const hs=s.hubspot_id?'<span class="v99-yes">Added</span>':s.hubspot_error?'<span class="v99-no" title="'+esc(s.hubspot_error)+'">Not added</span>':'<span class="v99-no">Waiting</span>';
       return '<tr><td>'+esc(nwWhen(s.created_at))+'</td><td>'+esc(s.name||'')+(s.job_title?'<br><small>'+esc(s.job_title)+'</small>':'')+'</td><td>'+esc(s.email)+'</td><td>'+esc(s.company||'')+'</td>'+
         '<td>'+esc(pg?pg.title:(s.slug||''))+'</td><td>'+esc(v115SuSrc(s))+'</td><td>'+hs+'</td>'+
         '<td>'+(s.lead_added?'<button type="button" class="nw-btn nw-btn-sm" onclick="apOpenLead60('+esc(nwJs(s.email))+')">Open lead</button>':'<span class="v99-no">No</span>')+'</td></tr>';
-    }).join('')+'</tbody></table></div>';
+    }).join('')+'</tbody></table></div>'+
+    /* v116: say how many show, and the cap on what loads */
+    (rows.length>(V115.lp.more||200)?'<div class="v115-more"><span class="nw-faint nw-small">Showing '+(V115.lp.more||200)+' of '+rows.length+'</span> '+
+      '<button type="button" class="nw-btn" onclick="V115.lp.more=(V115.lp.more||200)+200;v115SuQ(V115.lp.q)">Show more</button></div>':'')+
+    (V115.lp.su.length>=1000?'<p class="nw-faint nw-small">The newest 1,000 sign-ups show here and in the CSV.</p>':'');
 }
 function v115LpBody(){
   const L=V115.lp,P=L.pages||[];
@@ -49969,9 +50002,11 @@ function v115LpEdit(id){
       '<div class="nw-kicker">The top of the page</div>'+
       v115In('v115E-headline','Headline',c.headline)+
       v115In('v115E-sub','Under the headline',c.subheadline,{area:1,rows:3})+
-      (p.kind==='webinar'?v115In('v115E-when','When',c.when,{ph:'Thursday 6 November, 11am Pacific'})+v115In('v115E-presenter','Who presents',c.presenter):'')+
+      (p.kind==='webinar'||c.when||c.presenter?v115In('v115E-when','When',c.when,{ph:'Thursday 6 November, 11am Pacific'})+v115In('v115E-presenter','Who presents',c.presenter):'')+
+      (p.kind==='newsletter_signup'||c.how_often?v115In('v115E-often','How often',c.how_often,{ph:'Every two weeks'}):'')+
       v115In('v115E-who','Who it is for',c.who,{hint:'optional'})+
       v115In('v115E-bullets','Points',apArr(c.bullets).join('\n'),{area:1,rows:4,hint:'one per line'})+
+      (apArr(c.proof).length?v115In('v115E-proof','Proof',apArr(c.proof).join('\n'),{area:1,rows:3,hint:'one per line'}):'')+
       '<div class="nw-kicker">More on the page</div>'+
       '<div class="nw-field"><span class="nw-lbl">Sections</span>'+v115Pairs('sec',apArr(c.sections))+'</div>'+
       '<div class="nw-field"><span class="nw-lbl">Questions people ask</span>'+v115Pairs('faq',apArr(c.faq))+'</div>'+
@@ -49986,16 +50021,16 @@ function v115LpEdit(id){
       v115In('v115E-thh','Headline',th.headline)+
       v115In('v115E-thb','Text',th.body,{area:1,rows:2})+
       v115In('v115E-thc','Button',th.cta,{hint:'optional'})+
-      v115In('v115E-thu','Button link',th.url,{ph:p.kind==='book_call'?'https://calendly.com/...':'https://...',hint:p.kind==='book_call'?'your Calendly booking link':'optional'})+
+      v115In('v115E-thu','Button link',th.url,{ph:p.kind==='book_call'?'https://calendly.com/...':'https://...',hint:p.kind==='book_call'?'your booking link, needed to go live':p.kind==='download'?'the file they get, needed to go live':'optional'})+
       '<label class="nw-switch-row"><span><b>Add sign-ups to the lead pipeline</b><small>As New leads in Catalyst, ready for Engine 1. Everyone also goes to HubSpot.</small></span>'+
         '<button type="button" class="nw-switch" role="switch" id="v115E-pipe" aria-checked="'+(p.add_to_pipeline!==false)+'" onclick="this.setAttribute(\'aria-checked\',this.getAttribute(\'aria-checked\')!==\'true\')"></button></label>'+
       (flags.length?'<div class="nw-hint v115-flags">'+nwIc('alert',17)+'<span><b>Check before it goes live:</b><ul>'+flags.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>'+
         '<label class="v115-chk"><input type="checkbox" id="v115E-ok"'+(was?' checked':'')+'>I checked these</label></span></div>':'')+
-      '<p class="nw-faint nw-small" id="v115E-msg" role="status"></p>'+
     '</div>'+
-    '<div class="nw-d-foot">'+
+    /* v116: the message sits by the buttons, so a refusal shows where the click was */
+    '<div class="nw-d-foot"><p class="v116-msg" id="v115E-msg" role="status" aria-live="polite"></p>'+
       (p.status==='draft'&&!p.published_at?'<button type="button" class="nw-btn nw-btn-ghost" onclick="v115LpDel('+esc(nwJs(p.id))+')">'+nwIc('trash',15)+'Delete</button>':'')+
-      '<button type="button" class="nw-btn" onclick="v115LpSave('+esc(nwJs(p.id))+',null,true)">'+nwIc('eye',15)+'Preview</button><span class="nw-grow"></span>'+
+      '<button type="button" class="nw-btn" onclick="v115LpSave('+esc(nwJs(p.id))+',null,true)"'+(p.status==='live'?' title="Saves the page, so visitors see the change now"':'')+'>'+nwIc('eye',15)+(p.status==='live'?'Save and preview':'Preview')+'</button><span class="nw-grow"></span>'+
       (p.status==='live'?'<button type="button" class="nw-btn" onclick="v115LpSave('+esc(nwJs(p.id))+',\'paused\')">'+nwIc('pause',15)+'Pause</button>':'')+
       '<button type="button" class="nw-btn'+(p.status==='live'?' nw-btn-primary':'')+'" onclick="v115LpSave('+esc(nwJs(p.id))+')">Save</button>'+
       (p.status!=='live'?'<button type="button" class="nw-btn nw-btn-primary" onclick="v115LpSave('+esc(nwJs(p.id))+',\'live\')">'+nwIc('check',15)+'Put it live</button>':'')+
@@ -50008,6 +50043,8 @@ function v115EdRead(p){
     const o={};o[a]=v115Str(x.querySelector('[data-k="'+a+'"]').value);o[b]=v115Str(x.querySelector('[data-k="'+b+'"]').value);return o;}).filter(function(o){return o[a]||o[b];});};
   c.headline=v115EdVal('v115E-headline');c.subheadline=v115EdVal('v115E-sub');c.who=v115EdVal('v115E-who');
   if(document.getElementById('v115E-when')){c.when=v115EdVal('v115E-when');c.presenter=v115EdVal('v115E-presenter');}
+  if(document.getElementById('v115E-often'))c.how_often=v115EdVal('v115E-often');
+  if(document.getElementById('v115E-proof'))c.proof=v115EdVal('v115E-proof').split('\n').map(v115Str).filter(Boolean).slice(0,8);
   c.bullets=v115EdVal('v115E-bullets').split('\n').map(v115Str).filter(Boolean).slice(0,10);
   c.sections=pairs('sec','title','body').filter(function(s){return s.body;}).slice(0,10);
   c.faq=pairs('faq','q','a').filter(function(f){return f.q&&f.a;}).slice(0,10);
@@ -50021,6 +50058,7 @@ async function v115LpSave(id,status,preview){
   const p=v115LpPage(id);if(!p)return;
   const msg=document.getElementById('v115E-msg'),say=function(t){if(msg)msg.textContent=t;};
   const c=v115EdRead(p),slug=v115EdVal('v115E-slug').toLowerCase(),title=v115EdVal('v115E-title')||p.title;
+  const left=v116Left(),leftNote=left?(left===1?' One unfinished section or question was left out.':' '+left+' unfinished sections or questions were left out.'):'';
   const pipe=document.getElementById('v115E-pipe'),add=!pipe||pipe.getAttribute('aria-checked')==='true';
   if(!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)||slug.length<3||slug.length>60){say('The address takes 3 to 60 lowercase letters, numbers and single dashes.');return;}
   if((V115.lp.pages||[]).some(function(x){return x.slug===slug&&String(x.id)!==String(id);})){say('Another page already uses that address.');return;}
@@ -50030,6 +50068,7 @@ async function v115LpSave(id,status,preview){
     if(holes.length){say('Fill in '+holes.join(', ')+' before it goes live.');return;}
     if(!c.headline){say('Add a headline before it goes live.');return;}
     if(!c.cta){say('Add the button text before it goes live.');return;}
+    if(!c.thanks.url&&(p.kind==='book_call'||p.kind==='download')){say(p.kind==='book_call'?'Add your booking link under After they sign up, so people can pick a time.':'Add the link to the file under After they sign up, so people get it.');return;}
     if(c.thanks.url&&!/^https:\/\/[^\s]+$/i.test(c.thanks.url)){say('The button link after sign-up needs to start with https://');return;}
     const ok=document.getElementById('v115E-ok');if(ok&&!ok.checked){say('Tick "I checked these" first.');return;}
   }
@@ -50041,9 +50080,10 @@ async function v115LpSave(id,status,preview){
     const r=((await apPatch('landing_pages','id=eq.'+encodeURIComponent(id),body))||[])[0];
     if(!r)throw new Error('nothing came back');
     Object.assign(p,r);
-    if(preview){say('Saved. The preview opens in a new tab.');window.open(v115GoUrl(p.slug,true),'_blank','noopener');return;}
+    if(preview){say((p.status==='live'?'Saved, so visitors see it now. The preview opens in a new tab.':'Saved. The preview opens in a new tab.')+leftNote);window.open(v115GoUrl(p.slug,true),'_blank','noopener');return;}
     nwDrawerClose();
-    nwToast(status==='live'?'It is live at '+V115_SITE.replace(/^https:\/\//,'')+'/go/'+p.slug:status==='paused'?'Paused. The page now says it is not taking sign-ups.':'Saved');
+    const done=status==='live'?'It is live at '+V115_SITE.replace(/^https:\/\//,'')+'/go/'+p.slug:status==='paused'?'Paused. The page now says it is not taking sign-ups.':'Saved';
+    nwToast(leftNote?done.replace(/\.?$/,'.')+leftNote:done);
     if(nwOn('e3.lpages'))nwRepaint();
     if(status==='live'&&apArr(p.ads).length)setTimeout(function(){v115LpAds(p.id);},250);
   }catch(e){
@@ -50068,8 +50108,8 @@ function v115LpAds(id){
     '<button type="button" class="nw-btn nw-btn-sm" onclick="nwCopy('+esc(nwJs(url))+')">'+nwIc('copy',14)+'Copy</button></div>';};
   nwModal('v115AdsM','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">'+esc(p.title||p.slug)+'</div><h2>Ad links</h2></div>'+
       '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
-    '<div class="nw-m-body"><p class="nw-muted">Use the link that fits where the ad runs, and start the ad\'s name with its code in Ads Manager, like <b>'+esc((ads[0]&&ads[0].code)||'PK7Q2-A1')+' Spring webinar</b>. Ad Testing then counts sign-ups and cost per sign-up for each ad.</p>'+
-      (p.status!=='live'?'<div class="nw-hint">'+nwIc('info',17)+'<span>The page is not live yet, so these links show a "not taking sign-ups" page until it is.</span></div>':'')+
+    '<div class="nw-m-body"><p class="nw-muted">Use the link that fits where the ad runs, and start the ad\'s name with its code in Ads Manager, like <b>'+esc(((ads[0]&&ads[0].code)||'PK7Q2-A1')+' '+nwClip(p.title||p.slug,40))+'</b>. On LinkedIn, put the code in the campaign\'s name and keep one ad per campaign. Ad Testing then counts sign-ups and cost per sign-up for each ad.</p>'+
+      (p.status!=='live'?'<div class="nw-hint">'+nwIc('info',17)+'<span>'+(p.status==='paused'?'The page is paused, so these links show a "not taking sign-ups" page until you put it live again.':'The page is not live yet, so these links show a "not taking sign-ups" page until it is.')+'</span></div>':'')+
       ads.map(function(a){return '<div class="nw-card v115-ad"><div class="v115-ad-h"><span class="nw-tag nw-tag-gold">'+esc(a.code)+'</span><b>'+esc(nwClip(a.hook||a.headline||('Ad '+a.n),120))+'</b></div>'+
         row('Meta (Facebook and Instagram)',v115AdUrl(p,a,'meta'))+row('LinkedIn',v115AdUrl(p,a,'linkedin'))+row('A post',v115AdUrl(p,a,'post'))+'</div>';}).join('')+
     '</div>',true);
@@ -50083,8 +50123,11 @@ function v115AdTestHtml(T){
     '<p class="nw-muted nw-small">Put a landing page live and each ad gets a link and a code. Sign-ups and cost per sign-up show up here.</p>'+
     '<div class="nw-card-foot"><button type="button" class="nw-btn nw-btn-sm" onclick="v115LpNew()">Put a page live</button></div></section>';
   const since=Date.now()-30*864e5,res=(T&&T.ads)||[];
-  const spendOf=function(code){const re=new RegExp('(^|[^A-Z0-9])'+code.replace(/[^A-Z0-9-]/gi,'')+'([^A-Z0-9-]|$)','i');
-    return res.filter(function(r){return re.test(String(r.title||''));}).reduce(function(s,r){return s+(v98N(r.spend)||0);},0);};
+  const spendOf=function(code){const re=new RegExp('(^|[^A-Z0-9])'+code.replace(/[^A-Z0-9-]/gi,'')+'(?![A-Z0-9])','i');
+    /* v116: the same 30 days as the visits and sign-ups, and an ad's synced numbers when it has them, else what the team logged */
+    const inRange=function(r){const d=Date.parse(r.period_end||r.posted_on||r.created_at||'');return isNaN(d)||d>=since;};
+    const hits=res.filter(function(r){return inRange(r)&&re.test(String(r.title||''));}),api=hits.filter(function(r){return r.attribution==='api';});
+    return (api.length?api:hits).reduce(function(s,r){return s+(v98N(r.spend)||0);},0);};
   const rows=[];
   P.forEach(function(p){
     const su=L.su.filter(function(s){return String(s.page_id)===String(p.id)&&Date.parse(s.created_at)>=since;});
@@ -50120,6 +50163,70 @@ function v115AdTestHtml(T){
   };
   Object.keys(_t).forEach(function(k){NW_PAGES['e3.testing'][k]=_t[k];});
 })();
+</script>
+
+<style id="v116css">
+.v116-msg{flex-basis:100%;margin:0 0 2px;font:600 14px/1.45 var(--nw-body);color:var(--nw-ink-2)}
+.v116-msg:empty{display:none}
+/* v116: the top bar keeps the page's name whole; under 1180px wide the product word goes (the sidebar shows it) */
+@media (min-width:761px){body.nw-on .rd-topbar .nw-crumb{flex:0 0 auto}body.nw-on .rd-topbar .rd-search{min-width:0;flex:1 1 auto;overflow:hidden}}
+@media (min-width:761px) and (max-width:1180px){.nw-crumb .nw-crumb-p,.nw-crumb .nw-crumb-s{display:none}}
+/* v116: Knowledge base and Files rows fit between 861 and 1180px wide: the name gets its own line, the buttons go under */
+@media (min-width:861px) and (max-width:1180px){
+  .ap-frow{grid-template-columns:44px minmax(0,1fr) 150px 120px;row-gap:8px}
+  .ap-frow.hd{display:none}
+  .ap-frow>.ic{grid-row:1/span 2}
+  .ap-frow>.nm{grid-column:2/-1}
+  .ap-frow>.ac{grid-column:2/-1;justify-content:flex-start;flex-wrap:wrap}
+}
+</style>
+
+<script id="v116js">
+/* ===================================================================
+   v116: the QA round on v115. Views and the older shell's page headers carry
+   their product's name where they still said ENGINE 1 / ENGINE 3 (the lead page, search),
+   the Calls tab title matches the page, the sidebar says HubSpot contacts,
+   and Save says when an unfinished section or question was left out.
+   The rest of the round is fixed in place (search "v116:").
+   =================================================================== */
+(function(){
+  try{
+    Object.keys(AP_VIEWS).forEach(function(k){
+      const v=AP_VIEWS[k];if(!v||!/^ENGINE\b/i.test(String(v.tag||'')))return;
+      const p=v115P(v115ProdOf(k==='e1lead'?'e1pipeline':k)||(String(v.tag).indexOf('1')>=0?'cat':'pipe'));
+      if(p)v.tag=p.name;
+    });
+    if(AP_VIEWS.calls)AP_VIEWS.calls.title='Calls';
+    if(typeof NW_ITEMS!=='undefined'&&NW_ITEMS.hubspot)NW_ITEMS.hubspot[0]='HubSpot contacts';
+  }catch(e){console.warn('v116 names',e);}
+})();
+/* the pages still drawn by the older shell (the lead page among them) name the product, not the engine */
+(function(){
+  if(typeof apDemo!=='function')return;
+  const _d=apDemo;
+  apDemo=function(o){
+    try{if(o&&typeof o.eyebrow==='string')o.eyebrow=o.eyebrow.replace(/^ENGINE 1\b/i,'CATALYST').replace(/^ENGINE 3\b/i,'PIPELINE');}catch(e){}
+    return _d.apply(this,arguments);
+  };
+})();
+/* the narrow sidebar has no room for Settings' list: Settings opens its first page, as a product does */
+(function(){
+  if(typeof nwSetToggle!=='function')return;
+  const _s=nwSetToggle;
+  nwSetToggle=function(){
+    const app=document.getElementById('view-app');
+    if(app&&app.classList.contains('nw-collapsed')&&!document.body.classList.contains('ap-nav')&&window.matchMedia&&window.matchMedia('(min-width: 861px)').matches&&NW_SET.length){nwGo(NW_SET[0][0]);return;}
+    return _s.apply(this,arguments);
+  };
+})();
+/* sections with a heading but no text, and questions without an answer (or the other way round), are left out on Save */
+function v116Left(){
+  let n=0;
+  const val=function(x,k){const e=x.querySelector('[data-k="'+k+'"]');return e?v115Str(e.value):'';};
+  document.querySelectorAll('#v115E-sec .v115-pair').forEach(function(x){if(val(x,'title')&&!val(x,'body'))n++;});
+  document.querySelectorAll('#v115E-faq .v115-pair').forEach(function(x){const q=val(x,'q'),a=val(x,'a');if((q&&!a)||(!q&&a))n++;});
+  return n;
+}
 </script>
 
 <script>
