@@ -2950,6 +2950,35 @@ body{font-size:15px}
   .tb-ask{width:44px;padding:0;justify-content:center}
   .tb-ask .tb-ask-l{display:none}
 }
+/* ══════════════ v12.30: QA FIXES ══════════════
+   The top bar fits from 901 px up: the search box gives way, the buttons keep their size. The Customize
+   layout button sits clear of the sidebar (which is drawn at the app's 1.09 zoom, the button is not)
+   and goes away while a window is open over the page. A four-letter file type fits its tile. */
+.app.on .topbar .search{min-width:0}
+.app.on .topbar .search input{min-width:0;width:100%}
+.app.on .topbar .icon-btn,.app.on .topbar .hamb{flex:none}
+@media (min-width:901px){ #layFab,#layFab2{left:calc(248px * 1.09 + 16px)} }
+body:has(#scrim.on) #layFab,body:has(#scrim.on) #layFab2,body:has(#sigOv) #layFab,body:has(#sigOv) #layFab2{visibility:hidden}
+.row-ic.ext4{font-size:10.5px;letter-spacing:.01em}
+.toast.warn b{color:#F4B183}
+/* two cards side by side only when both fit (the Safety log's logs ran off the page from 901 to 1180 px), and the
+   conversation beside the message list gives way instead of pushing the page sideways */
+.app.on .main .grid2{grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr))}
+.app.on .main .grid2>*,.msg-split>*{min-width:0}
+.ask-in input{min-width:0}
+.ask-in button{flex:none}
+/* a closed window or drawer is out of reach of the keyboard and screen readers too (it only faded or slid away).
+   It is hidden once it has faded out, and shown at once when it opens, so it can take the focus straight away. */
+.modal:not(.on){visibility:hidden}
+.modal.on{visibility:visible;transition:.19s,visibility 0s}
+.drawer{transition:transform .24s cubic-bezier(.32,.72,0,1),visibility .24s}
+.drawer:not(.on){visibility:hidden}
+.drawer.on{visibility:visible;transition:transform .24s cubic-bezier(.32,.72,0,1),visibility 0s}
+@media (max-width:900px){                                            /* and so is the sidebar on a phone, while it is slid away */
+  .sidebar{transition:transform .22s cubic-bezier(.32,.72,0,1),visibility .22s}
+  .sidebar:not(.open){visibility:hidden}
+  .sidebar.open{visibility:visible;transition:transform .22s cubic-bezier(.32,.72,0,1),visibility 0s}
+}
 </style>
 </head>
 <body>
@@ -3342,7 +3371,7 @@ body{font-size:15px}
   <div class="md-f" id="mdFoot"></div>
 </div>
 
-<div class="toast" id="toast"><b>✓</b><span id="toastTxt"></span></div>
+<div class="toast" id="toast" role="status" aria-live="polite"><b aria-hidden="true">✓</b><span id="toastTxt"></span></div>
 
 <button class="ask-fab" id="askFab" onclick="toggleAsk()"><span class="sp"></span>✦ Ask Spectrum</button>
 <div class="ask-panel" id="askPanel">
@@ -5412,7 +5441,11 @@ function logAudit(act,obj,cat){
   AUDIT.unshift(entry); if(AUDIT.length>200) AUDIT.pop();
   sbPush('np_demo_audit_log',{who:entry.who,act:entry.act,obj:entry.obj,role:state.role,category:entry.cat||null});
 }
-function toast(msg){ el('toastTxt').textContent=msg; el('toast').classList.add('on'); clearTimeout(window._tt); window._tt=setTimeout(()=>el('toast').classList.remove('on'),2400); }
+/* v12.30: a message that something went wrong, or is needed first, shows ! (not ✓), and a long one stays long enough to read */
+const TOAST_WARN=/could(?:n['\u2019]t| not)|can(?:no|['\u2019])t|did(?:n['\u2019]t| not)|do(?:n['\u2019]t| not)|would not|won['\u2019]t|isn['\u2019]t|is not|was not|are not|not (?:valid|saved|linked|set up|allowed)|failed|expired|blocked|unavailable|offline|no longer|needs? |already|over \d+ ?MB|^(?:add a|add at|choose|enter|finish|give|name|pick|select|write|sign it first|type (?:a|just|their|your|the))\b|^(?:only|nothing|no )|^another |^there (?:is|are) no/i;
+function toast(msg){ msg=String(msg==null?'':msg); const w=TOAST_WARN.test(msg), t=el('toast');
+  el('toastTxt').textContent=msg; t.classList.toggle('warn',w); const b=t.querySelector('b'); if(b) b.textContent=w?'!':'\u2713';
+  t.classList.add('on'); clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('on'),Math.min(8000,Math.max(2400,msg.length*55)+(w?1000:0))); }
 function toMin(hm){ if(!hm||typeof hm!=='string') return 0; const [h,m]=hm.split(':').map(Number); return h*60+(m||0); }
 function pctOfDay(hm){ const START=6*60, END=22*60; return Math.max(0,Math.min(100,(toMin(hm)-START)/(END-START)*100)); }
 function hm12(hm){ if(!hm||typeof hm!=='string') return ''; const [h,m]=hm.split(':').map(Number);   // v12.15: a time-less entry (from another app) shows no time instead of breaking the page
@@ -8744,7 +8777,7 @@ function tplPersist(t){
 /* layout that has no column of its own, and (v12.19) where the uploaded original is kept */
 function tplExtrasOf(t){ const so=(t.source&&typeof t.source==='object')?t.source:null;
   return {subtitle:t.subtitle,foot:t.foot,sysNote:t.sysNote,source:so&&so.path?{file:so.file||'',path:so.path,size:so.size||0}:undefined,
-    overlay:ovIs(t)?{kind:t.overlay.kind,pages:t.overlay.pages,file:t.overlay.file||'',size:t.overlay.size||0}:undefined}; }
+    overlay:ovIs(t)?Object.assign({kind:t.overlay.kind,pages:t.overlay.pages,file:t.overlay.file||'',size:t.overlay.size||0},t.overlay.lang?{lang:t.overlay.lang}:{}):undefined}; }   // v12.30: and its language, for Find boxes
 /* the editor is the template's page: fill it in, assign it or delete it from there */
 function tpeThen(a){
   const t=tpeT(); if(!t) return;
@@ -8771,9 +8804,9 @@ function docRow(d){
   const bl=(()=>{const b=docBinderOf(d); return b?(FOLDER_NAMES[b]||b):'';})();
   const canEd=state.role==='director'||(!!d.cid&&d.cid===meSid()&&state.role!=='family');
   const rk='doc:'+(d.cid||'')+':'+d.n;
-  const ext=(String(d.n).split('.').pop()||'').toUpperCase().slice(0,4);
+  const ext=fileExt(d.n,d.url)||'◫';
   return `<div class="lrow doc-line" onclick="${fx(()=>openStoredDoc(d.id||'',d.n))}">
-    <span class="row-ic">${esc(ext)}</span>
+    ${extIc(ext)}
     <span class="row-copy"><strong>${canEd?rnName(d.n,nv=>docRenameTo(d.id,d.cid,d.n,nv),rk):esc(d.n)}${f?' '+filedPill(f):''}</strong>
       <span>${esc(d.cat||'')}${bl?` \u00b7 \ud83d\uddc0 ${esc(bl)}${(()=>{ const b=docBinderOf(d), sb=b?docSubOf(d,b):''; return sb?' / '+esc(sb):''; })()}`:''} \u00b7 uploaded by ${esc(d.by||'')} \u00b7 ${fmtDate(d.at)}${d.s?' \u00b7 '+esc(d.s):''}</span></span>
     ${canEd?rmBtn([{l:'Open',ic:'\u2197',fn:()=>openStoredDoc(d.id||'',d.n)},
@@ -13809,7 +13842,7 @@ function compOpen(fl){
 }
 function compRowHtml(key,fl,ci){
   const dir=state.role==='director', sg=sigFor(fl.n,key), f=fl.fid&&FILED_DOCS[fl.fid];   // v12.22: its own binder's signature
-  const ext=(String(fl.n).split('.').pop()||'').toUpperCase().slice(0,4)||'PDF';
+  const ext=fileExt(fl.n,fl.url)||'PDF';
   return `<div class="docrow comp-line" style="border-bottom:none;padding:8px 18px 8px 30px;cursor:pointer" onclick="${fx(()=>compOpen(fl))}">
     <div class="di">${esc(ext)}</div>
     <div class="dt"><b>${dir?rnName(fl.n,nv=>renameFiledTo(key,fl.n,nv),'comp:'+key+':'+fl.n):esc(fl.n)}${f?' '+filedPill(f):''}</b>
@@ -14468,10 +14501,15 @@ function libManageBtns(fl){
 }
 function libFind(dbId){ for(const k in USER_LIB){ for(const sec of ['forms','res']){ const i=(USER_LIB[k][sec]||[]).findIndex(x=>x.dbId===dbId); if(i>-1) return {k,sec,i,row:USER_LIB[k][sec][i]}; } } return null; }
 
+/* v12.30: the file type on a row, from its name or its link; a name with no file ending has none
+   ("Weekly Staff Schedule" is not a WEEK file) */
+function fileExt(n,url){ const m=String(n||'').match(/\.([A-Za-z0-9]{1,4})$/)||String(url||'').split(/[?#]/)[0].match(/\.([A-Za-z0-9]{1,4})$/); return m?m[1].toUpperCase():''; }
+const extIc=x=>`<span class="row-ic${x.length>3?' ext4':''}">${esc(x)}</span>`;
+
 /* ── v4.8: one renderer for every library row (plain link or editable example) ── */
 function libRowHtml(fl,key){
   if(!fl.editable){
-    const ico=fl.url?(fl.n.split('.').pop()||'').toUpperCase().slice(0,4):'◫';
+    const ico=fl.url?(fileExt(fl.n,fl.url)||'◫'):'◫';
     const rid='lb'+String(fl.n).replace(/[^A-Za-z0-9]/g,'').slice(0,24);
     const op=state.openLib===rid;
     const dirL=state.role==='director';
@@ -14479,7 +14517,7 @@ function libRowHtml(fl,key){
     const openL=()=>{ if(fl.url) openStored('',fl.url,fl.n); else toast('There is no file attached to '+fl.n+'.'); };   // v12.19: signed link
     const canRn=dirL&&!!lk;
     return `<div class="lrow" onclick="${fx(openL)}">
-      <span class="row-ic">${ico}</span>
+      ${extIc(ico)}
       <span class="row-copy"><strong>${canRn?rnName(fl.n,nv=>fl.dbId?libRenameTo(fl.dbId,nv):libRenameStockTo(fl.orig,nv),lk):esc(fl.n)}</strong><span>${esc(fl.sub||'')}</span></span>
       ${dirL?rmBtn([{l:'Open',ic:'\u2197',fn:openL},canRn&&{l:'Rename',ic:'\u270e',fn:()=>rnStartKey(lk)},
         '-',{l:'Delete',ic:'\u2715',danger:true,fn:()=>libDelete(key,fl)}],'Document actions'):'<span class="go-sq">\u203a</span>'}</div>`;
@@ -16550,10 +16588,10 @@ async function ovAnalyzeImage(url,opts){
   if(!img||!img.naturalWidth) return null;
   let cv, ang=0, cut=false, flat=false, turn=0, blob=null, hand=0;
   const lang=ovLangOk(opts.lang||'eng');
-  if(opts.asIs){ cv=ovCanvas(img.naturalWidth,img.naturalHeight); cv.getContext('2d').drawImage(img,0,0); }
+  if(opts.asIs){ cv=ovCanvas(img.naturalWidth,img.naturalHeight); const g0=cv.getContext('2d'); g0.fillStyle='#fff'; g0.fillRect(0,0,cv.width,cv.height); g0.drawImage(img,0,0); }
   else {
     ovSay('Straightening the photo\u2026'); await new Promise(r=>setTimeout(r,30));
-    const p=ovPhotoPrep(img); cv=p.cv; ang=p.ang; cut=p.cut; flat=p.flat; turn=p.turn;
+    const p=await ovPhotoPrep(img,lang); cv=p.cv; ang=p.ang; cut=p.cut; flat=p.flat; turn=p.turn;
   }
   ovSay('Reading the words\u2026');
   let r=await ovReadPicture(cv,0,lang);
@@ -16576,14 +16614,17 @@ async function ovAnalyzeImage(url,opts){
 const OV_SCAN_W=1275;                                                 // a page is looked at 1275 px wide (150 dpi on US letter)
 let OV_SLOTS={};                                                      // template id -> every place to fill in that was found
 function ovGuess(l){                                                  // the kind of box a name asks for
-  const s=String(l||'').toLowerCase();
-  const ws=s.split(/[\s:]+/).filter(Boolean), dw=/^(date|dated|fecha|ngày|petsa|дата|ամսաթիվ|تاریخ|تاريخ|ਮਿਤੀ|तारीख|दिनांक|កាលបរិច្ឆេទ)$/;
-  if(ws.length&&(dw.test(ws[0])||dw.test(ws[ws.length-1])||/(日期|날짜|日付)$/.test(s))) return 'date';   // v12.28: "Date of signature", "Signature date", "Fecha de la firma"
-  if(/signature|sign here|signed by|\bsigner\b|firma|chữ ký|lagda|подпис|签名|簽名|署名|서명|ստորագր|امضا|توقيع|ਦਸਤਖਤ|हस्ताक्षर|ហត្ថលេខា|підпис/.test(s)) return 'signature';
-  if(/\bdate\b|d\.?o\.?b\b|birth|fecha|nacimiento|ngày|petsa|kapanganakan|дата|日期|날짜|생년월일|ամսաթիվ|تاریخ|تاريخ|ਮਿਤੀ|तारीख|दिनांक|生年月日|កាលបរិច្ឆេទ/.test(s)) return 'date';
-  if(/\btime\b|\bhora\b|giờ|\boras\b|время|час|时间|時間|시간|ժամ|ساعت|وقت|ਸਮਾਂ|समय/.test(s)) return 'time';
-  if(/^(phone|tel|telephone|zip|age|amount|qty|quantity|total)\b/.test(s)) return 'text';
-  return guessType(s)==='long text'?'long text':'text';
+  /* v12.30: whole words only ("Confirmation" has no "firma" in it, "участника" no "час"); Chinese, Japanese,
+     Korean and Khmer put no spaces between words, so theirs are found anywhere */
+  const s=' '+String(l||'').normalize('NFC').toLowerCase().replace(/[：，。、；]/g,' ').trim()+' ', t=s.trim();
+  const W=w=>new RegExp('[^\\p{L}\\p{M}](?:'+w+')(?=[^\\p{L}\\p{M}])','u'), S=w=>new RegExp('[^\\p{L}\\p{M}](?:'+w+')','u');
+  const ws=t.split(/[\s:]+/).filter(Boolean), dw=/^(date|dated|fecha|ngày|petsa|дата|ամսաթիվ|التاريخ|تاریخ|تاريخ|ਮਿਤੀ|तारीख|दिनांक|កាលបរិច្ឆេទ)$/;
+  if(ws.length&&(dw.test(ws[0])||dw.test(ws[ws.length-1])||/(日期|날짜|日付)$/.test(t))) return 'date';   // v12.28: "Date of signature", "Signature date", "Fecha de la firma"
+  if(W('signature|signatures|sign here|signed by|signer|firma|firmas|chữ ký|lagda').test(s)||S('подпис|підпис|ստորագր|(?:ال)?توقيع|امضا|ਦਸਤਖਤ|हस्ताक्षर').test(s)||/签名|簽名|署名|서명|ហត្ថលេខា/.test(t)) return 'signature';
+  if(W('date|dates|dated|d\\.?o\\.?b\\.?|fecha|nacimiento|ngày|petsa|kapanganakan|дата|даты|дату|ամսաթիվ|(?:ال)?تاريخ|تاریخ|ਮਿਤੀ|तारीख|दिनांक').test(s)||S('birth').test(s)||/日期|날짜|생년월일|生年月日|កាលបរិច្ឆេទ/.test(t)) return 'date';
+  if(W('time|hora|giờ|oras|время|час|часы|ժամ|ساعت|(?:ال)?وقت|ਸਮਾਂ|समय').test(s)||/时间|時間|시간/.test(t)) return 'time';
+  if(/^(phone|tel|telephone|zip|age|amount|qty|quantity|total)\b/.test(t)) return 'text';
+  return guessType(t)==='long text'?'long text':'text';
 }
 /* a name made from the words around a blank: no underscores, no trailing punctuation, a few words at most */
 function ovLabelOf(s){
@@ -16591,7 +16632,7 @@ function ovLabelOf(s){
   s=s.replace(/([\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af])\s+(?=[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af])/g,'$1');   // v12.28: Chinese, Japanese and Korean are read a letter at a time
   const cut=s.split(/[.;!?]\s+/); s=cut[cut.length-1];                 // the last sentence only
   const np=s.replace(/\([^)]*\)?/g,' ').replace(/\s+/g,' ').trim(); if(np) s=np;   // "(Physician to fill out ...)" is a note, not a name
-  s=s.replace(/^[\s,:;.\-\u2013\u2014'"\u2018\u2019\u201c\u201d]+|[\s,:;.\-\u2013\u2014'"\u2018\u2019\u201c\u201d]+$/g,'').trim();
+  s=s.replace(/^[\s,:;.\-\u2013\u2014'"\u2018\u2019\u201c\u201d\uff1a\uff0c\u3002\u3001\uff1b]+|[\s,:;.\-\u2013\u2014'"\u2018\u2019\u201c\u201d\uff1a\uff0c\u3002\u3001\uff1b]+$/g,'').trim();   // v12.30: and the full-width ones
   const w=s.split(' '); if(w.length>6) s=w.slice(-6).join(' ');
   return ovPretty(s);
 }
@@ -16632,6 +16673,8 @@ function ovJoinSeg(ss,dir,gap){
   });
   return out;
 }
+/* v12.30: short words often printed in a form's answer cells (units, times of day, yes or no) */
+const OV_CELL_WORDS=/^(mg|mcg|ml|cc|kg|lbs?|oz|iu|units?|tabs?|caps?|am|pm|a\.m\.|p\.m\.|yes|no|n\/a|na|hrs?|mins?)[.:,]?$/i;
 function ovFindSlots(px,W,H,items,pi,opt){
   const N=W*H, dk=new Uint8Array(N);
   for(let i=0,j=0;i<N;i++,j+=4) dk[i]=(px[j]*299+px[j+1]*587+px[j+2]*114)<175000?1:0;   // light grey rules count too
@@ -16646,7 +16689,7 @@ function ovFindSlots(px,W,H,items,pi,opt){
   const wipe=[];
   const wipeOf=(x0,y0,x1,y1,ln,more)=>{
     const mb=more&&more.ty!=null?0.8:0.5;                              // above a cell, only full-size words: a pen loop's top can read as an "A"
-    const keep=items.filter(t=>printed(t)&&t.cf>=70&&(t.bh||tb)>=tb*mb&&t.x<x1&&t.x+t.w>x0&&t.y+(t.bh||t.fh*0.7)*0.35>y0&&t.y-(t.bh||t.fh*0.7)<y1)
+    const keep=items.filter(t=>printed(t)&&(t.bh||tb)>=tb*mb&&t.x<x1&&t.x+t.w>x0&&t.y+(t.bh||t.fh*0.7)*0.35>y0&&t.y-(t.bh||t.fh*0.7)<y1)
       .map(t=>({x0:t.x-2,y0:t.y-(t.bh||t.fh*0.7)-3,x1:t.x+t.w+2,y1:t.y+(t.bh||t.fh*0.7)*0.4}));
     return Object.assign({x0,y0,x1,y1,ln,keep},more); };
   const HMIN=Math.max(30,Math.round(W*0.03)), VMIN=Math.max(24,Math.round(th*1.5));
@@ -16660,8 +16703,8 @@ function ovFindSlots(px,W,H,items,pi,opt){
   const root=i=>{ while(par[i]!==i) i=par[i]=par[par[i]]; return i; };
   hs.forEach((h,a)=>vs.forEach((v,b)=>{ if(v.x0-4<=h.x1&&v.x1+4>=h.x0&&v.y0-4<=h.y1&&v.y1+4>=h.y0) par[root(a)]=root(hs.length+b); }));
   const groups={}; all.forEach((n,i)=>{ (groups[root(i)]=groups[root(i)]||[]).push(n); });
-  const slots=[], inGrid=new Set();
-  const textIn=(x0,y0,x1,y1,pr)=>items.filter(t=>{ if(pr&&hw(t)) return false; const cx=t.x+t.w/2, cy=t.y-t.fh*0.35; return cx>x0&&cx<x1&&cy>y0&&cy<y1; })
+  const slots=[], inGrid=new Set(), inCell=[];
+  const textIn=(x0,y0,x1,y1,pr)=>items.filter(t=>{ if(pr&&(hw(t)||(rd&&t.o&&t.cf<45&&(t.bh||tb)>tb*1.35))) return false; const cx=t.x+t.w/2, cy=t.y-t.fh*0.35; return cx>x0&&cx<x1&&cy>y0&&cy<y1; })
     .sort((a,b)=>(Math.abs(a.y-b.y)>a.fh*0.5?a.y-b.y:a.x-b.x)).map(t=>t.s).join(' ').replace(/\s+/g,' ').trim();
   const cluster=vals=>{ const s=vals.slice().sort((a,b)=>a-b), out=[]; s.forEach(v=>{ if(out.length&&v-out[out.length-1].v<=5){ const c=out[out.length-1]; c.v=(c.v*c.n+v)/(c.n+1); c.n++; } else out.push({v,n:1}); }); return out.map(c=>c.v); };
   let tn=0;
@@ -16697,18 +16740,28 @@ function ovFindSlots(px,W,H,items,pi,opt){
     if(!cells.length) return;
     tn++;
     const rowsOf=[...new Set(cells.map(c=>c.r))].sort((a,b)=>a-b);
-    const head=rowsOf.find(r=>{ const rc=cells.filter(c=>c.r===r); return rc.filter(c=>c.full).length>=Math.max(1,rc.length*0.5); });
-    const cols=head==null?[]:cells.filter(c=>c.r===head&&c.txt).map(c=>({xa:c.xa,xb:c.xb,n:ovLabelOf((rd&&textIn(c.xa,c.ya,c.xb,c.yb,1))||c.txt)}));
+    /* v12.28: written in by hand: ink, and no word the reader took for print (v12.30: the short words printed in
+       answer cells count even when read unsurely, so a printed "mg" is not wiped, while pen writing, read as
+       junk, does not; and this comes before the heading is picked, so a filled-in first row or framed box is
+       not taken for one) */
+    const printish=t=>printed(t)||(!hw(t)&&t.cf>=35&&OV_CELL_WORDS.test(t.s)&&(t.bh||tb)>=tb*0.5&&(t.bh||tb)<=tb*1.4);
+    if(rd) cells.forEach(c=>{ if(c.full&&!items.some(t=>printish(t)&&t.x+t.w/2>c.xa&&t.x+t.w/2<c.xb&&t.y-t.fh*0.35>c.ya&&t.y-t.fh*0.35<c.yb)&&ink(c.xa+4,c.ya+4,c.xb-4,c.yb-4)>0.006){ c.full=false; c.hand=1; } });
+    /* the heading is the first row that is mostly filled, with rows under it that are not like it (v12.30: a
+       "Diagnosis | ____" row with more like it below is the first row of answers, and a lone row is no heading) */
+    const pat=r=>cells.filter(c=>c.r===r).sort((a,b)=>a.xa-b.xa).map(c=>c.c+(c.full?'f':'e')).join(',');
+    let head=rowsOf.find(r=>{ const rc=cells.filter(c=>c.r===r); return rc.filter(c=>c.full).length>=Math.max(1,rc.length*0.5); });
+    if(head!=null){ const nx=rowsOf[rowsOf.indexOf(head)+1]; if(nx==null||(pat(nx)===pat(head)&&/e/.test(pat(head)))) head=undefined; }
+    const lab=c=>rd?textIn(c.xa,c.ya,c.xb,c.yb,1):c.txt;                  // v12.30: on a filled-in copy, names come from print only
+    const cols=head==null?[]:cells.filter(c=>c.r===head&&c.full&&c.txt).map(c=>({xa:c.xa,xb:c.xb,n:ovLabelOf(lab(c))})).filter(h=>h.n);
     const colOf=c=>{ const m=(c.xa+c.xb)/2, k=cols.find(h=>m>h.xa&&m<h.xb); return k?k.n:''; };
     const one=cells.length===1;
     let n=0;
     rowsOf.forEach(r=>{
       if(head!=null&&r<=head) return;
       const rc=cells.filter(c=>c.r===r).sort((a,b)=>a.xa-b.xa);
-      if(rd) rc.forEach(c=>{ if(c.full&&!items.some(t=>printed(t)&&t.x+t.w/2>c.xa&&t.x+t.w/2<c.xb&&t.y-t.fh*0.35>c.ya&&t.y-t.fh*0.35<c.yb)&&ink(c.xa+4,c.ya+4,c.xb-4,c.yb-4)>0.006){ c.full=false; c.hand=1; } });   // v12.28: written in by hand
       const empty=rc.filter(c=>!c.full); if(!empty.length) return;
       n++;
-      const rowLab=rc[0]&&rc[0].full&&rc[0].txt?ovLabelOf(rc[0].txt):'';
+      const rowLab=rc[0]&&rc[0].full&&rc[0].txt?ovLabelOf(lab(rc[0])):'';
       empty.forEach(c=>{
         const col=colOf(c), tall=(c.yb-c.ya)>th*2.4;
         let l, ty;
@@ -16718,7 +16771,7 @@ function ovFindSlots(px,W,H,items,pi,opt){
           l=rowLab?(rowLab+(col?': '+col:'')):((col||('Column '+(c.c+1)))+', row '+n);
           ty=ovGuess(col||rowLab); if(ty==='long text'&&!tall) ty='text';
         }
-        slots.push({p:pi,src:'cell',tb:'t'+pi+'-'+tn,r:n,c:c.c,col,l,ty,x0:c.xa+3,y0:c.ya+3,x1:c.xb-3,y1:c.yb-3,hand:c.hand});
+        slots.push({p:pi,src:'cell',tb:'t'+pi+'-'+tn,r:n,c:c.c,col,l,ty,x0:c.xa+3,y0:c.ya+3,x1:c.xb-3,y1:c.yb-3,hand:c.hand}); inCell.push(c);
         if(c.hand){ const top=gh.find(h=>Math.abs(hy(h)-c.ya)<=5&&h.x0<=c.xa+4&&h.x1>=c.xb-4);   // v12.28: writing can reach up over the cell's top line
           wipe.push(wipeOf(c.xa+3,top?c.ya-th*0.9:c.ya+3,c.xb-3,c.yb-3,top?{x0:c.xa,y0:top.y0,x1:c.xb,y1:top.y1}:null,top?{ty:top.y0}:{})); }
       });
@@ -16741,7 +16794,8 @@ function ovFindSlots(px,W,H,items,pi,opt){
     let n=0, a=0; for(let y=y0;y<=y1;y++){ const o=y*W; for(let x=h.x0+3;x<=h.x1-3;x++){ a++; if(dk[o+x]&&!cov[x]) n++; } }
     return a>0&&n/a>=0.012;
   };
-  const rawL=hs.map((h,i)=>({h,i})).filter(({h,i})=>!inGrid.has(i)&&h.y1-h.y0<=4), handL=rd?rawL.filter(({h})=>handOn(h)).map(({h})=>h):[];
+  /* v12.30: a stroke inside a box is not a blank */
+  const rawL=hs.map((h,i)=>({h,i})).filter(({h,i})=>!inGrid.has(i)&&h.y1-h.y0<=4&&!inCell.some(c=>h.x0>=c.xa-2&&h.x1<=c.xb+2&&hy(h)>c.ya+3&&hy(h)<c.yb-3)), handL=rd?rawL.filter(({h})=>handOn(h)).map(({h})=>h):[];
   const lines=rawL.filter(({h})=>!handL.includes(h)).map(({h})=>opt&&opt.pic?feet(h):h)
     .filter(h=>h&&ink(h.x0+3,h.y0-th*0.85,h.x1-3,h.y0-3)<0.015).sort((a,b)=>hy(a)-hy(b)||a.x0-b.x0);
   /* the words near a blank, as pieces with where each starts and ends. A piece ends at ____ or at a
@@ -16825,6 +16879,11 @@ function ovFindSlots(px,W,H,items,pi,opt){
   return res;
 }
 /* one page of a PDF: drawn, read and searched */
+/* v12.30: a page is a scan when it holds a picture; a typed page with few words on it is not one */
+async function ovPageHasPicture(lib,pg){
+  try{ const ops=await pg.getOperatorList(), O=lib.OPS||{}, want=[O.paintImageXObject,O.paintJpegXObject,O.paintInlineImageXObject,O.paintImageXObjectRepeat].filter(x=>x!=null);
+    return ops.fnArray.some(f=>want.includes(f)); }catch(e){ return true; }
+}
 async function ovScanPage(lib,pg,pi,lang){
   const v1=pg.getViewport({scale:1}), sc=OV_SCAN_W/v1.width, v=pg.getViewport({scale:sc});
   const W=Math.round(v.width), H=Math.round(v.height);
@@ -16836,7 +16895,7 @@ async function ovScanPage(lib,pg,pi,lang){
     const tr=lib.Util.transform(v.transform,it.transform);
     return {s:it.str,x:tr[4],y:tr[5],w:it.width*sc,fh:Math.max(4,Math.hypot(tr[2],tr[3]))};
   });
-  if(items.length<3){ const r=await ovReadScannedPage(pg,pi,lang); if(r) return r; }   // v12.27: a scan, with no words in it to read
+  if(items.length<3&&await ovPageHasPicture(lib,pg)){ const r=await ovReadScannedPage(pg,pi,lang); if(r) return r; }   // v12.27: a scan, with no words in it to read (v12.30: and a picture on it)
   return ovFindSlots(g.getImageData(0,0,W,H).data,W,H,items,pi);
 }
 /* a box for a place that was found */
@@ -16937,7 +16996,7 @@ async function ovUploadGo(){
   try{ a=isPdf?await ovAnalyzePdf(await f.arrayBuffer(),lang):await ovAnalyzeImage(url,{lang}); }catch(e){ console.warn('[np-demo] form read failed',e); }
   if(a&&a.kind==='pdf'&&a.scan&&a.scan.cv){                            // v12.28: a one-page scan on its side or upside down: turned, and kept as a clean picture like a photo
     try{ const b=await new Promise(r=>{ try{ a.scan.cv.toBlob(r,'image/png'); }catch(e){ r(null); } });
-      const a2=b?await ovAnalyzeImage(URL.createObjectURL(b),{lang}):null; if(a2){ a=a2; a.photo.fromScan=1; } }catch(e){ console.warn('[np-demo] turning the scan',e); }
+      let u2=''; const a2=b?await ovAnalyzeImage(u2=URL.createObjectURL(b),{lang}):null; try{ if(u2) URL.revokeObjectURL(u2); }catch(e){} if(a2){ a=a2; a.photo.fromScan=1; } }catch(e){ console.warn('[np-demo] turning the scan',e); }
   }
   OV_SAY=null;
   if(!a||!a.pages.length){ done(); return toast(isPdf?'That PDF could not be read. If it is password protected, save an unprotected copy and try again.':'That picture could not be read. Try a PNG or JPG.'); }
@@ -17043,7 +17102,7 @@ function ovIntroHtml(){
   const pic=window._ovPic; window._ovPic=null;                        // v12.27
   const pn=!pic?'':`<br><span class="tiny">${pic.photo?ovPicSays(pic)
       :'This PDF is a scan, so its words were read from the picture, on this computer.'+(pic.lang&&pic.lang!=='eng'?` Words read in ${ovLangName(pic.lang)}.`:'')}</span>`+ovPicWarn(pic)
-    +(pic.read===false?`<br><span class="tiny"><b>The words could not be read</b> (the word reader did not load), so the boxes have no names yet. Name them on the right, or press Find boxes once you are online.</span>`
+    +(pic.read===false?`<br><span class="tiny"><b>The words could not be read</b> (the word reader did not load), so the boxes have no names yet. Name them on the right, or press Find boxes once you are online.${pic.photo?' Any writing on a filled-in copy could not be checked either, so use a photo of a blank form.':''}</span>`
       :`<br><span class="tiny">Check each name: a ${pic.photo?'photo':'scan'} can be misread.</span>`);
   return `<div class="sec-note ov-intro" style="margin:0 0 10px"><span>✨</span><div>${msg}${pn}${more?` <br><span class="tiny">This PDF has ${more} pages; the first ${OV_MAX_PAGES} are kept.</span>`:''}</div></div>`;
 }
@@ -17611,14 +17670,27 @@ document.addEventListener('keydown',e=>{
 const OCR_CDN='https://cdn.jsdelivr.net/npm/', OCR_JS='tesseract.js@5.1.1', OCR_CORE='tesseract.js-core@5.1.1', OCR_ENG='@tesseract.js-data/eng@1.0.0/4.0.0_best_int';
 let _ocrW={}, OV_SAY=null;                                            // the word reader (one per visit), and where progress is shown
 function ovSay(t){ try{ if(OV_SAY) OV_SAY(t); }catch(e){} }
+/* v12.30: Tagalog's data comes only in the 4.0.0 build */
+const ocrDataPath=l=>l==='eng'?OCR_CDN+OCR_ENG:OCR_CDN+'@tesseract.js-data/'+l+'@1.0.0/'+(l==='tgl'?'4.0.0':'4.0.0_best_int');
+const OCR_WAIT=60000;                                                    // v12.30: a reader that says nothing for a minute while loading has failed
 function ocrWorker(lang){                                               // v12.28: one reader per language
   lang=ovLangOk(lang||'eng');
   if(_ocrW[lang]) return _ocrW[lang];
   _ocrW[lang]=(async()=>{
     if(!window.Tesseract) await new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=OCR_CDN+OCR_JS+'/dist/tesseract.min.js'; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
-    return await window.Tesseract.createWorker(lang,1,{workerPath:OCR_CDN+OCR_JS+'/dist/worker.min.js',corePath:OCR_CDN+OCR_CORE,langPath:lang==='eng'?OCR_CDN+OCR_ENG:OCR_CDN+'@tesseract.js-data/'+lang+'@1.0.0/4.0.0_best_int',
-      logger:m=>{ if(!m||!m.status) return; const pc=m.progress?' '+Math.round(m.progress*100)+'%':'';
+    /* v12.30: a language file that cannot be fetched leaves tesseract.js waiting for ever, so its error, or a
+       minute with no word from it, ends the wait (and a reader that turns up after that is let go) */
+    let fail=()=>{}, poke=()=>{}, tm=null;
+    const failed=new Promise((_,rej)=>{ fail=e=>rej(e instanceof Error?e:new Error(String(e))); });
+    const quiet=new Promise((_,rej)=>{ poke=()=>{ clearTimeout(tm); tm=setTimeout(()=>rej(new Error('the word reader stopped loading')),OCR_WAIT); }; });
+    failed.catch(()=>{}); quiet.catch(()=>{}); poke();
+    const wp=window.Tesseract.createWorker(lang,1,{workerPath:OCR_CDN+OCR_JS+'/dist/worker.min.js',corePath:OCR_CDN+OCR_CORE,langPath:ocrDataPath(lang),
+      errorHandler:e=>fail(e),
+      logger:m=>{ poke(); if(!m||!m.status) return; const pc=m.progress?' '+Math.round(m.progress*100)+'%':'';
         ovSay(/recogniz/.test(m.status)?'Reading the words…'+pc:'Getting the word reader ready (first time only)…'+pc); }});
+    try{ return await Promise.race([wp,failed,quiet]); }
+    catch(e){ wp.then(w=>{ try{ w.terminate(); }catch(_){} },()=>{}); throw e; }
+    finally{ clearTimeout(tm); poke=()=>{}; }
   })().catch(e=>{ console.warn('[np-demo] the word reader could not be loaded',e); delete _ocrW[lang]; return null; });
   return _ocrW[lang];
 }
@@ -17632,7 +17704,7 @@ async function ocrWords(cv,lang){
       const lh=l.bbox.y1-l.bbox.y0;
       (l.words||[]).forEach(wd=>{
         const s=String(wd.text||'').replace(/_+/g,'').trim().replace(/^[*®©·•°™]+|[*®©·•°™]+$/g,'');
-        if(!s||/^[\W_]+$/.test(s)) return;                                // rules read as dashes, and specks
+        if(!s||/^[^\p{L}\p{N}]+$/u.test(s)) return;                      // rules read as dashes, and specks (v12.30: a word in any alphabet is a word)
         if(/^[\[\]|(){}]/.test(s)&&s.length<=3) return;                     // a drawn tick box, read as "[J"
         /* a label that touched its line comes back with a low score ("Consumer:" lost its colon's dot
            with the line), so a real-looking word stays whatever its score */
@@ -17719,15 +17791,16 @@ function ovSkew(dk,W,H){
 }
 const ovDark=(gr,lim)=>{ const d=new Uint8Array(gr.length); for(let i=0;i<gr.length;i++) d[i]=gr[i]<(lim||140)?1:0; return d; };
 /* a photo, made into a clean straight page: {cv, ang, cut} */
-function ovPhotoPrep(img){
+async function ovPhotoPrep(img,lang){
   const s0=Math.min(1,2400/Math.max(img.naturalWidth||1,img.naturalHeight||1));
-  let c=ovCanvas((img.naturalWidth||1)*s0,(img.naturalHeight||1)*s0); c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+  let c=ovCanvas((img.naturalWidth||1)*s0,(img.naturalHeight||1)*s0);
+  { const g0=c.getContext('2d'); g0.fillStyle='#fff'; g0.fillRect(0,0,c.width,c.height); g0.drawImage(img,0,0,c.width,c.height); }   // v12.30: a see-through PNG on white paper, not black
   /* v12.28: the sheet's four corners; one at any angle is pulled flat, one square to the photo is cut out along them */
   const Q=ovPaperQuad(c), lean=Q?ovQuadLean(Q):0; let flat=false;
   if(Q&&lean>0.3){ const f=ovFlatten(c,Q); if(f){ c=f; flat=true; } }
   const pb=flat?null:Q?ovQuadBox(Q,c):ovPaperBox(c), cut=flat||!!pb, outer=!!pb&&!Q;
   if(pb){ const c2=ovCanvas(pb.w,pb.h); c2.getContext('2d').drawImage(c,pb.x,pb.y,pb.w,pb.h,0,0,c2.width,c2.height); c=c2; }
-  const turn=ovTurnOf(c); if(turn) c=ovTurn(c,turn);                    // v12.28: on its side, or upside down
+  const turn=await ovTurnFor(c,lang); if(turn) c=ovTurn(c,turn);         // v12.28: on its side, or upside down (v12.30: by the reader, for other alphabets)
   const ang=ovSkew(ovDark(ovEven(ovGray(c),c.width,c.height)),c.width,c.height);
   if(Math.abs(ang)>=0.2){
     const r=ovCanvas(c.width,c.height), g=r.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,r.width,r.height);
@@ -17798,10 +17871,13 @@ async function ovReadPicture(cv,pi,lang){
   R.vs.filter(meets).forEach(v=>og.fillRect((v.x0-2)*k,(v.y0-1)*k,(v.x1-v.x0+5)*k,(v.y1-v.y0+3)*k));
   const words=await ocrWords(oc,lang);
   const items=(words||[]).map(w=>({s:w.s,x:w.x/k,y:w.y/k,w:w.w/k,fh:w.fh/k,o:1,cf:w.cf,bh:w.bh/k}));
-  const slots=ovFindSlots(px,W,H,items,pi,{pic:1,read:!!words});
+  /* v12.30: writing is told from print by what the reader read as print, so a reader that read next to nothing
+     (the wrong language picked, say) cannot tell them apart, and nothing is taken for writing */
+  const rd=!!words&&items.filter(t=>t.cf>=60).length>=6;
+  const slots=ovFindSlots(px,W,H,items,pi,{pic:1,read:rd});
   const sure=items.filter(t=>t.cf>=70), fhs=(sure.length>=5?sure:items).map(t=>t.fh).sort((a,b)=>a-b), th=fhs.length?fhs[Math.floor(fhs.length/2)]:W*0.019;
   const wipe=slots.wipe||[];
-  ovFindTicks(dk,W,H,th,items,pi,!!words).forEach(t=>{ if(!slots.some(o=>ovOverlap(o,t)>0.3)){ slots.push(t); if(t.hand) wipe.push(t.er); } });
+  ovFindTicks(dk,W,H,th,items,pi,rd).forEach(t=>{ if(!slots.some(o=>ovOverlap(o,t)>0.3)){ slots.push(t); if(t.hand) wipe.push(t.er); } });
   return {slots,read:!!words,wipe};
 }
 /* a page of a PDF that is only a picture: read like a photo (but not cut down), its boxes put back
@@ -17812,7 +17888,7 @@ async function ovReadScannedPage(pg,pi,lang){
   await pg.render({canvasContext:g,viewport:v}).promise;
   const ev=ovEven(ovGray(c),c.width,c.height), dk=ovDark(ev);
   let ink=0; for(let i=0;i<dk.length;i+=7) ink+=dk[i]; if(ink<50) return null;   // a blank page
-  const turn=ovTurnOf(c);                                              // v12.28: on its side or upside down
+  const turn=await ovTurnFor(c,lang);                                  // v12.28: on its side or upside down
   if(turn){ const s=[]; s.scan={read:true,ang:0,turn,cv:c}; return s; }
   const ang=ovSkew(dk,c.width,c.height);
   let cv=ovPutGray(ovCanvas(c.width,c.height),ev);
@@ -17927,9 +18003,11 @@ function ovHomog(from,to){
 function ovFlatten(src,P){
   const L=(a,b)=>Math.hypot(b[0]-a[0],b[1]-a[1]);
   let w=Math.max(L(P[0],P[1]),L(P[3],P[2])), h=Math.max(L(P[0],P[3]),L(P[1],P[2]));
-  const r=h/w, sizes=[11/8.5,14/8.5,297/210,8.5/11,8.5/14,210/297];      // letter, legal and A4, either way round
+  const r=h/w, sizes=[11/8.5,14/8.5,297/210,8.5/5.5,8.5/11,8.5/14,210/297,5.5/8.5];   // letter, legal, A4 and half letter, either way round
   const near=sizes.reduce((m,s)=>Math.abs(Math.log(r/s))<Math.abs(Math.log(r/m))?s:m,sizes[0]);
-  if(Math.abs(Math.log(r/near))<0.2) h=w*near;                           // a camera at an angle shortens the far side: trust the paper's shape
+  /* a camera at an angle shortens the far side: trust the paper's shape (v12.30: only when the whole sheet is in the photo) */
+  const inside=P.every(([x,y])=>x>src.width*0.006&&y>src.height*0.006&&x<src.width*0.994&&y<src.height*0.994);
+  if(inside&&Math.abs(Math.log(r/near))<0.2) h=w*near;
   const k=Math.min(1,2200/Math.max(w,h)); w=Math.round(w*k); h=Math.round(h*k);
   const H=ovHomog([[0,0],[w,0],[w,h],[0,h]],P); if(!H) return null;
   const sg=src.getContext('2d',{willReadFrequently:true}), sd=sg.getImageData(0,0,src.width,src.height).data, SW=src.width, SH=src.height;
@@ -17961,6 +18039,32 @@ function ovLetters(dk,W,H){
   return out;
 }
 /* which way a page is turned: 0, 90, 180 or 270 degrees clockwise to bring it upright. 0 when unsure. */
+/* v12.30: ascenders and descenders only say which way up Latin letters are (Russian has more letters
+   hanging below the line than standing above it; Chinese and Korean have neither). For other alphabets
+   the reader reads the page both ways round (all four for Korean, whose lines do not show which way
+   they run) and the way it reads best is the right way up. With no reader the page is left as it is
+   rather than turned the wrong way. */
+const OCR_LATIN=['eng','spa','vie','tgl'];
+async function ovTurnFor(c,lang){
+  lang=ovLangOk(lang||'eng');
+  const geo=ovTurnOf(c);
+  if(OCR_LATIN.includes(lang)) return geo;
+  const w=await ocrWorker(lang); if(!w) return 0;
+  ovSay('Finding which way up the page is\u2026');
+  const cand=lang==='kor'?[0,90,180,270]:(geo===90||geo===270)?[90,270]:[0,180];
+  let best=0, bs=-1;
+  for(const t of cand){
+    const r=t?ovTurn(c,t):c, k=Math.min(1,1275/r.width), sw=Math.round(r.width*k), sh=Math.max(1,Math.round(r.height*k*0.5));
+    const s=ovCanvas(sw,sh), g=s.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,sw,sh);
+    g.drawImage(r,0,r.height*0.25,r.width,r.height*0.5,0,0,sw,sh);       // the middle half of the page
+    let sc=0;
+    try{ const o=await w.recognize(s,{},{blocks:true,text:false});
+      (o.data.blocks||[]).forEach(b=>(b.paragraphs||[]).forEach(p=>(p.lines||[]).forEach(l=>(l.words||[]).forEach(wd=>{
+        const n=(String(wd.text||'').match(/\p{L}/gu)||[]).length; if(n&&wd.confidence>=50) sc+=n*wd.confidence; })))); }catch(e){}
+    if(sc>bs){ bs=sc; best=t; }
+  }
+  return best;
+}
 function ovTurnOf(cv){
   const k=1275/Math.min(cv.width,cv.height), W=Math.round(cv.width*k), H=Math.round(cv.height*k);
   const s=ovCanvas(W,H); s.getContext('2d').drawImage(cv,0,0,W,H);
@@ -18043,7 +18147,8 @@ function ovClearWriting(cv,list){
     }
     if(r.ty!=null){ const ty=Y(r.ty)-y0, s=[];
       for(let i=0;i<N;i++) if(((i/w)|0)<ty) kill[i]=0;
-      for(let yy=Math.max(0,ty-5);yy<ty;yy++) for(let xx=x0-ax;xx<w;xx++) if(dark[yy*w+xx]) s.push(yy*w+xx);
+      const below=L?L[1]+1:ty+3, on=xx=>{ for(let yy=below;yy<Math.min(h,below+4);yy++) for(let dx=-1;dx<=1;dx++){ const a=xx+dx; if(a>=0&&a<w&&dark[yy*w+a]) return true; } return false; };
+      for(let yy=Math.max(0,ty-5);yy<ty;yy++) for(let xx=x0-ax;xx<w;xx++) if(dark[yy*w+xx]&&on(xx)) s.push(yy*w+xx);   // v12.30: only marks that carry on through the line into the cell
       flood(s,j=>((j/w)|0)<ty,i=>{ kill[i]=1; }); }
     (r.keep||[]).forEach(k=>{ for(let yy=Math.max(0,Y(k.y)-y0);yy<Math.min(h,Y(k.y+k.h)-y0);yy++) for(let xx=Math.max(0,X(k.x)-ax);xx<Math.min(w,X(k.x+k.w)-ax);xx++) kill[yy*w+xx]=0; });
     for(let i=0;i<N;i++) if(kill[i]){ d[i*4]=d[i*4+1]=d[i*4+2]=255; }
@@ -19550,7 +19655,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.29 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.30 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -21655,6 +21760,14 @@ const ASK_SUG={
   staff:['What is left on my shift?','How do I report an incident?','What appointments are today?','Which of my tasks are due this week?','Walk me through the fire drill log','What does the de-escalation protocol say?'],
   family:['When is the next appointment?','Who is with 4023180 today?','What documents were shared this month?','How do I message the care team?']
 };
+/* v12.30: copying says whether it worked (a browser can refuse), and says what to copy by hand if not */
+function copyText(s,ok){
+  const byHand=()=>{ try{ const t=document.createElement('textarea'); t.value=s; t.setAttribute('readonly',''); t.style.cssText='position:fixed;left:-9999px;top:0';
+    document.body.appendChild(t); t.select(); const r=document.execCommand('copy'); t.remove(); return r; }catch(e){ return false; } };
+  const say=r=>toast(r?ok:'This browser would not copy it. It is '+s+'.');
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(s).then(()=>say(true),()=>say(byHand()));
+  else say(byHand());
+}
 function supportCompose(){
   const to='support@aiparagonconsulting.com', su=encodeURIComponent('Spectrum Care Advisory OS support');
   openModal('Help & support',`
@@ -21662,7 +21775,7 @@ function supportCompose(){
     <div style="display:flex;flex-direction:column;gap:8px">
       <button class="btn ghost" onclick="window.open('https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}','_blank');closeAll()">Gmail (opens in a new tab)</button>
       <button class="btn ghost" onclick="location.href='mailto:${to}?subject=${su}';closeAll()">My default mail app</button>
-      <button class="btn ghost" onclick="navigator.clipboard&&navigator.clipboard.writeText('${to}');closeAll();toast('Address copied.')">Copy the address</button>
+      <button class="btn ghost" onclick="copyText('${to}','Address copied.');closeAll()">Copy the address</button>
     </div>`,
     `<button class="btn ghost" onclick="closeAll()">Close</button>`);
 }
