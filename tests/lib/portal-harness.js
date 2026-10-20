@@ -27,9 +27,9 @@ function pdfjsBuild() {
   return build;
 }
 
-// the in-browser word reader (tesseract.js, its engine and the English data), the versions the portal loads
-// from jsDelivr, kept in tests/.cache the same way
-const OCR_PKGS = { 'tesseract.js@5.1.1': 'tesseract.js@5.1.1', 'tesseract.js-core@5.1.1': 'tesseract.js-core@5.1.1', '@tesseract.js-data/eng@1.0.0': '@tesseract.js-data/eng@1.0.0' };
+// the in-browser word reader (tesseract.js, its engine, and the English and Spanish data), the versions the
+// portal loads from jsDelivr, kept in tests/.cache the same way
+const OCR_PKGS = { 'tesseract.js@5.1.1': 'tesseract.js@5.1.1', 'tesseract.js-core@5.1.1': 'tesseract.js-core@5.1.1', '@tesseract.js-data/eng@1.0.0': '@tesseract.js-data/eng@1.0.0', '@tesseract.js-data/spa@1.0.0': '@tesseract.js-data/spa@1.0.0' };
 function ocrPkg(spec) {
   const dir = path.join(__dirname, '..', '.cache', 'ocr', spec.replace(/[@/]/g, '_'));
   if (!fs.existsSync(path.join(dir, 'package', 'package.json'))) {
@@ -74,7 +74,7 @@ async function newPage(env, opts) {
     const m = u.match(/pdf\.js\/3\.11\.174\/(pdf(?:\.worker)?\.min\.js)$/);
     if (m) return route.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(build, m[1])) });
     // opts.noOcr: the word reader cannot be fetched (offline, or blocked)
-    const o = u.match(/^https:\/\/cdn\.jsdelivr\.net\/npm\/((?:@tesseract\.js-data\/eng|tesseract\.js-core|tesseract\.js)@[\d.]+)\/(.+)$/);
+    const o = u.match(/^https:\/\/cdn\.jsdelivr\.net\/npm\/((?:@tesseract\.js-data\/[a-z_]+|tesseract\.js-core|tesseract\.js)@[\d.]+)\/(.+)$/);
     if (o && OCR_PKGS[o[1]]) {
       if (opts.noOcr) return route.fulfill({ status: 404, body: 'not found' });
       const f = path.join(ocrPkg(OCR_PKGS[o[1]]), o[2].split('?')[0]);
