@@ -76,6 +76,8 @@ h1{font:500 clamp(34px,4.6vw,52px)/1.08 var(--display);letter-spacing:-.015em;ma
 .lp-foot a{color:var(--ink-2)}
 .lp-preview{position:sticky;top:0;z-index:5;padding:10px 24px;background:var(--gold-soft);color:var(--gold-text);font-size:14.5px;font-weight:600;text-align:center;border-bottom:1px solid #E7D9B8}
 .lp-loading,.lp-gone{max-width:640px;margin:16vh auto;padding:0 24px;text-align:center;color:var(--ink-2)}
+/* v116: a long address or word wraps instead of pushing the page sideways on a phone */
+.lp-hero,.lp-rest,.lp-card,.lp-gone,.lp-brand{overflow-wrap:anywhere}
 .lp-gone h1{font-size:34px}
 @media (max-width:900px){
   .lp-main{grid-template-columns:minmax(0,1fr);grid-template-areas:"hero" "form" "rest";padding-top:36px;gap:28px}
@@ -223,6 +225,9 @@ h1{font:500 clamp(34px,4.6vw,52px)/1.08 var(--display);letter-spacing:-.015em;ma
       (c.questions||[]).forEach(function(q){var i=form.elements[q.key];if(i&&String(i.value||'').trim())data.answers[q.key]=String(i.value).trim().slice(0,500);});
       if(bad){bad.setAttribute('aria-invalid','true');try{bad.focus();}catch(e){}return;}
       btn.disabled=true;btn.textContent='Sending…';
+      /* v116: the sign-up check takes a form sent within two seconds of the page opening for a bot, so a fast (autofilled) sign-up waits that out */
+      var gap=2100-(Date.now()-t0);if(gap>0)await new Promise(function(res){setTimeout(res,gap);});
+      data.t=Date.now()-t0;
       try{
         var r=await fetch(HOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
         var j=null;try{j=await r.json();}catch(e){j=null;}
