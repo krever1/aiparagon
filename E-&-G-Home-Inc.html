@@ -17912,6 +17912,10 @@ async function ovReadPicture(cv,pi,lang){
   og.drawImage(cv,0,0,oc.width,oc.height); og.fillStyle='#fff';
   R.hs.forEach(h=>og.fillRect((h.x0-1)*k,(h.y0-2)*k,(h.x1-h.x0+3)*k,(h.y1-h.y0+5)*k));
   R.vs.filter(meets).forEach(v=>og.fillRect((v.x0-2)*k,(v.y0-1)*k,(v.x1-v.x0+5)*k,(v.y1-v.y0+3)*k));
+  /* v12.32: and the outlines of empty tick boxes, which it read as "[J" stuck to the word beside them (and the
+     "No" after the second box of a Yes / No pair went missing) */
+  ovFindTicks(dk,W,H,Math.round(W*0.019),[],pi,false).forEach(t=>{ const x0=t.x/100*W, y0=t.y/100*H, x1=x0+t.w/100*W, y1=y0+t.h/100*H;
+    [[x0-3,y0-3,x1-x0+7,6],[x0-3,y1-3,x1-x0+7,6],[x0-3,y0-3,6,y1-y0+7],[x1-3,y0-3,6,y1-y0+7]].forEach(([x,y,w,h])=>og.fillRect(x*k,y*k,w*k,h*k)); });
   const words=await ocrWords(oc,lang);
   const items=(words||[]).map(w=>({s:w.s,x:w.x/k,y:w.y/k,w:w.w/k,fh:w.fh/k,o:1,cf:w.cf,bh:w.bh/k}));
   /* v12.30: writing is told from print by what the reader read as print, so a reader that read next to nothing
@@ -18096,19 +18100,47 @@ async function ovTurnFor(c,lang){
   if(OCR_LATIN.includes(lang)) return geo;
   const w=await ocrWorker(lang); if(!w) return 0;
   ovSay('Finding which way up the page is\u2026');
-  const cand=lang==='kor'?[0,90,180,270]:(geo===90||geo===270)?[90,270]:[0,180];
-  let best=0, bs=-1;
+  /* v12.32: the likeliest way round first (as it is, or the way its lines run), read on the band of the page with
+     the most lines of text; a clear read settles it, so an upright page takes one short read, not two or four */
+  const side=lang==='kor'?ovLinesSideways(c):(geo===90||geo===270);   // Korean's letters do not show which way they run; its lines do
+  const cand=side?(geo===90||geo===270?[geo,geo===90?270:90]:[90,270]):[0,180];
+  let best=cand[0], bs=-1;
   for(const t of cand){
-    const r=t?ovTurn(c,t):c, k=Math.min(1,1275/r.width), sw=Math.round(r.width*k), sh=Math.max(1,Math.round(r.height*k*0.5));
-    const s=ovCanvas(sw,sh), g=s.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,sw,sh);
-    g.drawImage(r,0,r.height*0.25,r.width,r.height*0.5,0,0,sw,sh);       // the middle half of the page
-    let sc=0;
-    try{ const o=await w.recognize(s,{},{blocks:true,text:false});
-      (o.data.blocks||[]).forEach(b=>(b.paragraphs||[]).forEach(p=>(p.lines||[]).forEach(l=>(l.words||[]).forEach(wd=>{
-        const n=(String(wd.text||'').match(/\p{L}/gu)||[]).length; if(n&&wd.confidence>=50) sc+=n*wd.confidence; })))); }catch(e){}
-    if(sc>bs){ bs=sc; best=t; }
+    const r=await ovTurnScore(w,t?ovTurn(c,t):c);
+    if(r.sc>bs){ bs=r.sc; best=t; }
+    if(r.n>=25&&r.cf>=80) break;
   }
   return best;
+}
+/* v12.32: a page on its side, from its lines: lines of text leave blank rows between them, so on a page on its
+   side the blank stripes run down the page instead of across it */
+function ovLinesSideways(c){
+  const k=Math.min(1,600/Math.max(c.width,c.height)), w=Math.max(1,Math.round(c.width*k)), h=Math.max(1,Math.round(c.height*k));
+  const s=ovCanvas(w,h), g=s.getContext('2d',{willReadFrequently:true}); g.fillStyle='#fff'; g.fillRect(0,0,w,h); g.drawImage(c,0,0,w,h);
+  const d=g.getImageData(0,0,w,h).data, rows=new Uint32Array(h), cols=new Uint32Array(w);
+  for(let y=0;y<h;y++) for(let x=0,i=y*w*4;x<w;x++,i+=4) if(d[i]+d[i+1]+d[i+2]<384){ rows[y]++; cols[x]++; }
+  const span=a=>{ let i=0,j=a.length-1; while(i<j&&!a[i]) i++; while(j>i&&!a[j]) j--; return [i,j]; };
+  const [y0,y1]=span(rows), [x0,x1]=span(cols);
+  const blank=(a,i,j,len)=>{ let n=0; for(let q=i;q<=j;q++) if(a[q]<=len*0.002) n++; return n/Math.max(1,j-i+1); };
+  const br=blank(rows,y0,y1,x1-x0+1), bc=blank(cols,x0,x1,y1-y0+1);
+  return bc>0.12&&bc>br*1.5;
+}
+/* how well a page reads the way it is, on the band of about ten lines with the most text: how sure the reader is of
+   its letters on average (not how many it read: Korean on its side still reads, and a page on its side fits more in) */
+async function ovTurnScore(w,r){
+  const k=Math.min(1,1275/r.width), sw=Math.round(r.width*k), sh=Math.max(1,Math.round(r.height*k));
+  const s=ovCanvas(sw,sh), g=s.getContext('2d',{willReadFrequently:true}); g.fillStyle='#fff'; g.fillRect(0,0,sw,sh); g.drawImage(r,0,0,sw,sh);
+  const d=g.getImageData(0,0,sw,sh).data, row=new Float32Array(sh);
+  for(let y=0;y<sh;y++){ let n=0; for(let x=0,i=y*sw*4;x<sw;x++,i+=4) if(d[i]+d[i+1]+d[i+2]<384) n++; const f=n/sw; row[y]=f>0.01&&f<0.4?1:0; }   // a row of letters: some ink, not a solid bar
+  const bh=Math.max(40,Math.min(sh,Math.round(Math.min(sh*0.3,360))));
+  let y0=0, cur=0, top=-1; for(let y=0;y<sh;y++){ cur+=row[y]; if(y>=bh) cur-=row[y-bh]; if(y>=bh-1&&cur>top){ top=cur; y0=y-bh+1; } }
+  const b=ovCanvas(sw,bh); b.getContext('2d').drawImage(s,0,y0,sw,bh,0,0,sw,bh);
+  let sc=0, n=0;
+  try{ const o=await w.recognize(b,{},{blocks:true,text:false});
+    (o.data.blocks||[]).forEach(bl=>(bl.paragraphs||[]).forEach(p=>(p.lines||[]).forEach(l=>(l.words||[]).forEach(wd=>{
+      const m=(String(wd.text||'').match(/\p{L}/gu)||[]).length; if(m&&wd.confidence>=50){ sc+=m*wd.confidence; n+=m; } })))); }catch(e){}
+  const cf=n?sc/n:0;
+  return {sc:cf*Math.min(1,n/20),n,cf};
 }
 function ovTurnOf(cv){
   const k=1275/Math.min(cv.width,cv.height), W=Math.round(cv.width*k), H=Math.round(cv.height*k);
@@ -19714,7 +19746,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.31 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.32 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────

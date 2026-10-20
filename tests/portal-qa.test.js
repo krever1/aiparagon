@@ -110,12 +110,19 @@ function photoGen() {
       for (const [lang, lines] of Object.entries(TXT)) {
         const c = ovCanvas(1275, 1650), g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 1275, 1650); g.fillStyle = '#000'; g.font = '20px "WenQuanYi Zen Hei", serif';
         let y = 120; for (let k = 0; k < 7; k++) lines.forEach((t) => { if (y < 1550) { g.fillText(t, 100, y); y += 34; } });
-        out[lang] = [await turnFor(c, lang), await turnFor(ovTurn(c, 90), lang), await turnFor(ovTurn(c, 180), lang), await turnFor(ovTurn(c, 270), lang)];
+        const reads = [], counted = typeof ovTurnScore === 'function';
+        const o0 = counted ? ovTurnScore : null; if (counted) window.ovTurnScore = function () { reads[reads.length - 1]++; return o0.apply(this, arguments); };
+        const one = async (cv) => { reads.push(0); return turnFor(cv, lang); };
+        out[lang] = [await one(c), await one(ovTurn(c, 90)), await one(ovTurn(c, 180)), await one(ovTurn(c, 270))];
+        if (counted) window.ovTurnScore = o0;
+        out[lang + '_reads'] = counted ? reads : null;
       }
       return out;
     });
     check('Chinese: an upright page stays, and one turned 90°, 180° or 270° is turned back', JSON.stringify(r.chi_sim) === '[0,270,180,90]', JSON.stringify(r.chi_sim));
     check('Korean: the same', JSON.stringify(r.kor) === '[0,270,180,90]', JSON.stringify(r.kor));
+    check('v12.32: an upright page in Chinese or Korean is settled in one short read, and one on its side in two at most (Korean too, from the way its lines run)',
+      !!r.chi_sim_reads && r.chi_sim_reads[0] === 1 && r.kor_reads[0] === 1 && r.chi_sim_reads.every((n) => n <= 2) && r.kor_reads.every((n) => n <= 2), JSON.stringify([r.chi_sim_reads, r.kor_reads]));
     await ctx.close();
   }
 
@@ -200,7 +207,7 @@ function photoGen() {
           const h = (yy) => run((i) => [x + i, yy]).filter(([u, v]) => [-2, -1, 0, 1, 2].some((d) => dk(u, v + d))).length / 24;
           const v = (xx) => run((i) => [xx, y + i]).filter(([u, w]) => [-2, -1, 0, 1, 2].some((d) => dk(u + d, w))).length / 24;
           return Math.min(h(y), h(y + 26), v(x), v(x + 26)); };
-        out[marked ? 'marked' : 'blank'] = { hand: a.photo.hand || 0, ticks: a.fields.filter((f) => f.ty === 'check').length,
+        out[marked ? 'marked' : 'blank'] = { hand: a.photo.hand || 0, ticks: a.fields.filter((f) => f.ty === 'check').length, names: a.fields.filter((f) => f.ty === 'check').map((f) => f.l),
           outside: Math.max(dark(670, 206, 16, 16), dark(744, 300, 8, 6), dark(790, 348, 8, 6), dark(746, 346, 8, 6), dark(792, 302, 8, 6), dark(632, 374, 6, 6)),
           inside: Math.max(dark(645, 243, 16, 16), dark(765, 323, 16, 16), dark(645, 403, 16, 16)),
           sides: Math.min(...[238, 318, 398].flatMap((y) => [sideOk(640, y), sideOk(760, y)])),
@@ -210,6 +217,8 @@ function photoGen() {
     });
     check('a filled-in copy with a tick and a cross running out over their boxes: all three marked boxes are found and cleared', tk.marked.hand === 3 && tk.marked.ticks === tk.blank.ticks && tk.marked.inside === 0, JSON.stringify(tk.marked));
     check('nothing of a mark is left outside its box', tk.marked.outside === 0, JSON.stringify(tk.marked));
+    const want = ['Does the client attend day program', 'The care plan reviewed this quarter', 'Any changes to medication'].flatMap((q) => [q + ': Yes', q + ': No']).join(' | ');
+    check('v12.32: each tick box is named by its question and the word beside it, Yes or No, on the blank form and the filled-in copy alike', tk.blank.names.join(' | ') === want && tk.marked.names.join(' | ') === want, JSON.stringify([tk.blank.names, tk.marked.names]));
     check('every box is drawn back whole, all four sides, and the Yes and No beside them are kept', tk.marked.sides >= 0.95 && tk.blank.sides >= 0.95 && tk.marked.labels > 0.15, JSON.stringify(tk));
 
     // print the reader is unsure of, and pen writing read as junk, side by side in a table
