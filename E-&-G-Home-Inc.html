@@ -16530,7 +16530,7 @@ async function ovAnalyzePdf(buf,lang){
     });
     if(widgets.length) continue;
     /* v12.23: a flat PDF is looked at as a picture: blank lines, drawn or typed, and table cells */
-    let found=null; try{ found=await ovScanPage(lib,pg,pi,lang); }catch(e){ console.warn('[np-demo] page scan',e); }
+    let found=null; try{ found=await ovScanPage(lib,pg,pi,lang,pdf.numPages===1); }catch(e){ console.warn('[np-demo] page scan',e); }
     if(found&&found.scan) scans.push(Object.assign({p:pi+1},found.scan));   // v12.27
     if(found) found.forEach(s=>{ slots.push(s); fields.push(ovSlotField(s)); });
     /* the older finder (a box over each ____ in the text) only runs when the picture could not be made */
@@ -16884,7 +16884,7 @@ async function ovPageHasPicture(lib,pg){
   try{ const ops=await pg.getOperatorList(), O=lib.OPS||{}, want=[O.paintImageXObject,O.paintJpegXObject,O.paintInlineImageXObject,O.paintImageXObjectRepeat].filter(x=>x!=null);
     return ops.fnArray.some(f=>want.includes(f)); }catch(e){ return true; }
 }
-async function ovScanPage(lib,pg,pi,lang){
+async function ovScanPage(lib,pg,pi,lang,one){
   const v1=pg.getViewport({scale:1}), sc=OV_SCAN_W/v1.width, v=pg.getViewport({scale:sc});
   const W=Math.round(v.width), H=Math.round(v.height);
   const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
@@ -16895,7 +16895,7 @@ async function ovScanPage(lib,pg,pi,lang){
     const tr=lib.Util.transform(v.transform,it.transform);
     return {s:it.str,x:tr[4],y:tr[5],w:it.width*sc,fh:Math.max(4,Math.hypot(tr[2],tr[3]))};
   });
-  if(items.length<3&&await ovPageHasPicture(lib,pg)){ const r=await ovReadScannedPage(pg,pi,lang); if(r) return r; }   // v12.27: a scan, with no words in it to read (v12.30: and a picture on it)
+  if(items.length<3&&await ovPageHasPicture(lib,pg)){ const r=await ovReadScannedPage(pg,pi,lang,one); if(r) return r; }   // v12.27: a scan, with no words in it to read (v12.30: and a picture on it)
   return ovFindSlots(g.getImageData(0,0,W,H).data,W,H,items,pi);
 }
 /* a box for a place that was found */
@@ -17841,17 +17841,48 @@ function ovFindTicks(dk,W,H,th,items,pi,rd){
     if(ink(x0-5,y0,x0-2,y1)>0.08||ink(x1+2,y0,x1+5,y1)>0.08) return;   // standing clear of its neighbours: a letter in a word is not a box
     if(!sq.some(o=>o.x0<s.x1&&s.x0<o.x1&&o.y0<s.y1&&s.y0<o.y1)) sq.push(s);
   });
+  /* v12.31: on a filled-in copy, a tick or cross that runs out over a box's sides breaks the clean outline looked
+     for above. So the boxes found there are used as a pattern: a square of the same size with all four sides drawn,
+     whatever crosses them, is a box too, with a mark in it (an X in it may be read as a letter) */
+  if(rd&&sq.length){
+    const pats=[]; sq.forEach(s=>{ const w=s.x1-s.x0, h=s.y1-s.y0; if(!pats.some(p=>Math.abs(p[0]-w)<=2&&Math.abs(p[1]-h)<=2)) pats.push([w,h]); });
+    const cov=(x0,y0,x1,y1)=>Math.min(side(x0,y0-1,x1,y0+1,true),side(x0,y1-1,x1,y1+1,true),side(x0-1,y0,x0+1,y1,false),side(x1-1,y0,x1+1,y1,false));
+    hs.filter(h=>h.x1-h.x0>=lo*0.7&&h.y1-h.y0<=14).forEach(h=>pats.forEach(([bw,bh])=>{
+      if(h.x1-h.x0>bw*2.5) return;                                      // a long rule is no box's side
+      let best=null;
+      for(const ys of [h.y0-2,h.y0-bh-2]) for(let y0=ys;y0<=ys+(h.y1-h.y0)+4;y0++) for(let x0=h.x0-3;x0<=Math.max(h.x0-3,h.x1-bw+3);x0++){
+        const x1=x0+bw, y1=y0+bh; if(x0<2||y0<2||x1>W-3||y1>H-3) continue;
+        const c=cov(x0,y0,x1,y1); if(c>=0.85&&(!best||c>best.c)) best={x0,y0,x1,y1,c};
+      }
+      if(!best||sq.some(o=>o.x0<best.x1&&best.x0<o.x1&&o.y0<best.y1&&best.y0<o.y1)) return;
+      const {x0,y0,x1,y1}=best, fill=ink(x0+3,y0+3,x1-3,y1-3);
+      if(fill<=0.06||fill>=0.6) return;                                  // empty ones were found above; a filled square is not a tick box
+      if(items.some(t=>t.cf>=60&&t.s.length>2&&t.x+t.w/2>x0&&t.x+t.w/2<x1&&t.y-t.fh*0.35>y0&&t.y-t.fh*0.35<y1)) return;   // a word in it
+      if([[x0,y0],[x1,y0],[x0,y1],[x1,y1]].some(([cx,cy])=>ink(cx-1,cy-1,cx+1,cy+1)<0.3)) return;
+      sq.push({x0,y0,x1,y1,hand:true});
+    }));
+  }
   /* named like the ones in a PDF: the word after the box, and the question before the first box on its line */
   const mid=o=>o.y-o.fh*0.35, same=(o,s)=>Math.abs(mid(o)-(s.y0+s.y1)/2)<th*0.6;
   return sq.map(s=>{
     const line=sq.filter(o=>Math.abs((o.y0+o.y1)/2-(s.y0+s.y1)/2)<th*0.6), first=Math.min(...line.map(o=>o.x0));
-    const right=items.filter(o=>same(o,s)&&o.x>=s.x1-2&&o.x<=s.x1+th*3).sort((a,c)=>a.x-c.x)[0];
+    const right=items.filter(o=>same(o,s)&&o.x+o.w>s.x1+2&&o.x<=s.x1+th*3).sort((a,c)=>a.x-c.x)[0];
     const nextBox=line.filter(o=>o.x0>s.x1).sort((a,c)=>a.x0-c.x0)[0];
-    const after=right&&(!nextBox||right.x<nextBox.x0)?right.s:'';
+    let after=right&&(!nextBox||right.x<nextBox.x0)?right.s:'';
+    if(after&&right.x<s.x1-2){                                         // v12.31: the box read into its label ("[JYes", "dyes"): the part right of the box
+      const k=Math.round(after.length*(right.x+right.w-s.x1)/Math.max(1,right.w)); after=after.slice(-Math.max(1,k)).replace(/^[^\p{L}\p{N}]+/u,''); }
     const q=ovLabelOf(items.filter(o=>same(o,s)&&o.x+o.w<=first+2).sort((a,c)=>a.x-c.x).map(o=>o.s).join(' ')).replace(/\?$/,'');
     const l=(q&&after)?q+': '+ovPretty(after):(ovPretty(after)||q||'Tick box');
     const o={p:pi,src:'tick',l,ty:'check',x:ovRound(s.x0/W*100),y:ovRound(s.y0/H*100),w:ovRound((s.x1-s.x0)/W*100),h:ovRound((s.y1-s.y0)/H*100),fs:OV_FS.m};
-    if(s.hand){ o.hand=1; o.er={x:ovRound((s.x0+3)/W*100),y:ovRound((s.y0+3)/H*100),w:ovRound((s.x1-s.x0-6)/W*100),h:ovRound((s.y1-s.y0-6)/H*100),keep:[]}; }   // v12.28
+    if(s.hand){ o.hand=1;                                              // v12.28
+      /* v12.31: a tick or cross often runs out over the box's sides: what joins the mark inside is cleared around
+         the box too, the printed words beside it are kept, and the box is drawn back */
+      const bhs=items.filter(t=>t.cf>=70&&t.bh).map(t=>t.bh).sort((a,b)=>a-b), tb=bhs.length?bhs[bhs.length>>1]:th*0.75;
+      const m=th*2, ex={x0:Math.max(0,s.x0-m),y0:Math.max(0,s.y0-m),x1:Math.min(W-1,s.x1+m),y1:Math.min(H-1,s.y1+m)};
+      const pc=r=>({x:ovRound(r.x0/W*100),y:ovRound(r.y0/H*100),w:ovRound((r.x1-r.x0)/W*100),h:ovRound((r.y1-r.y0)/H*100)});
+      const keep=items.filter(t=>{ const cx=t.x+t.w/2, cy=t.y-t.fh*0.35; return t.cf>=60&&/\p{L}.*\p{L}/u.test(t.s)&&!(cx>s.x0&&cx<s.x1&&cy>s.y0&&cy<s.y1)&&t.x<ex.x1&&t.x+t.w>ex.x0&&t.y>ex.y0&&t.y-t.fh<ex.y1; })
+        .map(t=>{ const bh=Math.min(t.bh||t.fh*0.7,tb*1.15); return pc({x0:t.x-1,y0:t.y-bh-1,x1:t.x+t.w+1,y1:t.y+bh*0.3}); });   // the word's letters at print height (a stroke read into it stays out)
+      o.er=Object.assign(pc(ex),{box:pc(s),keep}); }
     return o;
   });
 }
@@ -17882,14 +17913,16 @@ async function ovReadPicture(cv,pi,lang){
 }
 /* a page of a PDF that is only a picture: read like a photo (but not cut down), its boxes put back
    where the page leans, so they sit on the scan as it is */
-async function ovReadScannedPage(pg,pi,lang){
+async function ovReadScannedPage(pg,pi,lang,one){
   const v1=pg.getViewport({scale:1}), sc=Math.min(3,2000/v1.width), v=pg.getViewport({scale:sc});
   const c=ovCanvas(v.width,v.height), g=c.getContext('2d',{willReadFrequently:true}); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height);
   await pg.render({canvasContext:g,viewport:v}).promise;
   const ev=ovEven(ovGray(c),c.width,c.height), dk=ovDark(ev);
   let ink=0; for(let i=0;i<dk.length;i+=7) ink+=dk[i]; if(ink<50) return null;   // a blank page
   const turn=await ovTurnFor(c,lang);                                  // v12.28: on its side or upside down
-  if(turn){ const s=[]; s.scan={read:true,ang:0,turn,cv:c}; return s; }
+  /* v12.31: only a one-page scan is made into a picture, so a longer one lets go of the page at once (a full-size
+     page is about 20 MB, and a 20-page scan on its side held them all until it was read) */
+  if(turn){ const s=[]; s.scan={read:true,ang:0,turn,cv:one?c:null}; if(!one){ c.width=c.height=0; } return s; }
   const ang=ovSkew(dk,c.width,c.height);
   let cv=ovPutGray(ovCanvas(c.width,c.height),ev);
   if(Math.abs(ang)>=0.2){ const r=ovCanvas(cv.width,cv.height), rg=r.getContext('2d'); rg.fillStyle='#fff'; rg.fillRect(0,0,r.width,r.height);
@@ -18150,10 +18183,24 @@ function ovClearWriting(cv,list){
       const below=L?L[1]+1:ty+3, on=xx=>{ for(let yy=below;yy<Math.min(h,below+4);yy++) for(let dx=-1;dx<=1;dx++){ const a=xx+dx; if(a>=0&&a<w&&dark[yy*w+a]) return true; } return false; };
       for(let yy=Math.max(0,ty-5);yy<ty;yy++) for(let xx=x0-ax;xx<w;xx++) if(dark[yy*w+xx]&&on(xx)) s.push(yy*w+xx);   // v12.30: only marks that carry on through the line into the cell
       flood(s,j=>((j/w)|0)<ty,i=>{ kill[i]=1; }); }
+    let bt=0;
+    if(r.box){                                                          // v12.31: a tick box: the mark and all that joins it, the box drawn back after
+      const bx0=X(r.box.x)-ax, by0=Y(r.box.y)-y0, bx1=X(r.box.x+r.box.w)-ax, by1=Y(r.box.y+r.box.h)-y0;
+      const side=yy=>{ let k=0; yy=Math.max(0,Math.min(h-1,yy)); for(let xx=Math.max(0,bx0-2);xx<=Math.min(w-1,bx0+6);xx++) if(dark[yy*w+xx]) k++; return k; };
+      bt=Math.max(2,Math.min(5,Math.min(side(by0+(by1-by0)*0.3),side(by0+(by1-by0)*0.7))));   // how thick its sides are drawn
+      kill.fill(0); const s=[];
+      for(let yy=Math.max(0,by0+bt+1);yy<Math.min(h,by1-bt);yy++) for(let xx=Math.max(0,bx0+bt+1);xx<Math.min(w,bx1-bt);xx++) if(dark[yy*w+xx]) s.push(yy*w+xx);
+      flood(s,()=>true,i=>{ kill[i]=1; });
+      const halo=[]; for(let i=0;i<N;i++) if(kill[i]){ const xx=i%w, yy=(i/w)|0;   // and the light edge round each stroke, so no grey ghost is left
+        for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const a=xx+dx, b=yy+dy; if(a>=0&&b>=0&&a<w&&b<h&&!kill[b*w+a]&&d[(b*w+a)*4]<235) halo.push(b*w+a); } }
+      halo.forEach(i=>{ kill[i]=1; });
+    }
     (r.keep||[]).forEach(k=>{ for(let yy=Math.max(0,Y(k.y)-y0);yy<Math.min(h,Y(k.y+k.h)-y0);yy++) for(let xx=Math.max(0,X(k.x)-ax);xx<Math.min(w,X(k.x+k.w)-ax);xx++) kill[yy*w+xx]=0; });
     for(let i=0;i<N;i++) if(kill[i]){ d[i*4]=d[i*4+1]=d[i*4+2]=255; }
     g.putImageData(im,ax,y0);
-    if(r.ln){ g.fillStyle='#1a1a1a'; g.fillRect(X(r.ln.x),Y(r.ln.y),Math.max(1,X(r.ln.w)),Math.max(2,Y(r.ln.h))); } });
+    if(r.ln){ g.fillStyle='#1a1a1a'; g.fillRect(X(r.ln.x),Y(r.ln.y),Math.max(1,X(r.ln.w)),Math.max(2,Y(r.ln.h))); }
+    if(r.box){ const bx=X(r.box.x), by=Y(r.box.y), bw=Math.max(bt*2+2,X(r.box.w)), bh=Math.max(bt*2+2,Y(r.box.h)); g.fillStyle='#1a1a1a';
+      g.fillRect(bx,by,bw,bt); g.fillRect(bx,by+bh-bt,bw,bt); g.fillRect(bx,by,bt,bh); g.fillRect(bx+bw-bt,by,bt,bh); } });
   return n;
 }
 function ovLangSet(v){ OV_LANG=ovLangOk(v); try{ localStorage.setItem('np.ocrLang',OV_LANG); }catch(e){} }
@@ -19655,7 +19702,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.30 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.31 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
