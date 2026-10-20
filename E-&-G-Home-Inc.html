@@ -17859,6 +17859,18 @@ function ovFindTicks(dk,W,H,th,items,pi,rd){
       if(fill<=0.06||fill>=0.6) return;                                  // empty ones were found above; a filled square is not a tick box
       if(items.some(t=>t.cf>=60&&t.s.length>2&&t.x+t.w/2>x0&&t.x+t.w/2<x1&&t.y-t.fh*0.35>y0&&t.y-t.fh*0.35<y1)) return;   // a word in it
       if([[x0,y0],[x1,y0],[x0,y1],[x1,y1]].some(([cx,cy])=>ink(cx-1,cy-1,cx+1,cy+1)<0.3)) return;
+      /* a ruled side is a thin line with nothing beside it but where a mark crosses; a bold letter (the Q of a heading)
+         has ink just inside and outside its sides. Along the middle third of each side, a band just inside and one
+         just outside: a box has ink in two of the eight at most */
+      const ax=Math.round(x0+(x1-x0)/3), bx=Math.round(x1-(x1-x0)/3), ay=Math.round(y0+(y1-y0)/3), by=Math.round(y1-(y1-y0)/3);
+      const bands=[side(ax,y0+4,bx,y0+5,true),side(ax,y1-5,bx,y1-4,true),side(x0+4,ay,x0+5,by,false),side(x1-5,ay,x1-4,by,false),
+        side(ax,y0-5,bx,y0-4,true),side(ax,y1+4,bx,y1+5,true),side(x0-5,ay,x0-4,by,false),side(x1+4,ay,x1+5,by,false)];
+      if(bands.filter(v=>v>=0.4).length>2) return;
+      /* and a side is a rule a few pixels thick, not a letter's stroke (a bold O or Q has a square inside its ring) */
+      const run=(x,y,dx,dy)=>{ if(!dk[y*W+x]) return 0; let n=1; for(const s of [-1,1]) for(let k=1;k<9&&dk[(y+s*k*dy)*W+x+s*k*dx];k++) n++; return n; };
+      const mx=Math.round((x0+x1)/2), my=Math.round((y0+y1)/2);
+      if(Math.min(run(ax,y0,0,1),run(mx,y0,0,1),run(bx,y0,0,1))>5||Math.min(run(ax,y1,0,1),run(mx,y1,0,1),run(bx,y1,0,1))>5
+        ||Math.min(run(x0,ay,1,0),run(x0,my,1,0),run(x0,by,1,0))>5||Math.min(run(x1,ay,1,0),run(x1,my,1,0),run(x1,by,1,0))>5) return;
       sq.push({x0,y0,x1,y1,hand:true});
     }));
   }
