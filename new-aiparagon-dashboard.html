@@ -41999,7 +41999,7 @@ function nwOn(key){return typeof S!=='undefined'&&S.page==='ap60'&&typeof state!
     const ready=app&&!app.classList.contains('hidden')&&typeof AP_VIEWS!=='undefined';
     if(ready){
       nwShell();
-      if(!V107.booted){V107.booted=true;if(typeof S!=='undefined'&&S.page==='home')apGo('e3overview');}
+      if(!V107.booted){V107.booted=true;if(typeof S!=='undefined'&&S.page==='home')apGo(typeof v115Home==='function'?v115Home():'e3overview');}
       return;
     }
     if(tries<120)setTimeout(boot,250);
@@ -42152,7 +42152,7 @@ function nwApprovalAll(){
     (typeof AP_LEADS!=='undefined'?AP_LEADS:[]).forEach(function(l){
       const nx=apNextStage(l);if(!nx||l.fit_rating==='Weak')return;
       out.push({key:'lead:'+l.email,kind:'lead',icon:'users',title:(l.prospect_name||l.email)+(l.company_name?' · '+l.company_name:''),
-        text:'Next: '+nx.label,tags:[['Lead'],['Engine 1']],review:'apOpenLead60('+nwJs(l.email)+')',reviewLabel:'Open lead',when:l.updated_at});
+        text:'Next: '+nx.label,tags:[['Lead'],['Catalyst']],review:'apOpenLead60('+nwJs(l.email)+')',reviewLabel:'Open lead',when:l.updated_at});
     });
     (typeof apOpenComments==='function'?apOpenComments():[]).forEach(function(c){
       out.push({key:'cmt:'+c.id,kind:'comment',icon:'msg',title:'Comment from '+String(c.author||'someone').split('@')[0],text:c.body||'',
@@ -42519,7 +42519,7 @@ function nwHowOpen(){
   const C=nwCF(),waiting=C?[C.intel[0],C.ads[0]].filter(function(r){return r&&!apCfDecision(r.run_id);}).length:0;
   const step=function(n,icon,t,s,go,lbl){return '<li><span class="nw-step-n">'+n+'</span><div><b>'+esc(t)+'</b><span>'+esc(s)+'</span></div>'+
     (go?'<button type="button" class="nw-btn nw-btn-sm" onclick="nwModalClose();'+esc(go)+'">'+nwIc(icon,15)+esc(lbl)+'</button>':'')+'</li>';};
-  nwModal('nwHowM','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Engine 3 · Lead Generation &amp; Marketing</div><h2>How it fits together</h2></div>'+
+  nwModal('nwHowM','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Pipeline · Content and ads</div><h2>How it fits together</h2></div>'+
       '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
     '<ol class="nw-steps">'+
       step(1,'building','Your substance and voice','The company profile: voice, offers, personas, proof and guardrails. Every draft reads it.',"v104Go('brand')",'Company profile')+
@@ -49283,6 +49283,845 @@ async function v114Tok(force){
 })();
 </script>
 
+<style id="v115css">
+/* ---------- v115 · products in the sidebar ---------- */
+.nw-prod{display:grid;grid-template-columns:minmax(0,1fr)}
+.nw-prod+.nw-prod{margin-top:2px}
+.nw-prod-btn{min-height:50px;padding-top:7px;padding-bottom:7px}
+.nw-prod-t{display:flex;flex-direction:column;gap:1px}
+.nw-prod-t b{display:flex;align-items:center;gap:8px;min-width:0;font-weight:600;color:var(--nw-ink)}
+.nw-prod-t b>span:first-child{overflow:hidden;text-overflow:ellipsis}
+.nw-prod-t .nw-badge{margin:0}
+.nw-prod-t small{font-size:12.5px;font-weight:500;color:var(--nw-ink-3);overflow:hidden;text-overflow:ellipsis}
+.nw-prod-btn .nw-chev{flex:none}
+.nw-prod-btn.is-active .nw-i:first-child{color:var(--nw-accent-text)}
+.nw-prod.is-cur:not(.is-open)>.nw-prod-btn{background:var(--nw-accent-soft)}
+.nw-prod-sub{margin:2px 0 6px 12px;padding-left:8px}
+.nw-prod-sub .nw-kbd-hint{display:none}
+.nw-prod-sub .nw-text{white-space:normal;line-height:1.25}
+@media (min-width:1081px){body.nw-on #view-app{grid-template-columns:268px minmax(0,1fr)}}
+.nw-prod-sub[hidden]{display:none!important}
+@media (min-width:861px){
+  #view-app.nw-collapsed .nw-prod-t{display:none}
+  #view-app.nw-collapsed .nw-prod-sub:not([hidden]){display:grid!important;margin:2px 0 6px;padding:4px 0;border:0;border-radius:10px;background:var(--nw-sunk)}
+  #view-app.nw-collapsed .nw-prod-btn{min-height:44px}
+}
+/* the top bar says where you are */
+.nw-crumb{display:inline-flex;align-items:center;gap:8px;min-width:0;flex:0 1 auto;font:500 14.5px/1.2 var(--nw-body);color:var(--nw-ink-3)}
+.nw-crumb .nw-crumb-p{display:inline-flex;align-items:center;gap:8px;color:var(--nw-ink-2);white-space:nowrap}
+.nw-crumb .nw-crumb-p .nw-i{color:var(--nw-accent-text)}
+.nw-crumb b{color:var(--nw-ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.nw-crumb .nw-crumb-s{flex:none;color:var(--nw-ink-3)}
+@media (max-width:760px){.nw-crumb .nw-crumb-p,.nw-crumb .nw-crumb-s{display:none}}
+
+/* ---------- Today ---------- */
+.v115-prods{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.v115-prod{display:grid;align-content:start;gap:8px;padding:14px;border-radius:var(--nw-r-md);background:var(--nw-sunk);min-width:0}
+.v115-prod-h{display:flex;align-items:center;gap:10px;min-width:0}
+.v115-prod-h b{display:block;font-weight:600;color:var(--nw-ink)}
+.v115-prod-h small{display:block;font-size:12.5px;color:var(--nw-ink-3)}
+.v115-prod p{margin:0}
+.v115-prod-l{display:flex;flex-wrap:wrap;gap:6px}
+@media (max-width:1180px){.v115-prods{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){.v115-prods{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------- Deliverables and Landing pages ---------- */
+.v115-q{max-width:320px}
+.v115-list{display:grid}
+.v115-list .nw-row{border-bottom:1px solid var(--nw-line)}
+.v115-list .nw-row:last-child{border-bottom:0}
+.v115-list .nw-row-prev a{color:var(--nw-info);text-decoration:none}
+.v115-list .nw-row-prev a:hover{text-decoration:underline}
+.v115-more{display:flex;justify-content:center;padding:12px 0}
+.v115-note{display:flex;align-items:center;gap:6px;margin:12px 0 0}
+.v115-dl .nw-toolbar,.v115-lp .nw-toolbar{margin:16px 0 12px}
+.v115-lp .nw-tabpanel{margin-top:14px}
+.v115-su td{font-size:13.5px}
+.v115-pick .nw-row{border-bottom:1px solid var(--nw-line)}
+.v115-pick .nw-row:last-child{border-bottom:0}
+.v115-ed{gap:14px}
+.v115-ed .nw-kicker{margin-top:6px}
+.v115-addr{display:flex;align-items:center;gap:6px;min-width:0}
+.v115-addr>span{flex:none;font-size:13.5px;color:var(--nw-ink-3)}
+.v115-addr .nw-input{flex:1;min-width:0}
+.v115-pairs{display:grid;gap:10px}
+.v115-pair{display:grid;gap:6px;padding:10px;border-radius:var(--nw-r-md);background:var(--nw-sunk)}
+.v115-pair .nw-link{justify-self:start}
+.v115-fields,.v115-qs{display:flex;flex-wrap:wrap;gap:8px 16px}
+.v115-qs{flex-direction:column}
+.v115-chk{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--nw-ink-2);cursor:pointer}
+.v115-chk input{width:16px;height:16px;accent-color:var(--nw-action)}
+.v115-holes,.v115-flags{align-items:flex-start}
+.v115-flags ul{margin:6px 0 8px;padding-left:18px}
+.v115-ad{display:grid;gap:8px;padding:14px}
+.v115-ad-h{display:flex;align-items:center;gap:10px;min-width:0}
+.v115-ad-h b{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v115-url{display:grid;grid-template-columns:150px minmax(0,1fr) auto;align-items:center;gap:10px}
+.v115-url code{font:400 12.5px/1.4 "IBM Plex Mono",ui-monospace,monospace;color:var(--nw-ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--nw-sunk);padding:6px 8px;border-radius:6px}
+@media (max-width:640px){.v115-url{grid-template-columns:minmax(0,1fr) auto}.v115-url>span{grid-column:1 / -1}}
+.v115-adt{display:grid;gap:12px;margin-bottom:16px}
+</style>
+
+<script id="v115js">
+/* ===================================================================
+   v115: ONE DASHBOARD, FIVE PRODUCTS
+   The sidebar names the products from the Intelligence Workspace:
+   Touchpoint (home and tasks), Catalyst (clients and meetings, Engine 1),
+   Canvas (client deliverables), Pipeline (content and ads, Engine 3) and
+   Atlas (knowledge and files). All five stay on screen; the one you click
+   opens its pages, and a closed one adds up the badges inside it. The
+   engine switcher is gone and the top bar says where you are.
+   New pages: Today (Touchpoint's home), Deliverables (every document made
+   for a client) and Landing pages (a funnel's page put live on Vercel at
+   /go/<page>, with a sign-up form that goes through the Landing Page ·
+   Sign-up workflow). Every older address still opens its page.
+   =================================================================== */
+Object.assign(NW_P,{
+  home:'<path d="m3 10.5 9-7.5 9 7.5"/><path d="M5 9v11a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9"/>',
+  funnel:'<path d="M3 4h18l-7 8.5V19l-4 2v-8.5Z"/>',
+  globe:'<circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19"/><path d="M12 2.5a14.5 14.5 0 0 1 0 19a14.5 14.5 0 0 1 0-19"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.3 17.7-1.4 1.4"/><path d="m19.1 4.9-1.4 1.4"/>',
+  layout:'<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M3 9h18"/><path d="M9 21V9"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+  copy:'<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2"/>',
+  pause:'<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+  trash:'<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'
+});
+Object.assign(NW_ITEMS,{
+  today:['Today','sun'],deliverables:['Deliverables','layers'],e3landing:['Landing pages','layout'],
+  hubspot:['Contacts','user'],kb:['Knowledge base','book'],e3client:['Company profile','building'],templates:['Templates','copy']
+});
+/* the products and the pages under each, in sidebar order */
+const V115_PROD=[
+  {k:'touch',name:'Touchpoint',sub:'Home and tasks',icon:'home',items:['today','approvals','tasks']},
+  {k:'cat',name:'Catalyst',sub:'Clients and meetings',icon:'bulb',items:['e1overview','e1pipeline','hubspot','calls']},
+  {k:'canvas',name:'Canvas',sub:'Client deliverables',icon:'pen',items:['deliverables']},
+  {k:'pipe',name:'Pipeline',sub:'Content and ads',icon:'funnel',items:['e3overview','e3intel','e3ads','e3briefs','e3create','e3funnel','e3landing','e3testing','e3history']},
+  {k:'atlas',name:'Atlas',sub:'Knowledge and files',icon:'globe',items:['kb','files','e3client','templates']}
+];
+NW_SET.splice(0,NW_SET.length,['integrations','Integrations'],['learning','AI settings'],['audit','Audit log']);
+const V115={prod:null,open:null,
+  dl:{rows:null,p:null,t:0,f:'all',q:'',more:40,err:''},
+  lp:{pages:null,su:[],views:[],p:null,t:0,err:'',tab:'pages',q:'',edit:null}};
+AP_VIEWS.today={page:'ap60',title:'Today',v60:{engine:'home',view:'today'}};
+AP_VIEWS.deliverables={page:'ap60',title:'Deliverables',v60:{engine:'home',view:'deliverables'}};
+AP_VIEWS.e3landing={page:'ap60',tag:'ENGINE 3',title:'Landing pages',v60:{engine:'e3',view:'lpages'}};
+
+function v115P(k){return V115_PROD.find(function(p){return p.k===k;})||null;}
+function v115ProdOf(k){const p=V115_PROD.find(function(x){return x.items.indexOf(k)>=0;});return p?p.k:null;}
+/* Home is Today; the Overview of the product you are in (Catalyst and Pipeline have one) */
+function v115Home(){return 'today';}
+function v115Overview(){
+  let k=null;try{k=v115ProdOf(nwCurKey());}catch(e){}
+  k=k||V115.prod;
+  return k==='cat'?'e1overview':k==='pipe'?'e3overview':'today';
+}
+nwCurKey=function(){
+  const v=nwCurView();
+  if(v==='home')return 'today';
+  if(v==='e1lead')return 'e1pipeline';
+  if(v==='notion')return 'integrations';
+  return v;
+};
+function v115ProdHtml(p,cur,cp){
+  const open=V115.open===p.k,active=cp===p.k,id='nwProd-'+p.k;
+  let n=0,muted=true;
+  if(!open)p.items.forEach(function(k){const c=nwBadgeN(k);if(c){n+=c;if(k!=='e3briefs')muted=false;}});
+  return '<div class="nw-prod'+(open?' is-open':'')+(active?' is-cur':'')+'">'+
+    '<button type="button" class="nw-item nw-parent nw-prod-btn'+(active?' is-active':'')+'" data-prod="'+p.k+'" aria-expanded="'+open+'" aria-controls="'+id+'" onclick="v115Prod(\''+p.k+'\')" title="'+esc(p.name+': '+p.sub)+'">'+
+      nwIc(p.icon,19)+'<span class="nw-text nw-prod-t"><b><span>'+esc(p.name)+'</span>'+
+        (n?'<span class="nw-badge'+(muted?' is-muted':'')+'" title="'+esc(n+' waiting in '+p.name)+'">'+n+'</span>':'')+'</b><small>'+esc(p.sub)+'</small></span>'+
+      nwIc('chevD',16,1.75,'nw-chev')+'</button>'+
+    '<div class="nw-sub nw-prod-sub" id="'+id+'" role="group" aria-label="'+esc(p.name)+'"'+(open?'':' hidden')+'>'+
+      p.items.map(function(k){return nwNavItem(k,cur);}).join('')+'</div>'+
+  '</div>';
+}
+nwNavHtml=function(){
+  const cur=nwCurKey(),cp=v115ProdOf(cur);
+  /* the product of the page you are on opens when you get there; one you closed stays closed */
+  if(cp&&cp!==V115.prod){V115.prod=cp;V115.open=cp;}
+  if(V115.open==null)V115.open=cp||'touch';
+  return V115_PROD.map(function(p){return v115ProdHtml(p,cur,cp);}).join('')+
+    '<div class="nw-nav-label">Setup</div>'+nwSettingsNav(cur);
+};
+function v115Prod(k){
+  const p=v115P(k);if(!p)return;
+  const app=document.getElementById('view-app');
+  /* the narrow sidebar has no room for the list: the product opens on its first page */
+  if(app&&app.classList.contains('nw-collapsed')&&!document.body.classList.contains('ap-nav')&&window.matchMedia&&window.matchMedia('(min-width: 861px)').matches){
+    V115.open=k;nwGo(p.items[0]);return;
+  }
+  V115.open=V115.open===k?'':k;
+  nwNavPaint();
+  const b=document.querySelector('#nwNav .nw-prod-btn[data-prod="'+k+'"]');if(b)try{b.focus({preventScroll:true});}catch(e){}
+}
+/* the top bar says where you are: product, then page */
+function v115Crumb(){
+  const c=document.getElementById('nwCrumb');if(!c)return;
+  const cur=nwCurKey(),p=v115P(v115ProdOf(cur)),it=NW_ITEMS[cur],set=NW_SET.find(function(x){return x[0]===cur;});
+  const page=it?it[0]:set?set[1]:cur==='profile'?'Your account':(AP_VIEWS[cur]&&AP_VIEWS[cur].title)||'';
+  const head=p?'<span class="nw-crumb-p">'+nwIc(p.icon,17)+esc(p.name)+'</span>':set?'<span class="nw-crumb-p">'+nwIc('sliders',17)+'Settings</span>':'';
+  c.innerHTML=head+(head&&page?nwIc('chevR',15,1.75,'nw-crumb-s'):'')+(page?'<b>'+esc(page)+'</b>':'');
+}
+(function(){
+  const _p=nwNavPaint;
+  nwNavPaint=function(){const r=_p.apply(this,arguments);try{v115Crumb();}catch(e){}return r;};
+  const _t=nwTopbar;
+  nwTopbar=function(){
+    const r=_t.apply(this,arguments);
+    const e=document.getElementById('nwEng');if(e)e.remove();
+    const bar=document.querySelector('.rd-topbar');
+    if(bar&&!document.getElementById('nwCrumb')){
+      const c=document.createElement('div');c.id='nwCrumb';c.className='nw-crumb';
+      const nb=document.getElementById('apNavBtn');
+      if(nb&&nb.parentNode===bar)bar.insertBefore(c,nb.nextSibling);else bar.insertBefore(c,bar.firstChild);
+    }
+    try{v115Crumb();}catch(x){}
+    return r;
+  };
+  const _go=apGo;
+  apGo=function(v){if(v==='home')v=v115Home();return _go.apply(this,[v].concat([].slice.call(arguments,1)));};
+  const _nav=nav;
+  nav=function(p){if(p==='home'&&V107.booted)return apGo(v115Home());return _nav.apply(this,arguments);};
+})();
+/* G then a letter works the same from every page; G then O opens the Overview of the product you are in */
+(function(){
+  const M={h:'today',p:'approvals',l:'e1pipeline',d:'deliverables',i:'e3intel',a:'e3ads',b:'e3briefs',c:'e3create',m:'e3funnel',w:'e3landing',t:'e3testing',r:'e3history',s:'e3client'};
+  ['e1','e3'].forEach(function(e){
+    const k=NW_KEYS[e];if(!k)return;
+    Object.keys(k).forEach(function(x){delete k[x];});Object.assign(k,M);
+    Object.defineProperty(k,'o',{get:function(){return v115Overview();},enumerable:true,configurable:true});
+  });
+  NW_HINT.today='H';
+})();
+/* page headers say which product a page sits in */
+(function(){
+  const MAP={'Approvals':'Touchpoint','Intel Tracker':'Pipeline · Agent 1','Ad Strategist':'Pipeline · Agent 2','Market Intelligence Briefs':'Pipeline',
+    'Content Transformation':'Pipeline · Create','Marketing Generation':'Pipeline · Create','Ad Testing':'Pipeline · Results','Runs & uploads':'Pipeline'};
+  const OLD=/^(Activity|Engine|Engine · Agent [12]|Create|Setup · Settings)$/;
+  const _h=nwHead;
+  nwHead=function(o){
+    if(o&&MAP[o.title]&&OLD.test(String(o.eyebrow||'')))o=Object.assign({},o,{eyebrow:MAP[o.title]});
+    return _h.call(this,o);
+  };
+  Object.assign(NW_HEADS,{intel:['Pipeline · Agent 1','Intel Tracker'],ads:['Pipeline · Agent 2','Ad Strategist'],briefs:['Pipeline','Market Intelligence Briefs'],
+    create:['Pipeline · Create','Content Transformation'],funnel:['Pipeline · Create','Marketing Generation'],testing:['Pipeline · Results','Ad Testing'],history:['Pipeline','Runs & uploads'],
+    client:['Atlas','Company profile'],integrations:['Settings','Integrations'],notion:['Settings · Integrations','Notion'],hubspot:['Catalyst · Clients and meetings','HubSpot contacts'],
+    calls:['Catalyst · Clients and meetings','Calls'],e1overview:['Catalyst · Clients and meetings','Overview'],e1pipeline:['Catalyst · Clients and meetings','Lead pipeline']});
+  Object.assign(NW_PAGE_HEADS,{files:['Atlas','Files'],kb:['Atlas','Knowledge base'],templates:['Atlas','Templates'],learning:['Settings','AI settings'],
+    audit:['Settings','Audit log'],tasks:['Touchpoint','Tasks'],hubspot:['Catalyst · Clients and meetings','HubSpot contacts']});
+  const _o=nwOverviewHtml;
+  nwOverviewHtml=function(){return String(_o.apply(this,arguments)).replace('<div class="nw-ph-eyebrow">Overview · ','<div class="nw-ph-eyebrow">Pipeline · Overview · ');};
+  if(NW_TOUR[0]){NW_TOUR[0].t='Five products, one sidebar';
+    NW_TOUR[0].p='Touchpoint is home: today, approvals and tasks. Catalyst holds leads, contacts and calls (Engine 1), Canvas the client deliverables, Pipeline the content and ads (Engine 3), Atlas the knowledge and files. Click a name to open its pages.';}
+})();
+/* the browser tab names the page */
+function v113Title(){
+  try{
+    const app=document.getElementById('view-app');
+    if(app&&app.classList.contains('hidden')){document.title='Sign in · AI Paragon';return;}
+    let v=apCurrentView();if(v==='home')v=v115Home();
+    const t=({e3overview:'Pipeline overview',e1overview:'Catalyst overview'})[v]||(AP_VIEWS[v]&&AP_VIEWS[v].title)||'';
+    document.title=(t?t+' · ':'')+'AI Paragon';
+  }catch(e){}
+}
+
+/* ===================================================================
+   Today: what needs you, quick starts, the five products and recent runs
+   =================================================================== */
+function v115Card(w,title,body,cls){return '<section class="nw-card nw-w nw-w-'+w+(cls?' '+cls:'')+'">'+(title?'<div class="nw-kicker">'+esc(title)+'</div>':'')+body+'</section>';}
+function v115OvQuick(){
+  const q=function(icon,b,s,go){return '<button type="button" onclick="'+esc(go)+'"><span class="nw-qi">'+nwIc(icon,19)+'</span><span><b>'+esc(b)+'</b><small>'+esc(s)+'</small></span></button>';};
+  return v115Card(1,'Quick start','<div class="nw-quick">'+
+    q('users','Run Engine 1 for a lead','Catalyst · Lead pipeline',"v115RunE1()")+
+    q('rocket','Make an ad campaign','Pipeline · Marketing Generation',"v97Start('marketing')")+
+    q('repeat','Turn content into a post','Pipeline · Content Transformation',"v97Start('source')")+
+    q('layout','Put a landing page live','Pipeline · Landing pages',"v115LpNew()")+'</div>');
+}
+function v115RunE1(){apGo('e1pipeline');setTimeout(function(){try{openE1RunModal();}catch(e){console.error(e);}},350);}
+function v115ProdLine(k){
+  if(k==='touch'){const n=nwApprovalItems().length;return n?nwPlural(n,'thing')+' waiting for you':'Nothing waiting for you';}
+  if(k==='cat'){const L=typeof AP_LEADS!=='undefined'?AP_LEADS:[],w=nwBadgeN('e1pipeline');return nwPlural(L.length,'lead')+(w?' · '+w+' waiting on a next stage':'');}
+  if(k==='canvas'){const R=V115.dl.rows;return R?nwPlural(R.length,'document'):'Engine 1 documents and call write-ups';}
+  if(k==='pipe'){
+    const b=nwBadgeN('e3briefs'),P=V115.lp.pages,live=P?P.filter(function(p){return p.status==='live';}).length:null;
+    return [b?nwKindLabel('brief',b)+' to review':'No briefs waiting',live!=null?nwPlural(live,'live landing page'):''].filter(Boolean).join(' · ');
+  }
+  return 'Knowledge base, files, company profile and templates';
+}
+function v115OvProducts(){
+  return v115Card(3,'Your workspace','<div class="v115-prods">'+V115_PROD.map(function(p){
+    let line='';try{line=v115ProdLine(p.k);}catch(e){}
+    return '<div class="v115-prod"><div class="v115-prod-h"><span class="nw-agent-ic">'+nwIc(p.icon,17)+'</span><div><b>'+esc(p.name)+'</b><small>'+esc(p.sub)+'</small></div></div>'+
+      '<p class="nw-faint nw-small">'+esc(line)+'</p><div class="v115-prod-l">'+p.items.map(function(k){
+        const it=NW_ITEMS[k];return it?'<button type="button" class="nw-chip nw-chip-sm" onclick="apGo(\''+k+'\')">'+esc(it[0])+'</button>':'';}).join('')+'</div></div>';
+  }).join('')+'</div>','v115-prods-card');
+}
+function v115OvSignups(){
+  const L=V115.lp,P=L.pages||[];
+  const all=function(){return '<div class="nw-card-foot"><button type="button" class="nw-link" onclick="v115LpTab(\'signups\',1)">All sign-ups'+nwIc('arrowR',15)+'</button></div>';};
+  if(!L.pages)return v115Card(1,'Latest sign-ups','<p class="nw-faint nw-small">Loading…</p>');
+  if(!L.su.length)return v115Card(1,'Latest sign-ups',nwEmpty('layout','No sign-ups yet','They show up here from your live landing pages.',
+    '<button type="button" class="nw-btn nw-btn-sm" onclick="apGo(\'e3landing\')">Landing pages</button>'));
+  return v115Card(1,'Latest sign-ups','<div class="nw-mini-list">'+L.su.slice(0,4).map(function(s){
+    const pg=P.find(function(p){return p.id===s.page_id;});
+    return '<button type="button" class="nw-mini-row" onclick="v115LpTab(\'signups\',1)" title="'+esc(pg?pg.title:'')+'">'+nwIc('user',17)+'<span class="nw-mr-t">'+esc(s.name||s.email)+'</span>'+
+      '<span class="nw-faint nw-small">'+esc(v113Ago(s.created_at))+'</span></button>';}).join('')+'</div>'+all());
+}
+function v115TodayHtml(){
+  const h=new Date().getHours(),greet=h<12?'Good morning':h<18?'Good afternoon':'Good evening',name=nwFirstName();
+  const n=nwApprovalItems().length;
+  const sub=n?(n===1?'1 thing needs you.':n+' things need you.'):'Nothing needs you right now.';
+  return '<div class="nw-content v115-today">'+
+    '<section class="nw-hello"><div class="nw-hello-t"><div class="nw-ph-eyebrow">Touchpoint · '+esc(nwToday())+'</div>'+
+      '<h1>'+esc(greet+(name?', '+name:'')+'.')+'</h1><p class="nw-muted">'+esc(sub)+'</p></div>'+
+      '<div class="nw-ph-actions"><button type="button" class="nw-btn nw-btn-ghost" onclick="nwTourOpen()">'+nwIc('help',17)+'Take the tour</button></div></section>'+
+    '<div class="nw-widgets">'+[nwOvNeeds,v115OvQuick,v115OvProducts,nwOvRuns,v115OvSignups].map(function(f){try{return f();}catch(e){console.error(e);return '';}}).join('')+'</div>'+
+  '</div>';
+}
+NW_PAGES['home.today']=function(m,again){
+  m.innerHTML=v115TodayHtml();
+  if(again)return;
+  nwLoadThen('home.today');
+  Promise.all([v115DlLoad(),v115LpLoad()]).then(function(){if(nwOn('home.today'))nwRepaint();}).catch(function(){});
+};
+
+/* ===================================================================
+   Deliverables: every document made for a client. Engine 1's stage
+   documents for each lead and the write-up of each call, newest first;
+   each opens where it lives.
+   =================================================================== */
+async function v115DlLoad(force){
+  const D=V115.dl;
+  if(D.p)return D.p;
+  if(D.rows&&!force&&Date.now()-D.t<30000)return D;
+  D.p=(async function(){
+    const errs=[],safe=function(p){return p.then(function(r){return Array.isArray(r)?r:[];},function(e){errs.push((e&&e.message)||String(e));return [];});};
+    const ST=typeof E1_STAGES!=='undefined'?E1_STAGES:[];
+    const ag=ST.map(function(s){return s.agent;}).join(',');
+    const [leads,outs,calls]=await Promise.all([
+      safe(apSb('e1_leads?select=*&order=updated_at.desc&limit=300')),
+      ag?safe(apSb('agent_outputs?select=id,run_id,agent,title,created_at,pdf:data->>pdfUrl,pdf2:data->>pdf_url&agent=in.('+ag+')&order=created_at.desc&limit=1000')):Promise.resolve([]),
+      safe(apSb('call_outputs?select=id,call_id,call_title,call_start,meeting_type,deliverable,status,created_at&order=created_at.desc&limit=300'))
+    ]);
+    const rows=[];
+    (typeof mergeE1Leads==='function'?mergeE1Leads(leads):leads).forEach(function(l){
+      const emails=l.emails&&l.emails.length?l.emails:[l.email];
+      ST.forEach(function(s,i){
+        const o=outs.find(function(x){return emails.indexOf(x.run_id)>=0&&x.agent===s.agent;});
+        let url=l[s.urlCol]||(o&&(o.pdf||o.pdf2))||null;
+        if(url&&!/^https?:\/\//i.test(String(url)))url=null;
+        if(!o&&!url)return;
+        rows.push({key:'e1:'+l.email+':'+s.agent,src:'e1',title:s.label,kind:'Engine 1 · '+(String(s.kind||'').split(' · ')[1]||s.short),who:l.prospect_name||l.email,org:l.company_name||'',
+          when:(o&&o.created_at)||l.updated_at,url:url,open:'openE1LeadStage('+nwJs(l.email)+','+i+')'});
+      });
+    });
+    calls.forEach(function(c){
+      const d=apJson(c.deliverable)||{};if(!d.markdown&&!d.title)return;
+      let mt=(typeof AP_MT_DELIV!=='undefined'&&AP_MT_DELIV[c.meeting_type])||'';
+      mt=typeof mt==='string'&&mt?mt.charAt(0).toUpperCase()+mt.slice(1):'';
+      rows.push({key:'call:'+c.id,src:'call',title:d.title||'Call notes',kind:'Call'+(mt?' · '+mt:''),who:c.call_title||'A call',org:'',
+        when:c.created_at||c.call_start,open:'apCxOpenCall('+nwJs(c.call_id)+')'});
+    });
+    rows.sort(function(a,b){return String(b.when||'').localeCompare(String(a.when||''));});
+    D.rows=rows;D.err=errs.length===3?errs[0]:'';D.t=Date.now();
+    return D;
+  })().finally(function(){D.p=null;});
+  return D.p;
+}
+function v115DlRows(){
+  const D=V115.dl,q=D.q.trim().toLowerCase();
+  return (D.rows||[]).filter(function(r){return (D.f==='all'||r.src===D.f)&&(!q||(r.title+' '+r.kind+' '+r.who+' '+r.org).toLowerCase().indexOf(q)>=0);});
+}
+function v115DlRow(r){
+  return '<div class="nw-row v115-dl-row"><span class="nw-row-ic">'+nwIc(r.src==='e1'?'users':'msg',19)+'</span>'+
+    '<div class="nw-row-main"><b class="nw-row-title">'+esc(r.title)+'</b><span class="nw-row-prev">'+esc(r.who+(r.org?' · '+r.org:''))+'</span>'+
+      '<span class="nw-row-meta">'+nwTag(r.kind)+(r.when?nwTag(nwDay(r.when)):'')+'</span></div>'+
+    '<div class="nw-row-side">'+(r.url?'<a class="nw-btn nw-btn-ghost nw-btn-sm" href="'+esc(r.url)+'" target="_blank" rel="noopener">'+nwIc('file',15)+'PDF</a>':'')+
+      '<button type="button" class="nw-btn nw-btn-sm" onclick="'+esc(r.open)+'">'+nwIc('arrowR',15)+'Open</button></div></div>';
+}
+function v115DlListHtml(){
+  const D=V115.dl,rows=v115DlRows();
+  if(!rows.length)return '<div class="nw-card">'+nwEmpty('layers',D.q?'Nothing matches':'No documents yet',D.q?'Try another search.':'Engine 1 documents and call write-ups land here as they are made.','')+'</div>';
+  return '<div class="nw-list v115-list">'+rows.slice(0,D.more).map(v115DlRow).join('')+'</div>'+
+    (rows.length>D.more?'<div class="v115-more"><button type="button" class="nw-btn" onclick="V115.dl.more+=40;v115DlPaint()">Show more</button></div>':'');
+}
+function v115DlHtml(){
+  const D=V115.dl,R=D.rows||[],n1=R.filter(function(r){return r.src==='e1';}).length,n2=R.length-n1;
+  const head=nwHead({eyebrow:'Canvas · Client deliverables',title:'Deliverables',
+    status:D.rows?[[D.err?'bad':'good',D.err?'Could not load: '+D.err:nwPlural(R.length,'document')]]:[['info','Loading']],
+    caps:[['users','Engine 1 documents for each lead'],['msg','Write-ups from your calls']],
+    stats:D.rows?[nwStat(R.length,'documents',"v115DlF('all')"),nwStat(n1,'from Engine 1',"v115DlF('e1')"),nwStat(n2,'from calls',"v115DlF('call')")]:[]});
+  const tabs=[['all','All',R.length],['e1','Engine 1',n1],['call','Calls',n2]];
+  return '<div class="nw-content v115-dl">'+head+
+    '<div class="nw-toolbar"><div class="nw-seg" role="tablist" aria-label="Show">'+tabs.map(function(t){
+      return '<button type="button" role="tab" aria-selected="'+(D.f===t[0])+'" onclick="v115DlF(\''+t[0]+'\')">'+esc(t[1])+' <span class="nw-faint">'+t[2]+'</span></button>';}).join('')+'</div>'+
+      '<input type="search" class="nw-input v115-q" placeholder="Search documents or people" aria-label="Search documents" value="'+esc(D.q)+'" oninput="v115DlQ(this.value)"></div>'+
+    '<div id="v115DlList">'+(D.rows?v115DlListHtml():'<div class="nw-card"><p class="nw-faint">Loading documents…</p></div>')+'</div>'+
+    '<p class="nw-faint nw-small v115-note">'+nwIc('info',14)+'Making a deliverable from a lead, call or meeting, and moving them by stage, come next.</p>'+
+  '</div>';
+}
+function v115DlF(f){V115.dl.f=f;V115.dl.more=40;nwRepaint();}
+function v115DlQ(q){V115.dl.q=q;V115.dl.more=40;v115DlPaint();}
+function v115DlPaint(){const b=document.getElementById('v115DlList');if(b)b.innerHTML=v115DlListHtml();}
+NW_PAGES['home.deliverables']=function(m,again){
+  m.innerHTML=v115DlHtml();
+  if(!again)v115DlLoad().then(function(){if(nwOn('home.deliverables'))nwRepaint();}).catch(function(){});
+};
+
+/* ===================================================================
+   Landing pages: a funnel's main page put live at /go/<page> on Vercel
+   (go.html draws it from Supabase), with a sign-up form. Sign-ups go
+   through the Landing Page · Sign-up workflow: saved, sent to HubSpot and,
+   when the page says so, added to the lead pipeline as New. Each ad gets
+   a code and a tracking link; Ad Testing matches the code in the ad's
+   name to count sign-ups and cost per sign-up.
+   =================================================================== */
+const V115_SITE='https://aiparagon.vercel.app';
+const V115_KINDS={book_call:'Book a call',webinar:'Webinar',download:'Download',newsletter_signup:'Newsletter sign-up',landing:'Landing page'};
+const V115_FIELDS=[['name','Full name'],['email','Work email'],['company','Company'],['job_title','Job title'],['phone','Phone']];
+const V115_DEF_FIELDS={book_call:['name','email','company','job_title'],webinar:['name','email','company'],download:['name','email'],newsletter_signup:['name','email'],landing:['name','email','company']};
+const V115_CTA={book_call:'Book my call',webinar:'Save my seat',download:'Send it to me',newsletter_signup:'Subscribe',landing:'Get in touch'};
+const V115_THANKS={book_call:['Thanks. Pick a time that works.','We read your answers before the call, so it starts with your firm.'],
+  webinar:['You are registered.','We will email you the details and a reminder before it starts.'],
+  download:['It is on its way.','Check your inbox for the link.'],
+  newsletter_signup:['You are in.','The next issue comes to your inbox.'],
+  landing:['Thanks. We will be in touch.','Someone from our team will reach out shortly.']};
+const V115_RE_PH=/\[(?:ADD|FILL IN)[^\]]*\]/gi;
+
+async function v115LpLoad(force){
+  const L=V115.lp;
+  if(L.p)return L.p;
+  if(L.pages&&!force&&Date.now()-L.t<30000)return L;
+  L.p=(async function(){
+    const since=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+    try{
+      const r=await Promise.all([
+        apSb('landing_pages?select=*&order=updated_at.desc&limit=200'),
+        apSb('lp_signups?select=*&order=created_at.desc&limit=500'),
+        apSb('lp_views?select=page_id,day,ad_code,views&day=gte.'+since+'&limit=5000')
+      ]);
+      L.pages=r[0]||[];L.su=r[1]||[];L.views=r[2]||[];L.err='';L.t=Date.now();
+    }catch(e){L.err=(e&&e.message)||String(e);if(!L.pages)L.pages=[];}
+    return L;
+  })().finally(function(){L.p=null;});
+  return L.p;
+}
+function v115LpPage(id){return (V115.lp.pages||[]).find(function(p){return String(p.id)===String(id);})||null;}
+function v115Me(){try{return (typeof AP_USER!=='undefined'&&AP_USER&&AP_USER.email)||apCfMe();}catch(e){return 'dashboard';}}
+function v115Str(v){return v==null?'':String(v).trim();}
+function v115Dash(v){return typeof v==='string'?v.replace(/\s*[—–]\s*/g,', '):Array.isArray(v)?v.map(v115Dash):(v&&typeof v==='object')?Object.keys(v).reduce(function(o,k){o[k]=v115Dash(v[k]);return o;},{}):v;}
+function v115Holes(c){
+  const out=[];
+  (function walk(v){
+    if(typeof v==='string'){(v.match(V115_RE_PH)||[]).forEach(function(x){if(out.indexOf(x)<0)out.push(x);});}
+    else if(Array.isArray(v))v.forEach(walk);
+    else if(v&&typeof v==='object')Object.keys(v).forEach(function(k){walk(v[k]);});
+  })(c);
+  return out;
+}
+function v115Slug(t){
+  let s=String(t||'').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,48).replace(/-+$/,'');
+  if(s.length<3)s=('page-'+s).replace(/-+$/,'')||'page';
+  return s;
+}
+function v115SlugFree(base,id){
+  const P=V115.lp.pages||[];let s=base,i=2;
+  while(P.some(function(p){return p.slug===s&&String(p.id)!==String(id);}))s=base.slice(0,44).replace(/-+$/,'')+'-'+(i++);
+  return s;
+}
+function v115Code(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='P';for(let i=0;i<4;i++)s+=A[Math.floor(Math.random()*A.length)];return s;}
+function v115FieldKeys(list,t){
+  const out=[];
+  apArr(list).forEach(function(x){
+    const s=String(typeof x==='string'?x:x&&(x.label||x.name||x.key)||'').toLowerCase();
+    const k=/mail/.test(s)?'email':/phone|mobile/.test(s)?'phone':/title|role|position/.test(s)?'job_title':/company|firm|organi[sz]ation|business/.test(s)?'company':/name/.test(s)?'name':null;
+    if(k&&out.indexOf(k)<0)out.push(k);
+  });
+  (out.length?[]:(V115_DEF_FIELDS[t]||['name','email'])).forEach(function(k){if(out.indexOf(k)<0)out.push(k);});
+  if(out.indexOf('email')<0)out.push('email');
+  return V115_FIELDS.map(function(f){return f[0];}).filter(function(k){return out.indexOf(k)>=0;});
+}
+/* a funnel's package as a page: the main step, the step after sign-up, the ads */
+function v115LpFrom(pkg){
+  const t=pkg.funnel_type&&V115_KINDS[pkg.funnel_type]?pkg.funnel_type:'book_call';
+  const S=apJson(pkg.setup)||{},det=S.details||{},steps=apArr(pkg.steps);
+  const step=function(k){const s=steps.find(function(x){return x&&x.key===k;});return s?apJson(s.content):null;};
+  const MAIN={webinar:'registration_page',download:'optin_page',newsletter_signup:'signup_page',landing:'landing_page'};
+  const AFTER={webinar:'confirmation_page',download:'thank_you_page'};
+  const main=(MAIN[t]&&step(MAIN[t]))||apJson(pkg.landing_page)||{};
+  const after=(AFTER[t]&&step(AFTER[t]))||(t==='book_call'?apJson(pkg.booking_page):null)||{};
+  const list=function(v){return apArr(v).map(function(x){return typeof x==='string'?x:x&&(x.text||x.claim||x.title)||'';}).map(v115Str).filter(Boolean);};
+  const sections=apArr(main.sections).map(function(s){return s&&typeof s==='object'?{title:v115Str(s.title),body:v115Str(s.body)}:{title:'',body:v115Str(s)};}).filter(function(s){return s.title||s.body;});
+  if(main.offer_block)sections.push({title:'',body:v115Str(main.offer_block)});
+  const faq=apArr(main.faq).map(function(f){return {q:v115Str(f&&(f.q||f.question)),a:v115Str(f&&(f.a||f.answer))};}).filter(function(f){return f.q&&f.a;});
+  const sv=apJson(pkg.survey)||{};
+  const questions=t==='book_call'?apArr(sv.questions).map(function(q,i){
+    const o=apArr(q&&q.options).map(v115Str).filter(Boolean);
+    return {key:'q'+(i+1),label:v115Str(q&&(q.question||q.label)),options:o.slice(0,8)};}).filter(function(q){return q.label;}).slice(0,6):[];
+  const content=v115Dash({headline:v115Str(main.headline),subheadline:v115Str(main.subheadline),who:v115Str(main.who),when:v115Str(main.when||det.When||det.Date),
+    presenter:v115Str(main.presenter),how_often:v115Str(main.how_often),bullets:list(main.bullets).concat(list(main.benefit_bullets)).slice(0,8),
+    sections:sections.slice(0,8),faq:faq.slice(0,8),proof:list(main.proof).slice(0,6),cta:v115Str(main.cta||S.cta)||V115_CTA[t],
+    fields:v115FieldKeys(main.fields,t),questions:questions,
+    thanks:{headline:v115Str(after.headline)||V115_THANKS[t][0],body:v115Str(after.body||after.reassurance_subhead||after.confirmation_microcopy)||V115_THANKS[t][1],
+      cta:v115Str(after.cta||after.primary_action),url:v115Str(det['Booking link']||det['Calendly link']||det['Link to the resource']||S.booking_url||'')}});
+  const av=apJson(pkg.ad_variations),ads=apArr(av&&av.variants?av.variants:pkg.ad_variations).filter(function(a){return a&&typeof a==='object';}).slice(0,6)
+    .map(function(a,i){return {n:i+1,hook:v115Str(a.hook||a.headline||a.primary_text).slice(0,160),headline:v115Str(a.headline).slice(0,80)};});
+  const title=v115Str(S.title||det.Title||det['The resource']||det['Newsletter name'])||((t==='book_call'?'Book a call':V115_KINDS[t])+' · '+nwDay(pkg.created_at));
+  return {kind:t,title:title.slice(0,120),content:content,ads:ads,flags:apArr(S.review_flags).map(v115Str).filter(Boolean)};
+}
+function v115GoUrl(slug,preview){
+  const o=/^https:\/\/[a-z0-9.-]+\.vercel\.app$/i.test(location.origin)?location.origin:V115_SITE;
+  return (preview?o:V115_SITE)+'/go/'+encodeURIComponent(slug)+(preview?'?preview=1':'');
+}
+function v115AdUrl(p,a,src){
+  const q='utm_source='+src+'&utm_medium='+(src==='post'?'organic':'paid')+'&utm_campaign='+encodeURIComponent(p.slug)+'&utm_content='+encodeURIComponent(a.code);
+  return V115_SITE+'/go/'+encodeURIComponent(p.slug)+'?'+q;
+}
+
+/* numbers for one page (or every page): visits and sign-ups over 30 days */
+function v115LpNums(id){
+  const L=V115.lp,since=Date.now()-30*864e5;
+  const views=L.views.filter(function(v){return !id||String(v.page_id)===String(id);}).reduce(function(s,v){return s+(+v.views||0);},0);
+  const su=L.su.filter(function(s){return !id||String(s.page_id)===String(id);});
+  const su30=su.filter(function(s){return Date.parse(s.created_at)>=since;}).length;
+  return {views:views,su:su.length,su30:su30,conv:views?Math.round(su30/views*1000)/10:null};
+}
+function v115LpPill(p){return p.status==='live'?nwPill('good','Live'):p.status==='paused'?nwPill('warn','Paused'):nwPill('info','Draft');}
+function v115LpRow(p){
+  const N=v115LpNums(p.id),url=V115_SITE.replace(/^https:\/\//,'')+'/go/'+p.slug;
+  return '<div class="nw-row v115-lp-row" data-id="'+esc(p.id)+'"><span class="nw-row-ic">'+nwIc('layout',19)+'</span>'+
+    '<div class="nw-row-main"><b class="nw-row-title">'+esc(p.title||p.slug)+'</b>'+
+      '<span class="nw-row-prev">'+(p.status==='live'?'<a href="'+esc(V115_SITE+'/go/'+p.slug)+'" target="_blank" rel="noopener">'+esc(url)+'</a>':esc(url))+'</span>'+
+      '<span class="nw-row-meta">'+v115LpPill(p)+nwTag(V115_KINDS[p.kind]||'Page')+nwTag(nwPlural(N.views,'visit')+' in 30 days')+nwTag(nwPlural(N.su,'sign-up'))+
+        (N.conv!=null?nwTag(N.conv+'% sign up'):'')+'</span></div>'+
+    '<div class="nw-row-side">'+
+      (apArr(p.ads).length?'<button type="button" class="nw-btn nw-btn-ghost nw-btn-sm" onclick="v115LpAds('+esc(nwJs(p.id))+')">'+nwIc('link',15)+'Ad links</button>':'')+
+      (p.status==='live'?'<button type="button" class="nw-btn nw-btn-ghost nw-btn-sm" onclick="nwCopy('+esc(nwJs(V115_SITE+'/go/'+p.slug))+')">'+nwIc('copy',15)+'Copy link</button>':'')+
+      '<button type="button" class="nw-btn nw-btn-sm" onclick="v115LpEdit('+esc(nwJs(p.id))+')">'+nwIc('pen',15)+'Edit</button></div></div>';
+}
+function v115SuRows(){
+  const L=V115.lp,q=L.q.trim().toLowerCase(),P=L.pages||[];
+  return L.su.filter(function(s){
+    if(!q)return true;
+    const pg=P.find(function(p){return p.id===s.page_id;});
+    return [s.name,s.email,s.company,s.job_title,s.ad_code,pg&&pg.title].join(' ').toLowerCase().indexOf(q)>=0;
+  });
+}
+function v115SuSrc(s){const u=s.utm||{};return [s.ad_code,u.source].filter(Boolean).join(' · ')||'Direct';}
+function v115SuTable(){
+  const rows=v115SuRows(),P=V115.lp.pages||[];
+  if(!rows.length)return '<div class="nw-card">'+nwEmpty('user',V115.lp.q?'Nothing matches':'No sign-ups yet',V115.lp.q?'Try another search.':'Sign-ups from your live pages show up here.','')+'</div>';
+  return '<div class="nw-table-wrap"><table class="nw-tbl v115-su"><thead><tr><th>When</th><th>Name</th><th>Email</th><th>Company</th><th>Page</th><th>From</th><th>HubSpot</th><th>Lead</th></tr></thead><tbody>'+
+    rows.slice(0,200).map(function(s){
+      const pg=P.find(function(p){return p.id===s.page_id;});
+      const hs=s.hubspot_id?'<span class="v99-yes">Added</span>':s.hubspot_error?'<span class="v99-no" title="'+esc(s.hubspot_error)+'">Not added</span>':'<span class="v99-no">Waiting</span>';
+      return '<tr><td>'+esc(nwWhen(s.created_at))+'</td><td>'+esc(s.name||'')+(s.job_title?'<br><small>'+esc(s.job_title)+'</small>':'')+'</td><td>'+esc(s.email)+'</td><td>'+esc(s.company||'')+'</td>'+
+        '<td>'+esc(pg?pg.title:(s.slug||''))+'</td><td>'+esc(v115SuSrc(s))+'</td><td>'+hs+'</td>'+
+        '<td>'+(s.lead_added?'<button type="button" class="nw-btn nw-btn-sm" onclick="apOpenLead60('+esc(nwJs(s.email))+')">Open lead</button>':'<span class="v99-no">No</span>')+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+function v115LpBody(){
+  const L=V115.lp,P=L.pages||[];
+  if(L.tab==='signups')return '<div class="nw-toolbar"><input type="search" class="nw-input v115-q" placeholder="Search sign-ups" aria-label="Search sign-ups" value="'+esc(L.q)+'" oninput="v115SuQ(this.value)">'+
+      '<span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-sm" onclick="v115SuCsv()"'+(L.su.length?'':' disabled')+'>'+nwIc('download',15)+'Export CSV</button></div><div id="v115SuList">'+v115SuTable()+'</div>';
+  if(!P.length)return '<div class="nw-card">'+nwEmpty('layout','No landing pages yet','Make a funnel or a book-a-call campaign in Marketing Generation, then put its page live here.',
+    '<button type="button" class="nw-btn nw-btn-primary nw-btn-sm" onclick="v115LpNew()">Put a page live</button>')+'</div>';
+  return '<div class="nw-list v115-list">'+P.map(v115LpRow).join('')+'</div>';
+}
+function v115LpHtml(){
+  const L=V115.lp,P=L.pages||[],N=v115LpNums(null),live=P.filter(function(p){return p.status==='live';}).length;
+  const head=nwHead({eyebrow:'Pipeline · Create',title:'Landing pages',
+    status:L.pages?[[L.err?'bad':'good',L.err?'Could not load: '+L.err:nwPlural(live,'page')+' live']]:[['info','Loading']],
+    actions:'<button type="button" class="nw-btn" onclick="v115LpReload(this)">'+nwIc('repeat',16)+'Refresh</button><button type="button" class="nw-btn nw-btn-primary" onclick="v115LpNew()">'+nwIc('plus',16)+'Put a page live</button>',
+    caps:[['layout','Pages at '+V115_SITE.replace(/^https:\/\//,'')+'/go'],['users','Sign-ups go to HubSpot and the lead pipeline'],['link','A tracking link for each ad']],
+    stats:L.pages?[nwStat(live,'live',"v115LpTab('pages')"),nwStat(N.views,'visits in 30 days'),nwStat(N.su30,'sign-ups in 30 days',"v115LpTab('signups')"),
+      nwStat(N.conv!=null?N.conv+'%':'–','sign-up rate')]:[]});
+  return '<div class="nw-content v115-lp">'+head+
+    '<div class="nw-tabs" role="tablist">'+[['pages','Pages',P.length],['signups','Sign-ups',L.su.length]].map(function(t){
+      return '<button type="button" role="tab" aria-selected="'+(L.tab===t[0])+'" onclick="v115LpTab(\''+t[0]+'\')">'+esc(t[1])+' <span class="nw-faint">'+t[2]+'</span></button>';}).join('')+'</div>'+
+    '<div class="nw-tabpanel">'+(L.pages?v115LpBody():'<div class="nw-card"><p class="nw-faint">Loading pages…</p></div>')+'</div></div>';
+}
+function v115LpTab(t,go){V115.lp.tab=t;if(go||!nwOn('e3.lpages'))apGo('e3landing');else nwRepaint();}
+function v115SuQ(q){V115.lp.q=q;const b=document.getElementById('v115SuList');if(b)b.innerHTML=v115SuTable();}
+async function v115LpReload(btn){if(btn)btn.disabled=true;await v115LpLoad(true);if(btn)btn.disabled=false;if(nwOn('e3.lpages'))nwRepaint();}
+function v115SuCsv(){
+  /* sign-ups come from the public: a cell that a spreadsheet would run as a formula starts with a quote mark */
+  const P=V115.lp.pages||[],cell=function(v){v=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(v))v="'"+v;return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const head=['When','Name','Email','Company','Job title','Phone','Page','Ad code','Source','Medium','Campaign','HubSpot','In lead pipeline'];
+  const lines=[head.join(',')].concat(v115SuRows().map(function(s){
+    const pg=P.find(function(p){return p.id===s.page_id;}),u=s.utm||{};
+    return [s.created_at,s.name,s.email,s.company,s.job_title,s.phone,pg?pg.title:s.slug,s.ad_code,u.source,u.medium,u.campaign,s.hubspot_id?'Added':s.hubspot_error?'Not added':'',s.lead_added?'Yes':'No'].map(cell).join(',');
+  }));
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
+  a.download='sign-ups-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+}
+NW_PAGES['e3.lpages']=function(m,again){
+  m.innerHTML=v115LpHtml();
+  if(again)return;
+  v115LpLoad().then(function(){
+    if(!nwOn('e3.lpages'))return;
+    nwRepaint();
+    const id=V115.lp.edit;V115.lp.edit=null;if(id)v115LpEdit(id);
+  }).catch(function(){});
+};
+
+/* ---------- picking what to put live ---------- */
+async function v115LpNew(){
+  if(!nwOn('e3.lpages'))apGo('e3landing');
+  nwModal('v115PickM','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Landing pages</div><h2>Which page goes live?</h2></div>'+
+    '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div><div class="nw-m-body" id="v115PickB"><p class="nw-faint">Loading your funnels and campaigns…</p></div>',true);
+  let rows=[];
+  try{rows=(await apSb('funnel_packages?select=id,run_id,funnel_type,status,setup,created_at&order=created_at.desc&limit=40'))||[];await v115LpLoad();}
+  catch(e){const b=document.getElementById('v115PickB');if(b)b.innerHTML='<p class="nw-faint">Could not load them: '+esc(e.message||e)+'</p>';return;}
+  const b=document.getElementById('v115PickB');if(!b)return;
+  if(!rows.length){b.innerHTML=nwEmpty('rocket','Nothing to put live yet','Make a funnel or a book-a-call campaign in Marketing Generation first.',
+    '<button type="button" class="nw-btn nw-btn-sm" onclick="nwModalClose();v97Start(\'marketing\')">Open Marketing Generation</button>');return;}
+  const P=V115.lp.pages||[];
+  b.innerHTML='<p class="nw-muted nw-small">Each one becomes a page with a sign-up form. You can edit it before it goes live.</p><div class="nw-list v115-pick">'+rows.map(function(f){
+    const S=apJson(f.setup)||{},t=f.funnel_type&&V115_KINDS[f.funnel_type]?f.funnel_type:'book_call';
+    const name=f.funnel_type&&typeof v113FunName==='function'?v113FunName(f):(S.title||'Book a call campaign');
+    const has=P.find(function(p){return String(p.source_id)===String(f.id);});
+    return '<div class="nw-row"><span class="nw-row-ic">'+nwIc(t==='book_call'?'rocket':'layout',19)+'</span><div class="nw-row-main"><b class="nw-row-title">'+esc(name)+'</b>'+
+      '<span class="nw-row-meta">'+nwTag(V115_KINDS[t])+nwTag(nwDay(f.created_at))+(f.status==='approved'?nwPill('good','Approved'):nwPill('warn','Not approved yet'))+(has?v115LpPill(has):'')+'</span></div>'+
+      '<div class="nw-row-side"><button type="button" class="nw-btn nw-btn-sm'+(has?'':' nw-btn-primary')+'" onclick="v115LpFromPkg('+esc(nwJs(f.id))+',this)">'+(has?'Open its page':'Use this')+'</button></div></div>';
+  }).join('')+'</div>';
+}
+async function v115LpFromPkg(id,btn){
+  await v115LpLoad();
+  const has=(V115.lp.pages||[]).find(function(p){return String(p.source_id)===String(id);});
+  if(has){nwModalClose();v115LpOpenEdit(has.id);return;}
+  if(btn){btn.disabled=true;btn.textContent='Making the page…';}
+  try{
+    const pkg=((await apSb('funnel_packages?select=*&id=eq.'+encodeURIComponent(id)+'&limit=1'))||[])[0];
+    if(!pkg)throw new Error('that funnel is gone');
+    const x=v115LpFrom(pkg),code=v115Code(),me=v115Me();
+    const row={slug:v115SlugFree(v115Slug(x.title),null),title:x.title,status:'draft',kind:x.kind,source_type:'funnel_package',source_id:pkg.id,source_run:pkg.run_id||null,
+      content:Object.assign(x.content,{flags:x.flags}),ads:x.ads.map(function(a){return Object.assign({code:code+'-A'+a.n},a);}),add_to_pipeline:x.kind!=='newsletter_signup',
+      created_by:me,updated_by:me};
+    const made=((await apPost('landing_pages',row))||[])[0];
+    if(!made)throw new Error('nothing came back');
+    V115.lp.pages=[made].concat(V115.lp.pages||[]);
+    nwModalClose();v115LpOpenEdit(made.id);
+  }catch(e){
+    if(btn){btn.disabled=false;btn.textContent='Use this';}
+    nwToast('Could not make the page: '+(e.message||e));
+  }
+}
+function v115LpOpenEdit(id){if(nwOn('e3.lpages')){nwRepaint();v115LpEdit(id);}else{V115.lp.edit=id;apGo('e3landing');}}
+/* the funnel's own drawer can put its page live too */
+function v115LpFromPkgId(id){V115.lp.tab='pages';if(!nwOn('e3.lpages'))apGo('e3landing');v115LpFromPkg(id,null);}
+(function(){
+  if(typeof v113FunOpen!=='function')return;
+  const _o=v113FunOpen;
+  v113FunOpen=function(id){
+    const r=_o.apply(this,arguments);
+    try{
+      const d=document.getElementById('v113FunD');if(!d)return r;
+      const note=d.querySelector('.v113-real');if(note)note.innerHTML=nwIc('info',14)+'Put its page live on Vercel with a sign-up form, or copy the steps into your page builder.';
+      const foot=d.querySelector('.nw-d-foot'),grow=foot&&foot.querySelector('.nw-grow');
+      if(grow&&!foot.querySelector('.v115-golive')){
+        const b=document.createElement('button');b.type='button';b.className='nw-btn v115-golive';b.innerHTML=nwIc('layout',15)+'Put the page live';
+        b.onclick=function(){nwDrawerClose();v115LpFromPkgId(id);};
+        grow.parentNode.insertBefore(b,grow);
+      }
+    }catch(e){}
+    return r;
+  };
+})();
+
+/* ---------- the editor: what the page says, the form, after sign-up, live or not ---------- */
+function v115In(id,label,val,o){
+  o=o||{};
+  const f=o.area?'<textarea class="nw-input nw-textarea" id="'+id+'" rows="'+(o.rows||3)+'"'+(o.ph?' placeholder="'+esc(o.ph)+'"':'')+'>'+esc(val||'')+'</textarea>'
+    :'<input class="nw-input" id="'+id+'" value="'+esc(val||'')+'"'+(o.ph?' placeholder="'+esc(o.ph)+'"':'')+(o.dis?' disabled':'')+'>';
+  return '<label class="nw-field"><span class="nw-lbl">'+esc(label)+(o.hint?'<small>'+esc(o.hint)+'</small>':'')+'</span>'+f+'</label>';
+}
+function v115Pairs(kind,list){
+  const one=function(x,i){
+    return '<div class="v115-pair" data-i="'+i+'">'+(kind==='sec'?'<input class="nw-input" data-k="title" placeholder="Heading (optional)" value="'+esc(x.title||'')+'">'+
+        '<textarea class="nw-input nw-textarea" data-k="body" rows="3" placeholder="What it says">'+esc(x.body||'')+'</textarea>'
+      :'<input class="nw-input" data-k="q" placeholder="Question" value="'+esc(x.q||'')+'"><textarea class="nw-input nw-textarea" data-k="a" rows="2" placeholder="Answer">'+esc(x.a||'')+'</textarea>')+
+      '<button type="button" class="nw-link nw-small" onclick="this.parentNode.remove()">Remove</button></div>';
+  };
+  return '<div class="v115-pairs" id="v115E-'+kind+'">'+list.map(one).join('')+'</div>'+
+    '<button type="button" class="nw-btn nw-btn-sm" onclick="v115PairAdd(\''+kind+'\')">'+nwIc('plus',14)+(kind==='sec'?'Add a section':'Add a question')+'</button>';
+}
+function v115PairAdd(kind){
+  const box=document.getElementById('v115E-'+kind);if(!box)return;
+  const t=document.createElement('div');t.innerHTML=v115Pairs(kind,[{}]);
+  const p=t.querySelector('.v115-pair');if(p)box.appendChild(p);
+}
+function v115LpEdit(id){
+  const p=v115LpPage(id);if(!p)return;
+  const c=apJson(p.content)||{},th=c.thanks||{},flags=apArr(c.flags),holes=v115Holes(c),fields=apArr(c.fields);
+  const was=!!p.published_at;
+  nwDrawer('v115LpD','<div class="nw-d-head"><div class="nw-d-titles"><div class="nw-d-eyebrow">'+esc((V115_KINDS[p.kind]||'Page')+' · '+(p.status==='live'?'Live':p.status==='paused'?'Paused':'Draft'))+'</div>'+
+      '<h2 class="nw-d-title">'+esc(p.title||p.slug)+'</h2><div class="nw-pc-meta">'+v115LpPill(p)+'</div></div>'+
+      '<button type="button" class="nw-icon-btn nw-d-close" onclick="nwDrawerClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-d-body v115-ed">'+
+      (holes.length?'<div class="nw-hint v115-holes">'+nwIc('alert',17)+'<span><b>Fill these in before it goes live:</b> '+esc(holes.join(', '))+'</span></div>':'')+
+      v115In('v115E-title','Name in the dashboard',p.title)+
+      '<label class="nw-field"><span class="nw-lbl">Address'+(was?'<small>Changing it breaks the links already in your ads</small>':'')+'</span>'+
+        '<div class="v115-addr"><span>'+esc(V115_SITE.replace(/^https:\/\//,''))+'/go/</span><input class="nw-input" id="v115E-slug" value="'+esc(p.slug)+'" spellcheck="false"></div></label>'+
+      '<div class="nw-kicker">The top of the page</div>'+
+      v115In('v115E-headline','Headline',c.headline)+
+      v115In('v115E-sub','Under the headline',c.subheadline,{area:1,rows:3})+
+      (p.kind==='webinar'?v115In('v115E-when','When',c.when,{ph:'Thursday 6 November, 11am Pacific'})+v115In('v115E-presenter','Who presents',c.presenter):'')+
+      v115In('v115E-who','Who it is for',c.who,{hint:'optional'})+
+      v115In('v115E-bullets','Points',apArr(c.bullets).join('\n'),{area:1,rows:4,hint:'one per line'})+
+      '<div class="nw-kicker">More on the page</div>'+
+      '<div class="nw-field"><span class="nw-lbl">Sections</span>'+v115Pairs('sec',apArr(c.sections))+'</div>'+
+      '<div class="nw-field"><span class="nw-lbl">Questions people ask</span>'+v115Pairs('faq',apArr(c.faq))+'</div>'+
+      '<div class="nw-kicker">The form</div>'+
+      '<div class="v115-fields">'+V115_FIELDS.map(function(f){
+        const on=f[0]==='email'||fields.indexOf(f[0])>=0;
+        return '<label class="v115-chk"><input type="checkbox" data-f="'+f[0]+'"'+(on?' checked':'')+(f[0]==='email'?' disabled':'')+'>'+esc(f[1])+'</label>';}).join('')+'</div>'+
+      (apArr(c.questions).length?'<div class="nw-field"><span class="nw-lbl">Qualifying questions<small>from the campaign, all optional for the visitor</small></span><div class="v115-qs">'+apArr(c.questions).map(function(q){
+        return '<label class="v115-chk"><input type="checkbox" data-q="'+esc(q.key)+'"'+(q.off?'':' checked')+'>'+esc(q.label)+'</label>';}).join('')+'</div></div>':'')+
+      v115In('v115E-cta','Button',c.cta)+
+      '<div class="nw-kicker">After they sign up</div>'+
+      v115In('v115E-thh','Headline',th.headline)+
+      v115In('v115E-thb','Text',th.body,{area:1,rows:2})+
+      v115In('v115E-thc','Button',th.cta,{hint:'optional'})+
+      v115In('v115E-thu','Button link',th.url,{ph:p.kind==='book_call'?'https://calendly.com/...':'https://...',hint:p.kind==='book_call'?'your Calendly booking link':'optional'})+
+      '<label class="nw-switch-row"><span><b>Add sign-ups to the lead pipeline</b><small>As New leads in Catalyst, ready for Engine 1. Everyone also goes to HubSpot.</small></span>'+
+        '<button type="button" class="nw-switch" role="switch" id="v115E-pipe" aria-checked="'+(p.add_to_pipeline!==false)+'" onclick="this.setAttribute(\'aria-checked\',this.getAttribute(\'aria-checked\')!==\'true\')"></button></label>'+
+      (flags.length?'<div class="nw-hint v115-flags">'+nwIc('alert',17)+'<span><b>Check before it goes live:</b><ul>'+flags.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>'+
+        '<label class="v115-chk"><input type="checkbox" id="v115E-ok"'+(was?' checked':'')+'>I checked these</label></span></div>':'')+
+      '<p class="nw-faint nw-small" id="v115E-msg" role="status"></p>'+
+    '</div>'+
+    '<div class="nw-d-foot">'+
+      (p.status==='draft'&&!p.published_at?'<button type="button" class="nw-btn nw-btn-ghost" onclick="v115LpDel('+esc(nwJs(p.id))+')">'+nwIc('trash',15)+'Delete</button>':'')+
+      '<button type="button" class="nw-btn" onclick="v115LpSave('+esc(nwJs(p.id))+',null,true)">'+nwIc('eye',15)+'Preview</button><span class="nw-grow"></span>'+
+      (p.status==='live'?'<button type="button" class="nw-btn" onclick="v115LpSave('+esc(nwJs(p.id))+',\'paused\')">'+nwIc('pause',15)+'Pause</button>':'')+
+      '<button type="button" class="nw-btn'+(p.status==='live'?' nw-btn-primary':'')+'" onclick="v115LpSave('+esc(nwJs(p.id))+')">Save</button>'+
+      (p.status!=='live'?'<button type="button" class="nw-btn nw-btn-primary" onclick="v115LpSave('+esc(nwJs(p.id))+',\'live\')">'+nwIc('check',15)+'Put it live</button>':'')+
+    '</div>');
+}
+function v115EdVal(id){const e=document.getElementById(id);return e?v115Str(e.value):'';}
+function v115EdRead(p){
+  const c=Object.assign({},apJson(p.content)||{});
+  const pairs=function(kind,a,b){return [].slice.call(document.querySelectorAll('#v115E-'+kind+' .v115-pair')).map(function(x){
+    const o={};o[a]=v115Str(x.querySelector('[data-k="'+a+'"]').value);o[b]=v115Str(x.querySelector('[data-k="'+b+'"]').value);return o;}).filter(function(o){return o[a]||o[b];});};
+  c.headline=v115EdVal('v115E-headline');c.subheadline=v115EdVal('v115E-sub');c.who=v115EdVal('v115E-who');
+  if(document.getElementById('v115E-when')){c.when=v115EdVal('v115E-when');c.presenter=v115EdVal('v115E-presenter');}
+  c.bullets=v115EdVal('v115E-bullets').split('\n').map(v115Str).filter(Boolean).slice(0,10);
+  c.sections=pairs('sec','title','body').filter(function(s){return s.body;}).slice(0,10);
+  c.faq=pairs('faq','q','a').filter(function(f){return f.q&&f.a;}).slice(0,10);
+  c.fields=V115_FIELDS.map(function(f){return f[0];}).filter(function(k){const e=document.querySelector('#v115LpD [data-f="'+k+'"]');return k==='email'||(e&&e.checked);});
+  c.questions=apArr(c.questions).map(function(q){const e=document.querySelector('#v115LpD [data-q="'+q.key+'"]');return Object.assign({},q,{off:!!(e&&!e.checked)});});
+  c.cta=v115EdVal('v115E-cta');
+  c.thanks={headline:v115EdVal('v115E-thh'),body:v115EdVal('v115E-thb'),cta:v115EdVal('v115E-thc'),url:v115EdVal('v115E-thu')};
+  return v115Dash(c);
+}
+async function v115LpSave(id,status,preview){
+  const p=v115LpPage(id);if(!p)return;
+  const msg=document.getElementById('v115E-msg'),say=function(t){if(msg)msg.textContent=t;};
+  const c=v115EdRead(p),slug=v115EdVal('v115E-slug').toLowerCase(),title=v115EdVal('v115E-title')||p.title;
+  const pipe=document.getElementById('v115E-pipe'),add=!pipe||pipe.getAttribute('aria-checked')==='true';
+  if(!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)||slug.length<3||slug.length>60){say('The address takes 3 to 60 lowercase letters, numbers and single dashes.');return;}
+  if((V115.lp.pages||[]).some(function(x){return x.slug===slug&&String(x.id)!==String(id);})){say('Another page already uses that address.');return;}
+  const goingLive=status==='live'||(!status&&p.status==='live');
+  if(goingLive){
+    const holes=v115Holes(c);
+    if(holes.length){say('Fill in '+holes.join(', ')+' before it goes live.');return;}
+    if(!c.headline){say('Add a headline before it goes live.');return;}
+    if(!c.cta){say('Add the button text before it goes live.');return;}
+    if(c.thanks.url&&!/^https:\/\/[^\s]+$/i.test(c.thanks.url)){say('The button link after sign-up needs to start with https://');return;}
+    const ok=document.getElementById('v115E-ok');if(ok&&!ok.checked){say('Tick "I checked these" first.');return;}
+  }
+  const body={title:title.slice(0,120),slug:slug,content:c,add_to_pipeline:add,updated_by:v115Me(),updated_at:new Date().toISOString()};
+  if(status)body.status=status;
+  if(status==='live'&&!p.published_at)body.published_at=body.updated_at;
+  say('Saving…');
+  try{
+    const r=((await apPatch('landing_pages','id=eq.'+encodeURIComponent(id),body))||[])[0];
+    if(!r)throw new Error('nothing came back');
+    Object.assign(p,r);
+    if(preview){say('Saved. The preview opens in a new tab.');window.open(v115GoUrl(p.slug,true),'_blank','noopener');return;}
+    nwDrawerClose();
+    nwToast(status==='live'?'It is live at '+V115_SITE.replace(/^https:\/\//,'')+'/go/'+p.slug:status==='paused'?'Paused. The page now says it is not taking sign-ups.':'Saved');
+    if(nwOn('e3.lpages'))nwRepaint();
+    if(status==='live'&&apArr(p.ads).length)setTimeout(function(){v115LpAds(p.id);},250);
+  }catch(e){
+    const m=String(e.message||e);
+    say(/23505|duplicate/i.test(m)?'Another page already uses that address.':'Could not save: '+m);
+  }
+}
+async function v115LpDel(id){
+  const p=v115LpPage(id);if(!p||p.published_at)return;
+  if(!confirm('Delete the draft "'+(p.title||p.slug)+'"? It has never been live.'))return;
+  try{
+    await apSb('landing_pages?id=eq.'+encodeURIComponent(id),{method:'DELETE'});
+    V115.lp.pages=(V115.lp.pages||[]).filter(function(x){return String(x.id)!==String(id);});
+    nwDrawerClose();nwToast('Deleted');if(nwOn('e3.lpages'))nwRepaint();
+  }catch(e){nwToast('Could not delete it: '+(e.message||e));}
+}
+/* each ad's code and its links: the code starts the ad's name so Ad Testing can match it */
+function v115LpAds(id){
+  const p=v115LpPage(id);if(!p)return;
+  const ads=apArr(p.ads);
+  const row=function(label,url){return '<div class="v115-url"><span class="nw-faint nw-small">'+esc(label)+'</span><code>'+esc(url)+'</code>'+
+    '<button type="button" class="nw-btn nw-btn-sm" onclick="nwCopy('+esc(nwJs(url))+')">'+nwIc('copy',14)+'Copy</button></div>';};
+  nwModal('v115AdsM','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">'+esc(p.title||p.slug)+'</div><h2>Ad links</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body"><p class="nw-muted">Use the link that fits where the ad runs, and start the ad\'s name with its code in Ads Manager, like <b>'+esc((ads[0]&&ads[0].code)||'PK7Q2-A1')+' Spring webinar</b>. Ad Testing then counts sign-ups and cost per sign-up for each ad.</p>'+
+      (p.status!=='live'?'<div class="nw-hint">'+nwIc('info',17)+'<span>The page is not live yet, so these links show a "not taking sign-ups" page until it is.</span></div>':'')+
+      ads.map(function(a){return '<div class="nw-card v115-ad"><div class="v115-ad-h"><span class="nw-tag nw-tag-gold">'+esc(a.code)+'</span><b>'+esc(nwClip(a.hook||a.headline||('Ad '+a.n),120))+'</b></div>'+
+        row('Meta (Facebook and Instagram)',v115AdUrl(p,a,'meta'))+row('LinkedIn',v115AdUrl(p,a,'linkedin'))+row('A post',v115AdUrl(p,a,'post'))+'</div>';}).join('')+
+    '</div>',true);
+}
+
+/* ---------- Ad Testing: sign-ups from the landing pages, matched to each ad by its code ---------- */
+function v115AdTestHtml(T){
+  const L=V115.lp,P=(L.pages||[]).filter(function(p){return p.published_at;});
+  if(!L.pages)return '';
+  if(!P.length)return '<section class="nw-card v115-adt"><div class="nw-sec-title"><h2>Sign-ups from your landing pages</h2></div>'+
+    '<p class="nw-muted nw-small">Put a landing page live and each ad gets a link and a code. Sign-ups and cost per sign-up show up here.</p>'+
+    '<div class="nw-card-foot"><button type="button" class="nw-btn nw-btn-sm" onclick="v115LpNew()">Put a page live</button></div></section>';
+  const since=Date.now()-30*864e5,res=(T&&T.ads)||[];
+  const spendOf=function(code){const re=new RegExp('(^|[^A-Z0-9])'+code.replace(/[^A-Z0-9-]/gi,'')+'([^A-Z0-9-]|$)','i');
+    return res.filter(function(r){return re.test(String(r.title||''));}).reduce(function(s,r){return s+(v98N(r.spend)||0);},0);};
+  const rows=[];
+  P.forEach(function(p){
+    const su=L.su.filter(function(s){return String(s.page_id)===String(p.id)&&Date.parse(s.created_at)>=since;});
+    const vw=L.views.filter(function(v){return String(v.page_id)===String(p.id);});
+    apArr(p.ads).forEach(function(a){
+      const n=su.filter(function(s){return s.ad_code===a.code;}).length,v=vw.filter(function(x){return x.ad_code===a.code;}).reduce(function(s,x){return s+(+x.views||0);},0),sp=spendOf(a.code);
+      rows.push({page:p.title||p.slug,code:a.code,hook:a.hook||a.headline||'',v:v,n:n,sp:sp});
+    });
+    const other=su.filter(function(s){return !s.ad_code;}).length,ov=vw.filter(function(x){return !x.ad_code;}).reduce(function(s,x){return s+(+x.views||0);},0);
+    if(other||ov)rows.push({page:p.title||p.slug,code:'',hook:'Visits without an ad code',v:ov,n:other,sp:0});
+  });
+  return '<section class="nw-card v115-adt"><div class="nw-sec-title"><h2>Sign-ups from your landing pages</h2><span class="nw-faint nw-small">Last 30 days · spend matched by the code in the ad\'s name</span></div>'+
+    '<div class="nw-table-wrap is-flat"><table class="nw-tbl"><thead><tr><th>Ad</th><th>Page</th><th class="nw-r">Visits</th><th class="nw-r">Sign-ups</th><th class="nw-r">Sign up</th><th class="nw-r">Spend</th><th class="nw-r">Per sign-up</th></tr></thead><tbody>'+
+    rows.map(function(r){
+      return '<tr><td>'+(r.code?'<span class="nw-tag nw-tag-gold">'+esc(r.code)+'</span> ':'')+esc(nwClip(r.hook,70))+'</td><td>'+esc(r.page)+'</td><td class="nw-r">'+r.v+'</td><td class="nw-r">'+r.n+'</td>'+
+        '<td class="nw-r">'+(r.v?Math.round(r.n/r.v*1000)/10+'%':'')+'</td><td class="nw-r">'+(r.sp?v98Money(r.sp):'')+'</td><td class="nw-r">'+(r.sp&&r.n?v98Money(r.sp/r.n):'')+'</td></tr>';
+    }).join('')+'</tbody></table></div>'+
+    '<div class="nw-card-foot"><button type="button" class="nw-link nw-small" onclick="apGo(\'e3landing\')">Landing pages'+nwIc('arrowR',15)+'</button></div></section>';
+}
+(function(){
+  if(typeof nwTsResHtml!=='function')return;
+  const _r=nwTsResHtml;
+  nwTsResHtml=function(){
+    let h=_r.apply(this,arguments);
+    try{const x=v115AdTestHtml(nwTsRes());if(x)h=x+h;}catch(e){console.error(e);}
+    return h;
+  };
+  const _t=NW_PAGES['e3.testing'];
+  NW_PAGES['e3.testing']=function(m,again){
+    const r=_t.apply(this,arguments);
+    if(!again)v115LpLoad().then(function(){if(nwOn('e3.testing'))nwRepaint();}).catch(function(){});
+    return r;
+  };
+  Object.keys(_t).forEach(function(k){NW_PAGES['e3.testing'][k]=_t[k];});
+})();
+</script>
+
 <script>
 /* ===================================================================
    PAGE ADDRESSES
@@ -49309,19 +50148,24 @@ async function v114Tok(force){
     approvals:'approvals',e3history:'runs',
     e1overview:'engine-1',e1pipeline:'lead-pipeline',calls:'calls',tasks:'tasks',
     e3client:'company-profile',integrations:'integrations',kb:'knowledge-base',files:'files',
-    templates:'templates',learning:'ai-settings',audit:'audit-log',profile:'account',hubspot:'hubspot',notion:'notion'};
-  /* words that open the Overview of the engine you are in, as Home does */
-  var ROUTE_HOME=['home','overview'];
+    templates:'templates',learning:'ai-settings',audit:'audit-log',profile:'account',hubspot:'hubspot',notion:'notion',
+    today:'today',deliverables:'deliverables',e3landing:'landing-pages'};
+  /* home opens Today, overview the Overview of the product you are in; a product's name opens its first page */
+  var ROUTE_HOME=['home'];
+  var ROUTE_ALIAS={touchpoint:'today',catalyst:'e1overview',canvas:'deliverables',pipeline:'e3overview',atlas:'kb'};
   var ROUTE_BASE=/^\/dashboard(\/|$)/.test(location.pathname)?'/dashboard':null;
   var live=false,quiet=false,want=null,atLogin=false;
   function routeView(v){
-    if(v==='home')return (typeof V107!=='undefined'&&V107.eng==='e1')?'e1overview':'e3overview';
+    if(v==='home')return typeof v115Home==='function'?v115Home():'e3overview';
+    if(v==='overview')return typeof v115Overview==='function'?v115Overview():'e3overview';
     if(v==='e1lead')return 'e1pipeline';
     return v;
   }
   function routeName(word){
     word=String(word||'').toLowerCase();
     if(ROUTE_HOME.indexOf(word)!==-1)return 'home';
+    if(word==='overview')return 'overview';
+    if(Object.prototype.hasOwnProperty.call(ROUTE_ALIAS,word))return ROUTE_ALIAS[word];
     var views=Object.keys(ROUTE_SLUG);
     for(var i=0;i<views.length;i++)if(ROUTE_SLUG[views[i]]===word)return views[i];
     return views.indexOf(word)!==-1?word:null;            /* the view's own name works too: /dashboard/e3intel */
@@ -49413,7 +50257,7 @@ async function v114Tok(force){
   var carried=ROUTE_BASE&&/^#\//.test(location.hash)?location.hash:'';
   if(carried){try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}
   want=(carried&&routeWord(carried.slice(1)))||routeFromUrl();
-  if(want&&want!=='home')routeWrite(want,true);            /* odd spellings settle now; a bare or unknown address waits for sign-in or the resume */
+  if(want&&want!=='home'&&want!=='overview')routeWrite(want,true);            /* odd spellings settle now; a bare or unknown address waits for sign-in or the resume */
   window.addEventListener('popstate',routeSync);
   window.addEventListener('hashchange',routeSync);
 })();
