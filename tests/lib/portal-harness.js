@@ -61,7 +61,7 @@ async function start(file) {
 }
 
 // opts: viewport, bucket (page errors), calls (array that records Supabase calls), session (a stub account, below),
-// noOcr (the word reader cannot be fetched)
+// noOcr (the word reader cannot be fetched), relay (answers the np-relay, see below)
 async function newPage(env, opts) {
   opts = opts || {};
   const build = pdfjsBuild();
@@ -118,6 +118,11 @@ async function newPage(env, opts) {
       }
       if (p.startsWith('/auth/v1/token')) return json(400, { error_description: 'Invalid login credentials' });
       if (p.startsWith('/functions/v1/np-password')) return json(200, { ok: true });
+      // opts.relay: answers the np-relay ({action, payload} in, {status, body} out), so a suite sees what leaves the page
+      if (p.startsWith('/functions/v1/np-relay') && opts.relay) {
+        const out = (await opts.relay(JSON.parse(req.postData() || '{}'))) || {};
+        return json(out.status || 200, out.body || { ok: true });
+      }
       if (req.method() === 'GET') return json(200, []);
       return json(201, []);
     }
