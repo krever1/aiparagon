@@ -257,6 +257,23 @@ function photoGen() {
     check(`top bar at ${w} px: no sideways scrolling, and its buttons keep their size`, r.sw <= r.cw && r.btn.length >= 3 && r.btn.every((x) => x >= 47), JSON.stringify(r));
     await ctx.close();
   }
+  // every page, for each role, at narrow desktop widths: nothing runs off the side (the Safety log's logs and Messages did)
+  for (const w of [901, 1024, 1180]) {
+    const { ctx, page } = await open({ viewport: { width: w, height: 800 } });
+    const wide = [];
+    for (const role of ['director', 'staff', 'family']) {
+      if (role !== 'director') await page.evaluate((r) => signIn(r), role);
+      await page.waitForTimeout(200);
+      const views = await page.evaluate(() => NAV[state.role].filter((n) => n.id).map((n) => n.id));
+      for (const v of views) {
+        await page.evaluate((v) => { go(v); window.scrollTo(0, 0); }, v); await page.waitForTimeout(120);
+        const r = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
+        if (r.sw > r.cw) wide.push(role + ' ' + v + ' ' + r.sw);
+      }
+    }
+    check(`at ${w} px no page scrolls sideways, for any role`, !wide.length, wide.join(', '));
+    await ctx.close();
+  }
   {
     const { ctx, page } = await open();
     await page.evaluate(() => go('tasks')); await page.waitForTimeout(300);
