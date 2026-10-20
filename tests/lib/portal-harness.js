@@ -29,7 +29,7 @@ function pdfjsBuild() {
 
 // the in-browser word reader (tesseract.js, its engine, and the English and Spanish data), the versions the
 // portal loads from jsDelivr, kept in tests/.cache the same way
-const OCR_PKGS = { 'tesseract.js@5.1.1': 'tesseract.js@5.1.1', 'tesseract.js-core@5.1.1': 'tesseract.js-core@5.1.1', '@tesseract.js-data/eng@1.0.0': '@tesseract.js-data/eng@1.0.0', '@tesseract.js-data/spa@1.0.0': '@tesseract.js-data/spa@1.0.0' };
+const OCR_PKGS = { 'tesseract.js@5.1.1': 'tesseract.js@5.1.1', 'tesseract.js-core@5.1.1': 'tesseract.js-core@5.1.1', '@tesseract.js-data/eng@1.0.0': '@tesseract.js-data/eng@1.0.0', '@tesseract.js-data/spa@1.0.0': '@tesseract.js-data/spa@1.0.0', '@tesseract.js-data/rus@1.0.0': '@tesseract.js-data/rus@1.0.0', '@tesseract.js-data/tgl@1.0.0': '@tesseract.js-data/tgl@1.0.0', '@tesseract.js-data/chi_sim@1.0.0': '@tesseract.js-data/chi_sim@1.0.0', '@tesseract.js-data/kor@1.0.0': '@tesseract.js-data/kor@1.0.0' };
 function ocrPkg(spec) {
   const dir = path.join(__dirname, '..', '.cache', 'ocr', spec.replace(/[@/]/g, '_'));
   if (!fs.existsSync(path.join(dir, 'package', 'package.json'))) {
