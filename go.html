@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Paragon Consulting Group</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..600&family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet">
+<style>
+/* Landing pages from the dashboard (Pipeline > Landing pages). The page is
+   drawn from Supabase (lp_public) and the form posts to the Landing Page ·
+   Sign-up workflow in n8n. Served at /go/<page> by vercel.json. */
+:root{
+  --ink:#141A2E;--ink-2:#525A72;--ink-3:#7F8599;--line:#E1E4EC;--line-2:#CFD4E0;
+  --bg:#FBFAF7;--panel:#FFFFFF;--sunk:#F5F6F9;--action:#1C2647;--action-hover:#2A3765;
+  --gold:#B08A3E;--gold-soft:#F4ECDA;--gold-text:#7A5E1E;--bad:#B33A3A;--good:#1D7A4C;
+  --body:"Instrument Sans","Helvetica Neue",Helvetica,Arial,sans-serif;--display:"Newsreader",Georgia,"Times New Roman",serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 var(--body)}
+a{color:var(--action)}
+.lp{min-height:100vh;display:flex;flex-direction:column}
+.lp-wrap{width:100%;max-width:1160px;margin:0 auto;padding:0 24px}
+.lp-top{border-bottom:1px solid var(--line);background:var(--panel)}
+.lp-top .lp-wrap{display:flex;align-items:center;gap:12px;min-height:68px}
+.lp-mark{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:#131A35;color:#D9B66C;font:600 19px/1 var(--display)}
+.lp-brand{font-weight:600;font-size:16px;letter-spacing:.01em}
+.lp-main{display:grid;grid-template-columns:minmax(0,1fr) 400px;grid-template-areas:"hero form" "rest form";gap:28px 64px;padding-top:56px;padding-bottom:72px;flex:1}
+.lp-hero{grid-area:hero;min-width:0}
+.lp-rest{grid-area:rest;min-width:0;display:grid;gap:36px;align-content:start}
+.lp-side{grid-area:form;align-self:start;position:sticky;top:24px;min-width:0}
+.lp-kicker{display:inline-block;margin-bottom:14px;padding:4px 10px;border-radius:999px;background:var(--gold-soft);color:var(--gold-text);font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+h1{font:500 clamp(34px,4.6vw,52px)/1.08 var(--display);letter-spacing:-.015em;margin:0 0 18px}
+.lp-sub{font-size:19px;line-height:1.55;color:var(--ink-2);margin:0 0 18px;max-width:640px}
+.lp-meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin:0 0 22px;color:var(--ink-2);font-size:15.5px}
+.lp-meta b{color:var(--ink);font-weight:600}
+.lp-bullets{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:12px;max-width:640px}
+.lp-bullets li{position:relative;padding-left:30px}
+.lp-bullets li::before{content:"";position:absolute;left:0;top:7px;width:18px;height:18px;border-radius:50%;background:var(--gold-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237A5E1E' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center/11px no-repeat}
+.lp-sec h2,.lp-faq h2,.lp-proof h2{font:500 26px/1.2 var(--display);letter-spacing:-.01em;margin:0 0 10px}
+.lp-sec p{margin:0 0 12px;color:var(--ink-2)}
+.lp-sec p:last-child{margin-bottom:0}
+.lp-proof ul{margin:0;padding-left:20px;color:var(--ink-2);display:grid;gap:8px}
+.lp-faq details{border-top:1px solid var(--line);padding:14px 0}
+.lp-faq details:last-child{border-bottom:1px solid var(--line)}
+.lp-faq summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:16px}
+.lp-faq summary::-webkit-details-marker{display:none}
+.lp-faq summary::after{content:"+";font-weight:400;color:var(--ink-3);font-size:20px;line-height:1}
+.lp-faq details[open] summary::after{content:"\2212"}
+.lp-faq details p{margin:10px 0 0;color:var(--ink-2)}
+.lp-card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:26px;box-shadow:0 1px 2px rgba(20,26,46,.05),0 18px 40px -26px rgba(20,26,46,.35)}
+.lp-card h2{font:500 24px/1.2 var(--display);margin:0 0 6px}
+.lp-card .lp-note{font-size:14.5px;color:var(--ink-2);margin:0 0 18px}
+.lp-f{display:grid;gap:14px}
+.lp-field{display:grid;gap:6px}
+.lp-field label{font-size:14px;font-weight:600}
+.lp-field label small{font-weight:400;color:var(--ink-3);margin-left:4px}
+.lp-field input,.lp-field select{width:100%;padding:12px 13px;border-radius:11px;border:1px solid var(--line-2);background:#fff;font:400 16px/1.4 var(--body);color:var(--ink)}
+.lp-field input:focus,.lp-field select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+.lp-field input[aria-invalid="true"]{border-color:var(--bad)}
+.lp-hp{position:absolute!important;left:-10000px!important;width:1px;height:1px;overflow:hidden}
+.lp-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:50px;padding:12px 20px;border-radius:12px;border:0;background:var(--action);color:#fff;font:600 16.5px/1.25 var(--body);cursor:pointer;text-decoration:none;text-align:center}
+.lp-btn:hover{background:var(--action-hover)}
+.lp-btn[disabled]{opacity:.65;cursor:default}
+.lp-err{margin:0;color:var(--bad);font-size:14.5px;min-height:0}
+.lp-err:empty{display:none}
+.lp-privacy{margin:4px 0 0;font-size:13px;color:var(--ink-3)}
+.lp-privacy a{color:var(--ink-2)}
+.lp-done{display:grid;gap:12px;text-align:left}
+.lp-done .lp-tick{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#E2F2E9;color:var(--good)}
+.lp-foot{border-top:1px solid var(--line);color:var(--ink-3);font-size:14px}
+.lp-foot .lp-wrap{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;min-height:64px}
+.lp-foot a{color:var(--ink-2)}
+.lp-preview{position:sticky;top:0;z-index:5;padding:10px 24px;background:var(--gold-soft);color:var(--gold-text);font-size:14.5px;font-weight:600;text-align:center;border-bottom:1px solid #E7D9B8}
+.lp-loading,.lp-gone{max-width:640px;margin:16vh auto;padding:0 24px;text-align:center;color:var(--ink-2)}
+.lp-gone h1{font-size:34px}
+@media (max-width:900px){
+  .lp-main{grid-template-columns:minmax(0,1fr);grid-template-areas:"hero" "form" "rest";padding-top:36px;gap:28px}
+  .lp-side{position:static}
+}
+@media (max-width:520px){
+  .lp-wrap{padding-left:16px;padding-right:16px}
+  .lp-card{padding:20px;border-radius:16px}
+  .lp-sub{font-size:17.5px}
+}
+</style>
+</head>
+<body>
+<div id="lp" class="lp"><div class="lp-loading">Loading…</div></div>
+<noscript><div class="lp-gone"><h1>This page needs JavaScript</h1><p>Turn it on to see the page and sign up.</p></div></noscript>
+<script>
+(function(){
+  var SB='https://lesyptuwllcgajdxzjje.supabase.co';
+  /* the public anon key, the same one the dashboard carries; it can only read live pages through lp_public */
+  var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxlc3lwdHV3bGxjZ2FqZHh6amplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NDAzMDEsImV4cCI6MjA5ODQxNjMwMX0.81-nHOWy8w48weqcL8Yrvv5RGHFlfeSDAo3BZf90DSs';
+  var HOOK='https://n8n.aiparagonconsulting.com/webhook/lp-signup';
+  var BRAND='AI Paragon Consulting Group';
+  var LABELS={name:'Full name',email:'Work email',company:'Company',job_title:'Job title',phone:'Phone'};
+  var TYPES={name:'text',email:'email',company:'text',job_title:'text',phone:'tel'};
+  var AUTO={name:'name',email:'email',company:'organization',job_title:'organization-title',phone:'tel'};
+  var KICKER={webinar:'Webinar',download:'Download',newsletter_signup:'Newsletter'};
+  var root=document.getElementById('lp');
+  var qs=new URLSearchParams(location.search);
+  var m=location.pathname.match(/\/go\/([^\/?#]+)/);
+  var slug='';try{slug=String((m&&decodeURIComponent(m[1]))||qs.get('p')||'').toLowerCase();}catch(e){slug='';}
+  var preview=qs.get('preview')==='1';
+  var utm={};['source','medium','campaign','content','term'].forEach(function(k){var v=qs.get('utm_'+k);if(v)utm[k]=v.slice(0,120);});
+  var code=String(utm.content||'').replace(/[^A-Za-z0-9-]/g,'').slice(0,24);
+  var t0=Date.now();
+
+  function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
+  function paras(box,text){String(text||'').split(/\n{2,}/).map(function(s){return s.trim();}).filter(Boolean).forEach(function(s){box.appendChild(el('p',null,s));});}
+  function safeUrl(u){u=String(u||'').trim();return /^https:\/\/[^\s<>"']+$/i.test(u)?u:'';}
+  function top(name){
+    var h=el('header','lp-top'),w=el('div','lp-wrap');
+    w.appendChild(el('span','lp-mark',/paragon/i.test(name||BRAND)?'P':String(name||BRAND).charAt(0)||'P'));w.appendChild(el('span','lp-brand',name||BRAND));
+    h.appendChild(w);return h;
+  }
+  function foot(name){
+    var f=el('footer','lp-foot'),w=el('div','lp-wrap');
+    w.appendChild(el('span',null,'© '+new Date().getFullYear()+' '+(name||BRAND)));
+    var a=el('a',null,'Privacy policy');a.href='/privacy-policy.html';w.appendChild(a);
+    f.appendChild(w);return f;
+  }
+  function gone(){
+    document.title='Not available · '+BRAND;
+    root.innerHTML='';root.appendChild(top(BRAND));
+    var g=el('div','lp-gone');g.appendChild(el('h1',null,'This page is not available'));
+    g.appendChild(el('p',null,'It may have moved, or it is not taking sign-ups right now.'));
+    var a=el('a',null,'Visit AI Paragon');a.href='/';g.appendChild(a);
+    root.appendChild(g);root.appendChild(foot(BRAND));
+  }
+  function session(){try{var s=JSON.parse(localStorage.getItem('ap.session.v1')||'null');return s&&s.access_token?s:null;}catch(e){return null;}}
+  async function load(){
+    if(!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug))return null;
+    /* a preview from the dashboard reads the draft with the signed-in team member's own session */
+    if(preview){
+      var s=session();
+      if(s){
+        try{
+          var r=await fetch(SB+'/rest/v1/landing_pages?select=slug,title,kind,status,content&slug=eq.'+encodeURIComponent(slug)+'&limit=1',{headers:{apikey:KEY,Authorization:'Bearer '+s.access_token}});
+          if(r.ok){var j=await r.json();if(j&&j[0])return j[0];}
+        }catch(e){}
+      }
+    }
+    var r2=await fetch(SB+'/rest/v1/rpc/lp_public',{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({p_slug:slug,p_code:code,p_view:!preview})});
+    if(!r2.ok)return null;
+    return await r2.json();
+  }
+  function field(key,req){
+    var f=el('div','lp-field'),id='lp-'+key,l=el('label',null,LABELS[key]);l.htmlFor=id;
+    if(!req)l.appendChild(el('small',null,'optional'));
+    var i=el('input');i.id=id;i.name=key;i.type=TYPES[key]||'text';i.autocomplete=AUTO[key]||'on';i.maxLength=key==='email'?254:160;if(req)i.required=true;
+    f.appendChild(l);f.appendChild(i);return f;
+  }
+  function question(q){
+    var f=el('div','lp-field'),id='lp-'+q.key,l=el('label',null,q.label);l.htmlFor=id;l.appendChild(el('small',null,'optional'));
+    var i;
+    if(q.options&&q.options.length){
+      i=el('select');var o=el('option',null,'Choose one');o.value='';i.appendChild(o);
+      q.options.forEach(function(x){var op=el('option',null,x);op.value=x;i.appendChild(op);});
+    }else{i=el('input');i.type='text';i.maxLength=500;}
+    i.id=id;i.name=q.key;f.appendChild(l);f.appendChild(i);return f;
+  }
+  function done(card,c){
+    var t=c.thanks||{};
+    card.innerHTML='';
+    var d=el('div','lp-done'),tick=el('div','lp-tick');
+    tick.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+    d.appendChild(tick);d.appendChild(el('h2',null,t.headline||'Thanks. You are signed up.'));
+    if(t.body)d.appendChild(el('p','lp-note',t.body));
+    var u=safeUrl(t.url);
+    if(u){var a=el('a','lp-btn',t.cta||'Continue');a.href=u;a.target='_blank';a.rel='noopener';d.appendChild(a);}
+    card.appendChild(d);
+    try{card.setAttribute('tabindex','-1');card.focus({preventScroll:false});}catch(e){}
+  }
+  function render(p){
+    var c=p.content||{},brand=(p.brand&&p.brand.name)||BRAND;
+    document.title=(c.headline||p.title||brand)+' · '+brand;
+    root.innerHTML='';
+    if(preview)root.appendChild(el('div','lp-preview','Preview'+(p.status&&p.status!=='live'?', not live yet':'')+'. Sign-ups are off here.'));
+    root.appendChild(top(brand));
+    var main=el('main','lp-main lp-wrap'),hero=el('section','lp-hero'),rest=el('div','lp-rest'),side=el('aside','lp-side');
+    if(KICKER[p.kind])hero.appendChild(el('span','lp-kicker',KICKER[p.kind]));
+    hero.appendChild(el('h1',null,c.headline||p.title||''));
+    if(c.subheadline)hero.appendChild(el('p','lp-sub',c.subheadline));
+    var meta=el('div','lp-meta'),addMeta=function(k,v){if(!v)return;var s=el('span');s.appendChild(el('b',null,k+' '));s.appendChild(document.createTextNode(v));meta.appendChild(s);};
+    addMeta('When',c.when);addMeta('With',c.presenter);addMeta('For',c.who);addMeta('How often',c.how_often);
+    if(meta.childNodes.length)hero.appendChild(meta);
+    if(c.bullets&&c.bullets.length){var ul=el('ul','lp-bullets');c.bullets.forEach(function(b){ul.appendChild(el('li',null,b));});hero.appendChild(ul);}
+    (c.sections||[]).forEach(function(s){if(!s||!s.body)return;var b=el('section','lp-sec');if(s.title)b.appendChild(el('h2',null,s.title));paras(b,s.body);rest.appendChild(b);});
+    if(c.proof&&c.proof.length){var pr=el('section','lp-proof');var pl=el('ul');c.proof.forEach(function(x){pl.appendChild(el('li',null,x));});pr.appendChild(pl);rest.appendChild(pr);}
+    if(c.faq&&c.faq.length){
+      var fq=el('section','lp-faq');fq.appendChild(el('h2',null,'Questions'));
+      c.faq.forEach(function(x){var d=el('details'),s=el('summary',null,x.q);d.appendChild(s);d.appendChild(el('p',null,x.a));fq.appendChild(d);});
+      rest.appendChild(fq);
+    }
+    /* the form */
+    var card=el('div','lp-card');card.id='lp-form';
+    var form=el('form','lp-f');form.noValidate=true;form.setAttribute('aria-label','Sign up');
+    var keys=(c.fields&&c.fields.length?c.fields:['name','email']).filter(function(k){return LABELS[k];});
+    if(keys.indexOf('email')<0)keys.push('email');
+    keys.forEach(function(k){form.appendChild(field(k,k!=='phone'));});
+    (c.questions||[]).filter(function(q){return q&&q.key&&q.label&&!q.off;}).forEach(function(q){form.appendChild(question(q));});
+    var hp=el('div','lp-hp');hp.setAttribute('aria-hidden','true');
+    var hpi=el('input');hpi.type='text';hpi.name='website';hpi.tabIndex=-1;hpi.autocomplete='off';hp.appendChild(hpi);form.appendChild(hp);
+    var err=el('p','lp-err');err.setAttribute('role','alert');form.appendChild(err);
+    var btn=el('button','lp-btn',c.cta||'Sign up');btn.type='submit';form.appendChild(btn);
+    var pv=el('p','lp-privacy','We use your details to reply and send what you asked for. ');var pa=el('a',null,'Privacy policy');pa.href='/privacy-policy.html';pv.appendChild(pa);form.appendChild(pv);
+    card.appendChild(form);side.appendChild(card);
+    form.onsubmit=async function(ev){
+      ev.preventDefault();err.textContent='';
+      if(preview){err.textContent='This is a preview, so sign-ups are off.';return;}
+      var data={slug:slug,utm:utm,code:code,ref:String(document.referrer||'').slice(0,300),t:Date.now()-t0,hp:hpi.value,answers:{}},bad=null;
+      keys.forEach(function(k){var i=form.elements[k];var v=String(i.value||'').trim();i.removeAttribute('aria-invalid');
+        if(k!=='phone'&&!v&&!bad){bad=i;err.textContent='Fill in '+LABELS[k].toLowerCase()+'.';}
+        if(k==='email'&&v&&!/^[^\s@<>()",;:]+@[^\s@<>()",;:]+\.[a-z]{2,}$/i.test(v)&&!bad){bad=i;err.textContent='Check the email address.';}
+        data[k]=v;});
+      (c.questions||[]).forEach(function(q){var i=form.elements[q.key];if(i&&String(i.value||'').trim())data.answers[q.key]=String(i.value).trim().slice(0,500);});
+      if(bad){bad.setAttribute('aria-invalid','true');try{bad.focus();}catch(e){}return;}
+      btn.disabled=true;btn.textContent='Sending…';
+      try{
+        var r=await fetch(HOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+        var j=null;try{j=await r.json();}catch(e){j=null;}
+        if(r.ok&&j&&j.ok){done(card,c);return;}
+        err.textContent=(j&&j.message)||'Could not send that. Try again in a minute.';
+      }catch(e){err.textContent='Could not send that. Check your connection and try again.';}
+      btn.disabled=false;btn.textContent=c.cta||'Sign up';
+    };
+    main.appendChild(hero);main.appendChild(side);main.appendChild(rest);
+    root.appendChild(main);root.appendChild(foot(brand));
+  }
+  load().then(function(p){if(p&&p.content)render(p);else gone();}).catch(function(){gone();});
+})();
+</script>
+</body>
+</html>
