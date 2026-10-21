@@ -3100,7 +3100,7 @@ body:has(#scrim.on) #layFab,body:has(#scrim.on) #layFab2,body:has(#sigOv) #layFa
           <button class="opt" data-val="Residential facility"><span class="tick"></span><span><b>Residential facility</b><em>ARF, ARFPSHN, group home</em></span></button>
           <button class="opt" data-val="Adult day program"><span class="tick"></span><span><b>Adult day program</b><em>Day services, community integration</em></span></button>
           <button class="opt" data-val="Supported living"><span class="tick"></span><span><b>Supported or independent living</b><em>SLS, ILS in-home supports</em></span></button>
-          <button class="opt" data-val="Multiple program types"><span class="tick"></span><span><b>Several of these</b><em>Multi-program agency</em></span></button>
+          <button class="opt" data-val="Multiple program types"><span class="tick"></span><span><b>Several of these</b><em>Multi-program team</em></span></button>
         </div>
       </div>
 
@@ -3111,7 +3111,7 @@ body:has(#scrim.on) #layFab,body:has(#scrim.on) #layFab2,body:has(#sigOv) #layFa
           <button class="opt" data-val="8"  data-label="1–10"><span class="tick"></span><span><b>1–10 people</b><em>A single home or small program</em></span></button>
           <button class="opt" data-val="15" data-label="11–20"><span class="tick"></span><span><b>11–20 people</b><em>One busy site, or two smaller ones</em></span></button>
           <button class="opt" data-val="26" data-label="21–30"><span class="tick"></span><span><b>21–30 people</b><em>A growing program across a few sites</em></span></button>
-          <button class="opt" data-val="42" data-label="Over 30"><span class="tick"></span><span><b>Over 30 people</b><em>Multi-site agency</em></span></button>
+          <button class="opt" data-val="42" data-label="Over 30"><span class="tick"></span><span><b>Over 30 people</b><em>Multi-site team</em></span></button>
         </div>
       </div>
 
@@ -3130,7 +3130,7 @@ body:has(#scrim.on) #layFab,body:has(#scrim.on) #layFab2,body:has(#sigOv) #layFa
 
       <div class="ob-q" data-q="today">
         <h2>How do you track all this today?</h2>
-        <p class="help">Honest answers get you a better starting setup. Most agencies pick the last one.</p>
+        <p class="help">Honest answers get you a better starting setup. Most teams pick the last one.</p>
         <div class="opts" data-group="today">
           <button class="opt" data-val="Paper binders"><span class="tick"></span><span><b>Paper and binders</b><em>Sign-in sheets, service logs, file cabinets</em></span></button>
           <button class="opt" data-val="Spreadsheets"><span class="tick"></span><span><b>Spreadsheets</b><em>Shared drive, someone owns the master file</em></span></button>
@@ -3258,8 +3258,8 @@ body:has(#scrim.on) #layFab,body:has(#scrim.on) #layFab2,body:has(#sigOv) #layFa
       <button class="role-card" id="rcDir" onclick="signIn('director')">
         <div class="rc-ic" style="background:var(--navy-soft);color:var(--navy)">◈</div>
         <h3>Director</h3>
-        <p>Full agency view: every client, staff performance, compliance exports and audit history.</p>
-        <div class="rc-who" id="rcWhoD"><b>Agency director</b> · Executive Director</div>
+        <p>Full team view: every client, staff performance, compliance exports and audit history.</p>
+        <div class="rc-who" id="rcWhoD"><b>Team director</b> · Executive Director</div>
       </button>
       <button class="role-card" onclick="signIn('staff')" style="position:relative">
         <span class="pill neutral" style="position:absolute;top:10px;right:10px;font-size:10.5px">Demo preview</span>
@@ -3524,7 +3524,7 @@ function gcalRenew(){                                                 // one ren
     }
     if(d.status===401||d.status===403){                              // signed out, or no longer part of an agency: nothing to retry
       gcalClear(); render();
-      if(d.status===403) toast('Google Calendar is off here: this login is no longer part of an agency.');
+      if(d.status===403) toast('Google Calendar is off here: this login is no longer part of a team.');
       return false;
     }
     gcalBackoff(); return false;                                      // a hiccup: stay connected and try again later
@@ -3890,7 +3890,7 @@ function noAgencyOut(){
   orgForget(); AUTH.session=null; AUTH.signedIn=false; saveAuth(); lsDel('np_resume');
   try{ gcalClear(); }catch(e){}
   el('app').classList.remove('on'); closeAll(); hideWelcome(); hideOnboarding(); showLoginPage(); bootReveal();
-  const em0=AUTH.email; loginErr('This login is no longer part of an agency. If that is a mistake, ask your director for a new invite link.',true);
+  const em0=AUTH.email; loginErr('This login is no longer part of a team. If that is a mistake, ask your director for a new invite link.',true);
   const e=el('liEmail'); if(e&&em0) e.value=em0;
 }
 const DEMO_VIEW = (()=>{ try{ return new URLSearchParams(location.search).get('demo')==='1'; }catch(e){ return false; } })();
@@ -4209,7 +4209,7 @@ function progSave(row){
   /* the agency's settings never loaded on this page, so what it holds is built-in sample data:
      saving it would mix that into the agency's real settings */
   if(PROG_READ_FAILED){
-    if(Date.now()-_progWarned>4000){ _progWarned=Date.now(); toast('This page could not load the agency\u2019s settings \u2014 reload the page before making changes. Nothing was saved.'); }
+    if(Date.now()-_progWarned>4000){ _progWarned=Date.now(); toast('This page could not load the team\u2019s settings \u2014 reload the page before making changes. Nothing was saved.'); }
     console.warn('[np-demo] settings save refused ('+key+'): the settings rows did not load');
     return Promise.resolve(false);
   }
@@ -4350,7 +4350,7 @@ const LOGS = buildLogs();
 
 const APPTS = [
   {id:'a1', cid:'c3', title:'Neurology follow-up', type:'Medical', date:T, time:'10:30', dur:60, provider:'Dr. L. Chen', loc:'Riverside Clinic', flag:'Bring updated INR results', ride:'', notes:[], files:[]},
-  {id:'a2', cid:'c1', title:'Dentist — cleaning', type:'Dental', date:T, time:'14:00', dur:45, provider:'Bay Dental', loc:'Bay Dental, Suite 200', flag:'', ride:'M.R. driving · agency van', notes:[], files:[]},
+  {id:'a2', cid:'c1', title:'Dentist — cleaning', type:'Dental', date:T, time:'14:00', dur:45, provider:'Bay Dental', loc:'Bay Dental, Suite 200', flag:'', ride:'M.R. driving · team van', notes:[], files:[]},
   {id:'a3', cid:'c5', title:'Physio session', type:'Therapy', date:T, time:'16:00', dur:50, provider:'K. Owens PT', loc:'Birch House', flag:'', ride:'On site', notes:[], files:[]},
   {id:'a4', cid:'c2', title:'Care plan review', type:'Internal', date:iso(addDays(TODAY,1)), time:'11:00', dur:60, provider:'Team', loc:'Maple House', flag:'Annual plan expires in 12 days', notes:[], files:[]},
   {id:'a5', cid:'c4', title:'Endocrinology', type:'Medical', date:iso(addDays(TODAY,2)), time:'09:15', dur:40, provider:'Dr. P. Nair', loc:'Northside Medical', flag:'', notes:[], files:[]},
@@ -6044,7 +6044,7 @@ function bootPortal(){
     signIn('director');                                               // no welcome, no login, no agreement — just the sample workspace
     return;
   }
-  if(sbOn()) ME.director={name:'Your director',init:'DR',role:'Agency director',label:'Director view'};   // v12.13: no built-in name in a real workspace (before the invite page too)
+  if(sbOn()) ME.director={name:'Your director',init:'DR',role:'Team director',label:'Director view'};   // v12.13: no built-in name in a real workspace (before the invite page too)
   if(RESET_TOKEN&&sbOn()){                                            // v12.17: a link from a password reset email
     hideWelcome(); hideOnboarding();
     el('login').style.display='flex';
@@ -7143,7 +7143,7 @@ function csAddMenu(page,col){
     ${[['notes','✎ Notes','A free-text card for anything you want in front of you'],
        ['table','▦ Custom table','Your own columns and rows — a phone tree, a roles table, whatever fits'],
        ['links','⇗ Quick links','Buttons to portal pages or outside sites'],
-       ...(page==='templates'&&state.role==='director'?[['binder','🗀 Binder','A new binder with its own table of documents, shared with the whole agency']]:[])].map(([k,t,d])=>`
+       ...(page==='templates'&&state.role==='director'?[['binder','🗀 Binder','A new binder with its own table of documents, shared with the whole team']]:[])].map(([k,t,d])=>`
     <button class="checkrow" style="width:100%;cursor:pointer;text-align:left;border-color:var(--line)" onclick="csCreate('${page}','${k}')"><div class="cb">＋</div><div class="ct"><b>${t}</b><div class="tiny muted">${d}</div></div></button>`).join('')}`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>`);
 }
@@ -7856,7 +7856,7 @@ function hmSecMyTasks(){
 function hmSecAsk(){
   const sug=hmRole()==='family'?['When is the next appointment?','What changed today?']:hmRole()==='staff'?['What do I do if a client refuses a medication?','What is due on my shift?']
     :['Which certifications expire this month?','What is still due before inspection?','Summarize this week’s incidents'];
-  return `<section class="hm-card hm-ask" data-hm="ask"><div class="hm-ask-h"><span class="hm-ask-ic">${hmI('spark',20)}</span><div><h2>Ask Spectrum</h2><span>Plain-language answers from your agency’s records</span></div></div>
+  return `<section class="hm-card hm-ask" data-hm="ask"><div class="hm-ask-h"><span class="hm-ask-ic">${hmI('spark',20)}</span><div><h2>Ask Spectrum</h2><span>Plain-language answers from your team’s records</span></div></div>
     <div class="hm-ask-in"><input type="text" id="hmAskQ" aria-label="Ask Spectrum a question" placeholder="Ask about clients, staff or compliance" onkeydown="if(event.key==='Enter')hmAsk(this.value)">
       <button type="button" aria-label="Send question" onclick="hmAsk(el('hmAskQ').value)">${hmI('send',18)}</button></div>
     <div class="hm-ask-sug">${sug.map(q=>`<button type="button" onclick="hmAsk(this.textContent)">${esc(q)}</button>`).join('')}</div></section>`;
@@ -7936,7 +7936,7 @@ function hmCustDraw(){
   const tgtBtn=(t,l)=>`<button type="button" role="tab" aria-selected="${HM.tgt===t}" class="set-tab ${HM.tgt===t?'on':''}" onclick="hmCustTarget('${t}')">${l}</button>`;
   openModal('Customize your home page',`
     <div class="hm-cust">
-      ${dir?`<div class="set-tabs hm-tgt" role="tablist">${tgtBtn('me','Your home page')}<span class="hm-tgt-l">Agency default for</span>${tgtBtn('director','Directors')}${tgtBtn('staff','Staff')}${tgtBtn('family','Families')}</div>`:''}
+      ${dir?`<div class="set-tabs hm-tgt" role="tablist">${tgtBtn('me','Your home page')}<span class="hm-tgt-l">Team default for</span>${tgtBtn('director','Directors')}${tgtBtn('staff','Staff')}${tgtBtn('family','Families')}</div>`:''}
       <p class="hm-cust-note">${me?'Changes show behind this window as you make them. Saved to your account, so your home page looks the same on every device you sign in on.'
         :`What ${HM_ROLE_PL[R]} see until they set up their own home page. Anyone who has set up their own keeps theirs.${c.agency?'':' Right now they get the standard layout.'}`}</p>
       <h3>Look</h3><div class="hm-opts two">${opt('look','a','Clear agenda','A light header, the numbers in tiles, today as a list beside the sections',mini('a'))}${opt('look','b','Bold overview','A green header with the numbers and what’s next, the sections in a grid',mini('b'))}</div>
@@ -7952,7 +7952,7 @@ function hmCustDraw(){
       ${me?`<button type="button" class="btn ghost sm" onclick="hmCustAddOwn()">＋ Add your own section</button>`:''}
       ${dir?`<p class="hm-cust-note" style="margin-top:14px">House colors, appointment types and attention icons are under <a href="#" onclick="event.preventDefault();HM.edit=null;closeAll();render();homeSettings()">Settings</a>.</p>`:''}
     </div>`,
-    `<span class="hm-foot-l">${me&&c.own?`<button class="btn ghost" onclick="hmCustReset()">${c.agency?'Use the agency default':'Back to the standard layout'}</button>`:''}
+    `<span class="hm-foot-l">${me&&c.own?`<button class="btn ghost" onclick="hmCustReset()">${c.agency?'Use the team default':'Back to the standard layout'}</button>`:''}
       ${!me&&c.agency?`<button class="btn ghost" onclick="hmCustDefReset()">Back to the standard layout</button>`:''}</span>
      <button class="btn ghost" onclick="HM.edit=null;closeAll();render()">Cancel</button>
      <button class="btn navy" onclick="hmCustSave()">${me?'Save':'Save the default for '+HM_ROLE_PL[R]}</button>`);
@@ -7970,17 +7970,17 @@ function hmCustSave(){
   if(!HM.edit) return;
   const me=HM.tgt==='me', R=hmTgtRole(), cfg=hmClean(hmCfgFor(R,me,HM.edit));
   if(me){ hmOwnSave(cfg); logAudit('Customized their home page',R); toast('Saved. Your home page looks like this on every device you sign in on.'); }
-  else { hmDefSave(R,cfg); logAudit('Set the agency home page default',HM_ROLE_PL[R]);
+  else { hmDefSave(R,cfg); logAudit('Set the team home page default',HM_ROLE_PL[R]);
     toast('Saved. '+HM_ROLE_PL[R].charAt(0).toUpperCase()+HM_ROLE_PL[R].slice(1)+' who have not set up their own home page now see this layout.'); }
   HM.edit=null; HM.tgt='me'; closeAll(); render();
 }
 function hmCustReset(){
   const r=hmRole(), h=Object.assign({},((USER_SET[userKey()]||{}).home)||{}); delete h[r];
   userSetSave({home:h}); HM.edit=null; closeAll(); render(); logAudit('Reset their home page',r);
-  toast((HOME_DEFAULT&&HOME_DEFAULT[r])?'Your home page now follows the agency default.':'Your home page is back to the standard layout.');
+  toast((HOME_DEFAULT&&HOME_DEFAULT[r])?'Your home page now follows the team default.':'Your home page is back to the standard layout.');
 }
 function hmCustDefReset(){
-  const R=hmTgtRole(); hmDefSave(R,null); logAudit('Removed the agency home page default',HM_ROLE_PL[R]);
+  const R=hmTgtRole(); hmDefSave(R,null); logAudit('Removed the team home page default',HM_ROLE_PL[R]);
   HM.edit=hmDraft(hmCfgFor(R,false)); hmCustDraw(); toast(HM_ROLE_PL[R].charAt(0).toUpperCase()+HM_ROLE_PL[R].slice(1)+' get the standard layout again.');
 }
 /* adding or removing one of your own sections leaves this window, so what you changed here is kept first */
@@ -9222,7 +9222,7 @@ function notifSettings(tab){
         ${D.freq==='weekly'?`<span>on</span><select class="inp ns-sel" onchange="nsDigSet('weekday',+this.value)">${WEEKDAYS.map((d,i)=>`<option value="${i}" ${+D.weekday===i?'selected':''}>${d}</option>`).join('')}</select>`:''}
         ${on?`<span>at</span><select class="inp ns-sel" onchange="nsDigSet('hour',+this.value)">${HOUR_OPTS.filter(([h])=>h>=12).map(([h,l])=>`<option value="${h}" ${+D.hour===h?'selected':''}>${l}</option>`).join('')}</select>`:''}</div></div>
       ${on?`<div class="ns-card"><div class="ns-l" style="margin-top:0">Who gets it</div>${nsChips(D.who||[],'nsDigWho')}
-        <div class="tiny muted" style="margin-top:6px">Each person gets their own copy by email. Staff see their own tasks; the director sees the whole agency.</div></div>
+        <div class="tiny muted" style="margin-top:6px">Each person gets their own copy by email. Staff see their own tasks; the director sees the whole team.</div></div>
       <div class="ns-card"><div class="ns-l" style="margin-top:0">What it covers</div>
         ${[['today',D.freq==='weekly'?'This week: appointments, incidents, notes and documents':'Today: appointments, incidents, notes and documents'],['coming',D.freq==='weekly'?'The week ahead':'Tomorrow'],['reminders','Reminders: daily logs not done, messages waiting, certifications expiring'],['tasks','Open tasks: how many, and how many are overdue']]
           .map(([k,l])=>`<label class="ns-part"><input type="checkbox" ${D.parts[k]!==false?'checked':''} onchange="NOTIF_DIGEST.parts['${k}']=this.checked;nsSave()"> ${l}</label>`).join('')}</div>
@@ -9322,7 +9322,7 @@ function npDigest(D){
   var title=(weekly?'Your weekly summary':'Your daily summary')+' — '+(weekly?'week to '+day(today):longDay(today));
   var html='<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#1f2a2a">'
     +'<h2 style="font-size:19px;margin:0 0 4px">'+esc2(title)+'</h2>'
-    +'<div style="font-size:12.5px;color:#5b6666;margin:0 0 16px">'+esc2(D.agency||'Your agency')+(D.recipient.name?' · for '+esc2(D.recipient.name):'')+'</div>'
+    +'<div style="font-size:12.5px;color:#5b6666;margin:0 0 16px">'+esc2(D.agency||'Your team')+(D.recipient.name?' · for '+esc2(D.recipient.name):'')+'</div>'
     +sec.map(function(s){ return '<h3 style="font-size:14px;margin:16px 0 6px;border-bottom:1px solid #e3e0d6;padding-bottom:4px">'+esc2(s.h)+'</h3><ul style="margin:0;padding-left:18px;font-size:13.5px;line-height:1.7">'
       +s.li.map(function(x){ return '<li>'+(s.raw?x:esc2(x))+'</li>'; }).join('')+'</ul>'; }).join('')
     +(D.portalUrl?'<p style="margin:20px 0 0"><a href="'+esc2(D.portalUrl)+'" style="display:inline-block;background:#2f5a4e;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-size:13.5px;font-weight:bold">Open the portal</a></p>':'')
@@ -9369,7 +9369,7 @@ function digestDataHere(){
   noteDays.forEach(([c,d])=>{ if(d===T) done.add(c); });
   const dl=visibleClients().filter(c=>!done.has(c.id)).length;
   const certs=Object.values(CREDS||{}).reduce((a,l)=>a+(l||[]).filter(c=>c.s==='warn'||c.s==='bad').length,0);
-  return {agency:(AGENCY_PROFILE&&AGENCY_PROFILE.name)||ONB.org||'Your agency', todayIso:T, freq:NOTIF_DIGEST.freq==='off'?'daily':NOTIF_DIGEST.freq, parts:NOTIF_DIGEST.parts,
+  return {agency:(AGENCY_PROFILE&&AGENCY_PROFILE.name)||ONB.org||'Your team', todayIso:T, freq:NOTIF_DIGEST.freq==='off'?'daily':NOTIF_DIGEST.freq, parts:NOTIF_DIGEST.parts,
     recipient:{name:actorName(), role:isDir?'director':'staff', sid:me},
     appts:visAppts().filter(a=>!(isDir&&apptCalKey(a)==='personal')).map(a=>({date:a.date,time:a.time,cancelled:!!a.cancelled})),
     incidents:(INCIDENTS||[]).map(i=>({date:i.date,type:i.type})), notes, docs,
@@ -9555,7 +9555,7 @@ function clientDirectory(c){
       ${mine.map(d=>row(d,'')).join('')
         ||`<div class="empty"><b>Nobody assigned yet</b>Open any directory entry and tick ${esc(c.uci)} under "Who sees this provider".</div>`}
     </div>
-    ${rest.length?`<div class="sec-head"><h2>Agency wide</h2><span class="hd-n">${rest.length}</span>
+    ${rest.length?`<div class="sec-head"><h2>Team wide</h2><span class="hd-n">${rest.length}</span>
       <p>Not tied to one person — everyone uses these</p></div>
     <div class="card-b flush">${rest.map(d=>row(d,'All clients')).join('')}</div>`:''}
   </section>`;
@@ -11180,7 +11180,7 @@ function reminderSend(sid){
 }
 function delStaff(sid){
   const st=staff(sid); if(!st) return;
-  askDelete('Delete '+st.name+'?','Their shifts, certifications and assigned tasks go with them, and their sign-in, if they have one, stops opening this agency. The change log keeps a record that it happened.',()=>{
+  askDelete('Delete '+st.name+'?','Their shifts, certifications and assigned tasks go with them, and their sign-in, if they have one, stops opening this team\u2019s workspace. The change log keeps a record that it happened.',()=>{
     const logins=staffLogins(sid);                 // read before the record goes
     const i=STAFF.findIndex(x=>x.id===sid); if(i>-1) STAFF.splice(i,1);
     for(let j=SHIFTS.length-1;j>=0;j--) if(SHIFTS[j].sid===sid) SHIFTS.splice(j,1);
@@ -11250,18 +11250,18 @@ async function staffAccessEnd(email,sid,name,afterDelete){
   }
   if(j.removed){
     logAudit('Ended sign-in access',`${name} · ${email}`);
-    toast(afterDelete?name+' deleted. Their sign-in no longer opens this agency.':name+'’s sign-in no longer opens this agency.');
+    toast(afterDelete?name+' deleted. Their sign-in no longer opens this team\u2019s workspace.':name+'’s sign-in no longer opens this team\u2019s workspace.');
   }else if(j.reason==='director'){
     toast(afterDelete?name+' deleted. They sign in as a director, so their access stays.':name+' signs in as a director, so their access stays.');
   }else if(!afterDelete&&j.reason==='not-a-member'){
-    toast(name+' had no access to this agency. They are off the list now.');
+    toast(name+' had no access to this team\u2019s workspace. They are off the list now.');
   }
   if(typeof render==='function'&&!afterDelete) render();
   return j;
 }
 function teamAccessRemove(email){
   const u=USERS[email]||{}, name=u.name||email;
-  askDelete('Remove '+name+'’s access?','Their sign-in stops opening this agency, and any invite link sent to them stops working. Their staff record, if they have one, stays.',async()=>{
+  askDelete('Remove '+name+'’s access?','Their sign-in stops opening this team\u2019s workspace, and any invite link sent to them stops working. Their staff record, if they have one, stays.',async()=>{
     await staffAccessEnd(email,u.sid||'',name,false);
     if(typeof openSettings==='function') openSettings();
   },'Remove access');
@@ -12005,7 +12005,7 @@ function viewForms(){
   return `
   <div class="page-hd">
     <div class="title-ic honey">${ico('file-text',20)}</div>
-    <div class="title-copy"><h1>Templates</h1><p>The blank forms the agency works from — open one to fill it in, assign it or print it</p></div>
+    <div class="title-copy"><h1>Templates</h1><p>The blank forms the team works from — open one to fill it in, assign it or print it</p></div>
     ${state.role==='director'?`<div class="page-acts">
       ${state.layoutEdit?`<button class="btn gold sm" onclick="pageEdit()">✓ Done editing</button>`:''}
       <button class="gear" title="Settings" onclick="pageSettings('forms')">${ico('settings',17)}</button>
@@ -12184,7 +12184,7 @@ function viewDirectory(){
   if(q) list=list.filter(d=>(d.cat+' '+d.name+' '+d.org+' '+d.notes).toLowerCase().includes(q));
   return `
   <div class="page-h">
-    <div><h1>${esc(navLbl('directory','Directory'))}</h1><div class="sub">Providers, programs and resources the agency refers to — organized by category</div></div>
+    <div><h1>${esc(navLbl('directory','Directory'))}</h1><div class="sub">Providers, programs and resources the team refers to — organized by category</div></div>
     <div class="right" style="display:flex;gap:6px"><button class="btn ghost sm" title="Category icons" onclick="dirIconForm()">${ico('settings',15)}</button>
       <button class="btn navy" onclick="dirForm()">＋ Add entry</button></div>
   </div>
@@ -12294,7 +12294,7 @@ function dirForm(i){
           entry shows on each of those clients' Directory tab. */''}
     <div class="field" style="margin-top:12px"><label>Who sees this provider</label>
       <div id="drWho" style="display:flex;gap:6px;flex-wrap:wrap">${dirWhoChips()}</div>
-      <div class="tiny muted" style="margin-top:6px">Leave every one unticked if it applies to the whole agency.</div></div>`,
+      <div class="tiny muted" style="margin-top:6px">Leave every one unticked if it applies to the whole team.</div></div>`,
     `${i==null?'':`<button class="btn ghost" onclick="dirDel(${i})">✕ Delete</button>
       ${d.phone?`<a class="btn ghost" style="text-decoration:none" href="tel:${esc(d.phone)}">☏ Call</a>`:''}
       ${d.email?`<a class="btn ghost" style="text-decoration:none" href="mailto:${esc(d.email)}">✉ Email</a>`:''}`}
@@ -12565,14 +12565,14 @@ let MY_QUALS={director:[{c:'Administrator certification',d:'Dec 2027',s:'ok'},{c
 let MY_QUALS_P={};                                                   // v12.13: each director's own credentials, by sign-in email
 function editEmail(){
   if(realSession()){                                                 // v12.13: this is the agency's address, not the person's
-    openModal('Agency alerts email',`
-      <div class="field"><label>Send agency alerts to</label><input class="inp" id="meEmail" type="email" value="${esc(AGENCY_EMAIL||'')}" placeholder="director@agency.org"></div>
-      <div class="tiny muted">The daily overdue-task digest and SIR deadline alerts for the whole agency are emailed here. It does not change anyone\u2019s sign-in email.</div>`,
+    openModal('Team alerts email',`
+      <div class="field"><label>Send team alerts to</label><input class="inp" id="meEmail" type="email" value="${esc(AGENCY_EMAIL||'')}" placeholder="director@example.org"></div>
+      <div class="tiny muted">The daily overdue-task digest and SIR deadline alerts for the whole team are emailed here. It does not change anyone\u2019s sign-in email.</div>`,
       `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveEmail()">Save</button>`);
     return;
   }
   openModal('Your email',`
-    <div class="field"><label>Email address</label><input class="inp" id="meEmail" type="email" value="${esc(ONB.email||'')}" placeholder="you@agency.org"></div>
+    <div class="field"><label>Email address</label><input class="inp" id="meEmail" type="email" value="${esc(ONB.email||'')}" placeholder="you@example.org"></div>
     <div class="tiny muted">Used on your profile and for notification settings. Leave blank to remove.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveEmail()">Save</button>`);
 }
@@ -12582,8 +12582,8 @@ function saveEmail(){
     if(v&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return toast('Enter a valid email address.');
     AGENCY_EMAIL=v;
     sbUpsert('np_demo_program',{key:'email',value:{v},updated_by:auditActor()});
-    logAudit('Changed agency alerts email',v||'(none)');
-    closeAll(); render(); return toast(v?'Agency alerts will go to '+v+'.':'Agency alerts email removed.');
+    logAudit('Changed team alerts email',v||'(none)');
+    closeAll(); render(); return toast(v?'Team alerts will go to '+v+'.':'Team alerts email removed.');
   }
   ONB.email=(el('meEmail').value||'').trim();
   lsSet('np_onboarding',JSON.stringify(ONB));
@@ -12754,9 +12754,9 @@ function viewProfile(){
         <div class="card-b flush"><table class="tb"><tbody>
           ${[...(realSession()&&state.role!=='family'
                ? [['Sign-in email',esc(AUTH.email||'')+' <span class="tiny muted">\u00b7 the email you sign in with</span>'],
-                  ...(state.role==='director'?[['Agency alerts',(AGENCY_EMAIL?esc(AGENCY_EMAIL)+' <button class="btn ghost sm" onclick="editEmail()" title="Where the daily overdue digest and SIR deadline alerts are emailed">✎</button>':'<span class="muted">Not set</span> <button class="btn ghost sm" onclick="editEmail()">＋ Add</button>')+'<div class="tiny muted">Agency-wide: daily digest and SIR alerts go here</div>']]:[])]
+                  ...(state.role==='director'?[['Team alerts',(AGENCY_EMAIL?esc(AGENCY_EMAIL)+' <button class="btn ghost sm" onclick="editEmail()" title="Where the daily overdue digest and SIR deadline alerts are emailed">✎</button>':'<span class="muted">Not set</span> <button class="btn ghost sm" onclick="editEmail()">＋ Add</button>')+'<div class="tiny muted">Team-wide: daily digest and SIR alerts go here</div>']]:[])]
                : [['Email',state.role==='director'?((ONB.email||AUTH.email)?esc(ONB.email||AUTH.email)+' <button class="btn ghost sm" onclick="editEmail()">✎</button>':'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editEmail()">＋ Add email</button>'):state.role==='staff'?esc((ONB.email||AUTH.email)||'on file'):'guardian on file']]),
-             ...(state.role==='director'?[[realSession()?'Agency website':'Website',ONB.domain?`<a href="https://${esc(ONB.domain)}" target="_blank" style="color:var(--navy);font-weight:700">${esc(ONB.domain)}</a> <button class="btn ghost sm" onclick="editSite()">✎</button>`:'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editSite()">＋ Add website</button>']]:[]),
+             ...(state.role==='director'?[[realSession()?'Team website':'Website',ONB.domain?`<a href="https://${esc(ONB.domain)}" target="_blank" style="color:var(--navy);font-weight:700">${esc(ONB.domain)}</a> <button class="btn ghost sm" onclick="editSite()">✎</button>`:'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editSite()">＋ Add website</button>']]:[]),
              ['Role',esc(realSession()?((PERSON&&PERSON.title)||ME[state.role].role||ME[state.role].label||''):(ONB.roleTitle||ME[state.role].label||''))],
              ['Phone','On file'],['Timezone',`${esc(tzEff().replace(/_/g,' '))}${TZ_FORCE?'':' (automatic)'} <button class="btn ghost sm" onclick="editTz()">✎</button>`],
              ['Permission',state.role==='director'?'Administrator — full control of the organization':state.role==='staff'?'Care staff — assigned clients only':'Family — one client only']]
@@ -12826,7 +12826,7 @@ function profOnboardTab(){
   if(_ob&&_ob.length) return `${_ob.map((o,i)=>`<div class="checkrow" style="cursor:pointer" onclick="obToggle('${_sid}',${i})"><div class="cb ${o.d?'on':''}">✓</div><div class="ct ${o.d?'done':''}">${esc(o.t)}${o.link?` <a href="${esc(o.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="tiny" style="color:var(--navy);font-weight:700">↗ link</a>`:''}${o.by?` <span class="tiny muted">· ${esc(o.by)} ${esc(o.at||'')}</span>`:''}</div></div>`).join('')}
     <div class="tiny muted" style="padding:10px 18px">Your onboarding checklist, shared by your director. Tick each step as you complete it.</div>`;
   return `${ONBOARD.map(o=>`<div class="checkrow"><div class="cb">✓</div><div class="ct">${esc(o)}</div></div>`).join('')}
-    <div class="tiny muted" style="padding:10px 18px">The agency's standard onboarding steps. Your director has not shared a checklist with you yet.</div>`;
+    <div class="tiny muted" style="padding:10px 18px">The team's standard onboarding steps. Your director has not shared a checklist with you yet.</div>`;
 }
 function obStepsSave(){ sbUpsert('np_demo_program',{key:'onboarding',value:{steps:ONBOARD},updated_by:auditActor()}); lsSet('np_onboard_steps',JSON.stringify(ONBOARD)); }
 function obAdd(){ const v=(el('obNew').value||'').trim(); if(!v) return; ONBOARD.push(v); obStepsSave(); logAudit('Added onboarding step',v); render(); }
@@ -13742,7 +13742,7 @@ function exportAll(){                                               // v12.22: e
   toast('The print window opens with every client record. Choose \u201cSave as PDF\u201d to keep a copy.');
 }
 function exportAllLegacy(){ openModal('Export everything',`
-  <p class="muted" style="margin-top:0">Generates one folder per client plus agency-level records, zipped together.</p>
+  <p class="muted" style="margin-top:0">Generates one folder per client plus team-wide records, zipped together.</p>
   <div class="sec-note" style="margin-bottom:14px"><span>ℹ</span><div><b>This export is logged</b>Your name, the time and the contents are written to the audit trail.</div></div>
   ${['All 6 client folders','Staff training register','Incident summary','Audit trail for the period']
     .map(x=>`<div class="checkrow"><div class="cb on">✓</div><div class="ct">${x}</div></div>`).join('')}`,
@@ -15502,7 +15502,7 @@ function libVisible(key){ return fl=>!isDeleted('libdoc',libHideKey(key,fl)); }
 function libDelete(key,fl){
   if(fl.dbId) return libRemove(fl.dbId);
   if(fl.docId&&USER_DOCS[fl.docId]) return docRemove(fl.docId);
-  askDelete('Remove '+esc(fl.n)+'?',`It comes off ${esc(FOLDER_NAMES[key]||key)} for everyone in the agency.${fl.url?' The linked page itself is not affected.':''}`,()=>{
+  askDelete('Remove '+esc(fl.n)+'?',`It comes off ${esc(FOLDER_NAMES[key]||key)} for everyone on the team.${fl.url?' The linked page itself is not affected.':''}`,()=>{
     delMark('libdoc',libHideKey(key,fl));
     logAudit('Removed document',`${fl.n} \u00b7 ${FOLDER_NAMES[key]||key}`);
     docAct('removed',fl.n,FOLDER_NAMES[key]||key,null);
@@ -18382,7 +18382,7 @@ function viewIntegrations(){
     ['💊','Pharmacy feed','Import medication orders directly from the dispensing pharmacy',0]
   ];
   return `
-  <div class="page-h"><div><h1>Integrations</h1><div class="sub">Connect the tools the agency already uses</div></div></div>
+  <div class="page-h"><div><h1>Integrations</h1><div class="sub">Connect the tools the team already uses</div></div></div>
   <section class="card">
     <div class="card-b flush">
       ${ints.map(([ic,n,d,on],i)=>`<div class="intg"><div class="ii">${ic}</div>
@@ -18966,10 +18966,10 @@ function openIncidentForm(cid){
   setTimeout(icProtoShow,30);
 }
 let PROTOCOLS={
-  'Fall':{hours:24,first:['Make the person safe — check for injury, call emergency services if needed','Tell the shift lead by phone','Write down facts and times while fresh','Notify the guardian — the director confirms who calls'],call:['Shift lead on duty — A. Osei · ext. 214','Agency nurse — N. Harding · ext. 118','Executive director · ext. 101']},
-  'Medication error':{hours:24,first:['Check the person for any reaction — call poison control or 911 if symptomatic','Tell the agency nurse immediately','Quarantine the medication and the MAR','Write down what was given, when and by whom'],call:['Agency nurse — N. Harding · ext. 118','Prescriber on record','Executive director · ext. 101','State reporting line — 1-800-555-0142']},
+  'Fall':{hours:24,first:['Make the person safe — check for injury, call emergency services if needed','Tell the shift lead by phone','Write down facts and times while fresh','Notify the guardian — the director confirms who calls'],call:['Shift lead on duty — A. Osei · ext. 214','Staff nurse — N. Harding · ext. 118','Executive director · ext. 101']},
+  'Medication error':{hours:24,first:['Check the person for any reaction — call poison control or 911 if symptomatic','Tell the staff nurse immediately','Quarantine the medication and the MAR','Write down what was given, when and by whom'],call:['Staff nurse — N. Harding · ext. 118','Prescriber on record','Executive director · ext. 101','State reporting line — 1-800-555-0142']},
   'Behavioral':{hours:24,first:['Ensure everyone\'s safety — clear the area if needed','Use the person\'s behavior support plan','Tell the shift lead by phone','Document antecedent, behavior and consequence'],call:['Shift lead on duty — A. Osei · ext. 214','Behavior specialist on contract','Executive director · ext. 101']},
-  'Injury':{hours:24,first:['Provide first aid — call 911 for anything beyond minor','Tell the shift lead and the nurse','Photograph and document the scene','Notify the guardian'],call:['Agency nurse — N. Harding · ext. 118','Shift lead on duty — A. Osei · ext. 214','State reporting line — 1-800-555-0142']}
+  'Injury':{hours:24,first:['Provide first aid — call 911 for anything beyond minor','Tell the shift lead and the nurse','Photograph and document the scene','Notify the guardian'],call:['Staff nurse — N. Harding · ext. 118','Shift lead on duty — A. Osei · ext. 214','State reporting line — 1-800-555-0142']}
 };
 function protoHub(){
   const keys=Object.keys(PROTOCOLS).filter(k=>!hid('protocol',k));
@@ -19345,7 +19345,7 @@ function uploadDoc(cid,cat,opts){
     <div class="sec-note" style="margin:12px 0 0;display:block">
       <label class="checkrow" style="cursor:pointer;padding:0">
         <input type="checkbox" id="udBinder" checked onchange="el('udBinderPick').style.display=this.checked?'':'none'">
-        <span><b>Also file it in a binder</b> — keeps the agency record alongside the client folder</span></label>
+        <span><b>Also file it in a binder</b> — keeps a binder copy alongside the client folder</span></label>
       <div id="udBinderPick" class="row2" style="margin-top:8px">
         <div class="field"><label>Binder</label>
           <select class="inp" id="udBinderKey" data-list="binder" onchange="if(this.value==='__add__')return fillSelectChange(this);udSubs()">
@@ -19464,7 +19464,7 @@ function openReminderPrefs(){
       <select class="inp" id="np_lead">${[2,12,24,48].map(h=>`<option value="${h}" ${NOTIF_PREFS.lead===h?'selected':''}>${h} hours before</option>`).join('')}</select></div>
     ${row('inapp','In the portal','Shows in the notifications bell — always on during the pilot.')}
     ${row('email','Email me','Sent by the automation backend to the address below.')}
-    <div class="field"><label>Email address</label><input class="inp" id="np_emailTo" value="${esc(NOTIF_PREFS.emailTo||'')}" placeholder="you@youragency.org"></div>
+    <div class="field"><label>Email address</label><input class="inp" id="np_emailTo" value="${esc(NOTIF_PREFS.emailTo||'')}" placeholder="you@example.org"></div>
     ${row('sms','Text me','Sent by SMS. Needs a texting provider connected before it delivers.')}
     <div class="field"><label>Mobile number</label><input class="inp" id="np_smsTo" value="${esc(NOTIF_PREFS.smsTo||'')}" placeholder="+1 555 0142"></div>
     <div class="sec-note"><span>🔒</span><div><b>Nothing identifying leaves the portal</b>Email and text travel over public networks, so alerts never carry client names, IDs, diagnoses or any record detail. The full reminder — appointment, time and client ID — stays inside the portal.</div></div>
@@ -19521,13 +19521,13 @@ function openSettings(){
       <button class="btn ghost sm" onclick="closeAll();openCredentials()">🔑 ${realSession()?'Change password':(authReady()?'Sign-in credentials':'Set up sign-in')}</button>
       <div class="sec-note"><span>🔒</span><div><b>Auto sign-out</b>${IDLE_MIN?'You are signed out after '+IDLE_MIN+' minutes without activity on this account.':'Off for your account. Turn it on for shared workstations from the idle timer setting.'}</div></div>
     </div></section>
-    <section class="card"><div class="card-h"><h2>Notifications</h2><div class="sub">${state.role==='director'?'Reminders, alerts and the daily summary for the agency':'The reminders and alerts that reach you'}</div></div><div class="card-b">
+    <section class="card"><div class="card-h"><h2>Notifications</h2><div class="sub">${state.role==='director'?'Reminders, alerts and the daily summary for the team':'The reminders and alerts that reach you'}</div></div><div class="card-b">
       <button class="btn ghost sm" onclick="closeAll();${state.role==='director'?"notifSettings('rem')":'notifMine()'}">\u2699 ${state.role==='director'?'Notification settings':'What reaches me'}</button>
       ${realSession()?'':`<button class="btn ghost sm" onclick="closeAll();openCredentials()">🔑 ${authReady()?'Sign-in credentials':'Set up sign-in'}</button>`}
       ${(!realSession()||(state.role==='director'&&isAgencyOwner()))?'<button class="btn ghost sm" onclick="restartOnboarding()">↻ Run setup again</button>':''}
     </div></section>
     ${state.role==='director'&&realSession()?`
-    <section class="card"><div class="card-h"><h2>Team access</h2><div class="sub">People who sign in to this agency</div></div><div class="card-b">
+    <section class="card"><div class="card-h"><h2>Team access</h2><div class="sub">People who sign in to this team</div></div><div class="card-b">
       ${Object.entries(USERS).filter(([e,u])=>u&&/@/.test(e)).map(([e,u])=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px"><span><b>${esc(u.name||e)}</b>${u.title?' \u00b7 '+esc(u.title):''}<br><span class="tiny muted">${esc(e)}</span></span><span style="display:flex;gap:6px;align-items:center"><span class="pill ${u.role==='director'?'ok':''}">${u.role==='director'?'Director':'Staff'}</span>${u.role!=='director'&&e!==String(AUTH.email||'').toLowerCase()?`<button class="btn ghost sm" title="End this person’s sign-in access" onclick="closeAll();teamAccessRemove(${esc(JSON.stringify(e))})">Remove</button>`:''}</span></div>`).join('')||'<div class="tiny muted">Nobody else yet.</div>'}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn navy sm" onclick="closeAll();inviteDirector()">＋ Invite a director</button></div>
       <div class="tiny muted" style="margin-top:8px">Staff are invited from their staff record (Staff \u2192 open a person \u2192 Invite). Each person gets their own sign-in.</div>
@@ -19761,7 +19761,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.34 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.35 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -20029,7 +20029,7 @@ function forgotOpen(){                                               // shown on
   el('loginSub').textContent='We email you a link to choose a new password. It works once, for an hour.';
   let box=el('forgotBox'); if(box) box.remove();
   el('loginSub').insertAdjacentHTML('afterend',`<div id="forgotBox" style="text-align:left;max-width:360px;margin:0 auto 6px">
-    <div class="field"><label>Email</label><input class="inp" id="fpEmail" type="email" value="${esc(em)}" placeholder="you@youragency.org" onkeydown="if(event.key==='Enter')forgotSend()"></div>
+    <div class="field"><label>Email</label><input class="inp" id="fpEmail" type="email" value="${esc(em)}" placeholder="you@example.org" onkeydown="if(event.key==='Enter')forgotSend()"></div>
     <div id="fpMsg" class="tiny" style="display:none;margin:-4px 0 10px"></div>
     <button class="btn navy" id="fpGo" style="width:100%;justify-content:center" onclick="forgotSend()">Send reset link</button>
     <div class="tiny" id="fpBack" style="text-align:center;margin-top:12px"><a href="#" onclick="event.preventDefault();forgotClose()" style="color:var(--navy);font-weight:700">Back to log in</a></div></div>`);
@@ -20112,7 +20112,7 @@ async function resetSave(){
 function regSay(msg){ toast(msg); const m=el('liErr'); if(m){ m.textContent=msg; m.style.display='block'; } }
 function loginErr(msg,offerAgency){
   const m=el('liErr'); if(!m) return;
-  m.innerHTML=esc(msg)+(offerAgency?'<br><a href="#" onclick="event.preventDefault();agencyFromLogin()" style="color:var(--navy);font-weight:700">Set up a new agency with this login</a>':'');
+  m.innerHTML=esc(msg)+(offerAgency?'<br><a href="#" onclick="event.preventDefault();agencyFromLogin()" style="color:var(--navy);font-weight:700">Set up a new team with this login</a>':'');
   m.style.display='block';
 }
 /* v12.16: a login with no agency (its agency was deleted, or its access removed) can start one */
@@ -20121,7 +20121,7 @@ function agencyFromLogin(){
   showRegisterGate();
   const e=el('liEmail'); if(e) e.value=em;
   const pw=el('liPw'); if(pw) pw.placeholder='The password you already use';
-  el('loginSub').innerHTML='Starting a new agency with <b>'+esc(em)+'</b>. Use the password you already have. The agency gets its own private workspace.';
+  el('loginSub').innerHTML='Starting a new team with <b>'+esc(em)+'</b>. Use the password you already have. The team gets its own private workspace.';
   const er=el('liErr'); if(er) er.style.display='none';
 }
 /* v12.16: a login whose only agency is the empty one its own sign-up made (nobody else in it, no
@@ -20174,8 +20174,8 @@ async function authLogin(email,pw){
     if(r.ok&&r.d.access_token){
       AUTH={email,session:{t:r.d.access_token,r:r.d.refresh_token||'',at:Date.now()},mode:'supabase'}; saveAuth();
       orgForget(); await orgResolve();                                // pick up which agency this account belongs to
-      if(!ORG_ID) return {ok:false,noAgency:ORG_NONE,msg:ORG_NONE?'This login isn\u2019t part of an agency. If you work for one, ask your director for a new invite link.'
-        :'Could not reach your agency right now. Try again in a moment.'};
+      if(!ORG_ID) return {ok:false,noAgency:ORG_NONE,msg:ORG_NONE?'This login isn\u2019t part of a team. If you work with one, ask your director for a new invite link.'
+        :'Could not reach your team right now. Try again in a moment.'};
       return {ok:true};
     }
     const m=(r.d&&(r.d.error_description||r.d.msg||r.d.message))||'';
@@ -20200,7 +20200,7 @@ function openCredentials(){
     <div class="sec-note" style="margin-top:0"><span>🔑</span><div><b>${has?'Your login':'Choose how you sign in'}</b>${has
       ? 'These are the details you use when you sign back in.'
       : 'Set an email and password now and you will use them every time you open the portal.'}</div></div>
-    <div class="field"><label>Email</label><input class="inp" id="crEmail" type="email" value="${esc(AUTH.email||ONB.email||'')}" placeholder="you@youragency.org"></div>
+    <div class="field"><label>Email</label><input class="inp" id="crEmail" type="email" value="${esc(AUTH.email||ONB.email||'')}" placeholder="you@example.org"></div>
     <div class="field"><label>${has?'New password':'Password'}</label><input class="inp" id="crPw" type="password" placeholder="At least 8 characters"></div>
     <div class="field"><label>Confirm password</label><input class="inp" id="crPw2" type="password" placeholder="Type it again"></div>
     <div class="tiny muted">${sbOn()?'Your password is handled by the portal\u2019s authentication service — we never see it.'
@@ -20276,24 +20276,24 @@ function showRegisterGate(){
   /* v12.9: this screen starts a new agency, with its own private workspace. It no longer
      wears the name of whichever agency last used this browser. */
   loginMark('Spectrum Care Advisory OS');
-  el('loginTitle').textContent='Set up a new agency';
+  el('loginTitle').textContent='Set up a new team';
   lgChrome('register'); { const rw=el('liRemWrap'); if(rw) rw.style.display='none'; }   // v12.23
-  el('loginSub').innerHTML='Your agency gets its own private workspace \u2014 its own clients, staff, documents and settings. Nobody outside it can see any of it.';
+  el('loginSub').innerHTML='Your team gets its own private workspace \u2014 its own clients, staff, documents and settings. Nobody outside it can see any of it.';
   el('roleGrid').style.display='none';
   const cb=el('credBox'); cb.style.display='block';
   const fe=el('liFresh'); if(fe) fe.remove();
   const lf=el('loginFresh'); if(lf) lf.remove();
   if(!el('regRole')) cb.insertAdjacentHTML('afterbegin',`<div id="regRoleWrap">
-    <div class="field"><label>Agency name</label><input class="inp" id="regOrg" placeholder="e.g. AI Paragon Care" autocomplete="organization"></div>
+    <div class="field"><label>Team name</label><input class="inp" id="regOrg" placeholder="e.g. AI Paragon Care" autocomplete="organization"></div>
     <div class="field"><label>Your name</label><input class="inp" id="regName" placeholder="e.g. Jordan Lee" autocomplete="name"></div>
     <div class="field"><label>Your role</label><input class="inp" id="regRole" placeholder="e.g. Executive Director"></div></div>`);
-  const em=el('liEmail'); if(em){ em.value=''; em.placeholder='you@youragency.org'; }
+  const em=el('liEmail'); if(em){ em.value=''; em.placeholder='you@example.org'; }
   const pw=el('liPw'); if(pw){ pw.value=''; pw.placeholder='At least 8 characters'; pw.autocomplete='new-password'; }
-  loginGoLabel('Create agency account');
+  loginGoLabel('Create team account');
   { const fw=el('liForgotWrap'); if(fw) fw.style.display='none'; }
   { const er=el('liErr'); if(er){ er.style.display='none'; er.textContent=''; } }   // v12.17: a sign-in message from before does not carry over
   setTimeout(()=>{ const o=el('regOrg'); if(o) o.focus(); },60);
-  if(!el('regSwap')) cb.insertAdjacentHTML('beforeend','<div id="regSwap" class="tiny" style="text-align:center;margin-top:12px"><div class="muted" style="margin-bottom:6px">Joining an agency that already uses this? Open the invite link your director sent you.</div>Already have an account? <a href="#" onclick="event.preventDefault();showLoginPage()" style="color:var(--navy);font-weight:800">Log in</a></div>');
+  if(!el('regSwap')) cb.insertAdjacentHTML('beforeend','<div id="regSwap" class="tiny" style="text-align:center;margin-top:12px"><div class="muted" style="margin-bottom:6px">Joining a team that already uses this? Open the invite link your director sent you.</div>Already have an account? <a href="#" onclick="event.preventDefault();showLoginPage()" style="color:var(--navy);font-weight:800">Log in</a></div>');
   const ls=el('loginSwap'); if(ls) ls.remove();
   window._regMode=true;
 }
@@ -20320,7 +20320,7 @@ async function finishRegister(){
   const inv=window._joinInvite;
   const roleTxt=inv?(inv.role_title||'Staff'):(((el('regRole')&&el('regRole').value)||'').trim());
   const role=inv?(inv.access==='director'?'director':'staff'):(/\b(staff|dsp|support professional|aide|caregiver|nurse)\b/i.test(roleTxt)?'staff':'director');
-  if(!inv&&el('regOrg')&&!String(el('regOrg').value||'').trim()){ el('regOrg').focus(); return toast('Give your agency a name.'); }
+  if(!inv&&el('regOrg')&&!String(el('regOrg').value||'').trim()){ el('regOrg').focus(); return toast('Give your team a name.'); }
   let r=await authRegister(em,pw);                                  // Supabase Auth when the backend is configured
   if(r.nosession||(!r.ok&&r.exists)){                                // v12.15/16: sign in with the password and look at the login before going on
     const li=await authSignInOnly(em,pw,inv?'join':'agency');
@@ -20335,14 +20335,14 @@ async function finishRegister(){
     if(!ORG_NONE&&!spare){                                           // it already opens an agency: joining would move it out of that one, and a second one is not supported
       const had=!!ORG_ID; orgForget(); AUTH.session=null; saveAuth();
       return regSay(!had?'Could not check this sign-in right now. Try again in a moment.'
-        :inv?'This email is already part of an agency in the portal. If it is this one, just sign in; otherwise ask your director to invite a different email address.'
-        :'This email already has an agency in the portal. Log in instead.');
+        :inv?'This email is already part of a team in the portal. If it is this one, just sign in; otherwise ask your director to invite a different email address.'
+        :'This email already has a team in the portal. Log in instead.');
     }
     if(!inv&&!spare){
       const made=await orgCreateMine();                              // a new, empty agency for this login, with them as its director
       if(!made){ orgForget(); AUTH.session=null; saveAuth();
-        return regSay(made===undefined?'This login can\u2019t start an agency until a database update is installed. Ask your portal administrator.'
-          :'Could not set up the agency right now. Try again in a moment.'); }
+        return regSay(made===undefined?'This login can\u2019t start a team until a database update is installed. Ask your portal administrator.'
+          :'Could not set up the team right now. Try again in a moment.'); }
     }
     r={ok:true,msg:''};
     }
@@ -20399,7 +20399,7 @@ async function finishRegister(){
     el('liErr').style.display='none';
     showLoginPage(); loginMark('Spectrum Care Advisory OS');
     el('loginTitle').textContent='Check your email';
-    el('loginSub').innerHTML='Confirm your email address, then sign in here to finish setting up <b>'+esc(orgName||'your agency')+'</b>.';
+    el('loginSub').innerHTML='Confirm your email address, then sign in here to finish setting up <b>'+esc(orgName||'your team')+'</b>.';
     const e2=el('liEmail'); if(e2) e2.value=AUTH.email||em;
     return;
   }
@@ -20451,7 +20451,7 @@ function showRolePicker(){
     const p=PERSON||resolvePerson();
     if(rd) rd.innerHTML='<b>'+esc((p&&p.name)||'You')+'</b> \u00b7 '+esc((p&&p.title)||'Director');
     if(card) card.style.display=(roleFor()&&roleFor()!=='director')?'none':'';
-  } else if(rd) rd.innerHTML='<b>Agency director</b> \u00b7 Executive Director';
+  } else if(rd) rd.innerHTML='<b>Team director</b> \u00b7 Executive Director';
 }
 async function doLogin(){
   if(window._regMode) return finishRegister();
@@ -20779,7 +20779,7 @@ function openStaffForm(sid){
     </div>
     <div class="row2">
       <div class="field"><label>Date of hire</label><input class="inp" type="date" id="sfHired" value="${st&&st.hired?st.hired:T}"></div>
-      <div class="field"><label>Work email (for reminders)</label><input class="inp" id="sfEmail" value="${st&&st.email?esc(st.email):''}" placeholder="name@youragency.org"></div>
+      <div class="field"><label>Work email (for reminders)</label><input class="inp" id="sfEmail" value="${st&&st.email?esc(st.email):''}" placeholder="name@example.org"></div>
     </div>
     ${st?'':`
     <div class="card-h" style="padding:6px 0 4px"><h2 style="font-size:14px">Starting certifications <span class="tiny muted">optional</span></h2></div>
@@ -20800,7 +20800,7 @@ function openStaffForm(sid){
 function inviteStaff(sid){
   const st=staff(sid); if(!st) return;
   openModal('Invite '+esc(st.name)+' to the portal',`
-    <div class="field"><label>Send to</label><input class="inp" id="ivEmail" type="email" value="${esc(st.email||'')}" placeholder="name@agency.org"></div>
+    <div class="field"><label>Send to</label><input class="inp" id="ivEmail" type="email" value="${esc(st.email||'')}" placeholder="name@example.org"></div>
     <div class="tiny muted">They get a link to a registration page already set up as <b>${esc(st.name)}</b> — they choose a password and land straight in the staff view, with their own settings.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="inviteCreate('${sid}')">Create invite link</button>`);
 }
@@ -20825,9 +20825,9 @@ function inviteSendNow(sid,email,link,nm,rl,isDir){
 function inviteDirector(){
   openModal('Invite a director',`
     <div class="field"><label>Full name</label><input class="inp" id="idName" placeholder="e.g. Jordan Lee"></div>
-    <div class="field"><label>Email</label><input class="inp" id="idEmail" type="email" placeholder="name@agency.org"></div>
+    <div class="field"><label>Email</label><input class="inp" id="idEmail" type="email" placeholder="name@example.org"></div>
     <div class="field"><label>Title</label><input class="inp" id="idTitle" value="Director" placeholder="e.g. Executive Director"></div>
-    <div class="tiny muted">They get a link to set their own password and land in this agency with full director access. The link works once, for this email only, and expires in 14 days.</div>`,
+    <div class="tiny muted">They get a link to set their own password and land in this team with full director access. The link works once, for this email only, and expires in 14 days.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" id="idGo" onclick="inviteDirectorCreate()">Create invite link</button>`);
 }
 async function inviteDirectorCreate(){
@@ -21583,10 +21583,10 @@ function pilotGate(){
   const expires=new Date(Date.now()+30*864e5).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   openModal('Pilot Dashboard Agreement',`
     <div class="sec-note" style="margin-top:0"><span>✍</span><div><b>Required before using the dashboard</b>You are required to sign the pilot agreement upon first login. It cannot be opted out of — the dashboard unlocks when you accept below.</div></div>
-    ${asUser?`<div class="tiny muted" style="margin-top:8px">Your agency has signed the pilot agreement. These are the terms for everyone who uses the dashboard. Read them and accept to continue.</div>`:''}
+    ${asUser?`<div class="tiny muted" style="margin-top:8px">Your team has signed the pilot agreement. These are the terms for everyone who uses the dashboard. Read them and accept to continue.</div>`:''}
     <div style="max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:12.6px;line-height:1.55;color:var(--ink);margin:10px 0">${pilotBody(asUser)}</div>
     <div class="row2" ${asUser?'style="display:none"':''}>
-      <div class="field"><label>Agency (legal entity name)</label><input class="inp" id="pgAgency" placeholder="Legal entity name" value="${esc(ONB.org&&ONB.org!=='Spectrum'?ONB.org:'')}"></div>
+      <div class="field"><label>Team (legal entity name)</label><input class="inp" id="pgAgency" placeholder="Legal entity name" value="${esc(ONB.org&&ONB.org!=='Spectrum'?ONB.org:'')}"></div>
       <div class="field"><label>Facility license number(s)</label><input class="inp" id="pgLicense" placeholder="e.g. 347001234"></div>
     </div>
     <div class="row2">
@@ -21596,7 +21596,7 @@ function pilotGate(){
     <div class="tiny muted" style="margin:2px 0 8px">Effective date: <b>${fmtLong(T)}</b> · Pilot term: <b>30 days from first login</b> (through ${expires})</div>
     <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;cursor:pointer;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)">
       <input type="checkbox" id="pgAccept" style="margin-top:2px">
-      <span>${asUser?'I have read these terms and agree to use the dashboard under them.':'I confirm I am authorized to bind the Agency and agree to these terms. This electronic acceptance is a signature and has the same effect as a handwritten one.'}</span>
+      <span>${asUser?'I have read these terms and agree to use the dashboard under them.':'I confirm I am authorized to bind the Team and agree to these terms. This electronic acceptance is a signature and has the same effect as a handwritten one.'}</span>
     </label>`,
     `<button class="btn ghost" onclick="printSheet(pilotSheet())">Print</button>
      <button class="btn navy" onclick="pilotGateSign()">Continue</button>`);
@@ -21605,7 +21605,7 @@ function pilotGateSign(){
   const agency=(el('pgAgency').value||'').trim(), lic=(el('pgLicense').value||'').trim();
   const nm=(el('pgName').value||'').trim(), title=(el('pgTitle').value||'').trim();
   const asUser=!!window._pgUser;                                     // v12.22
-  if(!agency&&!asUser) return toast('Enter the Agency legal entity name.');
+  if(!agency&&!asUser) return toast('Enter the team\u2019s legal entity name.');
   if(!nm) return toast(asUser?'Enter your full name.':'Enter the authorized signer\'s full name.');
   if(!el('pgAccept').checked) return toast('Check the acceptance box to sign.');
   PILOT_AGREED={by:nm,title,agency:agency||ONB.org||'',license:lic,at:nowStamp(),role:ME[state.role].label,term:'30 days',expires:new Date(Date.now()+30*864e5).toISOString().slice(0,10)};
@@ -21624,21 +21624,21 @@ function pilotGateSign(){
 function pilotBody(u){                                               // v12.22: u = accepted by a user, not the agency's signer
   return `<b>Spectrum Care Advisory OS — Pilot Agreement</b><br>
   <b>Provider:</b> AI Paragon Consulting Group ("AI Paragon")<br><br>
-  <b>Scope.</b> AI Paragon provides the Agency a non-exclusive, non-transferable, revocable license to use the Spectrum Care Advisory OS workspace for internal evaluation only during the pilot term. The pilot includes the dashboard, backend sync, automated reminders, and email support at support@aiparagonconsulting.com. It does not include custom development, integrations, data migration, or on-site training unless separately agreed in writing.<br><br>
+  <b>Scope.</b> AI Paragon provides the Team a non-exclusive, non-transferable, revocable license to use the Spectrum Care Advisory OS workspace for internal evaluation only during the pilot term. The pilot includes the dashboard, backend sync, automated reminders, and email support at support@aiparagonconsulting.com. It does not include custom development, integrations, data migration, or on-site training unless separately agreed in writing.<br><br>
   <b>Fees.</b> The pilot is provided at no cost. Continued use after the pilot term requires a separate subscription agreement. The pilot creates no obligation for either party to enter one.<br><br>
-  <b>Demo preview.</b> Until AI Paragon confirms in writing that the workspace is cleared for live use, all views contain sample data only. The Agency must not enter real client, staff, or operational records before that written clearance.<br><br>
-  <b>Permitted data.</b> Once cleared for live use, the Agency may enter only the record types the workspace supports. The Agency must not enter protected health information, including client names, diagnoses, medications, or treatment notes. Clients are identified by 7-digit UCI only.<br><br>
-  <b>Data ownership.</b> Records the Agency enters remain the Agency's property. The Agency may export or delete them at any time from Settings. AI Paragon will not use Agency records to train third-party models.<br><br>
-  <b>Security.</b> AI Paragon maintains encryption in transit and at rest, role-based access controls, and access logging. The Agency is responsible for issuing, managing, and promptly revoking its own user credentials and for setting each user's role appropriately.<br><br>
-  <b>Not legal or clinical advice.</b> Compliance checklists, regulatory updates, incident templates, and generated documents are informational tools, not legal, regulatory, or clinical advice. The Agency remains solely responsible for its licensing obligations, reporting deadlines, and Special Incident Report submissions.<br><br>
-  <b>Feedback.</b> Issues and requests gathered during the pilot inform the production build. AI Paragon may use Agency feedback freely and without obligation or compensation.<br><br>
-  <b>Intellectual property.</b> AI Paragon owns the platform, its software, templates, workflows, and all derivative improvements. Nothing here transfers ownership to the Agency.<br><br>
+  <b>Demo preview.</b> Until AI Paragon confirms in writing that the workspace is cleared for live use, all views contain sample data only. The Team must not enter real client, staff, or operational records before that written clearance.<br><br>
+  <b>Permitted data.</b> Once cleared for live use, the Team may enter only the record types the workspace supports. The Team must not enter protected health information, including client names, diagnoses, medications, or treatment notes. Clients are identified by 7-digit UCI only.<br><br>
+  <b>Data ownership.</b> Records the Team enters remain the Team's property. The Team may export or delete them at any time from Settings. AI Paragon will not use Team records to train third-party models.<br><br>
+  <b>Security.</b> AI Paragon maintains encryption in transit and at rest, role-based access controls, and access logging. The Team is responsible for issuing, managing, and promptly revoking its own user credentials and for setting each user's role appropriately.<br><br>
+  <b>Not legal or clinical advice.</b> Compliance checklists, regulatory updates, incident templates, and generated documents are informational tools, not legal, regulatory, or clinical advice. The Team remains solely responsible for its licensing obligations, reporting deadlines, and Special Incident Report submissions.<br><br>
+  <b>Feedback.</b> Issues and requests gathered during the pilot inform the production build. AI Paragon may use Team feedback freely and without obligation or compensation.<br><br>
+  <b>Intellectual property.</b> AI Paragon owns the platform, its software, templates, workflows, and all derivative improvements. Nothing here transfers ownership to the Team.<br><br>
   <b>Availability.</b> The pilot workspace is provided as-is, without warranty of any kind. There is no uptime commitment or guaranteed support response time during the pilot. Support requests are handled on a commercially reasonable basis during business hours.<br><br>
   <b>Limitation of liability.</b> Neither party is liable for indirect, incidental, or consequential damages.<br><br>
-  <b>Confidentiality.</b> Each party will protect the other's non-public information, including pricing, unreleased features, and Agency operational data, and use it only for purposes of the pilot.<br><br>
-  <b>Termination.</b> Either party may end the pilot at any time on written notice. The workspace stays available for export for 30 days after the pilot ends, after which AI Paragon deletes Agency data.<br><br>
-  ${u?'<b>Acceptance.</b> By checking the acceptance box and clicking Continue, you agree to use the workspace under these terms. The Agency\u2019s authorized signer accepts this agreement for the Agency.'
-    :'<b>Acceptance.</b> By checking the acceptance box and clicking Continue, the signer confirms they are authorized to bind the Agency and agree to these terms. This electronic acceptance is a signature and has the same effect as a handwritten one.'}`;
+  <b>Confidentiality.</b> Each party will protect the other's non-public information, including pricing, unreleased features, and Team operational data, and use it only for purposes of the pilot.<br><br>
+  <b>Termination.</b> Either party may end the pilot at any time on written notice. The workspace stays available for export for 30 days after the pilot ends, after which AI Paragon deletes Team data.<br><br>
+  ${u?'<b>Acceptance.</b> By checking the acceptance box and clicking Continue, you agree to use the workspace under these terms. The Team\u2019s authorized signer accepts this agreement for the Team.'
+    :'<b>Acceptance.</b> By checking the acceptance box and clicking Continue, the signer confirms they are authorized to bind the Team and agree to these terms. This electronic acceptance is a signature and has the same effect as a handwritten one.'}`;
 }
 function openPilotAgreement(){
   if(PILOT_AGREED) return openModal('Signed agreement',`
@@ -21678,7 +21678,7 @@ function emailAgreement(){
   pilotSync();
   const P=PILOT_AGREED||{};
   const su=encodeURIComponent('Signed Pilot Dashboard Agreement — '+(ONB.org||'Spectrum'));
-  const bd=encodeURIComponent(`Signed by: ${P.by||''} (${P.role||''})\nAgency: ${P.agency||ONB.org||''}\nSigned at: ${P.at||''}\nTerm: ${P.term||'30 days'} · expires ${P.expires||''}\n\nOpen your dashboard profile for the full printable agreement text.`);
+  const bd=encodeURIComponent(`Signed by: ${P.by||''} (${P.role||''})\nTeam: ${P.agency||ONB.org||''}\nSigned at: ${P.at||''}\nTerm: ${P.term||'30 days'} · expires ${P.expires||''}\n\nOpen your dashboard profile for the full printable agreement text.`);
   const to=encodeURIComponent(AUTH.email||ONB.email||'');
   if(GCAL&&GCAL.connected) window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${bd}`,'_blank');
   else location.href=`mailto:${decodeURIComponent(to)}?subject=${su}&body=${bd}`;
@@ -21708,7 +21708,7 @@ function pilotSheet(){
   pilotSync();
   const P=PILOT_AGREED||{by:'',role:'',at:'',agency:(el('pgAgency')&&el('pgAgency').value)||'',license:(el('pgLicense')&&el('pgLicense').value)||'',title:(el('pgTitle')&&el('pgTitle').value)||''};
   return `<h2>Spectrum Care Advisory OS — Pilot Agreement</h2>
-    <div class="p-sub">Provider: AI Paragon Consulting Group ("AI Paragon")${P.agency?` · Agency: ${esc(P.agency)}`:''}${P.license?` · License: ${esc(P.license)}`:''}</div>
+    <div class="p-sub">Provider: AI Paragon Consulting Group ("AI Paragon")${P.agency?` · Team: ${esc(P.agency)}`:''}${P.license?` · License: ${esc(P.license)}`:''}</div>
     ${P.by?`<p>${P.user?'Accepted by':'Authorized signer'}: <b>${esc(P.by)}</b>${P.title?` · ${esc(P.title)}`:''} · Effective ${esc(P.at||fmtLong(T))} · Pilot term: 30 days from first login.</p>`:''}
     <div style="font-size:12px;line-height:1.6">${pilotBody(!!(P.user||(!PILOT_AGREED&&window._pgUser)))}</div>
     <div class="siglines"><div class="sig">${esc(P.by||'')}<br>Signature / date</div></div>`;
@@ -22351,7 +22351,7 @@ function saveShiftTL(sid){
 const TOURS={
   director:[
     {sel:'.hm-sched', t:'The day at a glance', p:'Appointments, shifts, meetings and reminders, in order. The gold line is right now. Change how it shows with the cog at the top.'},
-    {sel:'.hm-attn', t:'Your morning list', p:'Everything that needs a decision, worst first. Tap any line to jump straight to it. When this is empty, the agency is clean.'},
+    {sel:'.hm-attn', t:'Your morning list', p:'Everything that needs a decision, worst first. Tap any line to jump straight to it. When this is empty, the team is all caught up.'},
     {sel:'#nav', t:'One place per job', p:'Clients, med pass, billing, compliance — each lives in its own section so nothing is buried in a mega-menu.'},
     {sel:'.search', t:'Search anything', p:'A client, a staff member, an appointment. Type a name and go.'},
     {sel:'.tb-ask', t:'Or just ask', p:'Ask Spectrum answers from your own records and policies — "which med passes are late", "who is behind on training".'}],
@@ -22359,7 +22359,7 @@ const TOURS={
     {sel:'.act-strip', t:'Your three buttons', p:'Record a med pass, check your tasks, report an incident. Most shifts never need more than this row.'},
     {sel:'.hm-sched', t:'Your day at a glance', p:'Where you need to be and when, with your shift. The gold line is right now.'},
     {sel:'.hm-attn', t:'What needs you', p:'If something is late or flagged it shows here. Tap it and the portal takes you to the exact spot.'},
-    {sel:'.tb-ask', t:'Stuck? Ask', p:'"A client refused a medication" — Ask Spectrum tells you exactly what to do, from your agency\'s own policy.'}],
+    {sel:'.tb-ask', t:'Stuck? Ask', p:'"A client refused a medication" — Ask Spectrum tells you exactly what to do, from your team\'s own policy.'}],
   family:[
     {sel:'.hm-sched', t:"4023180's day", p:'His appointments and visits as they happen. Staff record things live, so this is always current.'},
     {sel:'#nav', t:'Everything about 4023180', p:'Medications, appointments, documents and messages — only for 4023180. Other residents are never visible to you.'},
@@ -23023,7 +23023,7 @@ captureSamples();   // end of script, every seed declared — still guaranteed b
       $('#pvS1').textContent = state.providerRole ? '6' : '—';
       $('#pvS2').textContent = state.providerRole ? '9' : '—';
       $('#pvS3').textContent = state.providerRole ? '3' : '—';
-      $('#pvCap').textContent = 'Your shift, your assigned clients. Nothing from the rest of the agency.';
+      $('#pvCap').textContent = 'Your shift, your assigned clients. Nothing from the rest of the team.';
       $$('.pv-nav div[data-mod], .pv-row[data-mod]').forEach(function(el){ el.classList.add('lit'); });
       return;
     }
