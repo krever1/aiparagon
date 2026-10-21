@@ -1,5 +1,5 @@
 // Sign-in page tests for E-&-G-Home-Inc.html (#2, the care portal), v12.23: the split-screen sign-in (Erica's
-// design), at desktop, tablet and phone width, with real clicks; the screens that share it (new agency, invite,
+// design), at desktop, tablet and phone width, with real clicks; the screens that share it (new team, invite,
 // forgot password, choose a view); the show-password eye; and "Remember my email on this device".
 // Supabase answers from stubs (lib/portal-harness.js), so no real account or agency is touched. See tests/README.md.
 // Usage: node tests/portal-login.test.js [baseline.html]
@@ -78,12 +78,17 @@ function check(label, ok, detail) {
     const err = await page.evaluate(() => { const e = document.getElementById('liErr'); return getComputedStyle(e).display !== 'none' ? e.textContent : ''; });
     check('a wrong password shows a message on the card', /Wrong password|no login/i.test(err), err);
 
-    // new agency and back
+    // new team and back
     await page.click('#lgTop a');
     await page.waitForTimeout(300);
     const r = await look(page);
-    check('Get your team started opens Set up a new agency', r.title === 'Set up a new agency' && /Already have an account\?\s*Sign in/.test(r.top) && r.go === 'Create agency account', r.title + ' | ' + r.top + ' | ' + r.go);
-    check('the new-agency screen has no remember box and asks for the agency and person', !r.rem.vis && await page.isVisible('#regOrg') && await page.isVisible('#regName'));
+    check('Get your team started opens Set up a new team', r.title === 'Set up a new team' && /Already have an account\?\s*Sign in/.test(r.top) && r.go === 'Create team account', r.title + ' | ' + r.top + ' | ' + r.go);
+    check('the new-team screen has no remember box and asks for the team and person', !r.rem.vis && await page.isVisible('#regOrg') && await page.isVisible('#regName'));
+    // v12.35: the screens behind sign-in say team too
+    const reg = await page.evaluate(() => ({ text: document.querySelector('#login').innerText, label: document.querySelector('#regOrg').closest('.field').querySelector('label').textContent, ph: document.getElementById('liEmail').placeholder }));
+    check('the new-team screen: Team name, Your team gets its own private workspace, you@example.org',
+      reg.label === 'Team name' && /Your team gets its own private workspace/.test(reg.text) && reg.ph === 'you@example.org', reg.label + ' | ' + reg.ph);
+    check('the new-team screen: the word agency is nowhere on it', !/agency/i.test(reg.text), (reg.text.match(/[^\n]*agency[^\n]*/i) || [''])[0]);
     check('and keeps the green panel', r.side.vis && r.side.x < r.main.x);
     await page.click('#liEye');
     await page.click('#lgTop a');
@@ -106,6 +111,8 @@ function check(label, ok, detail) {
     await page.waitForTimeout(200);
     const v = await page.evaluate(() => ({ cards: [...document.querySelectorAll('#roleGrid .role-card')].filter((c) => c.getBoundingClientRect().width > 0).length, top: document.getElementById('lgTop').textContent.trim() }));
     check('Choose a view keeps its three cards on the new page, with no sign-up link', v.cards === 3 && v.top === '', JSON.stringify(v));
+    const cards = await page.evaluate(() => document.getElementById('roleGrid').innerText);
+    check('Choose a view: Full team view and Team director, no agency', /Full team view/.test(cards) && /Team director/.test(cards) && !/agency/i.test(cards), (cards.match(/[^\n]*agency[^\n]*/i) || [''])[0]);
     await ctx.close();
   }
 

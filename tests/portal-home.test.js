@@ -317,9 +317,9 @@ const at = (hm) => new Date(DAY + 'T' + hm + ':00');
     s = await home(page);
     check('staff: their own choice wins over the default', /\bhm-a\b/.test(s.look) && St.writes.some((x) => x.key === 'usersettings' && x.value.map[stf].home && x.value.map[stf].home.staff.look === 'a') && !St.writes.some((x) => x.key === 'homedefault'), JSON.stringify(St.writes.map((x) => x.key)));
     await page.click('#view button[aria-label="Customize your home page"]');
-    await page.click('#mdFoot button:has-text("Use the agency default")');
+    await page.click('#mdFoot button:has-text("Use the team default")');
     await page.waitForTimeout(800);
-    check('staff: Use the agency default goes back to it', /\bhm-b\b/.test((await home(page)).look));
+    check('staff: Use the team default goes back to it', /\bhm-b\b/.test((await home(page)).look));
     await ctx.close();
   }
 
