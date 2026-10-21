@@ -41,18 +41,24 @@ function check(label, ok, detail) {
     const s = await look(page);
     check('sign-in: the green panel is on the left, the form on the right', s.side && s.main && s.side.vis && s.side.x < s.main.x && s.side.x === 0, JSON.stringify([s.side, s.main]));
     check('sign-in: both panels fill the window height', s.side.h >= 880 && s.main.h >= 880, s.side.h + '/' + s.main.h);
-    check('sign-in: Welcome back, Sign in to your agency’s workspace', s.title === 'Welcome back' && s.sub === 'Sign in to your agency’s workspace.', s.title + ' | ' + s.sub);
+    check('sign-in: Welcome back, Sign in to your team’s workspace', s.title === 'Welcome back' && s.sub === 'Sign in to your team’s workspace.', s.title + ' | ' + s.sub);
     check('sign-in: Hanken Grotesk, as in the design', /Hanken Grotesk/.test(s.font), s.font);
     const side = await page.evaluate(() => document.querySelector('#login .lg-side').innerText);
     check('sign-in: the panel says Care, with clarity. and its three features', /Care, with clarity\./.test(side) && /Role-based access/.test(side) && /Inspection ready/.test(side) && /One shared calendar to coordinate important events, meetings and appointments for your organization’s team and clients\./.test(side), side.slice(0, 200));
     check('sign-in: the wording is general (no day programs or residential care teams)', !/day programs|residential care teams/i.test(side), side);
-    check('sign-in: New agency? Create an agency account at the top right', /New agency\?\s*Create an agency account/.test(s.top), s.top);
+    check('sign-in: New here? Get your team started at the top right', /New here\?\s*Get your team started/.test(s.top), s.top);
+    // v12.34: the sign-in page talks about your team, not your agency
+    check('sign-in: the panel says Your team, connected and One shared workspace for your staff, care providers…',
+      /your team, connected/i.test(side) && /One shared workspace for your staff, care providers and the people you support, across community and residential services\./.test(side), side.slice(0, 200));
+    check('sign-in: the email box suggests you@example.org', s.ph[0] === 'you@example.org', s.ph[0]);
+    check('sign-in: the word agency is nowhere on the sign-in page', await page.evaluate(() => !/agency/i.test(document.querySelector('#login').innerText)),
+      await page.evaluate(() => (document.querySelector('#login').innerText.match(/[^\n]*agency[^\n]*/i) || [''])[0]));
     check('sign-in: the version sits in the footer', s.ver === (await page.evaluate(() => APP_VERSION)) && /^v12\.(2[3-9]|[3-9]\d) beta$/.test(s.ver), s.ver);
     check('sign-in: Support writes to support@aiparagonconsulting.com, and there are no dead Privacy or Terms links',
       await page.evaluate(() => { const a = [...document.querySelectorAll('#login .lg-foot a')]; return a.length === 1 && a[0].href === 'mailto:support@aiparagonconsulting.com'; }));
     check('sign-in: Forgot password? sits beside the Password label', s.forgot && s.forgot.vis, JSON.stringify(s.forgot));
     check('sign-in: Remember my email is shown and ticked', s.rem.vis && await page.isChecked('#liRemember'));
-    check('sign-in: the joining-a-team note is under the form', /Joining your agency’s team\? Open the invitation link your director sent you\./.test(await page.evaluate(() => (document.querySelector('#loginFresh .lg-note') || {}).textContent || '')));
+    check('sign-in: the joining-a-team note is under the form', /Joining your team’s workspace\? Open the invitation link from your director or administrator\. It sets up your sign-in\./.test(await page.evaluate(() => (document.querySelector('#loginFresh .lg-note') || {}).textContent || '')));
     check('sign-in: the brand mark above the form is hidden on a wide screen (it is in the panel)', !s.mark.vis);
     check('sign-in: nothing covers the Sign in button', (await clickable(page, '#liGo')) === 'ok', await clickable(page, '#liGo'));
     check('sign-in: nothing covers the email field', (await clickable(page, '#liEmail')) === 'ok', await clickable(page, '#liEmail'));
@@ -76,15 +82,15 @@ function check(label, ok, detail) {
     await page.click('#lgTop a');
     await page.waitForTimeout(300);
     const r = await look(page);
-    check('Create an agency account opens Set up a new agency', r.title === 'Set up a new agency' && /Already have an account\?\s*Sign in/.test(r.top) && r.go === 'Create agency account', r.title + ' | ' + r.top + ' | ' + r.go);
+    check('Get your team started opens Set up a new agency', r.title === 'Set up a new agency' && /Already have an account\?\s*Sign in/.test(r.top) && r.go === 'Create agency account', r.title + ' | ' + r.top + ' | ' + r.go);
     check('the new-agency screen has no remember box and asks for the agency and person', !r.rem.vis && await page.isVisible('#regOrg') && await page.isVisible('#regName'));
     check('and keeps the green panel', r.side.vis && r.side.x < r.main.x);
     await page.click('#liEye');
     await page.click('#lgTop a');
     await page.waitForTimeout(300);
     const b = await look(page);
-    check('Sign in at the top right comes back to Welcome back', b.title === 'Welcome back' && b.go === 'Sign in' && /New agency\?/.test(b.top), b.title + ' | ' + b.go);
-    check('the sign-in placeholders are back (not the new-agency ones)', b.ph[0] === 'name@agency.org' && b.ph[1] === 'Enter your password', b.ph.join(' | '));
+    check('Sign in at the top right comes back to Welcome back', b.title === 'Welcome back' && b.go === 'Sign in' && /New here\?/.test(b.top), b.title + ' | ' + b.go);
+    check('the sign-in placeholders are back (not the new-agency ones)', b.ph[0] === 'you@example.org' && b.ph[1] === 'Enter your password', b.ph.join(' | '));
     check('and the password is hidden again', (await page.getAttribute('#liPw', 'type')) === 'password');
 
     // forgot password and back
