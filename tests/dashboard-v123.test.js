@@ -186,6 +186,13 @@ function tables() {
     await page.click('#adImgBlock .fsteps > button[data-v106]'); await wait(page, 1200);
     const all2 = await ev(page, () => ({ hi: document.querySelectorAll('#adImgBlock .v123-hi').length, n: document.querySelectorAll('#adImgBlock .v106-flow > .v106-fc').length }));
     check('Whole funnel shows the same steps with none picked out', all2.n === 4 && all2.hi === 0, JSON.stringify(all2));
+    const bkText = () => ev(page, () => { const c = document.querySelector('#adImgBlock .v106-fc[data-k="booking"]'); return c ? c.textContent.replace(/\s+/g, ' ') : ''; });
+    const bk1 = await bkText();
+    check('the booking page says the call length the campaign was made with', /Pick a slot · 45 min/.test(bk1) && !/20 min/.test(bk1), bk1.slice(0, 160));
+    // the agent keeps the booking link in the campaign's data since v123: the booking page says where bookings go
+    await ev(page, (r) => { const o = nwLT().outs.find((x) => x.run_id === r); o.d.setup = { booking: { name: 'Diagnostic', url: 'https://calendly.com/qa-team/diagnostic', duration: 45 } }; renderFunnel(); }, RUN); await wait(page, 1800);
+    const bk2 = await bkText();
+    check('and, with the booking link it was made with, where bookings go', /Bookings go to Diagnostic/.test(bk2) && /Pick a slot · 45 min/.test(bk2), bk2.slice(0, 200));
     // a campaign made before keeps its four steps
     await ev(page, () => v97OpenCamp('lt_2026-10-11')); await wait(page, 2400);
     const b0 = await bar(page);
