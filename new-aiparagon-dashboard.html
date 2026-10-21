@@ -49933,6 +49933,40 @@ NW_PAGES['e3.lpages']=function(m,again){
   }).catch(function(){});
 };
 
+/* v120: one notion of an approved campaign: the package says approved (or launched), or, for a book-a-call
+   campaign, every ad is approved, as Marketing Generation's Campaigns list counts it */
+function v120Stat(st){st=String(st||'');return st==='launched'||(/approved/i.test(st)&&!/pending/i.test(st));}
+function v120OkWith(f,L){
+  if(!f||v120Stat(f.status))return true;
+  if(f.funnel_type||!L||typeof v97CampStatus!=='function')return false;
+  const o=(L.outs||[]).find(function(x){return x.run_id===f.run_id;});
+  return !!(o&&v97CampStatus(L,o).t==='Approved');
+}
+async function v120Ok(f){
+  let L=null;
+  if(f&&!f.funnel_type&&!v120Stat(f.status)&&typeof v97LtLoad==='function'){try{L=await v97LtLoad(true);}catch(e){L=null;}}
+  return v120OkWith(f,L);
+}
+function v120Pill(f,L){return v120OkWith(f,L)?nwPill('good','Approved'):f.funnel_type&&f.status==='draft'?nwPill('bad','Sent back'):nwPill('warn','Not approved yet');}
+/* the campaign behind a page, fresh from Supabase, so an approval made meanwhile counts */
+async function v120Camp(p){
+  if(!p||p.source_type!=='funnel_package'||!p.source_id)return null;
+  const f=((await apSb('funnel_packages?select=id,run_id,funnel_type,status&id=eq.'+encodeURIComponent(p.source_id)+'&limit=1'))||[])[0];
+  if(!f)return null;
+  return {f:f,ok:await v120Ok(f),sentBack:!!f.funnel_type&&f.status==='draft'};
+}
+/* putting the page live approves its campaign: the package and a record of who did it and how */
+async function v120Approve(c,slug){
+  const f=c.f,now=new Date().toISOString();
+  const r=await apPatch('funnel_packages','id=eq.'+encodeURIComponent(f.id),{status:'approved',updated_at:now});
+  if(Array.isArray(r)&&!r.length)throw new Error('Supabase did not save it');
+  try{await apPost('agent_feedback',{agent:f.funnel_type?'funnel_builder':'low_ticket_content',target_type:'funnel_package',target_id:String(f.id),action:'approved',
+    feedback:'Approved by putting its landing page live (/go/'+slug+')',author:typeof whoAmI==='function'?whoAmI():apCfMe()});}catch(e){}
+  f.status='approved';
+  try{const x=(typeof V113!=='undefined'&&V113.fun&&V113.fun.rows||[]).find(function(y){return String(y.id)===String(f.id);});if(x)x.status='approved';}catch(e){}
+  try{if(typeof V97!=='undefined'&&V97.cache)V97.cache.lt=null;}catch(e){}
+}
+
 /* ---------- picking what to put live ---------- */
 async function v115LpNew(){
   if(!nwOn('e3.lpages'))apGo('e3landing');
@@ -49945,12 +49979,14 @@ async function v115LpNew(){
   if(!rows.length){b.innerHTML=nwEmpty('rocket','Nothing to put live yet','Make a funnel or a book-a-call campaign in Marketing Generation first.',
     '<button type="button" class="nw-btn nw-btn-sm" onclick="nwModalClose();v97Start(\'marketing\')">Open Marketing Generation</button>');return;}
   const P=V115.lp.pages||[];
+  /* v120: book-a-call campaigns count as approved when every ad is, as on Marketing Generation */
+  let LT=null;if(rows.some(function(f){return !f.funnel_type&&!v120Stat(f.status);})&&typeof v97LtLoad==='function'){try{LT=await v97LtLoad();}catch(e){LT=null;}}
   b.innerHTML='<p class="nw-muted nw-small">Each one becomes a page with a sign-up form. You can edit it before it goes live.</p><div class="nw-list v115-pick">'+rows.map(function(f){
     const S=apJson(f.setup)||{},t=f.funnel_type&&V115_KINDS[f.funnel_type]?f.funnel_type:'book_call';
     const name=f.funnel_type&&typeof v113FunName==='function'?v113FunName(f):(S.title||'Book a call campaign');
     const has=P.find(function(p){return String(p.source_id)===String(f.id);});
     return '<div class="nw-row"><span class="nw-row-ic">'+nwIc(t==='book_call'?'rocket':'layout',19)+'</span><div class="nw-row-main"><b class="nw-row-title">'+esc(name)+'</b>'+
-      '<span class="nw-row-meta">'+nwTag(V115_KINDS[t])+nwTag(nwDay(f.created_at))+(f.status==='approved'?nwPill('good','Approved'):nwPill('warn','Not approved yet'))+(has?v115LpPill(has):'')+'</span></div>'+
+      '<span class="nw-row-meta">'+nwTag(V115_KINDS[t])+nwTag(nwDay(f.created_at))+v120Pill(f,LT)+(has?v115LpPill(has):'')+'</span></div>'+
       '<div class="nw-row-side"><button type="button" class="nw-btn nw-btn-sm'+(has?'':' nw-btn-primary')+'" onclick="v115LpFromPkg('+esc(nwJs(f.id))+',this)">'+(has?'Open its page':'Use this')+'</button></div></div>';
   }).join('')+'</div>';
 }
@@ -50065,7 +50101,7 @@ function v115LpEdit(id){
       '<button type="button" class="nw-btn" onclick="v115LpSave('+esc(nwJs(p.id))+',null,true)"'+(p.status==='live'?' title="Saves the page, so visitors see the change now"':'')+'>'+nwIc('eye',15)+(p.status==='live'?'Save and preview':'Preview')+'</button><span class="nw-grow"></span>'+
       (p.status==='live'?'<button type="button" class="nw-btn" onclick="v115LpSave('+esc(nwJs(p.id))+',\'paused\')">'+nwIc('pause',15)+'Pause</button>':'')+
       '<button type="button" class="nw-btn'+(p.status==='live'?' nw-btn-primary':'')+'" onclick="v115LpSave('+esc(nwJs(p.id))+')">Save</button>'+
-      (p.status!=='live'?'<button type="button" class="nw-btn nw-btn-primary" onclick="v115LpSave('+esc(nwJs(p.id))+',\'live\')">'+nwIc('check',15)+'Put it live</button>':'')+
+      (p.status!=='live'?'<button type="button" class="nw-btn nw-btn-primary" id="v115E-live" onclick="v115LpSave('+esc(nwJs(p.id))+',\'live\')">'+nwIc('check',15)+'Put it live</button>':'')+
     '</div>');
 }
 function v115EdVal(id){const e=document.getElementById(id);return e?v115Str(e.value):'';}
@@ -50104,6 +50140,23 @@ async function v115LpSave(id,status,preview){
     if(c.thanks.url&&!/^https:\/\/[^\s]+$/i.test(c.thanks.url)){say('The button link after sign-up needs to start with https://');return;}
     const ok=document.getElementById('v115E-ok');if(ok&&!ok.checked){say('Tick "I checked these" first.');return;}
   }
+  /* v120: a page goes live from an approved campaign. On one that is not, the first click says so and the
+     button becomes "Approve and put it live"; that click approves the campaign, then the page goes live */
+  let approvedNow=false;
+  if(status==='live'){
+    let camp=null;
+    try{camp=await v120Camp(p);}catch(e){say('Could not check the campaign behind this page: '+(e.message||e));return;}
+    if(camp&&!camp.ok){
+      const lb=document.getElementById('v115E-live');
+      if(!lb||lb.dataset.ask!=='1'){
+        if(lb){lb.dataset.ask='1';lb.innerHTML=nwIc('check',15)+'Approve and put it live';}
+        say(camp.sentBack?'This campaign was sent back for changes. Putting the page live approves it anyway.':'This campaign is not approved yet. Putting the page live approves it.');
+        return;
+      }
+      say('Approving the campaign…');
+      try{await v120Approve(camp,slug);approvedNow=true;}catch(e){say('Could not approve the campaign, so the page did not go live: '+(e.message||e));return;}
+    }
+  }
   const body={title:title.slice(0,120),slug:slug,content:c,add_to_pipeline:add,updated_by:v115Me(),updated_at:new Date().toISOString()};
   if(status)body.status=status;
   if(status==='live'&&!p.published_at)body.published_at=body.updated_at;
@@ -50115,7 +50168,7 @@ async function v115LpSave(id,status,preview){
     if(preview){say((p.status==='live'?'Saved, so visitors see it now. The preview opens in a new tab.':'Saved. The preview opens in a new tab.')+leftNote);window.open(v115GoUrl(p.slug,true),'_blank','noopener');return;}
     nwDrawerClose();
     const done=status==='live'?'It is live at '+V115_SITE.replace(/^https:\/\//,'')+'/go/'+p.slug:status==='paused'?'Paused. The page now says it is not taking sign-ups.':'Saved';
-    nwToast(leftNote?done.replace(/\.?$/,'.')+leftNote:done);
+    nwToast((approvedNow?'Campaign approved. ':'')+(leftNote?done.replace(/\.?$/,'.')+leftNote:done));
     if(nwOn('e3.lpages'))nwRepaint();
     if(status==='live'&&apArr(p.ads).length)setTimeout(function(){v115LpAds(p.id);},250);
   }catch(e){
@@ -50259,6 +50312,357 @@ function v116Left(){
   document.querySelectorAll('#v115E-faq .v115-pair').forEach(function(x){const q=val(x,'q'),a=val(x,'a');if((q&&!a)||(!q&&a))n++;});
   return n;
 }
+</script>
+
+<style id="v120css">
+/* v120: the Lead pipeline as a board */
+.v120-help{margin:-2px 0 12px;font-size:14px;color:var(--rd-muted)}
+.v120-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 12px}
+.v120-tools input[type=search]{flex:1 1 240px;max-width:360px;height:40px;border:1px solid var(--rd-line);border-radius:10px;padding:0 12px;font:inherit;font-size:14.5px;background:#fff;color:var(--rd-ink)}
+.v120-tools .v120-n{font-size:13px;color:var(--rd-muted)}
+.v120-kan{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;padding-bottom:6px;align-items:stretch}
+.v120-col{background:#EEF1F5;border-radius:12px;padding:10px;display:flex;flex-direction:column;min-height:320px;max-height:72vh;min-width:0;transition:opacity .12s}
+.v120-col.over{background:#E4EBF6;outline:2px dashed var(--rd-blue);outline-offset:-3px}
+.v120-col.no{opacity:.5}
+.v120-col-h{display:flex;align-items:center;gap:8px;padding:4px 4px 10px;font-size:14.5px;font-weight:700;color:var(--rd-ink)}
+.v120-col-h i{width:8px;height:8px;border-radius:50%;flex:none}
+.v120-col-h .c{margin-left:auto;background:#fff;color:var(--rd-muted);font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px}
+.v120-cards{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:2px}
+.v120-card{background:#fff;border-radius:10px;padding:12px 12px 10px;border-top:3px solid var(--v120c,#9AA3AF);box-shadow:var(--rd-shadow);cursor:grab;text-align:left;min-width:0}
+.v120-card.is-run{cursor:pointer}
+.v120-card:hover{box-shadow:0 4px 14px rgba(16,24,40,.1)}
+.v120-card:focus-visible{outline:2px solid var(--rd-blue);outline-offset:2px}
+.v120-card.dragging{opacity:.45}
+.v120-card b{display:block;font-size:14.5px;line-height:1.3;color:var(--rd-ink);overflow-wrap:anywhere}
+.v120-card .meta{font-size:12.5px;line-height:1.35;color:var(--rd-muted);margin-top:2px;overflow-wrap:anywhere}
+.v120-card .run{display:flex;align-items:center;gap:7px;font-size:12.5px;line-height:1.35;font-weight:600;color:#7A5A12;background:var(--rd-gold-soft);border-radius:8px;padding:6px 8px;margin-top:8px}
+.v120-card .run i{width:7px;height:7px;border-radius:50%;background:var(--rd-gold);flex:none;animation:v120pulse 1.4s ease-in-out infinite}
+@keyframes v120pulse{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.v120-card .run i{animation:none}}
+.v120-card .foot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 6px;margin-top:8px;font-size:12px;color:var(--rd-muted)}
+.v120-card .foot .pill{font-size:11px}
+.v120-card .v120-next{margin-top:8px;width:100%;justify-content:center}
+.v120-empty{padding:18px 8px;font-size:13px;color:var(--rd-muted);text-align:center}
+.v120-m p{margin:0 0 10px}
+.v120-m .v120-steps{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;padding:0;list-style:none}
+.v120-m .v120-steps li{font-size:12.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:#EEF1F5;color:var(--rd-muted)}
+.v120-m .v120-steps li.on{background:var(--rd-gold-soft);color:#7A5A12}
+.v120-m textarea{width:100%;box-sizing:border-box}
+.v120-m .v120-msg{margin:8px 0 0;font-size:13.5px;color:var(--nw-ink-2,#475467)}
+.v120-m .v120-msg:empty{display:none}
+.v120-m .v120-msg.err{color:#B4432F}
+/* between a phone and a wide screen the six steps sit in two rows of three */
+@media(max-width:1179px){.v120-kan{grid-template-columns:repeat(3,minmax(0,1fr))}.v120-col{min-height:220px}}
+@media(max-width:860px){
+  .v120-kan{grid-template-columns:1fr;overflow-x:visible}
+  .v120-col{max-height:none;min-height:0}
+  .v120-col .v120-empty{padding:8px}
+}
+</style>
+
+<script id="v120js">
+/* ===================================================================
+   v120: the Lead pipeline as a board. A column per step, each lead in the
+   column of the last step it finished. Drag a lead to a step (or use the
+   card's Run button), Catalyst says what will run, and on Run it starts
+   from that step through Engine 1 Custom Run (Erica); the steps after it
+   follow on their own. A card shows the run while it goes.
+   Discovery and the growth plan save under the anonymizer's placeholder
+   email, so their documents are linked back to the lead by name here.
+   Put it live and campaign approval are in v115js (search "v120:").
+   =================================================================== */
+const V120_COLS=[
+  {k:-1,name:'New',c:'#9AA3AF'},
+  {k:0,name:'Researched',agent:'lead_research',what:'lead research',c:'#4F7DC0'},
+  {k:1,name:'Interview',agent:'interview_script',what:'the interview script',c:'#6C5DD3'},
+  {k:2,name:'Assessment',agent:'anonymizer',what:'the assessment',c:'#C08A2E'},
+  {k:3,name:'Discovery call',agent:'discovery_call',what:'the discovery call framework',c:'#2E8B83'},
+  {k:4,name:'Growth plan',agent:'growth_plan',what:'the growth plan',c:'#2E7D5B'}];
+/* a run that has shown nothing for this long stops showing as running */
+const V120_STALE=45*60e3;
+const V120={drag:null,q:'',pt:null,ask:null};
+function v120Col(k){return V120_COLS.find(function(c){return c.k===k;})||null;}
+function v120Data(){
+  if(window._e1&&window._e1.leads)return window._e1;
+  try{return apE1Leads();}catch(e){return {leads:[],outs:[]};}
+}
+function v120Lead(email){return v120Data().leads.find(function(l){return l.email===email||(l.emails||[]).indexOf(email)>=0;})||null;}
+function v120At(l){return e1CurrentStage(l,v120Data().outs);}
+function v120Cap(t){t=String(t||'');return t.charAt(0).toUpperCase()+t.slice(1);}
+function v120List(a){return a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];}
+function v120Bare(t){return String(t||'').replace(/^the /,'');}
+
+/* ---------- Discovery and growth plan documents, linked back to their lead ---------- */
+/* the anonymizer's placeholder email is contact@<its placeholder company>.com, the same for every lead */
+function v120Slug(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+function v120Nm(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');}
+function v120Field(o,k){return o[k]!=null&&o[k]!==''?o[k]:asObj(o.data)[k];}
+function v120IsHolder(email,company){const s=v120Slug(company);return !!s&&String(email||'').trim().toLowerCase()==='contact@'+s+'.com';}
+function v120Relink(leads,outs){
+  if(!Array.isArray(outs)||!outs.length)return outs;
+  const by={};
+  const add=function(name,email){const k=v120Nm(name);if(!k||!email)return;by[k]=by[k]||[];if(by[k].indexOf(email)<0)by[k].push(email);};
+  (leads||[]).forEach(function(l){
+    if(v120IsHolder(l.email,l.company_name)||String(l.phone||'')==='555-000-0000'||/^delta advisory$/i.test(String(l.company_name||'').trim()))return;
+    add(l.prospect_name,l.email);
+  });
+  outs.forEach(function(o){
+    if(['lead_research','interview_script','anonymizer'].indexOf(o.agent)<0||v120IsHolder(o.run_id,v120Field(o,'companyName')))return;
+    add(v120Field(o,'prospectName'),o.run_id);
+  });
+  outs.forEach(function(o){
+    if((o.agent!=='discovery_call'&&o.agent!=='growth_plan')||!v120IsHolder(o.run_id,v120Field(o,'companyName')))return;
+    const to=by[v120Nm(v120Field(o,'prospectName'))];
+    if(to&&to.length){o.held_as=o.run_id;o.run_id=to[0];}
+  });
+  return outs;
+}
+(function(){
+  if(typeof e1Data==='function'){
+    const _d=e1Data;
+    e1Data=async function(){const r=await _d.apply(this,arguments);try{if(r)v120Relink(r.leads,r.outs);}catch(e){console.warn('v120 relink',e);}return r;};
+  }
+  if(typeof apE1Unify==='function'){
+    const _u=apE1Unify;
+    apE1Unify=function(leads,outs){try{v120Relink(leads,outs);}catch(e){console.warn('v120 relink',e);}return _u.apply(this,arguments);};
+  }
+})();
+
+/* the lead's earlier documents, newest first: the Google Doc ids the agents saved in data.documentId
+   (the assessment's is also in its link on the lead) */
+function v120Docs(l){
+  const outs=v120Data().outs,emails=l.emails&&l.emails.length?l.emails:[l.email];
+  const doc=function(a){const o=outs.find(function(x){return x.agent===a&&emails.indexOf(x.run_id)>=0&&asObj(x.data).documentId;});return o?String(asObj(o.data).documentId):'';};
+  const fromUrl=function(u){const m=/\/document\/d\/([A-Za-z0-9_-]{20,})/.exec(String(u||''));return m?m[1]:'';};
+  return {researchDocId:doc('lead_research'),interviewDocId:doc('interview_script'),anonymizedDocId:doc('anonymizer')||fromUrl(l.assessment_url)};
+}
+
+/* ---------- runs started from the board, by lead: {k: the step it started at, t0, seen: the newest document of each
+   step when it started, in Supabase's own times so this computer's clock does not matter} (kept with the workspace) ---------- */
+function v120Runs(){if(!RD.e1run||typeof RD.e1run!=='object')RD.e1run={};return RD.e1run;}
+function v120Newest(l,agent){
+  const outs=v120Data().outs,emails=l.emails&&l.emails.length?l.emails:[l.email];
+  return outs.reduce(function(m,o){const t=o.agent===agent&&emails.indexOf(o.run_id)>=0?Date.parse(o.created_at)||0:0;return t>m?t:m;},0);
+}
+/* how far a run has got: the first step from its start with no document newer than the one on file when it began */
+function v120RunState(l){
+  const R=v120Runs(),r=R[l.email]||(l.emails||[]).map(function(e){return R[e];}).find(Boolean);if(!r)return null;
+  if(Date.now()-r.t0>V120_STALE)return null;
+  const seen=r.seen||{};
+  for(let k=Math.max(r.k,0);k<=4;k++){
+    const a=v120Col(k).agent;
+    if(!(v120Newest(l,a)>(seen[a]||0)))return {k:k,col:v120Col(k),r:r};
+  }
+  return null;
+}
+function v120Tidy(){
+  /* with nothing loaded (a failed read) there is nothing to tidy against */
+  if(!v120Data().leads.length)return;
+  const R=v120Runs();let ch=false;
+  Object.keys(R).forEach(function(e){const l=v120Lead(e);if(!l||!v120RunState(l)){delete R[e];ch=true;}});
+  if(ch&&typeof rdSave==='function')rdSave();
+}
+function v120Running(){return Object.keys(v120Runs()).length>0;}
+
+/* ---------- what a step needs ---------- */
+/* Discovery and the growth plan work from the assessment; the interview script from the research; the assessment
+   from the research and the interview script. Call notes stand in for a document the lead does not have. */
+function v120Plan(l,k){
+  const cur=v120At(l),d=v120Docs(l),p={cur:cur,docs:d,again:k>=0&&k<=cur,blocked:'',need:'',notes:false};
+  if(k>=3){if(!d.anonymizedDocId)p.blocked=v120Cap(v120Col(k).what)+' works from the assessment, and this lead has none yet. Run the assessment first.';}
+  else if(k===1){if(!d.researchDocId){p.notes=true;p.need='lead research';}}
+  else if(k===2){p.notes=true;if(!d.researchDocId||!d.interviewDocId)p.need=!d.interviewDocId?'interview script':'lead research';}
+  return p;
+}
+/* where a lead can be dropped: any step but the one it is on, not while it runs, and not past a missing assessment */
+function v120CanDrop(email,k){
+  const l=v120Lead(email);if(!l||k<0)return false;
+  if(v120RunState(l)||k===v120At(l))return false;
+  return !v120Plan(l,k).blocked;
+}
+
+/* ---------- the board ---------- */
+function v120CardHtml(l,cur){
+  const run=v120RunState(l),col=v120Col(cur),next=cur<4?v120Col(cur+1):null;
+  const meta=[l.company_name,typeof apFirmType==='function'?apFirmType(l.firm_type):l.firm_type].filter(Boolean).join(' · ');
+  const em=esc(nwJs(l.email)),when=l.updated_at||l.created_at;
+  return '<div class="v120-card'+(run?' is-run':'')+'" style="--v120c:'+col.c+'" data-email="'+esc(l.email)+'" tabindex="0" role="button"'+
+      ' aria-label="'+esc((l.prospect_name||l.email)+', '+col.name+(run?', writing '+run.col.what:'')+'. Open the lead')+'"'+
+      (run?'':' draggable="true" ondragstart="v120DragStart(event,'+em+')" ondragend="v120DragEnd()"')+
+      ' onclick="openE1Lead('+em+')" onkeydown="if(event.key===\'Enter\'&&event.target===this)openE1Lead('+em+')">'+
+    '<b>'+esc(l.prospect_name||l.email)+'</b>'+(meta?'<div class="meta">'+esc(meta)+'</div>':'')+
+    (run?'<div class="run" role="status"><i></i>Writing '+esc(run.col.what)+'</div>':'')+
+    '<div class="foot"><span>'+(when?esc(nwDay(when)):'')+'</span>'+(typeof fitPill==='function'?fitPill(l.fit_rating):'')+'</div>'+
+    (!run&&next?'<button type="button" class="rd-btn sm v120-next" onclick="event.stopPropagation();v120Ask('+em+','+next.k+')">Run '+esc(next.k===0?'lead research':next.name.toLowerCase())+'</button>':'')+
+  '</div>';
+}
+function v120Rows(){
+  const q=V120.q.trim().toLowerCase();
+  return v120Data().leads.filter(function(l){return !q||[l.prospect_name,l.company_name,l.email].join(' ').toLowerCase().indexOf(q)>=0;});
+}
+function v120BoardHtml(){
+  const rows=v120Rows(),by={};
+  V120_COLS.forEach(function(c){by[c.k]=[];});
+  rows.forEach(function(l){const k=v120At(l);(by[k]||by[-1]).push(l);});
+  return '<div class="v120-kan">'+V120_COLS.map(function(c){
+    const L=by[c.k];
+    return '<section class="v120-col" data-k="'+c.k+'" aria-label="'+esc(c.name+', '+nwPlural(L.length,'lead'))+'" ondragover="v120Over(event,'+c.k+')" ondragleave="v120Leave(event)" ondrop="v120Drop(event,'+c.k+')">'+
+      '<div class="v120-col-h"><i style="background:'+c.c+'"></i>'+esc(c.name)+'<span class="c">'+L.length+'</span></div>'+
+      '<div class="v120-cards">'+(L.length?L.map(function(l){return v120CardHtml(l,c.k);}).join(''):'<div class="v120-empty">'+(c.k<0?'No new leads':'No leads here')+'</div>')+'</div></section>';
+  }).join('')+'</div>';
+}
+function v120Paint(){
+  const h=document.getElementById('v120Board');if(!h)return;
+  v120Tidy();
+  const n=v120Rows().length,all=v120Data().leads.length;
+  const b=h.querySelector('.v120-body');if(b)b.innerHTML=v120BoardHtml();
+  const c=h.querySelector('.v120-n');if(c)c.textContent=V120.q.trim()?n+' of '+all+' shown':nwPlural(all,'lead');
+  v120Poll();
+}
+function v120Host(h){
+  h.id='v120Board';
+  h.innerHTML='<p class="v120-help">Drag a lead to the step it should run next. Catalyst asks before it runs anything.</p>'+
+    '<div class="v120-tools"><input type="search" placeholder="Search prospect, company or email…" aria-label="Search leads" value="'+esc(V120.q)+'" oninput="V120.q=this.value;v120Paint()"><span class="v120-n"></span></div>'+
+    '<div class="v120-body"></div>';
+  v120Paint();
+}
+
+/* ---------- drag and drop ---------- */
+function v120DragStart(e,email){
+  V120.drag=email;
+  try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',email);}catch(_){}
+  const card=e.currentTarget;setTimeout(function(){if(card)card.classList.add('dragging');},0);
+  document.querySelectorAll('#v120Board .v120-col').forEach(function(c){c.classList.toggle('no',!v120CanDrop(email,+c.dataset.k));});
+}
+function v120DragEnd(){
+  V120.drag=null;
+  document.querySelectorAll('#v120Board .v120-col').forEach(function(c){c.classList.remove('no','over');});
+  document.querySelectorAll('#v120Board .v120-card.dragging').forEach(function(c){c.classList.remove('dragging');});
+}
+function v120Over(e,k){
+  const em=V120.drag;if(!em||!v120CanDrop(em,k))return;
+  e.preventDefault();try{e.dataTransfer.dropEffect='move';}catch(_){}
+  e.currentTarget.classList.add('over');
+}
+function v120Leave(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('over');}
+function v120Drop(e,k){
+  e.preventDefault();
+  let em=V120.drag;try{em=em||e.dataTransfer.getData('text/plain');}catch(_){}
+  v120DragEnd();
+  if(em&&v120CanDrop(em,k))v120Ask(em,k);
+}
+
+/* ---------- the question before a run: what runs, what it works from, then Run ---------- */
+async function v120Ask(email,k){
+  if(!v120Lead(email)){try{await v120Reload();}catch(e){}}
+  const l=v120Lead(email),col=v120Col(k);if(!l||!col||k<0)return;
+  if(v120RunState(l)){nwToast('A run for '+(l.prospect_name||l.email)+' is still going.');return;}
+  const p=v120Plan(l,k),name=l.prospect_name||l.email;
+  if(p.blocked){nwToast(p.blocked);return;}
+  V120.ask={email:l.email,k:k};
+  const after=V120_COLS.filter(function(c){return c.k>k;}).map(function(c){return c.what;});
+  const hint=p.need?'Needed: this lead has no '+p.need+' yet, so paste what the agents should work from, like a call transcript or your notes.'
+    :'If you had the prequalification call, paste its transcript or your notes. Optional.';
+  nwModal('v120M','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · Lead pipeline</div><h2>Run '+esc(col.what)+' for '+esc(name)+'?</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v120-m">'+
+      '<ul class="v120-steps" aria-label="What runs">'+V120_COLS.filter(function(c){return c.k>=0;}).map(function(c){return '<li'+(c.k>=k?' class="on"':'')+'>'+esc(c.name)+'</li>';}).join('')+'</ul>'+
+      '<p>'+esc(after.length?v120Cap(col.what)+' runs first, then '+v120List(after)+' follow on their own.':'Only '+col.what+' runs.')+' Each document shows up on the lead when it is done.</p>'+
+      (p.again?'<p class="nw-muted nw-small">'+esc(v120Cap(col.what)+(after.length?' and the steps after it are':' is')+' written again. Earlier versions stay in Files.')+'</p>':'')+
+      (p.notes?'<label class="nw-field"><span class="nw-lbl">Call transcript or notes<small>'+esc(hint)+'</small></span>'+
+        '<textarea class="nw-input nw-textarea" id="v120Note" rows="5"></textarea></label>':'')+
+      '<p class="v120-msg" id="v120Msg" role="status" aria-live="polite"></p>'+
+      '<div class="nw-m-foot"><span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button>'+
+        '<button type="button" class="nw-btn nw-btn-primary" id="v120Go" onclick="v120Go()">'+nwIc('check',15)+'Run it</button></div>'+
+    '</div>');
+}
+function v120Names(l){
+  const n=String(l.prospect_name||'').trim().split(/\s+/);
+  return {first:n[0]||'',last:n.slice(1).join(' ')};
+}
+/* what the run is sent: the lead's details, where to start, its earlier documents and any notes
+   (the full run takes the intake form's fields) */
+function v120Body(l,k,note){
+  const nm=v120Names(l);
+  const base={firstName:nm.first,lastName:nm.last,prospectName:l.prospect_name||'',prospectTitle:l.prospect_title||'',
+    firmName:l.company_name||'',companyName:l.company_name||'',companyUrl:l.website||'',website:l.website||'',
+    emailAddress:l.email,email:l.email,phone:l.phone||'',firmType:l.firm_type||'',firmSize:l.firm_size||''};
+  if(k===0)return Object.assign(base,{hearAboutUs:'Dashboard run',whatBringsYouHere:'',aiInterests:[],currentAIStage:'',preferredFollowUp:''});
+  return Object.assign(base,v120Docs(l),{entry:v120Col(k).agent,transcript:note||'',extraDoc:'',from:'board'});
+}
+async function v120Go(){
+  const a=V120.ask;if(!a)return;
+  const btn=document.getElementById('v120Go'),msg=document.getElementById('v120Msg');
+  const say=function(t,err){if(msg){msg.textContent=t;msg.classList.toggle('err',!!err);}};
+  const note=v115Str((document.getElementById('v120Note')||{}).value);
+  if(btn)btn.disabled=true;say('Starting…');
+  /* the newest documents on file go with the run */
+  try{await v120Reload();}catch(e){}
+  const l=v120Lead(a.email),col=v120Col(a.k);
+  if(!l||!col){if(btn)btn.disabled=false;say('Could not find this lead any more. Refresh the page.',true);return;}
+  const p=v120Plan(l,a.k);
+  if(p.blocked){if(btn)btn.disabled=false;say(p.blocked,true);return;}
+  if(p.need&&!note){if(btn)btn.disabled=false;say('Paste a call transcript or notes first. This lead has no '+p.need+' to work from yet.',true);return;}
+  try{await apHook(a.k===0?AP_HOOKS.e1_full:AP_HOOKS.e1_custom,v120Body(l,a.k,note));}
+  catch(e){if(btn)btn.disabled=false;say('Could not start it: '+(e.message||e)+'. Try again in a minute.',true);return;}
+  const seen={};V120_COLS.forEach(function(c){if(c.k>=Math.max(a.k,0))seen[c.agent]=v120Newest(l,c.agent);});
+  v120Runs()[l.email]={k:a.k,t0:Date.now(),seen:seen};
+  if(typeof rdSave==='function')rdSave();
+  V120.ask=null;nwModalClose();
+  nwToast('Started. '+v120Cap(col.what)+' shows up on the lead when it is done.');
+  v120Paint();
+}
+
+/* ---------- while a run goes, the board reads the pipeline again every half minute ---------- */
+async function v120Reload(){
+  /* the older Supabase helper keeps every read for the session, so the pipeline's reads are dropped first */
+  try{Object.keys(cache).forEach(function(k){if(/^(e1_leads|agent_outputs)\?/.test(k))delete cache[k];});}catch(e){}
+  const r=await e1Data();
+  if(r.err&&!(r.leads||[]).length&&!(r.outs||[]).length)return false;
+  const leads=(r.leads||[]).slice(),outs=r.outs||[],known=new Set(leads.map(function(l){return l.email;}));
+  outs.forEach(function(o){if(!known.has(o.run_id)){known.add(o.run_id);const d=asObj(o.data);leads.push({email:o.run_id,prospect_name:d.prospectName||'',company_name:d.companyName||'',updated_at:o.created_at});}});
+  window._e1={leads:mergeE1Leads(leads),outs:outs};
+  return true;
+}
+function v120Poll(){
+  clearTimeout(V120.pt);
+  if(!v120Running())return;
+  V120.pt=setTimeout(async function(){
+    if(!document.getElementById('v120Board')||!v120Running())return;
+    try{if(await v120Reload()){v120Paint();try{paintE1Rows();}catch(e){}try{apDemoRefreshStrip();}catch(e){}}}catch(e){}
+    v120Poll();
+  },30000);
+}
+
+/* the board is the Lead pipeline's first tab, and where the page opens the first time */
+(function(){
+  if(typeof apDemo!=='function')return;
+  const _d=apDemo;
+  apDemo=function(o){
+    try{
+      if(o&&o.page==='e1pipeline'&&Array.isArray(o.tabs)&&!o.tabs.some(function(t){return t.key==='board';})){
+        o.tabs.unshift({key:'board',label:'Board',render:v120Host,onShow:function(){v120HideList();v120Paint();}});
+        if(o.purpose)o.purpose=Object.assign({},o.purpose,{bold:'One card per prospect',small:'Open a card for every document it has. The other tabs list the same leads.'});
+        if(!RD.v120b){RD.v120b=1;RD.aptab.e1pipeline='board';}
+      }
+    }catch(e){console.warn('v120 board',e);}
+    const r=_d.apply(this,arguments);
+    /* the page shows its list again right after drawing the tabs, so the board hides it once that is done */
+    if(o&&o.page==='e1pipeline')Promise.resolve().then(function(){if(RD.aptab.e1pipeline==='board')v120HideList();});
+    return r;
+  };
+})();
+/* the list of every prospect is the other tabs' view */
+function v120HideList(){const s=document.getElementById('apE1List');if(s)s.classList.add('ap-hide');}
+/* the older Run buttons ask the same question, so they send the documents the run needs (lead research keeps its intake form) */
+(function(){
+  const _r=typeof apRunStage==='function'?apRunStage:null;
+  apRunStage=function(email,agent){
+    const c=V120_COLS.find(function(x){return x.agent===agent;});
+    if(!c||c.k===0){if(_r)return _r.apply(this,arguments);return;}
+    return v120Ask(email,c.k);
+  };
+})();
 </script>
 
 <script>

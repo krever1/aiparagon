@@ -76,7 +76,8 @@ function makeStore(tables) {
       return { status: 201, body: out };
     }
     if (method === 'PATCH') {
-      if (q.table === 'creative_briefs' && db.__lockCreative) { writes.push({ method, table: q.table, body, filters: q.filters, refused: true }); return { status: 200, body: [] }; }
+      // a table set in db.__lock answers an update with no rows, as Supabase does when a policy refuses it
+      if ((q.table === 'creative_briefs' && db.__lockCreative) || (db.__lock && db.__lock[q.table])) { writes.push({ method, table: q.table, body, filters: q.filters, refused: true }); return { status: 200, body: [] }; }
       const rows = select(Object.assign({}, q, { order: null, limit: null }));
       rows.forEach((r) => Object.assign(r, body));
       writes.push({ method, table: q.table, body, filters: q.filters, n: rows.length });
