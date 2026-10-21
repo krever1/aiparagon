@@ -97,7 +97,8 @@ function tables() {
     const { ctx, page } = await open('/dashboard/lead-pipeline');
     const tb = await tabs(page);
     check('the stage tabs put every lead in one of them (New for nothing run yet)',
-      JSON.stringify(tb) === JSON.stringify(['All 3', 'New 1', 'At Research 1', 'At Interview 0', 'At Assessment 0', 'At Discovery 0', 'Completed 1']), JSON.stringify(tb));
+      /* v120: the board comes first, with no count */
+      JSON.stringify(tb) === JSON.stringify(['Board', 'All 3', 'New 1', 'At Research 1', 'At Interview 0', 'At Assessment 0', 'At Discovery 0', 'Completed 1']), JSON.stringify(tb));
     const rowsOf = () => txt(page, '#apE1List tbody');
     await tab(page, 'New'); await wait(page, 700);
     let t = await txt(page, '#apE1List'), rows = await rowsOf();
