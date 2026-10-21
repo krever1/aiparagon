@@ -47949,6 +47949,11 @@ function v112HsMirror(url,name,email){
 .v113-funs{display:grid;gap:10px;margin-bottom:16px}
 .v113-st-r{display:grid;gap:2px;font-size:13px;line-height:1.45;color:var(--nw-ink-2)}
 .v113-st-r b{color:var(--nw-ink);font-size:12px}
+/* v122: a funnel card's lists sit inside the card, an item's lead words in ink, an agenda's times in a column */
+.v113-st-r ul{margin:2px 0 0;padding-left:18px;display:grid;gap:5px}
+.v113-st-r li{overflow-wrap:anywhere}
+.v113-st-r li b{font-size:inherit;font-weight:600}
+.v122-t{font-variant-numeric:tabular-nums;color:var(--nw-ink-3)}
 .v113-st-img{width:100%;border-radius:var(--nw-r-sm);border:1px solid var(--nw-line);margin-top:6px}
 /* v113 · Ad Testing */
 .v113-adsl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:-6px 0 14px;padding:10px 14px;border-radius:var(--nw-r-md);background:var(--nw-info-soft);color:var(--nw-info);font-size:13px}
@@ -48873,14 +48878,30 @@ function v113FunPaint(){const p=v97$('nwMgP_campaigns');if(!p)return;const old=p
 /* one funnel: every step as a card */
 function v113StepHtml(s){
   const c=s&&s.content||{};
+  /* v122: a list item that is an object reads in its own words (an agenda line as its time and part, an email with when
+     it goes and what it says, a question with its answers, a section with its title), labels read as words, and an item
+     with nothing to say is left out instead of printing a blank bullet */
+  const txt=function(v){return v==null?'':typeof v==='object'?(Array.isArray(v)?v.map(txt).filter(Boolean).join(' / '):Object.keys(v).map(function(k){return txt(v[k]);}).filter(Boolean).join(' · ')):String(v).trim();};
+  const item=function(x){
+    if(x==null||typeof x!=='object')return esc(txt(x));
+    const t=txt(x.t||x.time||x.at),part=txt(x.part||x.item||x.topic);
+    if(part)return (t?'<span class="v122-t">'+esc(t)+'</span> ':'')+esc(part);
+    const head=txt(x.subject||x.question||x.title||x.q||x.name||x.label),body=txt(x.body||x.answer||x.a||x.text||x.description||x.claim),
+      opts=apArr(x.options).map(txt).filter(Boolean).join(' / '),when=txt(x.when);
+    if(head||body||opts)return (head?'<b>'+esc(head)+'</b>':'')+(when?' <span class="nw-faint">· '+esc(when)+'</span>':'')+
+      (opts?(head?(/[?:.!]$/.test(head)?' ':': '):'')+esc(opts):'')+(body?(head||opts?'<br>':'')+esc(body):'');
+    return esc(txt(x));
+  };
+  const LBL={headline:'Headline',subheadline:'Subheadline',body:'Body',bullets:'Bullets',cta:'Button',subject:'Subject',preview:'Preview text',when:'When',faq:'Questions',
+    hook:'Hook',primary_text:'Primary text',description:'Description',image_direction:'Image',emails:'Emails',agenda:'Agenda',sections:'Sections',fields:'Form fields',proof:'Proof',notes:'Notes',questions:'Questions',routing:'Where answers lead',   /* v121: survey steps */
+    who:'Who it is for',presenter:'Presenter',how_often:'How often',offer:'The offer',title:'Title',price:'Price',link:'Link',url:'Link'};   /* v122 */
+  const lbl=function(k){return LBL[k]||(k.charAt(0).toUpperCase()+k.slice(1)).replace(/_/g,' ');};
   const row=function(k,v){if(v==null||v===''||(Array.isArray(v)&&!v.length))return '';
-    if(Array.isArray(v))return '<div class="v113-st-r"><span>'+esc(k)+'</span><ul>'+v.map(function(x){return '<li>'+esc(typeof x==='string'?x:[x.subject||x.question||x.title||x.q||'',x.body||x.answer||x.a||x.text||'',apArr(x&&x.options).map(String).join(' / ')].filter(Boolean).join(': '))+'</li>';}).join('')+'</ul></div>';
-    if(typeof v==='object')return '<div class="v113-st-r"><span>'+esc(k)+'</span><p>'+esc(Object.keys(v).map(function(x){return x+': '+v[x];}).join(' · '))+'</p></div>';
-    return '<div class="v113-st-r"><span>'+esc(k)+'</span><p>'+esc(String(v))+'</p></div>';};
-  const LBL={headline:'Headline',subheadline:'Subheadline',body:'Body',bullets:'Bullets',cta:'Button',subject:'Subject',preview:'Preview text',when:'When it goes',faq:'Questions',
-    hook:'Hook',primary_text:'Primary text',description:'Description',image_direction:'Image',emails:'Emails',agenda:'Agenda',sections:'Sections',fields:'Form fields',proof:'Proof',notes:'Notes',questions:'Questions',routing:'Where answers lead'};   /* v121: survey steps */
+    if(Array.isArray(v)){const li=v.map(item).filter(Boolean);return li.length?'<div class="v113-st-r"><span>'+esc(k)+'</span><ul>'+li.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>':'';}
+    if(typeof v==='object'){const t=Object.keys(v).map(function(x){const y=txt(v[x]);return y?lbl(x)+': '+y:'';}).filter(Boolean).join(' · ');return t?'<div class="v113-st-r"><span>'+esc(k)+'</span><p>'+esc(t)+'</p></div>':'';}
+    const t=txt(v);return t?'<div class="v113-st-r"><span>'+esc(k)+'</span><p>'+esc(t)+'</p></div>':'';};
   return '<article class="v113-card v113-st"><b class="v113-card-h">'+esc(s.title||s.key||'Step')+'</b>'+(s.why?'<p class="nw-faint nw-small">'+esc(s.why)+'</p>':'')+
-    Object.keys(c).map(function(k){return row(LBL[k]||k.replace(/_/g,' '),c[k]);}).join('')+'</article>';
+    Object.keys(c).map(function(k){return row(lbl(k),c[k]);}).join('')+'</article>';
 }
 function v113FunOpen(id){
   const f=(V113.fun.rows||[]).find(function(x){return String(x.id)===String(id);});if(!f)return;
