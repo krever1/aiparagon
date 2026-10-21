@@ -2,9 +2,9 @@
 // The build plan: the right pane on Content Transformation and Marketing Generation shows what gets built, step by
 // step, before it runs (a piece's parts, a funnel's steps), each step opens to change it (name, what it should say,
 // the details it needs, moved there from Details), steps are added, removed and moved, and the runs get it: a
-// piece's parts as its template sections, a funnel's steps as the Funnel Builder's plan, book a call and low-ticket
-// notes in the Low-Ticket request, a book-a-call campaign turned into a landing page campaign, Reset, and Save as
-// our default (ai_settings build_plans).
+// piece's parts as its template sections, a funnel's steps as the Funnel Builder's plan, book a call's in the
+// Low-Ticket request as its plan (since v123, which tests/dashboard-v123.test.js covers), Reset, and Save as our
+// default (ai_settings build_plans).
 // Calls: on Tasks each call shows its type (changed right there, the team's own types too) and the people on it,
 // calls are filed in client folders, and type buttons along the top show one kind of call (Tasks and Calls).
 // The sign-in screen: a saved session opens the dashboard with no sign-in screen first (sampled every frame).
@@ -183,13 +183,13 @@ function tables(o) {
     const { ctx, page, store, hooks } = await open('/dashboard/marketing-generation');
     check('book a call shows its four parts, in order', JSON.stringify(await names(page, 'mg')) === JSON.stringify(['Ads', 'Qualification survey', 'Landing page', 'Booking page']), JSON.stringify(await names(page, 'mg')));
     const fx = await ev(page, () => ({ add: !!document.querySelector('#v121Plan_mg .v121-add'), lock: (document.querySelector('#v121Plan_mg .v121-lock') || {}).textContent || '', sum: [...document.querySelectorAll('#v121Plan_mg .v121-stt small')].map((x) => x.textContent) }));
-    check('its parts are set: no Add a step, and a line on how to change them', !fx.add && /The Low-Ticket Agent always builds these four, with the ad images/.test(fx.lock) && /make it a landing page campaign/.test(fx.lock), fx.lock);
+    check('since v123 it takes steps of its own: Add a step, no locked line', fx.add && !fx.lock, fx.lock);
     check('each part says what it has: 3 ads with images, and the booking page wants its link', fx.sum[0] === '3 ads with images' && /20 min · add booking link/.test(fx.sum[3]), JSON.stringify(fx.sum));
     const left = await ev(page, () => [...document.querySelectorAll('#v113MgB .nw-lbl')].map((x) => x.textContent.replace(/optional$/, '')).join('|'));
     check('Details keeps what the whole campaign needs; each part\'s details moved to the plan', /What is the campaign for\?/.test(left) && /Button text/.test(left) && !/Call length|Who should book|Booking link|Anything about the funnel/.test(left) && !(await page.$('#v113FunNote')) && /Each step’s details are in the plan/.test(await txt(page, '#v113MgB')), left);
     await openStep(page, 'mg', 3);
     const bk = await ev(page, () => { const li = document.querySelector('#v121Plan_mg .v121-st.is-open'); return { name: !!li.querySelector('input[data-f="name"]'), del: !!li.querySelector('.v121-del'), len: !!li.querySelector('[aria-label="Call length"]'), cal: !!li.querySelector('#v113CalSel') }; });
-    check('the booking page holds the call length and the Calendly link, and cannot be renamed or removed', !bk.name && !bk.del && bk.len && bk.cal, JSON.stringify(bk));
+    check('the booking page holds the call length and the Calendly link (since v123 it can be renamed or removed)', bk.name && bk.del && bk.len && bk.cal, JSON.stringify(bk));
     await page.selectOption('#v113CalSel', 'https://calendly.com/qa-team/diagnostic'); await wait(page, 300);
     await page.click('#v121Plan_mg .v121-st[data-i="0"] .v121-sth'); await wait(page, 300);
     check('picking the event fills the booking page\'s line', /45 min · Diagnostic/.test(await txt(page, '#v121Plan_mg .v121-st[data-i="3"] .v121-stt small')), await txt(page, '#v121Plan_mg .v121-st[data-i="3"] .v121-stt small'));
@@ -197,7 +197,8 @@ function tables(o) {
     await openStep(page, 'mg', 2); await page.fill(inStep('mg', 'textarea[data-f="note"]'), 'Name the diagnostic');
     await page.click('#v97MgGoBtn'); await wait(page, 1800);
     const lt = last(hooks, /e3-low-ticket-run/), lb = lt ? lt.b : {};
-    check('book a call goes to the Low-Ticket Agent with each part\'s notes in the request', lb.request && /About the funnel: Qualification survey: Ask about AUM first\. Landing page: Name the diagnostic/.test(lb.request) && /Qualification survey: Ask about AUM first/.test((lb.setup || {}).funnel_note || ''), lb.request);
+    const st = (k) => (lb.plan || []).find((x) => x.key === k) || {};
+    check('book a call goes to the Low-Ticket Agent with each step\'s notes in its plan (v123), not in the request text', st('survey').note === 'Ask about AUM first' && st('landing').note === 'Name the diagnostic' && !/About the funnel/.test(lb.request || ''), JSON.stringify(lb.plan));
     check('with the booking link and the call length, as before', lb.setup && lb.setup.booking && lb.setup.booking.url === 'https://calendly.com/qa-team/diagnostic' && /Call length: 45 min/.test(lb.setup.details || ''), lb.setup && lb.setup.details);
     check('and the funnel note is not left set after the send', (await ev(page, () => V113.mg.funNote || '')) === '');
     // a webinar: every step can change
@@ -241,25 +242,6 @@ function tables(o) {
     await page.click('#v111Cats_mg .v111-cat[data-c="download"]'); await wait(page, 300);
     await page.click('#v111Cats_mg .v111-cat[data-c="webinar"]'); await wait(page, 300);
     check('and the next webinar starts from it', (await names(page, 'mg')).length === 2 && /Your team’s default/.test(await txt(page, '#v121Plan_mg .v121-pf')), JSON.stringify(await names(page, 'mg')));
-    await ctx.close();
-  }
-
-  // ---------------- A. book a call with steps of your own: a landing page campaign ----------------
-  {
-    const { ctx, page, hooks } = await open('/dashboard/marketing-generation');
-    await openStep(page, 'mg', 1); await page.fill(inStep('mg', 'input[placeholder="e.g. owners of RIAs with 5 or more advisers"]'), 'Owners of RIAs');
-    await page.click('#v121Plan_mg .v121-st[data-i="0"] .v121-sth'); await wait(page, 200);
-    await page.click('#v121Plan_mg .v121-lock button'); await wait(page, 600);
-    const st = await ev(page, () => ({ pk: V97.mg.pk, goal: v113MgA('ad').goal, keys: v121Plan('mg').steps.map((s) => s.key + ':' + s.kind), note: v121Plan('mg').steps[1].note, add: !!document.querySelector('#v121Plan_mg .v121-add') }));
-    check('make it a landing page campaign: a landing page set to book a call, with the same four steps', st.pk === 'landing' && st.goal === 'Book a call' && JSON.stringify(st.keys) === JSON.stringify(['ads:ads', 'survey:survey', 'landing_page:page', 'booking_page:booking']) && st.add, JSON.stringify(st));
-    check('who should book carries over into the survey\'s notes', /Who should book: Owners of RIAs/.test(st.note), st.note);
-    check('the campaign picker follows', (await ev(page, () => (document.querySelector('#v111Cats_mg .v111-cat[aria-checked="true"]') || {}).dataset || {})).c === 'landing');
-    await openStep(page, 'mg', 3);
-    check('the booking step has the Calendly link', !!(await page.$(inStep('mg', '#v113CalSel'))));
-    await page.selectOption('#v113CalSel', 'https://calendly.com/qa-team/intro'); await wait(page, 300);
-    await page.click('#v97MgGoBtn'); await wait(page, 1500);
-    const fb = (last(hooks, /e3-funnel-run/) || {}).b || {};
-    check('it goes to the Funnel Builder with its steps and the booking link', fb.funnel_type === 'landing' && fb.plan && fb.plan.some((s) => s.kind === 'booking') && fb.details && fb.details['Booking link'] === 'https://calendly.com/qa-team/intro' && fb.details['What the page asks for'] === 'Book a call', JSON.stringify(fb.details));
     await ctx.close();
   }
 
