@@ -131,6 +131,8 @@ function tables() {
   }
   {
     const { ctx, page } = await open('/dashboard/lead-pipeline');
+    // v120: the page opens on the board; the list and its heading are on All
+    await page.click('#apChrome .rd-tab[data-tab="all"]'); await wait(page, 600);
     const t = await txt(page, '#main');
     check('the Lead pipeline says Every prospect in Catalyst, with no engine label', /Every prospect in Catalyst/.test(t) && !ENGINE.test(t), (t.match(/.{0,60}engine [123].{0,40}/i) || [t.slice(0, 200)])[0]);
     await page.click('#main button:has-text("New run"), #apChrome button:has-text("New run")'); await wait(page, 800);

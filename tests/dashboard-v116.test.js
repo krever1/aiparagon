@@ -149,6 +149,9 @@ function tables(o) {
     check('the link box says it is needed', /needed to go live/.test(await txt(page, '#v115LpD .nw-field:has(#v115E-thu)')), await txt(page, '#v115LpD .nw-field:has(#v115E-thu)'));
     await page.fill('#v115E-thu', 'https://calendly.com/qa/intro');
     await page.click('#v115LpD button:has-text("Put it live")'); await wait(page, 1000);
+    // v120: this campaign is not approved yet, so the first click asks and the second approves it and puts the page live
+    check('the campaign is not approved yet, so it asks before going live', writes(store, 'landing_pages', 'PATCH').length === before && /This campaign is not approved yet/.test(await txt(page, '#v115E-msg')), await txt(page, '#v115E-msg'));
+    await page.click('#v115E-live'); await wait(page, 1000);
     const live = writes(store, 'landing_pages', 'PATCH').slice(-1)[0];
     check('with the link it goes live', writes(store, 'landing_pages', 'PATCH').length === before + 1 && live.body.status === 'live' && live.body.content.thanks.url === 'https://calendly.com/qa/intro', JSON.stringify(live && live.body.status));
     await wait(page, 500);
