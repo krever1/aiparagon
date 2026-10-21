@@ -61,7 +61,7 @@ async function start(file) {
 }
 
 // opts: viewport, bucket (page errors), calls (array that records Supabase calls), session (a stub account, below),
-// noOcr (the word reader cannot be fetched), relay (answers the np-relay, see below)
+// noOcr (the word reader cannot be fetched), relay (answers the np-relay, see below), rest (answers other calls first)
 async function newPage(env, opts) {
   opts = opts || {};
   const build = pdfjsBuild();
@@ -86,6 +86,11 @@ async function newPage(env, opts) {
       calls.push(req.method() + ' ' + p);
       const json = (status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
       if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
+      // opts.rest: a suite's own answer for some calls ({method, path, body} in, {status, body} out, or nothing to go on)
+      if (opts.rest) {
+        const out = await opts.rest({ method: req.method(), path: p, body: req.postData() || '' });
+        if (out) return json(out.status || 200, out.body === undefined ? [] : out.body);
+      }
       if (p.startsWith('/rest/v1/rpc/np_invite_peek')) {
         const b = JSON.parse(req.postData() || '{}');
         return json(200, b.p_token === INVITE.token ? [INVITE] : []);

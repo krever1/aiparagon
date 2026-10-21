@@ -2979,6 +2979,44 @@ body:has(#scrim.on) #layFab,body:has(#scrim.on) #layFab2,body:has(#sigOv) #layFa
   .sidebar:not(.open){visibility:hidden}
   .sidebar.open{visibility:visible;transition:transform .22s cubic-bezier(.32,.72,0,1),visibility 0s}
 }
+/* ══ v12.36: Demo vs. Development, the phone note, the invite tick, the team in Messages ══ */
+.mode-banner{background:#8A5A1E;color:#fff;padding:9px 16px;font-size:13px;font-weight:600;text-align:center;letter-spacing:.01em}
+.mode-banner a{color:#fff;text-decoration:underline;margin-left:8px;font-weight:500}
+.app.on .mode-banner{border-radius:12px;margin:0 0 16px}
+.mode-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode-opt{display:grid;gap:4px;align-content:start;text-align:left;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--white);cursor:pointer;font:inherit;color:var(--ink)}
+.mode-opt b{font-size:14px}
+.mode-opt span{font-size:12.4px;color:var(--muted);line-height:1.45}
+.mode-opt:hover{border-color:var(--navy)}
+.mode-opt.on{border-color:var(--navy);background:var(--navy-soft);box-shadow:inset 0 0 0 1px var(--navy)}
+.mode-opt:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
+@media (max-width:560px){ .mode-pick{grid-template-columns:1fr} }
+.phone-note{display:flex;gap:8px;align-items:flex-start;margin:8px 0 0;font-size:12.8px;color:var(--muted);line-height:1.45}
+.phone-note svg{flex:none;margin-top:1px;color:var(--navy)}
+.phone-note b{color:var(--ink);font-weight:600}
+.ov-modal .phone-note,#mdBody .phone-note{margin:-2px 0 12px}
+.checkrow.sf-invite{padding:10px 0;border-bottom:0;cursor:pointer;align-items:flex-start}
+.checkrow.sf-invite>span{display:grid;gap:2px;font-size:13.2px}
+.checkrow.sf-invite input{margin-top:3px}
+.msg-sec{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:10px 15px 6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--surface-2)}
+.msg-sec span{font-weight:600;letter-spacing:0;text-transform:none;font-size:11.5px}
+.msg-team .team-list{max-height:248px;overflow:auto}
+.msg-team .team-none{padding:8px 15px 12px}
+.team-i{display:flex;gap:10px;align-items:center;padding:8px 15px;width:100%;text-align:left;border-bottom:1px solid var(--line-soft);cursor:pointer;background:transparent;font:inherit;color:inherit}
+.team-i:hover{background:var(--surface-2)}
+.team-i:focus-visible{outline:2px solid var(--navy);outline-offset:-2px}
+.team-i .av-sm{position:relative}
+.team-i .ti{flex:1;min-width:0}
+.team-i .ti b{display:flex;align-items:center;gap:6px;font-size:13px}
+.team-i .ti>span{display:block;font-size:11.8px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pres-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:transparent;flex:none}
+.team-i .pres-dot{position:absolute;right:-2px;bottom:-2px;border:2px solid var(--white)}
+.pres-dot.on{background:#2E9B63}
+.pres-dot.off{background:#B9C0BB}
+.pres-dot.none,.pres-dot.sample,.pres-dot.unk{display:none}
+.pres-t{display:inline-flex;align-items:center;gap:5px}
+.pres-t.on{color:#22614A;font-weight:600}
+.new-tag{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#7A5E12;background:var(--gold-soft);border-radius:999px;padding:1px 6px}
 </style>
 </head>
 <body>
@@ -3332,6 +3370,7 @@ body:has(#scrim.on) #layFab,body:has(#scrim.on) #layFab2,body:has(#sigOv) #layFa
       ◈ Demonstration view — everything here is sample test data. Nothing you change is saved.
       <a href="#" onclick="event.preventDefault();window.close()" style="color:#fff;text-decoration:underline;margin-left:10px;font-weight:500">Close this tab</a>
     </div>
+    <div id="modeBanner" class="mode-banner" role="status" style="display:none"></div>
     <div class="topbar">
       <button class="hamb" onclick="toggleNav()" aria-label="Menu" title="Menu">☰</button>
       <div class="search">
@@ -4825,7 +4864,7 @@ function toggleSample(){
   sbUpsert('np_demo_program',{key:'hidesample',value:{v:state.hideSample},updated_by:auditActor()});
   if(state.hideSample) clearSampleLists(); else restoreSampleLists();
   renderNav(); render();
-  toast(state.hideSample?'Sample data hidden — houses, programs and categories are yours to fill in.':'Sample data shown again.');
+  toast(state.hideSample?'Development: only your team\u2019s real records show now. Houses, programs and categories are yours to fill in.':'Demo: the sample records show again, with a banner across the top so nobody takes them for real.');
 }
 function restoreSampleLists(){
   const L=SAMPLE.lists||{};
@@ -11469,6 +11508,7 @@ function viewMessages(){
   <section class="card">
     <div style="display:grid;grid-template-columns:280px 1fr" class="msg-split">
       <div class="threads">
+        ${msgTeamWrap()}
         ${visThreads().filter(t=>!hid('thread',t.id)).map(t=>`<button class="thread-i ${t.id===th.id?'active':''}" onclick="state.thread='${t.id}';t_unread('${t.id}');render()">
           <span class="av-sm ${t.role==='Guardian'?'g':t.role==='Group'?'gr':''}">${String(threadView(t).title||'?').split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('')}</span>
           <div class="tt"><b>${esc(threadView(t).title)}</b><span>${esc(t.sub)}</span><span class="tiny">${esc(t.last)}</span></div>
@@ -11477,7 +11517,7 @@ function viewMessages(){
         </button>`).join('')}
       </div>
       <div>
-        <div class="card-h"><h2>${esc(th.sub)}</h2><div class="sub">${esc(threadView(th).title)}${threadView(th).label?' · '+esc(threadView(th).label):''}</div></div>
+        <div class="card-h"><h2>${esc(th.sub)}</h2><div class="sub">${esc(threadView(th).title)}${threadView(th).label?' · '+esc(threadView(th).label):''}<span id="msgHeadPres">${msgHeadPres(th)}</span></div></div>
         <div class="chat-log">
           ${th.msgs.map(m=>`<div class="msg ${msgIsMe(m)?'me':'bot'}">${esc(m.t)}
             ${m.att?`<div style="margin-top:6px"><button class="btn ghost sm" onclick="askOpenDoc('${m.att.id}')">◫ ${esc(m.att.name)}</button></div>`:''}
@@ -11546,6 +11586,7 @@ function openNewThread(){
     ...(real?[]:[{v:'guardian:c1',l:'Guardian on file · client family'}]),
     ...HOMES.filter(h=>h&&h!=='All homes').map(h=>({v:'group:'+h,l:h+' team · group'}))];
   if(!people.length) return toast('There is nobody to message yet — add staff or invite a director first.');
+  try{ const tp=teamPeople(); people.forEach(p=>{ const x=tp.find(q=>q.key===p.v); if(x&&x.st==='on') p.l+=' · Online'; }); }catch(e){}   // v12.36
   openModal('New message',`
     <div class="field"><label>To</label><select class="inp" id="nmTo">${people.map(p=>`<option value="${esc(p.v)}">${esc(p.l)}</option>`).join('')}</select></div>
     <div class="field"><label>Subject</label><input class="inp" id="nmSub" placeholder="e.g. 4023180 — dental follow-up"></div>
@@ -12005,7 +12046,7 @@ function viewForms(){
   return `
   <div class="page-hd">
     <div class="title-ic honey">${ico('file-text',20)}</div>
-    <div class="title-copy"><h1>Templates</h1><p>The blank forms the team works from — open one to fill it in, assign it or print it</p></div>
+    <div class="title-copy"><h1>Templates</h1><p>The blank forms the team works from — open one to fill it in, assign it or print it</p>${phoneNote()}</div>
     ${state.role==='director'?`<div class="page-acts">
       ${state.layoutEdit?`<button class="btn gold sm" onclick="pageEdit()">✓ Done editing</button>`:''}
       <button class="gear" title="Settings" onclick="pageSettings('forms')">${ico('settings',17)}</button>
@@ -16967,6 +17008,7 @@ function ovUploadStart(bk){
   const dest=binderKeys().includes(bk)?bk:(binderKeys()[0]||'Agency');
   openModal('Upload a form',`
     <div class="ov-up-lead">The form you upload stays exactly as it is. You place the fill-in boxes on top of it, and every copy fills in, signs and prints on the original page. A photo is straightened and cleaned up first. Forms are read on this computer: nothing is sent anywhere to read them.</div>
+    ${phoneNote(1)}
     <label class="ov-drop" id="ovDrop">
       <input type="file" id="ovFile" accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx" onchange="ovPicked()">
       <span class="ov-drop-ic">⇧</span>
@@ -19533,11 +19575,12 @@ function openSettings(){
       <div class="tiny muted" style="margin-top:8px">Staff are invited from their staff record (Staff \u2192 open a person \u2192 Invite). Each person gets their own sign-in.</div>
     </div></section>`:''}
     ${state.role==='director'?`
-    <section class="card"><div class="card-h"><h2>Sample data</h2><div class="sub">Mock records that show how each page works</div></div><div class="card-b">
-      <label style="display:flex;gap:9px;align-items:center;font-size:13.4px;cursor:pointer">
-        <input type="checkbox" ${state.hideSample?'checked':''} onchange="toggleSample();openSettings()">
-        Hide sample data everywhere — mock clients, staff, shifts, tasks, appointments, incidents, messages and logs disappear; anything you create stays
-      </label>
+    <section class="card" id="modeCard"><div class="card-h"><h2>Demo vs. Development</h2><div class="sub">What everyone on the team sees on every page</div></div><div class="card-b">
+      <div class="mode-pick" role="radiogroup" aria-label="Demo or Development">
+        <button type="button" class="mode-opt${state.hideSample?'':' on'}" role="radio" aria-checked="${state.hideSample?'false':'true'}" onclick="setMode('demo')"><b>Demo</b><span>Sample clients, staff, shifts, tasks and messages show on every page, for showing people how the portal works. They are made up, not real records.</span></button>
+        <button type="button" class="mode-opt${state.hideSample?' on':''}" role="radio" aria-checked="${state.hideSample?'true':'false'}" onclick="setMode('dev')"><b>Development</b><span>Only your team\u2019s real records show. Use this once you start entering real work.</span></button>
+      </div>
+      <div class="tiny muted" style="margin-top:10px">Switching changes what everyone on the team sees. Nothing is deleted either way, and anything you created stays. While Demo is on, a banner across the top of every page says the records are sample data.</div>
     </div></section>
     <section class="card"><div class="card-h"><h2>Workspace data</h2><div class="sub">Deletions are permanent and apply to everyone using this workspace</div></div><div class="card-b">
       <div class="tiny muted" style="margin-bottom:10px">${delCount()} record${delCount()===1?'':'s'} deleted so far. Resetting restores the demonstration data and clears every deletion.</div>
@@ -19761,7 +19804,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.35 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.36 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -20380,7 +20423,7 @@ async function finishRegister(){
        this person was staff, so on another device they opened as a director. */
     MEMBER_ROLE=MEMBER_ROLE||role;                                  // v12.15: the role the database gave on joining wins
     const joinedAs=MEMBER_ROLE==='director'?'director':'staff';
-    await usersAddSelf((AUTH.email||em).toLowerCase(),Object.assign({role:joinedAs,name:inv.name||'',title:inv.role_title||''},inv.sid?{sid:inv.sid}:{}));
+    await usersAddSelf((AUTH.email||em).toLowerCase(),Object.assign({role:joinedAs,name:inv.name||'',title:inv.role_title||'',joined:T},inv.sid?{sid:inv.sid}:{}));   // v12.36: joined, for New in Messages
     signIn(joinedAs);
     try{ resolvePerson(); }catch(e){}                                // v12.22: logged now the team list is in, so the name is scrubbed
     logAudit('Staff joined from an invite',`${inv.name||em} · ${em}`);
@@ -20781,6 +20824,7 @@ function openStaffForm(sid){
       <div class="field"><label>Date of hire</label><input class="inp" type="date" id="sfHired" value="${st&&st.hired?st.hired:T}"></div>
       <div class="field"><label>Work email (for reminders)</label><input class="inp" id="sfEmail" value="${st&&st.email?esc(st.email):''}" placeholder="name@example.org"></div>
     </div>
+    ${!st&&realSession()?`<label class="checkrow sf-invite"><input type="checkbox" id="sfInvite" checked><span><b>Email them an invite to sign in</b><span class="tiny muted">Sent to their work email when you save. The link sets up their staff sign-in and works once.</span></span></label>`:''}
     ${st?'':`
     <div class="card-h" style="padding:6px 0 4px"><h2 style="font-size:14px">Starting certifications <span class="tiny muted">optional</span></h2></div>
     <div class="row2">
@@ -21040,8 +21084,12 @@ function saveStaff(sid){
       credInsert(row,{sid:id,cred_name:n,expires_on:exp||null,label:exp?null:'On file',status:exp?null:st2},saved,id);
     });
     logAudit('Added staff member',rec.name);
+    const obN=obAutoShare(id);                                       // v12.36: the team's onboarding checklist is waiting for them
     pingStaff(id,'Welcome to the portal','Your profile was created — onboarding steps are on your Profile page.');
-    toast(rec.name+' added to the team.');
+    const inv=!!(el('sfInvite')&&el('sfInvite').checked);           // v12.36: added and invited in one step
+    toast(rec.name+' added to the team.'+(obN?' Onboarding checklist shared ('+obN+' step'+(obN===1?'':'s')+').':'')
+      +(inv?(rec.email?' Sending their invite\u2026':' Add their work email to invite them.'):''));
+    if(inv&&rec.email) inviteAndSend(id,rec.email,saved);
   }
   closeAll(); render();
 }
@@ -22820,6 +22868,232 @@ document.addEventListener('keydown',e=>{
     e.preventDefault(); el('globalSearch').focus();
   }
 });
+
+/* ══════════════ v12.36: DEMO VS. DEVELOPMENT, ONE-STEP INVITES, THE TEAM IN MESSAGES ══════════════
+   Demo shows the sample records on every page, with a banner so nobody takes them for real; Development shows
+   only the team's own (the setting is the team's hidesample row, as before, and nothing is deleted either way).
+   A staff member is added and invited in one step, and the team's first onboarding checklist is shared with them
+   on adding. Messages lists everyone on the team with who is in the portal now: each signed-in page writes its own
+   row in np_demo_presence once a minute, and the database says how long ago each person was last in. */
+function setMode(m){
+  if(state.role!=='director') return toast('Only a director can switch between Demo and Development.');
+  if(!!state.hideSample===(m==='dev')) return;
+  toggleSample();
+  if(el('drawer')&&el('drawer').classList.contains('on')&&el('drTitle')&&el('drTitle').textContent==='Account') openSettings();
+}
+function modeOpen(){
+  openSettings();
+  setTimeout(()=>{ const c=el('modeCard'); if(c) c.scrollIntoView({block:'center'}); },120);
+}
+function modeBannerSync(){
+  const b=el('modeBanner'); if(!b) return;
+  const on=!DEMO_VIEW&&!state.hideSample;
+  b.style.display=on?'':'none';
+  if(!on) return;
+  const h='◈ Demo mode: the clients, staff and records here are sample data, not real.'
+    +(state.role==='director'?' <a href="#" onclick="event.preventDefault();modeOpen()">Switch to Development</a>':' A director can switch to Development in Settings.');
+  if(b._h!==h){ b._h=h; b.innerHTML=h; }
+}
+
+/* works on a phone: a photo of a paper form makes a template, and forms fill in and sign with a finger */
+function phoneIc(){ return '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>'; }
+function phoneNote(up){
+  return up
+    ? `<div class="phone-note">${phoneIc()}<span><b>On a phone?</b> Tap Choose the form, then take a photo of the paper form. It is straightened and read the same way.</span></div>`
+    : `<p class="phone-note">${phoneIc()}<span><b>Works on your phone.</b> Take a photo of a paper form to turn it into a template, and fill in and sign forms with your finger.</span></p>`;
+}
+
+/* the onboarding steps for every new hire, shared with someone just added (unless they already have a checklist);
+   with none of the team's own, the first checklist on Training & onboarding */
+function obAutoShare(sid){
+  if(!sid||(OB_ASSIGN[sid]||[]).length) return 0;
+  let steps=OB_MASTER.filter(o=>!hid('obitem',o.t)), list='';
+  if(!steps.length){ try{ obSeed(); }catch(e){} const l=OB_LISTS[0]; if(l&&(l.steps||[]).length){ steps=l.steps; list=l.name||''; } }
+  if(!steps.length) return 0;
+  OB_ASSIGN[sid]=steps.map(o=>({t:o.t,link:o.link||'',note:o.note||'',list,d:0}));
+  obSave();
+  sbPush('np_demo_notifications',{title:'Onboarding checklist shared',body:`${OB_ASSIGN[sid].length} items to complete`,kind:'onboard',for_staff:sid});
+  logAudit('Shared onboarding checklist',`${(staff(sid)||{}).name||sid} · when added`);
+  return OB_ASSIGN[sid].length;
+}
+
+/* an invite for a staff record, saved before its link is handed out */
+function inviteMake(sid,email){
+  const st=staff(sid); if(!st) return Promise.resolve(null);
+  if(String(st.email||'').toLowerCase()!==email){ st.email=email; sbPatch('np_demo_staff',sid,{email}); }
+  const token='iv'+Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
+  return Promise.resolve(sbPush('np_demo_invites',{token,workspace:NP_WS,org:ONB.org||'',email,sid,name:st.name,role_title:st.role||'',invited_by:auditActor()}))
+    .then(ok=>{ if(ok===false) return null;
+      logAudit('Invited staff to the portal',`${st.name} · ${email}`);
+      return location.origin+location.pathname+'?join='+token; });
+}
+function inviteAndSend(sid,email,after){
+  email=String(email||'').trim().toLowerCase();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('That work email does not look right, so no invite was sent. Fix it on their staff record, then use Invite.');
+  return Promise.resolve(after).catch(()=>{}).then(()=>inviteMake(sid,email)).then(link=>{
+    if(!link) return toast('The invite could not be saved. Open their staff record and use Invite to try again.');
+    inviteSendNow(sid,email,link);
+  });
+}
+
+/* who is in the portal: this page's own row once a minute, and how long ago everyone else was last in */
+function pres(){ return window._pres||(window._pres={age:{},ok:null,readAt:0,tick:0,beat0:0}); }
+async function presenceBeat(){
+  if(!realSession()||!ORG_ID||document.hidden||pres().none) return;
+  const em=String(AUTH.email||'').toLowerCase(); if(!em) return;
+  try{ const r=await fetch(`${BACKEND.url}/rest/v1/np_demo_presence?on_conflict=org_id,email`,{method:'POST',
+    headers:Object.assign(sbH(),{Prefer:'return=minimal,resolution=merge-duplicates'}),body:JSON.stringify({org_id:ORG_ID,email:em})});
+    if(r.status===404) pres().none=1;                                 // the table is not there yet: stop asking until a reload
+  }catch(e){}
+}
+async function presenceRead(){
+  if(!realSession()||!ORG_ID) return;
+  const P=pres();
+  if(P.none){ P.ok=false; P.readAt=Date.now(); return; }
+  try{
+    const h=sbH(); delete h.Prefer;
+    const r=await fetch(`${BACKEND.url}/rest/v1/rpc/np_presence`,{method:'POST',headers:h,body:'{}'});
+    if(!r.ok){ P.ok=false; P.readAt=Date.now(); if(r.status===404) P.none=1; return; }
+    const rows=await r.json(), age={};
+    (Array.isArray(rows)?rows:[]).forEach(x=>{ if(x&&x.email&&isFinite(x.age_s)) age[String(x.email).toLowerCase()]=Number(x.age_s); });
+    P.age=age; P.ok=true; P.readAt=Date.now();
+  }catch(e){ P.ok=false; P.readAt=Date.now(); }
+}
+function presOf(em){
+  const P=pres(), a=P.age[String(em||'').toLowerCase()];
+  if(a==null) return {st:P.ok?'off':'unk',age:null};
+  return {st:a<150?'on':'off',age:a};                              // a page writes every 60 seconds: one missed beat is still online
+}
+function agoText(s){
+  if(s<90) return 'a minute ago';
+  if(s<3600) return Math.round(s/60)+' min ago';
+  if(s<86400) return Math.round(s/3600)+' h ago';
+  if(s<172800) return 'yesterday';
+  return Math.round(s/86400)+' days ago';
+}
+function presLabel(p){
+  if(p.st==='on') return 'Online';
+  if(p.st==='off') return p.age!=null?'Last seen '+agoText(p.age):'Offline';
+  if(p.st==='none') return 'Not signed in yet';
+  if(p.st==='sample') return 'Sample record';
+  return '';
+}
+
+/* everyone this person can message, with their status: the team list's sign-ins, then staff records without one */
+function teamPeople(){
+  if(state.role==='family') return [];
+  const real=realSession(), me=String(AUTH.email||'').toLowerCase(), mySid=meSid(), out=[], seen={};
+  const recent=d=>!!d&&d<=T&&(Date.parse(T)-Date.parse(d))/864e5<=7;
+  if(real){
+    Object.entries(USERS).forEach(([em,u])=>{
+      em=String(em).toLowerCase(); if(!u||!/@/.test(em)||em===me) return;
+      const sid=u.sid||((STAFF.find(s=>String(s.email||'').toLowerCase()===em)||{}).id)||'', st=sid&&staff(sid);
+      if(sid) seen[sid]=1;
+      const dir=u.role==='director', p=presOf(em);
+      out.push({key:dir?'director:'+em:'staff:'+sid, email:em, sid, dir, name:u.name||(st&&st.name)||nameFromEmail(em),
+        title:u.title||(st&&st.role)||(dir?'Director':'Staff'), st:p.st, age:p.age, isNew:recent(u.joined)});
+    });
+  }else if(state.role!=='director'){
+    out.push({key:'director:1', dir:true, name:ME.director.name, title:ME.director.role, st:'on', age:null, isNew:false});   // the demo: the director is in
+  }
+  const onNow=new Set((typeof shiftsNow==='function'?shiftsNow():[]).map(s=>s.sid));
+  visibleStaff().forEach(x=>{
+    if(seen[x.id]) return;
+    if(state.role==='staff'&&(real?x.id===mySid:x.name===ME.staff.name)) return;
+    const sample=(SAMPLE.staff||[]).includes(String(x.id));
+    out.push({key:'staff:'+x.id, sid:x.id, dir:false, name:x.name, title:x.role||'Staff',
+      st:real?(sample?'sample':'none'):(onNow.has(x.id)?'on':'off'), age:null, isNew:real&&!sample&&recent(x.hired)});
+  });
+  const rank={on:0,off:1,unk:1,none:2,sample:3};
+  return out.sort((a,b)=>(rank[a.st]-rank[b.st])||((a.age==null?1e12:a.age)-(b.age==null?1e12:b.age))||(b.dir-a.dir)||String(a.name).localeCompare(String(b.name)));
+}
+function threadIsWith(t,p){
+  if(!t||!p) return false;
+  if(!realSession()||isSampleThread(t)) return t.who===p.name;       // the sample conversations are named for the other person
+  const me=String(AUTH.email||'').toLowerCase(), to=threadTo(t);
+  if(to.kind==='group'||to.kind==='guardian') return false;
+  const ems=p.email?[p.email]:(p.sid?sidEmails(p.sid):[]), ref=String(to.ref||'').toLowerCase();
+  const toP=(to.kind==='staff'&&!!p.sid&&to.ref===p.sid)||(to.kind==='director'&&ems.includes(ref));
+  const fromP=!!t.from&&ems.includes(String(t.from).toLowerCase());
+  const toMe=to.kind==='staff'?(!!meSid()&&to.ref===meSid()):(ref===me||(!ref&&state.role==='director'));
+  return (toP&&t.from===me)||(fromP&&toMe);
+}
+function msgWith(key){
+  const p=teamPeople().find(x=>x.key===key); if(!p) return;
+  const t=visThreads().find(x=>!hid('thread',x.id)&&threadIsWith(x,p));
+  if(t){ state.thread=t.id; t_unread(t.id); render(); return; }
+  openNewThread();
+  const s=el('nmTo'); if(s&&[...s.options].some(o=>o.value===key)) s.value=key;
+  const sub=el('nmSub'); if(sub) sub.focus();
+}
+function msgTeamHtml(){
+  const ppl=teamPeople(), on=ppl.filter(p=>p.st==='on').length;
+  if(!ppl.length) return `<div class="msg-sec">Team</div><div class="tiny muted team-none">Nobody else on the team yet.${state.role==='director'?' Staff you add show here.':''}</div>`;
+  return `<div class="msg-sec">Team <span>${on} online</span></div><div class="team-list">${ppl.map(p=>{
+    const s=presLabel(p), ini=String(p.name||'?').split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('');
+    return `<button type="button" class="team-i" data-key="${esc(p.key)}" onclick="msgWith(this.dataset.key)" title="Message ${esc(p.name)}">
+      <span class="av-sm ${p.dir?'':'gr'}">${esc(ini)}<i class="pres-dot ${p.st}" aria-hidden="true"></i></span>
+      <span class="ti"><b>${esc(p.name)}${p.isNew?'<em class="new-tag">New</em>':''}</b><span>${esc(p.title)}${s?' · '+esc(s):''}</span></span></button>`; }).join('')}</div>`;
+}
+function msgTeamWrap(){ return state.role==='family'?'':`<div id="msgTeam" class="msg-team">${msgTeamHtml()}</div><div class="msg-sec">Conversations</div>`; }
+function msgHeadPres(th){
+  try{
+    if(!th||!th.id||state.role==='family') return '';
+    const p=teamPeople().find(x=>threadIsWith(th,x)); if(!p) return '';
+    const s=presLabel(p); if(!s||p.st==='sample') return '';
+    return ` · <span class="pres-t ${p.st}"><i class="pres-dot ${p.st}" aria-hidden="true"></i>${esc(s)}</span>`;
+  }catch(e){ return ''; }
+}
+function msgLiveSync(){
+  if(state.view!=='messages') return;
+  const box=el('msgTeam'); if(box){ const h=msgTeamHtml(); if(box._h!==h){ box._h=h; box.innerHTML=h; } }
+  const hp=el('msgHeadPres'); if(hp){ const h=msgHeadPres(visThreads().find(t=>t.id===state.thread)); if(hp._h!==h){ hp._h=h; hp.innerHTML=h; } }
+}
+/* the team list and staff records, read again so someone who just joined shows without a reload */
+async function teamRefresh(){
+  if(!realSession()) return false;
+  let changed=false;
+  try{
+    const rows=await sbGetStrict('np_demo_program','key=eq.users&select=value');
+    const mp=Array.isArray(rows)&&rows[0]&&rows[0].value&&rows[0].value.map;
+    if(mp&&typeof mp==='object'){
+      (window._usersGone||[]).forEach(k=>delete mp[k]);              // removed here, maybe not saved yet
+      Object.keys(mp).forEach(k=>{ if(!jeq(USERS[k],mp[k])){ USERS[k]=mp[k]; changed=true; } });
+      const me=String(AUTH.email||'').toLowerCase();
+      Object.keys(USERS).forEach(k=>{ if(/@/.test(k)&&k!==me&&!(k in mp)){ delete USERS[k]; changed=true; } });
+    }
+  }catch(e){}
+  try{
+    const rows=await sbGetStrict('np_demo_staff','select=id,name,init,role,home,hired,email');
+    (Array.isArray(rows)?rows:[]).forEach(r=>{
+      if(!r||!r.id||STAFF.find(x=>x.id===r.id)) return;
+      STAFF.push({trainings:{},hrs:0,id:r.id,name:r.name,init:r.init,role:r.role||'Direct Support Professional',home:r.home||'',hired:r.hired||'',email:r.email||''});
+      CREDS[r.id]=CREDS[r.id]||[]; changed=true;
+    });
+  }catch(e){}
+  return changed;
+}
+function msgLiveTick(){
+  if(state.view!=='messages'||document.hidden||!realSession()) return Promise.resolve();
+  const P=pres(); P.tick++;
+  return Promise.all([presenceRead(),P.tick%2?Promise.resolve(false):teamRefresh()]).then(()=>msgLiveSync());
+}
+(function(){
+  const base=render;
+  render=function(){
+    const r=base.apply(this,arguments);
+    try{ modeBannerSync(); }catch(e){}
+    try{
+      const P=pres();
+      if(realSession()&&!P.beat0){ P.beat0=1; presenceBeat(); }
+      if(state.view==='messages'&&realSession()&&Date.now()-P.readAt>25000){ P.readAt=Date.now(); presenceRead().then(msgLiveSync); }
+    }catch(e){}
+    return r;
+  };
+  setInterval(()=>presenceBeat(),60000);
+  setInterval(()=>msgLiveTick(),30000);
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden) return; presenceBeat(); if(state.view==='messages') presenceRead().then(msgLiveSync); });
+})();
 
 captureSamples();   // end of script, every seed declared — still guaranteed before any hydration response lands
 
