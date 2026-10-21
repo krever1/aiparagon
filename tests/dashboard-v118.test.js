@@ -84,10 +84,10 @@ function tables() {
     check(slug + ' keeps the lead name Rita Ellison', /Rita Ellison/.test(t) && !/your team Ellison|Rita —|— Ellison/.test(t), t.slice(0, 300));
     await ctx.close();
   }
-  // the old demo Brand voice page (Your account, Brand voice) is still cleaned
+  // an old demo page is still cleaned: Brand voice, opened directly (since v119 Your account's link goes to Company profile)
   {
     const { ctx, page } = await open('/dashboard/account');
-    await page.click('text=Brand voice →'); await settleSweep(page);
+    await page.evaluate(() => navPm('voice')); await settleSweep(page);
     const t = await txt(page, '#page-voice');
     check('the old Brand voice page still has the demo firm swept out', t.length > 200 && !/deltaadvisory|Delta-Report-Shell|Delta-Deck-Shell|Delta Advisory|\bRita\b/.test(t), t.slice(0, 300));
     await ctx.close();
