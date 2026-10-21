@@ -163,7 +163,7 @@ const RESULTS = [
     check('reports, white papers, articles, how-to guides, events, decks, video and clips are there', ['report', 'white_paper', 'news_article', 'how_to', 'event_kit', 'deck', 'webinar_deck', 'video', 'clips', 'other'].every((k) => g.tiles.split(',').indexOf(k) >= 0), g.tiles);
     await page.click('#nwCtForm .nw-tile[data-k="deck"]'); await wait(page, 500);
     const q = await ev(page, () => ({ q: [...document.querySelectorAll('#v113CtQ .nw-lbl, #v113CtQ .v113-sw span')].map((x) => x.textContent.replace(/optional$/, '')).join('|'),
-      side: (document.getElementById('nwCtSideB') || {}).textContent || '', who: !!document.querySelector('.v113-ctq #v105CtPer'), notes: !!document.getElementById('v113CtNotes') }));
+      side: (document.getElementById('nwCtSide') || {}).textContent || '', who: !!document.querySelector('.v113-ctq #v105CtPer'), notes: !!document.getElementById('v113CtNotes') }));
     check('a deck asks how many slides, speaker notes and where it is shown', /^Slides\|Speaker notes\|Where it is shown\|Topics or messages to stress/.test(q.q), q.q);
     check('who it is for sits with the questions, and there is a notes box', q.who && q.notes);
     check('the side says what a deck gives', /Slide-by-slide cards with speaker notes/.test(q.side), q.side.slice(0, 160));
@@ -201,6 +201,7 @@ const RESULTS = [
       sizes: !!document.querySelector('#v113MgB [aria-label="Company size (people)"]'), market: [...document.querySelectorAll('#v113MgB input')].some((i) => i.value === 'Wealth managers and advisers'), per: !!document.querySelector('#v113MgPer #v105Per') }));
     check('who it is for: persona, job titles, company size and the market from the profile', blk.titles && blk.sizes && blk.market && blk.per && /^Who it is for\|Book a call: the details$/.test(blk.h), JSON.stringify(blk));
     await wait(page, 600);
+    await page.click('#v121Plan_mg .v121-st[data-i="3"] .v121-sth'); await wait(page, 200);   // v121: the booking page step holds the booking link
     const cal = await ev(page, () => { const s = document.getElementById('v113CalSel'); return s ? [...s.options].map((o) => o.textContent).join('|') : ''; });
     check('book a call offers the Calendly event types', /Intro call · 20 min/.test(cal) && /Diagnostic · 45 min/.test(cal), cal);
     await page.selectOption('#v113CalSel', 'https://calendly.com/qa-team/diagnostic'); await wait(page, 200);
@@ -211,15 +212,17 @@ const RESULTS = [
     check('a book-a-call campaign carries who it is for and the booking link to the Low-Ticket agent', lb.setup && lb.setup.targeting && lb.setup.targeting.titles.indexOf('COO') >= 0 && lb.setup.targeting.sizes[0] === '11 to 50' && lb.setup.booking && lb.setup.booking.url === 'https://calendly.com/qa-team/diagnostic', lt && JSON.stringify(lb.setup && lb.setup.targeting));
     check('the call length follows the Calendly event, and the request says who it is for', lb.setup && /Call length: 45 min/.test(lb.setup.details || '') && /Who it is for: Job titles: COO\. Company size: 11 to 50 people\./.test(lb.request || ''), lb.setup && lb.setup.details);
     await page.click('#v111Cats_mg .v111-cat[data-c="webinar"]'); await wait(page, 400);
-    const wq = await ev(page, () => ({ h: [...document.querySelectorAll('#v113MgB .v113-sub')].map((x) => x.textContent).join('|'), lbl: [...document.querySelectorAll('#v113MgB .nw-lbl')].map((x) => x.textContent.replace(/optional$/, '')).join('|'), gets: document.getElementById('nwMgSideB').textContent }));
-    check('a webinar asks its own details, and keeps who it is for', /Webinar or masterclass: the details/.test(wq.h) && /Title\|Date and time\|Length\|Where it runs\|Registration link\|Presenter/.test(wq.lbl), wq.lbl);
-    check('the side says what a webinar funnel gives', /Registration and confirmation pages/.test(wq.gets), wq.gets.slice(0, 120));
-    await page.fill('#v113MgB input[placeholder="e.g. Governed AI for RIAs: the first 90 days"]', 'Governed AI for RIAs'); await wait(page, 100);
-    await page.fill('#v113FunNote', 'Skip the replay email.');
+    await page.click('#v121Plan_mg .v121-st[data-i="1"] .v121-sth'); await wait(page, 200);   // v121: each step's details are in its step
+    const wq = await ev(page, () => ({ h: [...document.querySelectorAll('#v113MgB .v113-sub')].map((x) => x.textContent).join('|'), lbl: [...document.querySelectorAll('#v121Plan_mg .v121-st.is-open .nw-lbl')].map((x) => x.textContent.replace(/optional$/, '')).join('|'), gets: document.getElementById('v121Plan_mg').textContent }));
+    check('a webinar asks its own details, and keeps who it is for', /Webinar or masterclass: the details/.test(wq.h) && /Title\|Date and time\|Where it runs\|Registration link\|Presenter/.test(wq.lbl), wq.lbl);
+    check('the side says what a webinar funnel gives', /Registration page/.test(wq.gets) && /Confirmation page/.test(wq.gets), wq.gets.slice(0, 120));
+    await page.fill('#v121Plan_mg .v121-st.is-open input[placeholder="e.g. Governed AI for RIAs: the first 90 days"]', 'Governed AI for RIAs'); await wait(page, 100);
+    await page.click('#v121Plan_mg .v121-st[data-i="3"] .v121-sth'); await wait(page, 200);
+    await page.fill('#v121Plan_mg .v121-st.is-open textarea[data-f="note"]', 'Skip the replay email.');
     await page.click('#v97MgGoBtn'); await wait(page, 1500);
     const fr = last(hooks, /e3-funnel-run/), fb = fr ? fr.b : {};
     check('a webinar goes to the Funnel Builder, not the Low-Ticket agent', !!fr && fb.funnel_type === 'webinar' && hooks.filter((h) => /e3-low-ticket-run/.test(h.u)).length === 1, fr && JSON.stringify(Object.keys(fb)));
-    check('the Funnel Builder gets the targeting, goal, button, details and notes', fb.targeting && fb.targeting.titles.indexOf('COO') >= 0 && fb.objective === 'Get registrations' && fb.cta === 'Save my seat' && fb.details && fb.details.Title === 'Governed AI for RIAs' && fb.funnel_note === 'Skip the replay email.' && fb.offer && fb.offer.name === 'AI Readiness Scorecard', JSON.stringify({ o: fb.objective, c: fb.cta, d: fb.details }));
+    check('the Funnel Builder gets the targeting, goal, button, details and notes', fb.targeting && fb.targeting.titles.indexOf('COO') >= 0 && fb.objective === 'Get registrations' && fb.cta === 'Save my seat' && fb.details && fb.details.Title === 'Governed AI for RIAs' && fb.plan && fb.plan[3].note === 'Skip the replay email.' && fb.offer && fb.offer.name === 'AI Readiness Scorecard', JSON.stringify({ o: fb.objective, c: fb.cta, d: fb.details }));
     // the campaigns tab lists the new funnels; one opens as cards with its images and Approve
     await ev(page, () => { if (typeof nwMgGoTab === 'function') nwMgGoTab('campaigns'); }); await wait(page, 900);
     const list = await ev(page, () => [...document.querySelectorAll('.v113-funs .nw-row')].map((r) => r.textContent).join('|'));
