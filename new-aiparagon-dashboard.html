@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI Paragon</title>
+<script>
+/* v121: with a saved session the sign-in screen stays hidden until the session check settles, so it never flashes before the dashboard */
+(function(){try{var s=JSON.parse(localStorage.getItem('ap.session.v1')||'null');if(s&&s.refresh_token){var d=document.documentElement;d.classList.add('ap-resume');setTimeout(function(){d.classList.remove('ap-resume');},20000);}}catch(e){}})();
+</script>
+<style>
+html.ap-resume #view-login{visibility:hidden}
+html.ap-resume body::before{content:'';position:fixed;inset:0;z-index:99998;background:#EDEFF4}
+html.ap-resume body::after{content:'';position:fixed;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;z-index:99999;border-radius:50%;border:3px solid #CFD4E0;border-top-color:#B08A3E;animation:apResume .8s linear infinite}
+@keyframes apResume{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){html.ap-resume body::after{animation:none}}
+</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..600&family=Instrument+Sans:ital,wght@0,400..700;1,400..600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -29863,16 +29874,16 @@ function apCxRepaint(id){
 function apCxPostPaint(box,c){
   const id=String(c.id),ide=esc(id),o=apCo(id),busy=AP_CX.poll[id],type=apCmType(c),m=apCm(id)||{};
   const auto=!AP_AISET||AP_AISET.call_auto_actions!==false;
-  const head='<div class="ap-cx-ph"><div><b>Post-call actions</b><small>A summary, next steps, a '+esc(AP_MT_DELIV[type||'other'])+' and a follow-up email, written from this call. They stay here, and can go to Asana, Slack or HubSpot.</small></div>'+
+  const head='<div class="ap-cx-ph"><div><b>Post-call actions</b><small>A summary, next steps, the '+esc(AP_MT_DELIV[type]||AP_MT_DELIV.other)+' and a follow-up email, written from this call. They stay here, and can go to Asana, Slack or HubSpot.</small></div>'+
     '<label class="ap-tgl" title="When on, every new recorded call gets its actions within the hour"><input type="checkbox" '+(auto?'checked':'')+' onchange="apCxAuto(this.checked)"><span></span>Auto for new calls</label></div>';
   if(busy){
-    box.innerHTML=head+'<div class="ap-cx-busy"><span class="ap-cx-spin"></span><div><b>Writing the post-call actions…</b><small>Reading the transcript and writing the '+esc(AP_MT_DELIV[busy.type||type||'other'])+'. This usually takes under a minute. You can leave this page.</small></div></div>';
+    box.innerHTML=head+'<div class="ap-cx-busy"><span class="ap-cx-spin"></span><div><b>Writing the post-call actions…</b><small>Reading the transcript and writing the '+esc(AP_MT_DELIV[busy.type||type]||AP_MT_DELIV.other)+'. This usually takes under a minute. You can leave this page.</small></div></div>';
     return;
   }
-  const typeSel='<select data-nofill="1" id="apCxType" aria-label="Meeting type"><option value="">Let the AI decide</option>'+AP_MT_KEYS.map(function(k){return '<option value="'+k+'"'+(type===k&&!apCmTypeGuessed(c)?' selected':'')+'>'+esc(AP_MT[k].l)+'</option>';}).join('')+'</select>';
+  const typeSel='<select data-nofill="1" id="apCxType" aria-label="Call type">'+v121TypeOpts(apCmTypeGuessed(c)?'':type,'Let the AI decide',false)+'</select>';   /* v121: the team's own types too */
   if(!o){
     box.innerHTML=head+'<div class="ap-cx-empty"><h4>No post-call actions for this call yet</h4>'+
-      '<p>Pick the meeting type so the deliverable fits, or let the AI work it out from the call.</p>'+
+      '<p>Pick the call type so the deliverable fits, or let the AI work it out from the call.</p>'+
       '<div class="ap-cx-gen">'+typeSel+'<button class="rd-btn pri" onclick="apCxGen(\''+ide+'\',this)">Write post-call actions</button></div>'+
       '<textarea id="apCxNotes" rows="2" maxlength="1500" placeholder="Anything the AI should know (optional), e.g. they asked for pricing by Friday">'+esc(m.description||'')+'</textarea>'+
       (auto?'<p class="help">New calls get these automatically within the hour. Older calls need the button.</p>':'')+'</div>';
@@ -29933,7 +29944,7 @@ function apCxRegen(id){
   const c=apFtCall(id);if(!c)return;
   const t=apCmType(c),g=apCmTypeGuessed(c);
   apModal('apCxRegenM','<h3 class="ap-m89h">Write the post-call actions again</h3><p class="help">This makes a fresh set from the call. The current set stays in the history, and ticked tasks start unticked.</p>'+
-    '<label class="f"><span>Meeting type</span><select data-nofill="1" id="apCxType"><option value="">Let the AI decide</option>'+AP_MT_KEYS.map(function(k){return '<option value="'+k+'"'+(t===k&&!g?' selected':'')+'>'+esc(AP_MT[k].l)+'</option>';}).join('')+'</select></label>'+
+    '<label class="f"><span>Call type</span><select data-nofill="1" id="apCxType">'+v121TypeOpts(g?'':t,'Let the AI decide',false)+'</select></label>'+   /* v121: the team's own types too */
     '<label class="f"><span>Notes for the AI (optional)</span><textarea id="apCxNotes" rows="3" maxlength="1500">'+esc((apCm(id)||{}).description||'')+'</textarea></label>'+
     '<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'apCxRegenM\')">Cancel</button><button class="rd-btn pri" onclick="apCxGen(\''+esc(String(id))+'\',this).then(function(){apModalClose(\'apCxRegenM\');})">Write again</button></div>',560);
 }
@@ -30022,7 +30033,7 @@ async function apCxEditSave(id,btn){
 function apCxCrmBody(c){
   const m=apCm(c.id)||{},o=apCo(c.id),t=apCmType(c),tags=apCxArr(m.tags);
   const L=[];
-  if(t&&AP_MT[t])L.push('Meeting type: '+AP_MT[t].l);
+  if(t)L.push('Call type: '+(typeof v121MtL==='function'?v121MtL(t):(AP_MT[t]||{l:t}).l));   /* v121: the team's own types too */
   if(m.folder)L.push('Folder: '+m.folder);
   if(tags.length)L.push('Tags: '+tags.map(function(x){return '#'+x;}).join(' '));
   if(m.description)L.push('','Notes: '+m.description);
@@ -30138,7 +30149,7 @@ async function apAsanaTasks(gid){
 /* ---------- Slack ---------- */
 function apCxSlackText(c){
   const o=apCo(c.id),t=apCmType(c),sum=apCxArr(o&&o.summary),tasks=apCxArr(o&&o.tasks).filter(function(x){return !x.done;});
-  const L=['*'+c.title+'*'+(c.start?' · '+apCxDay(c.start):'')+(t&&AP_MT[t]?' · '+AP_MT[t].l:'')];
+  const L=['*'+c.title+'*'+(c.start?' · '+apCxDay(c.start):'')+(t?' · '+(typeof v121MtL==='function'?v121MtL(t):(AP_MT[t]||{l:t}).l):'')];
   if(sum.length)L.push('','*Summary*',sum.map(function(s){return '• '+s;}).join('\n'));
   if(tasks.length)L.push('','*Next steps*',tasks.map(function(x){return '• '+x.text+(x.owner?' ('+x.owner+(x.due?', due '+x.due:'')+')':'');}).join('\n'));
   const lk=apFtLink(c);if(lk)L.push('','<'+lk+'|Recording in Fathom>');
@@ -48863,11 +48874,11 @@ function v113FunPaint(){const p=v97$('nwMgP_campaigns');if(!p)return;const old=p
 function v113StepHtml(s){
   const c=s&&s.content||{};
   const row=function(k,v){if(v==null||v===''||(Array.isArray(v)&&!v.length))return '';
-    if(Array.isArray(v))return '<div class="v113-st-r"><span>'+esc(k)+'</span><ul>'+v.map(function(x){return '<li>'+esc(typeof x==='string'?x:[x.subject||x.question||x.title||x.q||'',x.body||x.answer||x.a||x.text||''].filter(Boolean).join(': '))+'</li>';}).join('')+'</ul></div>';
+    if(Array.isArray(v))return '<div class="v113-st-r"><span>'+esc(k)+'</span><ul>'+v.map(function(x){return '<li>'+esc(typeof x==='string'?x:[x.subject||x.question||x.title||x.q||'',x.body||x.answer||x.a||x.text||'',apArr(x&&x.options).map(String).join(' / ')].filter(Boolean).join(': '))+'</li>';}).join('')+'</ul></div>';
     if(typeof v==='object')return '<div class="v113-st-r"><span>'+esc(k)+'</span><p>'+esc(Object.keys(v).map(function(x){return x+': '+v[x];}).join(' · '))+'</p></div>';
     return '<div class="v113-st-r"><span>'+esc(k)+'</span><p>'+esc(String(v))+'</p></div>';};
   const LBL={headline:'Headline',subheadline:'Subheadline',body:'Body',bullets:'Bullets',cta:'Button',subject:'Subject',preview:'Preview text',when:'When it goes',faq:'Questions',
-    hook:'Hook',primary_text:'Primary text',description:'Description',image_direction:'Image',emails:'Emails',agenda:'Agenda',sections:'Sections',fields:'Form fields',proof:'Proof',notes:'Notes'};
+    hook:'Hook',primary_text:'Primary text',description:'Description',image_direction:'Image',emails:'Emails',agenda:'Agenda',sections:'Sections',fields:'Form fields',proof:'Proof',notes:'Notes',questions:'Questions',routing:'Where answers lead'};   /* v121: survey steps */
   return '<article class="v113-card v113-st"><b class="v113-card-h">'+esc(s.title||s.key||'Step')+'</b>'+(s.why?'<p class="nw-faint nw-small">'+esc(s.why)+'</p>':'')+
     Object.keys(c).map(function(k){return row(LBL[k]||k.replace(/_/g,' '),c[k]);}).join('')+'</article>';
 }
@@ -49829,7 +49840,7 @@ function v116Link(t,S,det){
   const ok=function(u){u=v115Str(u).replace(/[.,;)]+$/,'');return /^https?:\/\/\S+$/i.test(u)?u:'';};
   const said=function(label){const m=new RegExp(label+':\\s*(https?:\\/\\/\\S+)','i').exec(typeof S.details==='string'?S.details:'');return m?m[1]:'';};
   const by={book_call:[S.booking&&S.booking.url,det['Booking link'],det['Calendly link'],S.booking_url,said('Checkout link'),det['Checkout link']],
-    webinar:[det['Registration link']],download:[det['File link'],det['Link to the resource']],newsletter_signup:[det['Sign-up link']],landing:[det['Page link']]};
+    webinar:[det['Registration link']],download:[det['File link'],det['Link to the resource']],newsletter_signup:[det['Sign-up link']],landing:[det['Booking link'],det['Page link']]}   /* v121: a landing page that books calls */;
   return (by[t]||[]).map(ok).find(Boolean)||'';
 }
 function v115GoUrl(slug,preview){
@@ -50663,6 +50674,764 @@ function v120HideList(){const s=document.getElementById('apE1List');if(s)s.class
     return v120Ask(email,c.k);
   };
 })();
+</script>
+
+<style id="v121css">
+/* ---------- v121 A: the build plan in the right pane ---------- */
+.v121-plan{display:grid;gap:10px;min-width:0}
+#nwCtSideB,#nwMgSideB{display:grid;gap:14px;min-width:0}
+.v121-ph{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.v121-sub{margin:-4px 0 0;color:var(--nw-ink-2);line-height:1.45}
+.v121-steps{list-style:none;margin:0;padding:0;display:grid;gap:6px;min-width:0}
+.v121-st{border:1px solid var(--nw-line);border-radius:var(--nw-r-md);background:var(--nw-panel);min-width:0}
+.v121-st.is-open{border-color:var(--nw-line-2);box-shadow:var(--nw-shadow)}
+.v121-sth{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;background:none;border:0;border-radius:inherit;cursor:pointer;text-align:left;color:var(--nw-ink);font:inherit;min-width:0}
+.v121-sth:hover{background:var(--nw-sunk)}
+.v121-sth:focus-visible{outline:2px solid var(--nw-accent);outline-offset:-2px}
+.v121-sth>.nw-i{flex:none;color:var(--nw-ink-3)}
+.v121-n{width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--nw-accent-soft);color:var(--nw-accent-text);font:700 12px/1 var(--nw-body)}
+.v121-stt{flex:1;min-width:0;display:grid;gap:2px}
+.v121-stt b{font-size:13.5px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.v121-stt small{font-size:12px;line-height:1.35;color:var(--nw-ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v121-stt small.is-todo{color:var(--nw-warn)}
+.v121-stb{display:grid;gap:10px;padding:2px 12px 12px;min-width:0}
+.v121-does{margin:0;color:var(--nw-ink-2);line-height:1.45}
+.v121-q{display:grid;gap:10px;min-width:0}
+.v121-sta{display:flex;align-items:center;gap:4px}
+.v121-sta .nw-btn[disabled]{opacity:.35;cursor:default}
+.v121-del{color:var(--nw-bad)}
+.v121-add{justify-self:start}
+.v121-lock{display:flex;gap:8px;align-items:flex-start;margin:0;color:var(--nw-ink-2);line-height:1.45}
+.v121-lock>.nw-i{flex:none;margin-top:2px}
+.v121-lock .nw-link{display:inline;font-size:inherit}
+.v121-also,.v121-none{margin:0}
+.v121-pf{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.v121-pf:empty{display:none}
+.v121-more{display:grid;gap:8px;padding:10px 12px;border:1px dashed var(--nw-line-2);border-radius:var(--nw-r-md)}
+.v121-see{display:flex;gap:6px;align-items:center;margin:0}
+@media (min-width:1081px){.nw-sum{max-height:calc(100vh - 92px);max-height:calc(100dvh - 92px);overflow-y:auto;overscroll-behavior:contain}}
+
+/* ---------- v121 C: call types, people and client folders ---------- */
+.v121-cats{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.v121-cats .nw-chip{cursor:pointer}
+.v121-cats .nw-chip[aria-pressed="true"]{background:var(--nw-accent-soft);border-color:var(--nw-accent);color:var(--nw-accent-text)}
+.v121-cn{margin-left:2px;font-weight:700;opacity:.75;font-variant-numeric:tabular-nums}
+.v121-cats-w .v121-cats{margin:0 0 14px}
+.v121-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 8px;font-size:12.5px;color:var(--rd-muted);min-width:0}
+.v121-ty{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.v121-ty span{font-weight:600;color:var(--rd-text)}
+.v121-ty select{height:30px;max-width:230px;min-width:0;border:1px solid var(--rd-line);border-radius:8px;padding:0 6px;font:inherit;font-size:12.5px;background:#fff;color:var(--rd-text)}
+.v121-who{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v121-bar .nw-link{font-size:12.5px}
+.v121-fd{margin:0 0 12px}
+.v121-fd:last-child{margin-bottom:0}
+.v121-fdh{display:flex;align-items:center;gap:8px;width:100%;padding:6px 2px;background:none;border:0;cursor:pointer;text-align:left;color:var(--rd-text);font:inherit;min-width:0}
+.v121-fdh b{font-size:14px;min-width:0;overflow-wrap:anywhere}
+.v121-fdh small{color:var(--rd-muted);font-size:12.5px;white-space:nowrap}
+.v121-fdh>.nw-i{flex:none;color:var(--rd-muted)}
+.v121-fdh>.nw-i:last-child{margin-left:auto}
+.v121-fd.is-shut .v121-fdb{display:none}
+.v121-fdb{display:grid;gap:10px}
+.v121-fdb .ap-tk-call{margin:0}
+.v121-fdl{display:flex;align-items:center;gap:6px;margin:0 0 8px;font-size:12.5px;color:var(--rd-muted)}
+.v121-fdl b{color:var(--rd-text)}
+.ap-cx-chip.mt-dm{background:#EEF4FF;color:#3538CD}
+.ap-cx-chip.mt-sl{background:#FFF1F3;color:#C01048}
+.ap-cx-chip.mt-dv{background:#F0FDF9;color:#107569}
+.ap-cx-chip.mt-cu{background:#FEF6EE;color:#B93815}
+@media (max-width:700px){.v121-ty select{max-width:180px}}
+</style>
+<script id="v121js">
+/* ===================================================================
+   v121 A. The build plan. The right pane on Content Transformation and Marketing Generation shows
+   what gets built, step by step, before anything runs: a funnel's steps (ads, pages, emails) or the
+   parts of a piece. A step opens to change it: its name, what it should say or do, and the details
+   it needs (moved here from Details). Steps can be added, removed and moved wherever the agent
+   follows them: a piece's parts go to Content from Source as its template sections, a funnel's steps
+   go to the Funnel Builder as its plan. Book a call and low-ticket are written by the Low-Ticket
+   Agent, whose four parts are set: their notes ride in the request, and "make it a landing page
+   campaign" moves the steps to the Funnel Builder. Edits last while you work; Save as our default
+   keeps a plan for the team (ai_settings build_plans).
+   =================================================================== */
+const V121={cur:{ct:{},mg:{}},open:{ct:-1,mg:-1},key:{ct:'',mg:''},last:{ct:'',mg:''},raw:false,setAsk:0};
+const V121_KINDS=[['page','Page'],['email','Email'],['emails','Emails'],['post','Post'],['survey','Survey'],['booking','Booking page'],['outline','Outline'],['other','Something else']];
+/* each campaign's steps: [key, kind, name, what it makes, the details it asks for]. The keys are the
+   Funnel Builder's own, so Landing pages still find a funnel's main page. @cal is the booking link. */
+const V121_FUN={
+  direct_to_call:{fixed:true,steps:[
+    ['ads','ads','Ads','Three ads with images. Their one job: get the right people to book.',[]],
+    ['survey','survey','Qualification survey','Four questions: revenue range, decision maker, what they have tried, what they want.',['who']],
+    ['landing','page','Landing page','A short bridge page: one promise, the survey and the booking step.',[]],
+    ['booking','booking','Booking page','They pick a time, with what to prepare and a reminder so they show up.',['calllen','@cal']]]},
+  low_ticket:{fixed:true,steps:[
+    ['ads','ads','Ads','Three ads with images for the small offer.',[]],
+    ['offer_page','page','Landing page for the paid offer','The offer, the price and the checkout.',['price','checkout']],
+    ['survey','survey','Qualification survey','Sorts buyers for the call the offer leads to.',[]],
+    ['booking','booking','Onboarding call booking','Books the call that follows the purchase.',['upsell']]]},
+  webinar:{steps:[
+    ['ads','ads','Ads','Ads that send people to register, each from a different angle.',[]],
+    ['registration_page','page','Registration page','Headline, three things they will learn, who it is for, when, the presenter and a short form.',['title','when','platform','reglink','presenter']],
+    ['confirmation_page','page','Confirmation page','What happens next and how to add it to their calendar.',[]],
+    ['emails','emails','Confirmation, reminder and follow-up emails','The confirmation, the reminders, and the follow-up with the replay and the next step.',['reminders','replay']],
+    ['session_outline','outline','Session outline','The agenda with times, and the offer said once near the end.',['mins']]]},
+  download:{steps:[
+    ['ads','ads','Ads','Ads that send people to the opt-in page, each from a different angle.',[]],
+    ['optin_page','page','Opt-in page','Headline, what is inside, who it is for and a short form.',['title','rformat','inside']],
+    ['thank_you_page','page','Thank-you page','What happens next, and the next step.',[]],
+    ['delivery_email','email','Delivery email','Sends the resource.',['delivery','file']],
+    ['followups','emails','Follow-up emails','Two emails that lead to the next step.',[]],
+    ['resource_outline','outline','Outline of the resource','The parts of the resource.',[]]]},
+  newsletter_signup:{steps:[
+    ['ads','ads','Ads','Ads that send people to sign up, each from a different angle.',[]],
+    ['post','post','A post that sends people to sign up','A hook and a short body.',[]],
+    ['signup_page','page','Sign-up page','What readers get, how often, and the form.',['name','often','gets','signup']],
+    ['welcome_email','email','Welcome email','The first email after they sign up.',[]]]},
+  landing:{steps:[
+    ['ads','ads','Ads','Ads that send people to the page, each from a different angle.',[]],
+    ['post','post','A post that sends people to the page','A hook and a short body.',[]],
+    ['landing_page','page','Landing page','Headline, sections, proof, questions and answers, and the button.',['page']],
+    ['followup_email','email','Follow-up email','After they act on the page.',[]]]}
+};
+function v121Fun(page){return page==='mg'&&nwMgKind()==='ad';}
+function v121Key(page){
+  if(v121Fun(page))return 'funnel:'+(V97.mg.pk||'direct_to_call');
+  const t=page==='ct'?(nwCtKind()==='adcopy'?'ad':v105CtType()):nwMgType();
+  const st=v97Val(page==='ct'?'v97Struct':'v97MgStruct');
+  return 'piece:'+t+(st?':tpl:'+st:'');
+}
+function v121Step(s,i){
+  s=s&&typeof s==='object'?s:{};
+  const kind=String(s.kind||'part'),n=parseInt(s.n,10);
+  return {id:String(s.id||('s'+i+Math.random().toString(36).slice(2,6))),key:String(s.key||('step_'+(i+1))).slice(0,40),kind:kind,
+    name:String(s.name||'').slice(0,80),does:String(s.does||'').slice(0,300),note:String(s.note||'').slice(0,600),
+    q:apArr(s.q).map(String).slice(0,12),n:kind==='ads'?(n>=1&&n<=5?n:3):undefined,added:!!s.added};
+}
+/* the steps as they come: a campaign's from the list above, a piece's from the template it would follow */
+function v121Builtin(page,key){
+  if(key.indexOf('funnel:')===0){
+    const F=V121_FUN[key.slice(7)];
+    if(!F)return {fixed:false,tpl:null,steps:[]};
+    return {fixed:!!F.fixed,tpl:null,steps:F.steps.map(function(s,i){return v121Step({id:'b'+i,key:s[0],kind:s[1],name:s[2],does:s[3],q:s[4]},i);})};
+  }
+  let tp=null;V121.raw=true;
+  try{tp=page==='ct'?nwCtTemplate():nwMgPostTemplate();}catch(e){tp=null;}finally{V121.raw=false;}
+  const T=(tp&&tp.template)||{};
+  return {fixed:false,tpl:tp&&tp.id?(T.name||'saved'):null,steps:apArr(T.sections).map(function(s,i){return v121Step({id:'b'+i,key:'part_'+(i+1),kind:'part',name:s&&s.title,note:s&&s.guidance},i);}).filter(function(s){return s.name;})};
+}
+function v121Team(key){
+  const B=typeof AP_AISET!=='undefined'&&AP_AISET?AP_AISET.build_plans:null;
+  const P=B&&typeof B==='object'?B[key]:null;
+  return P&&Array.isArray(P.steps)&&P.steps.length?P:null;
+}
+function v121Default(page,key){
+  const b=v121Builtin(page,key);
+  if(key.indexOf(':tpl:')>0)return b;
+  const t=v121Team(key);if(!t)return b;
+  if(b.fixed){
+    /* the Low-Ticket Agent's parts are set, so a saved default keeps only their notes */
+    const by={};t.steps.forEach(function(s){if(s&&s.key)by[s.key]=s;});
+    return {fixed:true,tpl:null,team:true,steps:b.steps.map(function(s){const x=by[s.key];return x&&x.note?Object.assign({},s,{note:String(x.note).slice(0,600)}):s;})};
+  }
+  return {fixed:false,tpl:null,team:true,steps:t.steps.map(v121Step)};
+}
+function v121Plan(page){
+  const key=v121Key(page),cur=V121.cur[page][key];
+  if(cur)return {key:key,fixed:cur.fixed,tpl:cur.tpl,team:cur.team,steps:cur.steps};
+  const d=v121Default(page,key);
+  return {key:key,fixed:d.fixed,tpl:d.tpl||null,team:!!d.team,steps:d.steps};
+}
+/* the plan being changed: a copy of the default the first time */
+function v121Edit(page){
+  const key=v121Key(page);
+  if(!V121.cur[page][key]){const d=v121Default(page,key);V121.cur[page][key]={fixed:d.fixed,tpl:d.tpl||null,team:!!d.team,steps:d.steps.map(v121Step)};}
+  return V121.cur[page][key];
+}
+function v121Sig(steps){return JSON.stringify(apArr(steps).map(function(s){return [s.key,s.kind,s.name,s.note,s.n||0];}));}
+function v121Changed(page){const key=v121Key(page),cur=V121.cur[page][key];return !!cur&&v121Sig(cur.steps)!==v121Sig(v121Default(page,key).steps);}
+/* the campaign details each step asks for, and the ones a removed step leaves behind */
+function v121Q(pk,s){const ids=apArr(s.q);return (V113_MGQ[pk]||[]).filter(function(q){return ids.indexOf(q[0])>=0;});}
+function v121Moved(pk){const F=V121_FUN[pk],o=[];if(F)F.steps.forEach(function(s){s[4].forEach(function(id){if(id.charAt(0)!=='@'&&o.indexOf(id)<0)o.push(id);});});return o;}
+function v121CalIn(pk,P,s,S){
+  if(pk==='direct_to_call')return apArr(s.q).indexOf('@cal')>=0;
+  if(pk!=='landing'||!S||S.goal!=='Book a call')return false;
+  const b=P.steps.find(function(x){return x.kind==='booking';})||P.steps.find(function(x){return x.key==='landing_page';})||P.steps.find(function(x){return x.kind==='page';});
+  return b===s;
+}
+function v121Ans(q,v){
+  if(q[2]==='yes')return v?q[1]:'';
+  if(q[2]==='multi')return apArr(v).join(', ');
+  v=String(v==null?'':v).trim();if(!v)return '';
+  return /[a-z]/i.test(v)?v:q[1]+': '+v;
+}
+/* one line under a step's name: what is set, else what to add, else what it makes */
+function v121Sum(P,s,S){
+  if(P.key.indexOf('funnel:')!==0)return {t:s.note?nwClip(s.note,80):'Nothing set for this part yet',todo:false};
+  if(s.kind==='ads')return {t:(P.fixed?3:(s.n||3))+' ads'+(P.fixed?' with images':'')+(s.note?' · '+nwClip(s.note,40):''),todo:false};
+  const pk=P.key.slice(7),qs=v121Q(pk,s),cal=v121CalIn(pk,P,s,S),bk=V113.mg.cal;
+  const got=qs.map(function(q){return v121Ans(q,S&&S[q[0]]);}).filter(Boolean);
+  if(cal&&bk&&bk.url)got.push(bk.name&&bk.name!=='Booking link'?bk.name:'Booking link set');
+  const miss=qs.filter(function(q){return q[2]==='text'&&!String((S&&S[q[0]])||'').trim();}).map(function(q){return q[1].toLowerCase();});
+  if(cal&&!(bk&&bk.url))miss.push('booking link');
+  const parts=got.slice();
+  if(miss.length)parts.push('add '+miss.slice(0,2).join(', '));
+  if(parts.length)return {t:nwClip(parts.join(' · '),80),todo:!!miss.length};
+  return {t:nwClip(s.note||s.does||'',80),todo:false};
+}
+function v121StepHtml(page,P,s,i,S){
+  const fun=P.key.indexOf('funnel:')===0,on=V121.open[page]===i,pk=fun?P.key.slice(7):'',sm=v121Sum(P,s,S);
+  const head='<button type="button" class="v121-sth" aria-expanded="'+on+'" onclick="v121Tog(\''+page+'\','+i+')">'+
+    '<span class="v121-n">'+(i+1)+'</span><span class="v121-stt"><b>'+esc(s.name||'Untitled')+'</b><small'+(sm.todo?' class="is-todo"':'')+'>'+esc(sm.t)+'</small></span>'+nwIc(on?'chevD':'chevR',16)+'</button>';
+  if(!on)return '<li class="v121-st" data-i="'+i+'">'+head+'</li>';
+  const set=function(f){return "v121Set('"+page+"',"+i+",'"+f+"',this.value)";};
+  let b='';
+  if(!P.fixed)b+='<label class="nw-field"><span class="nw-lbl">Name</span><input class="nw-input" data-f="name" maxlength="80" value="'+esc(s.name)+'" oninput="'+set('name')+'"></label>';
+  if(fun&&s.added)b+='<label class="nw-field"><span class="nw-lbl">What kind of step</span><select class="nw-input" data-nofill="1" data-f="kind" onchange="v121Kind(\''+page+'\','+i+',this.value)">'+
+    V121_KINDS.map(function(k){return '<option value="'+k[0]+'"'+(s.kind===k[0]?' selected':'')+'>'+esc(k[1])+'</option>';}).join('')+'</select></label>';
+  if(fun&&s.does)b+='<p class="v121-does nw-small">'+esc(s.does)+'</p>';
+  if(fun&&s.kind==='ads'&&!P.fixed)b+='<div class="nw-field"><span class="nw-lbl">How many ads</span><div class="nw-chips" role="radiogroup" aria-label="How many ads">'+[1,2,3,4,5].map(function(n){const o=(s.n||3)===n;
+    return '<button type="button" class="nw-chip nw-chip-sm" role="radio" aria-checked="'+o+'" onclick="v121N(\''+page+'\','+i+','+n+')">'+(o?nwIc('check',13):'')+n+'</button>';}).join('')+'</div></div>';
+  b+='<label class="nw-field"><span class="nw-lbl">'+(fun?'What it should say or do':'What goes in it')+'<small>optional</small></span><textarea class="nw-input" data-f="note" rows="3" maxlength="600" placeholder="'+
+    esc(fun?'e.g. lead with the date and keep it short':'e.g. one example from the material')+'" oninput="'+set('note')+'">'+esc(s.note||'')+'</textarea></label>';
+  if(fun&&S){
+    const qs=v121Q(pk,s);
+    if(qs.length)b+='<div class="v121-q">'+v113QHtml('mg','ad',qs,S)+'</div>';
+    if(v121CalIn(pk,P,s,S))b+=v113CalHtml();
+  }
+  if(!P.fixed){
+    const n=P.steps.length;
+    b+='<div class="v121-sta"><button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v121Move(\''+page+'\','+i+',-1)"'+(i?'':' disabled')+' aria-label="Move up">'+nwIc('up',15)+'</button>'+
+      '<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v121Move(\''+page+'\','+i+',1)"'+(i<n-1?'':' disabled')+' aria-label="Move down">'+nwIc('down',15)+'</button><span class="nw-grow"></span>'+
+      '<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost v121-del" onclick="v121Del(\''+page+'\','+i+')">'+nwIc('trash',15)+'Remove</button></div>';
+  }
+  return '<li class="v121-st is-open" data-i="'+i+'">'+head+'<div class="v121-stb">'+b+'</div></li>';
+}
+function v121HeadHtml(page){return '<h3>The plan</h3>'+(v121Changed(page)?'<span class="nw-tag nw-tag-gold">Changed</span>':'');}
+function v121FootHtml(page){
+  const P=v121Plan(page);
+  if(v121Changed(page))return '<button type="button" class="nw-btn nw-btn-sm" onclick="v121Reset(\''+page+'\')">'+nwIc('undo',14)+'Reset</button>'+
+    (P.key.indexOf(':tpl:')>0?'':'<button type="button" class="nw-btn nw-btn-sm" onclick="v121SaveDef(\''+page+'\',this)">Save as our default</button>');
+  if(P.team)return '<span class="nw-small nw-faint">Your team’s default</span><button type="button" class="nw-link nw-small" onclick="v121UseBuiltin(\''+page+'\')">Use the usual steps</button>';
+  return '';
+}
+function v121Html(page){
+  const P=v121Plan(page),fun=P.key.indexOf('funnel:')===0,pk=fun?P.key.slice(7):'',S=fun?v113MgA('ad'):null;
+  const k=page==='ct'?nwCtKind():nwMgKind(),K=NW_CK[k]||{};
+  let gets=K.gets||[];
+  if(page==='ct'&&k==='newsletter'&&v105CtType()==='article')gets=['1 article with short sections','3 title options'];
+  const what=fun?(NW_MG_PK[pk]||['Campaign'])[0]:(gets[0]||K.t||'');
+  const sub=esc(what)+(fun?(P.fixed?', built in this order:':', step by step:'):(P.steps.length?', in these parts:':''))+(P.tpl?' <span class="nw-faint">From the '+esc(P.tpl)+' template.</span>':'');
+  let orphan='';
+  if(fun&&!P.fixed){
+    const have={};P.steps.forEach(function(s){apArr(s.q).forEach(function(id){have[id]=1;});});
+    const left=(V113_MGQ[pk]||[]).filter(function(q){return v121Moved(pk).indexOf(q[0])>=0&&!have[q[0]];});
+    if(left.length)orphan='<div class="v121-more"><span class="nw-lbl">Other details</span><div class="v121-q">'+v113QHtml('mg','ad',left,S)+'</div></div>';
+  }
+  const add=P.fixed?'<p class="v121-lock nw-small">'+nwIc('lock',14)+'<span>The Low-Ticket Agent always builds these four, with the ad images. To add, drop or move steps, <button type="button" class="nw-link nw-small" onclick="v121ToLanding()">make it a landing page campaign</button>.</span></p>'
+    :(P.steps.length<12?'<button type="button" class="nw-link nw-small v121-add" onclick="v121Add(\''+page+'\')">'+nwIc('plus',14)+(fun?'Add a step':'Add a part')+'</button>':'');
+  return '<div class="v121-ph">'+v121HeadHtml(page)+'</div><p class="v121-sub nw-small">'+sub+'</p>'+
+    (P.steps.length?'<ol class="v121-steps" aria-label="The plan">'+P.steps.map(function(s,i){return v121StepHtml(page,P,s,i,S);}).join('')+'</ol>'
+      :'<p class="v121-none nw-small nw-faint">'+(fun?'No steps yet. Add one to start.':'No set parts. The writer picks a shape from your answers.')+'</p>')+
+    orphan+add+(!fun&&gets.length>1?'<p class="v121-also nw-small nw-faint">Also: '+esc(gets.slice(1).join(', '))+'</p>':'')+
+    '<div class="v121-pf">'+v121FootHtml(page)+'</div>';
+}
+/* the plan sits above the side's own content, so the side's repaints leave it alone;
+   it repaints itself unless someone is typing in it, and once more when they leave it */
+function v121Paint(page,force){
+  const side=v97$(page==='ct'?'nwCtSide':'nwMgSide'),b=v97$(page==='ct'?'nwCtSideB':'nwMgSideB');if(!side||!b)return;
+  let h=v97$('v121Plan_'+page);
+  if(!h){
+    h=document.createElement('div');h.id='v121Plan_'+page;h.className='v121-plan';side.insertBefore(h,side.firstChild);side.setAttribute('aria-label','The plan');
+    h.addEventListener('focusout',function(){setTimeout(function(){if(!h.contains(document.activeElement))v121Paint(page);},0);});
+    V121.last[page]='';
+  }
+  if(typeof AP_AISET!=='undefined'&&!AP_AISET&&!V121.setAsk&&typeof apAiSettingsLoad==='function'){V121.setAsk=1;apAiSettingsLoad().then(function(){v121Paint('ct',true);v121Paint('mg',true);}).catch(function(){});}
+  const a=document.activeElement;
+  if(!force&&a&&h.contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))return;
+  let key='',html='';
+  try{key=v121Key(page);if(key!==V121.key[page]){V121.key[page]=key;V121.open[page]=-1;}html=v121Html(page);}catch(e){console.warn('v121 plan',e);return;}
+  if(!force&&html===V121.last[page])return;
+  V121.last[page]=html;h.innerHTML=html;
+}
+/* the side's own "You'll get" list gives way to the plan */
+function v121Strip(page){
+  const b=v97$(page==='ct'?'nwCtSideB':'nwMgSideB');if(!b)return;
+  [].slice.call(b.children).forEach(function(x){if((x.tagName==='H3'&&/ll get/.test(x.textContent))||x.classList.contains('nw-gets'))x.remove();});
+}
+(function(){
+  const _cs=nwCtSide;nwCtSide=function(){const r=_cs.apply(this,arguments);try{v121Strip('ct');v121Paint('ct');}catch(e){console.warn('v121',e);}return r;};
+  const _ms=nwMgSide;nwMgSide=function(){const r=_ms.apply(this,arguments);try{v121Strip('mg');v121Paint('mg');}catch(e){console.warn('v121',e);}return r;};
+})();
+/* picking a structure in More options changes the parts */
+document.addEventListener('change',function(e){const id=e.target&&e.target.id;if(id==='v97Struct')v121Paint('ct',true);else if(id==='v97MgStruct')v121Paint('mg',true);});
+
+/* ---------- changing the plan ---------- */
+function v121Tog(page,i){V121.open[page]=V121.open[page]===i?-1:i;v121Paint(page,true);}
+function v121Foot(page){
+  const h=v97$('v121Plan_'+page);if(!h)return;
+  const ph=h.querySelector('.v121-ph'),pf=h.querySelector('.v121-pf');
+  if(ph)ph.innerHTML=v121HeadHtml(page);if(pf)pf.innerHTML=v121FootHtml(page);
+}
+function v121Set(page,i,f,v){
+  const P=v121Edit(page),s=P.steps[i];if(!s||(f!=='name'&&f!=='note'))return;
+  s[f]=String(v||'').slice(0,f==='name'?80:600);
+  /* the header follows the typing without a repaint, so the cursor keeps its place */
+  const h=v97$('v121Plan_'+page),li=h&&h.querySelector('.v121-st[data-i="'+i+'"]');
+  if(li){const t=li.querySelector('.v121-stt b'),sm=li.querySelector('.v121-stt small');
+    if(f==='name'&&t)t.textContent=s.name||'Untitled';
+    if(sm){const x=v121Sum(v121Plan(page),s,v121Fun(page)?v113MgA('ad'):null);sm.textContent=x.t;sm.classList.toggle('is-todo',x.todo);}}
+  v121Foot(page);
+}
+function v121N(page,i,n){const s=v121Edit(page).steps[i];if(!s||s.kind!=='ads'||!(n>=1&&n<=5))return;s.n=n;v121Paint(page,true);}
+function v121Kind(page,i,k){
+  const s=v121Edit(page).steps[i],K=V121_KINDS.find(function(x){return x[0]===k;});if(!s||!K)return;
+  const was=V121_KINDS.find(function(x){return x[0]===s.kind;});
+  if(!s.name||(was&&s.name==='New '+was[1].toLowerCase()))s.name='New '+K[1].toLowerCase();
+  s.kind=k;v121Paint(page,true);
+}
+function v121Move(page,i,d){
+  const P=v121Edit(page),j=i+d;if(P.fixed||j<0||j>=P.steps.length)return;
+  const t=P.steps[i];P.steps[i]=P.steps[j];P.steps[j]=t;V121.open[page]=j;v121Paint(page,true);
+  const btn=document.querySelector('#v121Plan_'+page+' .v121-st.is-open .v121-sta button[aria-label="'+(d<0?'Move up':'Move down')+'"]');if(btn&&!btn.disabled)try{btn.focus();}catch(e){}
+}
+function v121Del(page,i){
+  const P=v121Edit(page);if(P.fixed||!P.steps[i])return;
+  if(v121Fun(page)&&!P.steps.some(function(s,k){return k!==i&&s.kind!=='ads';})){if(typeof nwToast==='function')nwToast('A funnel needs at least one step besides the ads');return;}
+  P.steps.splice(i,1);V121.open[page]=-1;v121Paint(page,true);
+}
+function v121Add(page){
+  const P=v121Edit(page);if(P.fixed||P.steps.length>=12)return;
+  const fun=v121Fun(page),n=P.steps.length;
+  let key=(fun?'step_':'part_')+(n+1),k=n+1;
+  while(P.steps.some(function(s){return s.key===key;}))key=(fun?'step_':'part_')+(++k);
+  P.steps.push(v121Step(fun?{key:key,kind:'page',name:'New page',added:true}:{key:key,kind:'part',name:'New part',added:true},n));
+  V121.open[page]=n;v121Paint(page,true);
+  const inp=document.querySelector('#v121Plan_'+page+' .v121-st.is-open input[data-f="name"]');if(inp)try{inp.focus();inp.select();}catch(e){}
+}
+function v121Reset(page){delete V121.cur[page][v121Key(page)];V121.open[page]=-1;v121Paint(page,true);}
+function v121UseBuiltin(page){
+  const key=v121Key(page),b=v121Builtin(page,key);
+  V121.cur[page][key]={fixed:b.fixed,tpl:b.tpl||null,team:false,steps:b.steps.map(v121Step)};V121.open[page]=-1;v121Paint(page,true);
+}
+async function v121SaveDef(page,btn){
+  const key=v121Key(page),cur=V121.cur[page][key];if(!cur||key.indexOf(':tpl:')>0)return;
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  const steps=cur.steps.map(function(s){return {key:s.key,kind:s.kind,name:s.name,does:s.does,note:s.note,q:s.q,n:s.n,added:s.added};});
+  try{
+    await v104SetPatch('build_plans',function(){const o={};o[key]={steps:steps,by:AP_ME(),at:new Date().toISOString()};return o;});
+    delete V121.cur[page][key];
+    if(typeof nwToast==='function')nwToast('Saved. The team starts from this plan from now on.');
+  }catch(e){if(typeof nwToast==='function')nwToast('Could not save the plan: '+(e.message||e));}
+  v121Paint(page,true);
+}
+/* book a call or low-ticket with steps of your own: the same campaign as a landing page, which the Funnel Builder writes */
+function v121ToLanding(){
+  if(!v121Fun('mg'))return;
+  const from=V97.mg.pk||'direct_to_call';if(!V121_FUN[from]||!V121_FUN[from].fixed)return;
+  const P=v121Plan('mg'),S0=v113MgA('ad');
+  const extra={survey:S0.who?'Who should book: '+S0.who:'',booking:[S0.calllen&&from==='direct_to_call'?'Call length: '+S0.calllen:'',S0.upsell?'It leads to: '+S0.upsell:''].filter(Boolean).join('. '),
+    offer_page:[S0.price?'Price: '+S0.price:'',S0.checkout?'Checkout link: '+S0.checkout:''].filter(Boolean).join('. ')};
+  const map={ads:['ads','ads'],survey:['survey','survey'],landing:['landing_page','page'],offer_page:['landing_page','page'],booking:['booking_page','booking']};
+  const steps=P.steps.map(function(s,i){const m=map[s.key]||[s.key,s.kind];
+    return v121Step({key:m[0],kind:m[1],name:s.name,does:s.does,note:[s.note,extra[s.key]].filter(Boolean).join('. '),q:m[0]==='landing_page'?['page']:[],n:m[1]==='ads'?3:undefined},i);});
+  nwMgPk('landing');
+  if(V97.mg.pk!=='landing')return;
+  const S=v113MgA('ad');S.goal=from==='low_ticket'?'Buy':'Book a call';
+  V121.cur.mg['funnel:landing']={fixed:false,tpl:null,team:false,steps:steps};V121.open.mg=-1;
+  try{v113MgQPaint();}catch(e){}
+  v121Paint('mg',true);
+  if(typeof nwToast==='function')nwToast('Now a landing page campaign set to '+(from==='low_ticket'?'buy':'book a call')+'. Change the steps as you like.');
+}
+
+/* ---------- what the runs get ---------- */
+function v121Out(page){
+  return v121Plan(page).steps.slice(0,12).map(function(s){const o={key:s.key,kind:s.kind,title:s.name,does:s.does||'',note:s.note||''};if(s.kind==='ads')o.n=s.n||3;return o;});
+}
+/* a piece's parts are its template's sections */
+(function(){
+  const sec=function(page,tp){
+    if(V121.raw||!tp||!tp.template)return tp;
+    const steps=v121Plan(page).steps;
+    const T=Object.assign({},tp.template,{sections:steps.slice(0,12).map(function(s){return {title:String(s.name||'').trim().slice(0,80),guidance:String(s.note||'').trim().slice(0,400)};}).filter(function(s){return s.title;})});
+    return Object.assign({},tp,{template:T});
+  };
+  const _ct=nwCtTemplate;nwCtTemplate=function(){return sec('ct',_ct.apply(this,arguments));};
+  const _mg=nwMgPostTemplate;nwMgPostTemplate=function(){return sec('mg',_mg.apply(this,arguments));};
+})();
+/* a funnel's steps go to the Funnel Builder as its plan, with the booking link when a step books calls */
+(function(){
+  const _c=v113Call;
+  v113Call=function(url,body,what){
+    try{
+      if(url===V113_HOOK.funnel&&body&&typeof body==='object'&&!body.plan&&v121Fun('mg')&&body.funnel_type===V97.mg.pk){
+        body.plan=v121Out('mg');
+        const S=v113MgA('ad'),cal=V113.mg.cal;
+        if(cal&&cal.url&&(body.plan.some(function(s){return s.kind==='booking';})||(body.funnel_type==='landing'&&S.goal==='Book a call')))
+          body.details=Object.assign({},body.details||{},{'Booking link':cal.url});
+      }
+    }catch(e){console.warn('v121 plan',e);}
+    return _c.apply(this,arguments);
+  };
+})();
+/* book a call and low-ticket: each part's notes ride in the request the Low-Ticket Agent reads */
+function v121LtNote(){
+  if(!v121Fun('mg'))return '';
+  const P=v121Plan('mg');if(!P.fixed)return '';
+  return P.steps.filter(function(s){return s.note;}).map(function(s){return s.name+': '+v104Tidy(s.note);}).join('. ').slice(0,700);
+}
+(function(){
+  const _s=v97MgStartAds;
+  v97MgStartAds=async function(){
+    const add=v121LtNote();
+    if(!add)return _s.apply(this,arguments);
+    const was=V113.mg.funNote||'';
+    V113.mg.funNote=[was,add].filter(Boolean).join(' ');
+    try{return await _s.apply(this,arguments);}finally{V113.mg.funNote=was;}
+  };
+})();
+/* the event kit's pieces are its parts now, so "What to make" leaves the questions */
+if(V113_CTQ.event_kit)V113_CTQ.event_kit=V113_CTQ.event_kit.filter(function(q){return q[0]!=='make';});
+/* Details keeps what the whole campaign needs; each step's details moved to the plan */
+v113MgBlockHtml=function(){
+  const k=nwMgKind(),ad=k==='ad',pk=V97.mg.pk||'direct_to_call',S=v113MgA(k);
+  const who=v113QHtml('mg',k,V113_MGQ_WHO,S);
+  let rest='';
+  if(ad){
+    const moved=v121Moved(pk);
+    rest=v113QHtml('mg',k,v113MgQList(k).filter(function(q){return !V113_MGQ_WHO.some(function(w){return w[0]===q[0];})&&moved.indexOf(q[0])<0;}),S)+
+      '<p class="v121-see nw-small nw-faint">'+nwIc('info',14)+'<span>Each step’s details are in the plan.</span></p>';
+  }else rest=v113QHtml('mg',k,V113_MGQ_POST[k]||[],S)+(k==='newsletter'?'<button type="button" class="nw-link nw-small v113-qfill" onclick="v113MgTopicsFill()">'+nwIc('sparkle',14)+'Use what the briefs found for the topics</button>':'');
+  return '<div class="v113-mgb"><h4 class="v113-sub">Who it is for</h4><div id="v113MgPer"></div>'+who+
+    '<h4 class="v113-sub">'+(ad?esc((NW_MG_PK[pk]||['Campaign'])[0])+': the details':'The goal and the next step')+'</h4>'+rest+'</div>';
+};
+
+/* ===================================================================
+   v121 B. A saved session opens the dashboard with no sign-in screen first. The head sets html.ap-resume
+   when a session is saved, which keeps the sign-in screen hidden behind a plain loading screen; it comes
+   off once the session check settles: the dashboard is up, or there is no session and the sign-in shows.
+   =================================================================== */
+function v121Resumed(){
+  const d=document.documentElement;if(!d.classList.contains('ap-resume'))return;
+  try{requestAnimationFrame(function(){d.classList.remove('ap-resume');});}catch(e){d.classList.remove('ap-resume');}
+}
+(function(){
+  const _a=apAfterLogin;
+  apAfterLogin=async function(){try{return await _a.apply(this,arguments);}finally{v121Resumed();}};
+  const _e=apEnsureSession;
+  apEnsureSession=async function(){let s=null;try{s=await _e.apply(this,arguments);}finally{if(!s)v121Resumed();}return s;};
+})();
+
+/* ===================================================================
+   v121 C. Calls. Each call on Tasks shows its call type (change it right there) and the people on it,
+   calls are filed in client folders (the folder set on the call, else its client company, else the
+   company of the people on it; calls with only the team go in AI Paragon (internal)), and type
+   buttons along the top show one kind of call at a time, on Tasks and on Calls. The types add
+   Client demo, Sales call and Internal development, and the team's own (ai_settings call_types,
+   saved as the name itself); Meetings · Post-call Actions knows them all.
+   =================================================================== */
+Object.assign(AP_MT,{demo:{l:'Client demo',c:'dm'},sales:{l:'Sales call',c:'sl'},dev:{l:'Internal development',c:'dv'}});
+AP_MT.internal.l='Internal meeting';
+AP_MT_KEYS.splice(0,AP_MT_KEYS.length,'demo','sales','interview','discovery','proposal','onboarding','checkin','dev','internal','other');
+Object.assign(AP_MT_DELIV,{demo:'demo recap',sales:'sales call notes',dev:'build notes'});
+/* the buttons: each type sits under one; Erica's three always show, the rest once a call has them */
+const V121_CC=[['demo','Client demos',['demo']],['sales','Sales',['sales','interview','discovery','proposal']],['client','Client work',['onboarding','checkin']],
+  ['dev','Internal development',['dev']],['internal','Internal meetings',['internal']],['other','Other',['other']]];
+const V121_CC_MAIN=['demo','sales','dev'];
+const V121_IN='AI Paragon (internal)',V121_NONE='No client yet';
+const V121C={tk:'all',shut:{},wait:false,newRes:null};
+function v121Custom(){
+  /* the team's own types live in the team settings; a picker drawn before they load asks for them once */
+  if(typeof AP_AISET!=='undefined'&&!AP_AISET&&!V121C.setAsk&&typeof apAiSettingsLoad==='function'){V121C.setAsk=1;apAiSettingsLoad().then(function(){if(document.getElementById('apTk'))apTkPaint();const d=document.querySelector('.ap-calls .detail');if(d&&d.dataset.id)apCxRepaint(d.dataset.id);}).catch(function(){});}
+  const L=typeof AP_AISET!=='undefined'&&AP_AISET?AP_AISET.call_types:null;
+  return (Array.isArray(L)?L:[]).map(function(x){return String((x&&x.label)||x||'').trim().slice(0,30);}).filter(Boolean);
+}
+function v121MtL(t){return t&&AP_MT[t]?AP_MT[t].l:String(t||'');}
+function v121Cat(t){if(!t)return 'none';const c=V121_CC.find(function(x){return x[2].indexOf(t)>=0;});return c?c[0]:'x:'+t;}
+function v121CatL(k){if(k==='none')return 'No type yet';if(k.indexOf('x:')===0)return k.slice(2);const c=V121_CC.find(function(x){return x[0]===k;});return c?c[1]:k;}
+/* the type of a call by its id, set by the team or else the AI's pick on its post-call actions */
+function v121Type(id){const m=apCm(id);if(m&&m.meeting_type)return m.meeting_type;const o=apCo(id);return (o&&o.meeting_type)||'';}
+/* the people on a call: who recorded it, then the guests (the team's list if they changed it) */
+function v121People(id){
+  const c=apFtCall(id),m=apCm(id)||{},out=[],seen={};
+  const add=function(p){if(!p)return;const k=String(p.email||p.name||'').toLowerCase().trim();if(!k||seen[k])return;seen[k]=1;
+    out.push({name:String(p.name||'').trim(),email:String(p.email||'').trim(),external:!!p.external});};
+  if(c&&c.recorded_by)add({name:c.recorded_by.name,email:c.recorded_by.email,external:false});
+  (c?apCmGuests(c):apCxArr(m.guests)).forEach(add);
+  return out;
+}
+const V121_FREE=/^(gmail|googlemail|outlook|hotmail|live|msn|yahoo|ymail|icloud|me|mac|aol|proton|protonmail|gmx|zoho|fastmail)\./i;
+function v121Co(email){
+  const d=String(email||'').toLowerCase().split('@')[1]||'';if(!d||V121_FREE.test(d))return '';
+  const p=d.split('.').filter(Boolean);if(p.length<2)return '';
+  let n=p[p.length-2];if(p.length>2&&/^(co|com|org|net|gov|ac)$/.test(n))n=p[p.length-3];
+  return n.split(/[-_]+/).filter(Boolean).map(function(w){return w.charAt(0).toUpperCase()+w.slice(1);}).join(' ');
+}
+function v121Ext(p){return p.external||(!!p.email&&!/@aiparagonconsulting\.com$/i.test(p.email));}
+/* the client folder a call is filed in */
+function v121Folder(id){
+  const m=apCm(id)||{};
+  if(m.folder)return String(m.folder);
+  if(m.client)return String(m.client);
+  const c=apFtCall(id);
+  if(c){try{const L=apCxLead(c);if(L&&L.lead&&L.lead.company_name)return String(L.lead.company_name);}catch(e){}}
+  const ext=v121People(id).filter(v121Ext);
+  for(let i=0;i<ext.length;i++){const n=v121Co(ext[i].email);if(n)return n;}
+  if(ext.length)return ext[0].name||ext[0].email;
+  const cat=v121Cat(v121Type(id)),inside=cat==='dev'||cat==='internal',facing=['demo','sales','client'].indexOf(cat)>=0;
+  /* no outside guest: the team's own call, unless it is a client call whose client is not on the invite */
+  if(c||apCxArr(m.guests).length)return facing?V121_NONE:V121_IN;
+  return inside?V121_IN:V121_NONE;
+}
+/* the type picker: grouped like the buttons, with the team's own types and a way to add one */
+function v121TypeOpts(cur,first,withNew){
+  const opt=function(k){return '<option value="'+esc(k)+'"'+(cur===k?' selected':'')+'>'+esc(v121MtL(k))+'</option>';};
+  let h='<option value=""'+(cur?'':' selected')+'>'+esc(first)+'</option>';
+  V121_CC.forEach(function(c){h+='<optgroup label="'+esc(c[1])+'">'+c[2].map(opt).join('')+'</optgroup>';});
+  const mine=v121Custom();if(cur&&!AP_MT[cur]&&mine.indexOf(cur)<0)mine.push(cur);
+  if(mine.length)h+='<optgroup label="Your types">'+mine.map(opt).join('')+'</optgroup>';
+  return h+(withNew?'<option value="__new">+ New type…</option>':'');
+}
+/* the call type and the people, on a call on Tasks and in a call's details on Calls */
+function v121CallBar(id){
+  const ide=esc(String(id)),m=apCm(id)||{},set=m.meeting_type||'',t=v121Type(id),P=v121People(id);
+  const names=P.filter(v121Ext).concat(P.filter(function(p){return !v121Ext(p);})).map(function(p){return p.name||p.email;}).filter(Boolean);
+  const who=names.length?'With '+names.slice(0,4).join(', ')+(names.length>4?' +'+(names.length-4):''):'No people listed';
+  return '<div class="v121-bar"><label class="v121-ty"><span>Call type</span><select data-nofill="1" aria-label="Call type" onchange="v121SetType(\''+ide+'\',this)">'+
+      v121TypeOpts(set,!set&&t?'AI pick: '+v121MtL(t):'No type yet',true)+'</select></label>'+
+    '<span class="v121-who" title="'+esc(P.map(function(p){return (p.name||p.email)+(v121Ext(p)?' (client side)':'');}).join(', '))+'">'+esc(who)+'</span>'+
+    '<button type="button" class="nw-link nw-small" onclick="apCxEdit(\''+ide+'\')">'+(names.length?'Edit people and client':'Add people')+'</button></div>';
+}
+async function v121SetType(id,sel){
+  let v=sel.value;
+  if(v==='__new'){v=await v121NewType();if(!v){apCxRepaint(id);return;}}
+  sel.disabled=true;
+  try{await apCxSaveMeta(id,{meeting_type:v||null});toast(v?'Call type: '+v121MtL(v)+'.':'Call type cleared. The AI’s pick shows until one is set.');}
+  catch(e){toast('Could not save the call type: '+e.message,false);}
+  sel.disabled=false;
+  apCxFiltersRefresh();apCxRepaint(id);v121CallsCats();
+}
+/* a type of the team's own */
+function v121NewType(){
+  return new Promise(function(res){
+    if(V121C.newRes)V121C.newRes(null);
+    V121C.newRes=res;
+    apModal('v121TypeM','<h3 class="ap-m89h">New call type</h3><p class="help">A kind of call the team has, like Partner call or Podcast. It shows on every call and gets its own button.</p>'+
+      '<label class="f"><span>Name</span><input id="v121TypeIn" maxlength="30" placeholder="e.g. Partner call" onkeydown="if(event.key===\'Enter\')v121NewTypeSave(document.getElementById(\'v121TypeGo\'))"></label>'+
+      '<div class="ap-cf-err" id="v121TypeErr"></div>'+
+      '<div class="ap-m89f"><button class="rd-btn" onclick="v121NewTypeDone(null)">Cancel</button><button class="rd-btn pri" id="v121TypeGo" onclick="v121NewTypeSave(this)">Add the type</button></div>',460);
+    setTimeout(function(){const i=document.getElementById('v121TypeIn');if(i)try{i.focus();}catch(e){}},60);
+  });
+}
+function v121NewTypeDone(v){const r=V121C.newRes;V121C.newRes=null;apModalClose('v121TypeM');if(r)r(v);}
+async function v121NewTypeSave(btn){
+  const i=document.getElementById('v121TypeIn'),err=document.getElementById('v121TypeErr');if(!i||!err)return;
+  const v=String(i.value||'').replace(/\s+/g,' ').trim(),lo=v.toLowerCase();
+  const bad=v.length<2?'Give it a name, two letters or more.':/[<>{}\[\]\\]/.test(v)?'Use letters, numbers and spaces.':
+    AP_MT_KEYS.some(function(k){return k===lo||AP_MT[k].l.toLowerCase()===lo;})||V121_CC.some(function(c){return c[1].toLowerCase()===lo;})||lo==='no type yet'?'That type is already in the list.':'';
+  if(bad){err.textContent=bad;err.classList.add('on');return;}
+  if(btn){btn.disabled=true;btn.textContent='Adding…';}
+  try{
+    const got=await apSb('ai_settings?select=value&key=eq.call_types');
+    const cur=((got||[])[0]||{}).value;
+    const L=(Array.isArray(cur)?cur:[]).map(String);
+    if(!L.some(function(x){return x.toLowerCase()===lo;}))L.push(v);
+    await v96Set('call_types',L);
+    v121NewTypeDone(L.find(function(x){return x.toLowerCase()===lo;})||v);
+  }catch(e){err.textContent='Could not add it: '+(e.message||e);err.classList.add('on');if(btn){btn.disabled=false;btn.textContent='Add the type';}}
+}
+(function(){
+  const _mc=apModalClose;
+  apModalClose=function(id){const r=_mc.apply(this,arguments);if(id==='v121TypeM'&&V121C.newRes){const f=V121C.newRes;V121C.newRes=null;f(null);}return r;};
+})();
+/* the buttons: All, then each kind of call with how many there are */
+function v121CatBtns(cats,total,cur,where){
+  const keys=V121_CC.map(function(c){return c[0];}).filter(function(k){return k!=='other'&&(cats[k]||V121_CC_MAIN.indexOf(k)>=0);})
+    .concat(Object.keys(cats).filter(function(k){return k.indexOf('x:')===0;}).sort())
+    .concat(cats.other?['other']:[]).concat(cats.none?['none']:[]);
+  const b=function(k,l,n){return '<button type="button" class="nw-chip nw-chip-sm" aria-pressed="'+(cur===k)+'" data-cat="'+esc(k)+'" onclick="v121CatPick(\''+where+'\',this.dataset.cat)">'+esc(l)+'<span class="v121-cn">'+n+'</span></button>';};
+  return '<div class="v121-cats" role="toolbar" aria-label="Show calls by type">'+b('all','All',total)+keys.map(function(k){return b(k,v121CatL(k),cats[k]||0);}).join('')+'</div>';
+}
+function v121CatPick(where,k){
+  if(where==='tk'){V121C.tk=k||'all';apTkPaint();return;}
+  AP_FT.cx=AP_FT.cx||{folder:'',type:'',tag:''};AP_FT.cx.cat=k&&k!=='all'?k:'';
+  document.querySelectorAll('.ap-tphost').forEach(function(h){if(h.querySelector('.ap-calls'))apCallsRows(h);});
+  apCxFiltersRefresh();
+}
+
+/* ---------- Tasks: the calls in client folders, with their type and people ---------- */
+apTkHtml=function(){
+  const left=function(o){return apCxArr(o.tasks).filter(function(t){return !t.done;}).length;};
+  const when=function(o){return String(o.call_start||o.created_at||'');};
+  const all=Object.keys(AP_CX.out).map(function(k){return AP_CX.out[k];})
+    .filter(function(o){return o&&o.status==='done'&&apCxArr(o.tasks).length;})
+    .sort(function(a,b){const oa=left(a)>0,ob=left(b)>0;if(oa!==ob)return oa?-1:1;return when(b).localeCompare(when(a));}).slice(0,40);
+  const cats={};all.forEach(function(o){const k=v121Cat(v121Type(o.call_id));cats[k]=(cats[k]||0)+1;});
+  let F=V121C.tk||'all';if(F!=='all'&&!cats[F]&&V121_CC_MAIN.indexOf(F)<0)F=V121C.tk='all';
+  const outs=all.filter(function(o){return F==='all'||v121Cat(v121Type(o.call_id))===F;});
+  const open=outs.reduce(function(n,o){return n+left(o);},0);
+  const card=function(o){
+    const id=esc(String(o.call_id)),tasks=apCxArr(o.tasks),l=left(o),as=apCxObj(o.asana),m=apCm(o.call_id)||{};
+    return '<section class="ap-cx-card ap-tk-call" data-id="'+id+'"><div class="ap-cx-ch"><h4>'+esc(m.title||o.call_title||'Call')+' <small>'+l+' of '+tasks.length+' open</small></h4>'+
+        '<button class="rd-btn sm" onclick="apCxOpenCall(\''+id+'\')">Open call</button><button class="rd-btn sm" onclick="apCxAsana(\''+id+'\')">'+(as.at?'Send to Asana again':'Send to Asana')+'</button></div>'+
+      '<p class="ap-tk-meta">'+esc(o.call_start?apCxDay(o.call_start):'')+(as.at?' · <span class="ok">in Asana'+(as.project_name?' · '+esc(as.project_name):'')+'</span>':'')+'</p>'+
+      v121CallBar(o.call_id)+
+      '<ul class="ap-cx-tasks">'+tasks.map(function(x){
+        return '<li class="'+(x.done?'done':'')+'"><label><input type="checkbox" '+(x.done?'checked':'')+' onchange="apCxTask(\''+id+'\',\''+esc(x.id)+'\',this.checked,this)"><span>'+esc(x.text)+'</span></label>'+
+          '<small>'+esc([x.owner,x.due?'due '+apCxDay(x.due+'T12:00:00'):'',x.why].filter(Boolean).join(' · '))+'</small></li>';}).join('')+'</ul></section>';
+  };
+  let body='';
+  if(!all.length)body='<p class="ap-tk-empty">No post-call to-dos yet. They show up here once a call has its post-call actions, which happens on its own within the hour of a new recording, or from <a href="#" onclick="apGo(\'calls\');return false">Calls</a>.</p>';
+  else if(V121C.wait)body='<p class="ap-tk-empty">Loading your calls…</p>';
+  else if(!outs.length)body='<p class="ap-tk-empty">Nothing under '+esc(v121CatL(F))+' yet. <a href="#" onclick="v121CatPick(\'tk\',\'all\');return false">Show all</a></p>';
+  else{
+    const G={},order=[];
+    outs.forEach(function(o){const f=v121Folder(o.call_id);if(!G[f]){G[f]=[];order.push(f);}G[f].push(o);});
+    const newest=function(f){return G[f].map(when).sort().pop()||'';};
+    order.sort(function(a,b){return newest(b).localeCompare(newest(a));});
+    body=order.map(function(f){
+      const L=G[f],n=L.reduce(function(a,o){return a+left(o);},0),shut=!!V121C.shut[f];
+      return '<section class="v121-fd'+(shut?' is-shut':'')+'" data-f="'+esc(f)+'"><button type="button" class="v121-fdh" aria-expanded="'+(!shut)+'" onclick="v121FdTog(this)">'+nwIc('folder',16)+
+        '<b>'+esc(f)+'</b><small>'+L.length+' call'+(L.length===1?'':'s')+' · '+n+' open</small>'+nwIc(shut?'chevR':'chevD',16)+'</button><div class="v121-fdb">'+L.map(card).join('')+'</div></section>';
+    }).join('');
+  }
+  return '<div class="ap-tk" id="apTk"><div class="ap-tk-h"><div><span class="e9-k">From your calls</span><h2>Post-call to-dos</h2>'+
+      '<p>Next steps written after each recorded call, filed by client. Tick them off, set each call’s type, open the call, or send them to Asana.</p></div>'+
+      '<span class="ap-tk-n">'+open+' open</span></div>'+(all.length?v121CatBtns(cats,all.length,F,'tk'):'')+body+'</div>';
+};
+function v121FdTog(btn){
+  const s=btn.closest('.v121-fd');if(!s)return;const f=s.dataset.f,shut=!s.classList.contains('is-shut');
+  V121C.shut[f]=shut;s.classList.toggle('is-shut',shut);btn.setAttribute('aria-expanded',String(!shut));
+  const ic=btn.querySelector('.nw-i:last-child');if(ic)ic.outerHTML=nwIc(shut?'chevR':'chevD',16);
+}
+/* the open count follows the button picked */
+(function(){
+  const _t=apCxTask;
+  apCxTask=async function(){
+    const r=await _t.apply(this,arguments);
+    const n=document.querySelector('#apTk .ap-tk-n');
+    if(n){const sel=V121C.tk||'all';const open=Object.keys(AP_CX.out).reduce(function(a,k){const o=AP_CX.out[k];
+      if(!o||o.status!=='done'||(sel!=='all'&&v121Cat(v121Type(o.call_id))!==sel))return a;return a+apCxArr(o.tasks).filter(function(t){return !t.done;}).length;},0);n.textContent=open+' open';}
+    try{const fd=document.querySelectorAll('#apTk .v121-fd');fd.forEach(function(s){const L=[].slice.call(s.querySelectorAll('.ap-tk-call'));
+      const k=L.reduce(function(a,c){const o=apCo(c.dataset.id);return a+(o?apCxArr(o.tasks).filter(function(t){return !t.done;}).length:0);},0);
+      const sm=s.querySelector('.v121-fdh small');if(sm)sm.textContent=L.length+' call'+(L.length===1?'':'s')+' · '+k+' open';});}catch(e){}
+    return r;
+  };
+})();
+/* Tasks reads the calls from Fathom for the people on them; the to-dos wait a moment for it */
+(function(){
+  const _rt=renderTasks;
+  renderTasks=async function(){
+    if(!AP_FT.loaded&&!V121C.ftP){
+      V121C.wait=true;
+      const ld=apFtLoad(false).catch(function(){});
+      V121C.ftP=ld;
+      ld.then(function(){V121C.ftP=null;V121C.wait=false;if(typeof state!=='undefined'&&state.view==='tasks')apTkPaint();});
+      setTimeout(function(){if(V121C.wait){V121C.wait=false;if(typeof state!=='undefined'&&state.view==='tasks')apTkPaint();}},4000);
+    }
+    try{if(typeof apAiSettingsLoad==='function'&&(typeof AP_AISET==='undefined'||!AP_AISET))apAiSettingsLoad().then(function(){if(document.getElementById('apTk'))apTkPaint();}).catch(function(){});}catch(e){}
+    return _rt.apply(this,arguments);
+  };
+  /* a Catalyst lead's company names the folder once Engine 1 has loaded */
+  if(typeof e1Data==='function'){
+    const _e=e1Data;
+    e1Data=async function(){const r=await _e.apply(this,arguments);try{if(document.getElementById('apTk'))apTkPaint();}catch(e){}return r;};
+  }
+})();
+
+/* ---------- Calls: the same buttons along the top, folders by client, the type on each call ---------- */
+apCxFolders=function(){
+  const s={};(AP_FT.items||[]).forEach(function(c){s[v121Folder(c.id)]=1;});
+  Object.keys(AP_CX.meta).forEach(function(k){const f=AP_CX.meta[k].folder;if(f)s[f]=1;});
+  return Object.keys(s).sort(function(a,b){return a===V121_NONE?1:b===V121_NONE?-1:a.localeCompare(b);});
+};
+apCxFilterHtml=function(){
+  const F=AP_FT.cx||{},fo=apCxFolders(),tg=apCxAllTags(),any=F.folder||F.type||F.tag||F.cat;
+  const sel=function(k,label,opts){return '<select data-nofill="1" aria-label="'+label+'" onchange="apCxFilter(\''+k+'\',this.value,this)"><option value="">'+label+'</option>'+
+    opts.map(function(o){return '<option value="'+esc(o[0])+'"'+(F[k]===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select>';};
+  return sel('folder','All folders',fo.map(function(f){return [f,f];}))+
+    sel('tag','All tags',tg.map(function(t){return [t,'#'+t];}))+
+    (any?'<button type="button" class="ap-cx-clear" onclick="apCxFilterClear(this)">Clear</button>':'');
+};
+apCallsFiltered=function(f){
+  const q=(AP_FT.q||'').trim().toLowerCase(),F=AP_FT.cx||{};
+  return AP_FT.items.filter(function(c){
+    if(f==='ext'&&!c.external)return false;if(f==='int'&&c.external)return false;
+    const m=apCm(c.id)||{};
+    if(F.folder&&v121Folder(c.id)!==F.folder)return false;
+    if(F.tag&&apCxArr(m.tags).indexOf(F.tag)<0)return false;
+    if(F.type&&apCmType(c)!==F.type)return false;
+    if(F.cat&&v121Cat(apCmType(c))!==F.cat)return false;
+    if(!q)return true;
+    const t=apCmType(c);
+    const hay=[c.title,c._ftTitle,c.meeting_title,c.recorded_by&&c.recorded_by.name,m.folder,m.client,v121Folder(c.id),m.description,apCxArr(m.tags).join(' '),t?v121MtL(t):'']
+      .concat(apCmGuests(c).map(function(i){return i.name+' '+i.email;})).join(' ').toLowerCase();
+    return hay.indexOf(q)>=0;
+  });
+};
+/* the buttons count the calls in the tab that is open */
+function v121CallsCats(){
+  document.querySelectorAll('.ap-tphost').forEach(function(h){
+    const calls=h.querySelector('.ap-calls');if(!calls)return;
+    const f=h.dataset.f||'all',items=(AP_FT.items||[]).filter(function(c){return f==='ext'?c.external:f==='int'?!c.external:true;});
+    const cats={};items.forEach(function(c){const k=v121Cat(apCmType(c));cats[k]=(cats[k]||0)+1;});
+    let w=h.querySelector('.v121-cats-w');if(!w){w=document.createElement('div');w.className='v121-cats-w';calls.parentNode.insertBefore(w,calls);}
+    w.innerHTML=v121CatBtns(cats,items.length,(AP_FT.cx&&AP_FT.cx.cat)||'all','calls');
+  });
+}
+(function(){
+  const _rows=apCallsRows;
+  apCallsRows=function(h){
+    const r=_rows.apply(this,arguments);
+    try{
+      const F=AP_FT.cx||{},box=h.querySelector('.rows');
+      if(box&&!h.querySelector('.ap-call-row')&&F.cat&&!(F.folder||F.type||F.tag)&&AP_FT.items.length)
+        box.innerHTML='<div class="empty-l">Nothing under '+esc(v121CatL(F.cat))+' here yet.<br><button type="button" class="ap-cx-clear" onclick="v121CatPick(\'calls\',\'all\')">Show all</button></div>';
+      v121CallsCats();
+    }catch(e){console.warn('v121 calls',e.message);}
+    return r;
+  };
+  const _fr=apCxFiltersRefresh;
+  apCxFiltersRefresh=function(){const r=_fr.apply(this,arguments);try{v121CallsCats();}catch(e){}return r;};
+  const _fc=apCxFilterClear;
+  apCxFilterClear=function(el){AP_FT.cx={folder:'',type:'',tag:'',cat:''};return _fc.apply(this,arguments);};
+  /* the call's details: its type and people first, and the folder it is filed in */
+  const _mh=apCxMetaHtml;
+  apCxMetaHtml=function(c){
+    let h=_mh.apply(this,arguments);
+    try{
+      h=h.replace(/<span class="ap-cx-chip mt-[a-z]+( guess)?" title="[^"]*">[^<]*<\/span>/,'').replace('<span class="ap-cx-none">No meeting type, folder or tags yet.</span>','');
+      h=v121CallBar(c.id)+'<div class="v121-fdl">'+nwIc('folder',14)+'<span>Filed under <b>'+esc(v121Folder(c.id))+'</b></span></div>'+h;
+    }catch(e){}
+    return h;
+  };
+})();
+/* a call type chip: the team's own types too */
+apCxTypeChip=function(c,short){
+  const t=apCmType(c);if(!t)return '';
+  const g=apCmTypeGuessed(c),M=AP_MT[t];
+  return '<span class="ap-cx-chip mt-'+(M?M.c:'cu')+(g?' guess':'')+'" title="'+(g?'Picked by the AI from the call. Pick a call type to set it.':'Call type')+'">'+esc(M?(short?M.l.split(' /')[0]:M.l):t)+'</span>';
+};
+/* Call details: the call type, the client folder and the people on the call */
+apCxEdit=function(id){
+  id=String(id);let c=apFtCall(id);
+  /* without Fathom (not connected, or Tasks opened first) the call is what its post-call actions say */
+  if(!c){const o=apCo(id);if(!o)return;c={id:id,title:o.call_title||'Call',_ftTitle:o.call_title||'Call',start:o.call_start||null,invitees:[]};}
+  const m=apCm(id)||{},t=m.meeting_type||'',g=apCmGuests(c),tags=apCxArr(m.tags),ide=esc(id),auto=v121Folder(id);
+  apModal('apCxEditM','<h3 class="ap-m89h">Call details</h3><p class="help">Saved for the whole team in the dashboard. Fathom is not changed. These details feed the post-call actions, the HubSpot sync and Catalyst.</p>'+
+    '<label class="f"><span>Title</span><input id="cxTitle" maxlength="200" value="'+esc(m.title||'')+'" placeholder="'+esc(c._ftTitle||c.title)+'"></label>'+
+    '<div class="ap-row2"><label class="f"><span>Call type</span><select data-nofill="1" id="cxType">'+v121TypeOpts(t,'Not set (the AI picks one)',false)+'</select></label>'+
+      '<label class="f"><span>Client company</span><input id="cxClient" maxlength="120" value="'+esc(m.client||'')+'" placeholder="e.g. Northwind Advisors"></label></div>'+
+    '<label class="f"><span>Client folder</span><input id="cxFolder" list="cxFolders" maxlength="80" value="'+esc(m.folder||'')+'" placeholder="'+esc('Filed under '+auto)+'">'+
+      '<datalist id="cxFolders">'+apCxFolders().filter(function(f){return f!==V121_NONE;}).map(function(f){return '<option value="'+esc(f)+'">';}).join('')+'</datalist></label>'+
+    '<p class="ap-cx-hint">A call is filed under its folder, else its client company, else the company of the people on it. A call with only the AI Paragon team goes in '+esc(V121_IN)+'.</p>'+
+    '<span class="l">People on the call</span><div id="cxGuests">'+(g.length?g.map(apCxGuestRow).join(''):'')+'</div>'+
+    '<button type="button" class="rd-btn sm" onclick="document.getElementById(\'cxGuests\').insertAdjacentHTML(\'beforeend\',apCxGuestRow({external:true}))">+ Add a person</button>'+
+    '<label class="f"><span>Tags</span><input id="cxTags" maxlength="300" value="'+esc(tags.join(', '))+'" placeholder="comma separated, e.g. onboarding, renewal"></label>'+
+    '<div class="ap-cx-sugg">'+AP_TAG_SUGGEST.concat(apCxAllTags()).filter(function(x,i,a){return a.indexOf(x)===i;}).slice(0,14).map(function(s){return '<button type="button" onclick="apCxAddTag(\''+esc(s)+'\')">#'+esc(s)+'</button>';}).join('')+'</div>'+
+    '<label class="f"><span>Description</span><textarea id="cxDesc" rows="3" maxlength="1500" placeholder="What the call was about, anything to remember">'+esc(m.description||'')+'</textarea></label>'+
+    '<p class="ap-cx-hint">The call type decides what gets written after the call: a demo recap, sales call notes, prequal notes that lead to the Assessment, a discovery recap that leads to the Growth Plan, a proposal follow-up, a 30-day onboarding plan, a client status update, or notes for an internal call.</p>'+
+    '<div class="ap-cf-err" id="cxErr"></div>'+
+    '<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'apCxEditM\')">Cancel</button><button class="rd-btn pri" onclick="apCxEditSave(\''+ide+'\',this)">Save details</button></div>',680);
+};
 </script>
 
 <script>
