@@ -48759,6 +48759,9 @@ document.addEventListener('input',function(e){if(e.target&&e.target.id==='v113Fu
         const line=v113MgTargetLine(S);
         const det=v113Answers((V113_MGQ[pk]||[]).concat([['objective','Campaign goal','seg'],['cta','Button text','text']]),S);
         b.setup=Object.assign({},b.setup||{},v113MgSetup('ad'),{objective:S.objective||null,cta:S.cta||null,details:det||null,funnel_note:V113.mg.funNote||null,booking:pk==='direct_to_call'?V113.mg.cal:null});
+        /* v123: the plan's steps in order, with the team's notes and how many ads, and the call length in minutes */
+        if(typeof v121Out==='function'&&typeof V121_FUN!=='undefined'&&V121_FUN[pk])b.plan=v121Out('mg');
+        const mins=parseInt(S.calllen,10);if(pk==='direct_to_call'&&mins>=10&&mins<=90)b.call_minutes=mins;
         /* the agent reads the persona and the request: a buyer from the titles when no persona is picked, and the details in the request while there is room */
         const D=b.setup.detail||(b.setup.detail={});
         if(!D.persona&&line)D.persona={name:'Target buyer',role:apArr(b.setup.targeting.titles).join(', '),firm:S.market||'',size:apArr(S.sizes).length?apArr(S.sizes).join(', ')+' people':'',pain:'',objection:'',buying_trigger:''};
@@ -50722,9 +50725,6 @@ function v120HideList(){const s=document.getElementById('apE1List');if(s)s.class
 .v121-sta .nw-btn[disabled]{opacity:.35;cursor:default}
 .v121-del{color:var(--nw-bad)}
 .v121-add{justify-self:start}
-.v121-lock{display:flex;gap:8px;align-items:flex-start;margin:0;color:var(--nw-ink-2);line-height:1.45}
-.v121-lock>.nw-i{flex:none;margin-top:2px}
-.v121-lock .nw-link{display:inline;font-size:inherit}
 .v121-also,.v121-none{margin:0}
 .v121-pf{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .v121-pf:empty{display:none}
@@ -50770,22 +50770,22 @@ function v120HideList(){const s=document.getElementById('apE1List');if(s)s.class
    it needs (moved here from Details). Steps can be added, removed and moved wherever the agent
    follows them: a piece's parts go to Content from Source as its template sections, a funnel's steps
    go to the Funnel Builder as its plan. Book a call and low-ticket are written by the Low-Ticket
-   Agent, whose four parts are set: their notes ride in the request, and "make it a landing page
-   campaign" moves the steps to the Funnel Builder. Edits last while you work; Save as our default
-   keeps a plan for the team (ai_settings build_plans).
+   Agent, which takes their plan the same way since v123 (it always writes their ads and main page).
+   Edits last while you work; Save as our default keeps a plan for the team (ai_settings build_plans).
    =================================================================== */
 const V121={cur:{ct:{},mg:{}},open:{ct:-1,mg:-1},key:{ct:'',mg:''},last:{ct:'',mg:''},raw:false,setAsk:0};
 const V121_KINDS=[['page','Page'],['email','Email'],['emails','Emails'],['post','Post'],['survey','Survey'],['booking','Booking page'],['outline','Outline'],['other','Something else']];
 /* each campaign's steps: [key, kind, name, what it makes, the details it asks for]. The keys are the
-   Funnel Builder's own, so Landing pages still find a funnel's main page. @cal is the booking link. */
+   Funnel Builder's own, so Landing pages still find a funnel's main page. @cal is the booking link.
+   v123: book a call and low-ticket change like the rest; the Low-Ticket Agent always writes the two in V123_KEEP. */
 const V121_FUN={
-  direct_to_call:{fixed:true,steps:[
-    ['ads','ads','Ads','Three ads with images. Their one job: get the right people to book.',[]],
+  direct_to_call:{steps:[
+    ['ads','ads','Ads','Ads with images. Their one job: get the right people to book.',[]],
     ['survey','survey','Qualification survey','Four questions: revenue range, decision maker, what they have tried, what they want.',['who']],
-    ['landing','page','Landing page','A short bridge page: one promise, the survey and the booking step.',[]],
+    ['landing','page','Landing page','A short bridge page: one promise that leads to the next step.',[]],
     ['booking','booking','Booking page','They pick a time, with what to prepare and a reminder so they show up.',['calllen','@cal']]]},
-  low_ticket:{fixed:true,steps:[
-    ['ads','ads','Ads','Three ads with images for the small offer.',[]],
+  low_ticket:{steps:[
+    ['ads','ads','Ads','Ads with images for the small offer.',[]],
     ['offer_page','page','Landing page for the paid offer','The offer, the price and the checkout.',['price','checkout']],
     ['survey','survey','Qualification survey','Sorts buyers for the call the offer leads to.',[]],
     ['booking','booking','Onboarding call booking','Books the call that follows the purchase.',['upsell']]]},
@@ -50813,6 +50813,10 @@ const V121_FUN={
     ['landing_page','page','Landing page','Headline, sections, proof, questions and answers, and the button.',['page']],
     ['followup_email','email','Follow-up email','After they act on the page.',[]]]}
 };
+/* v123: the steps the Low-Ticket Agent always writes for book a call and low-ticket: the ads and the main page */
+const V123_KEEP={direct_to_call:['ads','landing'],low_ticket:['ads','offer_page']};
+function v123Lt(key){return key==='funnel:direct_to_call'||key==='funnel:low_ticket';}
+function v123Kept(key,sk){const K=v123Lt(key)?V123_KEEP[key.slice(7)]:null;return !!K&&K.indexOf(sk)>=0;}
 function v121Fun(page){return page==='mg'&&nwMgKind()==='ad';}
 function v121Key(page){
   if(v121Fun(page))return 'funnel:'+(V97.mg.pk||'direct_to_call');
@@ -50848,11 +50852,6 @@ function v121Default(page,key){
   const b=v121Builtin(page,key);
   if(key.indexOf(':tpl:')>0)return b;
   const t=v121Team(key);if(!t)return b;
-  if(b.fixed){
-    /* the Low-Ticket Agent's parts are set, so a saved default keeps only their notes */
-    const by={};t.steps.forEach(function(s){if(s&&s.key)by[s.key]=s;});
-    return {fixed:true,tpl:null,team:true,steps:b.steps.map(function(s){const x=by[s.key];return x&&x.note?Object.assign({},s,{note:String(x.note).slice(0,600)}):s;})};
-  }
   return {fixed:false,tpl:null,team:true,steps:t.steps.map(v121Step)};
 }
 function v121Plan(page){
@@ -50887,7 +50886,7 @@ function v121Ans(q,v){
 /* one line under a step's name: what is set, else what to add, else what it makes */
 function v121Sum(P,s,S){
   if(P.key.indexOf('funnel:')!==0)return {t:s.note?nwClip(s.note,80):'Nothing set for this part yet',todo:false};
-  if(s.kind==='ads')return {t:(P.fixed?3:(s.n||3))+' ads'+(P.fixed?' with images':'')+(s.note?' · '+nwClip(s.note,40):''),todo:false};
+  if(s.kind==='ads')return {t:(s.n||3)+' ads'+(v123Lt(P.key)?' with images':'')+(s.note?' · '+nwClip(s.note,40):''),todo:false};   /* v123: the Low-Ticket Agent makes an image for each */
   const pk=P.key.slice(7),qs=v121Q(pk,s),cal=v121CalIn(pk,P,s,S),bk=V113.mg.cal;
   const got=qs.map(function(q){return v121Ans(q,S&&S[q[0]]);}).filter(Boolean);
   if(cal&&bk&&bk.url)got.push(bk.name&&bk.name!=='Booking link'?bk.name:'Booking link set');
@@ -50922,7 +50921,8 @@ function v121StepHtml(page,P,s,i,S){
     const n=P.steps.length;
     b+='<div class="v121-sta"><button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v121Move(\''+page+'\','+i+',-1)"'+(i?'':' disabled')+' aria-label="Move up">'+nwIc('up',15)+'</button>'+
       '<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost" onclick="v121Move(\''+page+'\','+i+',1)"'+(i<n-1?'':' disabled')+' aria-label="Move down">'+nwIc('down',15)+'</button><span class="nw-grow"></span>'+
-      '<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost v121-del" onclick="v121Del(\''+page+'\','+i+')">'+nwIc('trash',15)+'Remove</button></div>';
+      (v123Kept(P.key,s.key)?'<span class="v123-keep">'+nwIc('lock',14)+'Always included</span>'   /* v123: the Low-Ticket Agent always writes it */
+        :'<button type="button" class="nw-btn nw-btn-sm nw-btn-ghost v121-del" onclick="v121Del(\''+page+'\','+i+')">'+nwIc('trash',15)+'Remove</button>')+'</div>';
   }
   return '<li class="v121-st is-open" data-i="'+i+'">'+head+'<div class="v121-stb">'+b+'</div></li>';
 }
@@ -50947,8 +50947,7 @@ function v121Html(page){
     const left=(V113_MGQ[pk]||[]).filter(function(q){return v121Moved(pk).indexOf(q[0])>=0&&!have[q[0]];});
     if(left.length)orphan='<div class="v121-more"><span class="nw-lbl">Other details</span><div class="v121-q">'+v113QHtml('mg','ad',left,S)+'</div></div>';
   }
-  const add=P.fixed?'<p class="v121-lock nw-small">'+nwIc('lock',14)+'<span>The Low-Ticket Agent always builds these four, with the ad images. To add, drop or move steps, <button type="button" class="nw-link nw-small" onclick="v121ToLanding()">make it a landing page campaign</button>.</span></p>'
-    :(P.steps.length<12?'<button type="button" class="nw-link nw-small v121-add" onclick="v121Add(\''+page+'\')">'+nwIc('plus',14)+(fun?'Add a step':'Add a part')+'</button>':'');
+  const add=(P.steps.length<12?'<button type="button" class="nw-link nw-small v121-add" onclick="v121Add(\''+page+'\')">'+nwIc('plus',14)+(fun?'Add a step':'Add a part')+'</button>':'');
   return '<div class="v121-ph">'+v121HeadHtml(page)+'</div><p class="v121-sub nw-small">'+sub+'</p>'+
     (P.steps.length?'<ol class="v121-steps" aria-label="The plan">'+P.steps.map(function(s,i){return v121StepHtml(page,P,s,i,S);}).join('')+'</ol>'
       :'<p class="v121-none nw-small nw-faint">'+(fun?'No steps yet. Add one to start.':'No set parts. The writer picks a shape from your answers.')+'</p>')+
@@ -51016,6 +51015,7 @@ function v121Move(page,i,d){
 }
 function v121Del(page,i){
   const P=v121Edit(page);if(P.fixed||!P.steps[i])return;
+  if(v123Kept(v121Key(page),P.steps[i].key)){if(typeof nwToast==='function')nwToast('The Low-Ticket Agent always writes this step, so it stays');return;}   /* v123 */
   if(v121Fun(page)&&!P.steps.some(function(s,k){return k!==i&&s.kind!=='ads';})){if(typeof nwToast==='function')nwToast('A funnel needs at least one step besides the ads');return;}
   P.steps.splice(i,1);V121.open[page]=-1;v121Paint(page,true);
 }
@@ -51044,25 +51044,6 @@ async function v121SaveDef(page,btn){
   }catch(e){if(typeof nwToast==='function')nwToast('Could not save the plan: '+(e.message||e));}
   v121Paint(page,true);
 }
-/* book a call or low-ticket with steps of your own: the same campaign as a landing page, which the Funnel Builder writes */
-function v121ToLanding(){
-  if(!v121Fun('mg'))return;
-  const from=V97.mg.pk||'direct_to_call';if(!V121_FUN[from]||!V121_FUN[from].fixed)return;
-  const P=v121Plan('mg'),S0=v113MgA('ad');
-  const extra={survey:S0.who?'Who should book: '+S0.who:'',booking:[S0.calllen&&from==='direct_to_call'?'Call length: '+S0.calllen:'',S0.upsell?'It leads to: '+S0.upsell:''].filter(Boolean).join('. '),
-    offer_page:[S0.price?'Price: '+S0.price:'',S0.checkout?'Checkout link: '+S0.checkout:''].filter(Boolean).join('. ')};
-  const map={ads:['ads','ads'],survey:['survey','survey'],landing:['landing_page','page'],offer_page:['landing_page','page'],booking:['booking_page','booking']};
-  const steps=P.steps.map(function(s,i){const m=map[s.key]||[s.key,s.kind];
-    return v121Step({key:m[0],kind:m[1],name:s.name,does:s.does,note:[s.note,extra[s.key]].filter(Boolean).join('. '),q:m[0]==='landing_page'?['page']:[],n:m[1]==='ads'?3:undefined},i);});
-  nwMgPk('landing');
-  if(V97.mg.pk!=='landing')return;
-  const S=v113MgA('ad');S.goal=from==='low_ticket'?'Buy':'Book a call';
-  V121.cur.mg['funnel:landing']={fixed:false,tpl:null,team:false,steps:steps};V121.open.mg=-1;
-  try{v113MgQPaint();}catch(e){}
-  v121Paint('mg',true);
-  if(typeof nwToast==='function')nwToast('Now a landing page campaign set to '+(from==='low_ticket'?'buy':'book a call')+'. Change the steps as you like.');
-}
-
 /* ---------- what the runs get ---------- */
 function v121Out(page){
   return v121Plan(page).steps.slice(0,12).map(function(s){const o={key:s.key,kind:s.kind,title:s.name,does:s.does||'',note:s.note||''};if(s.kind==='ads')o.n=s.n||3;return o;});
@@ -51091,22 +51072,6 @@ function v121Out(page){
       }
     }catch(e){console.warn('v121 plan',e);}
     return _c.apply(this,arguments);
-  };
-})();
-/* book a call and low-ticket: each part's notes ride in the request the Low-Ticket Agent reads */
-function v121LtNote(){
-  if(!v121Fun('mg'))return '';
-  const P=v121Plan('mg');if(!P.fixed)return '';
-  return P.steps.filter(function(s){return s.note;}).map(function(s){return s.name+': '+v104Tidy(s.note);}).join('. ').slice(0,700);
-}
-(function(){
-  const _s=v97MgStartAds;
-  v97MgStartAds=async function(){
-    const add=v121LtNote();
-    if(!add)return _s.apply(this,arguments);
-    const was=V113.mg.funNote||'';
-    V113.mg.funNote=[was,add].filter(Boolean).join(' ');
-    try{return await _s.apply(this,arguments);}finally{V113.mg.funNote=was;}
   };
 })();
 /* the event kit's pieces are its parts now, so "What to make" leaves the questions */
@@ -51453,6 +51418,134 @@ apCxEdit=function(id){
     '<div class="ap-cf-err" id="cxErr"></div>'+
     '<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'apCxEditM\')">Cancel</button><button class="rd-btn pri" onclick="apCxEditSave(\''+ide+'\',this)">Save details</button></div>',680);
 };
+</script>
+
+<style id="v123css">
+/* ===================== v123 · book a call and low-ticket steps ===================== */
+.v123-keep{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--nw-ink-3)}
+.ap60 .v106-fc.v123-hi{border-color:var(--navy);box-shadow:0 0 0 3px rgba(201,162,39,.35)}
+.ap60 .v106-fb .v123-st{border:0;padding:4px 2px;background:none}
+</style>
+<script id="v123js">
+/* ===================================================================
+   v123. Book a call and low-ticket: their steps change like any funnel's. A step can be renamed, told
+   what to do and filled in, steps can be added, removed and moved, and the ads step says how many ads.
+   The Low-Ticket Agent always writes the ads and the main page (the landing page, or the page for the
+   paid offer), so those two stay (V123_KEEP, in v121js). The plan goes to the agent in its request
+   (plan and call_minutes, added where the request gets its setup, in v113js) and it writes the steps in
+   that order, the added ones too (agent_outputs data.plan and data.steps; funnel_packages steps and
+   setup). A campaign made from a plan shows its steps on its page in that order, with their names, and
+   an added step opens in the whole funnel. A campaign made before keeps its four steps.
+   =================================================================== */
+/* the plan's keys and the campaign page's own four steps */
+const V123_STUDIO={ads:'ad',survey:'survey',landing:'landing',offer_page:'landing',booking:'booking'};
+const V123_PV={survey:'survey',landing:'landing page',booking:'booking page'};
+const V123={focus:'',ask:{}};
+/* the campaign on screen and the plan it was built from */
+function v123Camp(run){
+  const L=typeof nwLT==='function'?nwLT():null,o=L&&L.outs.find(function(x){return x.run_id===run;});
+  const d=o&&o.d||{},plan=apArr(d.plan).filter(function(s){return s&&s.key;});
+  if(!plan.length)return null;
+  return {plan:plan,mode:V121_FUN[d.funnel_mode]?d.funnel_mode:'direct_to_call',min:parseInt(d.call_minutes,10)||20,
+    steps:apArr(d.steps).filter(function(s){return s&&s.key&&s.content&&typeof s.content==='object';})};
+}
+/* the campaign list may not have a campaign that just landed: load it once, then draw the page again */
+function v123Load(run){
+  if(!run||V123.ask[run]||typeof v97LtLoad!=='function')return;
+  V123.ask[run]=1;
+  v97LtLoad(true).then(function(){if(state.funnelRun===run&&v123Camp(run))renderFunnel();}).catch(function(){});
+}
+/* an added step's content, as the funnel's cards show it, under its own heading */
+function v123Body(x){return v113StepHtml(x).replace(/^<article class="v113-card v113-st"><b class="v113-card-h">[\s\S]*?<\/b>/,'<article class="v113-card v113-st v123-st">');}
+/* the step bar: the plan's steps in its order, with their names; the page's own four keep their views */
+function v123Bar(){
+  if(typeof state==='undefined')return;
+  const blk=v97$('adImgBlock'),bar=blk&&blk.querySelector('.fsteps');if(!bar)return;
+  const run=state.funnelRun,L=typeof nwLT==='function'?nwLT():null;
+  if(!L||!L.outs.some(function(x){return x.run_id===run;})){v123Load(run);return;}
+  const C=v123Camp(run);if(!C)return;
+  const by={};
+  [].slice.call(bar.querySelectorAll(':scope > button')).forEach(function(b){const m=/state\.funnelStep='(\w+)'/.exec(b.getAttribute('onclick')||'');if(m)by[m[1]]=b;});
+  if(!by.ad)return;
+  const named={};V121_FUN[C.mode].steps.forEach(function(s){named[s[0]]=s[2];});
+  [].slice.call(bar.querySelectorAll(':scope > .arr:not(.v106-sep), :scope > [data-v123]')).forEach(function(x){x.remove();});
+  const end=bar.querySelector(':scope > .v106-sep')||bar.querySelector(':scope > [data-v106]');
+  const all=typeof V106!=='undefined'&&!!V106.all,used={};
+  let n=0;
+  C.plan.forEach(function(s){
+    const k=V123_STUDIO[s.key];let b;
+    if(k&&by[k]&&!used[k]){
+      /* one of the page's own steps: its name only when the team changed it */
+      b=by[k];used[k]=1;b.style.display='';
+      const was=(b.textContent||'').replace(/^\d+/,'').trim(),cnt=/ \(\d+\)$/.exec(was);
+      b.innerHTML='<span class="n"></span>'+esc(s.title&&s.title!==named[s.key]?s.title+(cnt?cnt[0]:''):was);
+    }else{
+      b=document.createElement('button');b.type='button';b.dataset.v123=s.key;
+      b.innerHTML='<span class="n"></span>'+esc(s.title||'Step');
+      b.addEventListener('click',function(){v123Go(s.key);});
+      if(all&&V123.focus===s.key)b.classList.add('on');
+    }
+    b.querySelector('.n').textContent=++n;
+    if(n>1){const a=document.createElement('span');a.className='arr';a.textContent='→';bar.insertBefore(a,end);}
+    bar.insertBefore(b,end);
+  });
+  Object.keys(by).forEach(function(k){if(!used[k])by[k].style.display='none';});
+  const wb=bar.querySelector(':scope > [data-v106]');if(wb&&bar.querySelector(':scope > [data-v123].on'))wb.classList.remove('on');
+  /* the step on screen is not in this campaign (a workspace saved on another one): back to the ads */
+  const cur=state.funnelStep||'ad';
+  if(!all&&cur!=='ad'&&by[cur]&&!used[cur])setTimeout(function(){v106Step('ad');},0);
+  if(C.min!==20)blk.querySelectorAll('.fl-title').forEach(function(t){t.textContent=t.textContent.replace(/\b20-minute\b/,C.min+'-minute');});
+}
+/* an added step opens in the whole funnel, picked out */
+function v123Go(key){V123.focus=String(key||'');v106Step('all');}
+document.addEventListener('click',function(e){const b=e.target.closest&&e.target.closest('#adImgBlock .fsteps button');if(b&&!b.dataset.v123)V123.focus='';},true);
+/* the whole funnel: the plan's steps in its order, the added ones with what the agent wrote */
+(function(){
+  if(typeof v106AllPaint!=='function')return;
+  const _a=v106AllPaint;
+  v106AllPaint=function(blk){
+    const C=typeof state!=='undefined'?v123Camp(state.funnelRun):null;
+    if(!C)return _a.apply(this,arguments);
+    const canvas=blk.querySelector('.studio-canvas');if(!canvas||canvas.dataset.v106==='all')return;
+    const cards=[].slice.call(canvas.querySelectorAll(':scope > .vcard'));
+    const nc=cards.length,i=Math.min(V106.sel||0,Math.max(nc-1,0)),pk=v106Pkg();
+    const pick=nc>1?'<div class="v106-vp" role="radiogroup" aria-label="Which ad">'+cards.map(function(c,k){const b=c.querySelector('.v-head b');const l=b?b.textContent.replace(/^Variant\s*/,''):String.fromCharCode(65+k);
+      return '<button type="button" role="radio" aria-checked="'+(k===i)+'" class="'+(k===i?'on':'')+'" onclick="V106.sel='+k+';renderFunnel()">'+esc(l)+'</button>';}).join('')+'</div>':'';
+    const none=function(t){return '<p class="v106-none">No '+esc(t)+' stored for this campaign.</p>';};
+    const col=function(n,key,t,inner,step,extra){return '<section class="v106-fc" data-k="'+esc(key)+'"><div class="v106-fh"><span class="n">'+n+'</span><b>'+esc(t)+'</b>'+(extra||'')+
+      (step?'<button type="button" class="v97-link" onclick="v106Step(\''+step+'\')">Open</button>':'')+'</div><div class="v106-fb">'+inner+'</div></section>';};
+    const used={};
+    const html='<div class="v106-flow">'+C.plan.map(function(s,n){
+      const k=V123_STUDIO[s.key];
+      if(k&&!used[k]){used[k]=1;
+        if(k==='ad')return col(n+1,s.key,s.title||'Ads',v106AllAd(cards[i]),'ad',pick);
+        return col(n+1,s.key,s.title||V123_PV[k],(pk&&funnelAssetPreview(V123_PV[k]))||none(V123_PV[k]),k);}
+      const x=C.steps.find(function(y){return y.key===s.key;});
+      return col(n+1,s.key,s.title||'Step',x?v123Body(x):none(String(s.title||'step').toLowerCase()));
+    }).join('')+'</div>';
+    canvas.dataset.v106='all';canvas.removeAttribute('style');canvas.classList.add('v106-allc');canvas.innerHTML=html;
+    ['.ap-fbar','.ap-vhint'].forEach(function(s){const e=blk.querySelector(s);if(e)e.style.display='none';});
+    const f=V123.focus&&canvas.querySelector('.v106-fc[data-k="'+(window.CSS&&CSS.escape?CSS.escape(V123.focus):V123.focus)+'"]');
+    if(f){f.classList.add('v123-hi');try{f.scrollIntoView({block:'nearest'});}catch(e){}}
+  };
+})();
+/* the booking page's slot length: the call length the campaign was made with (the booking link's when it has one, set above in v113js) */
+(function(){
+  if(typeof funnelAssetPreview!=='function')return;
+  const _a=funnelAssetPreview;
+  funnelAssetPreview=function(title){
+    let h=_a.apply(this,arguments);
+    try{
+      if(String(title)==='booking page'&&h&&typeof state!=='undefined'){const C=v123Camp(state.funnelRun);if(C&&C.min!==20)h=h.replace(/Pick a slot · 20 min/,'Pick a slot · '+C.min+' min');}
+    }catch(e){}
+    return h;
+  };
+})();
+(function(){
+  const _f=window.renderFunnel;if(typeof _f!=='function')return;
+  window.renderFunnel=async function(){const r=await _f.apply(this,arguments);setTimeout(function(){try{v123Bar();}catch(e){console.warn('v123',e&&e.message);}},0);return r;};
+  try{renderFunnel=window.renderFunnel;}catch(e){}
+})();
 </script>
 
 <script>
