@@ -40,6 +40,8 @@ function rest(db) {
       return { status: 401, body: { code: 'PGRST303', details: null, hint: null, message: 'JWT expired' } };
     }
     if (path.startsWith('/rest/v1/np_demo_audit_log') && method === 'POST') {
+      // like Supabase: only a signed-in user may write (the public key alone is refused)
+      if (!(auth === 'Bearer qa-access-token' || Object.values(db.keys).some((k) => k.t && auth === 'Bearer ' + k.t))) { db.refused.push(path); return { status: 401, body: { code: '42501', message: 'permission denied for table np_demo_audit_log' } }; }
       const rows = [].concat(JSON.parse(body || '[]'));
       rows.forEach((r) => db.saved.push(Object.assign({ auth }, r)));
       return { status: 201 };
@@ -93,6 +95,10 @@ function rest(db) {
     await page.evaluate(() => { sbKeepFresh(); sbKeepFresh(); sbKeepFresh(); });
     await page.waitForTimeout(400);
     check('it stops trying to renew a dead sign-in (one try, not one a minute forever)', nRefresh(calls) - before === 1, String(nRefresh(calls) - before));
+    const c0 = calls.length;
+    await page.evaluate(() => logAudit('Saved while signed out', 'qa'));
+    await page.waitForTimeout(400);
+    check('while signed out nothing goes to the database, not even with the public key (it waits)', !calls.slice(c0).some((c) => c.includes('/rest/v1/')) && (await login(page)).held === 2, JSON.stringify(calls.slice(c0)));
     const fails = await page.evaluate(() => SB_FAILS.map((f) => f.t + ' ' + f.detail));
     check('a refused read or save is not listed as a raw database error', !fails.some((f) => /JWT|PGRST|401/.test(f)), JSON.stringify(fails));
     // sign back in, on the same page
@@ -105,6 +111,7 @@ function rest(db) {
     const sent = db.saved.filter((r) => /before the sign-in ran out/.test(r.act || ''));
     check('the change that waited is saved after signing back in, with the new sign-in', sent.length === 1 && sent[0].auth === 'Bearer qa-access-token', JSON.stringify(sent));
     check('nothing is left waiting', L.held === 0, String(L.held));
+    check('...the change made while signed out is saved too', db.saved.some((r) => r.act === 'Saved while signed out' && r.auth === 'Bearer qa-access-token'), JSON.stringify(db.saved.map((r) => r.act)));
     const tst = await page.evaluate(() => (el('toast') || {}).textContent || '');
     check('it says the change that was waiting has been saved', /The change that was waiting has been saved\./.test(tst) || db.saved.length > 0, tst);
     await ctx.close();
