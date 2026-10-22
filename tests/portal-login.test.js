@@ -53,7 +53,7 @@ function check(label, ok, detail) {
     check('sign-in: the email box suggests you@example.org', s.ph[0] === 'you@example.org', s.ph[0]);
     check('sign-in: the word agency is nowhere on the sign-in page', await page.evaluate(() => !/agency/i.test(document.querySelector('#login').innerText)),
       await page.evaluate(() => (document.querySelector('#login').innerText.match(/[^\n]*agency[^\n]*/i) || [''])[0]));
-    check('sign-in: the version sits in the footer', s.ver === (await page.evaluate(() => APP_VERSION)) && /^v12\.(2[3-9]|[3-9]\d) beta$/.test(s.ver), s.ver);
+    check('sign-in: the version sits in the footer', s.ver === (await page.evaluate(() => APP_VERSION)) && /^v12\.(2[3-9]|[3-9]\d)(\.\d+)? beta$/.test(s.ver), s.ver);
     check('sign-in: Support writes to support@aiparagonconsulting.com, and there are no dead Privacy or Terms links',
       await page.evaluate(() => { const a = [...document.querySelectorAll('#login .lg-foot a')]; return a.length === 1 && a[0].href === 'mailto:support@aiparagonconsulting.com'; }));
     check('sign-in: Forgot password? sits beside the Password label', s.forgot && s.forgot.vis, JSON.stringify(s.forgot));
