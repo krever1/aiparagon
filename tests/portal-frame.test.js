@@ -84,7 +84,7 @@ function check(label, ok, detail) {
     await page.evaluate(() => go('home'));
     const foot = await page.evaluate(() => ({ t: document.querySelector('.side-foot').innerText, link: getComputedStyle(el('pilotLink')).color }));
     check('bottom: "Spectrum Care Advisory OS · v12.29 beta", "Built by AI Paragon Consulting", then Pilot agreement and Help and support in green',
-      /Spectrum Care Advisory OS · v12\.(29|[3-9]\d) beta/.test(foot.t) && /Built by AI Paragon Consulting/.test(foot.t) && /Pilot agreement/.test(foot.t) && /Help and support/.test(foot.t) && foot.link === 'rgb(31, 107, 82)', JSON.stringify(foot));
+      /Spectrum Care Advisory OS · v12\.(29|[3-9]\d)(\.\d+)? beta/.test(foot.t) && /Built by AI Paragon Consulting/.test(foot.t) && /Pilot agreement/.test(foot.t) && /Help and support/.test(foot.t) && foot.link === 'rgb(31, 107, 82)', JSON.stringify(foot));
     const reach = await page.evaluate(() => { const s = document.querySelector('.app.on>.sidebar .side-inner'); s.scrollTop = 1e6; const f = document.querySelector('.side-foot').getBoundingClientRect(); const r = el('sidebar').getBoundingClientRect(); s.scrollTop = 0; return { fb: f.bottom, sb: r.bottom }; });
     check('bottom: reachable, the sidebar scrolls on its own when the window is short', reach.fb <= reach.sb + 1, JSON.stringify(reach));
 

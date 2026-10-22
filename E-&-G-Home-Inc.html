@@ -4200,14 +4200,14 @@ function sbHold(kind,t,retry){
   const dot=el('sbWarn'); if(dot){ dot.style.display=''; dot.textContent='!'; dot.title='Changes waiting for you to sign in again \u2014 click for details'; }
   sbDeadMsg();
 }
-let SB_FLUSHING=null;
+let SB_FLUSHING=null, SB_REPLAY=false;
 function sbHeldFlush(){
   if(SB_FLUSHING||!SB_HELD.length||!sbTok()) return SB_FLUSHING||Promise.resolve(0);
   const list=SB_HELD; SB_HELD=[];
   SB_FLUSHING=(async()=>{
     let ok=0;
     for(const h of list){
-      let r=null; try{ r=await h.retry(); }catch(e){}
+      let r=null; SB_REPLAY=true; try{ r=await h.retry(); }catch(e){} finally{ SB_REPLAY=false; }
       if(r&&r.ok){ ok++; continue; }
       if(r&&r.status===401&&h.n<3&&!SB_DEAD){ h.n++; SB_HELD.push(h); continue; }
       let b=''; try{ b=r?await r.text():''; }catch(e){}
@@ -4247,9 +4247,10 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState!=
   const withTok=init=>{ const h=Object.assign({},init.headers); delete h.authorization; h.Authorization='Bearer '+sbTok(); return Object.assign({},init,{headers:h}); };
   const dead401=()=>new Response('{"code":"PGRST303","message":"JWT expired"}',{status:401,headers:{'Content-Type':'application/json'}});
   window.fetch=async function(u,init){
-    if(!ours(u)||!userAuth(init)) return nf(u,init);
-    if(SB_DEAD&&!sbTok()) return dead401();                           // v12.37: signed out underneath: nothing goes out with the old pass
-    if(!sbTok()) return nf(u,init);
+    if(!ours(u)) return nf(u,init);
+    if(SB_DEAD&&!sbTok()) return dead401();                           // v12.37: signed out underneath: nothing goes to the database until the next sign-in
+    if(SB_REPLAY&&sbTok()&&!userAuth(init)) init=withTok(init);       // v12.37.1: a change sent again after signing back in goes with the new sign-in
+    if(!userAuth(init)||!sbTok()) return nf(u,init);
     try{ await sbFreshTok(60); }catch(e){}
     if(SB_DEAD&&!sbTok()) return dead401();
     const first=userAuth(init)==='Bearer '+sbTok()?init:withTok(init);
@@ -19964,7 +19965,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.37 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.37.1 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
