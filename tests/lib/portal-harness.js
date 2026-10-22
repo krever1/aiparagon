@@ -86,9 +86,9 @@ async function newPage(env, opts) {
       calls.push(req.method() + ' ' + p);
       const json = (status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
       if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
-      // opts.rest: a suite's own answer for some calls ({method, path, body} in, {status, body} out, or nothing to go on)
+      // opts.rest: a suite's own answer for some calls ({method, path, body, headers} in, {status, body} out, or nothing to go on)
       if (opts.rest) {
-        const out = await opts.rest({ method: req.method(), path: p, body: req.postData() || '' });
+        const out = await opts.rest({ method: req.method(), path: p, body: req.postData() || '', headers: req.headers() });
         if (out) return json(out.status || 200, out.body === undefined ? [] : out.body);
       }
       if (p.startsWith('/rest/v1/rpc/np_invite_peek')) {
