@@ -1,5 +1,5 @@
 // Routing tests for new-aiparagon-dashboard.html (#1 internal dashboard): /dashboard/<page> paths (Vercel),
-// #/<page> elsewhere, /dashboard/login and the saved-workspace resume, Back/Forward, engine switching,
+// #/<page> elsewhere, /dashboard/login and the saved-workspace resume, Back/Forward, the product sidebar,
 // leads, popups, sign-out, odd input, frames and the old-address forward. Given an earlier copy of the
 // file it also checks every view reads the same as that copy. Supabase answers from stubs
 // (tests/lib/dashboard-harness.js). See tests/README.md.
@@ -17,11 +17,21 @@ const SLUG = {
   e1overview: 'engine-1', e1pipeline: 'lead-pipeline', calls: 'calls', tasks: 'tasks',
   e3client: 'company-profile', integrations: 'integrations', kb: 'knowledge-base', files: 'files',
   templates: 'templates', learning: 'ai-settings', audit: 'audit-log', profile: 'account', hubspot: 'hubspot', notion: 'notion',
+  today: 'today', deliverables: 'deliverables', e3landing: 'landing-pages',
 };
 const A = (v) => '/dashboard/' + SLUG[v];
-const E3_SIDE = ['e3overview', 'e3intel', 'e3ads', 'e3briefs', 'e3create', 'e3funnel', 'e3testing', 'approvals', 'e3history'];
-const E1_SIDE = ['e1overview', 'e1pipeline', 'calls', 'tasks', 'approvals'];
-const SETTINGS = ['e3client', 'integrations', 'kb', 'files', 'templates', 'learning', 'audit'];
+// the sidebar's products and the pages under each (v115); the rest sit under Settings
+const PRODUCTS = {
+  touch: ['today', 'approvals', 'tasks'],
+  cat: ['e1overview', 'e1pipeline', 'hubspot', 'calls'],
+  canvas: ['deliverables'],
+  pipe: ['e3overview', 'e3intel', 'e3ads', 'e3briefs', 'e3create', 'e3funnel', 'e3landing', 'e3testing', 'e3history'],
+  atlas: ['kb', 'files', 'e3client', 'templates'],
+};
+const PROD_OF = {};
+Object.keys(PRODUCTS).forEach((p) => PRODUCTS[p].forEach((v) => { PROD_OF[v] = p; }));
+const SIDE = [].concat(...Object.values(PRODUCTS));
+const SETTINGS = ['integrations', 'learning', 'audit'];
 const MENU = [['profile', 'Your account'], ['e3client', 'Company profile'], ['learning', 'AI settings']];
 
 let pass = 0, fail = 0;
@@ -51,34 +61,44 @@ function check(label, ok, detail) {
     return page.evaluate(() => ({
       path: location.pathname, hash: location.hash, search: location.search,
       cur: (function () { try { return apCurrentView(); } catch (e) { return null; } })(),
-      page: S.page, eng: V107.eng,
+      page: S.page, prod: V115.prod,
+      open: [...document.querySelectorAll('#nwNav .nw-prod-btn[aria-expanded="true"]')].map((b) => b.dataset.prod),
+      engBtn: !!document.getElementById('nwEng'),
       side: [...document.querySelectorAll('#nwNav .nw-item[aria-current="page"]')].map((b) => b.dataset.view),
       app: !document.getElementById('view-app').classList.contains('hidden'),
       login: !document.getElementById('view-login').classList.contains('hidden'),
-      pm: !!document.querySelector('#profileMenu.open'), engMenu: !!document.getElementById('nwMenu'),
+      pm: !!document.querySelector('#profileMenu.open'),
       len: history.length,
     }));
   }
-  const HL = { hubspot: 'integrations', notion: 'integrations' };
+  const HL = { notion: 'integrations' };
+  // the page is on screen, its row is the one lit, and the product it sits in is open
   const shows = (s, v) => s.app && s.cur === v &&
-    (!(E3_SIDE.includes(v) || E1_SIDE.includes(v) || SETTINGS.includes(v) || HL[v]) || (s.side.length === 1 && s.side[0] === (HL[v] || v)));
+    (!(SIDE.includes(v) || SETTINGS.includes(v) || HL[v]) || (s.side.length === 1 && s.side[0] === (HL[v] || v))) &&
+    (!PROD_OF[v] || (s.prod === PROD_OF[v] && s.open.length === 1 && s.open[0] === PROD_OF[v]));
   const settle = (page) => page.waitForTimeout(250);
-  async function side(page, v) { await page.click('#nwNav .nw-item[data-view="' + v + '"]'); await settle(page); }
+  // a row is clicked the way a person would: its product is opened first when it is closed
+  async function side(page, v) {
+    const p = PROD_OF[v];
+    if (p && !(await page.$('#nwNav #nwProd-' + p + ':not([hidden])'))) await page.click('#nwNav .nw-prod-btn[data-prod="' + p + '"]');
+    await page.click('#nwNav .nw-item[data-view="' + v + '"]'); await settle(page);
+  }
+  async function product(page, p) { await page.click('#nwNav .nw-prod-btn[data-prod="' + p + '"]'); await page.waitForTimeout(120); }
   async function setting(page, v) {
-    if (!(await page.$('#nwNav .nw-sub'))) await page.click('#nwNav .nw-parent');
-    await page.click('#nwNav .nw-sub .nw-item[data-view="' + v + '"]'); await settle(page);
+    if (!(await page.$('#nwNav .nw-sub:not(.nw-prod-sub)'))) await page.click('#nwNav .nw-parent[title="Settings"]');
+    await page.click('#nwNav .nw-sub:not(.nw-prod-sub) .nw-item[data-view="' + v + '"]'); await settle(page);
   }
   async function menu(page, label) {
     await page.click('#sbFoot .sb-user'); await page.waitForTimeout(100);
     await page.click('#profileMenu .pm-item:has-text("' + label + '")'); await settle(page);
   }
-  async function engine(page, k) { await page.click('#nwEng'); await page.click('#nwMenu [onclick="nwEngPick(\'' + k + '\')"]'); await settle(page); }
 
   // 1. bare /dashboard resumes as before (nothing saved: Engine 3 Overview) and settles the address in place
   {
     const { ctx, page, len0 } = await open(BASE + '/dashboard');
     const s = await state(page);
-    check('bare /dashboard, nothing saved -> Engine 3 Overview at /dashboard/engine-3, no entry added', shows(s, 'e3overview') && s.path === '/dashboard/engine-3' && s.len === len0, JSON.stringify(s));
+    check('bare /dashboard, nothing saved -> Today at /dashboard/today, no entry added', shows(s, 'today') && s.path === '/dashboard/today' && s.len === len0, JSON.stringify(s));
+    check('no engine switcher; the five products in order, Touchpoint open', !s.engBtn && JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('#nwNav .nw-prod-btn')].map((b) => b.dataset.prod))) === JSON.stringify(Object.keys(PRODUCTS)), JSON.stringify(s));
     await ctx.close();
   }
   {
@@ -90,7 +110,7 @@ function check(label, ok, detail) {
   {
     const { ctx, page } = await open(BASE + '/dashboard', { prefs: { view: 'e1pipeline', e60: { engine: 'e1', view: 'e1pipeline' } } });
     const s = await state(page);
-    check('bare /dashboard resumes an Engine 1 page with its sidebar', shows(s, 'e1pipeline') && s.eng === 'e1' && s.path === '/dashboard/lead-pipeline', JSON.stringify(s));
+    check('bare /dashboard resumes an Engine 1 page with Catalyst open', shows(s, 'e1pipeline') && s.prod === 'cat' && s.path === '/dashboard/lead-pipeline', JSON.stringify(s));
     await ctx.close();
   }
   {
@@ -114,25 +134,32 @@ function check(label, ok, detail) {
   {
     const { ctx, page } = await open(BASE + '/dashboard/calls', { prefs: { view: 'e3ads', e60: { engine: 'e3', view: 'ads' } } });
     const s = await state(page);
-    check('/dashboard/calls switches the sidebar to Engine 1', shows(s, 'calls') && s.eng === 'e1' && s.path === '/dashboard/calls', JSON.stringify(s));
+    check('/dashboard/calls opens Catalyst in the sidebar', shows(s, 'calls') && s.prod === 'cat' && s.path === '/dashboard/calls', JSON.stringify(s));
     await ctx.close();
   }
-  // 3. every sidebar row, settings row and account-menu item writes its address
+  // 3. every product row, settings row and account-menu item writes its address; a product name opens and closes its list
   {
     const { ctx, page } = await open(BASE + '/dashboard');
-    for (const v of E3_SIDE.slice(1).concat(['e3overview'])) {
-      await side(page, v);
-      const s = await state(page);
-      check('Engine 3 sidebar ' + v + ' -> ' + A(v), shows(s, v) && s.path === A(v), JSON.stringify(s));
-    }
-    await engine(page, 'e1');
     let s = await state(page);
-    check('engine menu: Engine 1 -> /dashboard/engine-1', shows(s, 'e1overview') && s.eng === 'e1' && s.path === '/dashboard/engine-1', JSON.stringify(s));
-    for (const v of E1_SIDE.slice(1)) {
-      await side(page, v);
-      s = await state(page);
-      check('Engine 1 sidebar ' + v + ' -> ' + A(v), shows(s, v) && s.path === A(v), JSON.stringify(s));
+    const len0 = s.len;
+    await product(page, 'pipe');
+    s = await state(page);
+    check('clicking Pipeline opens its list and closes Touchpoint, without leaving Today', s.cur === 'today' && s.open.join() === 'pipe' && s.len === len0 && s.path === '/dashboard/today', JSON.stringify(s));
+    await product(page, 'pipe');
+    s = await state(page);
+    check('clicking it again closes it', s.cur === 'today' && s.open.length === 0, JSON.stringify(s));
+    const roll = await page.evaluate(() => { const b = document.querySelector('#nwNav .nw-prod-btn[data-prod="touch"] .nw-badge'); return b ? +b.textContent : 0; });
+    const inside = await page.evaluate(() => ['today', 'approvals', 'tasks'].reduce((n, k) => n + (nwBadgeN(k) || 0), 0));
+    check('a closed product adds up the badges inside it', roll === inside, roll + ' vs ' + inside);
+    for (const p of Object.keys(PRODUCTS)) {
+      for (const v of PRODUCTS[p].slice(1).concat(PRODUCTS[p][0])) {
+        await side(page, v);
+        s = await state(page);
+        check(p + ' sidebar ' + v + ' -> ' + A(v), shows(s, v) && s.path === A(v), JSON.stringify(s));
+      }
     }
+    const crumb = await page.evaluate(() => (document.getElementById('nwCrumb') || {}).innerText || '');
+    check('the top bar says where you are (Atlas, Knowledge base)', /Atlas/.test(crumb) && /Knowledge base/.test(crumb), crumb);
     for (const v of SETTINGS) {
       await setting(page, v);
       s = await state(page);
@@ -154,13 +181,17 @@ function check(label, ok, detail) {
   }
   // 5. odd input
   const odd = [
-    ['/dashboard/', 'e3overview', '/dashboard/engine-3'], ['/dashboard/nope', 'e3overview', '/dashboard/engine-3'],
+    ['/dashboard/', 'today', '/dashboard/today'], ['/dashboard/nope', 'today', '/dashboard/today'],
     ['/dashboard/INTEL-Tracker/', 'e3intel', '/dashboard/intel-tracker'], ['/dashboard/kb', 'kb', '/dashboard/knowledge-base'],
-    ['/dashboard/e3funnel', 'e3funnel', '/dashboard/marketing-generation'], ['/dashboard/overview', 'e3overview', '/dashboard/engine-3'],
-    ['/dashboard/home', 'e3overview', '/dashboard/engine-3'], ['/dashboard/e1lead', 'e3overview', '/dashboard/engine-3'],
-    ['/dashboard/lead-pipeline/abc/def', 'e1pipeline', '/dashboard/lead-pipeline'], ['/dashboard/%E0%A4%A', 'e3overview', '/dashboard/engine-3'],
-    ['/dashboard/%3Cscript%3E', 'e3overview', '/dashboard/engine-3'], ['/dashboard/constructor', 'e3overview', '/dashboard/engine-3'],
-    ['/dashboard/__proto__', 'e3overview', '/dashboard/engine-3'], ['/dashboard/toString', 'e3overview', '/dashboard/engine-3'],
+    ['/dashboard/e3funnel', 'e3funnel', '/dashboard/marketing-generation'], ['/dashboard/overview', 'today', '/dashboard/today'],
+    ['/dashboard/home', 'today', '/dashboard/today'], ['/dashboard/e1lead', 'today', '/dashboard/today'],
+    ['/dashboard/lead-pipeline/abc/def', 'e1pipeline', '/dashboard/lead-pipeline'], ['/dashboard/%E0%A4%A', 'today', '/dashboard/today'],
+    ['/dashboard/%3Cscript%3E', 'today', '/dashboard/today'], ['/dashboard/constructor', 'today', '/dashboard/today'],
+    ['/dashboard/__proto__', 'today', '/dashboard/today'], ['/dashboard/toString', 'today', '/dashboard/today'],
+    ['/dashboard/engine-3', 'e3overview', '/dashboard/engine-3'], ['/dashboard/engine-1', 'e1overview', '/dashboard/engine-1'],
+    ['/dashboard/pipeline', 'e3overview', '/dashboard/engine-3'], ['/dashboard/Catalyst', 'e1overview', '/dashboard/engine-1'],
+    ['/dashboard/touchpoint', 'today', '/dashboard/today'], ['/dashboard/canvas', 'deliverables', '/dashboard/deliverables'],
+    ['/dashboard/atlas', 'kb', '/dashboard/knowledge-base'], ['/dashboard/landing-pages', 'e3landing', '/dashboard/landing-pages'],
   ];
   for (const [url, v, want] of odd) {
     const { ctx, page } = await open(BASE + url);
@@ -171,7 +202,13 @@ function check(label, ok, detail) {
   {
     const { ctx, page } = await open(BASE + '/dashboard/overview', { prefs: { view: 'e1pipeline', e60: { engine: 'e1', view: 'e1pipeline' } } });
     const s = await state(page);
-    check('/dashboard/overview opens the Overview of the engine you are in (Engine 1)', shows(s, 'e1overview') && s.path === '/dashboard/engine-1', JSON.stringify(s));
+    check('/dashboard/overview opens the Overview of the product you are in (Catalyst)', shows(s, 'e1overview') && s.path === '/dashboard/engine-1', JSON.stringify(s));
+    await ctx.close();
+  }
+  {
+    const { ctx, page } = await open(BASE + '/dashboard/overview', { prefs: { view: 'e3ads', e60: { engine: 'e3', view: 'ads' } } });
+    const s = await state(page);
+    check('/dashboard/overview from a Pipeline page opens the Pipeline Overview', shows(s, 'e3overview') && s.path === '/dashboard/engine-3', JSON.stringify(s));
     await ctx.close();
   }
   {
@@ -190,7 +227,7 @@ function check(label, ok, detail) {
     check('Back -> Intel Tracker', shows(s, 'e3intel') && s.path === '/dashboard/intel-tracker', JSON.stringify(s));
     await page.goBack(); await settle(page);
     s = await state(page);
-    check('Back again -> Engine 3 Overview', shows(s, 'e3overview') && s.path === '/dashboard/engine-3', JSON.stringify(s));
+    check('Back again -> Today', shows(s, 'today') && s.path === '/dashboard/today', JSON.stringify(s));
     await page.goForward(); await settle(page);
     s = await state(page);
     check('Forward -> Intel Tracker', shows(s, 'e3intel') && s.path === '/dashboard/intel-tracker', JSON.stringify(s));
@@ -202,10 +239,12 @@ function check(label, ok, detail) {
     await side(page, 'e3history');
     s = await state(page);
     check('clicking the page you are on adds no history entry', s.len === len0, len0 + ' vs ' + s.len);
-    await engine(page, 'e1');
+    await side(page, 'e1pipeline');
+    s = await state(page);
+    check('a page in another product opens that product (Catalyst)', shows(s, 'e1pipeline') && s.path === '/dashboard/lead-pipeline', JSON.stringify(s));
     await page.goBack(); await settle(page);
     s = await state(page);
-    check('Back across an engine switch restores Engine 3 and its sidebar', shows(s, 'e3history') && s.eng === 'e3' && s.path === '/dashboard/runs', JSON.stringify(s));
+    check('Back across products restores Pipeline and its list', shows(s, 'e3history') && s.prod === 'pipe' && s.path === '/dashboard/runs', JSON.stringify(s));
     await ctx.close();
   }
   // 7. pages that move on their own keep the address in step; a lead keeps the Lead pipeline address
@@ -239,20 +278,22 @@ function check(label, ok, detail) {
     const wasOpen = s.pm;
     await page.goBack(); await settle(page);
     s = await state(page);
-    check('Back closes the account menu and shows the Overview', wasOpen && !s.pm && shows(s, 'e3overview') && s.path === '/dashboard/engine-3', JSON.stringify(s));
+    check('Back closes the account menu and shows Today', wasOpen && !s.pm && shows(s, 'today') && s.path === '/dashboard/today', JSON.stringify(s));
     await page.goForward(); await settle(page);
-    await page.click('#nwEng'); await page.waitForTimeout(100);
+    const len0 = (await state(page)).len;
+    await product(page, 'cat');
     s = await state(page);
-    const engOpen = s.engMenu;
+    check('opening another product keeps the page and adds no history entry', s.cur === 'e3briefs' && s.open.join() === 'cat' && s.len === len0 && s.path === '/dashboard/briefs', JSON.stringify(s));
     await page.goBack(); await settle(page);
     s = await state(page);
-    check('Back closes the engine menu', engOpen && !s.engMenu && shows(s, 'e3overview'), JSON.stringify(s));
+    check('then Back goes to Today with Touchpoint open', shows(s, 'today') && s.path === '/dashboard/today', JSON.stringify(s));
     await ctx.close();
   }
   // 9. adversarial: rapid clicks, then a burst of Back presses
   {
     const { ctx, page } = await open(BASE + '/dashboard');
-    for (const v of ['e3intel', 'e3ads', 'e3briefs', 'e3create', 'e3funnel', 'e3testing', 'approvals', 'e3history', 'e3overview', 'e3intel', 'e3ads'])
+    await product(page, 'pipe');
+    for (const v of ['e3intel', 'e3ads', 'e3briefs', 'e3create', 'e3funnel', 'e3testing', 'e3landing', 'e3history', 'e3overview', 'e3intel', 'e3ads'])
       await page.click('#nwNav .nw-item[data-view="' + v + '"]');
     await settle(page);
     let s = await state(page);
@@ -355,10 +396,10 @@ function check(label, ok, detail) {
   // 12. the old address forwards to /dashboard; a #/<page> carried through the forward opens that page
   for (const [suffix, v, wantHash, prefs] of [
     ['', 'e3ads', '', { view: 'e3ads', e60: { engine: 'e3', view: 'ads' } }],
-    ['', 'e3overview', '', null],
+    ['', 'today', '', null],
     ['#/briefs', 'e3briefs', '', { view: 'e3ads', e60: { engine: 'e3', view: 'ads' } }],
-    ['#/nope', 'e3overview', '', null],
-    ['#section-2', 'e3overview', '#section-2', null],
+    ['#/nope', 'today', '', null],
+    ['#section-2', 'today', '#section-2', null],
   ]) {
     const { ctx, page } = await open(BASE + '/' + FILE + suffix, { prefs });
     const s = await state(page);
@@ -370,7 +411,7 @@ function check(label, ok, detail) {
     await side(page, 'e3intel');
     await page.goBack(); await settle(page);
     let s = await state(page);
-    check('after the forward, Back returns to /dashboard/engine-3', shows(s, 'e3overview') && s.path === '/dashboard/engine-3', JSON.stringify(s));
+    check('after the forward, Back returns to /dashboard/today', shows(s, 'today') && s.path === '/dashboard/today', JSON.stringify(s));
     await page.goForward(); await settle(page);
     s = await state(page);
     check('after the forward, Forward returns to /dashboard/intel-tracker', shows(s, 'e3intel') && s.path === '/dashboard/intel-tracker', JSON.stringify(s));
@@ -397,7 +438,7 @@ function check(label, ok, detail) {
   {
     const { ctx, page } = await open(BASE + COPY);
     let s = await state(page);
-    check('other host: resumes and settles #/engine-3', shows(s, 'e3overview') && s.path === COPY && s.hash === '#/engine-3', JSON.stringify(s));
+    check('other host: resumes and settles #/today', shows(s, 'today') && s.path === COPY && s.hash === '#/today', JSON.stringify(s));
     await side(page, 'e3intel');
     s = await state(page);
     check('other host: sidebar writes #/intel-tracker', shows(s, 'e3intel') && s.hash === '#/intel-tracker', JSON.stringify(s));
@@ -406,10 +447,10 @@ function check(label, ok, detail) {
     check('other host: reload keeps Intel Tracker', shows(s, 'e3intel') && s.hash === '#/intel-tracker', JSON.stringify(s));
     await page.goBack(); await settle(page);
     s = await state(page);
-    check('other host: Back -> Engine 3 Overview', shows(s, 'e3overview') && s.hash === '#/engine-3', JSON.stringify(s));
+    check('other host: Back -> Today', shows(s, 'today') && s.hash === '#/today', JSON.stringify(s));
     await page.evaluate(() => { location.hash = '#section-2'; }); await settle(page);
     s = await state(page);
-    check('other host: an #anchor that is not a page changes nothing', shows(s, 'e3overview'), JSON.stringify(s));
+    check('other host: an #anchor that is not a page changes nothing', shows(s, 'today'), JSON.stringify(s));
     await ctx.close();
   }
   for (const [hash, v, want, prefs] of [['#/briefs', 'e3briefs', '#/briefs', null], ['#/CALLS', 'calls', '#/calls', null], ['#/nope', 'e3ads', '#/ad-strategist', { view: 'e3ads', e60: { engine: 'e3', view: 'ads' } }]]) {
@@ -435,7 +476,7 @@ function check(label, ok, detail) {
     check('local file: sidebar writes #/ad-testing', shows(s, 'e3testing') && s.hash === '#/ad-testing', JSON.stringify(s));
     await page.goBack(); await settle(page);
     s = await state(page);
-    check('local file: Back -> Engine 3 Overview', shows(s, 'e3overview') && s.hash === '#/engine-3', JSON.stringify(s));
+    check('local file: Back -> Today', shows(s, 'today') && s.hash === '#/today', JSON.stringify(s));
     await ctx.close();
   }
   {
@@ -452,10 +493,10 @@ function check(label, ok, detail) {
       await H.settled(fr, 'app');
       const s0 = await state(fr);
       const top0 = await page.evaluate(() => history.length);
-      await fr.click('#nwNav .nw-item[data-view="e3intel"]'); await fr.waitForTimeout(250);
+      await side(fr, 'e3intel');
       const s = await state(fr);
       const top1 = await page.evaluate(() => history.length);
-      check('frame: resumes as the original does (Overview), address untouched', s0.cur === 'e3overview' && s0.path === '/dashboard/briefs', JSON.stringify(s0));
+      check('frame: lands on Today, address untouched', s0.cur === 'today' && s0.path === '/dashboard/briefs', JSON.stringify(s0));
       check('frame: clicks change the page but not the address or the host history', s.cur === 'e3intel' && s.path === '/dashboard/briefs' && s.hash === '' && top1 === top0, JSON.stringify(s) + ' top ' + top0 + '->' + top1);
     } else check('frame loaded', false, 'no frame');
     await ctx.close();
