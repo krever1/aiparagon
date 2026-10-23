@@ -963,8 +963,8 @@ const store = {
   clear() { try { localStorage.removeItem(KEY); } catch (e) {} }
 };
 
-/* ---------- time. Bookings live in the business's time zone, so the calendar always shows Eastern. ---------- */
-const BIZ_TZ = "America/New_York";
+/* ---------- time. Bookings live in the business's time zone, so the calendar always shows Pacific. ---------- */
+const BIZ_TZ = "America/Los_Angeles";
 const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const MON_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const SLOT_TIMES = [[8, 0], [10, 30], [13, 0], [15, 30]];
@@ -1003,7 +1003,7 @@ function hm(h, mi) { const ap = h >= 12 ? "PM" : "AM"; const hh = h % 12 === 0 ?
 let tzS = null;
 function tzSuffix() {
   if (tzS !== null) return tzS;
-  try { const now = new Date(); const z = zparts(now); tzS = (z.h !== now.getHours() || z.d !== now.getDate()) ? " ET" : ""; } catch (e) { tzS = ""; }
+  try { const now = new Date(); const z = zparts(now); tzS = (z.h !== now.getHours() || z.d !== now.getDate()) ? " PT" : ""; } catch (e) { tzS = ""; }
   return tzS;
 }
 function dayDiff(iso) { const z = zparts(new Date(iso)), t = zparts(new Date()); return Math.round((Date.UTC(z.y, z.mo, z.d) - Date.UTC(t.y, t.mo, t.d)) / 86400000); }
@@ -1741,7 +1741,7 @@ function seed() {
   };
 }
 
-// Demo data is dated relative to the day it was created. On a new day (Eastern), the day-to-day activity is
+// Demo data is dated relative to the day it was created. On a new day (Pacific), the day-to-day activity is
 // regenerated so "tomorrow at 8" is still tomorrow. Knowledge, collections, rules, training, the call library,
 // automations, playbooks, the team and settings are kept exactly as they were.
 const DAILY_KEYS = ["kpis", "funnel", "activity", "customers", "calls", "appointments", "messages", "docs", "notifications", "caseUpdates", "skipped", "reviews", "quality", "analytics", "syncedMinutes"];
@@ -2484,8 +2484,8 @@ function renderCalendar() {
   const days = weekDays(ws);
   const today = zparts(new Date());
   const tk = dayKey(today);
-  $("calRange").textContent = MON_NAMES[days[0].mo].slice(0, 3) + " " + days[0].d + " – " + (days[5].mo !== days[0].mo ? MON_NAMES[days[5].mo].slice(0, 3) + " " : "") + days[5].d + (tzSuffix() ? " · Eastern time" : "");
-  $("calSub").textContent = "Everything the agent and the team have booked. Click a booking to confirm, move or cancel it, or an open time to book one." + (tzSuffix() ? " Times are Eastern, where the jobs are." : "");
+  $("calRange").textContent = MON_NAMES[days[0].mo].slice(0, 3) + " " + days[0].d + " – " + (days[5].mo !== days[0].mo ? MON_NAMES[days[5].mo].slice(0, 3) + " " : "") + days[5].d + (tzSuffix() ? " · Pacific time" : "");
+  $("calSub").textContent = "Everything the agent and the team have booked. Click a booking to confirm, move or cancel it, or an open time to book one." + (tzSuffix() ? " Times are Pacific, where the jobs are." : "");
   const typesShown = {};
   S.appointments.forEach((a) => { typesShown[a.type] = typeCls(a.type); });
   $("calLegend").innerHTML = Object.keys(typesShown).map((t) => '<span class="legend-dot"><i class="ev ' + typesShown[t] + '" style="position:static"></i>' + esc(t) + "</span>").join("") +
@@ -2552,7 +2552,7 @@ function renderAvailability(days) {
   $("calAvail").innerHTML = grid +
     '<p style="margin:0 0 8px">' + (total ? "This week: <b>" + (total - open) + " of " + total + "</b> times booked, " + aftOpen + " of " + aftTotal + " afternoon times still open." : "Nothing left to book this week.") + "</p>" +
     (nb.length || hist ? '<p style="margin:0 0 8px">' + (hist ? "<b>" + hist + "</b> callers in the last 30 days couldn't find a time that worked." : "") + (aft ? " " + aft + " of the recent ones wanted afternoons." : "") + ' <button class="linkbtn" data-reasonfilter="no_time_fit">See those calls</button></p>' : "") +
-    '<p class="mini" style="margin:0">These are the times the agent offers: Monday to Saturday at 8:00, 10:30, 1:00 and 3:30, Eastern. Adding or removing a time is a one-line change in the n8n tool workflow, so the agent and this calendar stay in step.</p>';
+    '<p class="mini" style="margin:0">These are the times the agent offers: Monday to Saturday at 8:00, 10:30, 1:00 and 3:30, Pacific. Adding or removing a time is a one-line change in the n8n tool workflow, so the agent and this calendar stay in step.</p>';
 }
 
 /* ---------- one booking ---------- */
@@ -2569,7 +2569,7 @@ function openAppointment(id, nav) {
     : rem.length ? "<table><tbody>" + rem.map(reminderRow).join("") + "</tbody></table>" : '<p class="subtle" style="margin:0">No reminders for this booking. Turn them on under Messages, Automations.</p>';
   const body =
     '<dl class="kvtight">' +
-    "<dt>When</dt><dd><b>" + esc(a.startsAt ? apptLong(a.startsAt) : a.slotLabel || "") + "</b>" + (tzSuffix() ? " Eastern" : "") + " · " + esc(minsLabel(a.duration || 60)) + "</dd>" +
+    "<dt>When</dt><dd><b>" + esc(a.startsAt ? apptLong(a.startsAt) : a.slotLabel || "") + "</b>" + (tzSuffix() ? " Pacific" : "") + " · " + esc(minsLabel(a.duration || 60)) + "</dd>" +
     "<dt>Type</dt><dd>" + esc(a.type) + "</dd>" +
     "<dt>Customer</dt><dd>" + (cu && String(cu.id).indexOf("appt:") !== 0 ? '<button class="linkbtn" data-client="' + esc(cu.id) + '">' + esc(cu.name) + "</button>" : esc(apptName(a))) + "</dd>" +
     "<dt>Address</dt><dd>" + esc(apptPlace(a)) + "</dd>" +
@@ -2675,7 +2675,7 @@ function pickSlot(title, onPick, pref, exceptId) {
       : '<p class="subtle">No open ' + (filter ? filter + " " : "") + "times in the next two weeks.</p>";
     $("slotFilter").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.f === filter)));
   };
-  openModal(title, "Open times over the next two weeks" + (tzSuffix() ? ", Eastern" : ""),
+  openModal(title, "Open times over the next two weeks" + (tzSuffix() ? ", Pacific" : ""),
     '<div class="seg" id="slotFilter"><button type="button" data-f="">Any time</button><button type="button" data-f="morning">Mornings</button><button type="button" data-f="afternoon">Afternoons</button></div><div id="slotPick"></div><p class="sub" id="slotMsg" style="margin:10px 0 0"></p>',
     [{ label: "Cancel", onClick: closeModal }, { label: "Use this time", primary: true, onClick: () => { if (!chosen) { $("slotMsg").textContent = "Pick a time first."; return; } onPick(chosen); } }]);
   $("slotFilter").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; filter = b.dataset.f; draw(); });

@@ -418,11 +418,12 @@ Caller (or the dashboard's "Call the agent" button) → Vapi runs the live call 
 | Tool | Role here |
 |---|---|
 | Vapi | The live call: speech in, turn-taking, voice out, tool calls, private call recordings, end-of-call report. Assistant "Arrington Roofing Intake", ID 1acd9667-542c-4e5e-a777-0309b7780703 (Clara voice, gpt-4.1 per Vapi Configure, Deepgram nova-3, 10 minute cap). Private key = server side only. Public key + assistant ID = the dashboard's browser calls (editable under Settings, Data source). |
-| n8n | Three jobs. (1) Tool server during the call: no model call inside so it answers in milliseconds. (2) End-of-call mission: acks Vapi at once, saves the call, then runs read → research → draft and saves a review packet. Approval gate: nothing is sent or written to a CRM automatically. (3) Helpers: caller lookup, recording links, configure, training/publish. Tool and end-of-call webhooks require the x-vapi-secret header. |
-| Supabase | vc_* tables: vc_calls (saved before the mission so a call shows even if the mission fails; structured._timeline keeps each turn and tool step so the dashboard can show what every tool returned), vc_missions (deliverables for review), vc_tool_events, plus knowledge, training rules and versions, customers/bookings, team alerts and text records. Auth for staff sign-in; recording links are staff only. |
-| OpenAI | The post-call mission steps (Responses API with web search, gpt-4o, in the Post-Call Mission workflow). A credential Base URL problem made these 404, leaving missions partial. |
+| n8n | Three jobs. (1) Tool server during the call: no model call inside, and one database read per call (the `vc_tool_context` view), so it answers in about 0.4s. (2) End-of-call mission: acks Vapi at once, saves the call, then runs read → research → draft and saves a review packet. Approval gate: nothing is sent or written to a CRM automatically. (3) Helpers: caller lookup, recording links, configure, training/publish. Tool and end-of-call webhooks require the x-vapi-secret header. |
+| Supabase | vc_* tables: vc_calls (saved before the mission so a call shows even if the mission fails; structured._timeline keeps each turn and tool step so the dashboard can show what every tool returned), vc_missions (deliverables for review), vc_tool_events, plus knowledge, training rules and versions, customers/bookings, team alerts and text records. `vc_customers` is the customer file: one row per caller, keyed by the caller ID number (or the name they gave when there's no number), with every name given, property, email and the last 10 calls; a trigger on vc_calls rebuilds it after every saved call. `vc_tool_context` is a one-row view the tool server reads. Auth for staff sign-in; recording links are staff only. |
+| OpenAI | The post-call mission steps (Responses API with web search, GPT-4.1, credential "OpenAI account 2", in the Post-Call Mission workflow). Fixed Oct 23: the old credential gave "not found", and JSON mode with web search on gave "bad request", so JSON mode is off and Shape Mission Result pulls the JSON out of the text. OpenAI returns no source list here, so research findings must carry real https links: placeholders like "turn0search1" are blanked and the finding drops to medium confidence. Every mission before Oct 23 failed. |
 | Hosting | The dashboard must be served over https for the mic (Vercel is fine). The Vapi web SDK loads from jsDelivr with no pinned version (esm.sh fallback); pin one. |
-| Twilio (planned) | Business phone number imported into Vapi; A2P 10DLC registration for US texting. The Send Text node is disabled until then. |
+| Phone number | A free Vapi number (530 area code, Oct 21), no assistant set on it, Server URL pointing at Caller Lookup with the x-vapi-secret header. Voice only. |
+| Twilio (planned) | Paid number + A2P 10DLC registration for US texting. The Send Text node is disabled until then. |
 | Pushover (planned) | Push alerts to staff phones. The Push to Phones node is disabled until then. |
 
 ## Page addresses
@@ -433,7 +434,7 @@ Caller (or the dashboard's "Call the agent" button) → Vapi runs the live call 
 - Not routed yet: the customer drawer, conversation detail and modals.
 
 ## Agent tools (all served by the n8n tool server)
-check_availability, book_appointment, lookup_knowledge, escalate_to_human, plus reschedule_appointment and add_case_details for returning callers. If lookup_knowledge says a topic belongs to a person, the agent says what it's told and escalates. If it says to ask questions first, the agent asks only the ones it still needs, one at a time.
+check_availability, book_appointment, lookup_knowledge, escalate_to_human, plus reschedule_appointment and add_case_details for returning callers. Times are Pacific (Mon to Sat, 8:00, 10:30, 1:00, 3:30, two weeks ahead). check_availability gets the caller's words in `requested`: an open exact time is confirmed without listing others, a day and date that don't match ("Thursday the 30th" when it's a Friday) are asked about, and "Oct 20th", "Tue, Oct 20 at 10:30 AM" and "10/20 at 10:30" all read the same. book_appointment refuses until it has a name and address and always stores the caller ID number (a different callback number goes in the note), so reschedule_appointment finds the booking on the next call. After a high-urgency escalation the tool tells the agent to offer the earliest leak check. If lookup_knowledge says a topic belongs to a person, the agent says what it's told and escalates. If it says to ask questions first, the agent asks only the ones it still needs, one at a time.
 
 ## n8n workflows
 | Workflow | ID | Notes |
@@ -443,31 +444,34 @@ check_availability, book_appointment, lookup_knowledge, escalate_to_human, plus 
 | Post-Call Mission | hpQO6ymk4yBEa3VI | The OpenAI step engine (read, research, draft), called by End of Call. |
 | Vapi Recording Link | McFBGxQ6EtGUeNdi | Short-lived presigned playback link, staff only. |
 | Vapi Train, Publish to Agent | JJ9MY0TQ6JrQoD8L | /webhook/vapi-train-publish. Writes the TEAM RULES block into the live prompt and logs vc_agent_versions. |
-| Vapi Caller Lookup (Roofing Intake) | xfGS6QuGQ2h2IF76 | /webhook/vapi-caller. Answers Vapi's assistant-request for inbound phone calls (returning callers). Needs the business number's Server URL. |
-| Vapi Configure (Roofing Intake) | U4jWATDlKAPk91i9 | Unpublished on purpose, run by hand. Patches the assistant and its 6 tools in place, then re-applies team rules. |
+| Vapi Caller Lookup (Roofing Intake) | xfGS6QuGQ2h2IF76 | /webhook/vapi-caller. Answers Vapi's assistant-request for inbound phone calls: reads the caller's file from vc_customers and passes it (name, last 3 calls, property, upcoming appointment, open items) plus caller_id_last4. Only runs if the number has no assistant set. |
+| Vapi Configure (Roofing Intake) | U4jWATDlKAPk91i9 | Unpublished on purpose, run by hand (execute it in manual mode). Patches the assistant and its 6 tools in place, then re-applies team rules. Holds the prompt, turn-taking and the hang-up goodbye. |
 | Vapi test workflow | PArDwhawz1IWSETk | Empty, ignore. |
 
 The older "Voice Agent Demo" and "Voice Agent Realtime Session" workflows are inactive (cleanup).
 
 ## What's built
+- Customer file per caller (vc_customers, Oct 23): the agent reads it before the call through Caller Lookup and confirms the number by its last four digits instead of reading it all out.
 - Returning callers matched on US 10-digit phone, greeted by name, can move a booking or add case details. The agent doesn't raise the previous call unless the caller does; a bare phone number is never used as a name.
 - Agent training: coach any transcript line into a Rule, Restriction, Approved answer or Note. Answers apply on the next call; rules wait for Publish (versioned). Requires vc-training.sql in Supabase.
 - Knowledge page: "Test a question" shows exactly what the agent would say and warns when trigger words would catch everyday calls (e.g. bare "panel" matching solar questions).
-- Turn-taking tuned: stops fast when interrupted, ignores "yeah / okay / mm-hm", always stops on "wait / hold on / stop / actually". The greeting plays in full (it carries the recording notice).
+- Turn-taking tuned: stops fast when interrupted, ignores "yeah / okay / mm-hm", always stops on "wait / hold on / stop / actually". The greeting plays in full (it carries the recording notice). Since Oct 23 the reply wait is shorter (livekit `400 + 2000 * max(0, x - 0.4)`, was up to about 3s), one question per turn, and the hang-up tool always says "Thanks for calling Arrington Roofing. Take care!".
 - Test a callback: sample customer when signed out, real data when signed in; test calls never touch real bookings or send texts.
 - Texting gated by a "Send confirmations" System Authority setting (allowed / needs approval / prohibited).
 - Conversations grouped by day with review status, search across names, phones and transcripts (Ctrl K).
 
-## Where it stands (as of 2026-10-15)
-- 3 calls saved so far, all browser test calls (Oct 1, 2 and 10), none reviewed; no booking saved yet.
-- Every post-call mission so far failed all three steps. n8n shows those runs as success because the OpenAI node continues on error; check vc_missions.status instead. No real call since Oct 10, so the credential fix is unconfirmed: one test call will tell.
-- The Oct 2 "ejected" bug is fixed in the page: the SDK's "ejected" error is treated as a normal end, the timer stops, the header says Call ended and End call becomes Close.
-- Slot parser: the "October 15th at 10:30am" regression passes. Abbreviated or numeric dates ("Oct 20th at 10:30am", "Tue, Oct 20 at 10:30 AM", "10/20 at 10:30") find no slot; add them to the regression set.
+## Where it stands (as of 2026-10-23)
+- Erica's first phone test (4 calls, Oct 22) found: no returning-caller recognition (the number still had an assistant set, so Caller Lookup never ran), the booking saved without a phone so it couldn't be moved, exact times turned into vague preferences, "Thursday, October 30th" not caught, an early hand-off when no time fit, two questions per turn, a rushed number read-back, an offer to text, hang-ups with no goodbye, and 2.5 to 4.5s reply gaps. All fixed on Oct 23 in the tool server, Caller Lookup, Configure (live as agent version 9) and the Scheduling topic's escalation rule; see Agent tools and What's built.
+- Time zone is Pacific everywhere: tool server, Caller Lookup and the Command Center (`BIZ_TZ`). Keep the three in step.
+- Test data: cleared Oct 23 (Kser ran the delete). A copy of the 7 test calls and their rows is in the `vc_archive` schema (`*_test_20261023`); drop it once nobody needs it.
+- Done Oct 23: test data cleared, the Vapi number's settings updated, the mission step switched to OpenAI account 2 (read step tested live). Kser's first call after the number change didn't reach n8n at all (no Caller Lookup run); check that call's Ended Reason in Vapi's call logs on the next test. Then Erica re-runs the three test calls.
+- n8n folders: the connector can't create folders or move workflows, so the Vapi folder is made by hand in n8n (the 8 Vapi and Post-Call Mission workflows).
 - Key rotation scope: the Vapi private key is inline in Configure, Train Publish and Recording Link; the server secret is in Tools, End of Call, Configure, Train Publish and Caller Lookup. Rotate all of them and never paste keys into chat.
 
 ## Open items
-- Business number not bought yet. Plan: a free Vapi number now so it's demoable, a paid Twilio number + A2P 10DLC (2 to 4 weeks) in parallel. A2P needs the client's legal business name, EIN, address and website. Costs and steps are in the "Callbacks, Phone and Texting Setup" doc.
-- Last known blockers on real calls: phone number area code and the OpenAI credential. Confirm whether fixed.
+- Paid Twilio number + A2P 10DLC (2 to 4 weeks) for texting. A2P needs the client's legal business name, EIN, address and website. Costs and steps are in the "Callbacks, Phone and Texting Setup" doc. When texting goes live, flip `TEXTS_ON` in the tool server and put the confirmation-text section back in Configure's prompt.
+- "Do you do free inspections?" has no approved answer yet (it falls back to the pricing line). Erica to add the real answer on the Knowledge page.
+- Measure reply latency on the next real calls (Vapi call logs) before considering a faster model than gpt-4.1.
 - Plans: per-industry knowledge bases (roofing done, property management drafted), US confirmation texts and push notifications.
 - Cleanup: archive the inactive "Voice Agent Demo" and "Realtime Session" workflows. Keep `voice-agent-client.html`: it's the Command Center now.
 
@@ -477,4 +481,6 @@ The older "Voice Agent Demo" and "Voice Agent Realtime Session" workflows are in
 
 ## Gotchas
 - Slot parsing: "October 15th at 10:30am" was once read as hour 15; keep the regression test.
+- The Vapi number must have no assistant set, or Vapi never asks Caller Lookup and every caller is treated as new.
+- The Supabase connector's execute_sql waits for the user to approve DELETE, DROP and similar statements; with nobody watching it times out and nothing runs.
 - Sample/demo callback data must stay isolated from real alerts and texts.

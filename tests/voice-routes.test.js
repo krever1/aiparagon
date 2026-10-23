@@ -56,7 +56,7 @@ function check(label, ok, detail) {
   const pageErrors = { patched: [], original: [] };
 
   async function open(url, opts) {
-    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, timezoneId: (opts && opts.tz) || undefined });
     // Offline on purpose: no Supabase, jsDelivr or n8n, so every run sees the same signed-out demo
     await ctx.route('**/*', (route) => {
       const u = route.request().url();
@@ -280,6 +280,20 @@ function check(label, ok, detail) {
       await ctx.close();
     }
     check('regression: ' + k + ' reads the same as the baseline', texts[0] === texts[1], 'lengths ' + texts[0].length + ' vs ' + texts[1].length);
+  }
+
+  // 12. the calendar is in the business's time zone (Pacific), whatever time zone the viewer is in
+  for (const tz of ['Asia/Dubai', 'America/New_York']) {
+    const { ctx, page } = await open(BASE + '/voice/calendar', { tz });
+    const t = await page.evaluate(() => ({ range: document.getElementById('calRange').textContent, sub: document.getElementById('calSub').textContent }));
+    check('calendar viewed from ' + tz + ' says Pacific', / · Pacific time$/.test(t.range) && /Times are Pacific/.test(t.sub) && !/Eastern/.test(t.range + t.sub), JSON.stringify(t));
+    await ctx.close();
+  }
+  {
+    const { ctx, page } = await open(BASE + '/voice/calendar', { tz: 'America/Los_Angeles' });
+    const t = await page.evaluate(() => document.getElementById('calRange').textContent + ' ' + document.getElementById('calSub').textContent);
+    check('calendar viewed from Pacific adds no time zone note', !/Pacific|Eastern/.test(t), t);
+    await ctx.close();
   }
 
   // without a baseline any page error fails; with one, only errors the baseline did not have
