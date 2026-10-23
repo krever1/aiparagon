@@ -9055,9 +9055,9 @@ function docRenameTo(id,cid,old,nv){
   nv=keepExt(old,String(nv||'').trim()); if(!nv||nv===old) return render();
   if(DOCS.some(x=>x!==d&&(x.cid||'')===(d.cid||'')&&x.n===nv)) return toast('This folder already has a document called '+nv+'.');
   const sk=(d.cid||'')+'|';
+  const b=docBinderOf(d);                                             // v12.38.1: read before the tag moves, or the team-binder copy was never renamed
   const tag=DOCTAG[sk+old]||DOCTAG[old];
   if(tag){ DOCTAG[sk+nv]=Object.assign({},tag); delete DOCTAG[sk+old]; doctagSave(); }
-  const b=docBinderOf(d);
   d.n=nv;
   let fch=false;
   Object.values(FILED_DOCS).forEach(f=>(f.refs||[]).forEach(r=>{ if((r.cid||'')===(d.cid||'')&&r.cid&&r.n===old){ r.n=nv; fch=true; } }));
@@ -9223,10 +9223,12 @@ function editDocMeta(cid,name){
 function saveDocMeta(cid,oldName){
   const d=DOCS.find(x=>x.cid===cid&&x.n===oldName); if(!d) return;
   const nn=(el('edN').value||'').trim(); if(!nn) return toast('Give the document a title.');
-  const patch={n:nn,cat:el('edC').value,doc_date:el('edD').value};
-  d.n=nn; d.cat=el('edC').value; d.at=el('edD').value||d.at;
-  if(sbOn()) fetch(`${BACKEND.url}/rest/v1/np_demo_documents?n=eq.${encodeURIComponent(oldName)}&${cid?'cid=eq.'+encodeURIComponent(cid):'cid=is.null'}`,{method:'PATCH',headers:sbH(),body:JSON.stringify(patch)}).catch(()=>{});   // v12.8: only this folder's copy
-  logAudit('Edited document details',`${nn}${cid&&client(cid)?' · '+client(cid).uci:''}`);
+  if(keepExt(oldName,nn)!==oldName&&DOCS.some(x=>x!==d&&(x.cid||'')===(cid||'')&&x.n===keepExt(oldName,nn))) return toast('This folder already has a document called '+keepExt(oldName,nn)+'.');
+  const patch={cat:el('edC').value,doc_date:el('edD').value};      // v12.38.1: the title goes through the rename, so the binder, tab and copies follow
+  d.cat=el('edC').value; d.at=el('edD').value||d.at;
+  if(sbOn()) fetch(`${BACKEND.url}/rest/v1/np_demo_documents?n=eq.${encodeURIComponent(oldName)}&${cid?'cid=eq.'+encodeURIComponent(cid):'cid=is.null'}`,{method:'PATCH',headers:sbH(),body:JSON.stringify(patch)}).catch(()=>{});   // v12.8: only this folder's copy (sent before the rename)
+  if(keepExt(oldName,nn)!==oldName){ closeAll(); docRenameTo(d.id,cid,oldName,nn); }
+  logAudit('Edited document details',`${d.n}${cid&&client(cid)?' · '+client(cid).uci:''}`);
   closeAll(); render(); toast('Document updated.');
 }
 
@@ -11547,6 +11549,10 @@ function delDoc(cid,name){
     const d=DOCS.splice(i,1)[0];
     sbDel('np_demo_documents','n=eq.'+encodeURIComponent(name)+(cid?'&cid=eq.'+encodeURIComponent(cid):'&cid=is.null'));
     filedRefDrop(r=>r.cid===cid&&r.n===name);
+    if(DOCTAG[(cid||'')+'|'+name]){ delete DOCTAG[(cid||'')+'|'+name]; doctagSave(); }
+    { const p=storedPath(d.path,d.url);                              // v12.38.1: its file goes too, unless a binder copy or another record still uses it
+      if(p&&sbOn()&&!DOCS.some(x=>storedPath(x.path,x.url)===p)&&!Object.values(COMPLETED).some(l=>(l||[]).some(x=>storedPath(x.path,x.url)===p)))
+        fetch(`${BACKEND.url}/storage/v1/object/np-demo-docs/${orgPath(p)}`,{method:'DELETE',headers:sbH()}).catch(()=>{}); }
     docAct('removed',name,(client(cid)||staff(cid)||{}).uci||((staff(cid)||{}).name)||'',null);
     delMark('doc',docKey(d));
     logAudit('Deleted document',`${name}${cid?' · '+docOwnerName(cid):''}`);
@@ -14046,7 +14052,7 @@ function agencyFileRename(key,it,nv,toKey,toSb){
   const ad=agencyFileOf(key,it); if(!ad) return;
   const old=ad.n; ad.n=nv;
   const tg=DOCTAG['|'+old]; if(tg||toKey){ delete DOCTAG['|'+old]; DOCTAG['|'+nv]=toKey?{b:toKey,sb:toSb||''}:tg; doctagSave(); }
-  if(sbOn()&&old!==nv) fetch(`${BACKEND.url}/rest/v1/np_demo_documents?n=eq.${encQ(old)}&cid=is.null${ad.path?'&storage_path=eq.'+encQ(ad.path):''}&cat=not.like.${encQ('Completed*')}${ORG_ID?'&org_id=eq.'+encQ(ORG_ID):''}`,
+  if(sbOn()&&old!==nv) fetch(`${BACKEND.url}/rest/v1/np_demo_documents?n=eq.${encQ(old)}&cid=is.null${ad.path?'&storage_path=eq.'+encQ(ad.path):''}&cat=not.like.${encQ('Completed — *')}${ORG_ID?'&org_id=eq.'+encQ(ORG_ID):''}`,
     {method:'PATCH',headers:sbH(),body:JSON.stringify({n:nv})}).catch(()=>{});
 }
 /* deleting a binder entry deletes the uploaded file and its record too, unless a client or staff
@@ -14056,7 +14062,7 @@ function binderItemPurge(key,it){
   const ad=agencyFileOf(key,it);
   const p=storedPath(it.path||(ad&&ad.path),it.url||(ad&&ad.url));
   if(ad){ DOCS.splice(DOCS.indexOf(ad),1); delete DOCTAG['|'+ad.n];
-    sbDel('np_demo_documents','n=eq.'+encQ(ad.n)+'&cid=is.null'+(ad.path?'&storage_path=eq.'+encQ(ad.path):'')+'&cat=not.like.'+encQ('Completed*')); }
+    sbDel('np_demo_documents','n=eq.'+encQ(ad.n)+'&cid=is.null'+(ad.path?'&storage_path=eq.'+encQ(ad.path):'')+'&cat=not.like.'+encQ('Completed — *')); }   // v12.38.1: not "Completed form" 
   for(let i=DOCS.length-1;i>=0;i--) if(!DOCS[i].cid&&DOCS[i].n===it.n&&DOCS[i].cat==='Completed \u2014 '+key) DOCS.splice(i,1);
   if(p&&sbOn()&&!DOCS.some(x=>storedPath(x.path,x.url)===p)&&!Object.values(COMPLETED).some(l=>(l||[]).some(x=>x!==it&&storedPath(x.path,x.url)===p)))
     fetch(`${BACKEND.url}/storage/v1/object/np-demo-docs/${orgPath(p)}`,{method:'DELETE',headers:sbH()}).catch(()=>{});
@@ -14134,9 +14140,8 @@ function clientDocsFor(cid){ return DOCS.filter(d=>d.cid===cid&&!hid('doc',docKe
 function clientBinderGroups(cid){
   const g={};
   clientDocsFor(cid).forEach(d=>{
-    const t=DOCTAG[d.n]||{};
-    const b=normBinder(t.b||catToBinder(d.cat)||'Agency').b;
-    const sb=t.sb||catToSub(d.cat)||'';                              // a lab result lands in Lab Work without being tagged by hand
+    const b=docBinderOf(d)||'Agency';                                 // v12.38.1: the binder and tab the folder shows it in
+    const sb=docSubOf(d,b);
     (g[b]=g[b]||{})[sb]=((g[b]||{})[sb]||[]).concat([d]);
   });
   return g;
@@ -14645,18 +14650,19 @@ function tplStartFor(who,id,tid){ state.tpkQ='';
     values:{},by:auditActor(),at:nowStamp(),date:T,status:'draft',signedBy:null,signedAt:null};
   DOCS.unshift({id:'doc'+Date.now(),cid:id,n:file,cat:'Draft',by:meInit(),at:T,s:'6 KB',fid});
   sbPush('np_demo_documents',{cid:id,n:file,cat:'Draft',uploaded_by:meInit(),doc_date:T,size:'6 KB',note:'filed:'+fid});   // v12.22: the row knows its filed copy
+  DOCTAG[id+'|'+file]={b:binder,sb:normBinder(binder,t.sub||'').sb||''}; doctagSave();   // v12.38.1: under the template's binder and tab in their file
   filedSave(); logAudit('Started a document from a template',`${t.name} \u2192 ${who==='client'?((client(id)||{}).uci||id):((staff(id)||{}).name||id)}`);
   docAct('drafted',file,binder,fid);
   closeAll(); render(); filedEdit(fid);
 }
 function linkDocForm(cid){
   const items=[]; const seen={};
-  const add=(n,src,b,url,docId)=>{ if(!n||seen[n+'|'+src]) return; seen[n+'|'+src]=1; items.push({n,src,b:b||'',url:url||'',docId:docId||''}); };
+  const add=(n,src,b,url,docId,path)=>{ if(!n||seen[n+'|'+src]) return; seen[n+'|'+src]=1; items.push({n,src,b:b||'',url:url||'',docId:docId||'',path:path||''}); };
   binderKeys().forEach(k=>{
     const bf=binderFiles(k);
     (bf.forms||[]).forEach(r=>add(r.n||r.name,FOLDER_NAMES[k]||k,k,r.url,r.docId));
     (bf.resources||[]).forEach(r=>add(r.n,FOLDER_NAMES[k]||k,k,r.url,r.docId));
-    (COMPLETED[k]||[]).forEach(r=>add(r.n,(FOLDER_NAMES[k]||k)+(r.sb?' / '+r.sb:''),k));
+    (COMPLETED[k]||[]).forEach(r=>add(r.n,(FOLDER_NAMES[k]||k)+(r.sb?' / '+r.sb:''),k,r.url,'',r.path));   // v12.38.1: with its stored file
   });
   Object.keys(FILLED).forEach(n=>add(n,'Completed from template',''));
   window._linkItems=items; window._linkCid=cid;
@@ -14679,10 +14685,10 @@ function linkDocList(){
 function linkDocGo(i){
   const x=(window._linkView||[])[i]; const cid=window._linkCid; if(!x||!cid) return;
   if(DOCS.some(d=>d.cid===cid&&d.n===x.n)) return toast('That document is already in this client\u2019s files.');
-  const rec={id:'doc'+Date.now(),cid,n:x.n,cat:'Linked',by:meInit(),at:T,s:'—',url:x.url||null,path:null,note:'Linked from '+x.src};
+  const rec={id:'doc'+Date.now(),cid,n:x.n,cat:'Linked',by:meInit(),at:T,s:'—',url:x.url||null,path:x.path||null,note:'Linked from '+x.src};
   DOCS.unshift(rec);
-  sbPush('np_demo_documents',{cid,n:x.n,cat:'Linked',uploaded_by:meInit(),doc_date:T,size:'—',url:x.url||null,note:rec.note});   // v12.19: the database numbers the row itself (sending an id was refused)
-  if(x.b){ if(!DOCTAG[x.n]){ DOCTAG[x.n]={b:normBinder(x.b).b,sb:''}; doctagSave(); } }
+  sbPush('np_demo_documents',{cid,n:x.n,cat:'Linked',uploaded_by:meInit(),doc_date:T,size:'—',url:x.url||null,storage_path:x.path||null,note:rec.note});   // v12.19: the database numbers the row itself (sending an id was refused)
+  if(x.b){ DOCTAG[cid+'|'+x.n]={b:normBinder(x.b).b,sb:''}; doctagSave(); }   // v12.38.1: this client's copy only
   logAudit('Linked a document to a client file',`${x.n} → ${(client(cid)||{}).uci||''}`);
   docAct('filed',x.n,(client(cid)||{}).uci||'client file');
   closeAll(); render(); toast('Linked — it shows in this client\u2019s files and stays in '+x.src+'.');
@@ -20091,7 +20097,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.38 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.38.1 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -23129,6 +23135,7 @@ async function sbHydrate(){
   docs.forEach(r=>{
     if(r.storage_path&&!r.path) r.path=r.storage_path;
     { const ex=DOCS.find(d=>d.cid===r.cid&&d.n===r.n); if(ex&&!ex.path&&!ex.url&&(r.storage_path||r.url)){ ex.path=r.storage_path||null; ex.url=r.url||null; } }   // v12.22: a binder's copy of an upload has the same name; keep the stored file
+    if(!r.cid&&r.cat&&r.cat.startsWith('Completed — ')) return;    // v12.38.1: a binder's own entry (in COMPLETED), not the file's record
     if(!DOCS.some(d=>d.cid===r.cid&&d.n===r.n)) DOCS.unshift({id:r.id||('doc-'+(r.cid||'x')+'-'+r.n),cid:r.cid,n:r.n,cat:r.cat,by:r.uploaded_by,at:r.doc_date,s:r.size,url:r.url||null,path:r.storage_path||null,note:r.note||''}); });
   if(creds.length){ Object.keys(CREDS).forEach(k=>delete CREDS[k]); creds.forEach(r=>{ (CREDS[r.sid]=CREDS[r.sid]||[]).push(credRowFromDb(r)); }); }
   if(tpls.length){ tpls.forEach(r=>{ const t=TEMPLATES5.find(x=>x.id===r.id); if(t){ t.name=r.name; if(Array.isArray(r.fields)){ t.fields=r.fields; t._cleared=(t._cleared||0)+tplBlank(t); } } }); }   // v12.19: blank, here too
