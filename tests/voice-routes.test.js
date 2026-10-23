@@ -64,6 +64,7 @@ function check(label, ok, detail) {
       return route.abort();
     });
     const page = await ctx.newPage();
+    if (opts && opts.testHook) await page.addInitScript(() => { window.__VC_TEST__ = true; });
     if (opts && opts.fixed) await page.clock.setFixedTime(new Date('2026-10-15T15:00:00-04:00'));
     const bucket = opts && opts.original ? pageErrors.original : pageErrors.patched;
     page.on('pageerror', (e) => bucket.push(url + ' :: ' + e.message));
@@ -293,6 +294,34 @@ function check(label, ok, detail) {
     const { ctx, page } = await open(BASE + '/voice/calendar', { tz: 'America/Los_Angeles' });
     const t = await page.evaluate(() => document.getElementById('calRange').textContent + ' ' + document.getElementById('calSub').textContent);
     check('calendar viewed from Pacific adds no time zone note', !/Pacific|Eastern/.test(t), t);
+    await ctx.close();
+  }
+
+  // 13. the tool server's reply formats (Oct 23): offered times are read out of each, refused bookings show as refused,
+  // and Test a callback gives the agent the customer's last four digits
+  {
+    const { ctx, page } = await open(BASE + '/voice/overview', { testHook: true });
+    const got = await page.evaluate(() => {
+      const { parseOffered, askedFor, callbackFor, usPhone, customers } = window.__VC_TEST__;
+      const ref = '2026-10-23T16:00:00Z';
+      const n = (r) => parseOffered(r, ref).length;
+      const cu = customers().find((c) => usPhone(c.phone)) || null;
+      return {
+        old: n('Open times: Thursday, October 29 at 8:00 AM; Thursday, November 5 at 8:00 AM; Thursday, October 29 at 10:30 AM. Offer two or three of these naturally, by day and time, and ask which works.'),
+        day: n('Open times on Thursday, October 29: Thursday, October 29 at 8:00 AM; Thursday, October 29 at 10:30 AM. Offer two or three of these naturally, by day and time, and ask which works.'),
+        exact: n('That exact time is open: Tuesday, October 27 at 10:30 AM. Tell them it is open and book it with book_appointment as soon as they say yes. Do not list other times.'),
+        closest: n('2:00 PM on Thursday, October 29 is not one of our inspection times. The closest open times that day: Thursday, October 29 at 1:00 PM; Thursday, October 29 at 3:30 PM. Offer those. If neither works, ask what other day suits them and check again.'),
+        nothing: n('Nothing is open on Sunday, November 1. We do not book inspections on Sundays. The closest open times: Friday, October 30 at 3:30 PM; Saturday, October 31 at 3:30 PM; Monday, November 2 at 8:00 AM. Offer two or three of these naturally, by day and time, and ask which works.'),
+        at: n('Open at 3:30 PM: Saturday, October 24 at 3:30 PM; Monday, October 26 at 3:30 PM. Offer two or three of these naturally, by day and time, and ask which works.'),
+        mismatch: n('October 30 is a Friday, not a Thursday. Ask which they meant: Thursday, October 29, or Friday, October 30. Do not offer times until they tell you.'),
+        asked: askedFor({ requested: 'Thursday, October 29th at 2pm' }) + ' | ' + askedFor({ preference: 'mornings' }),
+        last4: cu ? callbackFor(cu).overrides.variableValues.caller_id_last4 : null,
+        phone: cu ? usPhone(cu.phone) : null,
+      };
+    });
+    check('reply formats: offered times read from every form', got.old === 3 && got.day === 2 && got.exact === 1 && got.closest === 2 && got.nothing === 3 && got.at === 2 && got.mismatch === 0, JSON.stringify(got));
+    check('reply formats: "Asked for" shows the exact words, else the wish', got.asked === 'Thursday, October 29th at 2pm | mornings', got.asked);
+    check('Test a callback passes the last four digits', !!got.phone && got.last4 === got.phone.slice(-4), JSON.stringify(got));
     await ctx.close();
   }
 
