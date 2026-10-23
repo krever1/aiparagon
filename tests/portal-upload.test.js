@@ -78,6 +78,8 @@ const FORM = path.join(H.FORMS, 'alta-medication-reason-for-use.pdf');
     check('filed in a binder: no template is made', !r.open && r.tpl === nTpl, JSON.stringify({ open: r.open, tpl: r.tpl, nTpl }));
     check('...it is in the Medical binder, in the subfolder picked, as "Completed form"', r.top && r.top.n === 'Medication reason, Dr. Chen signed.pdf' && r.top.sb === sub && r.doc.cat === 'Completed form' && !r.doc.cid && r.tag && r.tag.b === 'Medical' && r.tag.sb === sub, JSON.stringify(r));
     check('...and it says where it went', (await toastText(page)) === `Filed in the Medical binder / ${sub} on the Documents page.`, await toastText(page));
+    const act = await page.evaluate(() => ({ row: (COMPLETED.Medical || [])[0].sub, a: DOC_ACT[0] && { k: DOC_ACT[0].k, w: DOC_ACT[0].w } }));
+    check('...its binder row and Recent activity say uploaded and name the binder, never "Agency" (v12.38.2)', /^Uploaded by \S/.test(act.row) && act.a && act.a.k === 'uploaded' && act.a.w === `Medical binder / ${sub}`, JSON.stringify(act));
     await page.evaluate(() => { closeAll(); go('templates'); }); await page.waitForTimeout(400);
     check('...it shows in the Medical binder on the Documents page', await page.evaluate(() => [...document.querySelectorAll('#view section')].some((s) => /Agency binders/.test(s.textContent) && /Medication reason, Dr\. Chen signed/.test(s.innerText))));
     // a client's file: the client must be picked
@@ -91,6 +93,8 @@ const FORM = path.join(H.FORMS, 'alta-medication-reason-for-use.pdf');
     r = await page.evaluate((id) => ({ doc: DOCS[0], uci: client(id).uci, inBinder: Object.values(COMPLETED).flat().some((x) => /Release of information signed/.test(x.n)) }), cid);
     check('...filed in that client’s file, not in the team binder', r.doc.cid === cid && r.doc.n === 'Release of information signed.pdf' && r.doc.cat === 'Completed form' && !r.inBinder, JSON.stringify(r));
     check('...and it says whose file', (await toastText(page)) === `Filed in client ${r.uci}’s file on the Documents page.`, await toastText(page));
+    const act2 = await page.evaluate(() => DOC_ACT[0] && { k: DOC_ACT[0].k, w: DOC_ACT[0].w });
+    check('...and Recent activity says uploaded, to that client (v12.38.2)', act2 && act2.k === 'uploaded' && act2.w.includes(r.uci) && !/Agency/.test(act2.w), JSON.stringify(act2));
     await page.evaluate((id) => { closeAll(); go('clients'); openClient(id); state.tab = 'documents'; render(); }, cid); await page.waitForTimeout(400);
     check('...it shows in the client’s Files', await page.evaluate(() => /Release of information signed/.test(el('view').innerText)));
     // a staff member's file
