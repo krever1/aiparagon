@@ -4866,7 +4866,9 @@ function kbResolve(q, list, ctx) {
 
 const STEP_STOP = new Set(("this that with have there their what when will would could should about your they them then than from into just like know need some does been were also only want call calls calling someone somebody anyone right okay yeah").split(" "));
 function stepWords(t) { return String(t || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).filter((w) => w.length >= 4 && !STEP_STOP.has(w)).map((w) => w.slice(0, 5)); }
-function stepKey(s) { const a = s.args || {}; return s.q || a.question || a.reason || a.preference || a.slot || ""; }
+function stepKey(s) { const a = s.args || {}; return s.q || a.question || a.reason || a.requested || a.preference || a.slot || ""; }
+// What the caller asked the calendar for: their exact words (requested), else a general wish (preference).
+function askedFor(a) { a = a || {}; return [a.requested, a.preference].filter(Boolean).join(", "); }
 
 // Calls saved before the timeline existed: put each step after the caller line it best matches, in order.
 function placeSteps(transcript, steps) {
@@ -5027,12 +5029,12 @@ function stepCard(c, s, n, steps, canEdit) {
   } else if (tool === "check_availability") {
     const a = s.args || {};
     const slots = ref.kind === "slots" ? ref.slots || [] : [];
-    body += '<div class="sm">' + (a.preference ? "Asked for " + esc(a.preference) + ". " : "") + (slots.length ? "Offered " + esc(slots.slice(0, 3).map((x) => apptShort(x)).join(", ")) : esc(s.label || "Checked open times")) + "</div>";
+    body += '<div class="sm">' + (askedFor(a) ? "Asked for " + esc(askedFor(a)) + ". " : "") + (slots.length ? "Offered " + esc(slots.slice(0, 3).map((x) => apptShort(x)).join(", ")) : esc(s.label || "Checked open times")) + "</div>";
     if (s.ok === false) cls = " changed";
     if (act) btns.push('<button class="btn sm" data-act="' + act + '">See the times</button>');
   } else if (tool === "book_appointment") {
     const a = s.args || {};
-    const failed = s.ok === false || /taken|not one of|switched off/i.test(s.result || "");
+    const failed = s.ok === false || /taken|not one of|switched off|not booked yet/i.test(s.result || "");
     cls = failed ? " changed" : "";
     body += '<div class="sm">' + (failed ? "Tried " : "Booked ") + esc(a.slot || (c.actions && c.actions[s.ai] ? actionResult(c.actions[s.ai], c) : "") || "a time") + (failed ? ", not booked" : "") + "</div>";
     if (act) btns.push('<button class="btn sm" data-act="' + act + '">Open the booking</button>');
@@ -5173,7 +5175,7 @@ function toolLine(name, args, id) {
     l.miss = !r.primary;
   } else if (name === "escalate_to_human") {
     l.title = "Flagged for a person"; l.detail = String(args.urgency || "normal") + " urgency" + (args.reason ? ": " + args.reason : ""); l.warn = /high/i.test(String(args.urgency || ""));
-  } else if (name === "check_availability") { l.title = "Checked the calendar"; l.detail = args.preference ? "for " + args.preference : ""; }
+  } else if (name === "check_availability") { l.title = "Checked the calendar"; l.detail = askedFor(args) ? "for " + askedFor(args) : ""; }
   else if (name === "book_appointment") { l.title = "Booking"; l.detail = String(args.slot || ""); }
   else if (name === "reschedule_appointment") { l.title = "Moving their booking"; l.detail = args.slot ? "to " + args.slot : ""; }
   else if (name === "add_case_details") { l.title = "Adding to their file"; l.detail = args.details ? "“" + args.details + "”" : ""; }
@@ -5217,7 +5219,7 @@ function callbackFor(cu) {
   // Signed in, this is a real customer: their booking can really move, but the test never texts them.
   // Signed out, it's a sample customer: the agent gets their file, and the tool server leaves real bookings alone.
   const sample = !cu.live;
-  const vars = { caller_known: "yes", caller_name: name, caller_first_name: first, customer_phone: sample ? "" : usPhone(cu.phone),
+  const vars = { caller_known: "yes", caller_name: name, caller_first_name: first, customer_phone: sample ? "" : usPhone(cu.phone), caller_id_last4: usPhone(cu.phone).slice(-4),
     last_call_when: last ? dayPhrase(last.receivedAt) : "", last_call_about: about, caller_history: lines.join("\n"),
     appointment_id: "", appointment_label: up && up.startsAt ? apptLong(up.startsAt) : "", test_call: "yes" };
   if (sample) vars.sample_data = "yes";
@@ -5392,7 +5394,7 @@ function finishCall(failed) {
           const pos = toolAt[i] || { at: undefined, line: {} };
           const extra = { at: pos.at, args: t.args, result: pos.line.result || "" };
           if (t.name === "lookup_knowledge") { const hit = (toolAt[i] && toolAt[i].line.kb !== undefined) ? kbList().find((k) => k.id === toolAt[i].line.kb) || null : kbMatch(String(t.args.question || "")); return Object.assign({ t: t.name, r: hit ? hit.collection + " · approved answer returned" : "No approved answer", ok: !!hit, kb: hit ? hit.id : null, ref: hit ? { kind: "kb", id: hit.id, q: t.args.question } : { kind: "gap", q: t.args.question } }, extra); }
-          return Object.assign({ t: t.name, r: t.name === "book_appointment" ? "Slot: " + (t.args.slot || "unspecified") : t.name === "escalate_to_human" ? (t.args.urgency || "normal") + " · " + (t.args.reason || "") : t.name === "check_availability" ? "Checked open times" + (t.args.preference ? " for " + t.args.preference : "") : "Called", ok: true }, extra);
+          return Object.assign({ t: t.name, r: t.name === "book_appointment" ? "Slot: " + (t.args.slot || "unspecified") : t.name === "escalate_to_human" ? (t.args.urgency || "normal") + " · " + (t.args.reason || "") : t.name === "check_availability" ? "Checked open times" + (askedFor(t.args) ? " for " + askedFor(t.args) : "") : "Called", ok: true }, extra);
         })
       : [{ t: "none", r: "No tools were called on this call", ok: true }]
   });
@@ -5513,7 +5515,7 @@ const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0) + "%";
 
 // The times the agent offered, read back out of the tool's reply
 function parseOffered(result, refIso) {
-  const m = String(result || "").match(/Open times:\s*([^]*?)(?:\.\s+Offer|$)/i);
+  const m = String(result || "").match(/(?:Open times(?: on [^:]+)?|Open at \d{1,2}:\d{2} [AP]M|The closest open times(?: that day)?|That exact time is open):\s*([^]*?)(?:\.\s+(?:Offer|Tell|If)|$)/i);
   if (!m) return [];
   return m[1].split(";").map((x) => parseSlotLabel(x.trim(), refIso)).filter(Boolean);
 }
@@ -5640,13 +5642,13 @@ function buildLive(raw) {
         return { t: e.tool, r: e.kb_entry_id ? (k ? k.collection : e.kb_entry_id) + " · approved answer returned" : "No approved answer", ok: !!e.kb_entry_id, ref: e.kb_entry_id ? { kind: "kb", id: e.kb_entry_id, q: a.question } : { kind: "gap", q: a.question } };
       }
       if (e.tool === "book_appointment") {
-        const failed = /taken|not one of|switched off|no time was supplied/i.test(e.result || "");
+        const failed = /taken|not one of|switched off|no time was supplied|not booked yet/i.test(e.result || "");
         const ap = !failed && apptByCall[c.id];
         return { t: e.tool, r: ap ? "" : "Asked for " + (a.slot || "a time") + (failed ? ", not booked" : ""), ok: !failed, ref: ap ? { kind: "appt", id: ap.id } : null };
       }
       if (e.tool === "check_availability") {
         const slots = parseOffered(e.result, e.created_at);
-        return { t: e.tool, r: slots.length ? slots.length + " times offered" + (a.preference ? " for " + a.preference : "") : "Checked open times", ok: !!slots.length, ref: slots.length ? { kind: "slots", slots: slots } : null };
+        return { t: e.tool, r: slots.length ? slots.length + (slots.length === 1 ? " time" : " times") + " offered" + (askedFor(a) ? " for " + askedFor(a) : "") : (/is a \w+day, not a /.test(e.result || "") ? "Asked which day they meant" : "Checked open times"), ok: !!slots.length, ref: slots.length ? { kind: "slots", slots: slots } : null };
       }
       if (e.tool === "reschedule_appointment") {
         const res = String(e.result || "");
@@ -6500,6 +6502,8 @@ setInterval(() => {
   if (!modalOpen() && !typing && (changed || ["overview", "appointments", "opportunities", "messages"].indexOf(current) !== -1)) renderAll();
   else if (changed) { renderCounts(); renderBell(); }
 }, 30000);
+// Test hook: only when a test sets window.__VC_TEST__ before the page loads (tests/voice-routes.test.js). Never on its own.
+if (window.__VC_TEST__ === true) window.__VC_TEST__ = { parseOffered: parseOffered, askedFor: askedFor, callbackFor: callbackFor, usPhone: usPhone, customers: () => (S && S.customers) || [] };
 })();
 </script>
 </body>
