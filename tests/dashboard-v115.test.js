@@ -262,7 +262,9 @@ function tables(withLive) {
     await page.keyboard.press('Escape');
     // Today's latest sign-ups
     await page.evaluate(() => apGo('today')); await wait(page, 1500);
-    const ls = await page.evaluate(() => [...document.querySelectorAll('#main .nw-mini-row[onclick*="signups"]')].map((r) => r.innerText.replace(/\s+/g, ' ')).filter((x) => /Jamie|Alex|Robin Direct/.test(x)));   // the sign-ups card only (Needs you can list Jamie's lead too)
+    // only the Latest sign-ups card: Needs you can list the new lead too, once older items age out of it
+    const ls = await page.evaluate(() => { const k = [...document.querySelectorAll('#main .nw-widgets > section')].find((s) => /Latest sign-ups/i.test(s.innerText));
+      return k ? [...k.querySelectorAll('.nw-mini-row')].map((r) => r.innerText.replace(/\s+/g, ' ')).filter((x) => /Jamie|Alex|Robin Direct/.test(x)) : []; });
     check('Today shows the latest sign-ups', ls.length === 3 && /Jamie Sample/.test(ls[0]), JSON.stringify(ls));
     await ctx.close();
   }
