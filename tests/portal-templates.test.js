@@ -60,16 +60,16 @@ function check(label, ok, detail) {
   await page.evaluate(() => ovUploadStart('Medical'));
   await page.waitForTimeout(300);
   const upLabel = await page.evaluate(() => [...document.querySelectorAll('#mdBody label')].map((l) => l.textContent.trim()).join(' | '));
-  check('upload: says where filled-in copies are saved, in plain words', /Filled-in copies are saved to/.test(upLabel) && !/Completed copies file to/.test(upLabel), upLabel);
+  check('upload: says where the template is kept, in plain words (v12.38)', /Keep it in Templates/.test(upLabel) && !/Filled-in copies are saved to|Completed copies file to/.test(upLabel), upLabel);
   await page.setInputFiles('#ovFile', path.join(H.FORMS, 'med-drawn.pdf'));
   await page.click('#ovGo');
   await page.waitForSelector('.ov-modal .ov-f', { timeout: 20000 });
   await page.waitForTimeout(600);
   const ed = await page.evaluate(() => ({ n: ovT().fields.length, intro: (document.querySelector('.ov-intro') || {}).textContent || '', tryIt: !!document.querySelector('.ov-try'),
-    find: !!document.querySelector('.ov-find'), saveTo: [...document.querySelectorAll('#mdBody label')].some((l) => /Filled-in copies are saved to/.test(l.textContent)), boxes: document.querySelectorAll('.ov-modal .ov-f').length }));
+    find: !!document.querySelector('.ov-find'), saveTo: [...document.querySelectorAll('#mdBody label')].some((l) => /Keep it in Templates/.test(l.textContent)), boxes: document.querySelectorAll('.ov-modal .ov-f').length }));
   check('upload: Found 68 places to fill in, each drawn on the page', ed.n === 68 && /Found 68 places/.test(ed.intro) && ed.boxes === 68, ed.n + ' / ' + ed.boxes + ' / ' + ed.intro.slice(0, 60));
   check('upload editor: no "Try it" switch', !ed.tryIt);
-  check('upload editor: a Find boxes button, and the plain "saved to" label', ed.find && ed.saveTo);
+  check('upload editor: a Find boxes button, and the plain "Keep it in Templates" label', ed.find && ed.saveTo);
 
   // Find boxes puts back what was taken away, and does not double up
   await page.evaluate(() => { ovSnap(); ovT().fields = ovT().fields.filter((f) => !/row/.test(f.l)); ovPaint(); });

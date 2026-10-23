@@ -59,11 +59,11 @@ function check(label, ok, detail) {
 
   // ---------------- 2. a whole column at once ----------------
   await pick('Dose, row 3');
-  await tblBtn('Number');
+  await tblBtn('Amount');
   let f = await fields();
-  check('“Every box in this column is Number” turns all 15 Dose boxes into numbers', f.filter((x) => /^Dose, row/.test(x.l)).every((x) => x.ty === 'number') && f.filter((x) => /^Dose, row/.test(x.l)).length === 15);
+  check('“Every box in this column is Amount” turns all 15 Dose boxes into amounts', f.filter((x) => /^Dose, row/.test(x.l)).every((x) => x.ty === 'number') && f.filter((x) => /^Dose, row/.test(x.l)).length === 15);
   check('and leaves the other columns alone', f.filter((x) => /^(Drug|Frequency Given|Reason for Use), row/.test(x.l)).every((x) => x.ty === 'text'));
-  check('the box’s own kind and the column’s kind both show Number', await page.evaluate(() => [...document.querySelectorAll('#ovSide .ov-kinds button.on')].map((b) => b.textContent.trim()).join(',')) === '#Number,#Number');
+  check('the box’s own kind and the column’s kind both show Amount', await page.evaluate(() => [...document.querySelectorAll('#ovSide .ov-kinds button.on')].map((b) => b.textContent.trim()).join(',')) === '#Amount,#Amount');
   const before = (await byL())['Frequency Given, row 4'].ov;
   await pick('Frequency Given, row 4');
   await tblBtn('Tick box');

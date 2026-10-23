@@ -3200,6 +3200,22 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
   .cx-ld{grid-auto-flow:column;align-items:center;justify-content:start;gap:12px}
   .cx-mhead h3{font-size:16px}
 }
+/* ══ v12.38: the boxes on an uploaded form say their kind; Upload a form asks what is being uploaded ══ */
+.ov-e .ov-lb .ov-ki{font-style:normal;margin-right:3px;opacity:.85}
+.ov-what{margin:0 0 14px}
+.ov-what-h{font:600 13.5px/1.3 var(--sans);color:var(--ink);margin:0 0 8px}
+.ov-what-os{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ov-what-o{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;background:var(--white);transition:border-color .15s,background .15s}
+.ov-what-o input{margin:3px 0 0;accent-color:var(--navy-deep);flex:none}
+.ov-what-o .ov-what-t{display:block;min-width:0}
+.ov-what-o b{display:block;font-size:14px;color:var(--ink)}
+.ov-what-o .ov-what-s{display:block;font-size:12.5px;line-height:1.45;color:var(--muted);margin-top:3px}
+.ov-what-o:has(input:checked){border-color:var(--navy);background:var(--navy-soft)}
+.ov-what-o:has(input:focus-visible){outline:2px solid var(--navy);outline-offset:2px}
+.ov-dest-note{margin-top:6px;line-height:1.45}
+.ov-ed-note{flex-basis:100%;margin-top:-6px}
+.ov-done[hidden],.ov-blank[hidden],#ovDoneWhoF[hidden]{display:none!important}
+@media(max-width:600px){.ov-what-os{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -14788,7 +14804,7 @@ function docFieldInput(fd,i,v){
   if(fd.ty==='number'||fd.ty==='email'||fd.ty==='phone'||fd.ty==='url'||fd.ty==='place'){
     const t={number:'number',email:'email',phone:'tel',url:'url',place:'text'}[fd.ty];
     const ph={number:'0',email:'name@example.org',phone:'(555) 000-0000',url:'https://',place:'Address or house'}[fd.ty];
-    return `<div class="field"><label>${esc(fd.l)}</label><input class="inp" type="${t}" id="dg${i}" value="${esc(val)}" placeholder="${ph}"></div>`;
+    return `<div class="field"><label>${esc(fd.l)}</label><input class="inp" type="${t}" id="dg${i}" value="${esc(val)}" placeholder="${ph}"${fd.ty==='number'?' step="any" inputmode="decimal"':''}></div>`;
   }
 
   if(fd.ty==='signature'){
@@ -16081,7 +16097,7 @@ function tplById(id){ return TEMPLATES5.find(t=>t.id===id); }
    onboarding checklists, safety logs and templates all describe the same thing: a list of
    questions. These are the kinds of question it can ask. */
 const TPL_KINDS=[['text','Short answer'],['long text','Long answer'],['choice','Multiple choice'],['checkbox','Yes / no'],
-  ['date','Date'],['time','Time'],['number','Number'],['scale','Rating'],['person','Person'],['place','Place'],
+  ['date','Date'],['time','Time'],['number','Amount'],['scale','Rating'],['person','Person'],['place','Place'],
   ['email','Email'],['phone','Phone'],['url','Link'],['file','File or photo'],
   ['table','Table'],['checklist','Checklist'],['signature','Signature'],
   ['h1','Title'],['head','Section heading'],['para','Paragraph'],['divider','Divider']];
@@ -16089,7 +16105,7 @@ const TPL_KIND_ICON={text:'file-text','long text':'file-text',choice:'list-todo'
   time:'clock',number:'chart',scale:'star',person:'users',place:'map-pin',email:'mail',phone:'phone',url:'sparkle',
   file:'folder',table:'chart',checklist:'clipboard',signature:'id-card',h1:'file-text',head:'file-text',para:'file-text',divider:'activity'};
 const TPL_KIND_HINT={text:'A line of text',"long text":'A paragraph',choice:'Pick one, or several',checkbox:'Yes, no, or your own options',
-  date:'A date picker',time:'A time',number:'Digits only',scale:'One to five',person:'A client or a staff member',place:'An address or a house',
+  date:'A date picker',time:'A time',number:'A number, like a count or an amount',scale:'One to five',person:'A client or a staff member',place:'An address or a house',
   email:'An email address',phone:'A phone number',url:'A web address',file:'Attach a file or a photo',
   table:'Rows and columns that repeat',checklist:'Tick-boxes',signature:'Drawn or typed',h1:'A large title',head:'A section heading',
   para:'Body text that prints as-is',divider:'A line across the page'};
@@ -16627,8 +16643,9 @@ function tplPrintHtml(id,preview){
    - a photo or scan of a paper form starts with no boxes; they are placed by hand
    Every box can be moved, resized, renamed, retyped or removed, with undo and a revert to the
    last saved version. Nothing is read anywhere but in this browser. */
-const OV_KINDS=[['text','Text'],['long text','Paragraph'],['date','Date'],['time','Time'],['number','Number'],['check','Tick box'],['signature','Signature']];
+const OV_KINDS=[['text','Text'],['long text','Paragraph'],['date','Date'],['time','Time'],['number','Amount'],['check','Tick box'],['signature','Signature']];   // v12.38: Number is called Amount
 const OV_KIND_ICON={text:'T','long text':'¶',date:'\u{1F4C5}',time:'⏱',number:'#',check:'☑',signature:'✍'};
+const ovKindName=k=>(OV_KINDS.find(x=>x[0]===k)||[])[1]||'Text';   // v12.38
 const OV_MAX_PAGES=20;
 const OV_FS={s:1.15,m:1.45,l:1.85};                                   // text size, as a share of the page width
 let OV_CACHE={}, OV_READY={}, OV_DESC={};
@@ -17158,40 +17175,140 @@ function ovSlotAt(tid,pi,px,py){
 }
 
 /* ── starting a template from an uploaded form ── */
-function ovUploadStart(bk){
+function ovUploadStart(bk,kind){
   if(state.role!=='director') return toast('Only a director can add templates.');
   const dest=binderKeys().includes(bk)?bk:(binderKeys()[0]||'Agency');
+  const done=kind==='done'; window._ovUpKind=done?'done':'blank';          // v12.38
+  const cl=visibleClients(), sf=visibleStaff();
   openModal('Upload a form',`
-    <div class="ai-note">${aiIc(16)}<div><b>AI reads your form.</b> It finds the blank lines, tables and tick boxes and names each box from the words beside it. A photo is straightened and cleaned up first. It all runs on this computer: nothing is sent anywhere to read it.</div></div>
-    <div class="ov-up-lead">The form you upload stays exactly as it is. You place the fill-in boxes on top of it, and every copy fills in, signs and prints on the original page.</div>
-    ${phoneNote(1)}
+    <div class="ov-what" role="radiogroup" aria-label="What are you uploading?">
+      <div class="ov-what-h">What are you uploading?</div>
+      <div class="ov-what-os">
+        <label class="ov-what-o"><input type="radio" name="ovWhat" value="blank" ${done?'':'checked'} onchange="ovUpKind('blank')">
+          <span class="ov-what-t"><b>A blank form</b><span class="ov-what-s">It becomes a template in Templates. AI finds the boxes, and every copy fills in and signs on the original page.</span></span></label>
+        <label class="ov-what-o"><input type="radio" name="ovWhat" value="done" ${done?'checked':''} onchange="ovUpKind('done')">
+          <span class="ov-what-t"><b>A completed or signed form</b><span class="ov-what-s">It is filed as it is in Documents, ready to open and print. No boxes are added.</span></span></label>
+      </div>
+    </div>
+    <div class="ov-blank" ${done?'hidden':''}>
+      <div class="ai-note">${aiIc(16)}<div><b>AI reads your form.</b> It finds the blank lines, tables and tick boxes and names each box from the words beside it. A photo is straightened and cleaned up first. It all runs on this computer: nothing is sent anywhere to read it.</div></div>
+      <div class="ov-up-lead">The form you upload stays exactly as it is. You place the fill-in boxes on top of it, and every copy fills in, signs and prints on the original page.</div>
+      ${phoneNote(1)}
+    </div>
     <label class="ov-drop" id="ovDrop">
       <input type="file" id="ovFile" accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx" onchange="ovPicked()">
       <span class="ov-drop-ic">⇧</span>
-      <span class="ov-drop-t" id="ovDropT"><b>Choose the form</b><span>PDF, or a photo or scan of a paper form (PNG or JPG)</span></span>
+      <span class="ov-drop-t" id="ovDropT">${ovDropSays(done)}</span>
     </label>
-    <div class="ov-lang"><label for="ovLang">Words on the form are in</label><select class="inp" id="ovLang" onchange="ovLangSet(this.value)">${OCR_LANGS.map(([k,n])=>`<option value="${k}" ${k===OV_LANG?'selected':''}>${esc(n)}</option>`).join('')}</select><span>for reading photos and scans</span></div>
-    <div id="ovWordNote"></div>
-    <div class="row2">
-      <div class="field"><label>Template name</label><input class="inp" id="ovName" placeholder="e.g. Physician visit report"></div>
-      <div class="field"><label>Filled-in copies are saved to</label><select class="inp" id="ovDest" data-list="binder" onchange="if(this.value==='__add__')return fillSelectChange(this)">
-        ${binderKeys().map(k=>`<option value="${k}" ${k===dest?'selected':''}>${esc(FOLDER_NAMES[k]||k)}</option>`).join('')}${addOpt('binder')}</select></div>
+    <div class="ov-blank" ${done?'hidden':''}>
+      <div class="ov-lang"><label for="ovLang">Words on the form are in</label><select class="inp" id="ovLang" onchange="ovLangSet(this.value)">${OCR_LANGS.map(([k,n])=>`<option value="${k}" ${k===OV_LANG?'selected':''}>${esc(n)}</option>`).join('')}</select><span>for reading photos and scans</span></div>
+      <div id="ovWordNote"></div>
+      <div class="row2">
+        <div class="field"><label>Template name</label><input class="inp" id="ovName" placeholder="e.g. Physician visit report"></div>
+        <div class="field"><label>Keep it in Templates</label><select class="inp" id="ovDest" data-list="binder" onchange="if(this.value==='__add__')return fillSelectChange(this);ovDestNote(this.value,'ovDestSay')">
+          ${binderKeys().map(k=>`<option value="${k}" ${k===dest?'selected':''}>${esc(ovTplSection(k))}</option>`).join('')}${addOpt('binder')}</select>
+          <div class="tiny muted ov-dest-note" id="ovDestSay">${ovDestSays(dest)}</div></div>
+      </div>
+      <div class="sec-note"><span>\u{1F512}</span><div><b>Upload the blank form</b>Not a filled-in copy. Client names and dates of birth never go in a template.</div></div>
     </div>
-    <div class="sec-note"><span>\u{1F512}</span><div><b>Upload the blank form</b>Not a filled-in copy. Client names and dates of birth never go in a template.</div></div>`,
+    <div class="ov-done" ${done?'':'hidden'}>
+      <div class="row2">
+        <div class="field"><label>Title</label><input class="inp" id="ovDoneTitle" placeholder="e.g. Physician visit, signed"></div>
+        <div class="field"><label>Date on the document</label><input class="inp" type="date" id="ovDoneDate" value="${T}"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>File it in</label><select class="inp" id="ovDoneWhere" onchange="ovDoneWherePick()">
+          <option value="binder">A binder in Documents</option>
+          <option value="client">A client’s file</option>
+          <option value="staff">A staff member’s file</option></select></div>
+        <div class="field" id="ovDoneWhoF" hidden><label id="ovDoneWhoL">Client</label>
+          <select class="inp" id="ovDoneWho" data-cl="${esc(JSON.stringify(cl.map(c=>[c.id,c.uci])))}" data-sf="${esc(JSON.stringify(sf.map(s=>[s.id,s.name+' \u00b7 '+(s.role||'')])))}"></select></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Binder</label><select class="inp" id="udBinderKey" data-list="binder" onchange="if(this.value==='__add__')return fillSelectChange(this);udSubs()">
+          ${binderKeys().map(k=>`<option value="${k}" ${k===dest?'selected':''}>${esc(FOLDER_NAMES[k]||k)}</option>`).join('')}
+          <option value="__add__">\uff0b New binder\u2026</option></select></div>
+        <div class="field"><label>Subfolder</label><span id="udSubWrap">${udSubSelect(dest)}</span></div>
+      </div>
+      <div class="tiny muted" id="ovDoneSay">${ovDoneSays()}</div>
+    </div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>
-     <button class="btn navy" id="ovGo" onclick="ovUploadGo()">Set up the form</button>`);
+     <button class="btn navy" id="ovGo" onclick="ovUploadGo()">${done?'File it':'Set up the form'}</button>`);
+  if(done) ovDoneWherePick();
+}
+/* v12.38: the Templates section a binder's blank forms sit in, and where their signed copies go */
+function ovTplSection(k){ return (FOLDER_NAMES[k]||k)+' templates'; }
+function ovDestSays(k){
+  if(k==='__client__') return 'Signed copies are filed in Documents, in the client\u2019s file picked when signing.';
+  if(k==='__staff__') return 'Signed copies are filed in Documents, in the staff member\u2019s file picked when signing.';
+  return `Signed copies are filed in Documents, in the ${esc(FOLDER_NAMES[k]||k)}, unless a client\u2019s or staff member\u2019s file is picked when signing.`;
+}
+function ovDestNote(k,id){ const n=el(id); if(n&&k!=='__add__') n.innerHTML=ovDestSays(k); }
+function ovDropSays(done){
+  return done?'<b>Choose the file</b><span>A PDF, a Word file or a photo of the completed form</span>'
+    :'<b>Choose the form</b><span>PDF, or a photo or scan of a paper form (PNG or JPG)</span>';
+}
+function ovUpKind(k){
+  const done=k==='done'; window._ovUpKind=done?'done':'blank';
+  document.querySelectorAll('#mdBody .ov-blank').forEach(x=>x.hidden=done);
+  document.querySelectorAll('#mdBody .ov-done').forEach(x=>x.hidden=!done);
+  const f=el('ovFile')&&(el('ovFile').files||[])[0];
+  if(f) ovPicked(); else if(el('ovDropT')) el('ovDropT').innerHTML=ovDropSays(done);
+  if(!f&&el('ovGo')) el('ovGo').textContent=done?'File it':'Set up the form';
+  if(done) ovDoneWherePick();
+}
+function ovDoneWherePick(){
+  const w=(el('ovDoneWhere')||{}).value||'binder', who=el('ovDoneWho'), f=el('ovDoneWhoF'); if(!who||!f) return;
+  f.hidden=w==='binder';
+  if(w!=='binder'){
+    const list=JSON.parse(who.dataset[w==='client'?'cl':'sf']||'[]'), cur=who.dataset.for===w?who.value:'';
+    el('ovDoneWhoL').textContent=w==='client'?'Client':'Staff member';
+    who.innerHTML=(list.length?`<option value="">\u2014 pick ${w==='client'?'a client':'someone'} \u2014</option>`:`<option value="">${w==='client'?'No clients yet':'No staff yet'}</option>`)
+      +list.map(([id,n])=>`<option value="${esc(id)}" ${id===cur?'selected':''}>${esc(n)}</option>`).join('');
+    who.dataset.for=w;
+  }
+  const s=el('ovDoneSay'); if(s) s.innerHTML=ovDoneSays();
+}
+function ovDoneSays(){
+  const w=(el('ovDoneWhere')||{}).value||'binder';
+  return w==='client'?'It goes in that client\u2019s file, in the binder and subfolder picked here.'
+    :w==='staff'?'It goes in that person\u2019s staff file, in the binder and subfolder picked here.'
+    :'It goes in that binder on the Documents page.';
+}
+/* a completed or signed form is stored as it is and filed, the same way Add a document files one */
+async function ovFileDone(){
+  const f=(el('ovFile').files||[])[0];
+  if(!f) return toast('Choose the file to upload.');
+  if(f.size>25*1024*1024) return toast('That file is over 25 MB \u2014 please upload a smaller copy.');
+  const w=el('ovDoneWhere').value, who=w==='binder'?'':(el('ovDoneWho').value||'');
+  if(w!=='binder'&&!who) return toast(w==='client'?'Pick the client whose file it goes in.':'Pick the staff member whose file it goes in.');
+  const bk=el('udBinderKey').value||'', bsub=(el('udSub')&&el('udSub').value)||'';
+  if(bk==='__add__'||bsub==='__add__') return toast('Finish naming the new binder or subfolder first, or pick one from the list.');
+  const title=(el('ovDoneTitle').value||'').trim()||String(f.name).replace(/\.[^.]+$/,'');
+  const btn=el('ovGo'); if(btn){ btn.disabled=true; btn.textContent='Filing\u2026'; }
+  const r=await docUploadFile({f,title,cid:who,cat:'Completed form',when:el('ovDoneDate').value||T,note:'',bk,bsub,alsoBinder:!who});
+  if(!r){ if(btn){ btn.disabled=false; btn.textContent='File it'; } return; }
+  logAudit('Filed a completed form',`${r.rec.n} \u2192 ${who?docOwnerName(who):FOLDER_NAMES[bk]||bk}`);
+  if(who) state.cbOpen=who+'|'+bk;
+  else { state.openBinder=bk; if(bsub){ state.openSubs=state.openSubs||[]; if(!subIsOpen(bk,bsub)) state.openSubs.push(subKey(bk,bsub)); } }
+  const where=(who?(w==='client'?'client '+docOwnerName(who)+'\u2019s file':docOwnerName(who)+'\u2019s staff file'):'the '+(FOLDER_NAMES[bk]||bk))+(bsub?' / '+bsub:'');
+  closeAll(); render();
+  toast(`Filed in ${where} on the Documents page.`);
 }
 function ovPicked(){
   const f=(el('ovFile').files||[])[0]; if(!f) return;
   const nm=String(f.name||'').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim();
   if(el('ovName')&&!el('ovName').value) el('ovName').value=nm;
+  if(el('ovDoneTitle')&&!el('ovDoneTitle').value) el('ovDoneTitle').value=nm;   // v12.38
   el('ovDropT').innerHTML=`<b>${esc(f.name)}</b><span>${Math.max(1,Math.round(f.size/1024))} KB · choose another file to change it</span>`;
+  if(window._ovUpKind==='done'){ el('ovWordNote').innerHTML=''; el('ovGo').textContent='File it'; return; }
   const word=/\.docx?$/i.test(f.name);
   el('ovWordNote').innerHTML=word?`<div class="sec-note warn" style="margin:0 0 12px"><span>ℹ️</span><div><b>A Word file cannot be shown exactly as it looks</b>
     To keep the original page, open it in Word, choose File › Save as › PDF, and upload the PDF. Or carry on, and the portal reads the Word file into a form you can edit (it will not look like the original).</div></div>`:'';
   el('ovGo').textContent=word?'Read it into a form':'Set up the form';
 }
 async function ovUploadGo(){
+  if(window._ovUpKind==='done') return ovFileDone();                   // v12.38
   const f=(el('ovFile').files||[])[0];
   if(!f) return toast('Choose the form to upload.');
   if(f.size>25*1024*1024) return toast('That file is over 25 MB — please upload a smaller copy.');
@@ -17321,8 +17438,9 @@ function ovIntroHtml(){
 }
 function ovBoxEd(fd,i,x){
   const on=OV.sel===i, ty=fd.ty;
-  return `<div class="ov-f ov-e ${on?'on':''}${x||''} ov-t-${ty.replace(' ','-')}" data-i="${i}" style="${ovPos(fd.ov)}" title="${esc(fd.l)}">
-    <span class="ov-lb" style="${ovFmtCss(fd.ov)}">${ty==='check'?'':esc(fd.l)}</span>
+  const kn=ovKindName(ty);                                             // v12.38: the box says what kind of answer goes in it
+  return `<div class="ov-f ov-e ${on?'on':''}${x||''} ov-t-${ty.replace(' ','-')}" data-i="${i}" style="${ovPos(fd.ov)}" title="${esc(fd.l)} \u00b7 ${esc(kn)}">
+    <span class="ov-lb" style="${ovFmtCss(fd.ov)}">${ty==='check'?'':`<i class="ov-ki" aria-hidden="true">${OV_KIND_ICON[ty]||'T'}</i>${esc(kn)}`}</span>
     ${on?`<span class="ov-rs" data-rs="1" title="Drag to resize"></span>`:''}</div>`;
 }
 function ovBoxTry(fd,i){
@@ -17330,7 +17448,7 @@ function ovBoxTry(fd,i){
   if(fd.ty==='check') return `<label class="ov-f ov-chk" style="${p}"><input type="checkbox"><span class="ov-tick">✓</span></label>`;
   if(fd.ty==='signature') return `<button type="button" class="ov-f ov-sigbtn" style="${p}" data-label="${esc(fd.l)}" onclick="sigOpen('ovtry',this.dataset.label,true)">✍ Sign</button>`;
   if(fd.ty==='long text') return `<textarea class="ov-f ov-in" style="${p};${fs}" placeholder="${esc(fd.l)}"></textarea>`;
-  return `<input class="ov-f ov-in" style="${p};${fs}" type="${fd.ty==='date'?'date':fd.ty==='time'?'time':fd.ty==='number'?'number':'text'}" placeholder="${esc(fd.l)}">`;
+  return `<input class="ov-f ov-in" style="${p};${fs}" type="${fd.ty==='date'?'date':fd.ty==='time'?'time':fd.ty==='number'?'number':'text'}"${fd.ty==='number'?' step="any" inputmode="decimal"':''} placeholder="${esc(fd.l)}">`;
 }
 function ovLayerEd(t,pi){ const sel=OV.sel!=null&&t.fields[OV.sel];   // v12.25: with the picked box's table marked
   return ovTblFrame(t,pi)+t.fields.map((fd,i)=>fd.ov&&fd.ov.p===pi?(OV.preview?ovBoxTry(fd,i):ovBoxEd(fd,i,ovTblMarks(t,fd,sel))):'').join(''); }
@@ -17379,11 +17497,13 @@ function ovDraw(){
         <div class="ov-meta">
           <div class="field" style="flex:1;min-width:200px;margin:0"><label>Template name</label>
             <input class="inp" id="ovTplName" value="${esc(t.name||'')}" placeholder="Name this form" onfocus="ovSnap()" oninput="ovT().name=this.value"></div>
-          <div class="field" style="min-width:180px;margin:0"><label>Filled-in copies are saved to</label>
-            <select class="inp" data-list="binder" onchange="if(this.value==='__add__')return fillSelectChange(this);ovSnap();ovT().dest=this.value">
-              ${binderKeys().map(k=>`<option value="${k}" ${k===(t.dest||'Agency')?'selected':''}>${esc(FOLDER_NAMES[k]||k)}</option>`).join('')}
-              <option value="__client__" ${t.dest==='__client__'?'selected':''}>A client’s file</option>
-              <option value="__staff__" ${t.dest==='__staff__'?'selected':''}>A staff member’s file</option>${addOpt('binder')}</select></div>
+          <div class="field" style="min-width:180px;margin:0"><label>Keep it in Templates</label>
+            <select class="inp" data-list="binder" onchange="if(this.value==='__add__')return fillSelectChange(this);ovSnap();ovT().dest=this.value;ovDestNote(this.value,'ovEdDestSay')">
+              ${binderKeys().map(k=>`<option value="${k}" ${k===(t.dest||'Agency')?'selected':''}>${esc(ovTplSection(k))}</option>`).join('')}
+              <option value="__client__" ${t.dest==='__client__'?'selected':''}>Other templates, for a client’s file</option>
+              <option value="__staff__" ${t.dest==='__staff__'?'selected':''}>Other templates, for a staff member’s file</option>${addOpt('binder')}</select>
+          </div>
+          <div class="tiny muted ov-dest-note ov-ed-note" id="ovEdDestSay">${ovDestSays(t.dest||'Agency')}</div>
         </div>
         ${ovPagesHtml(o,pi=>ovLayerEd(t,pi),'ov-edit'+(OV.place?' placing':'')+(OV.preview?' trying':''))}
         <div class="tiny muted" style="text-align:center;margin-top:8px">${esc(o.file||'Uploaded form')} · ${o.pages.length} page${o.pages.length===1?'':'s'} · the page itself cannot be changed, only the boxes on it</div>
@@ -17438,8 +17558,8 @@ function ovPlaceAt(pi,px,py){
   OV.place=null; OV.sel=t.fields.length-1; ovPaint();
   setTimeout(()=>{ const n=el('ovLabel'); if(n){ n.focus(); n.select(); } },20);
 }
-function ovLabelLive(v,i){ const t=ovT(), fd=t&&t.fields[i]; if(!fd) return;
-  const b=document.querySelector(`#mdBody .ov-f[data-i="${i}"] .ov-lb`); if(b&&fd.ty!=='check') b.textContent=v; }
+function ovLabelLive(v,i){ const t=ovT(), fd=t&&t.fields[i]; if(!fd) return;   // v12.38: the box shows its kind, so only its hover text follows the name
+  const b=document.querySelector(`#mdBody .ov-f[data-i="${i}"]`); if(b) b.title=v+' \u00b7 '+ovKindName(fd.ty); }
 /* a name still being typed is kept before another box is picked */
 function ovLabelCommit(){ const n=el('ovLabel'); if(!n||!ovT()) return; const i=+n.dataset.i, fd=ovT().fields[i];
   if(fd&&String(n.value).replace(/\s+/g,' ').trim()&&String(n.value).replace(/\s+/g,' ').trim()!==fd.l){ n.dataset.i='-1'; ovLabelSet(n.value,i,true); } }
@@ -17447,9 +17567,15 @@ function ovLabelSet(v,i,quiet){
   const t=ovT(), fd=t&&t.fields[i]; if(!fd||i<0) return;
   v=String(v||'').replace(/\s+/g,' ').trim()||fd.l;
   const clash=t.fields.some((x,j)=>j!==i&&String(x.l).toLowerCase()===v.toLowerCase());
-  if(clash){ toast('Another box is already called “'+v+'”. Each box needs its own name.'); v=ovUniq(t.fields.filter((x,j)=>j!==i).concat([{l:v}])).pop().l; }
-  fd.l=v; if(!quiet) ovPaint();
+  if(clash){ toast('Another box is already called “'+v+'”. Each box needs its own name.'); v=ovUniq(t.fields.filter((x,j)=>j!==i).concat([{l:v}])).pop().l; const n=el('ovLabel'); if(n&&quiet) n.value=v; }
+  if(v===fd.l) return;                                                // v12.38: nothing to redraw, so a click in the panel is not lost
+  fd.l=v;
+  if(!quiet){ const n=el('ovLabel'); if(n&&+n.dataset.i===i) n.value=v; ovLabelLive(v,i); }
 }
+document.addEventListener('pointerdown',e=>{                        // v12.38: the name is kept before the press, not on the blur after it
+  if(!el('ovLabel')||!e.target.closest||e.target.closest('#ovLabel')) return;
+  if(e.target.closest('#ovSide,#ovBar,#mdFoot')) ovLabelCommit();
+},true);
 function ovSetKind(k){ const t=ovT(), fd=t&&t.fields[OV.sel]; if(!fd||fd.ty===k) return; ovSnap();
   ovKindTo(fd,k,ovDocOf(t).pages[fd.ov.p]); ovPaint(); }                // v12.25: a tick box in a table cell sits in the middle of it
 function ovDel(){ const t=ovT(); if(!t||OV.sel==null) return; ovSnap(); const l=t.fields[OV.sel].l; t.fields.splice(OV.sel,1); OV.sel=null; ovPaint(); toast(`Removed “${l}”. Undo brings it back.`); }
@@ -18493,7 +18619,7 @@ function ovFillBox(fd,i,v){
       <input type="hidden" id="dg${i}" value="${esc(val)}"></div>`;
   if(fd.ty==='long text') return `<textarea class="ov-f ov-in" id="dg${i}" style="${p};${fs}${ovFmtX(fd.ov)}" title="${lab}" placeholder="${lab}" aria-label="${lab}">${esc(val)}</textarea>`;
   const ty=fd.ty==='date'?'date':fd.ty==='time'?'time':fd.ty==='number'?'number':'text';
-  return `<input class="ov-f ov-in" id="dg${i}" type="${ty}" style="${p};${fs}${ovFmtX(fd.ov)}" value="${esc(val)}" title="${lab}" placeholder="${lab}" aria-label="${lab}">`;
+  return `<input class="ov-f ov-in" id="dg${i}" type="${ty}"${ty==='number'?' step="any" inputmode="decimal"':''} style="${p};${fs}${ovFmtX(fd.ov)}" value="${esc(val)}" title="${lab}" placeholder="${lab}" aria-label="${lab}">`;
 }
 function ovFillOpen(id,saved,filedOf){
   const d=docById(id); if(!d) return;
@@ -19965,7 +20091,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.37.1 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.38 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────

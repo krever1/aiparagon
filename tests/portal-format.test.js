@@ -35,8 +35,8 @@ function check(label, ok, detail) {
   const bar = await page.evaluate(() => ({ kinds: [...document.querySelectorAll('#tpeRibbon .fb-k')].map((b) => b.textContent.trim()), more: !!document.querySelector('#tpeRibbon .fb-more'),
     top: document.querySelector('#tpeRibbon').getBoundingClientRect().top < document.querySelector('#tpeBlocks').getBoundingClientRect().top }));
   check('the field bar is at the top, above the form', bar.top && bar.kinds.length === 12 && bar.more, JSON.stringify(bar));
-  check('it has the everyday fields: short and long answers, date, time, number, yes / no, multiple choice, table, checklist, heading, paragraph, signature',
-    ['Short answer', 'Long answer', 'Date', 'Time', 'Number', 'Yes / no', 'Multiple choice', 'Table', 'Checklist', 'Section heading', 'Paragraph', 'Signature'].every((k) => bar.kinds.includes(k)), bar.kinds.join(', '));
+  check('it has the everyday fields: short and long answers, date, time, amount, yes / no, multiple choice, table, checklist, heading, paragraph, signature',
+    ['Short answer', 'Long answer', 'Date', 'Time', 'Amount', 'Yes / no', 'Multiple choice', 'Table', 'Checklist', 'Section heading', 'Paragraph', 'Signature'].every((k) => bar.kinds.includes(k)), bar.kinds.join(', '));
   const start = await kinds();
   await page.click('#tpeRibbon .fb-k[data-k="date"]');
   const placing = await page.evaluate(() => ({ on: document.querySelector('#tpeRibbon .fb-k[data-k="date"]').classList.contains('on'), hint: el('tpeHint').textContent,
