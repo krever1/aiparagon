@@ -78,6 +78,8 @@ const FORM = path.join(H.FORMS, 'alta-medication-reason-for-use.pdf');
     check('filed in a binder: no template is made', !r.open && r.tpl === nTpl, JSON.stringify({ open: r.open, tpl: r.tpl, nTpl }));
     check('...it is in the Medical binder, in the subfolder picked, as "Completed form"', r.top && r.top.n === 'Medication reason, Dr. Chen signed.pdf' && r.top.sb === sub && r.doc.cat === 'Completed form' && !r.doc.cid && r.tag && r.tag.b === 'Medical' && r.tag.sb === sub, JSON.stringify(r));
     check('...and it says where it went', (await toastText(page)) === `Filed in the Medical binder / ${sub} on the Documents page.`, await toastText(page));
+    const act = await page.evaluate(() => ({ row: (COMPLETED.Medical || [])[0].sub, a: DOC_ACT[0] && { k: DOC_ACT[0].k, w: DOC_ACT[0].w } }));
+    check('...its binder row and Recent activity say uploaded and name the binder, never "Agency" (v12.38.2)', /^Uploaded by \S/.test(act.row) && act.a && act.a.k === 'uploaded' && act.a.w === `Medical binder / ${sub}`, JSON.stringify(act));
     await page.evaluate(() => { closeAll(); go('templates'); }); await page.waitForTimeout(400);
     check('...it shows in the Medical binder on the Documents page', await page.evaluate(() => [...document.querySelectorAll('#view section')].some((s) => /Agency binders/.test(s.textContent) && /Medication reason, Dr\. Chen signed/.test(s.innerText))));
     // a client's file: the client must be picked
@@ -91,6 +93,8 @@ const FORM = path.join(H.FORMS, 'alta-medication-reason-for-use.pdf');
     r = await page.evaluate((id) => ({ doc: DOCS[0], uci: client(id).uci, inBinder: Object.values(COMPLETED).flat().some((x) => /Release of information signed/.test(x.n)) }), cid);
     check('...filed in that client’s file, not in the team binder', r.doc.cid === cid && r.doc.n === 'Release of information signed.pdf' && r.doc.cat === 'Completed form' && !r.inBinder, JSON.stringify(r));
     check('...and it says whose file', (await toastText(page)) === `Filed in client ${r.uci}’s file on the Documents page.`, await toastText(page));
+    const act2 = await page.evaluate(() => DOC_ACT[0] && { k: DOC_ACT[0].k, w: DOC_ACT[0].w });
+    check('...and Recent activity says uploaded, to that client (v12.38.2)', act2 && act2.k === 'uploaded' && act2.w.includes(r.uci) && !/Agency/.test(act2.w), JSON.stringify(act2));
     await page.evaluate((id) => { closeAll(); go('clients'); openClient(id); state.tab = 'documents'; render(); }, cid); await page.waitForTimeout(400);
     check('...it shows in the client’s Files', await page.evaluate(() => /Release of information signed/.test(el('view').innerText)));
     // a staff member's file
@@ -194,6 +198,51 @@ const FORM = path.join(H.FORMS, 'alta-medication-reason-for-use.pdf');
     await page.evaluate(() => { closeAll(); openTplEditor(); }); await page.waitForTimeout(300);
     const kinds = await page.evaluate(() => [...document.querySelectorAll('#tpeRibbon .fb-k')].map((b) => b.textContent.trim()));
     check('Create new template calls it Amount too', kinds.includes('Amount') && !kinds.includes('Number'), kinds.join(', '));
+    await ctx.close();
+  }
+
+  // ---------------- 4b. a blank form kept in Agency binder templates, then filled in: every filled-in copy goes to Documents, never to Templates ----------------
+  {
+    const { ctx, page } = await demo();
+    const NAME = 'Medication reason for use';
+    const n0 = await page.evaluate(() => TEMPLATES5.length);
+    await page.evaluate(() => { closeAll(); go('forms'); ovUploadStart(); }); await page.waitForTimeout(300);
+    await page.selectOption('#ovDest', 'Agency');
+    await page.setInputFiles('#ovFile', FORM); await page.fill('#ovName', NAME);
+    await page.click('#ovGo');
+    await page.waitForFunction(() => /Found \d+ places/.test((document.querySelector('.ov-intro') || {}).textContent || ''), null, { timeout: 120000 });
+    await page.waitForTimeout(500);
+    const tid = await page.evaluate(() => { const id = ovT().id; ovSave(); return id; }); await page.waitForTimeout(600);
+    const inTemplates = () => page.evaluate((nm) => { closeAll(); go('forms'); const sec = document.querySelector('#view section[data-binder="Agency"]'); return sec ? sec.innerText.split(nm).length - 1 : -1; }, NAME);
+    const inDocuments = () => page.evaluate((nm) => { closeAll(); state.docFocus = null; go('templates'); state.openBinder = 'Agency'; state.openSubs = subsOf('Agency').map((g) => subKey('Agency', g)).concat([subKey('Agency', '')]); render();
+      return [...document.querySelectorAll('#view .comp-line')].filter((x) => x.textContent.includes(nm)).length; }, NAME);
+    let s = await page.evaluate((id) => ({ n: TEMPLATES5.length, dest: tplById(id).dest }), tid);
+    check('kept in Agency binder templates: one blank template, in Templates only', s.n === n0 + 1 && s.dest === 'Agency' && (await inTemplates()) === 1 && (await inDocuments()) === 0, JSON.stringify(s));
+    const fillIn = async (drug) => {
+      await page.evaluate((id) => { closeAll(); go('forms'); tplOpenDoc(id); }, tid); await page.waitForTimeout(1200);
+      await page.evaluate((drug) => { const set = (lab, v) => { const n = [...document.querySelectorAll('#mdBody .ov-in')].find((x) => x.title === lab); if (n) { n.value = v; n.dispatchEvent(new Event('input', { bubbles: true })); } }; set('Consumer', '1234567'); set('Drug, row 1', drug); }, drug);
+      return page.evaluate(() => { const b = [...document.querySelectorAll('#mdFoot button')].find((x) => /Sign and finalize/.test(x.textContent)); return (b ? b.getAttribute('onclick') : '').replace(/^docFinalise\('(.*)'\)$/, '$1'); });
+    };
+    const fileIt = async () => { await page.waitForTimeout(400); const pk = await page.evaluate(() => ({ t: el('mdTitle').textContent, b: el('fpBinder') && el('fpBinder').value })); await page.evaluate(() => fpGo()); await page.waitForTimeout(800); return pk; };
+    const clean = () => page.evaluate((id) => !/Metformin|Lisinopril|Dr\. Feld/.test(JSON.stringify(tplById(id))), tid);
+    // Save draft
+    const d1 = await fillIn('Metformin');
+    await page.evaluate((id) => docSave(id, true), d1);
+    const pk1 = await fileIt();
+    s = await page.evaluate((nm) => Object.values(FILED_DOCS).filter((f) => f.name === nm).map((f) => ({ st: f.status, refs: (f.refs || []).map((r) => r.cid || r.b), drug: (f.values || {})['Drug, row 1'] })), NAME);
+    check('Save draft on a filled-in copy: the picker starts on the Agency binder, and the draft is filed in Documents', pk1.b === 'Agency' && s.some((f) => f.st === 'draft' && f.refs.includes('Agency') && f.drug === 'Metformin') && (await inDocuments()) === 1, JSON.stringify({ pk1, s }));
+    { const st = { n: await page.evaluate(() => TEMPLATES5.length), shown: await inTemplates(), clean: await clean() }; check('...Templates still has the one blank template, with no answers in it', st.n === n0 + 1 && st.shown === 1 && st.clean, JSON.stringify(st)); }
+    // Sign and finalize
+    const d2 = await fillIn('Lisinopril');
+    const sig = await page.evaluate(() => { const b = [...document.querySelectorAll('#mdBody .ov-sigbtn')].find((x) => /Physician/.test(x.dataset.label || '')); if (!b) return false; b.click(); return true; });
+    await page.waitForTimeout(150);
+    if (sig) { await page.evaluate(() => { const o = el('sigOv'); if (!o.classList.contains('typing')) sigOvMode(); }); await page.fill('#sigOv .sp-typed', 'Dr. Feld'); await page.evaluate(() => sigUse()); await page.waitForTimeout(200); }
+    await page.evaluate((id) => docFinalise(id), d2); await page.waitForTimeout(300);
+    await page.evaluate(() => { const b = [...document.querySelectorAll('#mdFoot button')].find((x) => /Sign and finalize/.test(x.textContent)); if (b) b.click(); });
+    const pk2 = await fileIt();
+    s = await page.evaluate((nm) => Object.values(FILED_DOCS).filter((f) => f.name === nm).map((f) => ({ st: f.status, refs: (f.refs || []).map((r) => r.cid || r.b), drug: (f.values || {})['Drug, row 1'] })), NAME);
+    check('Sign and finalize: signed, and filed in Documents in the Agency binder', sig && pk2.b === 'Agency' && s.some((f) => f.st === 'final' && f.refs.includes('Agency') && f.drug === 'Lisinopril') && (await inDocuments()) === 2, JSON.stringify({ sig, pk2, s }));
+    { const st = { n: await page.evaluate(() => TEMPLATES5.length), shown: await inTemplates(), clean: await clean() }; check('...Templates still has the one blank template, with no answers or signature in it', st.n === n0 + 1 && st.shown === 1 && st.clean, JSON.stringify(st)); }
     await ctx.close();
   }
 

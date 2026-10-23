@@ -14275,7 +14275,7 @@ function staffUnassignTpl(tid,sid){ /* v12.0: reported in Recent activity below 
 }
 function binderFiles(key){
   const map={Medical:['Medication','Lab','Consent'],Agency:['Incident','Policy'],Daily:['Report','Note']};
-  const fromDocs=DOCS.filter(d=>!hid('doc',docKey(d))&&(map[key]||[]).includes(d.cat)&&(!d.cid||client(d.cid))&&!(!d.cid&&docTagOf(d))).map(d=>({n:d.n,sub:`${d.cat} · ${client(d.cid)?client(d.cid).uci:'Agency'} · ${fmtDate(d.at)}`}));
+  const fromDocs=DOCS.filter(d=>!hid('doc',docKey(d))&&(map[key]||[]).includes(d.cat)&&(!d.cid||client(d.cid))&&!(!d.cid&&docTagOf(d))).map(d=>({n:d.n,sub:`${d.cat} · ${client(d.cid)?client(d.cid).uci:'Team'} · ${fmtDate(d.at)}`}));   // v12.38.2
   // sample-only rows disappear with Hide sample data / Erase; real libraries and everything the user uploaded always stay
   const stock=state.hideSample?{}:{
     Agency:[{n:'Facility license 2026.pdf',sub:'Licensing · renewed Jan 2026'},{n:'Disaster & evacuation plan.pdf',sub:'Policy · reviewed May 2026'},{n:'Admission agreement (blank).docx',sub:'Template'}],
@@ -14294,7 +14294,8 @@ function binderBlankForms(key){
   const libs=[DOC_LIBRARY[key],...legacyKeys.map(k=>DOC_LIBRARY[k])].filter(Boolean);
   const userLibs=[USER_LIB[key],...legacyKeys.map(k=>USER_LIB[k])].filter(Boolean);
   const ud=[];
-  for(const id in USER_DOCS){ const d=USER_DOCS[id]; if(normBinder(d.key).b===key&&d.sec!=='res') ud.push({n:d.name, docId:id, editable:true, url:d.url||'', desc:'Uploaded · editable in‑app', sub:''}); }
+  for(const id in USER_DOCS){ const d=USER_DOCS[id]; if(String(id).startsWith('tpl-')) continue;   // v12.38.2: filling in a template is not a second form in Templates
+    if(normBinder(d.key).b===key&&d.sec!=='res') ud.push({n:d.name, docId:id, editable:true, url:d.url||'', desc:'Uploaded · editable in‑app', sub:''}); }
   return [...libs.flatMap(L=>(L.forms||[]).map(x=>libRow(x[0],x[1]))), ...ud, ...userLibs.flatMap(U=>U.forms||[])].filter(libVisible(key));
 }
 let COMPLETED={};
@@ -19637,7 +19638,7 @@ function saveIncident(){
     (COMPLETED.Agency=COMPLETED.Agency||[]).unshift({n:docName,sub:`Incident report · ${meInit()} · ${fmtDate(T)}`,sb:'SIR',at:T});
     DOCTAG[docName]={b:'Agency',sb:'SIR'}; doctagSave();
     INC_REPORT[rec.id]=docName; incReportSave();
-    docAct('generated',docName,'Agency');
+    docAct('generated',docName,(FOLDER_NAMES.Agency||'Agency binder')+' / SIR');   // v12.38.2
     rec.doc=docName;
   }
   logAudit('Created incident report',`${(client(el('icClient').value)||{}).uci} · ${el('icType').value}`);
@@ -19745,10 +19746,10 @@ async function docUploadFile(o){
   if(o.bk){
     DOCTAG[(rec.cid||'')+'|'+rec.n]={b:o.bk,sb:o.bsub||''}; rec.sb=o.bsub||''; doctagSave();
     if(o.alsoBinder)
-      autoFileLog(o.bk, rec.n, `${docOwnerName(cid)||'Agency'} · uploaded by ${auditActor()}`, null, o.bsub||'', {exact:true,path,url});   // same name as the uploaded file, so it opens (v12.22: and it keeps the file's place)
+      autoFileLog(o.bk, rec.n, `${cid&&docOwnerName(cid)?docOwnerName(cid)+' · u':'U'}ploaded by ${auditActor()}`, null, o.bsub||'', {exact:true,path,url});   // v12.38.2: no "Agency" for the team   // same name as the uploaded file, so it opens (v12.22: and it keeps the file's place)
     logAudit('Filed uploaded document',`${title} → ${FOLDER_NAMES[o.bk]||o.bk}${o.bsub?' / '+o.bsub:''}`);
   }
-  docAct('generated',rec.n,cid?(docOwnerName(cid)||'Client folder'):'Agency');
+  docAct('uploaded',rec.n,cid?(docOwnerName(cid)||'Client folder'):o.bk?(FOLDER_NAMES[o.bk]||o.bk)+(o.bsub?' / '+o.bsub:''):'Team documents');   // v12.38.2: uploaded, and where it went
   notifyRule('doc','Document uploaded',`${rec.n}${cid?' · '+docOwnerName(cid):''}`,{canSee:recordSeenBy(cid)});   // v12.20
   logAudit('Uploaded document',rec.n);
   return {rec,url};
@@ -20097,7 +20098,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.38.1 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.38.2 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
