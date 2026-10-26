@@ -340,11 +340,18 @@ function check(label, ok, detail) {
         last: step('CHECK. Ask for their last name, then call find_caller again with the same number and their full name.', { name: 'Kaye', phone: '5550101234' }),
         nomatch: step('NO MATCH. Treat them as a new caller and take their details as usual.', { name: 'Brian Arrington', phone: '5550101234' }),
         nofile: step('NO FILE. Nothing is on file under that number, so this is a new caller.'),
+        full: step('CHECK. Ask for their first and last name, then call find_caller again with the same number and the name. Do not suggest a name.', { phone: '5550101234' }),
+        partial: step('That number is not complete. Ask for the whole number with the area code, read it back, then call find_caller again.', { name: 'Kaye', phone: '010-1234' }),
+        sample: step('This is a demo call with a sample customer, and their file is already loaded. Do not look anything else up.'),
+        tries: step('NO MATCH. Treat them as a new caller and take their details as usual. Do not call find_caller again on this call.'),
+        broken: step('The file could not be checked just now. Treat them as a new caller and take their details as usual.'),
       };
     });
     check('a plain test call has no caller ID and no caller file', got.vars.caller_id_last4 === '' && got.vars.caller_history === 'none' && got.vars.caller_known === 'no' && !Object.values(got.vars).some((v) => /\d/.test(String(v))), JSON.stringify(got.vars));
     check('find_caller in the timeline: a match says so and opens their file', /Looked for their file/.test(got.match) && /Matched their file by the number and their name/.test(got.match) && /Open their file/.test(got.match), got.match);
     check('find_caller in the timeline: a check says what she asked', /asked them to spell their first name/.test(got.check) && /asked them to give their last name/.test(got.last), got.check + ' | ' + got.last);
+    check('find_caller in the timeline: a missing name asks for the full name, an incomplete number for the whole number', /No name yet, so she asked for their full name/.test(got.full) && /wasn.t complete, so she asked for the whole number/.test(got.partial), got.full + ' | ' + got.partial);
+    check('find_caller in the timeline: a sample call, the try limit and a failed check each say so', /sample customer.s call/.test(got.sample) && /Three tries on this call already/.test(got.tries) && /couldn.t check the file/.test(got.broken) && !/couldn.t check/.test(got.sample + got.partial + got.tries), got.sample + ' | ' + got.tries + ' | ' + got.broken);
     check('find_caller in the timeline: no match and no file read as a new caller', /didn.t fit the file on that number/.test(got.nomatch) && !/Open their file/.test(got.nomatch) && /Nothing on file under that number/.test(got.nofile), got.nomatch + ' | ' + got.nofile);
     await page.evaluate(() => { location.hash = ''; });
     await ctx.close();
