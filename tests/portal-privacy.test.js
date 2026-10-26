@@ -193,6 +193,27 @@ const leaks = (s, home) => SECRET.concat(home ? [/Elm Street House/] : []).filte
     check('Ask: a [go:] token still becomes a button', await page.evaluate(() => !![...document.querySelectorAll('#askLog .msg.bot')].slice(-1)[0].querySelector('button')));
   }
 
+  // ---------------- Google's permission: the narrowest one, and only that (v12.38.3) ----------------
+  {
+    const asked = await page.evaluate(() => {
+      const seen = [], prev = window.google;
+      window.google = { accounts: { oauth2: {
+        initCodeClient: (c) => { seen.push({ kind: 'code', scope: c.scope, incl: c.include_granted_scopes }); return { requestCode() {} }; },
+        initTokenClient: (c) => { seen.push({ kind: 'token', scope: c.scope, incl: c.include_granted_scopes }); return { requestAccessToken() {} }; },
+        revoke() {} } } };
+      gcalClear(); GCAL.ready = null; GCAL.loading = false;
+      gcalConnect();                                       // signed in: the connection the server keeps
+      GCAL.ready = false; gcalConnect();                   // the server piece not in: this session only
+      GCAL.ready = null; window.google = prev;
+      return seen;
+    });
+    const OWNED = 'https://www.googleapis.com/auth/calendar.events.owned';
+    const code = asked.find((x) => x.kind === 'code'), tok = asked.find((x) => x.kind === 'token');
+    check('Google: connecting asks for calendar.events.owned (with openid, so the server knows the account)', code && code.scope === 'openid ' + OWNED, JSON.stringify(asked));
+    check('Google: connecting for this session only asks for calendar.events.owned alone', tok && tok.scope === OWNED, JSON.stringify(asked));
+    check('Google: never the wider calendar.events, and never a permission granted before', asked.length === 2 && asked.every((x) => x.incl === false && !x.scope.split(' ').includes('https://www.googleapis.com/auth/calendar.events')), JSON.stringify(asked));
+  }
+
   check('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
   await ctx.close();
   await env.close();

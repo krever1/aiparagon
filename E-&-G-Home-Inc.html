@@ -3699,7 +3699,7 @@ let SYS_NOTIFS=[];
    Calendar events are still never stored: they are read live from Google.
    Until that server piece is set up, and in the demo view, it works as before: this session only. */
 const GCAL={ token:null, events:[], connected:false, loading:false, email:'', exp:0, kept:false, ready:null, owner:'' };
-const GCAL_SCOPE='https://www.googleapis.com/auth/calendar.events';
+const GCAL_SCOPE='https://www.googleapis.com/auth/calendar.events.owned';   // v12.38.3: events on calendars the person owns (the page only uses their primary one); Google's review asked for the narrowest scope
 function gcalReady(){ return !!BACKEND.googleClientId; }
 let _gsiLoad=null;
 function gcalLoadSdk(cb,quiet){
@@ -3816,7 +3816,7 @@ function gcalConnect(){
   if(gcalSrvOn()&&GCAL.ready!==false) return gcalConnectKept();
   gcalLoadSdk(()=>{                                                   // this session only: the demo view, or before the server piece is in
     const tc=google.accounts.oauth2.initTokenClient({
-      client_id:BACKEND.googleClientId, scope:GCAL_SCOPE,
+      client_id:BACKEND.googleClientId, scope:GCAL_SCOPE, include_granted_scopes:false,   // v12.38.3: only what is asked for now
       callback:(resp)=>{
         if(resp.error) return toast('Google sign-in was canceled.');
         GCAL.token=resp.access_token; GCAL.exp=Date.now()+Math.max(60,(+resp.expires_in||3600)-60)*1000;
@@ -3835,6 +3835,7 @@ function gcalConnectKept(){                                           // v12.14:
     try{
       cc=google.accounts.oauth2.initCodeClient({
         client_id:BACKEND.googleClientId, scope:'openid '+GCAL_SCOPE, ux_mode:'popup',   // openid: tells the server which Google account this is
+        include_granted_scopes:false,                                 // v12.38.3: only what is asked for now, not a wider permission granted before
         select_account:true,                                          // always ask which Google account (a shared computer may be signed in to someone else's)
         callback:async(resp)=>{
           if(!resp||resp.error||!resp.code) return toast('Google sign-in was canceled.');
@@ -20098,7 +20099,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.38.2 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.38.3 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
