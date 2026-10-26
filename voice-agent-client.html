@@ -3906,6 +3906,7 @@ function openKbEntry(id, q) {
 /* ---------- agent tools: what each one does, what it reads, what it changes, and when it last ran ---------- */
 const TOOL_INFO = [
   { id: "caller_lookup", when: "Before the call", title: "Recognize returning callers", does: "When someone calls the business number, the number is checked against past calls before the agent answers. If it matches, she gets their file and the greeting asks if she's speaking with them. She only brings up the last call once they say yes.", reads: "Past calls, bookings, open escalations and recent changes for that number", changes: "Nothing" },
+  { id: "find_caller", isNew: true, title: "Find a caller's file", does: "When there's no caller ID (a browser test call or a blocked number), or the caller says they called before from another number, she asks for their name and that number and looks for their file. The number picks the file, and the name has to match a name given on that number. A near miss like Kate for Kaye is spelled out first, and a different spelling is a no. No match means a new caller, and she never says whose the number is.", reads: "The customer file for that number", changes: "Nothing. Once it matches, a booking, a move or added details on that call go on that file." },
   { id: "lookup_knowledge", title: "Look up an answer", does: "Finds the approved answer to anything the caller asks, from the collections above. If nothing matches, she says she'd rather not guess and flags it for a person.", reads: "The knowledge collections and answers on this page", changes: "Nothing. Each lookup is logged with the answer it used.", auth: ["au1", "answer_faq"] },
   { id: "check_availability", title: "Check the calendar", does: "Finds the next open times, matching what the caller prefers, like afternoons or next week. She only offers times this returns.", reads: "The calendar and business hours", changes: "Nothing", auth: ["au2", "book"] },
   { id: "book_appointment", title: "Book an appointment", does: "Books the time the caller picked, with the type of visit and their details.", reads: "The calendar, to make sure the time is still free", changes: "Adds the booking to the calendar and alerts the team after the call.", auth: ["au2", "book"] },
@@ -4977,7 +4978,7 @@ function stepsFor(c) {
 }
 
 function clock(sec) { sec = Math.max(0, Math.round(Number(sec) || 0)); return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"); }
-const STEP_TITLE = { lookup_knowledge: "Looked up an answer", escalate_to_human: "Flagged for a person", check_availability: "Checked the calendar", book_appointment: "Booking", reschedule_appointment: "Moved a booking", add_case_details: "Added to their file", endCall: "Ended the call", send_confirmation: "Sent a confirmation" };
+const STEP_TITLE = { lookup_knowledge: "Looked up an answer", escalate_to_human: "Flagged for a person", check_availability: "Checked the calendar", book_appointment: "Booking", reschedule_appointment: "Moved a booking", add_case_details: "Added to their file", find_caller: "Looked for their file", endCall: "Ended the call", send_confirmation: "Sent a confirmation" };
 
 function kbName(id) {
   const k = kbList().find((x) => x.id === id);
@@ -5057,6 +5058,20 @@ function stepCard(c, s, n, steps, canEdit) {
     body += (a.details ? '<div class="sq">“' + esc(a.details) + "”</div>" : "") + '<div class="sm">' + (saved ? "Saved to their file" + (a.topic && a.topic !== "other" ? " under " + esc(a.topic) : "") + ". The team gets an alert after the call." : "This didn't save. The tool server said: " + esc(String(s.result || "no reply").slice(0, 160))) + "</div>";
     const cu = customerForCall(c);
     btns.push('<button class="btn sm" data-client="' + esc(cu ? cu.id : "call:" + c.id) + '" data-tab="timeline">Open their file</button>');
+  } else if (tool === "find_caller") {
+    const a = s.args || {};
+    const res = String(s.result || "");
+    const kind = /^MATCH\b/.test(res) ? "match" : /^CHECK\b/.test(res) ? "check" : /^NO FILE\b/.test(res) ? "nofile" : /^NO MATCH\b/.test(res) ? "nomatch" : "other";
+    const ask = /spell their last/i.test(res) ? "spell their last name" : /spell their/i.test(res) ? "spell their first name" : /last name/i.test(res) ? "give their last name" : "give their full name";
+    if (kind === "nomatch" || kind === "other") cls = " changed";
+    body += '<div class="sq">' + esc([a.name, a.phone, a.spelling ? "spelled " + a.spelling : "", a.street ? "street " + a.street : ""].filter(Boolean).join(", ") || "No details given") + "</div>";
+    body += '<div class="sm">' + (kind === "match" ? "Matched their file by the number and their name."
+      : kind === "check" ? "Close but not a match yet, so she asked them to " + ask + "."
+      : kind === "nofile" ? "Nothing on file under that number, so she took them as a new caller."
+      : kind === "nomatch" ? "The name didn't fit the file on that number, so she took them as a new caller and shared nothing from it."
+      : "She couldn't check the file, so she took them as a new caller.") + "</div>";
+    if (kind === "match") { const cu = customerForCall(c); btns.push('<button class="btn sm" data-client="' + esc(cu ? cu.id : "call:" + c.id) + '" data-tab="timeline">Open their file</button>'); }
+    if (s.result) body += '<details class="sres"><summary>What the agent was told</summary><div>' + esc(s.result) + "</div></details>";
   } else if (tool === "endCall") {
     const after = (c.transcript || []).slice(s.after + 1);
     const callerAfter = after.some((l) => l[0] === "Caller");
@@ -5068,7 +5083,7 @@ function stepCard(c, s, n, steps, canEdit) {
     if (act) btns.push('<button class="btn sm" data-act="' + act + '">' + esc(actionOpen(c.actions[s.ai])) + "</button>");
   }
   if (s.mid) body += '<div class="sm faint">This happened partway through the reply below.</div>';
-  return '<div class="step' + cls + '" data-step="' + n + '"><div class="sh"><span class="sic" aria-hidden="true">' + (tool === "lookup_knowledge" ? "?" : tool === "escalate_to_human" ? "!" : tool === "endCall" ? "×" : tool === "reschedule_appointment" ? "↻" : tool === "add_case_details" ? "+" : "·") + "</span><b>" + esc(STEP_TITLE[tool] || tool) + "</b>" +
+  return '<div class="step' + cls + '" data-step="' + n + '"><div class="sh"><span class="sic" aria-hidden="true">' + (tool === "lookup_knowledge" ? "?" : tool === "escalate_to_human" ? "!" : tool === "endCall" ? "×" : tool === "reschedule_appointment" ? "↻" : tool === "add_case_details" ? "+" : tool === "find_caller" ? "#" : "·") + "</span><b>" + esc(STEP_TITLE[tool] || tool) + "</b>" +
     toolChip(tool) + time + "</div>" + body + (btns.length ? '<div class="row">' + btns.join("") + "</div>" : "") + "</div>";
 }
 
@@ -5179,6 +5194,7 @@ function toolLine(name, args, id) {
   else if (name === "book_appointment") { l.title = "Booking"; l.detail = String(args.slot || ""); }
   else if (name === "reschedule_appointment") { l.title = "Moving their booking"; l.detail = args.slot ? "to " + args.slot : ""; }
   else if (name === "add_case_details") { l.title = "Adding to their file"; l.detail = args.details ? "“" + args.details + "”" : ""; }
+  else if (name === "find_caller") { l.title = "Looking for their file"; l.detail = [args.name, args.phone].filter(Boolean).join(", "); }
   else if (/^end_?call$/i.test(name)) { l.title = "Ended the call"; l.detail = ""; }
   else { l.title = name; l.detail = ""; }
   l.text = l.title + (l.q ? " “" + l.q + "”" : "") + (l.detail ? " " + l.detail : "");
@@ -5237,6 +5253,9 @@ function startCallback(id) {
 }
 onClick("[data-callbackas]", (el) => startCallback(el.dataset.callbackas));
 
+// Plain test calls are browser calls: no caller file and no caller ID, so the agent asks for their number and looks
+// for their file with find_caller, the way it would for a caller who blocks their number.
+const PLAIN_CALL = { caller_history: "none", caller_known: "no", caller_id_last4: "", test_call: "yes" };
 async function startCall(opts) {
   opts = opts && opts.as ? opts : {};
   const key = (S.settings.vapiPublicKey || "").trim();
@@ -5324,8 +5343,7 @@ async function startCall(opts) {
 
   setCallStatus("Connecting");
   try {
-    // Plain test calls say there's no caller file, so the prompt never sees an empty placeholder.
-    const c = await vapi.start(asst, call.as ? call.as.overrides : { variableValues: { caller_history: "none", test_call: "yes" } });
+    const c = await vapi.start(asst, call.as ? call.as.overrides : { variableValues: Object.assign({}, PLAIN_CALL) });
     if (c && c.id) call.id = c.id;
   } catch (e) {
     $("callErr").textContent = (e && e.message) || "Vapi refused to start the call. Check the public key and assistant ID in Settings.";
@@ -6503,7 +6521,7 @@ setInterval(() => {
   else if (changed) { renderCounts(); renderBell(); }
 }, 30000);
 // Test hook: only when a test sets window.__VC_TEST__ before the page loads (tests/voice-routes.test.js). Never on its own.
-if (window.__VC_TEST__ === true) window.__VC_TEST__ = { parseOffered: parseOffered, askedFor: askedFor, callbackFor: callbackFor, usPhone: usPhone, customers: () => (S && S.customers) || [] };
+if (window.__VC_TEST__ === true) window.__VC_TEST__ = { parseOffered: parseOffered, askedFor: askedFor, callbackFor: callbackFor, usPhone: usPhone, customers: () => (S && S.customers) || [], plainCall: () => Object.assign({}, PLAIN_CALL), stepCard: stepCard };
 })();
 </script>
 </body>

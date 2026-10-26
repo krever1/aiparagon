@@ -325,6 +325,35 @@ function check(label, ok, detail) {
     await ctx.close();
   }
 
+  // 14. find_caller (Oct 26): a plain test call says there's no caller ID, the tool is listed on the Knowledge page,
+  // and each of its answers reads plainly in a call's timeline
+  {
+    const { ctx, page } = await open(BASE + '/voice/overview', { testHook: true });
+    const got = await page.evaluate(() => {
+      const { plainCall, stepCard } = window.__VC_TEST__;
+      const c = { id: 'qa-call', transcript: [], actions: [] };
+      const step = (result, args) => { const d = document.createElement('div'); d.innerHTML = stepCard(c, { tool: 'find_caller', t: 12, args: args || { name: 'Kaye Moreno', phone: '5550101234' }, result: result }, 0, [], false); return d.innerText.replace(/\s+/g, ' '); };
+      return {
+        vars: plainCall(),
+        match: step('MATCH. This is their customer file, matched by the number and their name. Name on file: Kaye Moreno. [file 5550101234]'),
+        check: step('CHECK. Ask them to spell their first name, letter by letter, then call find_caller again with the same number and name, and the letters in spelling. Do not suggest a spelling.', { name: 'Kate Moreno', phone: '5550101234' }),
+        last: step('CHECK. Ask for their last name, then call find_caller again with the same number and their full name.', { name: 'Kaye', phone: '5550101234' }),
+        nomatch: step('NO MATCH. Treat them as a new caller and take their details as usual.', { name: 'Brian Arrington', phone: '5550101234' }),
+        nofile: step('NO FILE. Nothing is on file under that number, so this is a new caller.'),
+      };
+    });
+    check('a plain test call has no caller ID and no caller file', got.vars.caller_id_last4 === '' && got.vars.caller_history === 'none' && got.vars.caller_known === 'no' && !Object.values(got.vars).some((v) => /\d/.test(String(v))), JSON.stringify(got.vars));
+    check('find_caller in the timeline: a match says so and opens their file', /Looked for their file/.test(got.match) && /Matched their file by the number and their name/.test(got.match) && /Open their file/.test(got.match), got.match);
+    check('find_caller in the timeline: a check says what she asked', /asked them to spell their first name/.test(got.check) && /asked them to give their last name/.test(got.last), got.check + ' | ' + got.last);
+    check('find_caller in the timeline: no match and no file read as a new caller', /didn.t fit the file on that number/.test(got.nomatch) && !/Open their file/.test(got.nomatch) && /Nothing on file under that number/.test(got.nofile), got.nomatch + ' | ' + got.nofile);
+    await page.evaluate(() => { location.hash = ''; });
+    await ctx.close();
+    const k = await open(BASE + '/voice/knowledge');
+    const row = await k.page.evaluate(() => { const r = document.querySelector('[data-toolrow="find_caller"]'); return r ? r.innerText.replace(/\s+/g, ' ') : ''; });
+    check('the Knowledge page lists find_caller', /Find a caller.s file/.test(row) && /name has to match/.test(row), row);
+    await k.ctx.close();
+  }
+
   // without a baseline any page error fails; with one, only errors the baseline did not have
   const newErrors = pageErrors.patched.filter((e) => !pageErrors.original.some((o) => o.split(' :: ')[1] === e.split(' :: ')[1]));
   check(BASELINE ? 'no new page errors' : 'no page errors', newErrors.length === 0, newErrors.slice(0, 3).join(' | '));
