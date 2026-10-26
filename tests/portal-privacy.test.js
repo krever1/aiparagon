@@ -212,6 +212,16 @@ const leaks = (s, home) => SECRET.concat(home ? [/Elm Street House/] : []).filte
     check('Google: connecting asks for calendar.events.owned (with openid, so the server knows the account)', code && code.scope === 'openid ' + OWNED, JSON.stringify(asked));
     check('Google: connecting for this session only asks for calendar.events.owned alone', tok && tok.scope === OWNED, JSON.stringify(asked));
     check('Google: never the wider calendar.events, and never a permission granted before', asked.length === 2 && asked.every((x) => x.incl === false && !x.scope.split(' ').includes('https://www.googleapis.com/auth/calendar.events')), JSON.stringify(asked));
+    // the booking form says what really goes to Google (v12.38.4): title, time and place, no client details
+    const note = await page.evaluate(() => {
+      const read = () => { const n = document.querySelector('#apGcal'); const t = n ? n.closest('label').innerText.replace(/\s+/g, ' ').trim() : null; closeAll(); return t; };
+      const was = GCAL.connected;
+      GCAL.connected = true; openApptForm(); const on = read();
+      GCAL.connected = false; openApptForm(); const off = read();
+      GCAL.connected = was; return { on, off };
+    });
+    const says = (t) => !!t && /title, time and place/.test(t) && /Client names, initials and UCIs are left out/.test(t) && !/provider|initials and UCI,|Never a full name/.test(t);
+    check('Google: the booking form says only the title, time and place go to Google, connected or not', says(note.on) && says(note.off) && /^Also send to Google Calendar Added to your connected/.test(note.on) && /Opens Google Calendar prefilled/.test(note.off), JSON.stringify(note));
   }
 
   check('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
