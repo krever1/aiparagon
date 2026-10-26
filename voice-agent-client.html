@@ -5061,14 +5061,19 @@ function stepCard(c, s, n, steps, canEdit) {
   } else if (tool === "find_caller") {
     const a = s.args || {};
     const res = String(s.result || "");
-    const kind = /^MATCH\b/.test(res) ? "match" : /^CHECK\b/.test(res) ? "check" : /^NO FILE\b/.test(res) ? "nofile" : /^NO MATCH\b/.test(res) ? "nomatch" : "other";
+    const kind = /^MATCH\b/.test(res) ? "match" : /^CHECK\b/.test(res) ? "check" : /^NO FILE\b/.test(res) ? "nofile"
+      : /^NO MATCH\b.*find_caller again/.test(res) ? "tries" : /^NO MATCH\b/.test(res) ? "nomatch"
+      : /^That number is not complete/.test(res) ? "partial" : /sample customer/i.test(res) ? "sample" : "other";
     const ask = /spell their last/i.test(res) ? "spell their last name" : /spell their/i.test(res) ? "spell their first name" : /last name/i.test(res) ? "give their last name" : "give their full name";
-    if (kind === "nomatch" || kind === "other") cls = " changed";
+    if (kind === "nomatch" || kind === "tries" || kind === "other") cls = " changed";
     body += '<div class="sq">' + esc([a.name, a.phone, a.spelling ? "spelled " + a.spelling : "", a.street ? "street " + a.street : ""].filter(Boolean).join(", ") || "No details given") + "</div>";
     body += '<div class="sm">' + (kind === "match" ? "Matched their file by the number and their name."
-      : kind === "check" ? "Close but not a match yet, so she asked them to " + ask + "."
+      : kind === "check" ? (/first and last name/i.test(res) ? "No name yet, so she asked for their full name." : "Close but not a match yet, so she asked them to " + ask + ".")
       : kind === "nofile" ? "Nothing on file under that number, so she took them as a new caller."
       : kind === "nomatch" ? "The name didn't fit the file on that number, so she took them as a new caller and shared nothing from it."
+      : kind === "tries" ? "Three tries on this call already, so she stopped looking and took them as a new caller."
+      : kind === "partial" ? "The number wasn't complete, so she asked for the whole number."
+      : kind === "sample" ? "A sample customer's call: their file was already loaded, so nothing else was looked up."
       : "She couldn't check the file, so she took them as a new caller.") + "</div>";
     if (kind === "match") { const cu = customerForCall(c); btns.push('<button class="btn sm" data-client="' + esc(cu ? cu.id : "call:" + c.id) + '" data-tab="timeline">Open their file</button>'); }
     if (s.result) body += '<details class="sres"><summary>What the agent was told</summary><div>' + esc(s.result) + "</div></details>";
