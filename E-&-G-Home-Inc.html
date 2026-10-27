@@ -11833,7 +11833,7 @@ function createThread(){
   /* v12.13: who wrote it and who it is for travel with the conversation (columns from the database update) */
   const by=actorName(), myRole=state.role;
   (async()=>{                                                        // the conversation first, then the message that points at it
-    await sbPush('np_demo_threads',{id,who,subject:sub,role,last_msg:body,unread:0,from_email:myEm||null,from_name:by,to_kind:kind,to_ref:toRef||null});
+    await sbPush('np_demo_threads',{id,who,subject:sub,role,last_msg:body,unread:1,from_email:myEm||null,from_name:by,to_kind:kind,to_ref:toRef||null});   // v12.39: unread for whoever it is sent to
     sbPush('np_demo_messages',{thread_id:id,author:by,author_email:myEm||null,role:myRole,body,is_me:true});
   })();
   msgNotify(th,body);
@@ -20099,7 +20099,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.38.4 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.39 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -22161,7 +22161,7 @@ function askContext(lbl){
   }
 
   const docLines=[];
-  DOCS.filter(d=>clIds.includes(d.cid)).slice(0,30).forEach(d=>docLines.push(`- ${ci(d.cid)} · ${d.n} · ${d.cat} · ${d.date||''}${d.by?' · uploaded by '+d.by:''}`));
+  DOCS.filter(d=>clIds.includes(d.cid)).slice(0,30).forEach(d=>docLines.push(`- ${ci(d.cid)} · ${d.n} · ${d.cat} · ${d.date||''}${d.by?' · uploaded by '+d.by:''}${/^[A-Za-z0-9_-]+$/.test(String(d.id))?` [open:${d.id}]`:''}`));   // v12.39: a link to the filed copy
   sec('Client file documents', docLines);
 
   const binder=[];
@@ -22196,6 +22196,12 @@ function askContext(lbl){
 }
 /* v5.6: make the assistant's answers actionable — tokens become buttons */
 const ASK_PAGES={documents:'Documents',safety:'Safety log',calendar:'Calendar',tasks:'Tasks',clients:'Clients',staff:'Staff',incidents:'Incidents',messages:'Messages',home:'Home'};
+function askOpenFiled(id){                                           // v12.39: the filed copy, from the client's Files, not the blank form
+  const d=DOCS.find(x=>String(x.id)===String(id)); if(!d) return toast('That document is no longer in the portal.');
+  if(el('askPanel').classList.contains('on')) toggleAsk();
+  openClient(d.cid,'documents'); setTimeout(()=>openStoredDoc(d.id,d.n),120);
+}
+const askPageView=v=>v==='documents'?(state.role==='family'?'docs':'templates'):v==='staff'?'team':v;   // v12.39: the Documents page is 'templates' ('docs' for a family), Staff is 'team'
 function askOpenDoc(id){
   const d=docById(id); if(!d) return toast('That document is no longer in the portal.');
   const p={Medical:'Medical',Agency:'Agency'}[d.key]||d.key;
@@ -22206,11 +22212,13 @@ function askLink(html){
   let out=String(html);
   // [open:<docId>] → open-document button
   out=out.replace(/\[open:([A-Za-z0-9_-]+)\]/g,(m,id)=>{
-    const d=docById(id); if(!d) return '';
+    const d=docById(id);
+    if(!d){ const f=DOCS.find(x=>String(x.id)===id&&visibleClients().some(c=>c.id===x.cid));   // v12.39: a filed document in a client's file
+      return f?`<button class="btn gold sm" style="margin:4px 4px 0 0" onclick="askOpenFiled('${id}')">Open ${esc(f.n)}</button>`:''; }
     return `<button class="btn gold sm" style="margin:4px 4px 0 0" onclick="askOpenDoc('${id}')">Open ${esc(d.name)}</button>`;
   });
   // [go:<page>] → navigation button
-  out=out.replace(/\[go:([a-z]+)\]/g,(m,v)=>ASK_PAGES[v]?`<button class="btn ghost sm" style="margin:4px 4px 0 0" onclick="go('${v}')">Go to ${esc(ASK_PAGES[v])}</button>`:'');
+  out=out.replace(/\[go:([a-z]+)\]/g,(m,v)=>ASK_PAGES[v]?`<button class="btn ghost sm" style="margin:4px 4px 0 0" onclick="go('${askPageView(v)}')">Go to ${esc(ASK_PAGES[v])}</button>`:'');
   // bare document names the model mentioned without a token
   if(!/askOpenDoc\(/.test(out)){
     const all=EXAMPLE_DOCS.concat(Object.values(USER_DOCS));
@@ -23376,7 +23384,49 @@ async function teamRefresh(){
 function msgLiveTick(){
   if(state.view!=='messages'||document.hidden||!realSession()) return Promise.resolve();
   const P=pres(); P.tick++;
-  return Promise.all([presenceRead(),P.tick%2?Promise.resolve(false):teamRefresh()]).then(()=>msgLiveSync());
+  return Promise.all([presenceRead(),P.tick%2?Promise.resolve(false):teamRefresh(),msgPull()]).then(()=>msgLiveSync());   // v12.39: and new messages
+}
+/* v12.39: new conversations and replies come in without a reload: read every 30 seconds while Messages is open
+   (with who is online) and once a minute anywhere else, for the unread count. The conversation open on screen is
+   marked read, and a message being typed is kept when the page is drawn again. */
+let _msgPulling=false;
+async function msgPull(){
+  if(_msgPulling||!realSession()||document.hidden||DEMO_VIEW) return false;
+  _msgPulling=true;
+  try{
+    const last=THREADS.reduce((a,t)=>(t.msgs||[]).reduce((b,m)=>m._db!=null&&m.ts&&m.ts>b?m.ts:b,a),'');   // only what is newer than the newest one here
+    const [thr,msgs]=await Promise.all([sbGetStrict('np_demo_threads','select=*&order=created_at'),
+      sbGetStrict('np_demo_messages','select=*&order=created_at'+(last?'&created_at=gt.'+encodeURIComponent(last):''))]);
+    if(!Array.isArray(thr)||!Array.isArray(msgs)) return false;
+    const me=String(AUTH.email||'').toLowerCase(); let changed=false;
+    thr.forEach(r=>{
+      if(!r||!r.id||isDeleted('thread',r.id)) return;
+      const t=THREADS.find(x=>x.id===r.id);
+      if(!t){ THREADS.unshift({id:r.id,who:r.who||'',sub:r.subject||'',role:r.role||'Staff',last:r.last_msg||'',unread:r.unread||0,msgs:[],
+        from:String(r.from_email||'').toLowerCase(),fromName:r.from_name||'',toKind:r.to_kind||'',toRef:r.to_ref||''}); changed=true; }
+      else if(r.last_msg&&t.last!==r.last_msg){ t.last=r.last_msg; t.unread=r.unread||0; changed=true; }
+    });
+    msgs.forEach(r=>{
+      const th=THREADS.find(t=>t.id===r.thread_id); if(!th||th.msgs.some(m=>m._db===r.id)) return;
+      const mine=!!r.author_email&&String(r.author_email).toLowerCase()===me;
+      const own=mine&&th.msgs.find(m=>m.me&&!m._db&&m.t===(r.body||''));   // sent from this page: it only lacked its id
+      if(own){ own._db=r.id; return; }
+      const d=docById(r.attach_doc);
+      th.msgs.push({_db:r.id,me:mine,role:r.role||'',t:r.body||'',w:r.author||'',email:String(r.author_email||'').toLowerCase(),
+        at:r.created_at?tsFmt(r.created_at,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'',ts:r.created_at||'',att:d?{id:d.id,name:d.name}:null});
+      changed=true;
+    });
+    if(!changed) return false;
+    THREADS.forEach(t=>{ const l=(t.msgs||[])[(t.msgs||[]).length-1]; if(l&&l.me) t.unread=0; });   // your own last message is never unread to you
+    const onMsgs=state.view==='messages'&&!el('modal').classList.contains('on')&&!el('drawer').classList.contains('on');
+    if(onMsgs){
+      const t=visThreads().find(x=>x.id===state.thread); if(t&&t.unread) t_unread(t.id);   // it is on screen: read
+      const inp=el('msgIn'), v=inp?inp.value:'', f=!!inp&&document.activeElement===inp, at=inp?inp.selectionStart:0;
+      render();
+      const n=el('msgIn'); if(n&&v) n.value=v; if(n&&f){ n.focus(); try{ n.setSelectionRange(at,at); }catch(e){} }
+    } else renderNav();
+    return true;
+  }catch(e){ return false; }finally{ _msgPulling=false; }
 }
 (function(){
   const base=render;
@@ -23392,7 +23442,8 @@ function msgLiveTick(){
   };
   setInterval(()=>presenceBeat(),60000);
   setInterval(()=>msgLiveTick(),30000);
-  document.addEventListener('visibilitychange',()=>{ if(document.hidden) return; presenceBeat(); if(state.view==='messages') presenceRead().then(msgLiveSync); });
+  setInterval(()=>{ if(state.view!=='messages') msgPull(); },60000);   // v12.39: the unread count elsewhere
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden) return; presenceBeat(); if(state.view==='messages') presenceRead().then(msgLiveSync); msgPull(); });   // v12.39: back on the tab: anything new
 })();
 
 /* ══ v12.37: THE AI MARK ══
