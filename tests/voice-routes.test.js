@@ -302,10 +302,10 @@ function check(label, ok, detail) {
   {
     const { ctx, page } = await open(BASE + '/voice/overview', { testHook: true });
     const got = await page.evaluate(() => {
-      const { parseOffered, askedFor, callbackFor, usPhone, customers } = window.__VC_TEST__;
+      const { parseOffered, askedFor, callbackFor, callPhone, customers } = window.__VC_TEST__;
       const ref = '2026-10-23T16:00:00Z';
       const n = (r) => parseOffered(r, ref).length;
-      const cu = customers().find((c) => usPhone(c.phone)) || null;
+      const cu = customers().find((c) => callPhone(c.phone)) || null;
       return {
         old: n('Open times: Thursday, October 29 at 8:00 AM; Thursday, November 5 at 8:00 AM; Thursday, October 29 at 10:30 AM. Offer two or three of these naturally, by day and time, and ask which works.'),
         day: n('Open times on Thursday, October 29: Thursday, October 29 at 8:00 AM; Thursday, October 29 at 10:30 AM. Offer two or three of these naturally, by day and time, and ask which works.'),
@@ -316,12 +316,16 @@ function check(label, ok, detail) {
         mismatch: n('October 30 is a Friday, not a Thursday. Ask which they meant: Thursday, October 29, or Friday, October 30. Do not offer times until they tell you.'),
         asked: askedFor({ requested: 'Thursday, October 29th at 2pm' }) + ' | ' + askedFor({ preference: 'mornings' }),
         last4: cu ? callbackFor(cu).overrides.variableValues.caller_id_last4 : null,
-        phone: cu ? usPhone(cu.phone) : null,
+        phone: cu ? callPhone(cu.phone) : null,
+        // a number from another country keeps every digit (Oct 27: a 12-digit number was cut to 10)
+        intl4: cu ? callbackFor(Object.assign({}, cu, { phone: '+44 7700 900123' })).overrides.variableValues.caller_id_last4 : null,
+        forms: [callPhone('+44 7700 900123'), callPhone('(555) 010-1234'), callPhone('1 555 010 1234'), callPhone('010-1234')].join('|'),
       };
     });
     check('reply formats: offered times read from every form', got.old === 3 && got.day === 2 && got.exact === 1 && got.closest === 2 && got.nothing === 3 && got.at === 2 && got.mismatch === 0, JSON.stringify(got));
     check('reply formats: "Asked for" shows the exact words, else the wish', got.asked === 'Thursday, October 29th at 2pm | mornings', got.asked);
     check('Test a callback passes the last four digits', !!got.phone && got.last4 === got.phone.slice(-4), JSON.stringify(got));
+    check('Test a callback keeps every digit of a number from another country', got.intl4 === '0123' && got.forms === '447700900123|5550101234|5550101234|', JSON.stringify(got));
     await ctx.close();
   }
 
@@ -345,6 +349,7 @@ function check(label, ok, detail) {
         sample: step('This is a demo call with a sample customer, and their file is already loaded. Do not look anything else up.'),
         tries: step('NO MATCH. Treat them as a new caller and take their details as usual. Do not call find_caller again on this call.'),
         broken: step('The file could not be checked just now. Treat them as a new caller and take their details as usual.'),
+        digits: step('CHECK. The caller said 12 digits, 4 4 7, 7 0 0, 9 0 0, 1 2 3, but you passed 10. Read the whole number back to them, every digit the way they said it, and once they say yes, call find_caller again with all 12 digits and their name.', { name: 'Kaye', phone: '4477009001' }),
       };
     });
     check('a plain test call has no caller ID and no caller file', got.vars.caller_id_last4 === '' && got.vars.caller_history === 'none' && got.vars.caller_known === 'no' && !Object.values(got.vars).some((v) => /\d/.test(String(v))), JSON.stringify(got.vars));
@@ -352,6 +357,7 @@ function check(label, ok, detail) {
     check('find_caller in the timeline: a check says what she asked', /asked them to spell their first name/.test(got.check) && /asked them to give their last name/.test(got.last), got.check + ' | ' + got.last);
     check('find_caller in the timeline: a missing name asks for the full name, an incomplete number for the whole number', /No name yet, so she asked for their full name/.test(got.full) && /wasn.t complete, so she asked for the whole number/.test(got.partial), got.full + ' | ' + got.partial);
     check('find_caller in the timeline: a sample call, the try limit and a failed check each say so', /sample customer.s call/.test(got.sample) && /Three tries on this call already/.test(got.tries) && /couldn.t check the file/.test(got.broken) && !/couldn.t check/.test(got.sample + got.partial + got.tries), got.sample + ' | ' + got.tries + ' | ' + got.broken);
+    check('find_caller in the timeline: a number with digits missing says she was told to read it all back', /didn.t match the digits the caller said/.test(got.digits) && !/Close but not a match/.test(got.digits), got.digits);
     check('find_caller in the timeline: no match and no file read as a new caller', /didn.t fit the file on that number/.test(got.nomatch) && !/Open their file/.test(got.nomatch) && /Nothing on file under that number/.test(got.nofile), got.nomatch + ' | ' + got.nofile);
     await page.evaluate(() => { location.hash = ''; });
     await ctx.close();
