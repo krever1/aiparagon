@@ -27896,7 +27896,7 @@ async function apRenderAiSettings(){
       '<div class="rd-card" style="margin-top:18px" id="apFbList"><div class="rd-sec-h gold"><div><div class="k">From your feedback</div><h3>Reasons given when approving or denying</h3></div></div>'+
         (set.learn_from_feedback===false?'<div class="rd-blank">Learning from feedback is off, so these are shown but not suggested as rules.</div>':'')+
         (fb.length?fb.map(function(f){const lab=(AP_AGENTS[f.agent]||{}).label||f.agent||'An agent';
-          return '<div class="ap-fb"><div><p>“'+esc(String(f.feedback).slice(0,400))+'”</p><small>'+esc(lab)+' · '+esc(f.action||'')+' · '+esc(String(f.author||'').split('@')[0])+' · '+esc(apAgo(f.created_at))+'</small></div>'+
+          return '<div class="ap-fb"><div><p>“'+esc(String(f.feedback).slice(0,400))+'”</p><small>'+esc(lab)+' · '+esc(f.action==='changes'?'asked for changes':(f.action||''))/* v125: a reason from What should change? */+' · '+esc(String(f.author||'').split('@')[0])+' · '+esc(apAgo(f.created_at))+'</small></div>'+
             '<button class="rd-btn sm" onclick="apRuleFromFb(this)" data-t="'+esc(String(f.feedback).slice(0,400))+'" data-a="'+esc(f.agent||'')+'">Make it a rule</button></div>';}).join('')
           :'<div class="rd-empty">No written feedback yet. When someone approves or denies an output with a reason, it shows here.</div>')+'</div>'+
     '</div><div>'+
@@ -51546,6 +51546,101 @@ document.addEventListener('click',function(e){const b=e.target.closest&&e.target
   const _f=window.renderFunnel;if(typeof _f!=='function')return;
   window.renderFunnel=async function(){const r=await _f.apply(this,arguments);setTimeout(function(){try{v123Bar();}catch(e){console.warn('v123',e&&e.message);}},0);return r;};
   try{renderFunnel=window.renderFunnel;}catch(e){}
+})();
+</script>
+
+<style id="v125css">
+/* ===================== v125 · a reason on any Catalyst document ===================== */
+.ap60 .ap-docc .statline .v125-n{border:0;background:none;padding:0 2px;font:inherit;font-size:12.5px;color:var(--rd-muted,#667085);
+  cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.ap60 .ap-docc .statline .v125-n:hover{color:var(--rd-ink,#101828)}
+.v125-m .v125-msg{margin:8px 0 0;font-size:13.5px;color:var(--nw-ink-2,#475467)}
+.v125-m .v125-msg:empty{display:none}
+.v125-m .v125-msg.err{color:#B4432F}
+</style>
+<script id="v125js">
+/* ===================================================================
+   v125. A reason on any Catalyst document. Each finished document on a lead's page gets "What should change?".
+   The reason is saved to agent_feedback with the document's agent (lead_research, interview_script, anonymizer,
+   discovery_call, growth_plan), target_type e1_document and target_id "<lead email>:<agent>", so it shows on
+   AI settings under From your feedback, where Make it a rule makes it a house rule for the Catalyst agents
+   (apRuleFromFb already scopes those agents to engine1; the agents read the rules on every run since Oct 27).
+   The card says how many changes were asked on that document; a click opens AI settings.
+   =================================================================== */
+const V125={fb:null,ask:null};
+const V125_TT='e1_document';
+const V125_DOC={lead_research:'lead research',interview_script:'call guide',anonymizer:'assessment',discovery_call:'discovery framework',growth_plan:'growth plan'};
+function v125Key(email,agent){return String(email||'').toLowerCase()+':'+agent;}
+async function v125Load(force){
+  if(V125.fb&&!force)return V125.fb;
+  try{V125.fb=(await apSb('agent_feedback?select=id,agent,target_id,action,feedback,author,created_at&target_type=eq.'+V125_TT+'&order=created_at.desc&limit=500'))||[];}
+  catch(e){V125.fb=V125.fb||[];}
+  return V125.fb;
+}
+/* the reasons given on one document of a lead (a merged lead counts every address it has) */
+function v125For(lead,agent){
+  const keys=(lead.emails||[lead.email]).map(function(e){return v125Key(e,agent);});
+  return (V125.fb||[]).filter(function(f){return keys.indexOf(String(f.target_id||'').toLowerCase())>=0;});
+}
+function v125Btns(){
+  if(typeof state==='undefined'||state.view!=='e1lead')return;
+  const main=document.getElementById('main');if(!main)return;
+  const X=apE1Lead();if(!X.lead)return;
+  const secs=[...main.querySelectorAll('section.block')];
+  E1_STAGES.forEach(function(s,i){
+    const sec=secs.find(function(x){const h=x.querySelector('h2');return h&&new RegExp('^\\s*'+(i+1)+'\\.').test(h.textContent);});
+    const card=sec&&sec.querySelector('.ap-docc');if(!card)return;
+    const line=card.querySelector('.statline');if(!line)return;
+    line.querySelectorAll('.v125-btn,.v125-n').forEach(function(e){e.remove();});
+    const b=document.createElement('button');b.type='button';b.className='rd-btn sm v125-btn';b.textContent='What should change?';
+    b.title='Say what should be different next time. On AI settings the reason can become a house rule the Catalyst agents follow.';
+    b.onclick=function(){v125Ask(X.lead.email,i);};
+    /* with the document's other actions, ahead of its status chips */
+    const chip=line.querySelector(':scope > .chip');
+    line.insertBefore(b,chip||null);
+    const n=v125For(X.lead,s.agent).length;
+    if(n){const c=document.createElement('button');c.type='button';c.className='v125-n';c.textContent=n+(n===1?' change asked':' changes asked');
+      c.title='See them on AI settings, under From your feedback';c.onclick=function(){apGo('learning');};b.after(c);}
+  });
+}
+function v125Ask(email,i){
+  const s=E1_STAGES[i];if(!s)return;
+  const X=apE1Lead(),l=X.lead||{},name=l.prospect_name||email;
+  V125.ask={email:email,i:i};
+  nwModal('v125M','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · '+esc(name)+'</div><h2>What should change in the '+esc(V125_DOC[s.agent]||s.label)+'?</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v125-m">'+
+      '<label class="nw-field"><span class="nw-lbl">Your reason<small>Say what to add, cut or do differently next time. It shows on AI settings, where it can become a house rule that every Catalyst agent follows.</small></span>'+
+        '<textarea class="nw-input nw-textarea" id="v125Ta" rows="4" maxlength="600"></textarea></label>'+
+      '<p class="v125-msg" id="v125Msg" role="status" aria-live="polite"></p>'+
+      '<div class="nw-m-foot"><span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button>'+
+        '<button type="button" class="nw-btn nw-btn-primary" id="v125Go" onclick="v125Save()">'+nwIc('check',15)+'Save the reason</button></div>'+
+    '</div>');
+  setTimeout(function(){const t=document.getElementById('v125Ta');if(t)try{t.focus({preventScroll:true});}catch(e){}},0);
+}
+async function v125Save(){
+  const a=V125.ask;if(!a)return;
+  const s=E1_STAGES[a.i],ta=document.getElementById('v125Ta'),btn=document.getElementById('v125Go'),msg=document.getElementById('v125Msg');
+  const say=function(t,err){if(msg){msg.textContent=t;msg.classList.toggle('err',!!err);}};
+  const t=String((ta&&ta.value)||'').replace(/\s+/g,' ').trim();
+  /* AI settings lists reasons of 12 characters or more */
+  if(t.length<12){say('Write a sentence or two, so it can become a rule.',true);if(ta)ta.focus();return;}
+  if(btn)btn.disabled=true;say('Saving…');
+  try{
+    await apPost('agent_feedback',{agent:s.agent,target_type:V125_TT,target_id:v125Key(a.email,s.agent),action:'changes',feedback:t.slice(0,600),author:apCfMe()});
+  }catch(e){if(btn)btn.disabled=false;say('Could not save it: '+((e&&e.message)||e),true);return;}
+  V125.ask=null;nwModalClose();
+  nwToast('Saved. Make it a rule on AI settings.');
+  await v125Load(true);
+  try{v125Btns();}catch(e){}
+}
+(function(){
+  const _r=renderE1Lead;
+  renderE1Lead=function(){
+    const r=_r.apply(this,arguments);
+    Promise.resolve(r).then(function(){return v125Load();}).then(function(){try{v125Btns();}catch(e){console.warn('v125',e&&e.message);}});
+    return r;
+  };
 })();
 </script>
 
