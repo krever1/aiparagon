@@ -57,8 +57,10 @@ function check(label, ok, detail) {
     check('the Intel Tracker reads them on every scheduled and custom run' + at, intel.says === 'Rules, on every scheduled and custom run' && intel.dot === 'live' && intel.color === green, JSON.stringify(intel));
     check('no line waits on a publish in n8n any more' + at, !r.some((x) => x.dot === 'ready') && !/Live once|published in n8n|daily/.test(r.map((x) => x.says).join(' | ')), r.map((x) => x.name + ': ' + x.says).join(' | '));
     check('the upload analyzer and the funnel builder still say Not yet' + at, later.says === 'Not yet' && later.dot === 'no' && later.color !== green, JSON.stringify(later));
-    check('the other lines are as they were' + at, JSON.stringify(r.map((x) => [x.says, x.dot])) === JSON.stringify([['Rules, the chosen template and the knowledge base', 'live'], ['Rules', 'live'],
-      ['Rules, on every scheduled and custom run', 'live'], ['Rules, sent with each question', 'live'], ['Rules, on every run', 'live'], ['Not yet', 'no']]), JSON.stringify(r.map((x) => [x.says, x.dot])));
+    // v126: drafts also read what the team asked to change, and the book-a-call and low-ticket line was added
+    check('the other lines are as they were' + at, JSON.stringify(r.map((x) => [x.says, x.dot])) === JSON.stringify([['Rules, the chosen template, the knowledge base and what the team asked to change in earlier drafts', 'live'], ['Rules', 'live'],
+      ['Rules, on every scheduled and custom run', 'live'], ['Rules, sent with each question', 'live'], ['Rules, on every run', 'live'],
+      ['Not the rules yet. They follow the reasons given when ads were denied', 'no'], ['Not yet', 'no']]), JSON.stringify(r.map((x) => [x.says, x.dot])));
     if (width === 390) check('the card fits a phone', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), String(await page.evaluate(() => document.documentElement.scrollWidth)));
     await ctx.close();
   }
