@@ -146,7 +146,7 @@ function tables() {
     check('Deliverables counts and tags lead documents under Catalyst', /from Catalyst/.test(t) && /Catalyst documents for each lead/.test(t) && /Catalyst · Prospect intelligence/.test(t) && !ENGINE.test(t), (t.match(/.{0,60}engine [123].{0,40}/i) || [t.slice(0, 300)])[0]);
     await ctx.close();
   }
-  for (const [slug, want] of [['ai-settings', /Catalyst agents \(research, interview, anonymizer, discovery, growth plan\)/], ['templates', /The Catalyst documents .*Pipeline briefs/],
+  for (const [slug, want] of [['ai-settings', /Catalyst agents \(research, interview, anonymizer, discovery, growth plan, post-call actions\)/], ['templates', /The Catalyst documents .*Pipeline briefs/],
     ['account', /Catalyst · Clients and meetings[\s\S]*Pipeline · Content and ads/i], ['files', null], ['knowledge-base', null]]) {
     const { ctx, page } = await open('/dashboard/' + slug);
     const t = await txt(page);
