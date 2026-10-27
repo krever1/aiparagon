@@ -3687,7 +3687,11 @@ const BACKEND = Object.assign({
   /* v12.9: no n8n address or token is written into the page any more. Every workflow call
      goes through the np-relay function on the Supabase project, which checks the caller's
      sign-in and agency and holds the addresses and secrets on the server. */
-  googleClientId: '665621800801-pbruv525a3kcrq5oa64p9rvh1mg7pt6c.apps.googleusercontent.com'
+  googleClientId: '665621800801-pbruv525a3kcrq5oa64p9rvh1mg7pt6c.apps.googleusercontent.com',
+  /* v12.40: the region the Supabase project (its database) is in. An Edge Function runs next to the
+     person calling it unless told otherwise, and np-gcal makes several database calls per answer,
+     so called from far away each of them crossed the world (4 to 5 seconds a call from the Gulf). */
+  fnRegion: 'us-west-2'
 }, (typeof window!=='undefined' && window.NP_CONFIG) || {});
 let SYS_NOTIFS=[];
 
@@ -3716,12 +3720,15 @@ const gcalSrvOn=()=>gcalReady()&&realSession()&&!DEMO_VIEW;
 async function gcalSrv(action,extra){                                 // the np-gcal server function, as the signed-in person
   if(!gcalSrvOn()) return {ready:false};
   const url=String(BACKEND.url).replace(/\/+$/,'')+'/functions/v1/np-gcal';
+  const pinned=BACKEND.fnRegion?url+'?forceFunctionRegion='+encodeURIComponent(BACKEND.fnRegion):url;   // v12.40: next to the database
   if(AUTH.session&&AUTH.session.at&&Date.now()-AUTH.session.at>50*60000) await sbRefresh();   // an hour-old sign-in is renewed first
-  const send=()=>fetch(url,{method:'POST',headers:{'Content-Type':'application/json',apikey:BACKEND.anon,
+  const send=u=>fetch(u||pinned,{method:'POST',headers:{'Content-Type':'application/json',apikey:BACKEND.anon,
     Authorization:'Bearer '+sbTok(),'X-Requested-With':'XmlHttpRequest'},body:JSON.stringify(Object.assign({action},extra||{}))});
   try{
     let r;
-    try{ r=await send(); }catch(e){ if(sbTok()&&await sbRefresh()) r=await send(); else throw e; }   // an expired sign-in can fail before the server answers
+    try{ r=await send(); }catch(e){
+      try{ r=await send(url); }                                       // v12.40: that region can't be reached: the nearest one will do
+      catch(e2){ if(sbTok()&&await sbRefresh()) r=await send(url); else throw e2; } }   // an expired sign-in can fail before the server answers
     if(r.status===401&&sbTok()&&await sbRefresh()) r=await send();
     if(r.status===404) return {status:404,ready:false};              // the server function is not deployed yet
     const d=await r.json().catch(()=>({}));
@@ -3789,7 +3796,22 @@ async function gcalApi(url,opts,manual){
   return r;
 }
 let _gcalRestoredFor='',_gcalRestoreTry=0,_gcalRestoreT=null;
-async function gcalRestore(){                                         // signed in: pick up a connection made earlier, on any device
+/* v12.40: until the server has said whether this login has a connection kept, the page shows that it
+   is checking instead of a Connect button (which flashed up on every reload, then went away by itself) */
+let _gcalAsked='',_gcalCheckT=0;
+function gcalAsked(me){ _gcalAsked=me; clearTimeout(_gcalCheckT); _gcalCheckT=0; }
+function gcalChecking(){
+  const me=gcalWho();
+  if(!me||!gcalSrvOn()||GCAL.ready===false||GCAL.connected||_gcalAsked===me) return false;
+  if(!_gcalCheckT) _gcalCheckT=setTimeout(()=>{ _gcalCheckT=0; _gcalAsked=gcalWho(); render(); gcalHubSync(); },20000);   // never stuck checking
+  return true;
+}
+function gcalHubSync(){                                               // a settings window left open on Checking follows the answer
+  const m=el('modal');
+  if(_setHub&&m&&m.classList.contains('on')&&/Checking for a connection you made earlier/.test(m.textContent)) settingsHub.apply(null,_setHub);
+}
+async function gcalRestore(){ await gcalRestore1(); gcalHubSync(); }
+async function gcalRestore1(){                                        // signed in: pick up a connection made earlier, on any device
   if(!gcalSrvOn()) return;
   const me=gcalWho(); if(!me) return;
   if(GCAL.owner&&GCAL.owner!==me) gcalClear();
@@ -3797,17 +3819,19 @@ async function gcalRestore(){                                         // signed 
   _gcalRestoredFor=me; clearTimeout(_gcalRestoreT);
   gcalLoadSdk(()=>{},true);                                           // so Connect opens Google's window straight away
   const d=await gcalSrv('token');
+  gcalAsked(me);                                                      // v12.40: answered, so Connect can show again where it should
   if(gcalWho()!==me||GCAL.connected) return;                          // signed out meanwhile, or connected by hand
   if(gcalNotSetUp(d)){ GCAL.ready=false; render(); return; }          // the server piece is not set up yet
-  if(d.status===401||d.status===403) return;                          // signed out, or not part of an agency: nothing to retry
+  if(d.status===401||d.status===403){ render(); return; }             // signed out, or not part of an agency: nothing to retry
   if(d.status===200) GCAL.ready=true;
   if(d.access_token){ gcalApply(d); render(); gcalFetch(true); return; }
   if(d.status===200&&d.connected===false){
     if(d.reason==='expired') toast('Your Google Calendar connection ended (Google expired or revoked it). Connect it again from the calendar.');
-    return; }
+    render(); return; }
   if(d.connected===true){                                             // on file, Google just did not answer: keep it and retry quietly
     GCAL.ready=true; GCAL.kept=true; GCAL.connected=true; GCAL.email=d.email||''; GCAL.owner=me;
     gcalBackoff(); gcalAutoRefresh(); render(); return; }
+  render();                                                           // v12.40: Connect stays offered while it tries again
   _gcalRestoredFor=''; _gcalRestoreTry++;                             // a passing problem (offline, server busy): ask again a little later
   if(_gcalRestoreTry<=4) _gcalRestoreT=setTimeout(gcalRestore,Math.min(600000,30000*Math.pow(2,_gcalRestoreTry-1)));
 }
@@ -7308,7 +7332,9 @@ function setRow(ic,t,d,fn){                                          // a settin
   return `<button type="button" class="set-row" onclick="${fn}"><span class="set-row-ic">${ICON_PATHS[ic]?ico(ic,17):ic}</span>
     <span class="set-row-t"><b>${t}</b><span>${d}</span></span><span class="go-sq">\u203a</span></button>`;
 }
+let _setHub=null;                                                     // v12.40: what the settings window was last opened on
 function settingsHub(tab,page,sub){
+  _setHub=[tab,page,sub];
   page=page||(state.client?'client':state.view)||'home';
   const dir=state.role==='director';
   /* staff only reach this from the calendar's cog: their own calendars and Google connection. Houses,
@@ -7348,6 +7374,8 @@ function settingsHub(tab,page,sub){
       ?`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>${GCAL.kept?('Connected'+(GCAL.email?' as '+esc(GCAL.email):'')+' \u00b7 stays connected until you disconnect'):'Connected for this session'}</span></div>
           <button class="btn ghost sm" onclick="gcalFetch();toast('Pulling the latest events from Google\u2026')">\u27f3 Refresh</button>
           <button class="btn ghost sm" onclick="closeAll();gcalDisconnect()">Disconnect</button></div>`
+      :gcalChecking()?`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>Checking for a connection you made earlier\u2026</span></div>
+          <button class="btn ghost sm" disabled>Checking\u2026</button></div>`   // v12.40
       :`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>Not connected. Connect it to see your Google events on the board and send portal appointments to Google.</span></div>
           <button class="btn gold sm" onclick="closeAll();gcalConnect()">${GCAL.loading?'Connecting\u2026':'Connect'}</button></div>`):'';
     body=`<div class="tiny muted" style="margin-bottom:10px">The calendars on the board, and the outside calendars connected to the portal.</div>
@@ -20099,7 +20127,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.39 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.40 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -23812,6 +23840,7 @@ function cxPage(p){
       ${gcalReady()?(GCAL.connected
         ?`<button class="btn ghost sm" onclick="gcalFetch()" title="Pull the latest events from Google">${GCAL.loading?'Refreshing…':'⟳ Refresh Google'}</button>
            <button class="btn ghost sm" onclick="gcalDisconnect()" title="${GCAL.kept?esc('Connected'+(GCAL.email?' as '+GCAL.email:'')+' · stays connected until you disconnect'):'Connected for this session only'}">Google ✓ · Disconnect</button>`
+        :gcalChecking()?`<button class="btn ghost sm" disabled title="Looking for a Google Calendar connection you made earlier">Checking Google Calendar…</button>`   /* v12.40 */
         :`<button class="btn gold sm" onclick="gcalConnect()">${GCAL.loading?'Connecting…':'Connect Google Calendar'}</button>`):''}
       ${seg}
       <button class="gear" title="Settings — calendars, categories, colors and names" onclick="calendarSettings()">${ico('settings',17)}</button>
