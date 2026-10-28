@@ -51976,6 +51976,26 @@ function v127Side(){
   d.insertAdjacentHTML('beforeend','<small class="nw-avoid v127-avoid" title="From the reasons given when pages were turned down">Avoids what was said about earlier pages: '+esc(v127FaSteps().join(', '))+'</small>');
 }
 </script>
+<script id="v129js">
+/* ===================================================================
+   v129: a page that draws itself again keeps its product header
+   - nwHeadFix (v107, the labels in NW_PAGE_HEADS) puts the product
+     header on a page when it opens. AI settings and Templates also
+     draw themselves again in place: AI settings after Add rule, Edit,
+     Cancel and Delete, Templates after a save, a copy, a delete or a
+     tile filter. Their own old header came back each time ("System ·
+     Dashboard AI settings", "System · Templates") until the next page
+     change. Both renderers now put the product header back as soon as
+     they have drawn.
+   =================================================================== */
+(function(){
+  if(typeof nwHeadFix!=='function')return;
+  ['apRenderAiSettings','apRenderTemplates2'].forEach(function(n){
+    const f=window[n];if(typeof f!=='function')return;
+    window[n]=async function(){const v=await f.apply(this,arguments);try{nwHeadFix();}catch(e){}return v;};
+  });
+})();
+</script>
 <script>
 /* ===================================================================
    PAGE ADDRESSES
