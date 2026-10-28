@@ -356,6 +356,9 @@ function check(label, ok, detail) {
           return list.map((cu) => cu.name + ':' + cu.id).sort().join(' | ');
         })(),
         household: step('MATCH. This is their customer file, matched by the number and their name. Name on file: Edward. [file 5550109000 for edward]', { name: 'Edward' }),
+        // a lookup with no approved answer: flagged when an escalation follows it, otherwise nothing was flagged (off topic)
+        offTopic: (function () { const st = [{ tool: 'lookup_knowledge', t: 70, q: 'How can I buy from Walmart?', kb: null, args: { question: 'How can I buy from Walmart?' } }]; const d = document.createElement('div'); d.innerHTML = stepCard(c, st[0], 0, st, false); return d.innerText.replace(/\s+/g, ' '); })(),
+        flagged: (function () { const st = [{ tool: 'lookup_knowledge', t: 70, q: 'Do you fix solar panels on the roof?', kb: null, args: { question: 'Do you fix solar panels on the roof?' } }, { tool: 'escalate_to_human', t: 72, args: { reason: 'solar panels', urgency: 'normal' } }]; const d = document.createElement('div'); d.innerHTML = stepCard(c, st[0], 0, st, false); return d.innerText.replace(/\s+/g, ' '); })(),
         digits: step('CHECK. The caller said 12 digits, 4 4 7, 7 0 0, 9 0 0, 1 2 3, but you passed 10. Read the whole number back to them, every digit the way they said it, and once they say yes, call find_caller again with all 12 digits and their name.', { name: 'Kaye', phone: '4477009001' }),
       };
     });
@@ -365,6 +368,7 @@ function check(label, ok, detail) {
     check('find_caller in the timeline: a missing name asks for the full name, an incomplete number for the whole number', /No name yet, so she asked for their full name/.test(got.full) && /wasn.t complete, so she asked for the whole number/.test(got.partial), got.full + ' | ' + got.partial);
     check('find_caller in the timeline: a sample call, the try limit and a failed check each say so', /sample customer.s call/.test(got.sample) && /Three tries on this call already/.test(got.tries) && /couldn.t check the file/.test(got.broken) && !/couldn.t check/.test(got.sample + got.partial + got.tries), got.sample + ' | ' + got.tries + ' | ' + got.broken);
     check('two people on one number are two customers in the Command Center', got.split === 'Edward Smith:lc-p5550109000-edward | Kaye:lc-p5550109000', got.split);
+    check('a lookup with no answer and nothing flagged reads as off topic; one followed by a flag says she flagged it', /Nothing was flagged for a person, as for a question that isn.t about roofing/.test(got.offTopic) && !/flagged it for a person/.test(got.offTopic) && /rather not guess and flagged it for a person/.test(got.flagged), got.offTopic + ' | ' + got.flagged);
     check('find_caller in the timeline: someone else on a number finds their own file, by the number they call from', /Edward, the number they.re calling from/.test(got.household) && /Matched their own file on that number by their name/.test(got.household) && /Open their file/.test(got.household), got.household);
     check('find_caller in the timeline: a number with digits missing says she was told to read it all back', /didn.t match the digits the caller said/.test(got.digits) && !/Close but not a match/.test(got.digits), got.digits);
     check('find_caller in the timeline: no match and no file read as a new caller', /didn.t fit the file on that number/.test(got.nomatch) && !/Open their file/.test(got.nomatch) && /Nothing on file under that number/.test(got.nofile), got.nomatch + ' | ' + got.nofile);
