@@ -1,6 +1,6 @@
 # AI Paragon Consulting Group: project repo
 
-Briefs for Claude sessions in this repo. Last reviewed 2026-10-28. Four projects live here, each as one single-file HTML app. Read the shared sections, then the section for the project you're working on.
+Briefs for Claude sessions in this repo. Last reviewed 2026-10-28. Five projects live here, each as one single-file HTML app (#5 is built from source, see its section). Read the shared sections, then the section for the project you're working on.
 
 ## Projects and files
 | # | Project | File in GitHub | Live at |
@@ -9,12 +9,13 @@ Briefs for Claude sessions in this repo. Last reviewed 2026-10-28. Four projects
 | 2 | Spectrum Care Advisory OS (care portal, np-demo) | `E-&-G-Home-Inc.html` | np.aiparagonconsulting.com (DigitalOcean) |
 | 3 | Paragon Advisory OS demo dashboard (Delta Advisory) | `mhwp-dashboard.html` | static deploy; this repo's copy is at aiparagon.vercel.app/advisory/touchpoint (pages at /advisory/<page>; the old file URL forwards there) |
 | 4 | Voice agent Command Center (Vapi, Arrington Roofing) | `voice-agent-client.html` | aiparagon.vercel.app/voice/overview (pages at /voice/<page>; the old file URL forwards there) |
+| 5 | Website builder demo (Puck) | `site-builder.html`, built from `builder-src/` | aiparagon.vercel.app/builder (pages at /builder/edit/<page> and /builder/view/<page>; the file URL forwards there) |
 
 - Those are the GitHub names: update each file in place, don't add numbered copies to the repo. Kser's own deliveries use numbered names (see each project).
 - Everything else in the repo is an older build or a marketing page: older dashboards (`ai-paragon-dashboard.html`, `ai-paragon-dashboard-v40.html`, `dashboard-v1.html`), older portal builds (`np-demo-*.html`, `Demo-portal.html`, `Spectrum-Care-Advisory-OS.html`), and the solution, landing and motion pages. Don't touch them for project work.
 - Vercel project "aiparagon" serves this repo as static files, no build step. Every file in the repo is public at aiparagon.vercel.app/<file>. Vercel is becoming the dev environment: each pushed branch gets a preview deployment.
-- `vercel.json` gives apps their own path prefix on the one domain: /dashboard and /dashboard/* serve the internal dashboard (#1), /voice and /voice/* serve the Command Center (#4), /advisory and /advisory/* serve the Advisory OS demo (#3), /go and /go/* serve `go.html` (the landing pages #1 puts live), and each old file address forwards to its app (/new-aiparagon-dashboard.html to /dashboard, /voice-agent-client.html to /voice/overview, /mhwp-dashboard.html to /advisory/touchpoint; temporary 307s for now). Other apps can follow the same pattern (one prefix each, one rewrite pair each, plus a forward from the old file address).
-- Browser tests for #1, #2, #3 and #4 live in `tests/` (kept off the live site by `.vercelignore`). Run `bash tests/run.sh` before merging a change to those files, and update a suite in the same PR when a page is added, renamed or moved; tests/README.md has the details.
+- `vercel.json` gives apps their own path prefix on the one domain: /dashboard and /dashboard/* serve the internal dashboard (#1), /voice and /voice/* serve the Command Center (#4), /advisory and /advisory/* serve the Advisory OS demo (#3), /go and /go/* serve `go.html` (the landing pages #1 puts live), /builder and /builder/* serve the website builder demo (#5), and each old file address forwards to its app (/new-aiparagon-dashboard.html to /dashboard, /voice-agent-client.html to /voice/overview, /mhwp-dashboard.html to /advisory/touchpoint, /site-builder.html to /builder; temporary 307s for now). Other apps can follow the same pattern (one prefix each, one rewrite pair each, plus a forward from the old file address).
+- Browser tests for #1 to #5 live in `tests/` (kept off the live site by `.vercelignore`). Run `bash tests/run.sh` before merging a change to those files, and update a suite in the same PR when a page is added, renamed or moved; tests/README.md has the details.
 - The repo is public. Keep secrets and security details out of commits and this file.
 
 ## Shared services
@@ -534,3 +535,29 @@ The older "Voice Agent Demo" and "Voice Agent Realtime Session" workflows are in
 - In a tool-calls request, Vapi's `artifact.messages` already holds the tool call being answered (same id as in `toolCallList`). Leave those ids out when counting earlier calls.
 - The prompt's read-back pattern shapes the digits the agent passes to tools: a three, three and four rule cut a 12-digit number to 10 (Oct 27). Keep numbers of any length in the prompt and the tool descriptions.
 - Never put a real number, email or name in the prompt as an example. On a call with no caller ID the agent took the example's last four digits as the caller's. Examples use 555-010-1234 and j smith.
+
+---
+
+# 5. Website builder demo (Puck)
+
+## What this is
+A self-serve website builder demo for the website creation offer (Erica's guide "Building Cinematic Websites with Claude", Oct 14). A dashboard of pages, a New page dialog (Cinematic, Business or Blank), a visual editor built on Puck (open source, MIT) where a page is made of sections, and the published page. Users click to type on the page, drag sections in, change settings in a side panel and preview phone, tablet and desktop. Front end only: pages are kept in the browser (localStorage `apSiteBuilder.v1`), so there are no accounts and no backend yet.
+
+## How it's built
+- Source in `builder-src/` (React 19, `@puckeditor/core` 0.23, esbuild). From `builder-src/`: `npm install`, then `npm run build` writes `site-builder.html`, one file with the script and styles inlined and the bundled packages' licenses at the end. Never edit `site-builder.html` by hand: change the source, rebuild, commit both. `.vercelignore` keeps `builder-src/` off the live site; its node_modules stay out of git.
+- `src/blocks.jsx`: the sections (Menu bar, Hero, Scroll story, Feature cards, Steps, Text and visual, FAQ, Call to action, Footer, Heading, Text, Button, Spacer), their fields and how they render. One config renders both the editor canvas and the published page. `src/blocks.css` styles built pages (scoped under `.sb-site`). `src/templates.js`: the starting points. `src/store.js`: pages (a draft and a live copy each; status Draft, Live or Unpublished changes). `src/router.js`: addresses. `src/main.jsx`: dashboard, editor, preview. `src/app.css`: the builder's own look (AI Paragon tokens, as in go.html).
+- Motion: Hero backgrounds are particles that follow the cursor, aurora, a moving grid, a video or an image. The Scroll story is a full-screen scene that sticks while its chapters scroll over it, driven by `--p` (scroll progress 0 to 1): Deep space, Neon city, Warp tunnel, or the user's video scrubbed by the scroll. Scenes are drawn in CSS, no media files. Entrance animations only run on the published page, never in the editor; prefers-reduced-motion holds everything still with every word visible.
+- Puck's built-in Publish control is a span a keyboard cannot reach, so the header has our own Publish button (`HeaderActions`). The canvas does not wait for web fonts (`iframe.waitForStyles` false).
+- Links typed into the editor go through `safeHref` (a javascript: link becomes #).
+
+## Page addresses
+- /builder (dashboard), /builder/edit/<page>, /builder/view/<page> (the live copy), /builder/view/<page>/draft. A missing page goes to the dashboard with a notice.
+- A copy opened anywhere else (a local file, another host) uses #/edit/<page> and so on. Inside a frame it opens the page its address names and then leaves the address alone.
+
+## Where it stands (as of 2026-10-28)
+- v1: dashboard, new page from three starting points, the editor, autosave, Publish, Preview, duplicate and delete, and Reset the demo (dashboard footer: back to the two sample pages, for the next demo). The cinematic template's brand (Kinetic Studio) is made up; no invented testimonials, logos or numbers anywhere.
+- Direction from the Oct 28 chat with Kser (not final): self-serve built in house on Puck, with our own AI panel on Claude (Puck's paid AI add-on is the shortcut); the AI writes the same page data the editor saves, never code. Higgsfield is connected to Claude as a custom connector for images and video; its own website builder can't be the self-serve builder (generation apps must sign in with Higgsfield and use the user's credits; sites live on higgsfield.app).
+- Not built: the AI prompt (setup and changes by chat), accounts and storage (its own Supabase project), the client dashboard settings (custom domain through Vercel's API, SEO, leads), image and video generation, uploads.
+
+## Shipping
+Rebuild (`npm run build` in `builder-src/`), run `bash tests/run.sh builder`, and commit the source with the built `site-builder.html`.

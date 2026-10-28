@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs the browser test suites (see tests/README.md).
 #   bash tests/run.sh                                  every suite
-#   bash tests/run.sh dashboard advisory               some of them: dashboard, advisory, voice, portal
+#   bash tests/run.sh dashboard advisory               some of them: dashboard, advisory, voice, portal, builder
 #   bash tests/run.sh dashboard --against origin/main  also compare every page's text with the file at that git ref
 cd "$(dirname "$0")/.." || exit 2
 export NODE_PATH="${NODE_PATH:-$(npm root -g 2>/dev/null)}"
@@ -14,19 +14,21 @@ while [ $# -gt 0 ]; do
     *) suites="$suites $1"; shift ;;
   esac
 done
-[ -z "$suites" ] && suites="dashboard advisory voice portal"
+[ -z "$suites" ] && suites="dashboard advisory voice portal builder"
 
 status=0
 for s in $suites; do
+  nobase=""
   case "$s" in
     dashboard) file=new-aiparagon-dashboard.html ;;
     advisory) file=mhwp-dashboard.html ;;
     voice) file=voice-agent-client.html ;;
     portal) file='E-&-G-Home-Inc.html' ;;
-    *) echo "unknown suite: $s (use dashboard, advisory, voice or portal)"; exit 2 ;;
+    builder) file=site-builder.html; nobase=1 ;;
+    *) echo "unknown suite: $s (use dashboard, advisory, voice, portal or builder)"; exit 2 ;;
   esac
   base=""
-  if [ -n "$ref" ]; then
+  if [ -n "$ref" ] && [ -z "$nobase" ]; then
     base="${TMPDIR:-/tmp}/baseline-$s.html"
     git show "$ref:$file" > "$base" || { echo "could not read $file at $ref"; exit 2; }
   fi
