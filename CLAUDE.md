@@ -1,6 +1,6 @@
 # AI Paragon Consulting Group: project repo
 
-Briefs for Claude sessions in this repo. Last reviewed 2026-10-28. Four projects live here, each as one single-file HTML app. Read the shared sections, then the section for the project you're working on.
+Briefs for Claude sessions in this repo. Last reviewed 2026-10-28. Five projects live here, each as one single-file HTML app (#5 is built from source, see its section). Read the shared sections, then the section for the project you're working on.
 
 ## Projects and files
 | # | Project | File in GitHub | Live at |
@@ -9,16 +9,17 @@ Briefs for Claude sessions in this repo. Last reviewed 2026-10-28. Four projects
 | 2 | Spectrum Care Advisory OS (care portal, np-demo) | `E-&-G-Home-Inc.html` | np.aiparagonconsulting.com (DigitalOcean) |
 | 3 | Paragon Advisory OS demo dashboard (Delta Advisory) | `mhwp-dashboard.html` | static deploy; this repo's copy is at aiparagon.vercel.app/advisory/touchpoint (pages at /advisory/<page>; the old file URL forwards there) |
 | 4 | Voice agent Command Center (Vapi, Arrington Roofing) | `voice-agent-client.html` | aiparagon.vercel.app/voice/overview (pages at /voice/<page>; the old file URL forwards there) |
+| 5 | Website builder demo (Puck) | `site-builder.html`, built from `builder-src/` | aiparagon.vercel.app/builder (pages at /builder/edit/<page> and /builder/view/<page>; the file URL forwards there) |
 
 - Those are the GitHub names: update each file in place, don't add numbered copies to the repo. Kser's own deliveries use numbered names (see each project).
 - Everything else in the repo is an older build or a marketing page: older dashboards (`ai-paragon-dashboard.html`, `ai-paragon-dashboard-v40.html`, `dashboard-v1.html`), older portal builds (`np-demo-*.html`, `Demo-portal.html`, `Spectrum-Care-Advisory-OS.html`), and the solution, landing and motion pages. Don't touch them for project work.
 - Vercel project "aiparagon" serves this repo as static files, no build step. Every file in the repo is public at aiparagon.vercel.app/<file>. Vercel is becoming the dev environment: each pushed branch gets a preview deployment.
-- `vercel.json` gives apps their own path prefix on the one domain: /dashboard and /dashboard/* serve the internal dashboard (#1), /voice and /voice/* serve the Command Center (#4), /advisory and /advisory/* serve the Advisory OS demo (#3), /go and /go/* serve `go.html` (the landing pages #1 puts live), and each old file address forwards to its app (/new-aiparagon-dashboard.html to /dashboard, /voice-agent-client.html to /voice/overview, /mhwp-dashboard.html to /advisory/touchpoint; temporary 307s for now). Other apps can follow the same pattern (one prefix each, one rewrite pair each, plus a forward from the old file address).
-- Browser tests for #1, #2, #3 and #4 live in `tests/` (kept off the live site by `.vercelignore`). Run `bash tests/run.sh` before merging a change to those files, and update a suite in the same PR when a page is added, renamed or moved; tests/README.md has the details.
+- `vercel.json` gives apps their own path prefix on the one domain: /dashboard and /dashboard/* serve the internal dashboard (#1), /voice and /voice/* serve the Command Center (#4), /advisory and /advisory/* serve the Advisory OS demo (#3), /go and /go/* serve `go.html` (the landing pages #1 puts live), /builder and /builder/* serve the website builder demo (#5), and each old file address forwards to its app (/new-aiparagon-dashboard.html to /dashboard, /voice-agent-client.html to /voice/overview, /mhwp-dashboard.html to /advisory/touchpoint, /site-builder.html to /builder; temporary 307s for now). Other apps can follow the same pattern (one prefix each, one rewrite pair each, plus a forward from the old file address).
+- Browser tests for #1 to #5 live in `tests/` (kept off the live site by `.vercelignore`). Run `bash tests/run.sh` before merging a change to those files, and update a suite in the same PR when a page is added, renamed or moved; tests/README.md has the details.
 - The repo is public. Keep secrets and security details out of commits and this file.
 
 ## Shared services
-- Supabase project lesyptuwllcgajdxzjje is shared by #1 (engine tables and ap_*), #2 (np_*) and #4 (vc_*). #3 has no backend. The mhwp_* tables belong to the old Meridian Harbor demo (see #3).
+- Supabase project lesyptuwllcgajdxzjje is shared by #1 (engine tables and ap_*), #2 (np_*) and #4 (vc_*). #5 uses only its sign-in (the team's accounts, for the AI panel). #3 has no backend. The mhwp_* tables belong to the old Meridian Harbor demo (see #3).
 - n8n at n8n.aiparagonconsulting.com runs every workflow. Self-hosted on DigitalOcean, AWS move in progress. Erica's n8n project: 70lGqIuDvXVysHIc (her copies end in "(Erica)"; three of her Engine 1 steps call the non-Erica copies, see #1's Gotchas).
 - People: Kser (Kaeser Valencerina) builds everything. Erica Dresslar is founder/CEO; she demos to prospects and gives feedback by Loom, Slack and call transcripts.
 - Never use Supabase-tesserafy or Tesserafy branding in any project.
@@ -534,3 +535,44 @@ The older "Voice Agent Demo" and "Voice Agent Realtime Session" workflows are in
 - In a tool-calls request, Vapi's `artifact.messages` already holds the tool call being answered (same id as in `toolCallList`). Leave those ids out when counting earlier calls.
 - The prompt's read-back pattern shapes the digits the agent passes to tools: a three, three and four rule cut a 12-digit number to 10 (Oct 27). Keep numbers of any length in the prompt and the tool descriptions.
 - Never put a real number, email or name in the prompt as an example. On a call with no caller ID the agent took the example's last four digits as the caller's. Examples use 555-010-1234 and j smith.
+
+---
+
+# 5. Website builder demo (Puck)
+
+## What this is
+A self-serve website builder demo for the website creation offer (Erica's guide "Building Cinematic Websites with Claude", Oct 14). A dashboard of pages, a New page dialog (Cinematic, Business, Blank or Describe it), a visual editor built on Puck (open source, MIT) where a page is made of sections, and the published page. Users click to type on the page, drag sections in, change settings in a side panel, preview phone, tablet and desktop, and ask the AI to write the page or change it. Pages are kept in the browser (localStorage `apSiteBuilder.v1`), so there are no accounts for pages yet; the only backend is the AI (an n8n workflow), which answers signed-in AI Paragon accounts.
+
+## How it's built
+- Source in `builder-src/` (React 19, `@puckeditor/core` 0.23, esbuild). From `builder-src/`: `npm install`, then `npm run build` writes `site-builder.html`, one file with the script and styles inlined and the bundled packages' licenses at the end. Never edit `site-builder.html` by hand: change the source, rebuild, commit both. `.vercelignore` keeps `builder-src/` off the live site; its node_modules stay out of git.
+- `src/blocks.jsx`: the sections (Menu bar, Hero, Scroll story, Feature cards, Steps, Text and visual, FAQ, Call to action, Footer, Heading, Text, Button, Spacer), their fields and how they render. One config renders both the editor canvas and the published page. `src/blocks.css` styles built pages (scoped under `.sb-site`). `src/templates.js`: the starting points. `src/store.js`: pages (a draft and a live copy each; status Draft, Live or Unpublished changes). `src/router.js`: addresses. `src/main.jsx`: dashboard, editor, preview. `src/app.css`: the builder's own look (AI Paragon tokens, as in go.html).
+- Motion: Hero backgrounds are particles that follow the cursor, aurora, a moving grid, a video or an image. The Scroll story is a full-screen scene that sticks while its chapters scroll over it, driven by `--p` (scroll progress 0 to 1): Deep space, Neon city, Warp tunnel, or the user's video scrubbed by the scroll. Scenes are drawn in CSS, no media files. Entrance animations only run on the published page, never in the editor; prefers-reduced-motion holds everything still with every word visible.
+- Puck's built-in Publish control is a span a keyboard cannot reach, so the header has our own Publish button (`HeaderActions`). The canvas does not wait for web fonts (`iframe.waitForStyles` false).
+- The AI (v2): `src/ai.js` is its side of the Site Builder · AI workflow. `catalog()` writes the blocks, fields and options from the Puck config, so a new block or option reaches the AI with no change in n8n (a new block needs a line in `ABOUT`, a field that only counts with a choice one in `WHEN`); `pageForAi` is the page as the AI reads it (settings without the address, then each section's id, type and fields); `askAi` sends both with the request and the sign-in token and waits up to 150 seconds. Claude answers with the page's sections in order, each `{keep: id}`, `{edit: id, props}` (only the fields that change; a list replaces the whole list) or `{add: type, props}`; a section left out is removed. `applyAnswer` checks it before anything touches the page: known blocks, fields and options only, text tidied and capped, rich text cut down to p, strong, em, a, ul, ol and li, a web address, email or phone number only when it is in the request or already on the page (else #), pictures and videos only from an https address given (else the built-in look), new ids for added sections, and sections added while the AI worked kept at the end.
+- `src/auth.js`: the AI's sign-in, with the team's accounts on the shared Supabase project (the dashboard's). The builder keeps its own session under `apSiteBuilder.auth` and renews it one tab at a time (`navigator.locks`). A dashboard sign-in in the same browser (`ap.session.v1`) is used while it has more than a minute left, read only: the builder never renews it, since two apps renewing one session race for the same renewal key.
+- `src/AiPanel.jsx`: the AI tab (a Puck plugin, after Blocks and Outline) and `useAiSession`, which holds the request, the answer, Undo and a description waiting from Describe it in the editor view (see Gotchas). The header's Ask AI button opens the tab and puts the cursor in it. An answer goes in through Puck's setData with history on, so Puck's undo takes it back too; Undo this change shows only while the page is as the AI left it. `src/context.js` holds `EditorCtx`. Tests reach the checks through `window.__SB_TEST__`, filled only when a test sets it to true before load.
+- Links typed into the editor go through `safeHref` (a javascript: link becomes #).
+
+## Page addresses
+- /builder (dashboard), /builder/edit/<page>, /builder/view/<page> (the live copy), /builder/view/<page>/draft. A missing page goes to the dashboard with a notice.
+- A copy opened anywhere else (a local file, another host) uses #/edit/<page> and so on. Inside a frame it opens the page its address names and then leaves the address alone.
+
+## n8n workflow
+| Workflow | ID | Notes |
+|---|---|---|
+| Site Builder · AI | xpgUs5ZEowntEW44 | /webhook/site-builder-ai. The dashboard webhooks' entry (Check Dashboard User; anyone but an AI Paragon account gets 401), then Claude (n8n's Anthropic node, Claude - Write Page, where the model is set) writes or changes the page from the builder's catalog, the page and the request, and it answers at once with `{ok, summary, root, sections}`. The prompt is in Build Page Request: no made-up facts (placeholders in [brackets]), no made-up links, a new page gets a Menu bar, a Hero, a Scroll story, 2 to 5 sections, a Call to action and a Footer. Limits: request 2,000 characters, catalog 30,000, page 90,000. Published Oct 28. |
+
+## Where it stands (as of 2026-10-28)
+- v1: dashboard, new page from three starting points, the editor, autosave, Publish, Preview, duplicate and delete, and Reset the demo (dashboard footer: back to the two sample pages, for the next demo). The cinematic template's brand (Kinetic Studio) is made up; no invented testimonials, logos or numbers anywhere.
+- v2 (Oct 28, the AI panel): an AI tab in the editor, also opened by Ask AI in the header. Describe the page, or say what to change, and Claude's answer lands on the page as sections, checked first (see How it's built), with what it says and what changed, Undo this change, Stop, and errors in plain words. New page has a fourth start, Describe it: a blank page that opens on the AI tab and sends the description, at once when signed in, after sign-in otherwise. The AI needs an AI Paragon sign-in (the dashboard account, or the dashboard's own sign-in in the same browser). In n8n the same day: Site Builder · AI, new and published, checked with real Claude runs (a page from a description in about 15 seconds, a change in about 6; both answers are the suite's fixtures) and a pinned run for a caller turned away. The live check from a browser is the first real use on the preview (this container cannot reach n8n). Tests: `tests/builder-ai.test.js`.
+- Direction from the Oct 28 chat with Kser (not final): self-serve built in house on Puck, with our own AI panel on Claude (built in v2; Puck's paid AI add-on was the shortcut); the AI writes the same page data the editor saves, never code. Higgsfield is connected to Claude as a custom connector for images and video; its own website builder can't be the self-serve builder (generation apps must sign in with Higgsfield and use the user's credits; sites live on higgsfield.app).
+- Not built: accounts and storage for pages (its own Supabase project, which would also give clients their own sign-in for the AI), the client dashboard settings (custom domain through Vercel's API, SEO, leads), image and video generation, uploads.
+
+## Shipping
+Rebuild (`npm run build` in `builder-src/`), run `bash tests/run.sh builder` (the app and AI suites), and commit the source with the built `site-builder.html`.
+
+## Gotchas
+- Puck builds its sidebar twice as the editor opens: a plugin's panel mounts, unmounts and mounts again. Anything that has to live on goes in the editor view (`useAiSession`), not in the panel; before that, a Describe it description went to the AI twice and the first request was cut off.
+- Puck's rail items (Blocks, Outline, AI) are divs and its Publish control a span, none reachable by keyboard; the header has real buttons for Ask AI and Publish.
+- Puck's Delete and Backspace hotkeys remove the selected section unless the key comes from an input, a textarea or editable text, so the AI box is safe (tested).
+- The workflow answers in one call, no polling: a whole page took about 15 seconds on Oct 28. The builder waits up to 150 seconds, and a 524 or 504 from a proxy in between reads as "took too long".
