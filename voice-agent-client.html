@@ -5066,8 +5066,8 @@ function stepCard(c, s, n, steps, canEdit) {
       : /^That number is not complete/.test(res) ? "partial" : /sample customer/i.test(res) ? "sample" : "other";
     const ask = /spell their last/i.test(res) ? "spell their last name" : /spell their/i.test(res) ? "spell their first name" : /last name/i.test(res) ? "give their last name" : "give their full name";
     if (kind === "nomatch" || kind === "tries" || kind === "digits" || kind === "other") cls = " changed";
-    body += '<div class="sq">' + esc([a.name, a.phone, a.spelling ? "spelled " + a.spelling : "", a.street ? "street " + a.street : ""].filter(Boolean).join(", ") || "No details given") + "</div>";
-    body += '<div class="sm">' + (kind === "match" ? "Matched their file by the number and their name."
+    body += '<div class="sq">' + esc([a.name, a.phone || (a.name ? "the number they're calling from" : ""), a.spelling ? "spelled " + a.spelling : "", a.street ? "street " + a.street : ""].filter(Boolean).join(", ") || "No details given") + "</div>";
+    body += '<div class="sm">' + (kind === "match" ? (/\[file \d+ for [a-z]+\]\s*$/.test(res) ? "Matched their own file on that number by their name. Someone else who calls from it has a file of their own." : "Matched their file by the number and their name.")
       : kind === "digits" ? "The number she passed didn't match the digits the caller said, so she was told to read the whole number back first."
       : kind === "check" ? (/first and last name/i.test(res) ? "No name yet, so she asked for their full name." : "Close but not a match yet, so she asked them to " + ask + ".")
       : kind === "nofile" ? "Nothing on file under that number, so she took them as a new caller."
@@ -5580,7 +5580,10 @@ function deriveCustomers(calls, appts, escalations) {
   calls.slice().sort((a, b) => new Date(a.receivedAt) - new Date(b.receivedAt)).forEach((c) => {
     const ph = digits(c.phone).slice(-10);
     const nm = c.customer && !/^(web|unknown) caller$/i.test(c.customer) ? "n" + slug(c.customer) : "";
-    const key = ph.length >= 7 ? "p" + ph : nm || "c" + slug(c.id);
+    // Someone else on a number that already has a customer (a household, a shared phone) is a customer of their own,
+    // filed by first name, as the database files them (structured._file = name).
+    const own = nm && c.structured && c.structured._file === "name" ? "-" + slug(String(c.customer).trim().split(/\s+/)[0]) : "";
+    const key = ph.length >= 7 ? "p" + ph + own : nm || "c" + slug(c.id);
     let cu = map[key];
     if (!cu) {
       cu = map[key] = { id: "lc-" + key, live: true, name: c.customer, phone: c.phone === "Web call" ? "" : (c.phone || ""), email: c.email || "", address: /not captured/i.test(c.address) ? "" : c.address,
@@ -6528,7 +6531,7 @@ setInterval(() => {
   else if (changed) { renderCounts(); renderBell(); }
 }, 30000);
 // Test hook: only when a test sets window.__VC_TEST__ before the page loads (tests/voice-routes.test.js). Never on its own.
-if (window.__VC_TEST__ === true) window.__VC_TEST__ = { parseOffered: parseOffered, askedFor: askedFor, callbackFor: callbackFor, callPhone: callPhone, customers: () => (S && S.customers) || [], plainCall: () => Object.assign({}, PLAIN_CALL), stepCard: stepCard };
+if (window.__VC_TEST__ === true) window.__VC_TEST__ = { parseOffered: parseOffered, askedFor: askedFor, callbackFor: callbackFor, callPhone: callPhone, customers: () => (S && S.customers) || [], plainCall: () => Object.assign({}, PLAIN_CALL), stepCard: stepCard, deriveCustomers: deriveCustomers };
 })();
 </script>
 </body>
