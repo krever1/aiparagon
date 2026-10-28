@@ -1,15 +1,21 @@
 // Site builder demo: a dashboard of pages, a Puck editor to build each page from sections, and a
 // preview of the published page. Everything is saved in this browser (see store.js).
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Puck, Render, Button, useGetPuck } from '@puckeditor/core';
 import '@puckeditor/core/no-external.css';
 import './app.css';
 import './blocks.css';
 import { config, ACCENTS, FONTS } from './blocks.jsx';
-import { TEMPLATE_LIST } from './templates.js';
+import { TEMPLATE_LIST, makeData } from './templates.js';
 import * as store from './store.js';
 import { canonicalize, go, hrefFor, linkProps, useRoute } from './router.js';
+import { EditorCtx } from './context.js';
+import { AiPanel, SparkIcon, useAiSession } from './AiPanel.jsx';
+import { setPending, takePending, catalog, pageForAi, applyAnswer } from './ai.js';
+
+// "Describe it" makes a blank page and hands the description to the AI panel
+const START_LIST = [...TEMPLATE_LIST, { key: 'describe', label: 'Describe it', blurb: 'Say what the page is for and the AI writes a first draft.' }];
 
 const VIEWPORTS = [
   { width: 390, height: 'auto', label: 'Phone', icon: 'Smartphone' },
@@ -137,16 +143,25 @@ function NewPageModal({ onClose }) {
   const [slug, setSlug] = useState('');
   const [slugEdited, setSlugEdited] = useState(false);
   const [template, setTemplate] = useState('cinematic');
+  const [about, setAbout] = useState('');
   const [error, setError] = useState('');
+  const [aboutError, setAboutError] = useState('');
   const shownSlug = slugEdited ? slug : store.slugify(name);
   const finalSlug = store.freeSlug(shownSlug || name || 'page');
+  const describe = template === 'describe';
   const submit = (e) => {
     e.preventDefault();
-    if (!name.trim()) {
-      setError('Give the page a name.');
+    const noName = !name.trim();
+    const noAbout = describe && !about.trim();
+    setError(noName ? 'Give the page a name.' : '');
+    setAboutError(noAbout ? 'Say what the page is for.' : '');
+    if (noName || noAbout) {
+      const first = document.getElementById(noName ? 'np-name' : 'np-about');
+      if (first) first.focus();
       return;
     }
-    const page = store.createPage({ title: name.trim(), slug: shownSlug || name, template });
+    const page = store.createPage({ title: name.trim(), slug: shownSlug || name, template: describe ? 'blank' : template });
+    if (describe) setPending(page.id, about.trim());
     go({ name: 'edit', id: page.id });
   };
   return (
@@ -180,16 +195,33 @@ function NewPageModal({ onClose }) {
         <fieldset className="ap-field ap-fieldset">
           <legend>Start from</legend>
           <div className="ap-choices">
-            {TEMPLATE_LIST.map((t) => (
+            {START_LIST.map((t) => (
               <label key={t.key} className="ap-choice" data-kind={t.key}>
                 <input type="radio" name="np-template" value={t.key} checked={template === t.key} onChange={() => setTemplate(t.key)} />
-                <span className="ap-choice-art" aria-hidden="true"><i /><i /><i /></span>
+                <span className="ap-choice-art" aria-hidden="true">{t.key === 'describe' ? <SparkIcon /> : null}<i /><i /><i /></span>
                 <b>{t.label}</b>
                 <small>{t.blurb}</small>
               </label>
             ))}
           </div>
         </fieldset>
+        {describe ? (
+          <div className="ap-field">
+            <label htmlFor="np-about">What is the page for?</label>
+            <textarea
+              id="np-about"
+              className="ap-input ap-textarea"
+              rows={4}
+              maxLength={2000}
+              value={about}
+              placeholder="Who it is for, what you offer, and what visitors should do. For example: a page for Bright Paws, a dog grooming studio, with services, how booking works and a booking button."
+              aria-invalid={aboutError ? 'true' : undefined}
+              aria-describedby={aboutError ? 'np-about-err' : 'np-about-hint'}
+              onChange={(e) => { setAbout(e.target.value); setAboutError(''); }}
+            />
+            {aboutError ? <p id="np-about-err" className="ap-error">{aboutError}</p> : <p id="np-about-hint" className="ap-hint">The editor opens with the AI panel and sends this. The AI needs an AI Paragon sign-in.</p>}
+          </div>
+        ) : null}
         <div className="ap-modal-actions">
           <button type="button" className="ap-btn" onClick={onClose}>Cancel</button>
           <button type="submit" className="ap-btn ap-btn-primary">Create page</button>
@@ -320,8 +352,6 @@ function Dashboard({ notice, clearNotice }) {
 
 /* ---------- Editor ---------- */
 
-const EditorCtx = createContext(null);
-
 // Puck's own Publish control is a <span>, which a keyboard cannot reach, so the header gets a real
 // button that publishes the editor's current data
 function HeaderActions() {
@@ -332,6 +362,15 @@ function HeaderActions() {
     flush();
     go(route);
   };
+  // Puck's rail items are plain divs a keyboard cannot reach, so the AI also has a header button,
+  // which opens its tab and puts the cursor in it
+  const openAi = () => {
+    getPuck().dispatch({ type: 'setUi', ui: { plugin: { current: 'ai' }, leftSideBarVisible: true } });
+    setTimeout(() => {
+      const el = document.querySelector('#ai-ask:not([disabled]), #ai-email, .ap-ai-stop');
+      if (el) el.focus();
+    }, 60);
+  };
   return (
     <>
       <span className="ap-save" role="status" aria-live="polite" data-status={status}>
@@ -339,6 +378,7 @@ function HeaderActions() {
       </span>
       <Button variant="secondary" href={hrefFor({ name: 'dashboard' })} onClick={leave({ name: 'dashboard' })}>All pages</Button>
       <Button variant="secondary" href={hrefFor({ name: 'view', id, draft: true })} onClick={leave({ name: 'view', id, draft: true })}>Preview</Button>
+      <Button type="button" variant="secondary" icon={<SparkIcon />} onClick={openAi}>Ask AI</Button>
       <Button type="button" variant="primary" icon={<GlobeIcon />} onClick={() => publish(getPuck().appState.data)}>Publish</Button>
     </>
   );
@@ -356,9 +396,14 @@ function GlobeIcon() {
 const OVERRIDES = { headerActions: HeaderActions };
 // The canvas shows as soon as the page's own (inline) styles are in; web fonts swap in when they load
 const IFRAME = { waitForStyles: false };
+// The AI tab sits in the left rail after Blocks and Outline
+const PLUGINS = [{ name: 'ai', label: 'AI', icon: <SparkIcon />, render: AiPanel }];
 
 function EditorView({ page }) {
   const [initial] = useState(() => page.draft);
+  const [pendingAsk] = useState(() => takePending(page.id));
+  const [ui] = useState(() => (pendingAsk ? { plugin: { current: 'ai' }, leftSideBarVisible: true } : undefined));
+  const ai = useAiSession(pendingAsk);
   const [status, setStatus] = useState(store.savingWorks() ? 'saved' : 'error');
   const [toast, setToast] = useState(null);
   const latest = useRef(null);
@@ -409,7 +454,7 @@ function EditorView({ page }) {
     };
   }, [flush]);
 
-  const ctx = useMemo(() => ({ id, status, flush, publish }), [id, status, flush, publish]);
+  const ctx = useMemo(() => ({ id, status, flush, publish, ai }), [id, status, flush, publish, ai]);
   const done = useCallback(() => setToast(null), []);
   const current = store.getPage(id) || page;
   const title = store.titleOf(current);
@@ -428,6 +473,8 @@ function EditorView({ page }) {
           headerPath={'/' + store.slugOf(current)}
           viewports={VIEWPORTS}
           overrides={OVERRIDES}
+          plugins={PLUGINS}
+          ui={ui}
           iframe={IFRAME}
           height="100%"
         />
@@ -515,6 +562,10 @@ function App() {
   if (route.name === 'view') return <PreviewView key={key} page={page} draft={route.draft} />;
   return <Dashboard notice={notice} clearNotice={() => setNotice('')} />;
 }
+
+// Tests reach the AI's checks through window.__SB_TEST__, filled only when a test sets it to true
+// before the page loads
+if (window.__SB_TEST__ === true) window.__SB_TEST__ = { catalog, pageForAi, applyAnswer, makeData, config };
 
 store.init();
 canonicalize();
