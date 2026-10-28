@@ -2948,14 +2948,14 @@ body.ai-hi .rd-cta .ai-mark,body.ai-hi .rd-btn.pri .ai-mark{box-shadow:0 0 0 3px
   <div class="login-side">
     <div>
       <div class="brandmark">
-        <div class="brand-g">D</div>
+        <div class="brand-g">P</div>
         <div>
           <b class="brand-name" style="font-size:28px;font-weight:800">AI Paragon</b>
-          <div class="brand-line">AI Paragon Consulting Group · 2026 · <em>Demo environment</em> · <em>Sample data</em></div>
+          <div class="brand-line">AI Paragon Consulting Group · <em>Team workspace</em></div>
         </div>
       </div>
       <h1>One intelligent workspace.<br>From <span class="hl-gold">your real sources</span>, in <span class="hl-gold">your voice</span>.</h1>
-      <p class="sub">Generate, review, and refine client work in a single system that learns your voice and improves with every edit.</p>
+      <p class="sub">Prepare every meeting, turn your market into campaigns, and review it all before anything goes to a client.</p>
     </div>
   </div>
   <div class="login-form-wrap">
@@ -2965,7 +2965,7 @@ body.ai-hi .rd-cta .ai-mark,body.ai-hi .rd-btn.pri .ai-mark{box-shadow:0 0 0 3px
         <button id="apTabUp" onclick="apAuthTab('up')">Create account</button>
       </div>
       <h2 id="apAuthH">Welcome back</h2>
-      <p class="help" id="apAuthSub" style="margin:-6px 0 18px">Your workspace follows you — sign in on any machine and pick up where you left off.</p>
+      <p class="help" id="apAuthSub" style="margin:-6px 0 18px">Your workspace follows you. Sign in on any machine and pick up where you left off.</p>
       <div class="login-err" id="apAuthErr"></div>
       <div class="ap-auth-ok" id="apAuthOk"></div>
       <div id="apUpName" class="hidden">
@@ -14070,7 +14070,7 @@ async function apSaveLead(email,patch){
   try{ await apPatch('e1_leads','email=eq.'+encodeURIComponent(email),patch); toast('Saved to Supabase'); }
   catch(e){ toast('Save failed: '+e.message,false); }
 }
-async function apSetDraft(id,status){
+async function apSetDraft(id,status,reason){
   const d=AP_DRAFTS.filter(function(x){return x.id===id;})[0];
   if(d)d.status=status;
   apRefresh();
@@ -14078,7 +14078,7 @@ async function apSetDraft(id,status){
   try{
     await apPatch('engagement_drafts','id=eq.'+encodeURIComponent(id),{status:status});
     await apPost('agent_feedback',{agent:'intel_tracker',target_type:'engagement_draft',target_id:id,
-      action:status==='approved'?'approved':'rejected',feedback:'Reviewed on the dashboard',author:AP_PROFILE.contact_name});
+      action:status==='approved'?'approved':'rejected',feedback:reason||'Reviewed on the dashboard'/* v127: the reason given on Reject */,author:AP_PROFILE.contact_name});
     toast('Draft '+status);
   }catch(e){ toast('Could not save that: '+e.message,false); }
 }
@@ -14890,7 +14890,7 @@ function openScoreModal(title, current, onSave){
   wrap.style.cssText = "position:fixed;inset:0;z-index:998;background:rgba(30,40,60,.45);display:flex;align-items:center;justify-content:center;padding:20px";
   wrap.innerHTML = `<div style="background:var(--white);border-radius:14px;max-width:420px;width:100%;padding:24px 26px;box-shadow:0 18px 60px rgba(0,0,0,.25)">
     <div style="font-family:'Instrument Sans',sans-serif;font-size:1.15rem;color:var(--ink);margin-bottom:4px">${title}</div>
-    <div style="font-size:.82rem;color:var(--muted);margin-bottom:14px">This override is saved to the knowledge base and logged as feedback for the agents.</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:14px">Your score is saved on this item, in place of the agent’s.</div>
     <div style="display:flex;align-items:center;gap:14px">
       <input id="scoreRange" type="range" min="0" max="1" step="0.01" value="${cur.toFixed(2)}" style="flex:1;accent-color:var(--gold)">
       <input id="scoreNum" type="number" min="0" max="1" step="0.01" value="${cur.toFixed(2)}" style="width:84px;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;text-align:center">
@@ -14960,7 +14960,7 @@ async function editScore(kind, table, id, current, chipEl){
   });
 }
 function rejectWithFeedback(id, btn, agent, targetType, contextLabel){
-  ap60Modal(`Reject — why?`, `What's wrong with this ${contextLabel}? (tone, angle, accuracy, not our voice…) This is saved and used to steer future outputs. Leave empty to reject without feedback.`, async (text)=>{
+  ap60Modal(`Reject — why?`, `What's wrong with this ${contextLabel}? (tone, angle, accuracy, not our voice…) The reason shows on AI settings, where it can become a rule the agent follows. Leave it empty to reject without one.`, async (text)=>{
     if(text) await saveFeedback({ agent, target_type: targetType, target_id: String(id), action: "rejected", feedback: text });
     await setDraftStatus(id, "rejected", btn);
   });
@@ -18440,7 +18440,7 @@ async function assetDecision(step, action){
     if(side) side.innerHTML = funnelInspector(step);
   };
   if(action==="rejected"){
-    ap60Modal("Deny this "+step+" — why?", "What needs to change? (questions, framing, routing, tone…) This is saved and steers the next generation run.", async (text)=>{ await doSave(text); });
+    ap60Modal("Deny this "+step+" — why?", "What needs to change? (questions, framing, routing, tone…) The next campaign you make gets it with its request.", async (text)=>{ await doSave(text); });
   } else {
     try{ await doSave(); }catch(e){ showAlert(String(e.body||e.message||e), "Save failed"); }
   }
@@ -19647,7 +19647,7 @@ function apAuthTab(m){
   document.getElementById('apAuthH').textContent=up?'Create your account':'Welcome back';
   document.getElementById('apAuthSub').textContent=up
     ? 'Accounts are limited to the team. Use your aiparagonconsulting.com address.'
-    : 'Your workspace follows you \u2014 sign in on any machine and pick up where you left off.';
+    : 'Your workspace follows you. Sign in on any machine and pick up where you left off.';
   document.getElementById('apAuthBtn').textContent=up?'Create account':'Sign in';
   document.getElementById('apPw').setAttribute('autocomplete',up?'new-password':'current-password');
   document.getElementById('apPwHint').innerHTML=up?'At least 8 characters.':'&nbsp;';
@@ -23475,11 +23475,11 @@ async function apCfApprove(agent,id,action){
   const save=async function(note){
     try{
       await apPost('agent_feedback',{agent:agent,target_type:'brief_approval',target_id:id,action:action,feedback:note||null,author:apCfMe()});
-      toast(action==='approved'?'Brief approved. Content Generation picks approved briefs first.':'Change request saved');
+      toast(action==='approved'?'Brief approved. Content Generation picks approved briefs first.':'Saved. It shows on AI settings, where it can become a rule.');
       await apCfLoad(true);apCfBriefsRepaint();
     }catch(e){toast('Could not save: '+e.message,false);}
   };
-  if(action==='changes')ap60Modal('What needs to change in this brief?','Be specific: which signal is off, what is missing, what should not be used.',function(t){return save(t);});
+  if(action==='changes')ap60Modal('What needs to change in this brief?','Be specific: which signal is off, what is missing, what should not be used. It shows on AI settings, where it can become a rule the agent follows.',function(t){return save(t);});
   else save('');
 }
 function apCfPicker(kind,rows,label,cur){
@@ -27862,21 +27862,23 @@ setTimeout(function(){if(typeof apSess==='function'&&apSess())apRulesLoad();},15
 const AP_RED={id:null,scopes:['all']};
 /* v124: the Catalyst agents and post-call actions read the house rules (n8n Catalyst · House Rules), and the Intel Tracker reads them since it was published */
 /* v126: drafts also read what the team asked to change in earlier drafts; book a call and low-ticket read the reasons ads were denied, not the rules */
+/* v127: the campaigns also read the reasons pages were denied, and the funnel builder gets the same setup line (profile, guardrails, denials) */
 const AP_WHERE=[
   ['Content Generation (Create content)','Rules, the chosen template, the knowledge base and what the team asked to change in earlier drafts','live'],
   ['Ad Strategist (Build ad strategy)','Rules','live'],
   ['Competitor Intel Tracker','Rules, on every scheduled and custom run','live'],
   ['Assistant (Ask)','Rules, sent with each question','live'],
   ['Catalyst agents (research, interview, anonymizer, discovery, growth plan, post-call actions)','Rules, on every run','live'],
-  ['Book a call and low-ticket campaigns','Not the rules yet. They follow the reasons given when ads were denied','no'],
-  ['Ad upload analyzer and the funnel builder','Not yet','no']];
+  ['Book a call and low-ticket campaigns','Not the rules yet. They follow the company profile and the reasons ads and pages were denied','no'],
+  ['Funnel builder (webinar, download, sign-up and landing page)','Not the rules yet. It follows the company profile and the reasons ads and pages were denied','no'],
+  ['Ad upload analyzer','Not yet','no']];
 async function apRenderAiSettings(){
   const pg=document.getElementById('page-learning');if(!pg)return;
   pg.innerHTML='<div class="rd-page"><div class="loading">Loading your AI settings…</div></div>';
-  const r=await Promise.all([apRulesLoad(true),apAiSettingsLoad(true),apSb('agent_feedback?select=id,agent,target_type,action,feedback,author,created_at&feedback=not.is.null&order=created_at.desc&limit=40').catch(function(){return [];})]);
+  const r=await Promise.all([apRulesLoad(true),apAiSettingsLoad(true),apSb('agent_feedback?select=id,agent,target_type,action,feedback,author,created_at&feedback=not.is.null&order=created_at.desc&limit=100').catch(function(){return [];})]);
   if(S.page!=='learning')return;
   const seenFb={};const rules=r[0],set=r[1],fb=(r[2]||[]).filter(function(f){const t=String(f.feedback||'').trim();
-    if(t.length<12||/^(approved|denied|rejected) on (the )?dashboard\.?$|edited directly|customi[sz]ed on dashboard|manually edited|^approved$|^denied$/i.test(t))return false;
+    if(t.length<12||/^(approved|denied|rejected) on (the )?dashboard\.?$|edited directly|customi[sz]ed on dashboard|manually edited|^approved$|^denied$/i.test(t)||(typeof v127Stock==='function'&&v127Stock(t))/* v127: the other texts the dashboard writes itself */)return false;
     const k=t.toLowerCase();if(seenFb[k])return false;seenFb[k]=1;return true;});
   const active=rules.filter(function(x){return x.active!==false;}).length;
   const tgl=function(k,t,s){return '<label class="ap-set"><span><b>'+t+'</b><small>'+s+'</small></span><span class="ap-tgl"><input type="checkbox" '+(set[k]!==false?'checked':'')+' onchange="apAiSet(\''+k+'\',this.checked)" aria-label="'+esc(t)+'"><span></span></span></label>';};
@@ -29416,11 +29418,11 @@ async function e9LearnPaint(){
   const appr=C.appr.filter(function(a){return a.action==='approved';}).length;
   box.innerHTML='<section class="e9-learn"><span class="e9-k">How it learns</span><h3>It gets better the more you use it</h3>'+
     '<p>Nothing learns in the background without you. Each of these is something you can see and change.</p><ol>'+
-      '<li class="you"><span class="n">'+lib+'</span><b>Your library grows</b><span>Every piece you add gives drafts more of your own ideas, stories and proof.</span><button class="rd-btn sm" onclick="apTab(\'library\')">Library</button></li>'+
+      '<li class="you"><span class="n">'+lib+'</span><b>Your library grows</b><span>Every piece you add is turned into drafts from its own ideas, stories and proof.</span><button class="rd-btn sm" onclick="apTab(\'library\')">Library</button></li>'+
       '<li class="you"><span class="n">'+vv+'</span><b>Voice versions</b><span>Learned from your writing, edited by you. Every draft reads the newest one.</span><button class="rd-btn sm" onclick="apTab(\'voice\')">Your voice</button></li>'+
-      '<li class="out"><span class="n">'+fb+'</span><b>Your feedback</b><span>Approvals, denials with a reason and edits go into the next run.</span><button class="rd-btn sm" onclick="apGo(\'e3funnel\')">Drafts</button></li>'+
+      '<li class="out"><span class="n">'+fb+'</span><b>Your feedback</b><span>The reasons ads were denied and what you asked to change on drafts go into the next run.</span><button class="rd-btn sm" onclick="apGo(\'e3funnel\')">Drafts</button></li>'+
       '<li class="org"><span class="n">'+appr+'</span><b>Approved briefs</b><span>Approved market briefs are picked first when a draft is written.</span><button class="rd-btn sm" onclick="apGo(\'e3briefs\')">Briefs</button></li>'+
-      '<li class="ad"><span class="n">'+rules+'</span><b>House rules</b><span>Rules you set in AI settings apply to every agent, every time.</span><button class="rd-btn sm" onclick="apGo(\'learning\')">AI settings</button></li>'+
+      '<li class="ad"><span class="n">'+rules+'</span><b>House rules</b><span>Rules you set in AI settings go into every run of the agents listed there.</span><button class="rd-btn sm" onclick="apGo(\'learning\')">AI settings</button></li>'+
     '</ol></section>';
 }
 
@@ -32094,7 +32096,7 @@ function v96Voice123(){
   return '<ol class="v96-123s">'+
     '<li><span class="n">1</span><div><b>Share your content</b><small>Writing samples, your website and anything else that sounds like you.</small></div></li>'+
     '<li><span class="n">2</span><div><b>We summarize your voice</b><small>A short bio, how you sound, your mission and values. Edit any line.</small></div></li>'+
-    '<li><span class="n">3</span><div><b>Every draft uses it</b><small>New drafts follow the newest version. Your edits and feedback keep refining it.</small></div></li></ol>';
+    '<li><span class="n">3</span><div><b>Every draft uses it</b><small>New drafts follow the newest version. Each edit you save makes a new one.</small></div></li></ol>';
 }
 function v96VoiceView(c){
   const lines=String(c.summary||'').split(/\n+/).map(function(s){return s.replace(/^\s*[-•*]\s*/,'').trim();}).filter(Boolean);
@@ -37230,7 +37232,7 @@ Object.assign(E9_INFO,{
   top5:{t:'How the top 5 are picked',h:'<p>Ranked by ad score, then days running. At most two per advertiser, and each advertisement is counted once.</p>'},
   send:{t:'Send to Marketing Generation',h:'<p>Build a strategy from the ads you uploaded, then send it to Marketing Generation. Marketing Generation always builds from the newest advertisement brief.</p>'},
   adonly:{t:'Where the rest of the funnel comes from',h:'<p>This draft is the ad copy only. The survey, landing and booking pages come from an ad campaign in Marketing Generation, and each one gets its own review.</p>'},
-  voice3:{t:'How your voice is built',h:'<ol class="v99-ol"><li><b>Share your content:</b> writing samples, your website and anything else that sounds like you.</li><li><b>We summarize your voice:</b> a short bio, how you sound, your mission and values. Edit any line.</li><li><b>Every draft uses it:</b> new drafts follow the newest version. Your edits and feedback keep refining it.</li></ol>'}
+  voice3:{t:'How your voice is built',h:'<ol class="v99-ol"><li><b>Share your content:</b> writing samples, your website and anything else that sounds like you.</li><li><b>We summarize your voice:</b> a short bio, how you sound, your mission and values. Edit any line.</li><li><b>Every draft uses it:</b> new drafts follow the newest version. Each edit you save makes a new one.</li></ol>'}
 });
 
 /* ---------- every Engine 3 page: title, one line, no eyebrow ---------- */
@@ -38610,6 +38612,8 @@ function v103SetupBuild(used){
   const off=v103LeftOut(b);
   if(off.length)add('off',['Leave out these patterns from the brief: '+off.join('; ')+'.']);
   if(v103RejWhy().length)add('rej',[v103RejLine(true),v103RejLine(false)]);
+  /* v127: what the team said when a survey, landing or booking page was turned down */
+  if(typeof v127FaLine==='function'&&(V127.fa||[]).length)add('pages',[v127FaLine(2,90),v127FaLine(1,60)]);
   return {line:line===V103_SETUP?'':line,has:has,offN:off.length};
 }
 
@@ -38952,7 +38956,7 @@ E9_INFO.v104per={t:'How personas are used',h:'<p>New drafts and campaigns are wr
 E9_INFO.v104def={t:'The default offer',h:'<p>New campaigns sell the default offer, and drafts treat it as your main offer.</p>'};
 E9_INFO.v104proof={t:'How proof is used',h:'<p>Only proof marked approved, with a source, and not past its expiry date goes into new drafts and campaigns. Its limits travel with it.</p><p>Until there is approved proof, ads keep a [FILL IN] marker where proof would go.</p>'};
 E9_INFO.v104guard={t:'How the guardrails work',h:'<p>Blocked phrases and the disclosure are sent with every new draft and campaign, and the wording check on Ad creatives flags blocked phrases.</p><p>With approval switched on, an ad can be copied or downloaded only once it is approved.</p><p>It is a quick scan, not a legal review. The reviewer makes the call.</p>'};
-E9_INFO.v104mem={t:'How the agents remember',h:'<p>Preferences and remembered corrections are sent with every new draft and campaign. Denials without a reason only steer the next images.</p><p>Results from Ad Testing are kept apart: they show what performed, not what the team liked.</p>'};
+E9_INFO.v104mem={t:'How the agents remember',h:'<p>Preferences and remembered corrections are sent with every new draft and campaign. When an ad is denied, the reasons about its copy go with the next campaign, and the newest reasons steer the next book-a-call and low-ticket images. A denial with no reason changes nothing.</p><p>Results from Ad Testing are kept apart: they show what performed, not what the team liked.</p>'};
 
 /* ---------- data ---------- */
 function v104Today(){return new Date().toISOString().slice(0,10);}
@@ -42386,7 +42390,7 @@ async function nwReplyAct(id,status){
     catch(e){toast('Could not save your edit: '+(e.message||e),false);return;}
   }
   nwModalClose();
-  if(status==='rejected'){await apSetDraft(d.id,'rejected');nwRepaint();nwNavPaint();nwToast('Rejected. The tracker learns from it.');return;}
+  if(status==='rejected'){/* v127: Reject asks why first; Cancel keeps the reply */if((await apSetDraft(d.id,'rejected'))===false)return;nwRepaint();nwNavPaint();nwToast(V127.last?'Rejected. The reason is on AI settings, where it can become a rule the tracker follows.':'Rejected.');return;}
   await nwApprove(['reply:'+d.id]);
 }
 
@@ -46636,7 +46640,7 @@ function v111EdHead(){
       '<p class="nw-muted nw-small">'+(e.kind==='org'?'Change or remove anything that is off. Removing a post flags the findings that quoted it.':'Change or remove anything that is off. Removing an ad takes it out of the evidence.')+' Drafts read the brief as you save it, and the agent’s own version is kept.</p></div></div>'+
     '<label class="nw-field"><span class="nw-lbl">Note for the record<small>optional</small></span><textarea class="nw-input" id="v111EdNote" rows="2" placeholder="'+(e.kind==='org'?'e.g. Leave job posts out. Governance should lead.':'e.g. Leave out ads for unrelated products. Lead with proof.')+'" oninput="V111.ed.note=this.value">'+esc(e.note||'')+'</textarea></label>'+
     (e.err?'<p class="v111-err" role="alert">'+esc(e.err)+'</p>':'')+
-    '<p class="nw-faint nw-small">'+(rmN?esc(nwPlural(rmN,e.kind==='org'?'post':'ad')+' taken out of this brief so far. ')+'':'')+'Only want the agent to redo it next time? <button type="button" class="nw-link nw-small" onclick="v111EdNoteOnly()">Leave a note instead</button></p></section>';
+    '<p class="nw-faint nw-small">'+(rmN?esc(nwPlural(rmN,e.kind==='org'?'post':'ad')+' taken out of this brief so far. ')+'':'')+'Want the agent to do it differently next time? <button type="button" class="nw-link nw-small" onclick="v111EdNoteOnly()">Leave a note instead</button> On AI settings a note can become a rule the agent follows.</p></section>';
 }
 function v111EdHtml(){
   const e=V111.ed;if(!e)return '';
@@ -51799,6 +51803,178 @@ function v126Repaint(){
     return _p.apply(this,arguments);
   };
 })();
+</script>
+<style id="v127css">
+/* ===================== v127 · why a reply was rejected ===================== */
+.v127-m .v127-lbl{margin:0;font-size:12.5px;font-weight:700;color:var(--nw-ink,#101828)}
+.v127-m .v103-why{margin:8px 0 14px}
+.v127-m .v103-dh{margin:8px 0 0}
+</style>
+<script id="v127js">
+/* ===================================================================
+   v127. Screens say what the agents really do with feedback, and the
+   feedback that went nowhere reaches the next run.
+   - Rejecting an Intel Tracker reply asks why: quick reasons and a note,
+     or reject without one. The reason is saved to agent_feedback
+     (intel_tracker, engagement_draft, rejected). AI settings lists it, and
+     Make it a rule turns it into a rule the tracker reads on every run (its
+     reply prompt ends with the house rules).
+   - What the team said when a campaign's survey, landing or booking page
+     was turned down (agent_feedback funnel_asset) rides in the campaign
+     setup line (base v103SetupBuild, marked v127): the newest decision per
+     page counts, from the last 120 days.
+   - The Funnel Builder (webinar, download, sign-up and landing page) gets
+     the same setup line at the end of its funnel note: the company profile,
+     the guardrails, brief patterns left out and the reasons ads and pages
+     were denied, sized to the 1500 characters it reads. The side pane's
+     "Follows" and "Avoids" lines count on that budget.
+   - From your feedback leaves out the texts the dashboard writes itself.
+   =================================================================== */
+const V127={why:null,fa:null,faT:0,faP:null,last:''};
+const V127_WHY=[['voice','Off-voice'],['salesy','Too salesy'],['long','Too long'],['generic','Too generic'],['topic','Off-topic'],['skip','Not worth a reply']];
+const V127_STEP={survey:'survey',landing:'landing page',booking:'booking page'};
+/* what the dashboard saves on its own: a decision, not a reason */
+const V127_STOCK=[/^(approved|denied|rejected|reviewed) (on|in) (the )?(dashboard|approvals)\.?$/i,/^undone in approvals\.?$/i,/^put back the agent.s own version\.?$/i,
+  /^changed after approval\.?$/i,/^approved by putting its landing page live\b/i,/^regenerated without notes\.?$/i,/^score manually set to\b/i,
+  /^[a-z_ -]+ edited on (the )?dashboard\.?$/i,/^\s*[\[{]/];
+function v127Stock(t){t=String(t||'').trim();return V127_STOCK.some(function(r){return r.test(t);});}
+
+/* ---------- why a reply was rejected ---------- */
+/* "Reply: too salesy, too long. Skip posts about a client loss." */
+function v127WhyText(picked,note){
+  const w=V127_WHY.filter(function(x){return picked.indexOf(x[0])>=0;}).map(function(x){return x[1].toLowerCase();});
+  note=String(note||'').replace(/\s+/g,' ').trim();
+  if(!w.length&&!note)return '';
+  return ('Reply: '+[w.length?w.join(', ')+'.':'',note].filter(Boolean).join(' ')).slice(0,600);
+}
+/* resolves to the reason ('' for none), or null when the question is closed without rejecting */
+function v127Why(id){
+  return new Promise(function(res){
+    const d=(typeof nwFindReply==='function'&&nwFindReply(id))||null,who=d?(d.competitor||d.competitor_name||''):'';
+    nwModal('v127M','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Intel Tracker'+(who?' · reply to '+esc(nwClip(who,40)):'')+'</div><h2>Why reject this reply?</h2></div>'+
+        '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+      '<div class="nw-m-body v127-m">'+
+        '<p class="v127-lbl" id="v127Lbl">What was off?</p>'+
+        '<div class="v103-why" role="group" aria-labelledby="v127Lbl">'+V127_WHY.map(function(w){return '<button type="button" data-w="'+w[0]+'" aria-pressed="false" onclick="v103Why(this)">'+esc(w[1])+'</button>';}).join('')+'</div>'+
+        '<label class="nw-field"><span class="nw-lbl">Anything to add?<small>Optional.</small></span>'+
+          '<textarea class="nw-input nw-textarea" id="v127Ta" rows="3" maxlength="400" placeholder="e.g. Skip posts about a client loss"></textarea></label>'+
+        '<p class="v103-dh">The reason shows on AI settings, where it can become a rule the tracker follows. Leave it empty to reject without one.</p>'+
+        '<div class="nw-m-foot"><span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button>'+
+          '<button type="button" class="nw-btn nw-btn-primary" id="v127Go" onclick="v127WhyGo()">Reject</button></div>'+
+      '</div>');
+    V127.why=res;
+    setTimeout(function(){const b=document.querySelector('#v127M .v103-why button');if(b)try{b.focus({preventScroll:true});}catch(e){}},0);
+  });
+}
+function v127WhyGo(){
+  const m=document.getElementById('v127M'),f=V127.why;if(!m||!f)return;
+  const picked=[...m.querySelectorAll('.v103-why button[aria-pressed="true"]')].map(function(b){return b.dataset.w;});
+  const t=v127WhyText(picked,(document.getElementById('v127Ta')||{}).value);
+  V127.why=null;nwModalClose();f(t);
+}
+(function(){
+  /* closed any other way (Cancel, the X, Esc, a click outside): the reply stays */
+  const _c=nwModalClose;
+  nwModalClose=function(){
+    const r=_c.apply(this,arguments);
+    if(V127.why&&!document.getElementById('v127M')){const f=V127.why;V127.why=null;f(null);}
+    return r;
+  };
+  /* a reject with no reason passed asks for one; false when it was called off */
+  const _s=apSetDraft;
+  apSetDraft=async function(id,status,reason){
+    if(status!=='rejected'||reason!==undefined)return _s.apply(this,arguments);
+    V127.last='';
+    const t=await v127Why(id);
+    if(t===null)return false;
+    V127.last=t;
+    return _s.call(this,id,status,t);
+  };
+})();
+
+/* ---------- what the team said when a campaign's page was turned down ---------- */
+/* agent_feedback funnel_asset, target_id <package>:<step>; the newest approve or deny per page decides */
+function v127FaLoad(force){
+  if(V127.fa&&!force&&Date.now()-V127.faT<60000)return Promise.resolve(V127.fa);
+  if(V127.faP)return V127.faP;
+  V127.faP=apSb('agent_feedback?select=target_id,action,feedback,created_at&target_type=eq.funnel_asset&order=created_at.desc&limit=100')
+    .catch(function(){return [];})
+    .then(function(r){
+      const seen={},out=[];
+      (r||[]).forEach(function(x){
+        if(!x||(x.action!=='approved'&&x.action!=='rejected')||seen[x.target_id])return;
+        seen[x.target_id]=1;
+        const step=String(x.target_id||'').split(':').pop(),t=String(x.feedback||'').replace(/\s+/g,' ').trim();
+        if(x.action==='rejected'&&t&&!v127Stock(t)&&V127_STEP[step]&&Date.now()-Date.parse(x.created_at||0)<120*864e5)out.push({step:step,text:t});
+      });
+      V127.fa=out;V127.faT=Date.now();V127.faP=null;return out;
+    });
+  return V127.faP;
+}
+function v127FaSteps(){const s=[];(V127.fa||[]).forEach(function(x){const w=V127_STEP[x.step];if(s.indexOf(w)<0)s.push(w);});return s;}
+/* "Earlier pages were turned down. What the team said about the survey: “…”; the landing page: “…”. Do not repeat these." */
+function v127FaLine(n,clip){
+  const by={},order=[];
+  (V127.fa||[]).forEach(function(x){if(!by[x.step]){by[x.step]=[];order.push(x.step);}if(by[x.step].length<n&&by[x.step].indexOf(x.text)<0)by[x.step].push(x.text);});
+  if(!order.length)return '';
+  return 'Earlier pages were turned down. What the team said about '+order.map(function(s){return 'the '+V127_STEP[s]+': '+by[s].map(function(t){return '“'+v98Clip(t,clip)+'”';}).join(' ');}).join('; ')+'. Do not repeat these.';
+}
+(function(){
+  const _rl=v103RejLoad;
+  v103RejLoad=function(force){
+    return Promise.all([_rl.apply(this,arguments),v127FaLoad(force).catch(function(){return [];})]).then(function(r){return r[0];});
+  };
+})();
+
+/* ---------- the Funnel Builder gets the setup line too ---------- */
+const V127_FUN=1500;
+function v127FunPk(){const pk=(typeof V97!=='undefined'&&V97.mg&&V97.mg.pk)||'';return typeof v113FunNew==='function'&&v113FunNew(pk);}
+/* v103SetupBuild leaves 1200-used-1 characters for the line; for a funnel that is what its note leaves of 1500 */
+function v127FunUsed(note){note=String(note||'').trim();return 1199-(V127_FUN-(note?note.length+2:0));}
+(function(){
+  const _u=v103Used;
+  v103Used=function(ctx){
+    try{if(!(typeof V103!=='undefined'&&V103.compose)&&v127FunPk())return v127FunUsed(typeof V113!=='undefined'&&V113.mg?V113.mg.funNote:'');}catch(e){}
+    return _u.apply(this,arguments);
+  };
+  const _c=v113Call;
+  v113Call=async function(url,body,what){
+    if(url===V113_HOOK.funnel&&body&&typeof body==='object'){
+      /* the line reads the denials, the profile, the guardrails and the latest read, fresh */
+      const need=[v103RejLoad(true)];
+      if(typeof V104!=='undefined'&&!V104.t&&typeof v104Load==='function')need.push(v104Load());
+      if(typeof AP_AISET!=='undefined'&&!AP_AISET&&typeof apAiSettingsLoad==='function')need.push(apAiSettingsLoad());
+      if(typeof V98!=='undefined'&&!V98.hist&&typeof v98InsLoad==='function')need.push(v98InsLoad());
+      try{await Promise.race([Promise.all(need),new Promise(function(r){setTimeout(r,4000);})]);}catch(e){}
+      try{
+        const note=String(body.funnel_note||'').trim(),S=v103SetupBuild(v127FunUsed(note));
+        if(S.line)body.funnel_note=(note?note+'\n\n':'')+S.line;
+      }catch(e){console.warn('v127 funnel',e&&e.message);}
+    }
+    return _c.apply(this,arguments);
+  };
+  /* the side pane: what the pages said, and advice that fits a funnel when the line runs out of room */
+  const _s=nwMgSide;
+  nwMgSide=function(){
+    const r=_s.apply(this,arguments);
+    try{v127Side();}catch(e){console.warn('v127 side',e&&e.message);}
+    return r;
+  };
+})();
+function v127Side(){
+  const b=v97$('nwMgSideB');if(!b||typeof nwMgKind!=='function'||nwMgKind()!=='ad')return;
+  if(!V127.fa&&!V127.faP)v127FaLoad().then(function(x){if(x&&x.length&&v97$('nwMgSideB'))nwMgSide();}).catch(function(){});
+  /* a funnel's room is not taken by the focus or the ad structure: what is left to shorten is its note, else the guardrails */
+  if(v127FunPk()){
+    const fix=String((typeof V113!=='undefined'&&V113.mg&&V113.mg.funNote)||'').trim()?'Shorten the note about the funnel.':'Shorten the blocked phrases or the disclosure on the company profile.';
+    b.querySelectorAll('.nw-long').forEach(function(p){p.textContent=p.textContent.replace('Shorten the focus or pick a shorter ad structure.',fix);});
+  }
+  if(!(V127.fa||[]).length||!(typeof nwMgSel==='function'&&nwMgSel(true)))return;
+  const S=v103SetupBuild(v103Used(V103.ctx0?V103.ctx0():''));if(!S.has.pages)return;
+  const li=[...b.querySelectorAll('.nw-uses > li')].find(function(x){const t=x.querySelector('b');return t&&t.textContent.trim()==='Your request';});
+  const d=li&&li.querySelector(':scope > div');if(!d||d.querySelector('.v127-avoid'))return;
+  d.insertAdjacentHTML('beforeend','<small class="nw-avoid v127-avoid" title="From the reasons given when pages were turned down">Avoids what was said about earlier pages: '+esc(v127FaSteps().join(', '))+'</small>');
+}
 </script>
 <script>
 /* ===================================================================

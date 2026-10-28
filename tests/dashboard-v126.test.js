@@ -120,7 +120,7 @@ function tables(extra) {
     const where = await page.$$eval('.ap-ais .ap-where > div', (els) => els.map((el) => ({ n: (el.querySelector('b') || {}).textContent || '', s: (el.querySelector('small') || {}).textContent || '', d: ((el.querySelector('.d') || {}).className || '').replace(/\bd\b/, '').trim() })));
     const ct = where.find((x) => /^Content/.test(x.n)) || {}, lt = where.find((x) => /^Book a call and low-ticket/.test(x.n)) || {};
     check('Where these apply: drafts read what the team asked to change', ct.s === 'Rules, the chosen template, the knowledge base and what the team asked to change in earlier drafts' && ct.d === 'live', JSON.stringify(ct));
-    check('and the book-a-call and low-ticket campaigns are listed, reading denial reasons, not rules', lt.s === 'Not the rules yet. They follow the reasons given when ads were denied' && lt.d === 'no', JSON.stringify(lt));
+    check('and the book-a-call and low-ticket campaigns are listed, reading denial reasons, not rules (v127: and the profile, and page denials)', lt.s === 'Not the rules yet. They follow the company profile and the reasons ads and pages were denied' && lt.d === 'no', JSON.stringify(lt));
     await ctx.close();
   }
 
