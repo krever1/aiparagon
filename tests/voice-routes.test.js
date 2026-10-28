@@ -349,6 +349,13 @@ function check(label, ok, detail) {
         sample: step('This is a demo call with a sample customer, and their file is already loaded. Do not look anything else up.'),
         tries: step('NO MATCH. Treat them as a new caller and take their details as usual. Do not call find_caller again on this call.'),
         broken: step('The file could not be checked just now. Treat them as a new caller and take their details as usual.'),
+        // two people on one number: the second has their own customer, as the database files them
+        split: (function () {
+          const mk = (id, name, file, h) => ({ id: id, receivedAt: '2026-10-27T1' + h + ':00:00Z', phone: '5550109000', customer: name, email: '', address: 'not captured', intent: 'Roof leak', structured: file ? { _file: 'name' } : {} });
+          const list = window.__VC_TEST__.deriveCustomers([mk('a', 'Kaye Moreno', false, 1), mk('b', 'Edward', true, 2), mk('c', 'Edward Smith', true, 3), mk('d', 'Kaye', false, 4)], [], []);
+          return list.map((cu) => cu.name + ':' + cu.id).sort().join(' | ');
+        })(),
+        household: step('MATCH. This is their customer file, matched by the number and their name. Name on file: Edward. [file 5550109000 for edward]', { name: 'Edward' }),
         digits: step('CHECK. The caller said 12 digits, 4 4 7, 7 0 0, 9 0 0, 1 2 3, but you passed 10. Read the whole number back to them, every digit the way they said it, and once they say yes, call find_caller again with all 12 digits and their name.', { name: 'Kaye', phone: '4477009001' }),
       };
     });
@@ -357,6 +364,8 @@ function check(label, ok, detail) {
     check('find_caller in the timeline: a check says what she asked', /asked them to spell their first name/.test(got.check) && /asked them to give their last name/.test(got.last), got.check + ' | ' + got.last);
     check('find_caller in the timeline: a missing name asks for the full name, an incomplete number for the whole number', /No name yet, so she asked for their full name/.test(got.full) && /wasn.t complete, so she asked for the whole number/.test(got.partial), got.full + ' | ' + got.partial);
     check('find_caller in the timeline: a sample call, the try limit and a failed check each say so', /sample customer.s call/.test(got.sample) && /Three tries on this call already/.test(got.tries) && /couldn.t check the file/.test(got.broken) && !/couldn.t check/.test(got.sample + got.partial + got.tries), got.sample + ' | ' + got.tries + ' | ' + got.broken);
+    check('two people on one number are two customers in the Command Center', got.split === 'Edward Smith:lc-p5550109000-edward | Kaye:lc-p5550109000', got.split);
+    check('find_caller in the timeline: someone else on a number finds their own file, by the number they call from', /Edward, the number they.re calling from/.test(got.household) && /Matched their own file on that number by their name/.test(got.household) && /Open their file/.test(got.household), got.household);
     check('find_caller in the timeline: a number with digits missing says she was told to read it all back', /didn.t match the digits the caller said/.test(got.digits) && !/Close but not a match/.test(got.digits), got.digits);
     check('find_caller in the timeline: no match and no file read as a new caller', /didn.t fit the file on that number/.test(got.nomatch) && !/Open their file/.test(got.nomatch) && /Nothing on file under that number/.test(got.nofile), got.nomatch + ' | ' + got.nofile);
     await page.evaluate(() => { location.hash = ''; });
