@@ -38612,8 +38612,6 @@ function v103SetupBuild(used){
   const off=v103LeftOut(b);
   if(off.length)add('off',['Leave out these patterns from the brief: '+off.join('; ')+'.']);
   if(v103RejWhy().length)add('rej',[v103RejLine(true),v103RejLine(false)]);
-  /* v127: what the team said when a survey, landing or booking page was turned down */
-  if(typeof v127FaLine==='function'&&(V127.fa||[]).length)add('pages',[v127FaLine(2,90),v127FaLine(1,60)]);
   return {line:line===V103_SETUP?'':line,has:has,offN:off.length};
 }
 
@@ -39809,6 +39807,8 @@ function v104ReadSync(force){
     const g=v104Guard(),p=v104Prefs(),list=function(a,n){return a.slice(0,n).map(v104Tidy).filter(Boolean).join('; ');};
     if(g.blocked.length)add('blocked',['Never use these phrases: '+list(g.blocked,60)+'.','Never use these phrases: '+list(g.blocked,6)+'.']);
     if(g.disclosure)add('disc',['Include this disclosure exactly as written: '+g.disclosure.replace(/\s+/g,' ').trim()]);
+    /* v127, moved in v128: what the team said when a survey, landing or booking page was turned down, after the guardrails so it never pushes them out */
+    if(typeof v127FaLine==='function'&&(V127.fa||[]).length)add('pages',[v127FaLine(2,90),v127FaLine(1,60)]);
     const dp=v104SetupPersona();
     if(dp)add('persona',['Write for '+v104PersonaLine(dp)+'.'+(dp.pain?' Their pain: '+v104Tidy(dp.pain)+'.':''),'Write for '+dp.name+'.']);
     const pf=v104SetupProof();
@@ -51821,8 +51821,8 @@ function v126Repaint(){
      reply prompt ends with the house rules).
    - What the team said when a campaign's survey, landing or booking page
      was turned down (agent_feedback funnel_asset) rides in the campaign
-     setup line (base v103SetupBuild, marked v127): the newest decision per
-     page counts, from the last 120 days.
+     setup line (the v104 wrapper of v103SetupBuild, after the guardrails
+     since v128): the newest decision per page counts, from the last 120 days.
    - The Funnel Builder (webinar, download, sign-up and landing page) gets
      the same setup line at the end of its funnel note: the company profile,
      the guardrails, brief patterns left out and the reasons ads and pages
