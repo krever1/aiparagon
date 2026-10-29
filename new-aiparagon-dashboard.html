@@ -27926,13 +27926,16 @@ function apRuleScope(cb){
 }
 async function apRuleSave(){
   const ta=document.getElementById('apRuleTa'),t=(ta.value||'').trim();if(t.length<4){toast('Write the rule first',false);ta.focus();return;}
+  /* v130: one save per click, so a double click no longer adds the rule twice (or sends a change twice) */
+  if(AP_RED.busy)return;AP_RED.busy=true;const go=document.getElementById('apRuleGo');if(go)go.disabled=true;
   const row={rule:t.slice(0,600),category:document.getElementById('apRuleCat').value,applies_to:AP_RED.scopes,updated_at:new Date().toISOString()};
   try{
     if(AP_RED.id)await apPatch('ai_rules','id=eq.'+AP_RED.id,row);
     else await apPost('ai_rules',Object.assign(row,{active:true,source:AP_RED.from||'dashboard',created_by:AP_ME()}));
     toast(AP_RED.id?'Rule updated':'Rule added. The next run follows it.');
     AP_RED.id=null;AP_RED.scopes=['all'];AP_RED.from=null;apRenderAiSettings();
-  }catch(e){toast('Could not save the rule: '+e.message,false);}
+  }catch(e){toast('Could not save the rule: '+e.message,false);if(go)go.disabled=false;}
+  finally{AP_RED.busy=false;}
 }
 function apRuleCancel(){AP_RED.id=null;AP_RED.scopes=['all'];apRenderAiSettings();}
 function apRuleEdit(id){const r=(AP_RULES||[]).find(function(x){return x.id===id;});if(!r)return;AP_RED.id=id;AP_RED.scopes=(r.applies_to&&r.applies_to.length)?r.applies_to.slice():['all'];
