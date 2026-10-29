@@ -3906,13 +3906,13 @@ function openKbEntry(id, q) {
 /* ---------- agent tools: what each one does, what it reads, what it changes, and when it last ran ---------- */
 const TOOL_INFO = [
   { id: "caller_lookup", when: "Before the call", title: "Recognize returning callers", does: "When someone calls the business number, the number is checked against past calls before the agent answers. If it matches, she gets their file and the greeting asks if she's speaking with them. She only brings up the last call once they say yes.", reads: "Past calls, bookings, open escalations and recent changes for that number", changes: "Nothing" },
-  { id: "find_caller", isNew: true, title: "Find a caller's file", does: "When there's no caller ID (a browser test call or a blocked number), or the caller says they called before from another number, she asks for their name and that number and looks for their file. The number picks the file, and the name has to match a name given on that number. A near miss like Kate for Kaye is spelled out first, and a different spelling is a no. No match means a new caller, and she never says whose the number is.", reads: "The customer file for that number", changes: "Nothing. Once it matches, a booking, a move or added details on that call go on that file." },
-  { id: "lookup_knowledge", title: "Look up an answer", does: "Finds the approved answer to anything the caller asks, from the collections above. If nothing matches, she says she'd rather not guess and flags it for a person.", reads: "The knowledge collections and answers on this page", changes: "Nothing. Each lookup is logged with the answer it used.", auth: ["au1", "answer_faq"] },
+  { id: "find_caller", isNew: true, title: "Find a caller's file", does: "When there's no caller ID (a browser test call or a blocked number), or the caller says they called before from another number, she asks for their name and that number, reads the number back, and looks for their file once they say yes (a number she hasn't read back is turned down). The number picks the file, and the name has to match a name given on that number. A near miss like Kate for Kaye is spelled out first, and a different spelling is a no. No match means a new caller, and she never says whose the number is.", reads: "The customer file for that number", changes: "Nothing. Once it matches, a booking, a move or added details on that call go on that file." },
+  { id: "lookup_knowledge", title: "Look up an answer", does: "Finds the approved answer to anything the caller asks about roofing, from the collections above. If nothing matches, she says she'd rather not guess and flags it for a person. A question about something else, like another business or lawn care, gets a plain \"I can only help with roofing\", and nothing is flagged.", reads: "The knowledge collections and answers on this page", changes: "Nothing. Each lookup is logged with the answer it used.", auth: ["au1", "answer_faq"] },
   { id: "check_availability", title: "Check the calendar", does: "Finds the next open times, matching what the caller prefers, like afternoons or next week. She only offers times this returns.", reads: "The calendar and business hours", changes: "Nothing", auth: ["au2", "book"] },
   { id: "book_appointment", title: "Book an appointment", does: "Books the time the caller picked, with the type of visit and their details.", reads: "The calendar, to make sure the time is still free", changes: "Adds the booking to the calendar and alerts the team after the call.", auth: ["au2", "book"] },
   { id: "reschedule_appointment", isNew: true, title: "Move a booking", does: "Moves a returning caller's upcoming booking to a time they picked from the calendar. It never books a second appointment. If nothing is booked for them, she passes it to a coordinator.", reads: "The caller's file and the calendar", changes: "Updates the booking, keeps a note of the old time, and alerts the team after the call.", auth: ["au2", "book"] },
   { id: "add_case_details", isNew: true, title: "Add to their file", does: "Saves new details a returning caller shares, like damage spreading, access notes or an insurance update. She asks if there's anything else first, then saves it in one go.", reads: "The caller's file", changes: "Adds an update to their file and alerts the team after the call." },
-  { id: "escalate_to_human", title: "Flag for a person", does: "Hands the call to the team: high urgency for safety, normal for a question with no approved answer, a hand-off topic, or times that don't fit.", reads: "The hand-over rules in each collection", changes: "Opens an escalation in Quality. Urgent ones show on the bell straight away." },
+  { id: "escalate_to_human", title: "Flag for a person", does: "Hands the call to the team: high urgency for safety, normal for a roofing question with no approved answer, a hand-off topic, or times that don't fit.", reads: "The hand-over rules in each collection", changes: "Opens an escalation in Quality. Urgent ones show on the bell straight away." },
   { id: "endCall", title: "End the call", does: "Hangs up once the caller has said they're done, after a short goodbye.", reads: "Nothing", changes: "Nothing" },
   { id: "send_confirmation", when: "After the call", isNew: true, title: "Confirmation text", does: "After a call that booked, moved or added something, the caller gets one text with the change, as long as they said yes when she asked.", reads: "The changes made on the call", changes: "Sends one text. Each change shows whether it went out, or why not.", auth: ["au3", "confirm"] },
   { id: "team_alert", when: "After the call", isNew: true, title: "Team alert", does: "One alert for each call that changed a client's file, on the bell here and as a desktop alert. Phone alerts follow once they're set up.", reads: "The changes made on the call", changes: "Adds the alert to the bell" }
@@ -3992,7 +3992,7 @@ function testQuestion(q, ctx) {
   const editable = hit && kbList().some((k) => k.id === hit.id);
   if (faqOff) { out.innerHTML = '<div class="note">Answering questions is switched off under System authority, so the agent hands every question to a person.</div>'; return; }
   if (!hit) {
-    out.innerHTML = '<div class="quote"><small><span class="kind never">No approved answer</span></small>She\'ll say she\'d rather not guess, and flag it so a person calls back.</div>' +
+    out.innerHTML = '<div class="quote"><small><span class="kind never">No approved answer</span></small>She\'ll say she\'d rather not guess, and flag it so a person calls back. If it has nothing to do with roofing, she says she can only help with roofing questions and flags nothing.</div>' +
       '<div class="row"><button class="btn sm primary" id="kbTestAdd">Add an answer for this</button><button class="btn sm" id="kbTestHand">Make it a hand-off topic</button></div>';
     $("kbTestAdd").addEventListener("click", () => { if (LIVE.on && !LIVE.trainingReady) { showTrainingSetup(); return; } openAnswerEditor({ question: q }); });
     $("kbTestHand").addEventListener("click", () => { if (LIVE.on && !LIVE.trainingReady) { showTrainingSetup(); return; } openAnswerEditor({ question: q, mode: "handoff" }); });
@@ -5003,7 +5003,13 @@ function stepCard(c, s, n, steps, canEdit) {
     const k = s.kb ? kbList().find((x) => x.id === s.kb) : null;
     body += s.q ? '<div class="sq">“' + esc(s.q) + "”</div>" : "";
     if (s.kb) body += '<div class="sm">' + (k ? modeChip(k) + " " : "") + "Answered from " + kbLink(s.kb) + (s.also && s.also.length > 1 ? ", plus " + s.also.filter((x) => x !== s.kb).map(kbLink).join(", ") : "") + "</div>";
-    else if (s.kb === null) { cls = " miss"; body += '<div class="sm"><span class="kind never">No approved answer</span> She said she would rather not guess and flagged it for a person.</div>'; }
+    else if (s.kb === null) {
+      // A question that isn't about roofing gets "roofing only" and nothing is flagged; only a flag before the next lookup counts.
+      const next = steps.findIndex((p, i) => i > n && p.tool === "lookup_knowledge");
+      const flaggedIt = steps.slice(n + 1, next === -1 ? steps.length : next).some((p) => p.tool === "escalate_to_human");
+      cls = " miss";
+      body += '<div class="sm"><span class="kind never">No approved answer</span> ' + (flaggedIt ? "She said she would rather not guess and flagged it for a person." : "Nothing was flagged for a person, as for a question that isn't about roofing.") + "</div>";
+    }
     else body += '<div class="sm">The tool server did not log which answer it used.</div>';
     if (s.q) {
       const now = kbResolve(s.q, null, { flagged: flagged });
@@ -5061,14 +5067,17 @@ function stepCard(c, s, n, steps, canEdit) {
   } else if (tool === "find_caller") {
     const a = s.args || {};
     const res = String(s.result || "");
-    const kind = /^MATCH\b/.test(res) ? "match" : /^CHECK\. The caller said \d+ digits/.test(res) ? "digits" : /^CHECK\b/.test(res) ? "check" : /^NO FILE\b/.test(res) ? "nofile"
+    const kind = /^MATCH\b/.test(res) ? "match" : /^READ BACK FIRST\b/.test(res) ? "readback" : /^CHECK\. The caller said \d+ digits/.test(res) ? "digits" : /^CHECK\b/.test(res) ? "check" : /^NO FILE\b/.test(res) ? "nofile"
       : /^NO MATCH\b.*find_caller again/.test(res) ? "tries" : /^NO MATCH\b/.test(res) ? "nomatch"
       : /^That number is not complete/.test(res) ? "partial" : /sample customer/i.test(res) ? "sample" : "other";
     const ask = /spell their last/i.test(res) ? "spell their last name" : /spell their/i.test(res) ? "spell their first name" : /last name/i.test(res) ? "give their last name" : "give their full name";
-    if (kind === "nomatch" || kind === "tries" || kind === "digits" || kind === "other") cls = " changed";
+    if (kind === "nomatch" || kind === "tries" || kind === "digits" || kind === "readback" || kind === "other") cls = " changed";
     body += '<div class="sq">' + esc([a.name, a.phone || (a.name ? "the number they're calling from" : ""), a.spelling ? "spelled " + a.spelling : "", a.street ? "street " + a.street : ""].filter(Boolean).join(", ") || "No details given") + "</div>";
     body += '<div class="sm">' + (kind === "match" ? (/\[file \d+ for [a-z]+\]\s*$/.test(res) ? "Matched their own file on that number by their name. Someone else who calls from it has a file of their own." : "Matched their file by the number and their name.")
       : kind === "digits" ? "The number she passed didn't match the digits the caller said, so she was told to read the whole number back first."
+      : kind === "readback" ? (/Wait for their answer/.test(res) ? "She looked before they answered her read-back, so she was told to wait for their yes."
+        : /did not say yes/.test(res) ? "They didn't say yes to the number she read back, so she was told to ask for it again."
+        : "She hadn't read the number back yet, so she was told to read it back and wait for a yes before looking.")
       : kind === "check" ? (/first and last name/i.test(res) ? "No name yet, so she asked for their full name." : "Close but not a match yet, so she asked them to " + ask + ".")
       : kind === "nofile" ? "Nothing on file under that number, so she took them as a new caller."
       : kind === "nomatch" ? "The name didn't fit the file on that number, so she took them as a new caller and shared nothing from it."
