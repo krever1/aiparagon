@@ -4,6 +4,7 @@
 // holds still for prefers-reduced-motion, and the particle canvas pauses when it is out of view.
 // Puck renders the editor canvas in an iframe, so window work goes through the element's own window.
 import { useEffect, useRef } from 'react';
+import { ChatMount } from './ChatWidget.jsx';
 
 export const ACCENTS = {
   cyan: { label: 'Cyan', dark: '#37E2D5', light: '#0B7380' },
@@ -725,7 +726,7 @@ export const config = {
   },
   root: {
     fields: {
-      title: { type: 'text', label: 'Page name (also the title in Google and the browser tab)' },
+      title: { type: 'text', label: 'Page name (also its title in Google, unless the SEO tab sets one)' },
       description: { type: 'textarea', label: 'Search description (shown under the title in Google)' },
       slug: { type: 'text', label: 'Page address' },
       theme: { type: 'radio', label: 'Theme', options: [{ label: 'Dark', value: 'dark' }, { label: 'Light', value: 'light' }] },
@@ -733,12 +734,16 @@ export const config = {
       font: { type: 'select', label: 'Heading font', options: toOptions(FONTS) },
     },
     defaultProps: { title: 'Untitled page', description: '', slug: 'page', theme: 'dark', accent: 'cyan', font: 'grotesk' },
-    render: ({ children, theme, accent, font, puck }) => {
+    // Settings kept here with no field in Puck's page panel, edited in the editor's own tabs:
+    // seoTitle, socialImage, noindex (SEO) and chatbot (Chatbot). The chatbot is never on the
+    // editor canvas, where a click picks a section.
+    render: ({ children, theme, accent, font, chatbot, puck }) => {
       const a = ACCENTS[accent] || ACCENTS.cyan;
       const f = FONTS[font] || FONTS.grotesk;
       return (
         <div className="sb-site" data-theme={theme === 'light' ? 'light' : 'dark'} data-motion={isEditing(puck) ? 'off' : 'on'} style={{ '--acc-d': a.dark, '--acc-l': a.light, '--font-head': f.head }}>
           {children}
+          {!isEditing(puck) && chatbot && chatbot.on === true ? <ChatMount chatbot={chatbot} /> : null}
         </div>
       );
     },

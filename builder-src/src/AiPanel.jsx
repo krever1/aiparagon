@@ -106,7 +106,9 @@ export function useAiSession(pendingAsk) {
   return { puckRef, who, ask, setAsk, work, result, undo, hint, setHint, send, stop, undoChange, waiting: auto.current };
 }
 
-function SignIn() {
+// lede: the line above the form (the Chatbot tab says what the sign-in is for there); prefix keeps
+// the field ids apart when another tab shows the form too
+export function SignIn({ lede, prefix = 'ai' }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -124,14 +126,14 @@ function SignIn() {
   };
   return (
     <form className="ap-ai-signin" onSubmit={submit} noValidate>
-      <p className="ap-ai-lede">Sign in with your AI Paragon account to use the AI. It is the same account as the dashboard.</p>
+      <p className="ap-ai-lede">{lede || 'Sign in with your AI Paragon account to use the AI. It is the same account as the dashboard.'}</p>
       <div className="ap-field">
-        <label htmlFor="ai-email">Email</label>
-        <input id="ai-email" className="ap-input" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@aiparagonconsulting.com" />
+        <label htmlFor={prefix + '-email'}>Email</label>
+        <input id={prefix + '-email'} className="ap-input" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@aiparagonconsulting.com" />
       </div>
       <div className="ap-field">
-        <label htmlFor="ai-pw">Password</label>
-        <input id="ai-pw" className="ap-input" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <label htmlFor={prefix + '-pw'}>Password</label>
+        <input id={prefix + '-pw'} className="ap-input" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
       {error ? (
         <p className="ap-error" role="alert">

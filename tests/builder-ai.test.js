@@ -334,7 +334,7 @@ const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers
   {
     const { page, st } = await open(BASE + '/builder/edit/home');
     await canvas(page);
-    check('editor: the AI has a tab in the left rail', (await page.locator('[class*="NavItem-link"]', { hasText: 'AI' }).count()) === 1);
+    check('editor: the AI has a tab in the left rail', (await page.locator('[class*="NavItem-link"]', { hasText: /^AI$/ }).count()) === 1);
     const askBtn = visible(page, 'button:has-text("Ask AI")');
     check('editor: and a real Ask AI button in the header', (await askBtn.count()) === 1 && (await askBtn.evaluate((b) => b.tagName)) === 'BUTTON');
     await askBtn.focus();
@@ -600,7 +600,7 @@ const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers
   {
     const { page, st } = await open(BASE + '/builder/edit/home', { session: session(3600e3), viewport: { width: 390, height: 844 }, mobile: true });
     await canvas(page);
-    await page.locator('[class*="NavItem-link"]', { hasText: 'AI' }).click();
+    await page.locator('[class*="NavItem-link"]', { hasText: /^AI$/ }).click();
     await waitFor(page, async () => (await page.locator('#ai-ask >> visible=true').count()) === 1);
     const box = await page.locator('#ai-ask').boundingBox();
     check('phone: the AI tab opens the panel, inside the screen', !!box && box.x >= 0 && box.x + box.width <= 390, JSON.stringify(box));
