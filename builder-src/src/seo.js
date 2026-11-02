@@ -1,7 +1,8 @@
 // SEO for a page: the title and description search engines show, the picture link previews use,
 // whether search engines may list it, and checks a person can act on. The values live in the page's
-// settings (root props), so they go live with Publish like everything else. Pages are kept in this
-// browser for now, so the tags are written into the published view when it opens (applyMeta).
+// settings (root props), so they go live with Publish like everything else. The live page's server
+// writes the tags into the HTML it sends (headHtml); the builder's own previews write them into the
+// page while they are open (applyMeta).
 
 export const TITLE_RANGE = [30, 60];
 export const DESC_RANGE = [70, 155];
@@ -215,4 +216,31 @@ export function applyMeta(data, { url, draft } = {}) {
     draft ? '' : url || '',
   );
   return () => undo.reverse().forEach((fn) => fn());
+}
+
+const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// The same tags as HTML, for the live page's server. url: the address this copy was asked for;
+// canonical: the page's main address (its own domain when it has one), which link previews and
+// search engines are pointed to.
+export function headHtml(data, { url, canonical } = {}) {
+  const s = seoOf(data);
+  const main = canonical || url || '';
+  const out = ['<title>' + esc(s.title) + '</title>'];
+  const tag = (attr, name, value) => {
+    if (value) out.push('<meta ' + attr + '="' + name + '" content="' + esc(value) + '">');
+  };
+  tag('name', 'description', s.description);
+  tag('name', 'robots', s.noindex ? 'noindex, nofollow' : 'index, follow');
+  tag('property', 'og:type', 'website');
+  tag('property', 'og:title', s.title);
+  tag('property', 'og:description', s.description);
+  tag('property', 'og:url', main);
+  tag('property', 'og:image', s.image);
+  tag('name', 'twitter:card', s.image ? 'summary_large_image' : 'summary');
+  tag('name', 'twitter:title', s.title);
+  tag('name', 'twitter:description', s.description);
+  tag('name', 'twitter:image', s.image);
+  if (main) out.push('<link rel="canonical" href="' + esc(main) + '">');
+  return out.join('\n');
 }

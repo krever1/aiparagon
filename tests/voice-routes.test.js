@@ -66,6 +66,7 @@ function check(label, ok, detail) {
     const page = await ctx.newPage();
     if (opts && opts.testHook) await page.addInitScript(() => { window.__VC_TEST__ = true; });
     if (opts && opts.fixed) await page.clock.setFixedTime(new Date('2026-10-15T15:00:00-04:00'));
+    if (opts && opts.at) await page.clock.setFixedTime(new Date(opts.at));
     const bucket = opts && opts.original ? pageErrors.original : pageErrors.patched;
     page.on('pageerror', (e) => bucket.push(url + ' :: ' + e.message));
     await page.goto(url, { waitUntil: 'load' });
@@ -383,6 +384,79 @@ function check(label, ok, detail) {
     const row = await k.page.evaluate(() => { const r = document.querySelector('[data-toolrow="find_caller"]'); return r ? r.innerText.replace(/\s+/g, ' ') : ''; });
     check('the Knowledge page lists find_caller', /Find a caller.s file/.test(row) && /name has to match/.test(row) && /reads the number back/.test(row), row);
     await k.ctx.close();
+  }
+
+  // 15. availability (Nov 2): the inspection days and times set on Settings, the three holidays closed, on the calendar
+  //     too. Fixed on Friday, Nov 20, so Thanksgiving (Nov 26) is inside the two weeks the agent books.
+  {
+    const AT = '2026-11-20T10:00:00-08:00';
+    const { ctx, page } = await open(BASE + '/voice/calendar', { testHook: true, at: AT });
+    const hook = await page.evaluate(() => {
+      const T = window.__VC_TEST__;
+      const slots = T.openSlots('');
+      return {
+        hol: [T.holidayOn(2026, 10, 26), T.holidayOn(2026, 11, 25), T.holidayOn(2027, 0, 1), T.holidayOn(2026, 10, 27), T.holidayOn(2027, 10, 25)],
+        summary: T.availSummary(),
+        nov26: slots.filter((iso) => /^2026-11-26/.test(new Date(new Date(iso).getTime() - 8 * 3600000).toISOString())).length,
+        nov25: slots.filter((iso) => /^2026-11-25/.test(new Date(new Date(iso).getTime() - 8 * 3600000).toISOString())).length,
+        sundays: slots.filter((iso) => new Date(new Date(iso).getTime() - 8 * 3600000).getUTCDay() === 0).length,
+      };
+    });
+    check('availability: the three holidays (Thanksgiving is the fourth Thursday of November)', JSON.stringify(hook.hol) === JSON.stringify(['Thanksgiving', 'Christmas Day', "New Year's Day", null, 'Thanksgiving']), JSON.stringify(hook.hol));
+    check('availability: the usual times read as one sentence', hook.summary === 'Monday to Saturday at 8:00 AM, 10:30 AM, 1:00 PM and 3:30 PM', hook.summary);
+    check('availability: no open times on Thanksgiving or a Sunday, the day before is open', hook.nov26 === 0 && hook.sundays === 0 && hook.nov25 === 4, JSON.stringify(hook));
+    await page.click('#calNext'); await settle(page);
+    const wk = await page.evaluate(() => {
+      const heads = [...document.querySelectorAll('#calGrid .ch')].slice(1).map((h) => ({ text: h.innerText.replace(/\s+/g, ' '), closed: h.classList.contains('closed') }));
+      const cols = [...document.querySelectorAll('#calGrid .dc')].map((c) => ({ open: c.querySelectorAll('.open').length, tag: (c.querySelector('.closedtag') || {}).textContent || '' }));
+      return { heads, cols, grid: document.getElementById('calAvail').innerText.replace(/\s+/g, ' ') };
+    });
+    check('calendar: Thanksgiving week shows Thursday closed with no open times', wk.heads.length === 6 && wk.heads[3].closed && /Thanksgiving/.test(wk.heads[3].text) && wk.cols[3].open === 0 && /Closed for Thanksgiving/.test(wk.cols[3].tag) && wk.cols[2].open === 4 && !wk.heads[2].closed, JSON.stringify(wk.heads) + JSON.stringify(wk.cols));
+    check('calendar: the grid says Closed for the holiday and the note names the times and links to Settings', /Closed/.test(wk.grid) && /These are the times the agent offers: Monday to Saturday at 8:00 AM, 10:30 AM, 1:00 PM and 3:30 PM, Pacific\. Closed all day on Thanksgiving, Christmas Day and New Year.s Day\. Change them in Settings/.test(wk.grid), wk.grid);
+    await page.click('#calAvail [data-go="settings"]'); await settle(page);
+    const ed = await page.evaluate(() => ({
+      path: location.pathname,
+      rows: [...document.querySelectorAll('#availDays .avrow')].map((r) => r.innerText.replace(/\s+/g, ' ')),
+      closed: document.getElementById('availClosed').innerText.replace(/\s+/g, ' '),
+      msg: document.getElementById('availMsg').value,
+      preview: document.getElementById('availPreview').innerText,
+      state: document.getElementById('availState').innerText,
+    }));
+    check('settings: Change them in Settings opens the Availability section', ed.path === '/voice/settings' && ed.rows.length === 7, ed.path + ' ' + ed.rows.length);
+    check('settings: each day with its times, Monday first, Sunday without inspections', /^Monday 8:00 AM.*10:30 AM.*1:00 PM.*3:30 PM/.test(ed.rows[0]) && /^Sunday No inspections/.test(ed.rows[6]), JSON.stringify(ed.rows));
+    check('settings: the closed days with their dates, and the default message', /Closed all day on Thanksgiving \(Thursday, November 26\), Christmas Day \(Friday, December 25\) and New Year.s Day \(Friday, January 1\)/.test(ed.closed) && ed.msg === "Thanks for calling Arrington Roofing. We're closed today for {holiday}. Please call us back on our next business day." && /On Thanksgiving callers hear: .Thanks for calling Arrington Roofing\. We're closed today for Thanksgiving\./.test(ed.preview) && /Sign in to change the live agent/.test(ed.state), JSON.stringify(ed));
+    // change it: Saturday closed, Sunday at 9, a time outside the day refused, the team's own message
+    for (const t of ['08:00', '10:30', '13:00', '15:30']) await page.click('[data-avail-del="sat|' + t + '"]');
+    await page.fill('[data-avail-new="sun"]', '09:00'); await page.click('[data-avail-add="sun"]');
+    await page.fill('[data-avail-new="mon"]', '18:00'); await page.click('[data-avail-add="mon"]');
+    const refused = await page.evaluate(() => document.getElementById('toastMsg').textContent);
+    await page.fill('[data-avail-new="mon"]', '08:00'); await page.click('[data-avail-add="mon"]');
+    const dup = await page.evaluate(() => document.getElementById('toastMsg').textContent);
+    await page.fill('#availMsg', 'Happy {holiday}! We are closed today, call us tomorrow.');
+    const ch = await page.evaluate(() => ({ rows: [...document.querySelectorAll('#availDays .avrow')].map((r) => r.innerText.replace(/\s+/g, ' ')), preview: document.getElementById('availPreview').innerText, state: document.getElementById('availState').innerText }));
+    check('settings: a time outside 7 AM to 5 PM and a time already there are turned away', /7:00 AM to 5:00 PM/.test(refused) && /already there/.test(dup) && !/6:00 PM/.test(ch.rows[0]), refused + ' | ' + dup);
+    check('settings: changes show at once and wait for Save', /^Saturday No inspections/.test(ch.rows[5]) && /^Sunday 9:00 AM/.test(ch.rows[6]) && /Happy Thanksgiving! We are closed today, call us tomorrow\./.test(ch.preview) && ch.state === 'Not saved yet', JSON.stringify(ch));
+    await page.click('#saveAvail'); await settle(page);
+    const saved = await page.evaluate(() => ({ toast: document.getElementById('toastMsg').textContent, state: document.getElementById('availState').innerText }));
+    check('settings: Save keeps it (in this browser when signed out)', /Saved in this browser/.test(saved.toast) && /Sign in to change the live agent/.test(saved.state), JSON.stringify(saved));
+    await page.click('.nav[data-go="appointments"]'); await settle(page);
+    await page.click('#calNext'); await settle(page);
+    const wk2 = await page.evaluate(() => ({
+      heads: [...document.querySelectorAll('#calGrid .ch')].slice(1).map((h) => h.innerText.replace(/\s+/g, ' ')),
+      opens: [...document.querySelectorAll('#calGrid .dc')].map((c) => [...c.querySelectorAll('.open')].map((b) => b.textContent.trim())),
+      note: document.getElementById('calAvail').innerText.replace(/\s+/g, ' '),
+      slots: window.__VC_TEST__.openSlots('').map((iso) => new Date(new Date(iso).getTime() - 8 * 3600000).getUTCDay()),
+    }));
+    check('calendar: follows the saved days (Sunday shown with 9:00, Saturday without times)', wk2.heads.length === 7 && /^Sun \d+/.test(wk2.heads[6]) && JSON.stringify(wk2.opens[6]) === '["+ 9:00 AM"]' && wk2.opens[5].length === 0 && wk2.slots.indexOf(6) === -1 && wk2.slots.indexOf(0) !== -1, JSON.stringify(wk2.heads) + JSON.stringify(wk2.opens));
+    check('calendar: the note reads the saved days', /Monday to Friday at 8:00 AM, 10:30 AM, 1:00 PM and 3:30 PM; Sunday at 9:00 AM, Pacific/.test(wk2.note), wk2.note);
+    await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(250);
+    await page.click('.nav[data-go="settings"]'); await settle(page);
+    const kept = await page.evaluate(() => ({ sun: document.querySelector('#availDays [data-avday="sun"]').innerText.replace(/\s+/g, ' '), msg: document.getElementById('availMsg').value }));
+    check('settings: the saved availability is still there after a reload', /9:00 AM/.test(kept.sun) && kept.msg === 'Happy {holiday}! We are closed today, call us tomorrow.', JSON.stringify(kept));
+    await page.click('#availReset');
+    const reset = await page.evaluate(() => ({ sat: document.querySelector('#availDays [data-avday="sat"]').innerText.replace(/\s+/g, ' '), sun: document.querySelector('#availDays [data-avday="sun"]').innerText.replace(/\s+/g, ' '), state: document.getElementById('availState').innerText, msg: document.getElementById('availMsg').value }));
+    check('settings: Use the usual times puts the days back and keeps the message, unsaved', /8:00 AM/.test(reset.sat) && /No inspections/.test(reset.sun) && reset.state === 'Not saved yet' && /^Happy \{holiday\}/.test(reset.msg), JSON.stringify(reset));
+    await ctx.close();
   }
 
   // without a baseline any page error fails; with one, only errors the baseline did not have
