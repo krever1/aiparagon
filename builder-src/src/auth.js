@@ -1,6 +1,7 @@
-// Sign-in for the AI panel. The AI runs in n8n and answers only the AI Paragon team, so the builder
+// Sign-in for the builder. The AI runs in n8n and answers only the AI Paragon team, so the builder
 // signs in with the team's accounts (the dashboard's Supabase project) and sends the session's token
-// with each request, like the dashboard does. Pages themselves still live in this browser only.
+// with each request, like the dashboard does. The team's pages live in their own project, reached
+// with a session there that this sign-in is swapped for (sites.js).
 // The builder keeps its own session under its own key and renews it one tab at a time (a renewal key
 // can be used once). A dashboard sign-in in this browser is borrowed while it lasts, read only: the
 // builder never renews the dashboard's session, so the two never race for the same key.
@@ -68,6 +69,12 @@ export function current() {
   if (s) return { email: s.email || '', from: 'builder' };
   const d = borrowed();
   return d ? { email: d.email, from: 'dashboard' } : null;
+}
+
+// Calls fn whenever the sign-in changes (signed in or out here, or in another tab)
+export function onAuth(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
 }
 
 export function useAuth() {

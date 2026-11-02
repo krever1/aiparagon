@@ -1,8 +1,10 @@
 // The SEO, Domain, Chatbot and Code tabs in the editor's left rail. SEO, Chatbot and Code change the
 // page's settings (root props) the way Puck's own page fields do, so they autosave, go live with
 // Publish and undo like any edit. The domain and the contacts the chatbot took are kept on the page record
-// (store.js), since they are not content. Puck's rail items are divs a keyboard cannot reach, so
-// the header's Settings button opens these tabs and each tab has buttons for the other two.
+// (store.js), since they are not content. A team page's domain is connected through Vercel
+// (domains.js) and its contacts come from the server; a page in this browser keeps both here.
+// Puck's rail items are divs a keyboard cannot reach, so the header's Settings button opens these
+// tabs and each tab has buttons for the others.
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createUsePuck, useGetPuck } from '@puckeditor/core';
 import { EditorCtx } from './context.js';
@@ -10,13 +12,16 @@ import * as store from './store.js';
 import { config, ACCENTS, FONTS } from './blocks.jsx';
 import { hrefFor } from './router.js';
 import { seoOf, seoChecks, TITLE_RANGE, DESC_RANGE } from './seo.js';
-import { normalizeDomain, recordsFor, checkDns } from './domain.js';
+import { normalizeDomain, recordsFor, checkDns, apexOf } from './domain.js';
 import { botOf, brandOf, startersFor, pageTextFor, shownName, shownGreeting, safeBotLink, TONES, LEADS, LIMITS } from './chat.js';
 import { ChatWidget } from './ChatWidget.jsx';
+import { askBot } from './chat-team.js';
 import { SignIn } from './AiPanel.jsx';
 import { useAuth } from './auth.js';
 import { askAi, applyAnswer, AiError } from './ai.js';
 import { TRACKERS, UI_ORDER, CODE_MAX, trackerError, codeOf, checkCode, pageCode } from './code.js';
+import { domainCall } from './domains.js';
+import { SHARED_HOST } from './site/config.js';
 
 const usePuck = createUsePuck();
 
@@ -83,12 +88,18 @@ function Count({ n, range }) {
 
 const cut = (s, n) => (s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s);
 
-// The page's own domain, if one is saved, and the address its live page opens at today
+// The page's own domain, if one is saved, and the address its live page opens at: a team page's
+// shared link (once published), or the builder's own preview for a page in this browser
 function useLiveAddress(id) {
   store.usePages();
-  const domain = store.domainOf(store.getPage(id));
+  const page = store.getPage(id);
+  const domain = store.domainOf(page);
+  if (page && page.where === 'team') {
+    const st = page.domainState || null;
+    return { domain, now: SHARED_HOST + '/' + (page.liveSlug || store.slugOf(page)), team: true, live: !!page.live, state: st, connected: !!(st && st.connected), page };
+  }
   const u = new URL(hrefFor({ name: 'view', id }), location.href);
-  return { domain, now: (u.host + u.pathname + u.hash).replace(/\/$/, '') };
+  return { domain, now: (u.host + u.pathname + u.hash).replace(/\/$/, ''), team: false, live: !!(page && page.live), state: null, connected: false, page };
 }
 
 /* ---------- SEO ---------- */
@@ -108,7 +119,8 @@ export function SeoPanel() {
   const seo = seoOf(data);
   const checks = useMemo(() => seoChecks(data), [data]);
   const passed = checks.filter((c) => c.ok).length;
-  const { domain, now } = useLiveAddress(id);
+  const where = useLiveAddress(id);
+  const { domain, now } = where;
   const host = domain || now.split('/')[0] || 'this page';
   const urlLine = domain ? domain : now.split(/[/#]+/).filter(Boolean).join(' › ');
   const image = String(props.socialImage || '').trim();
@@ -253,7 +265,15 @@ export function SeoPanel() {
         </ul>
       </section>
 
-      <p className="ap-set-note">Pages are saved in this browser for now, so search engines can’t find them yet. These settings go out with the page once pages are hosted.</p>
+      <p className="ap-set-note">
+        {!where.team
+          ? 'This page is only in this browser, so search engines can’t find it. Sign in and publish it from the team’s pages to put it on the web; these settings go out with it.'
+          : !where.live
+            ? 'Search engines can find the page once it is published, at ' + now + (domain ? ' and at ' + domain + ' once that is connected' : '') + '.'
+            : props.noindex === true
+              ? 'The live page asks search engines to leave it out.'
+              : 'Search engines can find the live page at ' + (where.connected ? domain : now) + '. A change here goes out with the next Publish.'}
+      </p>
     </div>
   );
 }
@@ -278,24 +298,60 @@ function Copy({ text, label }) {
   );
 }
 
-function pointsLine(r) {
+function pointsLine(r, team) {
   if (r.status === 'failed') return 'Could not check just now. Try again in a minute.';
   if (r.status === 'missing') return 'Not found in DNS. Check the spelling, and that the domain is registered.';
   if (r.status === 'empty') return 'Has no address records yet.';
-  if (r.here) return 'Already points to Vercel. The page shows there once pages are hosted.';
+  if (r.here) return team ? 'Points to Vercel.' : 'Already points to Vercel.';
   const to = r.cname.length ? r.cname[0] : r.a.join(', ');
   return 'Points to ' + to + ', most likely your current website.';
 }
 
+function Records({ records }) {
+  return (
+    <table className="ap-rec">
+      <thead>
+        <tr>
+          <th scope="col">Type</th>
+          <th scope="col">Name</th>
+          <th scope="col">Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {records.map((r) => (
+          <tr key={r.type + r.name + r.value}>
+            <td>{r.type}</td>
+            <td>{r.name}</td>
+            <td>
+              <code>{r.value}</code>
+              <Copy text={r.value} label={r.type + ' value for ' + (r.host || r.name)} />
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+// Vercel's records name the host in full; DNS settings want the part before the domain (@ for it)
+function asDnsName(name, apex) {
+  const n = String(name || '').replace(/\.$/, '');
+  if (!apex || n === apex) return '@';
+  return n.endsWith('.' + apex) ? n.slice(0, -apex.length - 1) : n;
+}
+
 export function DomainPanel() {
   const { id } = useContext(EditorCtx);
-  const { domain, now } = useLiveAddress(id);
+  const where = useLiveAddress(id);
+  const { domain, now, team } = where;
   // Puck keeps every tab's panel mounted, so DNS is only read while this tab is the one showing
   const shown = usePuck((s) => !!(s.appState.ui.plugin && s.appState.ui.plugin.current === 'domain' && s.appState.ui.leftSideBarVisible));
   const [text, setText] = useState(domain);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(!domain);
   const [dns, setDns] = useState(null); // { busy } | { results }
+  const [busy, setBusy] = useState(''); // save | connect | check | remove
+  const [said, setSaid] = useState(null); // { text, tone }
   const ctrl = useRef(null);
 
   const runCheck = async (host) => {
@@ -316,7 +372,26 @@ export function DomainPanel() {
     return () => ctrl.current && ctrl.current.abort();
   }, [domain, shown]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const save = (e) => {
+  // A team page's domain on Vercel: added (connect), looked at again (check) or taken off (remove)
+  const vercel = async (action, host) => {
+    setBusy(action);
+    setSaid(null);
+    try {
+      const st = await domainCall(action, host);
+      if (action !== 'remove') {
+        await store.setDomainState(id, st);
+        setSaid(st.connected ? { text: 'Connected. The page is live at ' + host + '.', tone: 'ok' } : null);
+      }
+      return true;
+    } catch (e) {
+      setSaid({ text: e.message, tone: e.code === 'off' ? 'info' : 'warn' });
+      return e.code === 'off';
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const save = async (e) => {
     e.preventDefault();
     const n = normalizeDomain(text);
     if (n.error) {
@@ -324,7 +399,9 @@ export function DomainPanel() {
       document.getElementById('dom-name').focus();
       return;
     }
-    const r = store.setDomain(id, n.host);
+    if (team) setBusy('save');
+    const r = await Promise.resolve(store.setDomain(id, n.host));
+    if (team) setBusy('');
     if (r.error) {
       setError(r.error);
       return;
@@ -332,27 +409,48 @@ export function DomainPanel() {
     setText(n.host);
     setError('');
     setEditing(false);
+    if (team) vercel('connect', n.host);
   };
-  const remove = () => {
-    store.setDomain(id, '');
+  const remove = async () => {
+    if (team) {
+      const ok = await vercel('remove', domain);
+      if (!ok) return;
+      setBusy('remove');
+      const r = await store.setDomain(id, '');
+      setBusy('');
+      if (r.error) {
+        setSaid({ text: r.error, tone: 'warn' });
+        return;
+      }
+    } else {
+      store.setDomain(id, '');
+    }
     setText('');
+    setSaid(null);
     setEditing(true);
     setTimeout(() => {
       const el = document.getElementById('dom-name');
       if (el) el.focus();
     }, 0);
   };
+  const again = () => {
+    runCheck(domain);
+    if (team) vercel('check', domain);
+  };
 
-  const records = domain ? recordsFor(domain) : [];
+  const st = where.state;
+  const apex = domain ? apexOf(domain) : '';
+  const records = team && st && st.records && st.records.length ? st.verification.concat(st.records).map((r) => ({ ...r, name: asDnsName(r.name, apex) })) : domain ? recordsFor(domain) : [];
+  const chip = !team ? 'Not connected yet' : where.connected ? 'Connected' : st ? 'Waiting for DNS' : 'Not connected yet';
   return (
     <div className="ap-set">
       <Nav current="domain" />
       <Head name="domain" title="Domain">Put the page on the business’s own address, like www.yourbusiness.com.</Head>
 
       <p className="ap-set-now">
-        <span>Address now</span>
+        <span>{team ? (where.live ? 'Live at' : 'Once published') : 'Address now'}</span>
         <code>{now}</code>
-        <small>Live pages are saved in this browser for now.</small>
+        <small>{team ? 'The shared link works with or without a domain.' : 'This page is only in this browser.'}</small>
       </p>
 
       {editing ? (
@@ -374,7 +472,7 @@ export function DomainPanel() {
                 if (error) setError('');
               }}
             />
-            <button type="submit" className="ap-btn ap-btn-primary">Save</button>
+            <button type="submit" className="ap-btn ap-btn-primary" disabled={!!busy}>{busy === 'save' ? 'Saving…' : team ? 'Connect' : 'Save'}</button>
           </div>
           {error ? <p id="dom-err" className="ap-error" role="alert">{error}</p> : null}
           {domain ? (
@@ -387,14 +485,20 @@ export function DomainPanel() {
         <div className="ap-dom">
           <p className="ap-dom-name">
             <b>{domain}</b>
-            <span className="ap-status ap-status-draft">Not connected yet</span>
+            <span className={'ap-status ' + (where.connected ? 'ap-status-live' : 'ap-status-draft')}>{chip}</span>
           </p>
           <div className="ap-set-row">
-            <button type="button" className="ap-btn" onClick={() => setEditing(true)}>Change</button>
-            <button type="button" className="ap-btn ap-btn-quiet" onClick={remove}>Remove</button>
+            <button type="button" className="ap-btn" onClick={() => setEditing(true)} disabled={!!busy}>Change</button>
+            <button type="button" className="ap-btn ap-btn-quiet" onClick={remove} disabled={!!busy}>{busy === 'remove' ? 'Removing…' : 'Remove'}</button>
           </div>
         </div>
       )}
+
+      {busy === 'connect' || busy === 'check' ? (
+        <p className="ap-hint" role="status">{busy === 'connect' ? 'Adding the domain on Vercel…' : 'Asking Vercel…'}</p>
+      ) : said ? (
+        <p className={said.tone === 'warn' ? 'ap-set-warn' : said.tone === 'ok' ? 'ap-set-ok' : 'ap-hint'} role={said.tone === 'warn' ? 'alert' : 'status'}>{said.text}</p>
+      ) : null}
 
       {domain ? (
         <>
@@ -405,48 +509,40 @@ export function DomainPanel() {
                 {dns.results.map((r) => (
                   <li key={r.host} data-state={r.here ? 'here' : r.status}>
                     <b>{r.host}</b>
-                    <span>{pointsLine(r)}</span>
+                    <span>{pointsLine(r, team)}</span>
                   </li>
                 ))}
               </ul>
             ) : (
               <p className="ap-hint" role="status">Checking DNS…</p>
             )}
-            <button type="button" className="ap-btn" onClick={() => runCheck(domain)} disabled={!!(dns && dns.busy)}>
-              {dns && dns.busy ? 'Checking…' : 'Check again'}
+            <button type="button" className="ap-btn" onClick={again} disabled={!!(dns && dns.busy) || busy === 'check'}>
+              {(dns && dns.busy) || busy === 'check' ? 'Checking…' : 'Check again'}
             </button>
           </section>
 
-          <section className="ap-dns" aria-labelledby="rec-h">
-            <h3 id="rec-h">Records it will need</h3>
-            <p className="ap-set-warn">Don’t add these yet. Until pages are hosted, the domain would stop showing your current site.</p>
-            <table className="ap-rec">
-              <thead>
-                <tr>
-                  <th scope="col">Type</th>
-                  <th scope="col">Name</th>
-                  <th scope="col">Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {records.map((r) => (
-                  <tr key={r.type + r.name + r.value}>
-                    <td>{r.type}</td>
-                    <td>{r.name}</td>
-                    <td>
-                      <code>{r.value}</code>
-                      <Copy text={r.value} label={r.type + ' value for ' + r.host} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="ap-hint">Add them where the domain was bought (GoDaddy, Namecheap, Squarespace and the like), in its DNS settings.</p>
-          </section>
+          {!where.connected ? (
+            <section className="ap-dns" aria-labelledby="rec-h">
+              <h3 id="rec-h">{team && st && st.records && st.records.length ? 'Records to add' : 'Records it will need'}</h3>
+              {!team ? (
+                <p className="ap-set-warn">Don’t add these yet. This page is only in this browser, so the domain would stop showing your current site.</p>
+              ) : !where.live ? (
+                <p className="ap-set-warn">Publish the page first. Adding these before then would stop the domain showing your current site.</p>
+              ) : (
+                <p className="ap-hint">Add these and the page shows at the domain once Vercel sees them, usually within minutes, sometimes up to a day.</p>
+              )}
+              <Records records={records} />
+              <p className="ap-hint">Add them where the domain was bought (GoDaddy, Namecheap, Squarespace and the like), in its DNS settings.</p>
+            </section>
+          ) : null}
         </>
       ) : null}
 
-      <p className="ap-set-note">Connecting a domain needs pages to be hosted for everyone. The domain is saved now, and the check reads its real DNS.</p>
+      <p className="ap-set-note">
+        {team
+          ? 'Domains are added to the sites project on Vercel, with HTTPS set up for them on their own.'
+          : 'A domain needs the page to be on the web: sign in and move the page to the team’s pages. The domain is saved here now, and the check reads its real DNS.'}
+      </p>
     </div>
   );
 }
@@ -474,11 +570,23 @@ function download(name, text) {
 
 const when = (t) => new Date(t).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
-function Leads({ id }) {
+function Leads({ id, shown }) {
   store.usePages();
   const page = store.getPage(id);
   const leads = store.leadsOf(page);
+  const team = !!(page && page.where === 'team');
   const [sure, setSure] = useState(false);
+  const [said, setSaid] = useState('');
+  // Visitors' contacts are read while the tab shows (Puck keeps every tab mounted)
+  useEffect(() => {
+    if (!team || !shown) return;
+    store.loadLeads(id).then((r) => setSaid(r && r.error ? 'Could not read the contacts just now: ' + r.error : ''));
+  }, [team, shown, id]);
+  const clear = async () => {
+    const r = await Promise.resolve(store.clearLeads(id));
+    setSure(false);
+    setSaid(r && r.error ? r.error : '');
+  };
   const csv = () => {
     const rows = [['When', 'Name', 'Email', 'Phone', 'Question', 'Where']].concat(
       leads.map((l) => [new Date(l.at).toISOString(), l.name, l.email, l.phone || '', l.question || '', l.via || '']),
@@ -494,7 +602,7 @@ function Leads({ id }) {
         <>
           <ul>
             {leads.slice(0, 20).map((l) => (
-              <li key={l.at + l.email}>
+              <li key={(l.id || l.at) + l.email}>
                 <b>{l.name}</b>
                 <span>{l.email}{l.phone ? ' · ' + l.phone : ''}</span>
                 {l.question ? <span className="ap-leads-q">“{l.question}”</span> : null}
@@ -507,7 +615,7 @@ function Leads({ id }) {
             <button type="button" className="ap-btn" onClick={csv}>Download CSV</button>
             {sure ? (
               <>
-                <button type="button" className="ap-btn ap-btn-danger" onClick={() => { store.clearLeads(id); setSure(false); }}>Clear {leads.length}</button>
+                <button type="button" className="ap-btn ap-btn-danger" onClick={clear}>Clear {leads.length}</button>
                 <button type="button" className="ap-btn ap-btn-quiet" onClick={() => setSure(false)}>Keep them</button>
               </>
             ) : (
@@ -516,8 +624,9 @@ function Leads({ id }) {
           </div>
         </>
       ) : (
-        <p className="ap-hint">None yet. When someone leaves their details in the chat, they show here.</p>
+        <p className="ap-hint">None yet. When someone leaves their details in the chat, they show here{team ? ', for the whole team' : ''}.</p>
       )}
+      {said ? <p className="ap-set-warn" role="alert">{said}</p> : null}
     </section>
   );
 }
@@ -535,6 +644,8 @@ function Field({ id, label, hint, children }) {
 export function ChatPanel() {
   const { id } = useContext(EditorCtx);
   const data = usePuck((s) => s.appState.data);
+  const shown = usePuck((s) => !!(s.appState.ui.plugin && s.appState.ui.plugin.current === 'chat' && s.appState.ui.leftSideBarVisible));
+  const where = useLiveAddress(id);
   const [props, patch] = useRoot();
   const who = useAuth();
   const [round, setRound] = useState(0);
@@ -661,18 +772,22 @@ export function ChatPanel() {
                 data-motion="off"
                 style={{ '--acc-d': (ACCENTS[props.accent] || ACCENTS.cyan).dark, '--acc-l': (ACCENTS[props.accent] || ACCENTS.cyan).light, '--font-head': (FONTS[props.font] || FONTS.grotesk).head }}
               >
-                <ChatWidget key={round} embedded bot={bot} brand={brand} title={props.title} pageText={pageText} starters={starters} onLead={(lead) => store.addLead(id, { ...lead, via: 'editor' })} />
+                <ChatWidget key={round} embedded bot={bot} brand={brand} title={props.title} pageText={pageText} starters={starters} ask={askBot} onLead={(lead) => store.addLead(id, { ...lead, via: 'editor' })} />
               </div>
             ) : (
-              <SignIn prefix="chat" lede="Sign in with your AI Paragon account to try the chatbot. Until pages are hosted it answers the team only." />
+              <SignIn prefix="chat" lede="Sign in with your AI Paragon account to try the chatbot here. Visitors chat on the live page without signing in." />
             )}
           </section>
 
-          <Leads id={id} />
+          <Leads id={id} shown={shown} />
         </>
       ) : null}
 
-      <p className="ap-set-note">Until pages are hosted, the chatbot answers signed-in AI Paragon accounts only, so visitors can’t use it yet. Contacts are kept in this browser.</p>
+      <p className="ap-set-note">
+        {where.team
+          ? 'Visitors chat on the live page (' + where.now + (where.connected ? ' and ' + where.domain : '') + ') once it is published, with limits per visitor and per page. Contacts they leave show here for the team. Try it here answers from this draft.'
+          : 'This page is only in this browser, so only signed-in team members can try the chatbot, here and on the preview. Contacts are kept in this browser.'}
+      </p>
     </div>
   );
 }
@@ -682,6 +797,8 @@ export function ChatPanel() {
 const CODE_BOX = { className: 'ap-input ap-textarea ap-code', spellCheck: false, autoCapitalize: 'off', autoComplete: 'off', autoCorrect: 'off', wrap: 'off', maxLength: CODE_MAX };
 
 export function CodePanel() {
+  const { id } = useContext(EditorCtx);
+  const where = useLiveAddress(id);
   const [props, patch] = useRoot();
   const raw = props.tracking || {};
   const code = codeOf(props);
@@ -700,7 +817,12 @@ export function CodePanel() {
     <div className="ap-set">
       <Nav current="code" />
       <Head name="code" title="Custom code">Tracking tags and your own code for this page, like custom code in Webflow.</Head>
-      <p className="ap-set-warn" id="code-where">Code goes live when the page is hosted on its own domain. It never runs in the editor or on these previews, which share their web address with AI Paragon’s own tools.</p>
+      <p className="ap-set-warn" id="code-where">
+        {where.team
+          ? 'Code runs on the live page (' + where.now + (where.domain ? ' and ' + where.domain : '') + ') after Publish.'
+          : 'Code runs only on pages on the web: sign in and publish the page from the team’s pages.'}{' '}
+        It never runs in the editor or on these previews, which share their web address with AI Paragon’s own tools.
+      </p>
 
       <section className="ap-code-tags" aria-labelledby="code-tags-h">
         <h3 id="code-tags-h">Tracking</h3>

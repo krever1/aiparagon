@@ -64,7 +64,7 @@ const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers
   async function open(url, opts) {
     const o = opts || {};
     const ctx = await browser.newContext({ viewport: o.viewport || { width: 1440, height: 900 }, isMobile: !!o.mobile, hasTouch: !!o.mobile });
-    const st = { hook: [], logins: [], refreshes: [], logouts: 0, answer: o.answer === undefined ? { body: CHANGE.answer } : o.answer, refresh: 'ok' };
+    const st = { hook: [], logins: [], refreshes: [], logouts: 0, answer: o.answer === undefined ? { body: CHANGE.answer } : o.answer, refresh: o.refresh || 'ok' };
     await ctx.route('**/*', (route) => {
       const u = route.request().url();
       if (u.startsWith(BASE) || u.startsWith('data:') || u.startsWith('blob:')) return route.continue();
@@ -507,13 +507,13 @@ const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers
     check('renewal: the new session is kept', a.access_token === 'tok-A2' && a.refresh_token === 'ref-A2' && a.email === EMAIL && a.expires_at > Date.now() + 50 * 60e3);
   }
   {
-    const { page, st } = await open(BASE + '/builder/edit/home', { session: session(60e3) });
-    st.refresh = 'refuse';
+    // The builder opens the team's pages as it loads, which renews a sign-in that is about to run
+    // out; a refused renewal there drops it before anything reaches the AI
+    const { page, st } = await open(BASE + '/builder/edit/home', { session: session(60e3), refresh: 'refuse' });
     await canvas(page);
     await openAi(page);
-    await send(page, CHANGE.ask);
     await waitFor(page, async () => (await page.locator('#ai-email').count()) === 1);
-    check('renewal: a refused renewal asks to sign in, and nothing is sent to the AI', st.refreshes.length === 1 && st.hook.length === 0 && (await page.locator('.ap-ai-result').innerText()).includes('Sign in to use the AI.'));
+    check('renewal: a refused renewal asks to sign in, and nothing is sent to the AI', st.refreshes.length === 1 && st.hook.length === 0 && (await page.locator('#ai-email').count()) === 1);
     check('renewal: the dead session is dropped', (await stored(page, AUTH)) === null);
   }
 

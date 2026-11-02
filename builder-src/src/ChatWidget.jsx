@@ -3,7 +3,7 @@
 // and the Chatbot tab shows the same window inline so the team can try it while setting it up.
 // The window is not modal: the page stays usable, Esc closes it and focus goes back to the button.
 import { useContext, useEffect, useId, useRef, useState } from 'react';
-import { askBot, botOf, ChatError, checkLead, shownGreeting, shownName, startersFor, LIMITS } from './chat.js';
+import { botOf, ChatError, checkLead, shownGreeting, shownName, startersFor, LIMITS } from './chat.js';
 import { PageCtx } from './context.js';
 
 export function ChatIcon({ size = 20 }) {
@@ -20,6 +20,7 @@ const nextId = () => 'm' + ++seq;
 function LeadForm({ leads, onSend, onSkip }) {
   const [v, setV] = useState({ name: '', email: '', phone: '' });
   const [err, setErr] = useState(null);
+  const [sending, setSending] = useState(false);
   const base = useId();
   const refs = { name: useRef(null), email: useRef(null), phone: useRef(null) };
   const submit = (e) => {
@@ -31,7 +32,10 @@ function LeadForm({ leads, onSend, onSkip }) {
       if (el) el.focus();
       return;
     }
-    onSend(r.lead);
+    setSending(true);
+    Promise.resolve(onSend(r.lead))
+      .catch((e) => setErr({ error: (e && e.message) || 'Could not send that just now. Try again.' }))
+      .finally(() => setSending(false));
   };
   const field = (key, label, type, auto) => (
     <label className="sb-chat-f" htmlFor={base + key}>
@@ -59,16 +63,18 @@ function LeadForm({ leads, onSend, onSkip }) {
       {leads === 'phone' ? field('phone', 'Phone', 'tel', 'tel') : null}
       {err ? <p className="sb-chat-err" role="alert">{err.error}</p> : null}
       <div className="sb-chat-row">
-        <button type="submit" className="sb-btn sb-btn-sm">Send</button>
+        <button type="submit" className="sb-btn sb-btn-sm" disabled={sending}>{sending ? 'Sending…' : 'Send'}</button>
         <button type="button" className="sb-chat-link" onClick={onSkip}>No thanks</button>
       </div>
     </form>
   );
 }
 
-// bot: from botOf(). onLead(lead) keeps a contact left in the chat. embedded: shown open, in place
-// (the Chatbot tab), instead of a button in the page corner.
-export function ChatWidget({ bot, brand, title, pageText, starters, onLead, signInHref, embedded, sendLabel }) {
+// bot: from botOf(). ask({ bot, brand, title, pageText, messages, signal }) gets one answer (the
+// team's transport in the builder, the visitor chat on a live page). onLead(lead) keeps a contact
+// left in the chat, and may return a promise: the form stays, with the reason, if it fails.
+// embedded: shown open, in place (the Chatbot tab), instead of a button in the page corner.
+export function ChatWidget({ bot, brand, title, pageText, starters, ask, onLead, signInHref, embedded, sendLabel }) {
   const name = shownName(bot, brand);
   const greeting = shownGreeting(bot, brand);
   const [open, setOpen] = useState(!!embedded);
@@ -116,7 +122,8 @@ export function ChatWidget({ bot, brand, title, pageText, starters, onLead, sign
     ctrl.current = ac;
     try {
       const turns = kept.filter((m) => m.role === 'visitor' || m.role === 'bot');
-      const got = await askBot({ bot, brand, title, pageText, messages: turns, signal: ac.signal });
+      if (!ask) throw new ChatError('off', 'The chat is not available here.');
+      const got = await ask({ bot, brand, title, pageText, messages: turns, signal: ac.signal });
       const add = [{ id: nextId(), role: 'bot', text: got.reply }];
       if (got.action === 'contact') add.push({ id: nextId(), role: 'lead', question: words });
       if (got.action === 'link') add.push({ id: nextId(), role: 'offer' });
@@ -130,8 +137,8 @@ export function ChatWidget({ bot, brand, title, pageText, starters, onLead, sign
     }
   };
 
-  const leadSent = (id, question) => (lead) => {
-    if (onLead) onLead({ ...lead, question, at: Date.now() });
+  const leadSent = (id, question) => async (lead) => {
+    if (onLead) await onLead({ ...lead, question, at: Date.now() });
     const first = lead.name.split(/\s+/)[0];
     setLog((l) =>
       l
@@ -264,10 +271,10 @@ export function ChatWidget({ bot, brand, title, pageText, starters, onLead, sign
 }
 
 // The chatbot as the page renders it (blocks.jsx puts this in the page root): only on the preview
-// and the live page, which say through PageCtx which page this is
+// and the live page, which say through PageCtx which page this is and how its chat answers
 export function ChatMount({ chatbot }) {
   const ctx = useContext(PageCtx);
   const bot = botOf({ chatbot });
   if (!ctx || !bot.on) return null;
-  return <ChatWidget bot={bot} brand={ctx.brand} title={ctx.title} pageText={ctx.pageText} starters={startersFor(bot, ctx.data)} onLead={ctx.onLead} signInHref={ctx.signInHref} />;
+  return <ChatWidget bot={bot} brand={ctx.brand} title={ctx.title} pageText={ctx.pageText} starters={startersFor(bot, ctx.data)} ask={ctx.ask} onLead={ctx.onLead} signInHref={ctx.signInHref} />;
 }
