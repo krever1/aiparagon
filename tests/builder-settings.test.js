@@ -621,7 +621,7 @@ const dnsAnswer = (answers) => ({ Status: 0, Answer: answers.map(([type, data, n
     await page.goto(BASE + '/builder/edit/home');
     await canvas(page);
     await tab(page, 'Chatbot');
-    check('signed out: the Chatbot tab offers its own sign-in form', (await visible(page, '#chat-email').count()) === 1 && (await visible(page, '#chat-pw').count()) === 1 && (await visible(page, '.ap-try .ap-ai-lede').innerText()).includes('answers the team only'));
+    check('signed out: the Chatbot tab offers its own sign-in form', (await visible(page, '#chat-email').count()) === 1 && (await visible(page, '#chat-pw').count()) === 1 && (await visible(page, '.ap-try .ap-ai-lede').innerText()).includes('Visitors chat on the live page without signing in'));
     await page.context().close();
   }
 

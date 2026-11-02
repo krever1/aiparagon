@@ -1,13 +1,11 @@
-// The page's chatbot: its settings (root props `chatbot`), the page text it answers from, and its
-// side of the "Site Builder · Chatbot" n8n workflow (POST /webhook/site-builder-chat). Claude answers
-// from the page text and the facts the team gives it, and says when to show the contact form or
-// the booking button. Until pages are hosted the workflow answers signed-in AI Paragon accounts
-// only, so on the published page the chat works for the team, as a preview.
-import { token, forget } from './auth.js';
+// The page's chatbot: its settings (root props `chatbot`), the page text it answers from, and the
+// checks both of its transports share. In the builder it talks to the "Site Builder · Chatbot" n8n
+// workflow with the team's sign-in (chat-team.js); on a live page, to the public visitor chat
+// (chat-visitor.js), which reads the settings from the live copy itself. No sign-in code here, so
+// the live pages' server and browser bundles can use it.
 
-export const CHAT_HOOK = 'https://n8n.aiparagonconsulting.com/webhook/site-builder-chat';
-const WAIT_MS = 45 * 1000;
-const KEEP_TURNS = 12;
+export const WAIT_MS = 45 * 1000;
+export const KEEP_TURNS = 12;
 
 export const TONES = [
   { value: 'friendly', label: 'Friendly' },
@@ -146,55 +144,18 @@ export function pageTextFor(config, data) {
   return lines.join('\n').slice(0, 12000);
 }
 
-// One answer from the bot: { reply, action } where action is none, contact or link
-export async function askBot({ bot, brand, title, pageText, messages, signal }) {
-  const auth = await token();
-  if (!auth) throw new ChatError('signin', 'Sign in with your AI Paragon account to try the chatbot.');
-  const stop = new AbortController();
-  let timedOut = false;
-  const timer = setTimeout(() => {
-    timedOut = true;
-    stop.abort();
-  }, WAIT_MS);
-  const onStop = () => stop.abort();
-  if (signal) signal.addEventListener('abort', onStop);
-  const turns = arr(messages)
+// The last turns of the conversation, as both workflows read them
+export function turnsOf(messages) {
+  return arr(messages)
     .filter((m) => m && (m.role === 'visitor' || m.role === 'bot') && str(m.text).trim())
     .slice(-KEEP_TURNS)
     .map((m) => ({ role: m.role, text: str(m.text).slice(0, LIMITS.message) }));
-  let res;
-  let j = null;
-  try {
-    res = await fetch(CHAT_HOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        auth,
-        bot: { name: shownName(bot, brand), tone: bot.tone, knows: bot.knows, rules: bot.rules, leads: bot.leads, hasLink: !!bot.link },
-        page: { brand, title, text: pageText },
-        messages: turns,
-      }),
-      signal: stop.signal,
-    });
-    j = await res.json().catch(() => null);
-  } catch (e) {
-    if (signal && signal.aborted) throw new ChatError('stopped', 'Stopped.');
-    if (timedOut) throw new ChatError('timeout', 'That took too long. Try again.');
-    throw new ChatError('network', 'Could not reach the assistant. Check the connection and try again.');
-  } finally {
-    clearTimeout(timer);
-    if (signal) signal.removeEventListener('abort', onStop);
-  }
-  if (signal && signal.aborted) throw new ChatError('stopped', 'Stopped.');
-  if (res.status === 401 || (j && j.code === 'unauthorized')) {
-    forget();
-    throw new ChatError('signin', 'Your sign-in has run out. Sign in again to try the chatbot.');
-  }
-  if (res.status === 524 || res.status === 504) throw new ChatError('timeout', 'That took too long. Try again.');
-  if (j && j.ok === false) throw new ChatError(j.code || 'model', str(j.message) || 'The assistant could not answer just now. Try again in a minute.');
-  if (!res.ok || !j || j.ok !== true || !str(j.reply).trim()) throw new ChatError('model', 'The assistant could not answer just now. Try again in a minute.');
-  const action = j.action === 'contact' && bot.leads !== 'off' ? 'contact' : j.action === 'link' && bot.link ? 'link' : 'none';
-  return { reply: str(j.reply).trim().slice(0, 1200), action };
+}
+
+// What the bot may offer after its answer: the contact form only when contacts are asked for, the
+// button only when there is a link
+export function actionOf(j, bot) {
+  return j && j.action === 'contact' && bot.leads !== 'off' ? 'contact' : j && j.action === 'link' && bot.link ? 'link' : 'none';
 }
 
 // A contact left in the chat, checked: { lead } or { error, field }
