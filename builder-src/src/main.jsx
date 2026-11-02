@@ -10,9 +10,14 @@ import { config, ACCENTS, FONTS } from './blocks.jsx';
 import { TEMPLATE_LIST, makeData } from './templates.js';
 import * as store from './store.js';
 import { canonicalize, go, hrefFor, linkProps, useRoute } from './router.js';
-import { EditorCtx } from './context.js';
+import { EditorCtx, PageCtx } from './context.js';
 import { AiPanel, SparkIcon, useAiSession } from './AiPanel.jsx';
 import { setPending, takePending, catalog, pageForAi, applyAnswer } from './ai.js';
+import { SeoPanel, DomainPanel, ChatPanel, openSettings } from './SettingsPanels.jsx';
+import { ChatIcon } from './ChatWidget.jsx';
+import { applyMeta, seoChecks, seoOf } from './seo.js';
+import { normalizeDomain, recordsFor, pairOf } from './domain.js';
+import { botOf, brandOf, pageTextFor, startersFor } from './chat.js';
 
 // "Describe it" makes a blank page and hands the description to the AI panel
 const START_LIST = [...TEMPLATE_LIST, { key: 'describe', label: 'Describe it', blurb: 'Say what the page is for and the AI writes a first draft.' }];
@@ -260,6 +265,8 @@ function PageCard({ page, onDelete, onDuplicate }) {
   const st = store.statusOf(page);
   const title = store.titleOf(page);
   const n = ((page.draft && page.draft.content) || []).length;
+  const domain = store.domainOf(page);
+  const bot = botOf((page.draft && page.draft.root && page.draft.root.props) || {}).on;
   return (
     <li className="ap-card" data-page={page.id}>
       <a className="ap-thumb-link" {...linkProps({ name: 'edit', id: page.id })} tabIndex={-1} aria-hidden="true">
@@ -272,6 +279,12 @@ function PageCard({ page, onDelete, onDuplicate }) {
           <span className="ap-card-slug">/{store.slugOf(page)}</span>
           <span>{n} section{n === 1 ? '' : 's'}</span>
         </div>
+        {domain || bot ? (
+          <p className="ap-card-extra">
+            {domain ? <span>{domain} · not connected yet</span> : null}
+            {bot ? <span>Chatbot on</span> : null}
+          </p>
+        ) : null}
         <p className="ap-card-time">Edited {ago(page.updatedAt)}{page.live ? ' · published ' + ago(page.publishedAt) : ''}</p>
       </div>
       <div className="ap-card-actions">
@@ -378,9 +391,28 @@ function HeaderActions() {
       </span>
       <Button variant="secondary" href={hrefFor({ name: 'dashboard' })} onClick={leave({ name: 'dashboard' })}>All pages</Button>
       <Button variant="secondary" href={hrefFor({ name: 'view', id, draft: true })} onClick={leave({ name: 'view', id, draft: true })}>Preview</Button>
+      <Button type="button" variant="secondary" onClick={() => openSettings(getPuck, 'seo')}>Settings</Button>
       <Button type="button" variant="secondary" icon={<SparkIcon />} onClick={openAi}>Ask AI</Button>
       <Button type="button" variant="primary" icon={<GlobeIcon />} onClick={() => publish(getPuck().appState.data)}>Publish</Button>
     </>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M20 20l-4.2-4.2" />
+    </svg>
+  );
+}
+
+function LinkIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1" />
+      <path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1" />
+    </svg>
   );
 }
 
@@ -396,8 +428,13 @@ function GlobeIcon() {
 const OVERRIDES = { headerActions: HeaderActions };
 // The canvas shows as soon as the page's own (inline) styles are in; web fonts swap in when they load
 const IFRAME = { waitForStyles: false };
-// The AI tab sits in the left rail after Blocks and Outline
-const PLUGINS = [{ name: 'ai', label: 'AI', icon: <SparkIcon />, render: AiPanel }];
+// The AI tab sits in the left rail after Blocks and Outline, then the page's settings
+const PLUGINS = [
+  { name: 'ai', label: 'AI', icon: <SparkIcon />, render: AiPanel },
+  { name: 'seo', label: 'SEO', icon: <SearchIcon />, render: SeoPanel },
+  { name: 'domain', label: 'Domain', icon: <LinkIcon />, render: DomainPanel },
+  { name: 'chat', label: 'Chatbot', icon: <ChatIcon size={18} />, render: ChatPanel },
+];
 
 function EditorView({ page }) {
   const [initial] = useState(() => page.draft);
@@ -488,19 +525,24 @@ function EditorView({ page }) {
 
 function PreviewView({ page, draft }) {
   const data = draft ? page.draft : page.live;
-  useEffect(() => {
-    const meta = document.querySelector('meta[name="description"]');
-    const before = { title: document.title, desc: meta ? meta.getAttribute('content') : null };
-    if (data) {
-      const rp = (data.root && data.root.props) || {};
-      document.title = plain(rp.title) || 'Untitled page';
-      if (meta) meta.setAttribute('content', plain(rp.description));
-    }
-    return () => {
-      document.title = before.title;
-      if (meta && before.desc != null) meta.setAttribute('content', before.desc);
-    };
-  }, [data]);
+  // The page's own search and link-preview tags while it is open; a draft is never listed
+  useEffect(() => (data ? applyMeta(data, { url: location.href.split('?')[0], draft }) : undefined), [data, draft]);
+  const id = page.id;
+  const pageInfo = useMemo(
+    () =>
+      data
+        ? {
+            pageId: id,
+            data,
+            brand: brandOf(data),
+            title: plain(data.root && data.root.props && data.root.props.title),
+            pageText: pageTextFor(config, data),
+            onLead: (lead) => store.addLead(id, { ...lead, via: draft ? 'preview' : 'live page' }),
+            signInHref: hrefFor({ name: 'edit', id }),
+          }
+        : null,
+    [data, id, draft],
+  );
 
   if (!data) {
     return (
@@ -520,7 +562,9 @@ function PreviewView({ page, draft }) {
   return (
     <>
       <div className="ap-preview">
-        <Render config={config} data={data} />
+        <PageCtx.Provider value={pageInfo}>
+          <Render config={config} data={data} />
+        </PageCtx.Provider>
       </div>
       <nav className="ap-pill" aria-label="Preview">
         <span>{draft ? 'Draft preview' : 'Live page'}</span>
@@ -563,9 +607,11 @@ function App() {
   return <Dashboard notice={notice} clearNotice={() => setNotice('')} />;
 }
 
-// Tests reach the AI's checks through window.__SB_TEST__, filled only when a test sets it to true
-// before the page loads
-if (window.__SB_TEST__ === true) window.__SB_TEST__ = { catalog, pageForAi, applyAnswer, makeData, config };
+// Tests reach the checks (the AI's answer, SEO, domains, the chatbot's settings and page text) through
+// window.__SB_TEST__, filled only when a test sets it to true before the page loads
+if (window.__SB_TEST__ === true) {
+  window.__SB_TEST__ = { catalog, pageForAi, applyAnswer, makeData, config, seoOf, seoChecks, normalizeDomain, recordsFor, pairOf, botOf, brandOf, pageTextFor, startersFor };
+}
 
 store.init();
 canonicalize();

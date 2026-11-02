@@ -26,7 +26,12 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 /* ---------- The catalog ---------- */
 
-const ROOT_KEYS = ['title', 'description', 'theme', 'accent', 'font'];
+const ROOT_KEYS = ['title', 'seoTitle', 'description', 'theme', 'accent', 'font'];
+// Settings the AI may write that the editor shows in its own tab (SEO), not in Puck's page fields
+const ROOT_EXTRA = {
+  seoTitle: { type: 'text', label: 'Title in Google, when it should differ from the page name (under 60 characters)' },
+};
+const rootField = (k) => config.root.fields[k] || ROOT_EXTRA[k];
 
 const ABOUT = {
   Navbar: 'The bar across the top: the brand name, up to 6 menu links and one button. Put it first.',
@@ -84,7 +89,7 @@ export function catalog() {
   if (catalogText) return catalogText;
   const rootFields = {};
   ROOT_KEYS.forEach((k) => {
-    rootFields[k] = config.root.fields[k];
+    rootFields[k] = rootField(k);
   });
   const lines = ['Page settings, in "root":', ...fieldLines('root', rootFields), '', 'Blocks (the first word of each is its type, for "add"):'];
   Object.entries(config.components).forEach(([type, c]) => {
@@ -154,7 +159,7 @@ export async function askAi({ ask, data, signal }) {
 
 /* ---------- Checking the answer ---------- */
 
-const MAX = { text: 200, textarea: 800, richtext: 6000, title: 80, description: 300 };
+const MAX = { text: 200, textarea: 800, richtext: 6000, title: 80, seoTitle: 70, description: 300 };
 
 // Plain words: no tags or entities, dashes as the team writes them (an en dash in a range becomes
 // a hyphen, an em dash a comma)
@@ -389,9 +394,9 @@ export function applyAnswer(data, answer, { ask, before } = {}) {
   if (isObj(answer && answer.root)) {
     ROOT_KEYS.forEach((k) => {
       if (!(k in answer.root)) return;
-      const f = config.root.fields[k];
+      const f = rootField(k);
       let v = cleanValue(f, answer.root[k], k, known);
-      if (typeof v === 'string' && (k === 'title' || k === 'description')) v = v.slice(0, MAX[k]);
+      if (typeof v === 'string' && MAX[k]) v = v.slice(0, MAX[k]);
       if (k === 'title' && !v) return;
       if (v !== undefined && !same(root.props[k], v)) {
         root.props[k] = v;

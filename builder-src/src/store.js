@@ -182,6 +182,51 @@ export function deletePage(id) {
   return true;
 }
 
+// A page's own domain and the contacts its chatbot took are kept on the page itself, outside the
+// editor's data: they are not content, so they neither wait for Publish nor mark the page changed.
+export function domainOf(page) {
+  return (page && typeof page.domain === 'string' && page.domain) || '';
+}
+
+// host: a checked domain (domain.js), or '' to remove it. Returns { ok } or { error }.
+export function setDomain(id, host) {
+  const page = getPage(id);
+  if (!page) return { error: 'This page is gone.' };
+  if (host) {
+    const other = state.pages.find((p) => p.id !== id && domainOf(p) === host);
+    if (other) return { error: '“' + titleOf(other) + '” already uses ' + host + '. Remove it there first.' };
+  }
+  if (host) page.domain = host;
+  else delete page.domain;
+  const ok = persist();
+  emit();
+  return ok ? { ok: true } : { error: 'This browser is not saving pages, so the domain lasts until the tab is closed.' };
+}
+
+const MAX_LEADS = 200;
+
+export function leadsOf(page) {
+  return (page && Array.isArray(page.leads) && page.leads) || [];
+}
+
+export function addLead(id, lead) {
+  const page = getPage(id);
+  if (!page) return false;
+  page.leads = [{ ...lead, at: lead.at || Date.now() }, ...leadsOf(page)].slice(0, MAX_LEADS);
+  const ok = persist();
+  emit();
+  return ok;
+}
+
+export function clearLeads(id) {
+  const page = getPage(id);
+  if (!page) return false;
+  delete page.leads;
+  const ok = persist();
+  emit();
+  return ok;
+}
+
 // Back to the two sample pages, for the next demo
 export function resetDemo() {
   state = seed();
