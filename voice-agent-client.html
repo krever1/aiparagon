@@ -348,6 +348,20 @@ tr.clickable:hover td.go{text-decoration:underline}
 .availgrid .t{color:var(--muted);text-align:right;padding-right:6px}
 .availgrid .on{background:var(--blue-soft);color:var(--navy);font-weight:600}
 .availgrid .full{background:#e7eef4;color:var(--muted)}
+.availgrid .off{color:#b9c7d3}
+.availgrid .closed{background:#f6efe3;color:var(--warn)}
+.cal .ch.closed{background:#f6efe3;color:var(--warn)}
+.cal .dc.closed{background:repeating-linear-gradient(135deg,#fbf8f3 0 8px,#f6f1e8 8px 16px)}
+.cal .closedtag{position:absolute;top:8px;left:6px;right:6px;font-size:11px;font-weight:600;color:var(--warn);text-align:center}
+.avrow{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eef3f7}
+.avtimes{display:flex;flex-wrap:wrap;gap:6px}
+.avchip{display:inline-flex;align-items:center;gap:2px;background:var(--blue-soft);color:var(--navy);border-radius:999px;padding:3px 3px 3px 10px;font-size:12px;font-weight:600}
+.avchip button{border:0;background:transparent;color:var(--muted);font-size:15px;line-height:1;padding:0 5px;border-radius:999px}
+.avchip button:hover{color:var(--bad);background:#fff}
+.avclosed{color:var(--muted);font-size:12px}
+.avadd{display:flex;gap:6px;align-items:center}
+.avadd input{border:1px solid var(--blue-line);border-radius:8px;padding:5px 8px;background:#fff;width:118px}
+@media (max-width:640px){.avrow{grid-template-columns:1fr}}
 
 /* messages */
 .thread{display:flex;flex-direction:column;gap:2px}
@@ -884,6 +898,18 @@ button.tn.tnlink:hover,button.tn.tnlink:focus-visible{border-color:var(--blue);c
           <div class="pb flush"><table id="sysTable"></table></div>
         </div>
       </div>
+      <div class="panel" id="availPanel">
+        <div class="ph"><h2>Availability</h2><span class="tag neut">When the agent books inspections</span></div>
+        <div class="pb">
+          <p class="mini" style="margin:0 0 6px">The agent only offers these start times, Pacific, up to two weeks ahead. An inspection takes about an hour.</p>
+          <div id="availDays"></div>
+          <div class="note" id="availClosed" style="margin:14px 0"></div>
+          <div class="field"><label for="availMsg">Closed day message</label><textarea id="availMsg" rows="3" maxlength="400"></textarea>
+            <p class="mini" id="availPreview" style="margin:6px 0 0"></p></div>
+          <p class="mini" style="margin:0 0 10px">The agent's answer about your hours is on the Knowledge page (Hours). Change it there too if you change the days.</p>
+          <div class="row"><button class="btn primary sm" id="saveAvail">Save availability</button><button class="btn sm" id="availReset">Use the usual times</button><span class="mini" id="availState"></span></div>
+        </div>
+      </div>
       <div class="panel">
         <div class="ph"><h2>Team and routing</h2><div class="row"><span class="tag neut">Who playbooks notify and escalate to</span><button class="btn sm" id="addTeam">Add person</button></div></div>
         <div class="note hidden" id="teamPreview" style="margin:14px 18px 0">Preview. Notifications to these people go out once texting and email are connected.</div>
@@ -968,6 +994,28 @@ const BIZ_TZ = "America/Los_Angeles";
 const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const MON_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const SLOT_TIMES = [[8, 0], [10, 30], [13, 0], [15, 30]];
+// Inspection days and start times (Settings, Availability), the ones the tool server offers: signed in they come from
+// vc_settings, signed out the demo keeps its own copy. Without any, Monday to Saturday at the four times above.
+const WEEK_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const CLOSED_DEFAULT = "Thanks for calling Arrington Roofing. We're closed today for {holiday}. Please call us back on our next business day.";
+const AVAIL_DEFAULT = { days: { sun: [], mon: ["08:00", "10:30", "13:00", "15:30"], tue: ["08:00", "10:30", "13:00", "15:30"], wed: ["08:00", "10:30", "13:00", "15:30"], thu: ["08:00", "10:30", "13:00", "15:30"], fri: ["08:00", "10:30", "13:00", "15:30"], sat: ["08:00", "10:30", "13:00", "15:30"] }, closed_message: CLOSED_DEFAULT };
+function availOf(st) { const a = st && st.availability; return a && a.days && typeof a.days === "object" && WEEK_KEYS.some((k) => Array.isArray(a.days[k])) ? a : AVAIL_DEFAULT; }
+function parseHM(t) { const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || "").trim()); return m && +m[1] >= 5 && +m[1] <= 20 && +m[2] < 60 ? [+m[1], +m[2]] : null; }
+function timesOf(a, wd) {
+  const seen = {};
+  const list = Array.isArray(a.days[WEEK_KEYS[wd]]) ? a.days[WEEK_KEYS[wd]] : [];
+  return list.map(parseHM).filter((t) => { if (!t || seen[t.join(":")]) return false; seen[t.join(":")] = 1; return true; })
+    .sort((x, y) => x[0] * 60 + x[1] - (y[0] * 60 + y[1])).slice(0, 12);
+}
+function dayTimes(wd) { return timesOf(availOf(S), wd); }
+// Closed all day: New Year's Day, Thanksgiving (the fourth Thursday of November) and Christmas Day, the same three as the
+// tool server and Caller Lookup.
+function holidayOn(y, mo, d) {
+  if (mo === 0 && d === 1) return "New Year's Day";
+  if (mo === 11 && d === 25) return "Christmas Day";
+  if (mo === 10 && d === 22 + ((11 - new Date(Date.UTC(y, 10, 1, 12)).getUTCDay()) % 7)) return "Thanksgiving";
+  return null;
+}
 const APPT_TYPES = {
   "Roof inspection": { key: "inspection", minutes: 60, cls: "t-insp" },
   "Urgent leak check": { key: "leak_check", minutes: 45, cls: "t-leak" },
@@ -2433,8 +2481,8 @@ function weekStartOf(iso) {
   const m = new Date(base);
   return { y: m.getUTCFullYear(), mo: m.getUTCMonth(), d: m.getUTCDate() };
 }
-function weekDays(ws) {
-  return [0, 1, 2, 3, 4, 5].map((i) => { const dt = new Date(Date.UTC(ws.y, ws.mo, ws.d + i, 12)); return { y: dt.getUTCFullYear(), mo: dt.getUTCMonth(), d: dt.getUTCDate(), wd: dt.getUTCDay() }; });
+function weekDays(ws, n) {
+  return [0, 1, 2, 3, 4, 5, 6].slice(0, n || 6).map((i) => { const dt = new Date(Date.UTC(ws.y, ws.mo, ws.d + i, 12)); return { y: dt.getUTCFullYear(), mo: dt.getUTCMonth(), d: dt.getUTCDate(), wd: dt.getUTCDay() }; });
 }
 function shiftWeek(ws, n) { const dt = new Date(Date.UTC(ws.y, ws.mo, ws.d + 7 * n, 12)); return { y: dt.getUTCFullYear(), mo: dt.getUTCMonth(), d: dt.getUTCDate() }; }
 function slotLabelFor(iso) { const z = zparts(new Date(iso)); return DAY_NAMES[z.wd] + ", " + MON_NAMES[z.mo] + " " + z.d + " at " + hm(z.h, z.mi); }
@@ -2451,8 +2499,8 @@ function openSlots(pref, exceptId) {
   const t = zparts(new Date());
   for (let i = 0; i <= 14; i++) {
     const b = new Date(Date.UTC(t.y, t.mo, t.d + i, 12));
-    if (b.getUTCDay() === 0) continue;
-    SLOT_TIMES.forEach((st) => {
+    if (holidayOn(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate())) continue;
+    dayTimes(b.getUTCDay()).forEach((st) => {
       if (/afternoon/.test(p) && st[0] < 12) return;
       if (/morning/.test(p) && st[0] >= 12) return;
       const iso = zdate(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate(), st[0], st[1]).toISOString();
@@ -2481,10 +2529,11 @@ function layoutDay(items) {
 
 function renderCalendar() {
   const ws = calWeek || (calWeek = weekStartOf());
-  const days = weekDays(ws);
+  const days = weekDays(ws, dayTimes(0).length ? 7 : 6);
+  const lastDay = days[days.length - 1];
   const today = zparts(new Date());
   const tk = dayKey(today);
-  $("calRange").textContent = MON_NAMES[days[0].mo].slice(0, 3) + " " + days[0].d + " – " + (days[5].mo !== days[0].mo ? MON_NAMES[days[5].mo].slice(0, 3) + " " : "") + days[5].d + (tzSuffix() ? " · Pacific time" : "");
+  $("calRange").textContent = MON_NAMES[days[0].mo].slice(0, 3) + " " + days[0].d + " – " + (lastDay.mo !== days[0].mo ? MON_NAMES[lastDay.mo].slice(0, 3) + " " : "") + lastDay.d + (tzSuffix() ? " · Pacific time" : "");
   $("calSub").textContent = "Everything the agent and the team have booked. Click a booking to confirm, move or cancel it, or an open time to book one." + (tzSuffix() ? " Times are Pacific, where the jobs are." : "");
   const typesShown = {};
   S.appointments.forEach((a) => { typesShown[a.type] = typeCls(a.type); });
@@ -2493,12 +2542,14 @@ function renderCalendar() {
 
   const hours = [];
   for (let h = CAL_START; h < CAL_END; h++) hours.push(h);
-  let html = '<div class="cal"><div class="ch"></div>' + days.map((d) => '<div class="ch' + (dayKey(d) === tk ? " today" : "") + '">' + DAY_NAMES[d.wd].slice(0, 3) + " " + d.d + "<small>" + MON_NAMES[d.mo].slice(0, 3) + "</small></div>").join("");
+  let html = '<div class="cal" style="grid-template-columns:56px repeat(' + days.length + ',minmax(112px,1fr))"><div class="ch"></div>' + days.map((d) => { const hol = holidayOn(d.y, d.mo, d.d); return '<div class="ch' + (dayKey(d) === tk ? " today" : "") + (hol ? " closed" : "") + '"' + (hol ? ' title="Closed for ' + esc(hol) + '"' : "") + ">" + DAY_NAMES[d.wd].slice(0, 3) + " " + d.d + "<small>" + (hol ? esc(hol) : MON_NAMES[d.mo].slice(0, 3)) + "</small></div>"; }).join("");
   html += '<div class="tc">' + hours.map((h) => '<div class="tl">' + (h % 12 === 0 ? 12 : h % 12) + (h < 12 ? " AM" : " PM") + "</div>").join("") + "</div>";
   days.forEach((d) => {
     const items = S.appointments.filter((a) => a.startsAt && dayKey(zparts(new Date(a.startsAt))) === dayKey(d));
-    html += '<div class="dc' + (dayKey(d) === tk ? " today" : "") + '">' + hours.map(() => '<div class="hr"></div>').join("");
-    SLOT_TIMES.forEach((st) => {
+    const hol = holidayOn(d.y, d.mo, d.d);
+    html += '<div class="dc' + (dayKey(d) === tk ? " today" : "") + (hol ? " closed" : "") + '">' + hours.map(() => '<div class="hr"></div>').join("") + (hol ? '<div class="closedtag">Closed for ' + esc(hol) + "</div>" : "");
+    (hol ? [] : dayTimes(d.wd)).forEach((st) => {
+      if (st[0] < CAL_START || st[0] >= CAL_END) return;
       const iso = zdate(d.y, d.mo, d.d, st[0], st[1]).toISOString();
       if (new Date(iso).getTime() < Date.now() + 30 * 60000) return;
       if (items.some((a) => a.status !== "Cancelled" && overlaps(a, iso, 60))) return;
@@ -2533,10 +2584,16 @@ RENDER.appointments = renderCalendar;
 
 function renderAvailability(days) {
   let open = 0, total = 0, aftOpen = 0, aftTotal = 0;
-  let grid = '<div class="availgrid"><span></span>' + days.map((d) => '<span class="h">' + DAY_NAMES[d.wd].slice(0, 3) + "</span>").join("");
-  SLOT_TIMES.forEach((st) => {
+  // A row for every start time any of these days has; a day without that time shows a dash, a holiday says Closed.
+  const rows = [];
+  days.forEach((d) => dayTimes(d.wd).forEach((t) => { if (!rows.some((r) => r[0] === t[0] && r[1] === t[1])) rows.push(t); }));
+  rows.sort((x, y) => x[0] * 60 + x[1] - (y[0] * 60 + y[1]));
+  let grid = '<div class="availgrid" style="grid-template-columns:70px repeat(' + days.length + ',1fr)"><span></span>' + days.map((d) => '<span class="h">' + DAY_NAMES[d.wd].slice(0, 3) + "</span>").join("");
+  rows.forEach((st) => {
     grid += '<span class="t">' + hm(st[0], st[1]) + "</span>";
     days.forEach((d) => {
+      if (holidayOn(d.y, d.mo, d.d)) { grid += '<span class="closed">Closed</span>'; return; }
+      if (!dayTimes(d.wd).some((t) => t[0] === st[0] && t[1] === st[1])) { grid += '<span class="off">–</span>'; return; }
       const iso = zdate(d.y, d.mo, d.d, st[0], st[1]).toISOString();
       const taken = slotTaken(iso);
       if (!taken && new Date(iso).getTime() < Date.now()) { grid += '<span class="full" style="opacity:.5">Past</span>'; return; }
@@ -2552,7 +2609,7 @@ function renderAvailability(days) {
   $("calAvail").innerHTML = grid +
     '<p style="margin:0 0 8px">' + (total ? "This week: <b>" + (total - open) + " of " + total + "</b> times booked, " + aftOpen + " of " + aftTotal + " afternoon times still open." : "Nothing left to book this week.") + "</p>" +
     (nb.length || hist ? '<p style="margin:0 0 8px">' + (hist ? "<b>" + hist + "</b> callers in the last 30 days couldn't find a time that worked." : "") + (aft ? " " + aft + " of the recent ones wanted afternoons." : "") + ' <button class="linkbtn" data-reasonfilter="no_time_fit">See those calls</button></p>' : "") +
-    '<p class="mini" style="margin:0">These are the times the agent offers: Monday to Saturday at 8:00, 10:30, 1:00 and 3:30, Pacific. Adding or removing a time is a one-line change in the n8n tool workflow, so the agent and this calendar stay in step.</p>';
+    '<p class="mini" style="margin:0">These are the times the agent offers: ' + esc(availSummary()) + ', Pacific. Closed all day on Thanksgiving, Christmas Day and New Year\'s Day. <button class="linkbtn" data-go="settings">Change them in Settings</button></p>';
 }
 
 /* ---------- one booking ---------- */
@@ -4776,10 +4833,112 @@ function renderSettings() {
     "<thead><tr><th>System</th><th>State</th></tr></thead><tbody>" +
     S.systems.map((x) => "<tr><td><b>" + esc(x.name) + '</b><span class="t2">' + esc(x.note) +
       '</span></td><td><span class="tag ' + (x.state === "Healthy" ? "ok" : x.state === "Not connected" ? "neut" : "warnt") + '">' + esc(x.state) + "</span></td></tr>").join("") + "</tbody>";
+  renderAvailEditor();
   renderTeam();
   $("modePill").textContent = pillText();
 }
 RENDER.settings = renderSettings;
+
+/* ---------- availability: inspection days and start times, and the closed day message ---------- */
+let AV = null; // the change in progress ({ days, closed_message }), null when nothing has been changed
+const AV_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Monday first, as the team reads a week
+function hmKey(t) { return (t[0] < 10 ? "0" : "") + t[0] + ":" + (t[1] < 10 ? "0" : "") + t[1]; }
+function avFrom(a) { const out = { days: {}, closed_message: typeof a.closed_message === "string" && a.closed_message.trim() ? a.closed_message : CLOSED_DEFAULT }; WEEK_KEYS.forEach((k, wd) => { out.days[k] = timesOf(a, wd).map(hmKey); }); return out; }
+function avDraft() { if (!AV) AV = avFrom(availOf(S)); return AV; }
+function avChanged() { return !!AV && JSON.stringify(AV) !== JSON.stringify(avFrom(availOf(S))); }
+function listJoin(a) { return a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1]; }
+// "Monday to Saturday at 8:00 AM, 10:30 AM, 1:00 PM and 3:30 PM", with days that share their times put together.
+function availSummary(a) {
+  a = a || availOf(S);
+  const groups = [];
+  AV_ORDER.forEach((wd) => {
+    const ts = timesOf(a, wd);
+    if (!ts.length) return;
+    const key = ts.map(hmKey).join(",");
+    let g = groups.find((x) => x.key === key);
+    if (!g) groups.push(g = { key: key, ts: ts, wds: [] });
+    g.wds.push(wd);
+  });
+  if (!groups.length) return "none, every day is closed for inspections";
+  return groups.map((g) => {
+    const idx = g.wds.map((wd) => AV_ORDER.indexOf(wd));
+    const run = g.wds.length >= 3 && idx.every((v, n) => !n || v === idx[n - 1] + 1);
+    return (run ? DAY_NAMES[g.wds[0]] + " to " + DAY_NAMES[g.wds[g.wds.length - 1]] : listJoin(g.wds.map((wd) => DAY_NAMES[wd]))) + " at " + listJoin(g.ts.map((t) => hm(t[0], t[1])));
+  }).join("; ");
+}
+// The next date of each holiday, soonest first
+function nextHolidays() {
+  const t = zparts(new Date());
+  const today = Date.UTC(t.y, t.mo, t.d);
+  const out = [];
+  [t.y, t.y + 1].forEach((y) => {
+    [[0, 1], [10, 22 + ((11 - new Date(Date.UTC(y, 10, 1, 12)).getUTCDay()) % 7)], [11, 25]].forEach((md) => {
+      const name = holidayOn(y, md[0], md[1]);
+      const at = Date.UTC(y, md[0], md[1]);
+      if (name && at >= today && !out.some((x) => x.name === name)) out.push({ name: name, at: at, label: DAY_NAMES[new Date(Date.UTC(y, md[0], md[1], 12)).getUTCDay()] + ", " + MON_NAMES[md[0]] + " " + md[1] });
+    });
+  });
+  return out.sort((x, y) => x.at - y.at);
+}
+function closedWords(msg, name) { return (String(msg || "").trim() || CLOSED_DEFAULT).split("{holiday}").join(name).replace(/\s+/g, " ").slice(0, 400); }
+function renderAvailEditor() {
+  const d = avDraft();
+  $("availDays").innerHTML = AV_ORDER.map((wd) => {
+    const k = WEEK_KEYS[wd];
+    const ts = (d.days[k] || []).map(parseHM).filter(Boolean);
+    return '<div class="avrow" data-avday="' + k + '"><b>' + DAY_NAMES[wd] + '</b><span class="avtimes">' +
+      (ts.length ? ts.map((t) => '<span class="avchip">' + esc(hm(t[0], t[1])) + '<button type="button" data-avail-del="' + k + "|" + hmKey(t) + '" aria-label="Remove ' + esc(hm(t[0], t[1])) + " on " + DAY_NAMES[wd] + '">×</button></span>').join("") : '<span class="avclosed">No inspections</span>') +
+      '</span><span class="avadd"><input type="time" step="900" min="07:00" max="17:00" data-avail-new="' + k + '" aria-label="New start time on ' + DAY_NAMES[wd] + '"><button class="btn sm" type="button" data-avail-add="' + k + '">Add</button></span></div>';
+  }).join("");
+  const hols = nextHolidays();
+  $("availClosed").innerHTML = "<b>Closed all day</b> on " + listJoin(hols.map((h) => esc(h.name) + " (" + esc(h.label) + ")")) + ". The agent offers no times on them, and a phone call on one hears the message below, then the call ends.";
+  if (document.activeElement !== $("availMsg")) $("availMsg").value = d.closed_message;
+  avPreview();
+}
+function avPreview() {
+  const h = nextHolidays()[0];
+  $("availPreview").innerHTML = "{holiday} becomes the day's name. On " + esc(h.name) + " callers hear: “" + esc(closedWords($("availMsg").value, h.name)) + "”";
+  $("availState").textContent = avChanged() ? "Not saved yet" : (LIVE.on ? "This is what the live agent uses." : "Demo. Sign in to change the live agent.");
+}
+function avAdd(k) {
+  const inp = document.querySelector('[data-avail-new="' + k + '"]');
+  const t = parseHM(inp ? inp.value : "");
+  if (!t) { toast("Pick a start time first."); return; }
+  if (t[0] < 7 || t[0] > 17 || (t[0] === 17 && t[1] > 0)) { toast("Pick a time from 7:00 AM to 5:00 PM, so the inspection fits the day."); return; }
+  const d = avDraft();
+  const list = d.days[k] || (d.days[k] = []);
+  if (list.indexOf(hmKey(t)) !== -1) { toast("That time is already there."); return; }
+  if (list.length >= 8) { toast("Eight start times a day at most."); return; }
+  list.push(hmKey(t));
+  list.sort();
+  renderAvailEditor();
+}
+onClick("[data-avail-add]", (el) => avAdd(el.dataset.availAdd));
+onClick("[data-avail-del]", (el) => {
+  const parts = el.dataset.availDel.split("|");
+  const d = avDraft();
+  d.days[parts[0]] = (d.days[parts[0]] || []).filter((t) => t !== parts[1]);
+  renderAvailEditor();
+});
+onClick("#availReset", () => { const d = avDraft(); WEEK_KEYS.forEach((k) => { d.days[k] = AVAIL_DEFAULT.days[k].slice(); }); renderAvailEditor(); });
+document.addEventListener("keydown", (e) => { const t = e.target; if (e.key === "Enter" && t && t.matches && t.matches("[data-avail-new]")) { e.preventDefault(); avAdd(t.dataset.availNew); } });
+$("availMsg").addEventListener("input", () => { avDraft().closed_message = $("availMsg").value; avPreview(); });
+onClick("#saveAvail", async () => {
+  const d = avDraft();
+  const value = { days: {}, closed_message: $("availMsg").value.trim() || CLOSED_DEFAULT };
+  WEEK_KEYS.forEach((k) => { value.days[k] = (d.days[k] || []).slice(); });
+  if (LIVE.on) {
+    if (!LIVE.availabilityReady) { toast("The settings table isn't set up on this project yet, so this can't be saved."); return; }
+    const ok = await liveWrite(LIVE.sb.from("vc_settings").upsert({ key: "availability", value: value, updated_at: new Date().toISOString(), updated_by: LIVE.user ? LIVE.user.email : null }), "Saved. The agent offers these times from the next call.");
+    if (ok) { AV = null; renderSettings(); }
+    return;
+  }
+  S.availability = value;
+  save();
+  AV = null;
+  renderSettings();
+  toast("Saved in this browser. Sign in to change the live agent.");
+});
 onClick("[data-toggle]", (el) => { const t = S.settings.toggles.find((x) => x.id === el.dataset.toggle); if (t) { t.on = !t.on; save(); renderSettings(); } });
 
 $("saveSettings").addEventListener("click", () => {
@@ -5624,6 +5783,7 @@ function deriveCustomers(calls, appts, escalations) {
 function buildLive(raw) {
   const V = JSON.parse(JSON.stringify(DEMO));
   V.settings = S.settings;
+  V.availability = raw.availability || null;
   const eventsByCall = {};
   raw.events.forEach((e) => { (eventsByCall[e.call_id] = eventsByCall[e.call_id] || []).push(e); });
   const missionByCall = {};
@@ -5867,7 +6027,8 @@ async function loadLive(quiet) {
     sb.from("vc_library").select("*").order("created_at", { ascending: false }).limit(200),
     sb.from("vc_suggestions").select("*").order("created_at", { ascending: true }).limit(1000),
     sb.from("vc_case_updates").select("*").order("created_at", { ascending: false }).limit(500),
-    sb.from("vc_notifications").select("*").order("created_at", { ascending: false }).limit(200)
+    sb.from("vc_notifications").select("*").order("created_at", { ascending: false }).limit(200),
+    sb.from("vc_settings").select("*").eq("key", "availability")
   ]);
   LIVE.trainingReady = !tr.slice(0, 3).some((r) => r.error);
   LIVE.upgradeReady = !tr[3].error;
@@ -5879,6 +6040,9 @@ async function loadLive(quiet) {
   LIVE.callbacksReady = !tr[6].error && !tr[7].error;
   raw.caseUpdates = tr[6].error ? [] : (tr[6].data || []);
   raw.notifications = tr[7].error ? [] : (tr[7].data || []);
+  // Availability (vc_settings) is optional too: without it the agent and the calendar keep the usual times.
+  LIVE.availabilityReady = !tr[8].error;
+  raw.availability = tr[8].error ? null : (((tr[8].data || [])[0] || {}).value || null);
   const json = JSON.stringify(raw);
   const sig = json.length + ":" + hashStr(json) + ":" + LIVE.upgradeReady + LIVE.trainingReady + LIVE.callbacksReady;
   const unchanged = LIVE.on && quiet && sig === LIVE.sig;
@@ -6540,7 +6704,7 @@ setInterval(() => {
   else if (changed) { renderCounts(); renderBell(); }
 }, 30000);
 // Test hook: only when a test sets window.__VC_TEST__ before the page loads (tests/voice-routes.test.js). Never on its own.
-if (window.__VC_TEST__ === true) window.__VC_TEST__ = { parseOffered: parseOffered, askedFor: askedFor, callbackFor: callbackFor, callPhone: callPhone, customers: () => (S && S.customers) || [], plainCall: () => Object.assign({}, PLAIN_CALL), stepCard: stepCard, deriveCustomers: deriveCustomers };
+if (window.__VC_TEST__ === true) window.__VC_TEST__ = { parseOffered: parseOffered, askedFor: askedFor, callbackFor: callbackFor, callPhone: callPhone, customers: () => (S && S.customers) || [], plainCall: () => Object.assign({}, PLAIN_CALL), stepCard: stepCard, deriveCustomers: deriveCustomers, holidayOn: holidayOn, dayTimes: dayTimes, availSummary: availSummary, openSlots: openSlots };
 })();
 </script>
 </body>
