@@ -51999,6 +51999,51 @@ function v127Side(){
   });
 })();
 </script>
+<script id="v131js">
+/* ===================================================================
+   v131: Fathom Analytics (usefathom.com, not the Fathom call recorder
+   on Calls) counts which dashboard pages get used, on its own Fathom
+   site. Live site only (aiparagon.vercel.app): never a preview
+   deployment, a local copy or inside a frame. One page view per page
+   shown, as its address without a query or #anchor (/dashboard/<page>,
+   the sign-in screen as /dashboard/login), sent once the page is on
+   screen. A bare /dashboard is the boot settling into a page, so it is
+   not counted. The script's own page view is off (data-auto="false")
+   and the page views go out from here: the address changes in place,
+   sometimes with replaceState, and only the dashboard knows when a page
+   is on screen. It counts pages, not people.
+   =================================================================== */
+(function(){
+  var V131={site:'HXYHZOYN',host:'aiparagon.vercel.app',src:'https://cdn.usefathom.com/script.js',sent:null,timer:null,ready:false,tries:0};
+  window.V131=V131;
+  if(location.hostname!==V131.host||window.self!==window.top)return;
+  function page(){var p=location.pathname.replace(/\/+$/,'');return /^\/dashboard\/[^\/]+$/.test(p)?p:null;}
+  /* on screen: the app for a page, the sign-in screen (not the loading screen in front of it) for /dashboard/login */
+  function shown(p){
+    if(/\/login$/.test(p)){const lg=document.getElementById('view-login');
+      return !!(lg&&!lg.classList.contains('hidden')&&!document.documentElement.classList.contains('ap-resume'));}
+    const app=document.getElementById('view-app');return !!(app&&!app.classList.contains('hidden'));
+  }
+  function send(){
+    V131.timer=null;
+    const p=page();if(!p||p===V131.sent)return;
+    if(!V131.ready||!shown(p)){if(++V131.tries<60)V131.timer=setTimeout(send,700);return;}
+    try{window.fathom.trackPageview({url:location.origin+p,referrer:V131.sent?location.origin+V131.sent:document.referrer});V131.sent=p;}catch(e){}
+  }
+  /* an address can settle in steps (an old spelling, the sign-in screen, the resumed page): count it once it holds */
+  function soon(){clearTimeout(V131.timer);V131.tries=0;V131.timer=setTimeout(send,700);}
+  ['pushState','replaceState'].forEach(function(k){
+    const f=history[k];if(typeof f!=='function')return;
+    history[k]=function(){const r=f.apply(this,arguments);soon();return r;};
+  });
+  window.addEventListener('popstate',soon);
+  const s=document.createElement('script');
+  s.src=V131.src;s.defer=true;s.setAttribute('data-site',V131.site);s.setAttribute('data-auto','false');
+  s.onload=function(){V131.ready=!!(window.fathom&&window.fathom.trackPageview);soon();};
+  document.head.appendChild(s);
+  soon();
+})();
+</script>
 <script>
 /* ===================================================================
    PAGE ADDRESSES
