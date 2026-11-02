@@ -13,11 +13,12 @@ import { canonicalize, go, hrefFor, linkProps, useRoute } from './router.js';
 import { EditorCtx, PageCtx } from './context.js';
 import { AiPanel, SparkIcon, useAiSession } from './AiPanel.jsx';
 import { setPending, takePending, catalog, pageForAi, applyAnswer } from './ai.js';
-import { SeoPanel, DomainPanel, ChatPanel, openSettings } from './SettingsPanels.jsx';
+import { SeoPanel, DomainPanel, ChatPanel, CodePanel, openSettings } from './SettingsPanels.jsx';
 import { ChatIcon } from './ChatWidget.jsx';
 import { applyMeta, seoChecks, seoOf } from './seo.js';
 import { normalizeDomain, recordsFor, pairOf } from './domain.js';
 import { botOf, brandOf, pageTextFor, startersFor } from './chat.js';
+import { trackingOf, trackerError, checkCode, pageCode, TRACKERS } from './code.js';
 
 // "Describe it" makes a blank page and hands the description to the AI panel
 const START_LIST = [...TEMPLATE_LIST, { key: 'describe', label: 'Describe it', blurb: 'Say what the page is for and the AI writes a first draft.' }];
@@ -407,6 +408,14 @@ function SearchIcon() {
   );
 }
 
+function CodeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <path d="M8 7l-5 5 5 5M16 7l5 5-5 5M13.5 4l-3 16" />
+    </svg>
+  );
+}
+
 function LinkIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
@@ -434,6 +443,7 @@ const PLUGINS = [
   { name: 'seo', label: 'SEO', icon: <SearchIcon />, render: SeoPanel },
   { name: 'domain', label: 'Domain', icon: <LinkIcon />, render: DomainPanel },
   { name: 'chat', label: 'Chatbot', icon: <ChatIcon size={18} />, render: ChatPanel },
+  { name: 'code', label: 'Code', icon: <CodeIcon />, render: CodePanel },
 ];
 
 function EditorView({ page }) {
@@ -610,7 +620,7 @@ function App() {
 // Tests reach the checks (the AI's answer, SEO, domains, the chatbot's settings and page text) through
 // window.__SB_TEST__, filled only when a test sets it to true before the page loads
 if (window.__SB_TEST__ === true) {
-  window.__SB_TEST__ = { catalog, pageForAi, applyAnswer, makeData, config, seoOf, seoChecks, normalizeDomain, recordsFor, pairOf, botOf, brandOf, pageTextFor, startersFor };
+  window.__SB_TEST__ = { catalog, pageForAi, applyAnswer, makeData, config, seoOf, seoChecks, normalizeDomain, recordsFor, pairOf, botOf, brandOf, pageTextFor, startersFor, trackingOf, trackerError, checkCode, pageCode, TRACKERS };
 }
 
 store.init();
