@@ -6,8 +6,11 @@
 // Remove, kept on the page record and on the dashboard card) and the Chatbot (off until switched on,
 // its settings saved with the page, never on the editor canvas, on the draft preview at once and on
 // the live page after Publish, the window from the keyboard, what each message sends, the contact form
-// and its checks, the booking button, every error, the contacts list and its CSV, and a phone screen).
-// Supabase sign-in, the two n8n webhooks and DNS over HTTPS are stubbed. The chatbot's answers are
+// and its checks, the booking button, every error, the contacts list and its CSV, and a phone screen),
+// and Custom code (the tracking IDs and why a wrong one is wrong, each service's tag, what pasted code
+// holds and loads and what to fix in it, saved and published with the page, and none of it ever
+// running or loading in the editor, on the preview or on the live page, or reaching the AI or the
+// chatbot). Supabase sign-in, the two n8n webhooks and DNS over HTTPS are stubbed. The chatbot's answers are
 // real ones from the Site Builder · Chatbot workflow. Offline otherwise.
 // Usage: node tests/builder-settings.test.js
 const http = require('http');
@@ -70,10 +73,11 @@ const dnsAnswer = (answers) => ({ Status: 0, Answer: answers.map(([type, data, n
   async function open(url, opts) {
     const o = opts || {};
     const ctx = await browser.newContext({ viewport: o.viewport || { width: 1440, height: 900 }, isMobile: !!o.mobile, hasTouch: !!o.mobile, acceptDownloads: true });
-    const st = { chat: o.chat || { body: REPLY.what }, chatReqs: [], ai: o.ai || null, aiReqs: [], dns: o.dns || {}, cf: o.cf || {}, dnsHits: [] };
+    const st = { chat: o.chat || { body: REPLY.what }, chatReqs: [], ai: o.ai || null, aiReqs: [], dns: o.dns || {}, cf: o.cf || {}, dnsHits: [], outside: [] };
     await ctx.route('**/*', (route) => {
       const u = route.request().url();
       if (u.startsWith(BASE) || u.startsWith('data:') || u.startsWith('blob:')) return route.continue();
+      st.outside.push(u);
       return route.abort();
     });
     await ctx.route(SB + '/**', (route) => {
@@ -621,6 +625,99 @@ const dnsAnswer = (answers) => ({ Status: 0, Answer: answers.map(([type, data, n
     await page.context().close();
   }
 
+  /* ---------------- Custom code ---------------- */
+  {
+    const { page } = await open(BASE + '/builder');
+    const r = await page.evaluate(() => {
+      const T = window.__SB_TEST__;
+      const tr = (k) => T.TRACKERS.find((x) => x.key === k);
+      const home = T.makeData('cinematic', { title: 'Home', slug: 'home' });
+      const coded = JSON.parse(JSON.stringify(home));
+      coded.root.props.code = { head: '<script>window.__x = 1</script>', body: '<p>SECRET-BODY</p>' };
+      coded.root.props.tracking = { ga4: 'G-ABC1234567' };
+      return {
+        err: [
+          T.trackerError(tr('ga4'), ' g-abc1234567 '),
+          T.trackerError(tr('ga4'), 'UA-1234-1'),
+          T.trackerError(tr('ga4'), 'gtm-abc123'),
+          T.trackerError(tr('gtm'), 'G-ABC123456'),
+          T.trackerError(tr('meta'), '12345'),
+          T.trackerError(tr('meta'), '1234567890123456'),
+          T.trackerError(tr('linkedin'), 'abc'),
+          T.trackerError(tr('hubspot'), '12 345 678'),
+          T.trackerError(tr('ga4'), ''),
+        ],
+        out: T.pageCode({ tracking: { ga4: ' g-abc1234567 ', gtm: 'gtm-ab12cd', meta: '1234567890123456', linkedin: '1234567', hubspot: '7654321' }, code: { head: '<meta name="x" content="y">', body: '<script>go()</script>' } }),
+        bad: T.pageCode({ tracking: { ga4: 'UA-1-1', meta: '123' } }),
+        c1: T.checkCode({ code: { head: '<div>x</div><script>a()</script>', body: 'alert(1)' } }),
+        c2: T.checkCode({ code: { head: '<script src="http://x.example/a.js">', body: '<style>p{}' } }),
+        c3: T.checkCode({ tracking: { meta: '1234567890123456' }, code: { body: "<script>fbq('init', '1234567890123456');</script><script async src=\"https://static.hotjar.com/c/hotjar-1.js\"></script><iframe src=\"https://cal.example/x\"></iframe>" } }),
+        c4: T.checkCode({}),
+        ai: JSON.stringify(T.pageForAi(coded)),
+        cat: T.catalog(),
+        applied: T.applyAnswer(coded, { root: { code: { head: '<script>evil()</script>' }, tracking: { ga4: 'G-EVIL123456' } }, sections: [] }, { ask: 'x' }).data.root.props,
+        text: T.pageTextFor(T.config, coded),
+      };
+    });
+    check('code: a Google ID is tidied, a wrong one says why', r.err[0] === '' && /Universal Analytics/.test(r.err[1]) && /Tag Manager box/.test(r.err[2]) && /Google Analytics 4 box/.test(r.err[3]) && r.err[8] === '', r.err.slice(0, 4).join(' | '));
+    check('code: number IDs are digits only', /digits only, 10 or more/.test(r.err[4]) && r.err[5] === '' && /digits only/.test(r.err[6]) && r.err[7] === '');
+    check('code: each service’s own tag, with the ID', r.out.head.includes('gtag/js?id=G-ABC1234567') && r.out.head.includes("gtag('config', 'G-ABC1234567')") && r.out.head.includes("fbq('init', '1234567890123456')") && r.out.bodyEnd.includes('_linkedin_partner_id = "1234567"') && r.out.bodyEnd.includes('js.hs-scripts.com/7654321.js'));
+    check('code: Tag Manager first in the head and right after the body opens', r.out.head.indexOf('gtm.js') < r.out.head.indexOf('gtag/js') && r.out.head.includes("'GTM-AB12CD'") && r.out.bodyStart.includes('ns.html?id=GTM-AB12CD'));
+    check('code: the team’s own code in place (head after the tags, body before them)', r.out.head.endsWith('<meta name="x" content="y">') && r.out.bodyEnd.startsWith('<script>go()</script>'));
+    check('code: an ID that is not one adds nothing', r.bad.head === '' && r.bad.bodyStart === '' && r.bad.bodyEnd === '');
+    check('code: body tags in the head, and loose text, are flagged', r.c1.warnings.some((w) => /<div> cannot go in the head/.test(w)) && r.c1.warnings.some((w) => /body code is plain text/.test(w)), r.c1.warnings.join(' | '));
+    check('code: an unclosed tag and an http link are flagged', r.c2.warnings.some((w) => /<script> tag in the head code is not closed/.test(w)) && r.c2.warnings.some((w) => /<style> tag in the body code is not closed/.test(w)) && r.c2.warnings.some((w) => /x\.example over http/.test(w)), r.c2.warnings.join(' | '));
+    const f3 = r.c3.found.map((f) => f.label + ':' + f.from + ':' + f.id).join('|');
+    check('code: services found in pasted code, with their IDs', f3.includes('Meta Pixel:field:1234567890123456') && f3.includes('Meta Pixel:code:1234567890123456') && f3.includes('Hotjar:code:'), f3);
+    check('code: a service in its box and in the code counts twice, and says so', r.c3.warnings.some((w) => /Meta Pixel is in its box and in your code/.test(w)));
+    check('code: what the code loads and holds', r.c3.hosts.join(',') === 'cal.example,static.hotjar.com' && r.c3.counts.scripts === 2 && r.c3.counts.external === 1 && r.c3.counts.frames === 1, JSON.stringify([r.c3.hosts, r.c3.counts]));
+    check('code: nothing yet says so', r.c4.empty === true && r.c4.warnings.length === 0);
+    check('code: never sent to the page AI, never offered to it, never taken from it', !/__x|SECRET-BODY|G-ABC1234567|tracking|"code"/.test(r.ai) && !/\b(tracking|code) \(/.test(r.cat) && JSON.stringify(r.applied.code) === JSON.stringify({ head: '<script>window.__x = 1</script>', body: '<p>SECRET-BODY</p>' }) && r.applied.tracking.ga4 === 'G-ABC1234567');
+    check('code: never part of what the chatbot reads', !/__x|SECRET-BODY|G-ABC/.test(r.text));
+    await page.context().close();
+  }
+  {
+    const { page, st } = await open(BASE + '/builder/edit/home');
+    await canvas(page);
+    await tab(page, 'Code');
+    check('Code tab: from the settings buttons, saying where code runs', (await visible(page, '#code-where').innerText()).includes('never runs in the editor or on these previews'));
+    const order = await visible(page, '.ap-code-tags label').allInnerTexts();
+    check('Code tab: Google Analytics first, then Tag Manager, Meta, LinkedIn and HubSpot', order.map((t) => t.split(/\s{2,}|\n/)[0].replace(/ (Measurement|Container|Pixel|Partner|Hub) ID$/, '')).join('|') === 'Google Analytics 4|Google Tag Manager|Meta Pixel|LinkedIn Insight Tag|HubSpot tracking', order.join('|'));
+    await page.fill('#trk-ga4', 'UA-1234-1');
+    check('Code tab: a wrong ID is marked and says why', (await page.locator('#trk-ga4').getAttribute('aria-invalid')) === 'true' && (await page.locator('#trk-ga4-hint').innerText()).includes('Universal Analytics'));
+    await page.fill('#trk-ga4', 'g-abc1234567');
+    await page.fill('#trk-linkedin', '1234567');
+    await page.fill('#code-head', '<script>window.__headRan = 1</script>\n<script src="https://tracker.example/t.js"></script>\n<link rel="stylesheet" href="https://tracker.example/s.css">');
+    await page.fill('#code-body', '<script>window.__bodyRan = 1</script>\n<img src="https://tracker.example/p.gif" alt="">');
+    await waitFor(page, async () => (await visible(page, '.ap-code-found li').count()) === 2);
+    check('Code tab: the right ID is taken, and listed with what the code loads', (await page.locator('#trk-ga4').getAttribute('aria-invalid')) === null && (await visible(page, '.ap-code-found').innerText()).includes('G-ABC1234567') && (await visible(page, '.ap-code-report').innerText()).includes('tracker.example'));
+    check('Code tab: the length of each box', (await page.locator('#code-head-hint .ap-count').innerText()).endsWith('/ 20,000') && (await page.locator('#code-head').getAttribute('maxlength')) === '20000');
+    await visible(page, '.ap-code-out summary').click();
+    const shown = (await visible(page, '.ap-code-out').innerText()).replace(/\s+/g, ' ');
+    check('Code tab: shows the code that goes on the page, tags and all', shown.includes('In the head') && shown.includes('gtag/js?id=G-ABC1234567') && shown.includes('window.__headRan = 1') && shown.includes('At the end of the body') && shown.includes('_linkedin_partner_id = "1234567"'));
+    const saved = await waitFor(page, async () => {
+      const rp = (await pageOf(page, 'home')).draft.root.props;
+      return rp.tracking && rp.tracking.linkedin === '1234567' && rp.code && rp.code.body.includes('__bodyRan') ? rp : null;
+    });
+    check('Code tab: saved with the draft, as typed', !!saved && saved.tracking.ga4 === 'g-abc1234567');
+    const frame = await canvas(page);
+    check('editor: none of it runs, on the page or on the canvas', (await page.evaluate(() => [window.__headRan, window.__bodyRan].join(','))) === ',' && (await frame.evaluate(() => [window.__headRan, window.__bodyRan].join(','))) === ',');
+    await visible(page, 'button:has-text("Publish")').click();
+    await waitFor(page, async () => !!((await pageOf(page, 'home')).live.root.props.code || {}).head);
+    check('Publish: the code goes live with the page', (await pageOf(page, 'home')).live.root.props.tracking.linkedin === '1234567');
+    for (const [where, url] of [['live page', '/builder/view/home'], ['draft preview', '/builder/view/home/draft']]) {
+      await page.goto(BASE + url);
+      await page.waitForTimeout(500);
+      const got = await page.evaluate(() => ({
+        ran: [window.__headRan, window.__bodyRan].join(','),
+        tags: [...document.querySelectorAll('script[src], link[href], img[src], iframe[src]')].filter((e) => /tracker\.example|googletagmanager|licdn|hs-scripts/.test(e.src || e.href)).length,
+        dataLayer: typeof window.dataLayer,
+      }));
+      check(where + ': the code and tags never run here, and nothing loads', got.ran === ',' && got.tags === 0 && got.dataLayer === 'undefined' && !st.outside.some((u) => /tracker\.example|googletagmanager|licdn|hs-scripts/.test(u)), JSON.stringify(got));
+    }
+    await page.context().close();
+  }
+
   // A phone screen
   {
     const { page } = await open(BASE + '/builder', { viewport: { width: 390, height: 844 }, mobile: true });
@@ -639,7 +736,7 @@ const dnsAnswer = (answers) => ({ Status: 0, Answer: answers.map(([type, data, n
   {
     const { page } = await open(BASE + '/builder/edit/home', { viewport: { width: 1280, height: 800 } });
     await canvas(page);
-    for (const name of ['SEO', 'Domain', 'Chatbot']) {
+    for (const name of ['SEO', 'Domain', 'Code', 'Chatbot']) {
       await tab(page, name);
       if (name === 'Chatbot') await visible(page, '.ap-check-big input').check();
       await page.waitForTimeout(200);

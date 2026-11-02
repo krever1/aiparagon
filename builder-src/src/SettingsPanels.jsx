@@ -1,6 +1,6 @@
-// The SEO, Domain and Chatbot tabs in the editor's left rail. SEO and Chatbot change the page's
-// settings (root props) the way Puck's own page fields do, so they autosave, go live with Publish
-// and undo like any edit. The domain and the contacts the chatbot took are kept on the page record
+// The SEO, Domain, Chatbot and Code tabs in the editor's left rail. SEO, Chatbot and Code change the
+// page's settings (root props) the way Puck's own page fields do, so they autosave, go live with
+// Publish and undo like any edit. The domain and the contacts the chatbot took are kept on the page record
 // (store.js), since they are not content. Puck's rail items are divs a keyboard cannot reach, so
 // the header's Settings button opens these tabs and each tab has buttons for the other two.
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -16,6 +16,7 @@ import { ChatWidget } from './ChatWidget.jsx';
 import { SignIn } from './AiPanel.jsx';
 import { useAuth } from './auth.js';
 import { askAi, applyAnswer, AiError } from './ai.js';
+import { TRACKERS, UI_ORDER, CODE_MAX, trackerError, codeOf, checkCode, pageCode } from './code.js';
 
 const usePuck = createUsePuck();
 
@@ -23,6 +24,7 @@ export const SETTINGS_TABS = [
   { name: 'seo', label: 'SEO' },
   { name: 'domain', label: 'Domain' },
   { name: 'chat', label: 'Chatbot' },
+  { name: 'code', label: 'Code' },
 ];
 
 // Opens a settings tab and moves the cursor to its heading
@@ -671,6 +673,138 @@ export function ChatPanel() {
       ) : null}
 
       <p className="ap-set-note">Until pages are hosted, the chatbot answers signed-in AI Paragon accounts only, so visitors can’t use it yet. Contacts are kept in this browser.</p>
+    </div>
+  );
+}
+
+/* ---------- Custom code ---------- */
+
+const CODE_BOX = { className: 'ap-input ap-textarea ap-code', spellCheck: false, autoCapitalize: 'off', autoComplete: 'off', autoCorrect: 'off', wrap: 'off', maxLength: CODE_MAX };
+
+export function CodePanel() {
+  const [props, patch] = useRoot();
+  const raw = props.tracking || {};
+  const code = codeOf(props);
+  const report = useMemo(() => checkCode(props), [props.tracking, props.code]); // eslint-disable-line react-hooks/exhaustive-deps
+  const out = useMemo(() => pageCode(props), [props.tracking, props.code]); // eslint-disable-line react-hooks/exhaustive-deps
+  const setTag = (key, v) => patch((p) => ({ tracking: { ...(p.tracking || {}), [key]: v } }));
+  const setCode = (key, v) => patch((p) => ({ code: { ...(p.code || {}), [key]: v } }));
+  const n = (v) => v.length.toLocaleString('en-US');
+  const blocks = [
+    ['In the head', out.head],
+    ['Right after <body>', out.bodyStart],
+    ['At the end of the body', out.bodyEnd],
+  ].filter(([, v]) => v);
+
+  return (
+    <div className="ap-set">
+      <Nav current="code" />
+      <Head name="code" title="Custom code">Tracking tags and your own code for this page, like custom code in Webflow.</Head>
+      <p className="ap-set-warn" id="code-where">Code goes live when the page is hosted on its own domain. It never runs in the editor or on these previews, which share their web address with AI Paragon’s own tools.</p>
+
+      <section className="ap-code-tags" aria-labelledby="code-tags-h">
+        <h3 id="code-tags-h">Tracking</h3>
+        {UI_ORDER.map((key) => {
+          const t = TRACKERS.find((x) => x.key === key);
+          const v = typeof raw[key] === 'string' ? raw[key] : '';
+          const err = trackerError(t, v);
+          return (
+            <div className="ap-field" key={key}>
+              <label htmlFor={'trk-' + key}>
+                {t.label} <span className="ap-field-sub">{t.field}</span>
+              </label>
+              <input
+                id={'trk-' + key}
+                className="ap-input ap-mono"
+                value={v}
+                placeholder={t.placeholder}
+                maxLength={30}
+                spellCheck={false}
+                autoCapitalize="off"
+                autoComplete="off"
+                aria-invalid={err ? 'true' : undefined}
+                aria-describedby={'trk-' + key + '-hint'}
+                onChange={(e) => setTag(key, e.target.value)}
+              />
+              <p id={'trk-' + key + '-hint'} className={err ? 'ap-error' : 'ap-hint'}>{err || t.help}</p>
+            </div>
+          );
+        })}
+      </section>
+
+      <div className="ap-field">
+        <label htmlFor="code-head">Code in the head</label>
+        <textarea id="code-head" {...CODE_BOX} rows={6} value={code.head} placeholder={'<meta name="…" content="…">'} aria-describedby="code-head-hint" onChange={(e) => setCode('head', e.target.value)} />
+        <p id="code-head-hint" className="ap-hint ap-set-hint">
+          <span>Verification and meta tags, styles, and scripts that must load first.</span>
+          <span className="ap-count">{n(code.head)} / 20,000</span>
+        </p>
+      </div>
+      <div className="ap-field">
+        <label htmlFor="code-body">Code at the end of the body</label>
+        <textarea id="code-body" {...CODE_BOX} rows={6} value={code.body} placeholder={'<script src="https://…"></script>'} aria-describedby="code-body-hint" onChange={(e) => setCode('body', e.target.value)} />
+        <p id="code-body-hint" className="ap-hint ap-set-hint">
+          <span>Chat widgets and other scripts.</span>
+          <span className="ap-count">{n(code.body)} / 20,000</span>
+        </p>
+      </div>
+
+      <section className="ap-checks ap-code-report" aria-labelledby="code-rep-h">
+        <h3 id="code-rep-h">What it adds</h3>
+        {report.empty ? (
+          <p className="ap-hint">Nothing yet.</p>
+        ) : (
+          <>
+            {report.found.length ? (
+              <ul className="ap-code-found">
+                {report.found.map((f) => (
+                  <li key={f.key + f.from}>
+                    <b>{f.label}</b>
+                    {f.id ? <code>{f.id}</code> : null}
+                    <small>{f.from === 'field' ? 'from its box' : 'in your code'}</small>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {report.counts.scripts || report.counts.styles || report.counts.meta || report.counts.frames ? (
+              <p className="ap-hint">
+                {[
+                  report.counts.scripts ? report.counts.scripts + (report.counts.scripts === 1 ? ' script' : ' scripts') + (report.counts.external ? ' (' + report.counts.external + ' loaded from another site)' : '') : '',
+                  report.counts.styles ? report.counts.styles + (report.counts.styles === 1 ? ' style sheet' : ' style sheets') : '',
+                  report.counts.meta ? report.counts.meta + (report.counts.meta === 1 ? ' meta tag' : ' meta tags') : '',
+                  report.counts.frames ? report.counts.frames + (report.counts.frames === 1 ? ' frame' : ' frames') : '',
+                ]
+                  .filter(Boolean)
+                  .join(', ')}{' '}
+                in your code.
+              </p>
+            ) : null}
+            {report.hosts.length ? <p className="ap-hint">Your code loads from {report.hosts.join(', ')}.</p> : null}
+          </>
+        )}
+        {report.warnings.length ? (
+          <ul className="ap-code-warn" aria-label="To look at">
+            {report.warnings.map((w) => (
+              <li key={w}>
+                <span className="ap-check-mark" aria-hidden="true">!</span>
+                <span>{w}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
+
+      {blocks.length ? (
+        <details className="ap-code-out">
+          <summary>See the code that goes on the page</summary>
+          {blocks.map(([where, text]) => (
+            <div key={where}>
+              <p>{where}</p>
+              <pre tabIndex={0}>{text}</pre>
+            </div>
+          ))}
+        </details>
+      ) : null}
     </div>
   );
 }

@@ -735,8 +735,9 @@ export const config = {
     },
     defaultProps: { title: 'Untitled page', description: '', slug: 'page', theme: 'dark', accent: 'cyan', font: 'grotesk' },
     // Settings kept here with no field in Puck's page panel, edited in the editor's own tabs:
-    // seoTitle, socialImage, noindex (SEO) and chatbot (Chatbot). The chatbot is never on the
-    // editor canvas, where a click picks a section.
+    // seoTitle, socialImage, noindex (SEO), chatbot (Chatbot), tracking and code (Code). The chatbot
+    // is never on the editor canvas, where a click picks a section. Custom code is never rendered
+    // anywhere in the builder (see code.js).
     render: ({ children, theme, accent, font, chatbot, puck }) => {
       const a = ACCENTS[accent] || ACCENTS.cyan;
       const f = FONTS[font] || FONTS.grotesk;
