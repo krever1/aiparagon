@@ -459,6 +459,65 @@ function check(label, ok, detail) {
     await ctx.close();
   }
 
+  // 16. background sound (Nov 3): Erica heard Vapi's busy office sound as a call center. Settings picks light ambient
+  //     (the default), quiet office, busy office or off; phone calls get it from Caller Lookup, browser calls from here.
+  {
+    const { ctx, page } = await open(BASE + '/voice/settings', { testHook: true });
+    const LIGHT = 'https://aiparagon.vercel.app/voice-sounds/light-ambient.mp3';
+    const QUIET = 'https://aiparagon.vercel.app/voice-sounds/quiet-office.mp3';
+    const hk = await page.evaluate(() => {
+      const T = window.__VC_TEST__;
+      return {
+        key: T.soundKey(), light: T.soundFor('light'), quiet: T.soundFor('quiet'), office: T.soundFor('office'), off: T.soundFor('off'), odd: T.soundFor('loud'),
+        plain: T.startOverrides({}),
+        test: T.startOverrides({ as: { overrides: { firstMessage: 'Hi', variableValues: { caller_known: 'yes' } } } }),
+      };
+    });
+    check('sound: light ambient by default, and what Vapi gets for each choice', hk.key === 'light' && hk.light === LIGHT && hk.quiet === QUIET && hk.office === 'office' && hk.off === 'off' && hk.odd === LIGHT, JSON.stringify(hk));
+    check('sound: Call the agent sends it, a plain call and a test callback alike, and keeps their own overrides', hk.plain.backgroundSound === LIGHT && hk.plain.variableValues.test_call === 'yes' && hk.test.backgroundSound === LIGHT && hk.test.firstMessage === 'Hi' && hk.test.variableValues.caller_known === 'yes', JSON.stringify(hk.test));
+    const files = await page.evaluate(async () => Promise.all(['light-ambient', 'quiet-office'].map(async (f) => {
+      const r = await fetch('/voice-sounds/' + f + '.mp3'); const b = new Uint8Array(await r.arrayBuffer());
+      return { status: r.status, size: b.length, mp3: (b[0] === 0x49 && b[1] === 0x44 && b[2] === 0x33) || (b[0] === 0xff && (b[1] & 0xe0) === 0xe0) };
+    })));
+    check('sound: both files are served as mp3 at /voice-sounds, not caught by the /voice rewrite', files.every((f) => f.status === 200 && f.mp3 && f.size > 100000), JSON.stringify(files));
+    const ui = () => page.evaluate(() => ({
+      names: [...document.querySelectorAll('#soundOpts .sndopt')].map((o) => o.querySelector('.sndhead').innerText.trim()),
+      on: (document.querySelector('#soundOpts .sndopt.on .sndhead') || {}).innerText,
+      checked: (document.querySelector('#soundOpts input[name="sndPick"]:checked') || {}).value,
+      listen: [...document.querySelectorAll('[data-sound-play]')].map((b) => b.dataset.soundPlay + ':' + b.textContent),
+      foot: [...document.querySelectorAll('#soundOpts .sndfoot')].map((f) => f.innerText.trim()),
+      state: document.getElementById('soundState').innerText,
+    }));
+    let u = await ui();
+    check('settings: Background sound lists the four choices, light ambient picked', JSON.stringify(u.names.map((n) => n.trim())) === JSON.stringify(['Light ambient', 'Quiet office', 'Busy office', 'Off']) && u.checked === 'light' && /Light ambient/.test(u.on), JSON.stringify(u));
+    check('settings: Listen on our two sounds only; busy office says it has no preview', JSON.stringify(u.listen) === JSON.stringify(['light:Listen', 'quiet:Listen']) && /No preview/.test(u.foot[2]) && u.foot[3] === '' && /Demo\. Sign in/.test(u.state), JSON.stringify(u));
+    await page.click('[data-sound-play="quiet"]'); await page.waitForTimeout(300);
+    u = await ui();
+    const toastAfterPlay = await page.evaluate(() => document.getElementById('toastMsg').textContent);
+    check('settings: Listen plays it and turns into Stop', JSON.stringify(u.listen) === JSON.stringify(['light:Listen', 'quiet:Stop']), JSON.stringify(u.listen) + ' ' + toastAfterPlay);
+    await page.click('[data-sound-play="quiet"]');
+    u = await ui();
+    check('settings: Stop stops it', JSON.stringify(u.listen) === JSON.stringify(['light:Listen', 'quiet:Listen']), JSON.stringify(u.listen));
+    await page.click('[data-sound-play="light"]'); await page.waitForTimeout(200);
+    await page.click('.nav[data-go="overview"]'); await settle(page);
+    await page.click('.nav[data-go="settings"]'); await settle(page);
+    u = await ui();
+    check('settings: leaving Settings stops the sound', JSON.stringify(u.listen) === JSON.stringify(['light:Listen', 'quiet:Listen']), JSON.stringify(u.listen));
+    await page.check('#soundOpts input[value="quiet"]');
+    u = await ui();
+    check('settings: picking another waits for Save', u.checked === 'quiet' && /Quiet office/.test(u.on) && u.state === 'Not saved yet', JSON.stringify(u));
+    await page.click('#saveSound'); await settle(page);
+    const sv = await page.evaluate(() => ({ toast: document.getElementById('toastMsg').textContent, key: window.__VC_TEST__.soundKey(), call: window.__VC_TEST__.startOverrides({}).backgroundSound }));
+    check('settings: Save keeps it (in this browser when signed out) and the next browser call uses it', /Saved in this browser/.test(sv.toast) && sv.key === 'quiet' && sv.call === QUIET, JSON.stringify(sv));
+    await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(250);
+    u = await ui();
+    check('settings: still quiet office after a reload', u.checked === 'quiet' && /Demo\. Sign in/.test(u.state), JSON.stringify(u));
+    await page.check('#soundOpts input[value="off"]'); await page.click('#saveSound'); await settle(page);
+    const off = await page.evaluate(() => window.__VC_TEST__.startOverrides({}).backgroundSound);
+    check('settings: Off sends off', off === 'off', off);
+    await ctx.close();
+  }
+
   // without a baseline any page error fails; with one, only errors the baseline did not have
   const newErrors = pageErrors.patched.filter((e) => !pageErrors.original.some((o) => o.split(' :: ')[1] === e.split(' :: ')[1]));
   check(BASELINE ? 'no new page errors' : 'no page errors', newErrors.length === 0, newErrors.slice(0, 3).join(' | '));

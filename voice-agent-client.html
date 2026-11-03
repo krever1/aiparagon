@@ -365,6 +365,13 @@ tr.clickable:hover td.go{text-decoration:underline}
 .avadd{display:flex;gap:6px;align-items:center}
 .avadd input{border:1px solid var(--blue-line);border-radius:8px;padding:5px 8px;background:#fff;width:118px}
 @media (max-width:640px){.avrow{grid-template-columns:1fr}}
+.sndgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:0 0 14px}
+.sndopt{display:flex;flex-direction:column;gap:6px;border:1px solid var(--blue-line);border-radius:10px;padding:12px;background:#fff;cursor:pointer}
+.sndopt.on{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-soft)}
+.sndopt .sndhead{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--navy)}
+.sndopt .sndhead input{margin:0}
+.sndopt .snddesc{font-size:12px;color:var(--muted);line-height:1.4}
+.sndopt .sndfoot{margin-top:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
 
 /* messages */
 .thread{display:flex;flex-direction:column;gap:2px}
@@ -913,6 +920,14 @@ button.tn.tnlink:hover,button.tn.tnlink:focus-visible{border-color:var(--blue);c
           <div class="row"><button class="btn primary sm" id="saveAvail">Save availability</button><button class="btn sm" id="availReset">Use the usual times</button><span class="mini" id="availState"></span></div>
         </div>
       </div>
+      <div class="panel" id="soundPanel">
+        <div class="ph"><h2>Background sound</h2><span class="tag neut">What callers hear behind her voice</span></div>
+        <div class="pb">
+          <p class="mini" style="margin:0 0 10px">A little room sound makes the line feel like a real office. It plays on phone calls and on Call the agent, from the next call.</p>
+          <div class="sndgrid" id="soundOpts" role="radiogroup" aria-label="Background sound"></div>
+          <div class="row"><button class="btn primary sm" id="saveSound">Save background sound</button><span class="mini" id="soundState"></span></div>
+        </div>
+      </div>
       <div class="panel">
         <div class="ph"><h2>Team and routing</h2><div class="row"><span class="tag neut">Who playbooks notify and escalate to</span><button class="btn sm" id="addTeam">Add person</button></div></div>
         <div class="note hidden" id="teamPreview" style="margin:14px 18px 0">Preview. Notifications to these people go out once texting and email are connected.</div>
@@ -1234,7 +1249,7 @@ const SECTIONS = ["overview","conversations","messages","opportunities","appoint
 let current = "overview";
 function go(name) {
   if (SECTIONS.indexOf(name) === -1) name = "overview";
-  if (name !== current) stopPlayback();
+  if (name !== current) { stopPlayback(); soundStop(); }
   current = name;
   SECTIONS.forEach((s) => { const el = $("s-" + s); if (el) el.classList.toggle("hidden", s !== name); });
   document.querySelectorAll(".nav").forEach((n) => n.setAttribute("aria-current", String(n.dataset.go === name)));
@@ -4837,6 +4852,7 @@ function renderSettings() {
     S.systems.map((x) => "<tr><td><b>" + esc(x.name) + '</b><span class="t2">' + esc(x.note) +
       '</span></td><td><span class="tag ' + (x.state === "Healthy" ? "ok" : x.state === "Not connected" ? "neut" : "warnt") + '">' + esc(x.state) + "</span></td></tr>").join("") + "</tbody>";
   renderAvailEditor();
+  renderSoundEditor();
   renderTeam();
   $("modePill").textContent = pillText();
 }
@@ -4939,6 +4955,63 @@ onClick("#saveAvail", async () => {
   S.availability = value;
   save();
   AV = null;
+  renderSettings();
+  toast("Saved in this browser. Sign in to change the live agent.");
+});
+/* ---------- background sound: what callers hear behind the agent ---------- */
+// Vapi offers off, its own busy "office" sound, or an audio file by its address. Light ambient and quiet office are ours
+// (voice-sounds/ on this site, made for this); Vapi fetches them from the live site, so the address is always that one.
+// Caller Lookup has the same list for phone calls; keep them in step.
+const SOUND_LIVE = "https://aiparagon.vercel.app/voice-sounds/";
+const SOUND_OPTS = [
+  { k: "light", name: "Light ambient", desc: "Soft room tone, barely there. The default.", file: "light-ambient.mp3" },
+  { k: "quiet", name: "Quiet office", desc: "Room tone, someone typing a few desks away and a faint murmur nobody can make out.", file: "quiet-office.mp3" },
+  { k: "office", name: "Busy office", desc: "Vapi's own sound: lots of people talking, like a call center. What calls had before.", vapi: "office" },
+  { k: "off", name: "Off", desc: "Nothing behind her voice.", vapi: "off" }
+];
+const SOUND_DEFAULT = "light";
+function soundKey(st) { const v = st && st.callSound && st.callSound.background; return SOUND_OPTS.some((o) => o.k === v) ? v : SOUND_DEFAULT; }
+// What Vapi gets as backgroundSound for a sound
+function soundFor(k) { const o = SOUND_OPTS.find((x) => x.k === k) || SOUND_OPTS[0]; return o.file ? SOUND_LIVE + o.file : o.vapi; }
+// Where this page plays a sound to listen to it: this site's copy (a local copy reads the file next to it)
+function soundSrc(o) { return (location.protocol === "file:" ? "" : "/") + "voice-sounds/" + o.file; }
+var SND = null; // the pick in progress, null when nothing has been changed
+var SND_AUDIO = null; // var: go() can stop it before this line has run
+function soundStop() { if (SND_AUDIO) { SND_AUDIO.pause(); SND_AUDIO = null; } document.querySelectorAll("[data-sound-play]").forEach((b) => { b.textContent = "Listen"; }); }
+function renderSoundEditor() {
+  const pick = SND || soundKey(S);
+  $("soundOpts").innerHTML = SOUND_OPTS.map((o) =>
+    '<label class="sndopt' + (o.k === pick ? " on" : "") + '"><span class="sndhead"><input type="radio" name="sndPick" value="' + o.k + '"' + (o.k === pick ? " checked" : "") + "> " + esc(o.name) + "</span>" +
+    '<span class="snddesc">' + esc(o.desc) + "</span>" +
+    '<span class="sndfoot">' + (o.file ? '<button class="btn sm" type="button" data-sound-play="' + o.k + '">Listen</button>' : o.k === "office" ? "No preview here, it's Vapi's own" : "") + "</span></label>").join("");
+  if (SND_AUDIO && SND_AUDIO.dataset) { const b = document.querySelector('[data-sound-play="' + SND_AUDIO.dataset.k + '"]'); if (b) b.textContent = "Stop"; }
+  $("soundState").textContent = SND && SND !== soundKey(S) ? "Not saved yet" : (LIVE.on ? "This is what callers hear now." : "Demo. Sign in to change the live agent.");
+}
+document.addEventListener("change", (e) => { const t = e.target; if (t && t.name === "sndPick") { SND = t.value; renderSoundEditor(); } });
+onClick("[data-sound-play]", (el) => {
+  const k = el.dataset.soundPlay;
+  const was = SND_AUDIO && SND_AUDIO.dataset.k;
+  soundStop();
+  if (was === k) return;
+  const o = SOUND_OPTS.find((x) => x.k === k);
+  const a = new Audio(soundSrc(o));
+  a.loop = true; a.dataset.k = k;
+  SND_AUDIO = a;
+  el.textContent = "Stop";
+  a.play().catch(() => { if (SND_AUDIO === a) { soundStop(); toast("The browser wouldn't play it. Try again, or check the sound is on."); } });
+});
+onClick("#saveSound", async () => {
+  const value = { background: SND || soundKey(S) };
+  soundStop();
+  if (LIVE.on) {
+    if (!LIVE.availabilityReady) { toast("The settings table isn't set up on this project yet, so this can't be saved."); return; }
+    const ok = await liveWrite(LIVE.sb.from("vc_settings").upsert({ key: "call_sound", value: value, updated_at: new Date().toISOString(), updated_by: LIVE.user ? LIVE.user.email : null }), "Saved. Callers hear it from the next call.");
+    if (ok) { SND = null; renderSettings(); }
+    return;
+  }
+  S.callSound = value;
+  save();
+  SND = null;
   renderSettings();
   toast("Saved in this browser. Sign in to change the live agent.");
 });
@@ -5205,7 +5278,8 @@ function stepCard(c, s, n, steps, canEdit) {
     const a = s.args || {};
     const failed = s.ok === false || /taken|not one of|switched off|not booked yet/i.test(s.result || "");
     cls = failed ? " changed" : "";
-    body += '<div class="sm">' + (failed ? "Tried " : "Booked ") + esc(a.slot || (c.actions && c.actions[s.ai] ? actionResult(c.actions[s.ai], c) : "") || "a time") + (failed ? ", not booked" : "") + "</div>";
+    const gap = /The address has no (house number or city|house number|city)\./.exec(s.result || "");
+    body += '<div class="sm">' + (failed ? "Tried " : "Booked ") + esc(a.slot || (c.actions && c.actions[s.ai] ? actionResult(c.actions[s.ai], c) : "") || "a time") + (failed ? ", not booked" + (gap ? ": the address had no " + gap[1] : "") : "") + "</div>";
     if (act) btns.push('<button class="btn sm" data-act="' + act + '">Open the booking</button>');
   } else if (tool === "reschedule_appointment") {
     const a = s.args || {};
@@ -5434,6 +5508,12 @@ onClick("[data-callbackas]", (el) => startCallback(el.dataset.callbackas));
 // Plain test calls are browser calls: no caller file and no caller ID, so the agent asks for their number and looks
 // for their file with find_caller, the way it would for a caller who blocks their number.
 const PLAIN_CALL = { caller_history: "none", caller_known: "no", caller_id_last4: "", test_call: "yes" };
+// What a browser call starts with: a test callback's own overrides or the plain call's, plus the team's background sound
+// (Vapi plays none on browser calls unless told).
+function startOverrides(call) {
+  const base = call && call.as ? call.as.overrides : { variableValues: Object.assign({}, PLAIN_CALL) };
+  return Object.assign({}, base, { backgroundSound: soundFor(soundKey(S)) });
+}
 async function startCall(opts) {
   opts = opts && opts.as ? opts : {};
   const key = (S.settings.vapiPublicKey || "").trim();
@@ -5521,7 +5601,7 @@ async function startCall(opts) {
 
   setCallStatus("Connecting");
   try {
-    const c = await vapi.start(asst, call.as ? call.as.overrides : { variableValues: Object.assign({}, PLAIN_CALL) });
+    const c = await vapi.start(asst, startOverrides(call));
     if (c && c.id) call.id = c.id;
   } catch (e) {
     $("callErr").textContent = (e && e.message) || "Vapi refused to start the call. Check the public key and assistant ID in Settings.";
@@ -5787,6 +5867,7 @@ function buildLive(raw) {
   const V = JSON.parse(JSON.stringify(DEMO));
   V.settings = S.settings;
   V.availability = raw.availability || null;
+  V.callSound = raw.callSound || null;
   const eventsByCall = {};
   raw.events.forEach((e) => { (eventsByCall[e.call_id] = eventsByCall[e.call_id] || []).push(e); });
   const missionByCall = {};
@@ -5844,7 +5925,8 @@ function buildLive(raw) {
       if (e.tool === "book_appointment") {
         const failed = /taken|not one of|switched off|no time was supplied|not booked yet/i.test(e.result || "");
         const ap = !failed && apptByCall[c.id];
-        return { t: e.tool, r: ap ? "" : "Asked for " + (a.slot || "a time") + (failed ? ", not booked" : ""), ok: !failed, ref: ap ? { kind: "appt", id: ap.id } : null };
+        const gap = /The address has no (house number or city|house number|city)\./.exec(e.result || "");
+        return { t: e.tool, r: ap ? "" : "Asked for " + (a.slot || "a time") + (failed ? ", not booked" + (gap ? ": the address had no " + gap[1] : "") : ""), ok: !failed, ref: ap ? { kind: "appt", id: ap.id } : null };
       }
       if (e.tool === "check_availability") {
         const slots = parseOffered(e.result, e.created_at);
@@ -6031,7 +6113,7 @@ async function loadLive(quiet) {
     sb.from("vc_suggestions").select("*").order("created_at", { ascending: true }).limit(1000),
     sb.from("vc_case_updates").select("*").order("created_at", { ascending: false }).limit(500),
     sb.from("vc_notifications").select("*").order("created_at", { ascending: false }).limit(200),
-    sb.from("vc_settings").select("*").eq("key", "availability")
+    sb.from("vc_settings").select("*").in("key", ["availability", "call_sound"])
   ]);
   LIVE.trainingReady = !tr.slice(0, 3).some((r) => r.error);
   LIVE.upgradeReady = !tr[3].error;
@@ -6045,7 +6127,9 @@ async function loadLive(quiet) {
   raw.notifications = tr[7].error ? [] : (tr[7].data || []);
   // Availability (vc_settings) is optional too: without it the agent and the calendar keep the usual times.
   LIVE.availabilityReady = !tr[8].error;
-  raw.availability = tr[8].error ? null : (((tr[8].data || [])[0] || {}).value || null);
+  const setRow = (k) => (tr[8].error ? null : ((tr[8].data || []).find((r) => r && r.key === k) || {}).value || null);
+  raw.availability = setRow("availability");
+  raw.callSound = setRow("call_sound");
   const json = JSON.stringify(raw);
   const sig = json.length + ":" + hashStr(json) + ":" + LIVE.upgradeReady + LIVE.trainingReady + LIVE.callbacksReady;
   const unchanged = LIVE.on && quiet && sig === LIVE.sig;
@@ -6707,7 +6791,7 @@ setInterval(() => {
   else if (changed) { renderCounts(); renderBell(); }
 }, 30000);
 // Test hook: only when a test sets window.__VC_TEST__ before the page loads (tests/voice-routes.test.js). Never on its own.
-if (window.__VC_TEST__ === true) window.__VC_TEST__ = { parseOffered: parseOffered, askedFor: askedFor, callbackFor: callbackFor, callPhone: callPhone, customers: () => (S && S.customers) || [], plainCall: () => Object.assign({}, PLAIN_CALL), stepCard: stepCard, deriveCustomers: deriveCustomers, holidayOn: holidayOn, dayTimes: dayTimes, availSummary: availSummary, openSlots: openSlots };
+if (window.__VC_TEST__ === true) window.__VC_TEST__ = { parseOffered: parseOffered, askedFor: askedFor, callbackFor: callbackFor, callPhone: callPhone, customers: () => (S && S.customers) || [], plainCall: () => Object.assign({}, PLAIN_CALL), stepCard: stepCard, deriveCustomers: deriveCustomers, holidayOn: holidayOn, soundKey: () => soundKey(S), soundFor: soundFor, startOverrides: startOverrides, dayTimes: dayTimes, availSummary: availSummary, openSlots: openSlots };
 })();
 </script>
 </body>
