@@ -541,6 +541,67 @@ function check(label, ok, detail) {
     await ctx.close();
   }
 
+  // 18. one booking a call (QA round 2, Nov 3): a second book_appointment moves the first, the same time again is not
+  //     booked twice. The timeline and the live call rows say so.
+  {
+    const { ctx, page } = await open(BASE + '/voice/conversations', { testHook: true });
+    const b = await page.evaluate(() => {
+      const T = window.__VC_TEST__;
+      const text = (html) => { const d = document.createElement('div'); d.innerHTML = html; document.body.appendChild(d); const t = d.innerText.replace(/\s+/g, ' ').trim(); d.remove(); return t; };
+      const cls = (html) => { const d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild.className; };
+      const c = { id: 't', transcript: [['Caller', 'hi'], ['Agent', 'hello']], actions: [] };
+      const card = (args, result) => { const st = { tool: 'book_appointment', after: 0, args: args, result: result }; return T.stepCard(c, st, 0, [st], false); };
+      const R = {
+        moved: 'Moved the roof inspection booked on this call from Wednesday, November 4 at 10:30 AM to Thursday, November 5 at 1:00 PM. Reference INS-ABC123. There is still one booking, not two. Confirm the new day, date and time in one sentence.',
+        held: 'Moved the roof inspection booked on this call from Wednesday, November 4 at 10:30 AM to Thursday, November 5 at 1:00 PM, held for a coordinator to confirm. There is still one booking, not two.',
+        twice: 'That time is already booked on this call: Wednesday, November 4 at 10:30 AM, reference INS-ABC123. Do not book it again. Confirm the day, date and time in one sentence.',
+        booked: 'Booked a roof inspection for Wednesday, November 4 at 10:30 AM. Reference INS-ABC123. Confirm the day, date and time in one sentence.',
+        taken: 'That time was just taken. Apologise briefly and offer these instead: Thursday, November 5 at 1:00 PM.'
+      };
+      const out = {};
+      Object.keys(R).forEach((k) => { const h = card({ slot: k === 'twice' ? 'Wednesday at 10:30' : k === 'booked' ? 'Wednesday, November 4 at 10:30 AM' : 'Thursday, November 5 at 1:00 PM' }, R[k]); out[k] = text(h); out[k + 'Cls'] = cls(h); });
+      // the live rows, from vc_tool_events
+      const at = (s) => '2026-11-03T18:0' + s + ':00Z';
+      const ev = (i, result, slot) => ({ call_id: 'c1', created_at: at(i), tool: 'book_appointment', args: { slot: slot }, result: result });
+      const V = T.buildLive({ calls: [{ id: 'c1', started_at: at(0), ended_at: at(9), source: 'web', customer_name: 'Sam Lee', transcript: 'AI: Hi\nUser: Hi', outcome: 'booked' }],
+        events: [ev(1, R.booked, 'Wednesday, November 4 at 10:30 AM'), ev(2, R.twice, 'Wednesday at 10:30'), ev(3, R.moved, 'Thursday, November 5 at 1:00 PM'), ev(4, R.taken, 'Friday at 8')],
+        missions: [], approvals: [], escalations: [], knowledge: [], caseUpdates: [], suggestions: [], authority: [], feedback: [], rules: [], versions: [], collections: [], library: [], notifications: [],
+        appointments: [{ id: 'a1', call_id: 'c1', status: 'confirmed', slot: 'Thursday, November 5 at 1:00 PM', starts_at: '2026-11-05T21:00:00Z', customer_name: 'Sam Lee' }] });
+      const call = V.calls.find((x) => x.id === 'c1');
+      out.live = (call.actions || []).filter((a) => a.t === 'book_appointment').map((a) => ({ r: a.r, ok: a.ok, ref: a.ref && a.ref.kind }));
+      return out;
+    });
+    check('one booking a call: a second booking reads as a move of the first', /Moved the booking made on this call from Wednesday, November 4 at 10:30 AM to Thursday, November 5 at 1:00 PM, so there is still one booking/.test(b.moved) && !/changed/.test(b.movedCls), b.moved);
+    check('one booking a call: a held move says where it moved to', /from Wednesday, November 4 at 10:30 AM to Thursday, November 5 at 1:00 PM, so there is still one booking/.test(b.held), b.held);
+    check('one booking a call: the same time again was not booked twice', /Wednesday, November 4 at 10:30 AM was already booked on this call, so it wasn't booked twice/.test(b.twice) && !/changed/.test(b.twiceCls), b.twice);
+    check('one booking a call: a plain booking and a taken time read as before', /Booked Wednesday, November 4 at 10:30 AM/.test(b.booked) && /Tried Thursday, November 5 at 1:00 PM, not booked/.test(b.taken) && /changed/.test(b.takenCls), b.booked + ' | ' + b.taken);
+    check('one booking a call: the live rows say booked, already booked, moved, not booked', JSON.stringify(b.live) === JSON.stringify([{ r: '', ok: true, ref: 'appt' }, { r: 'Already booked on this call, not booked twice', ok: true, ref: 'appt' }, { r: 'Moved the booking made on this call from Wednesday, November 4 at 10:30 AM', ok: true, ref: 'appt' }, { r: 'Asked for Friday at 8, not booked', ok: false, ref: null }]), JSON.stringify(b.live));
+    await ctx.close();
+  }
+
+  // 19. no times on any day (QA round 2, Nov 3): Save asks first, since the agent would then book nobody.
+  {
+    const { ctx, page } = await open(BASE + '/voice/settings', { fixed: true });
+    const empty = async () => { for (;;) { const b = await page.$('[data-avail-del]'); if (!b) break; await b.click(); } };
+    await empty();
+    await page.click('#saveAvail'); await settle(page);
+    const asked = await page.evaluate(() => ({ title: document.getElementById('mTitle').textContent, body: document.getElementById('mBody').innerText, btns: [...document.querySelectorAll('#mFoot button')].map((b) => b.textContent), state: document.getElementById('availState').innerText }));
+    check('no times: Save asks before turning off every day', asked.title === 'Save with no inspection times?' && /won't offer or book any inspection/.test(asked.body) && JSON.stringify(asked.btns) === '["Keep editing","Save with no times"]' && asked.state === 'Not saved yet', JSON.stringify(asked));
+    await page.click('#mFoot button:text("Keep editing")'); await settle(page);
+    const kept = await page.evaluate(() => ({ state: document.getElementById('availState').innerText, rows: [...document.querySelectorAll('#availDays .avrow')].map((r) => r.innerText.replace(/\s+/g, ' ')) }));
+    check('no times: Keep editing saves nothing and keeps the edit', kept.state === 'Not saved yet' && kept.rows.every((r) => /No inspections/.test(r)), JSON.stringify(kept));
+    await page.click('#saveAvail'); await settle(page);
+    await page.click('#mFoot button:text("Save with no times")'); await settle(page);
+    const done = await page.evaluate(() => ({ toast: document.getElementById('toastMsg').textContent, state: document.getElementById('availState').innerText }));
+    check('no times: Save with no times saves it', /Saved in this browser/.test(done.toast) && done.state !== 'Not saved yet', JSON.stringify(done));
+    // a day with times saves straight away, no question
+    await page.click('#availReset'); await settle(page);
+    await page.click('#saveAvail'); await settle(page);
+    const plain = await page.evaluate(() => ({ toast: document.getElementById('toastMsg').textContent, open: !!document.querySelector('#modal.open, .modal.open, [data-open="true"]') }));
+    check('no times: the usual times save without a question', /Saved in this browser/.test(plain.toast), JSON.stringify(plain));
+    await ctx.close();
+  }
+
   // without a baseline any page error fails; with one, only errors the baseline did not have
   const newErrors = pageErrors.patched.filter((e) => !pageErrors.original.some((o) => o.split(' :: ')[1] === e.split(' :: ')[1]));
   check(BASELINE ? 'no new page errors' : 'no page errors', newErrors.length === 0, newErrors.slice(0, 3).join(' | '));
