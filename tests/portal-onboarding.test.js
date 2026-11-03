@@ -1,7 +1,7 @@
 // Staff onboarding regression tests for E-&-G-Home-Inc.html (#2, the care portal), v12.41: a staff member added by
 // the director gets the team's onboarding checklist, and can find it and tick it off. Until v12.41 the welcome notice
 // sent them to their Profile page, but the Profile only had a Credentials tab, so the checklist could not be reached
-// from their own view. Now the Profile has an Onboarding tab (opened first while steps are left), My shift's training
+// from their own view. Now the Profile has an Onboarding tab (Credentials stays the tab it opens on), My shift's training
 // card has the checklist's progress with Open, and the onboarding notices open it. Two people in their own browsers
 // against the stand-in for the Supabase project (lib/portal-backend.js), as in the end-to-end suite.
 // Usage: node tests/portal-onboarding.test.js [baseline.html]
@@ -122,9 +122,12 @@ const STF = { email: 'omar@cedar.test', pw: 'omar-pass-12', name: 'Omar Diaz' };
   await nrow.click(); await settle(sp, 400);
   check('and opens the Onboarding tab', await sp.evaluate(() => state.view === 'profile' && !el('drawer').classList.contains('on')) && (await profile(sp)).on.startsWith('Onboarding'));
 
-  // the Profile opens on Onboarding by itself while steps are left
+  // the Profile still opens on Credentials, with the Onboarding tab saying what is left; the tab opens the checklist
   await go(sp, 'home'); await sp.evaluate(() => { state.profTab = ''; }); await go(sp, 'profile');
-  check('the Profile opens on Onboarding while steps are left', (await profile(sp)).on.startsWith('Onboarding'), (await profile(sp)).on);
+  pr = await profile(sp);
+  check('the Profile still opens on Credentials, the Onboarding tab saying what is left', pr.on === 'Credentials' && pr.tabs.includes('Onboarding · 0 of ' + shared.length), JSON.stringify(pr));
+  await sp.locator('#view .tabs button:has-text("Onboarding")').click(); await settle(sp, 300);
+  check('the Onboarding tab opens the checklist', (await profile(sp)).rows.length === shared.length, JSON.stringify(await profile(sp)));
 
   // tick one: saved for the team, and the director sees it
   await sp.locator('#view .checkrow').first().click(); await settle(sp, 500);
@@ -134,7 +137,8 @@ const STF = { email: 'omar@cedar.test', pw: 'omar-pass-12', name: 'Omar Diaz' };
   const saved = ((((B.prog(org, 'onboard') || {}).assign || {})[sid]) || [])[0] || {};
   check('the tick is saved for the team, with who ticked it', saved.d === 1 && saved.by === STF.name, JSON.stringify(saved));
   await reload(sp); await go(sp, 'profile');
-  check('after a reload the tick is still there', (await profile(sp)).on === 'Onboarding · 1 of ' + shared.length, (await profile(sp)).on);
+  check('after a reload the tick is still there', (await profile(sp)).tabs.includes('Onboarding · 1 of ' + shared.length), JSON.stringify((await profile(sp)).tabs));
+  await sp.locator('#view .tabs button:has-text("Onboarding")').click(); await settle(sp, 300);
   await reload(page);
   const dirView = await page.evaluate((id) => { openStaffPage(id); const c = [...document.querySelectorAll('.card')].find((x) => /Onboarding checklist/.test(x.innerText)); return c ? c.innerText.replace(/\s+/g, ' ') : ''; }, sid);
   check('the director sees their progress on the staff page', new RegExp('1 of ' + shared.length).test(dirView), dirView.slice(0, 200));
@@ -144,7 +148,7 @@ const STF = { email: 'omar@cedar.test', pw: 'omar-pass-12', name: 'Omar Diaz' };
   pr = await profile(sp);
   check('with every step ticked the tab says so', pr.on === 'Onboarding · ' + shared.length + ' of ' + shared.length && /All done/.test(pr.note), JSON.stringify(pr));
   await go(sp, 'home'); await sp.evaluate(() => { state.profTab = ''; }); await go(sp, 'profile');
-  check('once it is done the Profile opens on Credentials, with Onboarding still there', (await profile(sp)).on === 'Credentials' && (await profile(sp)).tabs.length === 2, JSON.stringify(await profile(sp)));
+  check('once it is done the Profile still opens on Credentials, with Onboarding still there', (await profile(sp)).on === 'Credentials' && (await profile(sp)).tabs.length === 2, JSON.stringify(await profile(sp)));
   await go(sp, 'home');
   const done = await sp.evaluate(() => { const c = [...document.querySelectorAll('#view .card')].find((x) => /Training to finish/.test(x.innerText)); return c ? c.innerText.replace(/\s+/g, ' ') : ''; });
   check('My shift’s card drops the checklist once it is done', !/Onboarding checklist/.test(done) && /All current|Nothing outstanding/.test(done), done.slice(0, 200));

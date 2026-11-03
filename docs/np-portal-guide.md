@@ -325,7 +325,7 @@ The AI assistant. Open it with **Ask Spectrum** at the top right (a floating but
 
 ### Your profile and Account settings
 
-Click your name at the bottom of the sidebar for your **profile**: credentials (Add credential), and for staff with a checklist shared with them an **Onboarding** tab ("Onboarding · 2 of 5"), where they tick each step as they do it (it opens on that tab while steps are left), About (sign-in email, Team alerts and Team website for directors, role, time zone), Preferences, your signed agreement, and Account settings, "Start over on this dashboard" and Sign out.
+Click your name at the bottom of the sidebar for your **profile**: credentials (Add credential), and for staff with a checklist shared with them an **Onboarding** tab ("Onboarding · 2 of 5"), where they tick each step as they do it, About (sign-in email, Team alerts and Team website for directors, role, time zone), Preferences, your signed agreement, and Account settings, "Start over on this dashboard" and Sign out.
 
 **Settings** (top of the profile) or **Account settings** opens the Account window:
 
