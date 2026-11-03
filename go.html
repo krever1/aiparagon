@@ -112,6 +112,14 @@ h1{font:500 clamp(34px,4.6vw,52px)/1.08 var(--display);letter-spacing:-.015em;ma
   var utm={};['source','medium','campaign','content','term'].forEach(function(k){var v=qs.get('utm_'+k);if(v)utm[k]=v.slice(0,120);});
   var code=String(utm.content||'').replace(/[^A-Za-z0-9-]/g,'').slice(0,24);
   var t0=Date.now();
+  /* v131: Fathom Analytics (usefathom.com) counts visits to live pages and each sign-up, on a Fathom site of its own so
+     public traffic stays apart from the dashboard's. Live site only, never a preview. Empty until that site is set up. */
+  var FATHOM_SITE='';
+  function track(){
+    if(!FATHOM_SITE||preview||location.hostname!=='aiparagon.vercel.app'||window.self!==window.top)return;
+    var s=document.createElement('script');s.src='https://cdn.usefathom.com/script.js';s.defer=true;s.setAttribute('data-site',FATHOM_SITE);
+    document.head.appendChild(s);
+  }
 
   function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
   function paras(box,text){String(text||'').split(/\n{2,}/).map(function(s){return s.trim();}).filter(Boolean).forEach(function(s){box.appendChild(el('p',null,s));});}
@@ -231,13 +239,14 @@ h1{font:500 clamp(34px,4.6vw,52px)/1.08 var(--display);letter-spacing:-.015em;ma
       try{
         var r=await fetch(HOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
         var j=null;try{j=await r.json();}catch(e){j=null;}
-        if(r.ok&&j&&j.ok){done(card,c);return;}
+        if(r.ok&&j&&j.ok){done(card,c);try{if(window.fathom&&window.fathom.trackEvent)window.fathom.trackEvent('Sign up: '+slug);}catch(e){}return;}
         err.textContent=(j&&j.message)||'Could not send that. Try again in a minute.';
       }catch(e){err.textContent='Could not send that. Check your connection and try again.';}
       btn.disabled=false;btn.textContent=c.cta||'Sign up';
     };
     main.appendChild(hero);main.appendChild(side);main.appendChild(rest);
     root.appendChild(main);root.appendChild(foot(brand));
+    track();
   }
   load().then(function(p){if(p&&p.content)render(p);else gone();}).catch(function(){gone();});
 })();
