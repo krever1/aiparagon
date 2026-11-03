@@ -52986,6 +52986,52 @@ var V134={nav:0,keep:false};
   };
 })();
 </script>
+<script id="v135js">
+/* ===================================================================
+   v135: Templates keeps its place when it draws itself again, like AI
+   settings since v134. Save in the template editor, Duplicate, Delete,
+   a tile filter and the redraw after the dashboard's own data load put
+   the loading screen up first (the page emptied, so the window jumped
+   to the top), and the past documents card (v132) came back a moment
+   after the rest, once its own read was done. Now a redraw in place
+   reads the templates and the past documents first while the page stays
+   on screen (taking no clicks meanwhile), then draws it all in one go
+   and keeps the scroll; a template just made or copied is brought into
+   view when it is not on screen. Opening Templates from another page
+   still starts at the top: page changes go through nav(), which
+   V134.nav counts.
+   =================================================================== */
+var V135={ids:null};
+(function(){
+  if(typeof apRenderTemplates2!=='function')return;
+  const _r=apRenderTemplates2;
+  const ids=function(){const o={};(AP_TPLS||[]).forEach(function(t){if(t&&t.id)o[t.id]=1;});return o;};
+  apRenderTemplates2=async function(quick){
+    const el=document.getElementById('rd-templates');
+    const again=!(window.V134&&V134.nav)&&S.page==='templates'&&!!(el&&el.querySelector('.ap-tpl-grid'));
+    if(!again){const v0=await _r.apply(this,arguments);if(S.page==='templates')V135.ids=ids();return v0;}
+    const y=window.scrollY,before=V135.ids;
+    let v;
+    el.style.pointerEvents='none';
+    try{
+      /* what a full redraw reads, read first with the page on screen; then drawn in one go from it (quick) */
+      if(!quick||!AP_TPLS)await apTplLoad(true);
+      if(!quick&&typeof v132Load==='function'){try{await v132Load(true);}catch(e){}}
+      if(S.page!=='templates')return;
+      v=await _r.call(this,true);
+    }finally{el.style.pointerEvents='';}
+    if(S.page!=='templates')return v;
+    V135.ids=ids();
+    if(Math.abs(window.scrollY-y)>1)window.scrollTo(0,y);
+    const fresh=before?(AP_TPLS||[]).filter(function(t){return t&&t.id&&!before[t.id];}):[];
+    if(fresh.length===1){
+      const b0=el.querySelector('.ap-tpl-card [onclick*="'+String(fresh[0].id).replace(/["\\]/g,'')+'"]'),card=b0&&b0.closest('.ap-tpl-card');
+      if(card){const b=card.getBoundingClientRect();if(b.top<72||b.bottom>window.innerHeight-8)card.scrollIntoView({block:'center'});}
+    }
+    return v;
+  };
+})();
+</script>
 <script>
 /* ===================================================================
    PAGE ADDRESSES
