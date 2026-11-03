@@ -29,6 +29,7 @@ function check(label, ok, detail) {
     const { ctx, page } = await H.newPage(browser, BASE, { seed: !!o.seed, bucket: errors });
     const asked = [];
     await ctx.route(I.LOGO, (r) => { asked.push(r.request().resourceType()); return logo ? r.fulfill({ status: 200, contentType: 'image/png', body: I.PNG }) : r.abort(); });
+    if (o.before) await o.before(ctx);
     if (o.height) await page.setViewportSize({ width: 1440, height: o.height });
     await page.goto(BASE + url, { waitUntil: 'load' });
     if (o.wait !== false) await H.settled(page, o.seed ? 'app' : 'login');
@@ -94,12 +95,35 @@ function check(label, ok, detail) {
     await ctx.close();
   }
 
-  // 5. the landing pages link the same icon
+  // 5. the landing pages: the same icon, and the logo in place of an AI Paragon page's P; another brand keeps its letter
   {
-    const { ctx, page } = await open('/go/qa-page', true, { wait: false });
-    const links = await I.iconLinks(page);
+    const SB = 'https://lesyptuwllcgajdxzjje.supabase.co';
+    const PAGE = (brand) => ({ slug: 'spring-webinar', title: 'Spring webinar', kind: 'webinar', brand: { name: brand },
+      content: { headline: 'Governed AI for RIAs', cta: 'Save my seat', fields: ['name', 'email'] } });
+    async function goPage(brand, logo) {
+      const o = await open('/go/spring-webinar', logo, { wait: false, before: (ctx) => ctx.route(SB + '/rest/v1/rpc/lp_public', (r) => r.fulfill({
+        status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(brand ? PAGE(brand) : {}) })) });
+      await o.page.waitForSelector('.lp-mark', { timeout: 10000 });
+      await o.page.waitForTimeout(300);
+      const m = await mark(o.page, '.lp-mark');
+      m.ap = await o.page.evaluate(() => document.querySelector('.lp-mark').classList.contains('lp-mark-ap'));
+      m.name = await o.page.evaluate(() => (document.querySelector('.lp-brand') || {}).textContent);
+      return Object.assign(o, { m });
+    }
+    let g = await goPage('AI Paragon', true);
+    const links = await I.iconLinks(g.page);
     check('go.html: the tab and home-screen icons are the logo, and only those', links.length === 2 && links.includes(want[0]) && links.includes(want[1]), JSON.stringify(links));
-    await ctx.close();
+    check('go.html, an AI Paragon page: the logo stands in for the P, at its size (34 px)', isLogo(g.m) && g.m.ap && g.m.w === 34 && g.m.h === 34 && g.m.name === 'AI Paragon', JSON.stringify(g.m));
+    await g.ctx.close();
+    g = await goPage('Summit Advisors', true);
+    check('go.html, another brand: its letter stays (no logo)', g.m.ok && !g.m.ap && g.m.text === 'S' && !g.m.bg.includes('logo.png') && g.m.color !== 'rgba(0, 0, 0, 0)', JSON.stringify(g.m));
+    await g.ctx.close();
+    g = await goPage('AI Paragon', false);
+    check('go.html, logo refused: the AI Paragon page keeps its P', isP(g.m) && g.m.ap, JSON.stringify(g.m));
+    await g.ctx.close();
+    g = await goPage(null, true);
+    check('go.html, a page that is not available: the logo stands in for the P there too', isLogo(g.m) && g.m.ap, JSON.stringify(g.m));
+    await g.ctx.close();
   }
 
   // 6. vercel.json: the pages that link no icon get it from /favicon.ico; the app addresses are as they were
