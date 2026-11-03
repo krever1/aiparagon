@@ -142,11 +142,23 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     check('the page says what it holds now', top.sub === 'Your past documents for Catalyst, and the structures Content Transformation drafts follow.', top.sub);
     check('the fixed formats note names the client proposal and still covers the other Catalyst documents', /^The Catalyst documents .*Pipeline briefs/.test(top.fixed) && /client proposal takes its sections and branding from your proposal template/.test(top.fixed), top.fixed);
     check('the product header stays Templates', top.head === 'Templates', top.head);
+    // every row that shows the reading state is noted as it appears (three small files can be read in well under
+    // the 150 ms a single look waited, so that look sometimes came after the reading was done)
+    await page.evaluate(() => {
+      window.__v132Seen = {};
+      const root = document.getElementById('rd-templates') || document.body;
+      window.__v132Mo = new MutationObserver(() => root.querySelectorAll('#v132Src .v132-row').forEach((e) => {
+        if (e.querySelector('.v132-busy')) { const n = (e.querySelector('.nm') || {}).textContent || ''; window.__v132Seen[n] = 1; }
+      }));
+      window.__v132Mo.observe(root, { childList: true, subtree: true, characterData: true });
+    });
     await page.setInputFiles('#v132File', DOCX.map((f) => path.join(FIX, f)));
     await page.waitForTimeout(150);
     const busy = await rows(page);
-    check('each file shows while it is read', busy.length === 3 && busy.some((r) => r.busy), JSON.stringify(busy.map((r) => [r.name, r.busy])));
+    check('the three files show at once', busy.length === 3, JSON.stringify(busy.map((r) => [r.name, r.busy])));
     await settledRows(page, 3);
+    const seen = await page.evaluate(() => { if (window.__v132Mo) window.__v132Mo.disconnect(); return window.__v132Seen || {}; });
+    check('each file shows while it is read', DOCX.every((f) => seen[f]), JSON.stringify(seen));
     const r = await rows(page);
     const by = (n) => r.find((x) => x.name === n) || {};
     const pt = by(DOCX[0]), dq = by(DOCX[1]), pa = by(DOCX[2]);
