@@ -1,5 +1,5 @@
 # Care portal guide (Spectrum Care Advisory OS)
-Reflects v12.40 (Oct 27, 2026). For build history, open items and backend notes, see CLAUDE.md section 2.
+Reflects v12.41 (Nov 3, 2026). For build history, open items and backend notes, see CLAUDE.md section 2.
 
 This guide says what each page of the care portal is for and how to do things in it. It is written for the AI Paragon team and for np-bot, which answers the team's questions in Slack.
 
@@ -93,6 +93,7 @@ Staff also see:
 - a strip of shortcuts: **Safety log**, **My tasks**, **Report an incident**
 - **Documents assigned to you**, each with **Acknowledge** and **Open & fill**
 - **Readiness guides**, each with **Acknowledge**
+- in **Your training** (the "Training to finish" card), their **Onboarding checklist** with how many steps are done and **Open**, while steps are left
 
 The sidebar's **This week** box shows progress counts on every page but Home. Directors pick what it counts with its small gear.
 
@@ -183,7 +184,7 @@ A document filed to a team binder shows both here and on the Documents page.
 Tiles for Trainings outstanding, Certifications current and Open staff tasks, then the **Staff roster** (name, role, home, certifications, trainings outstanding, open tasks). Click a person to open their staff page.
 
 - **Add shift**.
-- **Add staff**: full name, initials, role, primary home, date of hire, work email, up to two starting certifications, and "Email them an invite to sign in" (ticked by default). Saving shares the team's onboarding steps, sends a welcome notice, and emails the invite if there is a work email.
+- **Add staff**: full name, initials, role, primary home, date of hire, work email, up to two starting certifications, and "Email them an invite to sign in" (ticked by default). Saving shares the team's onboarding steps, sends a welcome notice ("Your onboarding checklist is on your Profile page, under Onboarding."), and emails the invite if there is a work email.
 
 ### The staff page
 
@@ -311,7 +312,7 @@ While Messages is open, new messages arrive on their own and a half-typed messag
 
 ### Notifications (top bar bell)
 
-A panel with Upcoming appointments (with a Reminders link), System notifications (task assigned, onboarding shared, SIR clock started and so on), unread Messages & questions, and every item that needs attention. Click an item to go to it.
+A panel with Upcoming appointments (with a Reminders link), System notifications (task assigned, onboarding shared, SIR clock started and so on), unread Messages & questions, and every item that needs attention. Click an item to go to it. For staff, the "Welcome to the portal" and "Onboarding checklist shared" notices open their onboarding checklist.
 
 ### Ask Spectrum (top bar)
 
@@ -324,7 +325,7 @@ The AI assistant. Open it with **Ask Spectrum** at the top right (a floating but
 
 ### Your profile and Account settings
 
-Click your name at the bottom of the sidebar for your **profile**: credentials (Add credential), About (sign-in email, Team alerts and Team website for directors, role, time zone), Preferences, your signed agreement, and Account settings, "Start over on this dashboard" and Sign out.
+Click your name at the bottom of the sidebar for your **profile**: credentials (Add credential), and for staff with a checklist shared with them an **Onboarding** tab ("Onboarding · 2 of 5"), where they tick each step as they do it (it opens on that tab while steps are left), About (sign-in email, Team alerts and Team website for directors, role, time zone), Preferences, your signed agreement, and Account settings, "Start over on this dashboard" and Sign out.
 
 **Settings** (top of the profile) or **Account settings** opens the Account window:
 
@@ -435,7 +436,7 @@ For each, choose Who and How (In the portal, Email). Staff see their own under S
 
 **21. Add a certification.** Staff > their name > Certifications > Add credential > name and expiry date > Save. Staff can add their own on their profile.
 
-**22. Assign onboarding.** Training & onboarding > Onboarding checklists > open one > Share with a new hire > pick the person > Share checklist. Or Staff > their name > Share onboarding steps > Share with them. New staff get the team's steps automatically.
+**22. Assign onboarding.** Training & onboarding > Onboarding checklists > open one > Share with a new hire > pick the person > Share checklist. Or Staff > their name > Share onboarding steps > Share with them. New staff get the team's steps automatically. The new hire ticks the steps on their profile's Onboarding tab (or My shift > Your training > Onboarding checklist > Open); you see their progress on their staff page.
 
 **23. Assign a training course.** Training & onboarding > open the course > Assign, or Staff > their name > Assign a course. Remind outstanding nudges anyone not finished.
 

@@ -8392,11 +8392,14 @@ function courseOpen(tid){ closeAll(); state.client=null; state.staffPage=null; s
   setTimeout(()=>{ const n=document.querySelector(`[data-train="${tid}"]`); if(n) n.scrollIntoView({block:'center'}); },60); }
 function trainCard(sid){
   const p=trainPending(sid);
+  const ob=(sid&&Array.isArray(OB_ASSIGN[sid]))?OB_ASSIGN[sid]:[], obLeft=ob.filter(x=>!x.d).length, n=p.n+(obLeft?1:0);   // v12.41
+  const obRow=obLeft?`<div class="docrow"><div class="di">✓</div><div class="dt"><b>Onboarding checklist</b><span>${ob.length-obLeft} of ${ob.length} steps done</span></div>
+          <button class="btn gold sm" onclick="event.stopPropagation();myOnboarding()">Open</button></div>`:'';
   return `<section class="card">
     <div class="card-h"><h2>Training to finish</h2>
-      <div class="right"><span class="pill ${p.n?'warn':'ok'}">${p.n?p.n+' pending':'All current'}</span></div></div>
+      <div class="right"><span class="pill ${n?'warn':'ok'}">${n?n+' pending':'All current'}</span></div></div>
     <div class="card-b flush">
-      ${p.n? p.t.map(t=>`
+      ${n? obRow + p.t.map(t=>`
         <div class="docrow"><div class="di">◉</div>
           <div class="dt"><b>${esc(t.n)}</b><span>${t.mins} min${t.due?` · due ${esc(t.due)}`:''}${t.req?' · required':''}</span></div>
           <button class="btn gold sm" onclick="event.stopPropagation();courseStart('${t.id}')">Open</button>
@@ -8406,7 +8409,7 @@ function trainCard(sid){
           <div class="dt"><b>${esc(c.c)}</b><span>${esc(c.d)}</span></div>
           <span class="pill ${c.s}">${c.s==='warn'?'Renew soon':'Expired'}</span>
         </div>`).join('')
-      : `<div class="empty"><b>Nothing outstanding</b>Certifications and courses are all current.</div>`}
+      : `<div class="empty"><b>Nothing outstanding</b>Onboarding, certifications and courses are all current.</div>`}
       ${p.n?`<div style="padding:10px 18px;border-top:1px solid var(--line)"><button class="btn ghost sm" onclick="go('training')">Open training</button></div>`:''}
     </div>
   </section>`;
@@ -10791,7 +10794,7 @@ function obToggle(sid,i){
   const it=OB_ASSIGN[sid][i]; it.d=it.d?0:1;
   if(it.d){ it.by=actorName(); it.at=nowStamp(); } else { it.by=''; it.at=''; }
   obSave(); logAudit(it.d?'Completed onboarding item':'Unchecked onboarding item',`${staff(sid).init} · ${it.t}`);
-  if(state.view==='profile') render(); else openStaffPage(sid);      // v12.22: ticked from their own Profile, they stay there
+  if(state.view==='profile'){ state.profTab='onboard'; render(); } else openStaffPage(sid);   // v12.22: ticked from their own Profile, they stay there (v12.41: on its tab, the last tick too)
 }
 function obStepOpen(){ closeAll(); state.client=null; state.staffPage=null; state.view='trainhub'; state.openOb=true; render();
   setTimeout(()=>{ const n=el('obMaster'); if(n) n.scrollIntoView({block:'center'}); },60); }
@@ -13008,7 +13011,9 @@ function viewProfile(){
   const quals = state.role==='staff' ? (CREDS[meSid()]||[])
     : (realSession()&&state.role==='director') ? (MY_QUALS_P[String(AUTH.email||'').toLowerCase()]||[])   // v12.13: yours, not the role's
     : (MY_QUALS[state.role]||[]).filter(x=>!state.hideSample||!x._seed);
-  const tab = state.profTab||'creds';
+  const obl=profObList();                                            // v12.41: their onboarding checklist has a tab
+  let tab = state.profTab||(obl.some(x=>!x.d)?'onboard':'creds');
+  if(tab==='onboard'&&!obl.length) tab='creds';
   return `
   <section class="hero" style="display:flex;gap:18px;align-items:center">
     <div class="av" style="width:64px;height:64px;font-size:22px;border-radius:20px">${m.init}</div>
@@ -13025,7 +13030,7 @@ function viewProfile(){
           ${state.role==='director'&&tab==='training'?`<div class="right"><button class="btn navy sm" onclick="openTrainingForm()">＋ Add training</button></div>`:''}</div>
         <div class="card-b flush">
           <div class="tabs" style="margin:12px 18px 4px">
-            ${[['creds','Credentials']].map(([k,lb])=>`<button class="${tab===k?'active':''}" onclick="state.profTab='${k}';render()">${lb}</button>`).join('')}
+            ${[['creds','Credentials']].concat(obl.length?[['onboard','Onboarding · '+obl.filter(x=>x.d).length+' of '+obl.length]]:[]).map(([k,lb])=>`<button class="${tab===k?'active':''}" onclick="state.profTab='${k}';render()">${lb}</button>`).join('')}
           </div>
           ${tab==='creds'?`<table class="tb"><tbody>${quals.map(x=>`<tr><td><b>${esc(x.c)}</b></td><td style="text-align:right"><span class="pill ${x.s}">${esc(x.d)}</span></td></tr>`).join('')||'<tr><td class="empty">No credentials on file yet.</td></tr>'}</tbody></table>`
           :tab==='training'? profTrainingTab()
@@ -13097,6 +13102,10 @@ function profTrainingTab(){
       ${done?`<span class="pill ok">Complete${(t.doneAt||{})[meSid()]?' · '+esc(t.doneAt[meSid()]):''}</span>`:`<button class="btn ghost sm" onclick="courseStart('${t.id}')">Open</button> <button class="btn gold sm" onclick="courseSelfDone('${t.id}')">Mark complete</button>`}</div>`;
   }).join('')||'<div class="empty">No training assigned to you yet.</div>'}`;
 }
+/* v12.41: the onboarding checklist shared with the person signed in, when they are staff. The welcome
+   notice sent them to their Profile for it, but the Profile only had a Credentials tab. */
+function profObList(){ if(state.role!=='staff') return []; const sid=meSid(); return (sid&&Array.isArray(OB_ASSIGN[sid]))?OB_ASSIGN[sid]:[]; }
+function myOnboarding(){ closeAll(); state.client=null; state.staffPage=null; state.view='profile'; state.profTab='onboard'; render(); }
 function profOnboardTab(){
   if(state.role==='director'){
     return `${ONBOARD.map((o,i)=>`<div class="docrow" style="padding:8px 18px"><div class="di">${i+1}</div>
@@ -13109,7 +13118,7 @@ function profOnboardTab(){
   }
   const _sid=meSid(), _ob=_sid&&OB_ASSIGN[_sid];                     // v12.22: the checklist shared with this person, ticked for real
   if(_ob&&_ob.length) return `${_ob.map((o,i)=>`<div class="checkrow" style="cursor:pointer" onclick="obToggle('${_sid}',${i})"><div class="cb ${o.d?'on':''}">✓</div><div class="ct ${o.d?'done':''}">${esc(o.t)}${o.link?` <a href="${esc(o.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="tiny" style="color:var(--navy);font-weight:700">↗ link</a>`:''}${o.by?` <span class="tiny muted">· ${esc(o.by)} ${esc(o.at||'')}</span>`:''}</div></div>`).join('')}
-    <div class="tiny muted" style="padding:10px 18px">Your onboarding checklist, shared by your director. Tick each step as you complete it.</div>`;
+    <div class="tiny muted" style="padding:10px 18px">${_ob.every(o=>o.d)?'All done. Your director can see each step you ticked.':'Your onboarding checklist, shared by your director. Tick each step as you complete it.'}</div>`;
   return `${ONBOARD.map(o=>`<div class="checkrow"><div class="cb">✓</div><div class="ct">${esc(o)}</div></div>`).join('')}
     <div class="tiny muted" style="padding:10px 18px">The team's standard onboarding steps. Your director has not shared a checklist with you yet.</div>`;
 }
@@ -19857,8 +19866,9 @@ function openAlerts(){
       <div class="aa">Open →</div></div>`).join('')}</div></section>`:'';
   const sysList=SYS_NOTIFS.filter(n=>!state.hideSample||!n._seed).filter(notifFor);
   const sysHtml=sysList.length?`<section class="card"><div class="card-h acc-navy"><h2>System notifications</h2><div class="sub">Delivered by the portal's automation backend</div></div>
-    <div class="card-b flush">${sysList.map(n=>`<div class="attn"><div class="ai ${n.k==='bad'?'bad':'info'}">◈</div>
-    <div class="at"><b>${esc(n.t)}</b><span>${esc(n.s)} · ${esc(n.at)}</span></div></div>`).join('')}</div></section>`:'';
+    <div class="card-b flush">${sysList.map(n=>{ const ob=profObList().length&&/^(Onboarding checklist shared|Welcome to the portal)$/.test(n.t);   // v12.41
+      return `<div class="attn"${ob?' style="cursor:pointer" onclick="myOnboarding()"':''}><div class="ai ${n.k==='bad'?'bad':'info'}">◈</div>
+    <div class="at"><b>${esc(n.t)}</b><span>${esc(n.s)} · ${esc(n.at)}</span></div>${ob?'<div class="aa">Open →</div>':''}</div>`; }).join('')}</div></section>`:'';
   openDrawer('Notifications',`${rem.length?rem.length+' upcoming · ':''}${un.length?un.reduce((a,t)=>a+t.unread,0)+' unread messages · ':''}${attn.length} items need attention`,
     remHtml+sysHtml+msgHtml+(attn.length?attn.map((a,i)=>`<div class="card" style="margin-bottom:10px"><div class="attn" style="border:none" onclick="closeAll();_attn[${i}].go()">
       <div class="ai ${a.k}">${a.ic}</div><div class="at"><b>${a.t}</b><span>${a.s}</span></div></div></div>`).join('')
@@ -20127,7 +20137,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.40 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.41 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -21411,7 +21421,7 @@ function saveStaff(sid){
     });
     logAudit('Added staff member',rec.name);
     const obN=obAutoShare(id);                                       // v12.36: the team's onboarding checklist is waiting for them
-    pingStaff(id,'Welcome to the portal','Your profile was created — onboarding steps are on your Profile page.');
+    pingStaff(id,'Welcome to the portal',obN?'Your onboarding checklist is on your Profile page, under Onboarding.':'Your profile was created.');   // v12.41: where the steps really are
     const inv=!!(el('sfInvite')&&el('sfInvite').checked);           // v12.36: added and invited in one step
     toast(rec.name+' added to the team.'+(obN?' Onboarding checklist shared ('+obN+' step'+(obN===1?'':'s')+').':'')
       +(inv?(rec.email?' Sending their invite\u2026':' Add their work email to invite them.'):''));
