@@ -531,10 +531,12 @@ function check(label, ok, detail) {
       const no = card({ tool: 'end_call', result: 'NOT YET. Don\'t hang up: the call is still on. The caller isn\'t done: they said "That\'s all. But don\'t you wanna". You already said goodbye, so start with a few words like "Oh, sorry, go ahead," then answer what they said, and ask if there\'s anything else you can help with.' });
       const yes = card({ tool: 'end_call', result: 'Ending the call. Say nothing more.' });
       const old = card({ tool: 'endCall' });
-      return { no: text(no), noCls: cls(no), yes: text(yes), old: text(old), oldCls: cls(old),
+      const hold = card({ tool: 'end_call', result: 'NOT YET. Don\'t hang up: the call is still on. The caller asked you to hold: they said "No thanks, hold on". Say "Sure, take your time" and wait for them. Do not call end_call until they are back and say they are done.' });
+      return { no: text(no), noCls: cls(no), yes: text(yes), old: text(old), oldCls: cls(old), hold: text(hold),
         ended: ['assistant-ended-call', 'assistant-ended-call-after-message-spoken', 'customer-ended-call', 'silence-timed-out'].map(T.ended) };
     });
     check('hang-ups: a refused end_call reads Didn\'t hang up yet, with what the caller said', /^× Didn't hang up yet end_call/.test(h.no) && /the call went on\. The caller isn't done: they said "That's all\. But don't you wanna"\./.test(h.no) && /changed/.test(h.noCls) && !/You already said goodbye/.test(h.no), h.no);
+    check('hang-ups: asked to hold reads as such, without the agent\'s instructions', /^× Didn't hang up yet end_call/.test(h.hold) && /The caller asked her to hold: they said "No thanks, hold on"\.$/.test(h.hold) && !/Sure, take your time|end_call until/.test(h.hold.replace(/^× Didn't hang up yet end_call/, '')), h.hold);
     check('hang-ups: an end_call that went through reads Hung up', /^× Hung up end_call/.test(h.yes) && /hung up a second after her goodbye/.test(h.yes), h.yes);
     check('hang-ups: older calls with Vapi\'s endCall read as before', /^× Ended the call endCall/.test(h.old) && /caller was still talking afterwards/.test(h.old) && /warn/.test(h.oldCls), h.old);
     check('hang-ups: every agent-ended reason reads Agent ended the call', JSON.stringify(h.ended) === JSON.stringify(['Agent ended the call', 'Agent ended the call', 'Caller hung up', 'Went quiet, call timed out']), JSON.stringify(h.ended));
