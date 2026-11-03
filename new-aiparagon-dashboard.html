@@ -27947,7 +27947,7 @@ function apRuleFromFb(btn){
   const ta=document.getElementById('apRuleTa');if(!ta)return;
   ta.value=btn.dataset.t;AP_RED.id=null;AP_RED.from='feedback';
   const a=btn.dataset.a;const map={intel_tracker:'intel_tracker',ad_strategist:'ad_strategist',content_generation:'content_generation'};
-  AP_RED.scopes=map[a]?[map[a]]:(/^(lead_research|interview_script|anonymizer|discovery_call|growth_plan)$/.test(a)?['engine1']:['all']);
+  AP_RED.scopes=map[a]?[map[a]]:(/^(lead_research|interview_script|anonymizer|discovery_call|growth_plan|client_proposal)$/.test(a)?['engine1']:['all']);/* v132: and the client proposal */
   document.querySelectorAll('.ap-rule-opts input').forEach(function(i){i.checked=AP_RED.scopes.indexOf(i.value)>=0;});
   ta.focus();ta.scrollIntoView({block:'center',behavior:'smooth'});
   toast('Edit the wording so it reads as a rule, then add it');
@@ -49686,7 +49686,7 @@ async function v115DlLoad(force){
   D.p=(async function(){
     const errs=[],safe=function(p){return p.then(function(r){return Array.isArray(r)?r:[];},function(e){errs.push((e&&e.message)||String(e));return [];});};
     const ST=typeof E1_STAGES!=='undefined'?E1_STAGES:[];
-    const ag=ST.map(function(s){return s.agent;}).join(',');
+    const ag=ST.map(function(s){return s.agent;}).concat(['client_proposal']).join(',');/* v132: and the client proposal */
     const [leads,outs,calls]=await Promise.all([
       safe(apSb('e1_leads?select=*&order=updated_at.desc&limit=300')),
       ag?safe(apSb('agent_outputs?select=id,run_id,agent,title,created_at,pdf:data->>pdfUrl,pdf2:data->>pdf_url,prospectName:data->>prospectName,companyName:data->>companyName&agent=in.('+ag+')&order=created_at.desc&limit=3000')):Promise.resolve([]),
@@ -49703,6 +49703,10 @@ async function v115DlLoad(force){
         rows.push({key:'e1:'+l.email+':'+s.agent,src:'e1',title:s.label,kind:'Catalyst · '+(String(s.kind||'').split(' · ')[1]||s.short),who:l.prospect_name||l.email,org:l.company_name||'',
           when:(o&&o.created_at)||l.updated_at,url:url,open:'openE1LeadStage('+nwJs(l.email)+','+i+')'});
       });
+      /* v132: the client proposal, written after the growth plan; Open shows it on its lead */
+      const cp=outs.find(function(x){return emails.indexOf(x.run_id)>=0&&x.agent==='client_proposal';});
+      if(cp)rows.push({key:'e1:'+l.email+':client_proposal',src:'e1',title:'Client proposal',kind:'Catalyst · Proposal for the client',who:l.prospect_name||l.email,org:l.company_name||'',
+        when:cp.created_at||l.updated_at,url:null,open:'v132OpenLead('+nwJs(l.email)+')'});
     });
     calls.forEach(function(c){
       const d=apJson(c.deliverable)||{};if(!d.markdown&&!d.title)return;
@@ -51998,6 +52002,931 @@ function v127Side(){
     window[n]=async function(){const v=await f.apply(this,arguments);try{nwHeadFix();}catch(e){}return v;};
   });
 })();
+</script>
+<script id="v131js">
+/* ===================================================================
+   v131: Fathom Analytics (usefathom.com, not the Fathom call recorder
+   on Calls) counts which dashboard pages get used, on its own Fathom
+   site. Live site only (aiparagon.vercel.app): never a preview
+   deployment, a local copy or inside a frame. One page view per page
+   shown, as its address without a query or #anchor (/dashboard/<page>,
+   the sign-in screen as /dashboard/login), sent once the page is on
+   screen. A bare /dashboard is the boot settling into a page, so it is
+   not counted. The script's own page view is off (data-auto="false")
+   and the page views go out from here: the address changes in place,
+   sometimes with replaceState, and only the dashboard knows when a page
+   is on screen. It counts pages, not people.
+   =================================================================== */
+(function(){
+  var V131={site:'HXYHZOYN',host:'aiparagon.vercel.app',src:'https://cdn.usefathom.com/script.js',sent:null,timer:null,ready:false,tries:0};
+  window.V131=V131;
+  if(location.hostname!==V131.host||window.self!==window.top)return;
+  function page(){var p=location.pathname.replace(/\/+$/,'');return /^\/dashboard\/[^\/]+$/.test(p)?p:null;}
+  /* on screen: the app for a page, the sign-in screen (not the loading screen in front of it) for /dashboard/login */
+  function shown(p){
+    if(/\/login$/.test(p)){const lg=document.getElementById('view-login');
+      return !!(lg&&!lg.classList.contains('hidden')&&!document.documentElement.classList.contains('ap-resume'));}
+    const app=document.getElementById('view-app');return !!(app&&!app.classList.contains('hidden'));
+  }
+  function send(){
+    V131.timer=null;
+    const p=page();if(!p||p===V131.sent)return;
+    if(!V131.ready||!shown(p)){if(++V131.tries<60)V131.timer=setTimeout(send,700);return;}
+    try{window.fathom.trackPageview({url:location.origin+p,referrer:V131.sent?location.origin+V131.sent:document.referrer});V131.sent=p;}catch(e){}
+  }
+  /* an address can settle in steps (an old spelling, the sign-in screen, the resumed page): count it once it holds */
+  function soon(){clearTimeout(V131.timer);V131.tries=0;V131.timer=setTimeout(send,700);}
+  ['pushState','replaceState'].forEach(function(k){
+    const f=history[k];if(typeof f!=='function')return;
+    history[k]=function(){const r=f.apply(this,arguments);soon();return r;};
+  });
+  window.addEventListener('popstate',soon);
+  const s=document.createElement('script');
+  s.src=V131.src;s.defer=true;s.setAttribute('data-site',V131.site);s.setAttribute('data-auto','false');
+  s.onload=function(){V131.ready=!!(window.fathom&&window.fathom.trackPageview);soon();};
+  document.head.appendChild(s);
+  soon();
+})();
+</script>
+<style id="v132css">
+/* ===================== v132 · your past documents for Catalyst, and the client proposal ===================== */
+.v132-src{margin-bottom:18px}
+.v132-src .v132-in{padding:16px 24px 22px}
+.v132-src .v132-lead{margin:0 0 14px;color:var(--rd-muted,#667085);font-size:14px;max-width:780px}
+.v132-drop{display:flex;align-items:center;gap:14px;border:1.5px dashed #CBD2DE;border-radius:14px;padding:18px 20px;background:#FAFBFC;
+  cursor:pointer;transition:border-color .15s,background .15s}
+.v132-drop:hover,.v132-drop:focus-visible,.v132-drop.over{border-color:#B08A3E;background:#FFF9EE;outline:none}
+.v132-drop .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#1C2647;color:#fff;flex:none}
+.v132-drop b{display:block;font-size:15px;color:var(--rd-ink,#101828)}
+.v132-drop small{display:block;color:var(--rd-muted,#667085);font-size:13px;margin-top:2px}
+.v132-drop small u{color:var(--rd-ink,#101828)}
+.v132-list{display:grid;gap:10px;margin-top:14px}
+.v132-list:empty{display:none}
+.v132-row{border:1px solid var(--rd-line-soft,#EEF0F3);border-radius:12px;padding:12px 14px;background:#fff}
+.v132-row.v132-new{border-color:#E6C27A;box-shadow:0 0 0 3px rgba(230,194,122,.18)}
+.v132-row.v132-old{background:#FAFBFC}
+.v132-row.v132-old .v132-learn{opacity:.75}
+.v132-r1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.v132-ext{font:700 10.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;padding:5px 6px;border-radius:6px;background:#E8EEF7;color:#2D4A7A}
+.v132-ext.pdf{background:#FBE9E7;color:#A33A2A}
+.v132-ext.txt,.v132-ext.md{background:#EEF0F3;color:#475467}
+.v132-r1 .nm{font-weight:650;color:var(--rd-ink,#101828);min-width:0;overflow-wrap:anywhere}
+.v132-r1 .sp{flex:1}
+.v132-kind{font:inherit;font-size:13px;border:1px solid #D0D5DD;border-radius:999px;padding:4px 10px;background:#fff;color:var(--rd-ink,#101828)}
+.v132-use{font-size:12px;font-weight:700;color:#1D7A4C;background:#E7F5EE;border-radius:999px;padding:3px 9px}
+.v132-x{border:0;background:none;color:#98A2B3;font-size:16px;cursor:pointer;padding:2px 6px;border-radius:6px}
+.v132-x:hover{color:#B4432F;background:#FDF0EE}
+.v132-learn{display:grid;gap:7px;margin-top:10px;padding-top:10px;border-top:1px solid var(--rd-line-soft,#EEF0F3)}
+.v132-l{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px;color:var(--rd-ink-2,#344054)}
+.v132-ck{width:18px;height:18px;border-radius:50%;background:#1D7A4C;color:#fff;display:inline-grid;place-items:center;font-size:11px;flex:none}
+.v132-ck.no{background:#D0D5DD}
+.v132-chip{font-size:12px;border-radius:999px;padding:2px 8px;background:#F2F4F7;color:#344054}
+.v132-sw{width:18px;height:18px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);display:inline-block}
+.v132-logo{height:24px;max-width:130px;object-fit:contain;background:#fff;border:1px solid #EEF0F3;border-radius:5px;padding:2px 4px}
+.v132-ff{font-size:12.5px;color:var(--rd-muted,#667085)}
+.v132-what{font-size:12.5px;color:var(--rd-muted,#667085)}
+.v132-busy{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--rd-muted,#667085);margin-top:8px}
+.v132-spin{width:14px;height:14px;border-radius:50%;border:2px solid #D0D5DD;border-top-color:#1C2647;animation:v132s .8s linear infinite;flex:none}
+@keyframes v132s{to{transform:rotate(360deg)}}
+.v132-err{color:#B4432F;font-size:13.5px;margin-top:8px}
+.v132-ctpl{margin:22px 0 10px}
+.v132-ctpl .k{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#B08A3E}
+.v132-ctpl h3{margin:4px 0 0;font-size:20px}
+/* a run: what it is built from */
+.v132-uses{margin:2px 0 14px;padding:10px 12px;border-radius:10px;background:#F7F8FA;display:grid;gap:6px}
+.v132-uses .t{font-size:14px;font-weight:700;color:var(--rd-ink,#101828)}
+.v132-uses .u{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;color:var(--rd-ink-2,#344054)}
+.v132-uses .u .v132-ck{margin-top:1px}
+.v132-uses .u.v132-off .v132-ck{background:#D0D5DD}
+.v132-uses .u.v132-cl .v132-ck{background:#6C5DD3}
+.v132-m .v132-msg{margin:8px 0 0;font-size:13.5px;color:var(--nw-ink-2,#475467)}
+.v132-m .v132-msg:empty{display:none}
+.v132-m .v132-msg.err{color:#B4432F}
+/* the client proposal on a lead */
+.v132-pc{margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.v132-pc > .statline{margin:0!important}
+.v132-pc > .v132-run,.v132-pc > .v132-dv{flex-basis:100%}
+.v132-pc .v132-n{border:0;background:none;padding:0;font:inherit;font-size:12.5px;color:var(--rd-muted,#667085);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.v132-run{display:grid;gap:8px;margin-top:12px;padding:12px 14px;border-radius:10px;background:#F7F8FA}
+.v132-run b{font-size:14px}
+.v132-run .v132-bar{height:4px;border-radius:4px;background:#E4E7EC;overflow:hidden}
+.v132-run .v132-bar i{display:block;height:100%;width:40%;background:#1C2647;border-radius:4px;animation:v132b 1.6s ease-in-out infinite}
+@keyframes v132b{0%{margin-left:-40%}100%{margin-left:100%}}
+.v132-run .v132-uses{margin:0;padding:0;background:none}
+/* the document, as the client sees it */
+.v132-dv{margin-top:14px}
+/* the document's toolbar stays under the top bar while the document is read (its section clips its corners with
+   overflow:clip, which makes no scroll container, instead of hidden, which would hold the toolbar back) */
+#main.ap-demo section.block:has(.v132-dv:not([hidden])){overflow:clip}
+.v132-dbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;position:sticky;top:66px;z-index:6;
+  background:var(--rd-card,#fff);padding:10px 0;box-shadow:0 1px 0 var(--rd-line-soft,#EEF0F3)}
+.v132-dbar .note{font-size:13px;color:var(--rd-muted,#667085)}
+.v132-doc{--b1:#1C2647;--b2:#B08A3E;--bt:#1D2433;--bs:#F2F4F8;--bh:Georgia,serif;--bb:Georgia,serif;
+  background:#E9ECF1;border-radius:12px;padding:26px;display:grid;gap:22px;justify-items:center}
+.v132-page{box-sizing:border-box;width:100%;max-width:820px;background:#fff;box-shadow:0 2px 10px rgba(16,24,40,.08),0 1px 2px rgba(16,24,40,.06);
+  border-radius:3px;padding:64px 72px;color:var(--bt);font:400 15.5px/1.65 var(--bb);text-align:left}
+.v132-cover{min-height:min(1060px,calc(100vh - 130px));display:flex;flex-direction:column;position:relative;overflow:hidden;padding-top:70px}
+.v132-cover .lg{height:62px;max-width:320px;object-fit:contain;object-position:left center;align-self:flex-start}
+.v132-cover .firm{font:700 22px/1.2 var(--bh);color:var(--b1)}
+.v132-cover .kick{margin-top:auto;font:700 13px/1.4 var(--bh);letter-spacing:.16em;text-transform:uppercase;color:var(--b2)}
+.v132-cover h1{margin:12px 0 0;font:700 46px/1.1 var(--bh);color:var(--b1);letter-spacing:-.01em}
+.v132-cover .sub{margin:14px 0 0;font-size:20px;line-height:1.4;color:var(--bt)}
+.v132-cover .rule{height:6px;width:120px;background:var(--b2);border-radius:3px;margin:30px 0 22px}
+.v132-cover .meta{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;font-size:15px}
+.v132-cover .meta b{font:600 12px/1.9 var(--bh);letter-spacing:.08em;text-transform:uppercase;color:var(--b1)}
+.v132-cover .foot{margin:46px 0 26px;font-size:12.5px;color:#667085}
+.v132-cover .band{position:absolute;left:0;right:0;bottom:0;height:14px;background:linear-gradient(90deg,var(--b1) 0 72%,var(--b2) 72% 100%)}
+.v132-sec+.v132-sec{margin-top:34px}
+.v132-sec .hd{display:flex;align-items:baseline;gap:14px}
+.v132-sec .no{font:700 14px/1 var(--bh);color:var(--b2);letter-spacing:.06em;flex:none}
+.v132-sec h2{margin:0;font:700 25px/1.25 var(--bh);color:var(--b1)}
+.v132-sec .src{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0 12px}
+.v132-sec .src span{font:600 11.5px/1 system-ui,-apple-system,"Segoe UI",sans-serif;padding:5px 9px;border-radius:999px;background:var(--bs);color:var(--b1)}
+.v132-sec .bd p{margin:0 0 12px}
+.v132-sec .bd ul,.v132-sec .bd ol{margin:0 0 12px;padding-left:22px}
+.v132-sec .bd li{margin:5px 0}
+.v132-sec .bd li::marker{color:var(--b2)}
+.v132-sec .bd h3{margin:16px 0 6px;font:700 17px/1.3 var(--bh);color:var(--b1)}
+.v132-sec .bd strong{color:var(--b1)}
+.v132-fill{background:#FFF3D6;color:#7A5200;border-radius:4px;padding:0 3px}
+.v132-pfoot{margin-top:46px;padding-top:14px;border-top:2px solid var(--b2);display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#667085}
+.v132-doc.edit [contenteditable=true]{outline:1.5px dashed #C9A24A;outline-offset:5px;border-radius:4px}
+.v132-doc.edit [contenteditable=true]:focus{outline-style:solid;background:#FFFDF6}
+@media(max-width:760px){.v132-doc{padding:10px}.v132-page{padding:30px 22px}.v132-cover{min-height:auto}.v132-cover h1{font-size:32px}
+  .v132-drop{align-items:flex-start}}
+</style>
+<script id="v132js">
+/* ===================================================================
+   v132: the firm's own past documents for Catalyst (Atlas > Templates),
+   and the client proposal written in their structure and branding.
+   - Templates gets "Your past documents": drop a past proposal, the
+     discovery call questions or a past assessment (Word, PDF or text).
+     The page reads each file itself: its text, its sections (the
+     headings) and its brand (a Word file's header logo, theme colors and
+     fonts; a PDF's fonts and colors), shows what it found, and keeps the
+     file in guide-files/sources with a catalyst_sources row. The newest
+     active file of each kind is the one in use.
+   - n8n reads them: Catalyst · House Rules adds the discovery call
+     questions to the interview script and the discovery framework, and
+     the past assessment to the assessment; Catalyst · Client Proposal
+     writes the client's proposal in the proposal template's sections,
+     from all three, the call transcript and the lead's documents, after
+     the growth plan or when asked here.
+   - On a lead, the growth plan tab gets the client proposal: the
+     document as the client sees it (cover, logo, colors, fonts, every
+     section and where it came from), edits in place, Save as PDF, What
+     should change? and Write it again. Deliverables lists it too.
+   - The question before a run names the past documents its steps use.
+   =================================================================== */
+const V132={src:null,err:null,pend:[],n:0,fresh:{},props:{},run:{},open:{},edit:null,ask:null,chg:null,
+  printer:function(w){w.focus();w.print();}};
+const V132_KINDS=[
+  {k:'proposal_template',name:'Proposal template',use:'The client proposal follows its sections, wording and branding.'},
+  {k:'discovery_template',name:'Discovery call questions',use:'The interview script and the discovery framework ask questions the way it does, and the proposal sorts what the client said by its topics.'},
+  {k:'past_assessment',name:'Past assessment',use:'The assessment follows its order and tone, and the proposal writes findings the same way.'}];
+const V132_HOOK=AP_N8N+'catalyst-proposal';
+const V132_MAX=25*1024*1024;
+const V132_W='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const V132_A='http://schemas.openxmlformats.org/drawingml/2006/main';
+const V132_R='http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+/* fonts every computer has, so they are not fetched from Google Fonts */
+const V132_SYS=/^(arial|helvetica|helvetica neue|times new roman|times|georgia|calibri|cambria|aptos|garamond|verdana|tahoma|segoe ui|courier new|trebuchet ms)$/i;
+AP_AGENTS.client_proposal={label:'Client Proposal',engine:'e1',kind:'Proposal for the client'};
+(function(){
+  const i=AP_WHERE.findIndex(function(r){return /^Catalyst agents/.test(r[0]);});
+  if(i<0)return;
+  AP_WHERE[i][1]='Rules, on every run. The interview script and the discovery framework also follow your discovery call questions, and the assessment your past assessment, from Templates';
+  AP_WHERE.splice(i+1,0,['Client proposal','Rules, your past documents from Templates, the call transcript and the lead\'s documents','live']);
+})();
+
+function v132Kind(k){return V132_KINDS.find(function(x){return x.k===k;})||{k:k,name:k,use:''};}
+/* what a file probably is, from its name; the select next to it changes it */
+function v132Guess(name){
+  const n=String(name||'').toLowerCase();
+  if(/propos|scope of work|\bsow\b|statement of work|engagement letter/.test(n))return 'proposal_template';
+  if(/assess|audit|diagnos|findings/.test(n))return 'past_assessment';
+  if(/discover|question|interview|call|script|guide/.test(n))return 'discovery_template';
+  return 'proposal_template';
+}
+async function v132Load(force){
+  if(V132.src&&!force)return V132.src;
+  try{V132.src=(await apSb('catalyst_sources?select=*&order=created_at.desc&limit=200'))||[];V132.err=null;}
+  catch(e){V132.err=(e&&e.message)||String(e);V132.src=V132.src||[];}
+  return V132.src;
+}
+/* the newest active file of a kind is the one in use */
+function v132InUse(kind){
+  return (V132.src||[]).filter(function(r){return r.kind===kind&&r.active!==false;})
+    .sort(function(a,b){return String(b.created_at||'').localeCompare(String(a.created_at||''));})[0]||null;
+}
+function v132Day(v){const d=new Date(v);return isNaN(d)?'':d.toLocaleDateString(undefined,{month:'short',day:'numeric'});}
+
+/* ---------- reading a Word file: a .docx is a zip, opened with the browser's own inflate ---------- */
+async function v132Unzip(buf){
+  const u8=new Uint8Array(buf),dv=new DataView(buf);
+  let e=-1;for(let i=u8.length-22;i>=Math.max(0,u8.length-66000);i--){if(dv.getUint32(i,true)===0x06054b50){e=i;break;}}
+  if(e<0)throw new Error('This Word file looks damaged. Open it in Word and save it again.');
+  const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const files={};
+  for(let k=0;k<n&&p+46<=u8.length;k++){
+    if(dv.getUint32(p,true)!==0x02014b50)break;
+    const meth=dv.getUint16(p+10,true),csz=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),off=dv.getUint32(p+42,true);
+    files[new TextDecoder().decode(u8.subarray(p+46,p+46+nl))]={meth:meth,csz:csz,off:off};
+    p+=46+nl+xl+cl;
+  }
+  async function bytes(name){
+    const f=files[name];if(!f||f.off+30>u8.length)return null;
+    const at=f.off+30+dv.getUint16(f.off+26,true)+dv.getUint16(f.off+28,true),data=u8.subarray(at,at+f.csz);
+    if(f.meth===0)return data.slice();
+    if(f.meth!==8)throw new Error('This Word file is packed in a way the page cannot read. Save it again in Word.');
+    if(typeof DecompressionStream==='undefined')throw new Error('This browser cannot open Word files here. Use Chrome, Edge, Firefox or Safari 16.4 or newer.');
+    return new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+  }
+  return {names:Object.keys(files),bytes:bytes,text:async function(name){const b=await bytes(name);return b?new TextDecoder().decode(b):null;}};
+}
+function v132Xml(s){return s?new DOMParser().parseFromString(s,'application/xml'):null;}
+function v132Hex(v){v=String(v||'').replace(/^#/,'').toUpperCase();return /^[0-9A-F]{6}$/.test(v)?'#'+v:'';}
+/* a color with next to no hue (black, white, greys) is not a brand color */
+function v132Grey(h){if(!h)return true;const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return Math.max(r,g,b)-Math.min(r,g,b)<28;}
+function v132Font(n){n=String(n||'').replace(/["';{}<>]/g,'').trim();return /^\+m[nj]-/.test(n)?'':n.slice(0,60);}
+async function v132ReadDocx(file){
+  const z=await v132Unzip(await file.arrayBuffer());
+  const doc=v132Xml(await z.text('word/document.xml'));
+  const body=doc&&doc.getElementsByTagNameNS(V132_W,'body')[0];
+  if(!body)throw new Error('This Word file has no document inside.');
+  const styles=v132Xml(await z.text('word/styles.xml')),theme=v132Xml(await z.text('word/theme/theme1.xml'));
+  const W=V132_W,A=V132_A;
+  const att=function(el,n){return el?(el.getAttributeNS(W,n)||el.getAttribute('w:'+n)||''):'';};
+  const kid=function(el,n){return el?el.getElementsByTagNameNS(W,n)[0]||null:null;};
+  /* each style's name, color and font, and the style it is based on */
+  const S={};let normal='',h1='',h2='',title='';
+  if(styles)[...styles.getElementsByTagNameNS(W,'style')].forEach(function(s){
+    const id=att(s,'styleId'),nm=att(kid(s,'name'),'val').toLowerCase(),rp=kid(s,'rPr'),c=kid(rp,'color'),f=kid(rp,'rFonts');
+    S[id]={name:nm,based:att(kid(s,'basedOn'),'val'),color:att(c,'val'),themeColor:att(c,'themeColor'),font:att(f,'ascii'),fontTheme:att(f,'asciiTheme')};
+    if(nm==='normal')normal=id;else if(nm==='heading 1')h1=id;else if(nm==='heading 2')h2=id;else if(nm==='title')title=id;
+  });
+  const sty=function(id,k){for(let i=0;id&&S[id]&&i<8;i++,id=S[id].based){if(S[id][k])return S[id][k];}return '';};
+  /* the theme: the brand's colors and its heading and body fonts */
+  const T={};
+  if(theme){
+    const cs=theme.getElementsByTagNameNS(A,'clrScheme')[0];
+    if(cs)[...cs.children].forEach(function(c){const v=c.firstElementChild;if(v)T[c.localName]=v132Hex(v.getAttribute('lastClr')||v.getAttribute('val'));});
+    ['majorFont','minorFont'].forEach(function(k){const f=theme.getElementsByTagNameNS(A,k)[0],l=f&&f.getElementsByTagNameNS(A,'latin')[0];T[k]=l?l.getAttribute('typeface')||'':'';});
+  }
+  const dflt=styles&&styles.getElementsByTagNameNS(W,'rPrDefault')[0];
+  const themeFont=function(t){return /^major/i.test(t)?T.majorFont:/^minor/i.test(t)?T.minorFont:'';};
+  const TC={text1:'dk1',text2:'dk2',background1:'lt1',background2:'lt2'};
+  const colorOf=function(id){const v=sty(id,'color');if(v&&!/^auto$/i.test(v))return v132Hex(v);const tc=sty(id,'themeColor');return tc?T[TC[tc]||tc]||'':'';};
+  /* the sections: the headings in order (Heading 1, else Heading 2); the text keeps them as ## lines for the agents */
+  const paras=[...body.getElementsByTagNameNS(W,'p')];
+  const textOf=function(p){return [...p.getElementsByTagNameNS(W,'t')].map(function(t){return t.textContent;}).join('').replace(/\s+/g,' ').trim();};
+  const styleOf=function(p){return att(kid(kid(p,'pPr'),'pStyle'),'val');};
+  const lvl=h1&&paras.some(function(p){return styleOf(p)===h1;})?h1:(h2&&paras.some(function(p){return styleOf(p)===h2;})?h2:'');
+  const secs=[],lines=[];let docTitle='';
+  paras.forEach(function(p){
+    const t=textOf(p),s=styleOf(p);if(!t)return;
+    if(title&&s===title&&!docTitle){docTitle=t;lines.push('# '+t);return;}
+    if(lvl&&s===lvl){secs.push({title:t.slice(0,120)});lines.push('','## '+t);return;}
+    lines.push((kid(kid(p,'pPr'),'numPr')||/^list/.test((S[s]||{}).name||'')?'- ':'')+t);
+  });
+  /* the brand: the heading color and font, then the theme */
+  const hid=lvl||title;
+  let primary=hid?colorOf(hid):'';if(!primary||v132Grey(primary))primary=T.accent1&&!v132Grey(T.accent1)?T.accent1:'';
+  const accent=[T.accent2,T.accent1,T.accent3,T.accent4].filter(function(c){return c&&!v132Grey(c)&&c!==primary;})[0]||'';
+  const text=colorOf(normal)||T.dk2||'';
+  const hfont=v132Font((hid&&(sty(hid,'font')||themeFont(sty(hid,'fontTheme'))))||T.majorFont);
+  const bfont=v132Font(sty(normal,'font')||themeFont(sty(normal,'fontTheme'))||att(dflt&&kid(dflt,'rFonts'),'ascii')||T.minorFont);
+  const logo=await v132DocxLogo(z,doc,paras,lvl,styleOf);
+  const brand={colors:{},fonts:{},found:[]};
+  if(primary)brand.colors.primary=primary;if(accent)brand.colors.accent=accent;if(text)brand.colors.text=text;
+  if(hfont)brand.fonts.heading=hfont;if(bfont)brand.fonts.body=bfont;
+  if(logo)brand.found.push('logo');if(primary||accent)brand.found.push('colors');if(hfont||bfont)brand.found.push('fonts');
+  return {title:docTitle,text:lines.join('\n').replace(/\n{3,}/g,'\n\n').trim(),sections:secs,brand:brand,logo:logo};
+}
+/* the logo: the picture in the page header, else a picture before the first heading (a cover); pictures only, never SVG */
+async function v132DocxLogo(z,doc,paras,lvl,styleOf){
+  const rels=async function(path){const x=v132Xml(await z.text(path));const m={};if(x)[...x.getElementsByTagName('Relationship')].forEach(function(r){m[r.getAttribute('Id')]=r.getAttribute('Target')||'';});return m;};
+  const pick=async function(target){
+    const p=('word/'+String(target||'').replace(/^\.?\//,'')).replace(/\/[^/]+\/\.\.\//g,'/');
+    const ext=String((p.match(/\.([a-z0-9]+)$/i)||[])[1]||'').toLowerCase();
+    if(!/^(png|jpe?g|gif|webp)$/.test(ext))return null;
+    const b=await z.bytes(p);if(!b||!b.length||b.length>4*1024*1024)return null;
+    const type='image/'+(ext==='jpg'?'jpeg':ext);
+    return {blob:new Blob([b],{type:type}),ext:ext==='jpeg'?'jpg':ext,type:type};
+  };
+  const docRels=await rels('word/_rels/document.xml.rels');
+  const sect=doc.getElementsByTagNameNS(V132_W,'sectPr')[0];
+  const hdrs=(sect?[...sect.getElementsByTagNameNS(V132_W,'headerReference')]:[]).map(function(r){return docRels[r.getAttributeNS(V132_R,'id')];}).filter(Boolean);
+  z.names.filter(function(n){return /^word\/header\d*\.xml$/.test(n);}).forEach(function(n){const t=n.slice(5);if(hdrs.indexOf(t)<0)hdrs.push(t);});
+  for(const h of hdrs){
+    const hx=v132Xml(await z.text('word/'+h));const blip=hx&&hx.getElementsByTagNameNS(V132_A,'blip')[0];if(!blip)continue;
+    const hr=await rels('word/_rels/'+h.replace(/^.*\//,'')+'.rels');
+    const g=await pick(hr[blip.getAttributeNS(V132_R,'embed')]);if(g)return g;
+  }
+  for(const p of paras){
+    if(lvl&&styleOf(p)===lvl)break;
+    const blip=p.getElementsByTagNameNS(V132_A,'blip')[0];if(!blip)continue;
+    const g=await pick(docRels[blip.getAttributeNS(V132_R,'embed')]);if(g)return g;
+  }
+  return null;
+}
+
+/* ---------- reading a PDF (pdf.js, the copy Content Transformation loads): text, headings, fonts and colors ---------- */
+async function v132PdfLib(){
+  if(window.pdfjsLib)return window.pdfjsLib;
+  await apCfScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  return window.pdfjsLib;
+}
+/* "ABCDEF+SourceSerif4-Semibold" -> "Source Serif 4" */
+function v132PdfFont(n){
+  n=String(n||'').replace(/^[A-Z]{6}\+/,'').split(/[-,]/)[0].replace(/(MT|PS|PSMT)$/,'');
+  if(!n||/^(g_d|f\d|t\d|font\d|Type3)/i.test(n))return '';
+  /* a weight in the family part ("MontserratThin", "OpenSansSemiBold") is not part of the name */
+  const w=n.replace(/(Thin|ExtraLight|UltraLight|Light|Regular|Book|Medium|SemiBold|DemiBold|ExtraBold|UltraBold|Bold|Black|Heavy|Italic|Oblique)+$/,'');
+  if(w.length>=3)n=w;
+  return n.replace(/([a-z])([A-Z0-9])/g,'$1 $2').replace(/([0-9])([A-Za-z])/g,'$1 $2').trim();
+}
+async function v132ReadPdf(file){
+  const lib=await v132PdfLib();
+  const pdf=await lib.getDocument({data:await file.arrayBuffer()}).promise;
+  const lines=[];let canvas=null;
+  for(let n=1;n<=Math.min(pdf.numPages,30);n++){
+    const page=await pdf.getPage(n);
+    if(n===1){/* the first page drawn: its colors, and the real names of the fonts on it */
+      const vp=page.getViewport({scale:1});canvas=document.createElement('canvas');canvas.width=Math.ceil(vp.width);canvas.height=Math.ceil(vp.height);
+      await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+    }
+    const tc=await page.getTextContent();let cur=null,end=0;
+    tc.items.forEach(function(it){
+      if(!it.str||!it.transform)return;
+      const y=Math.round(it.transform[5]),x=it.transform[4],size=Math.round(Math.hypot(it.transform[2],it.transform[3])*10)/10;
+      let font='';if(n===1){try{const f=page.commonObjs.has(it.fontName)?page.commonObjs.get(it.fontName):null;font=v132PdfFont(f&&f.name);}catch(e){}}
+      if(!cur||Math.abs(cur.y-y)>Math.max(2,size*.4)){cur={y:y,size:size,font:font,text:'',page:n};lines.push(cur);end=x;}
+      else if(x-end>size*.2&&!/\s$/.test(cur.text)&&!/^\s/.test(it.str))cur.text+=' ';
+      cur.text+=it.str;cur.size=Math.max(cur.size,size);if(!cur.font)cur.font=font;end=x+(it.width||0);
+    });
+  }
+  lines.forEach(function(l){l.text=l.text.replace(/\s+/g,' ').trim();});
+  const real=lines.filter(function(l){return l.text;});
+  if(!real.length)return {text:'',sections:[],brand:{colors:{},fonts:{},found:[]},logo:null};
+  /* the usual size of the text; lines well above it are headings, the biggest on page 1 the title */
+  const weights={};real.forEach(function(l){weights[l.size]=(weights[l.size]||0)+l.text.length;});
+  const body=+Object.keys(weights).sort(function(a,b){return weights[b]-weights[a];})[0];
+  const top=Math.max.apply(null,real.filter(function(l){return l.page===1;}).map(function(l){return l.size;}));
+  const isHead=function(l){return l.size>=body*1.25&&l.text.length>=2&&l.text.length<=90&&!/[.,;]$/.test(l.text)&&/[A-Za-z]/.test(l.text);};
+  const secs=[],out=[];let title='';
+  real.forEach(function(l){
+    if(l.page===1&&l.size===top&&!title&&top>=body*1.6){title=l.text;out.push('# '+l.text);return;}
+    if(isHead(l)){const t=l.text.replace(/^\d{1,2}[.)]?\s+/,'');if(!secs.some(function(s){return s.title===t;}))secs.push({title:t.slice(0,120)});out.push('','## '+t);return;}
+    out.push(l.text);
+  });
+  const count=function(f){const m={};real.filter(f).forEach(function(l){if(l.font)m[l.font]=(m[l.font]||0)+l.text.length;});return Object.keys(m).sort(function(a,b){return m[b]-m[a];})[0]||'';};
+  const hfont=count(function(l){return l.page===1&&(isHead(l)||l.size===top);}),bfont=count(function(l){return l.page===1&&!isHead(l)&&l.size!==top;});
+  const col=v132CanvasColors(canvas);
+  const brand={colors:{},fonts:{},found:[]};
+  if(col[0])brand.colors.primary=col[0];if(col[1])brand.colors.accent=col[1];
+  if(hfont)brand.fonts.heading=hfont;if(bfont)brand.fonts.body=bfont;
+  if(col.length)brand.found.push('colors');if(hfont||bfont)brand.found.push('fonts');
+  return {title:title,text:out.join('\n').replace(/\n{3,}/g,'\n\n').trim(),sections:secs,brand:brand,logo:null};
+}
+/* the two most used colors with a real hue on a drawn page */
+function v132CanvasColors(c){
+  if(!c)return [];
+  let px;try{px=c.getContext('2d').getImageData(0,0,c.width,c.height).data;}catch(e){return [];}
+  const m={};
+  for(let i=0;i<px.length;i+=4*3){
+    const r=px[i],g=px[i+1],b=px[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+    if(px[i+3]<200||mx-mn<40||mx<40||mn>230)continue;
+    const k=((r>>4)<<8)|((g>>4)<<4)|(b>>4);m[k]=(m[k]||0)+1;
+  }
+  const hex=function(k){const q=function(v){return ('0'+((v<<4)|8).toString(16)).slice(-2);};return ('#'+q(k>>8)+q((k>>4)&15)+q(k&15)).toUpperCase();};
+  const keys=Object.keys(m).map(Number).sort(function(a,b){return m[b]-m[a];});
+  const out=[];
+  keys.forEach(function(k){if(out.length>=2||m[k]<40)return;
+    const far=out.every(function(o){const d=Math.abs((o>>8)-(k>>8))+Math.abs(((o>>4)&15)-((k>>4)&15))+Math.abs((o&15)-(k&15));return d>=5;});
+    if(far)out.push(k);});
+  return out.map(hex);
+}
+/* a text or markdown file: its ## headings (a # line above them is the title), else its # headings, else
+   numbered lines that read as headings */
+function v132ReadText(t){
+  t=String(t||'').replace(/\r\n?/g,'\n');const h1=[],h2=[];
+  t.split('\n').forEach(function(l){const m=l.match(/^\s{0,3}(#{1,2})\s+(.+?)\s*#*\s*$/);if(m)(m[1].length===1?h1:h2).push({title:m[2].trim().slice(0,120)});});
+  let secs=h2.length?h2:h1;
+  if(!secs.length)t.split('\n').forEach(function(l){const s=l.trim();if(/^\d{1,2}[.)]\s+\S/.test(s)&&s.length<80&&!/[.:;,]$/.test(s))secs.push({title:s.replace(/^\d{1,2}[.)]\s+/,'').slice(0,120)});});
+  return {title:h2.length&&h1.length?h1[0].title:'',text:t.trim(),sections:secs,brand:{colors:{},fonts:{},found:[]},logo:null};
+}
+
+/* ---------- keeping the files: guide-files/sources, the way Files keeps team uploads ---------- */
+async function v132Store(path,blob,type){
+  const res=await fetch(SUPABASE_URL+'/storage/v1/object/guide-files/'+path,{method:'POST',
+    headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+SUPABASE_ANON_KEY,'x-upsert':'true','Content-Type':type||'application/octet-stream'},body:blob});
+  if(!res.ok)throw new Error('The upload failed ('+res.status+').');
+  return SUPABASE_URL+'/storage/v1/object/public/guide-files/'+path;
+}
+function v132Add(list){[...(list||[])].forEach(function(f){v132AddOne(f);});}
+async function v132AddOne(f){
+  const ext=String((String(f.name).match(/\.([a-z0-9]+)$/i)||[])[1]||'').toLowerCase();
+  const p={pid:'p'+(++V132.n),file_name:f.name,ext:ext,kind:v132Guess(f.name),state:'read',msg:''};
+  V132.pend.push(p);v132Paint();
+  try{
+    if(f.size>V132_MAX)throw new Error('Keep each file under 25 MB.');
+    let r;
+    if(ext==='docx')r=await v132ReadDocx(f);
+    else if(ext==='pdf')r=await v132ReadPdf(f);
+    else if(/^(txt|md|markdown)$/.test(ext))r=v132ReadText(await f.text());
+    else if(ext==='doc')throw new Error('Save it as a .docx first: the older .doc format cannot be read here.');
+    else throw new Error('Use a Word file (.docx), a PDF or a text file.');
+    if(!r.text||r.text.replace(/\s+/g,'').length<20)throw new Error('No text could be read from it. If it is a scan, upload the Word version instead.');
+    p.state='save';v132Paint();
+    const stamp=Date.now(),path='sources/'+stamp+'-'+String(f.name).replace(/[^\w.\-]+/g,'_');
+    const url=await v132Store(path,f,f.type);
+    const brand=r.brand||{colors:{},fonts:{},found:[]};
+    if(r.logo){try{brand.logo_url=await v132Store('sources/'+stamp+'-logo.'+r.logo.ext,r.logo.blob,r.logo.type);}
+      catch(e){brand.found=(brand.found||[]).filter(function(x){return x!=='logo';});}}
+    const made=await apPost('catalyst_sources',{kind:p.kind,file_name:f.name,file_path:path,file_url:url,file_type:ext,file_size:f.size,
+      file_text:r.text.slice(0,60000),sections:r.sections||[],brand:brand,active:true,uploaded_by:apCfMe()});
+    const row=Array.isArray(made)?made[0]:made;
+    V132.pend=V132.pend.filter(function(x){return x!==p;});
+    if(row&&row.id){V132.src=[row].concat((V132.src||[]).filter(function(x){return x.id!==row.id;}));V132.fresh[row.id]=1;}
+    else await v132Load(true);
+    v132Paint();
+  }catch(e){p.state='err';p.msg=(e&&e.message)||String(e);v132Paint();}
+}
+function v132PendKind(pid,k){const p=V132.pend.find(function(x){return x.pid===pid;});if(p)p.kind=k;}
+function v132PendDrop(pid){V132.pend=V132.pend.filter(function(x){return x.pid!==pid;});v132Paint();}
+async function v132SetKind(id,kind){
+  const r=(V132.src||[]).find(function(x){return x.id===id;});if(!r||r.kind===kind)return;
+  const was=r.kind;r.kind=kind;v132Paint();
+  try{await apPatch('catalyst_sources','id=eq.'+encodeURIComponent(id),{kind:kind,updated_at:new Date().toISOString()});}
+  catch(e){r.kind=was;v132Paint();nwToast('Could not change it: '+((e&&e.message)||e));}
+}
+/* use an older file again: it becomes the only active one of its kind */
+async function v132Use(id){
+  const r=(V132.src||[]).find(function(x){return x.id===id;});if(!r)return;
+  try{
+    for(const o of (V132.src||[]).filter(function(x){return x.kind===r.kind&&x.id!==id&&x.active!==false;})){
+      await apPatch('catalyst_sources','id=eq.'+encodeURIComponent(o.id),{active:false,updated_at:new Date().toISOString()});o.active=false;}
+    if(r.active===false){await apPatch('catalyst_sources','id=eq.'+encodeURIComponent(id),{active:true,updated_at:new Date().toISOString()});r.active=true;}
+  }catch(e){nwToast('Could not change it: '+((e&&e.message)||e));}
+  v132Paint();
+}
+/* removing a file stops Catalyst using it; documents already written keep their look (their logo stays in storage) */
+async function v132Del(id){
+  const r=(V132.src||[]).find(function(x){return x.id===id;});if(!r)return;
+  if(!confirm('Remove '+r.file_name+'? Catalyst stops using it. Documents already written keep their look.'))return;
+  try{await apSb('catalyst_sources?id=eq.'+encodeURIComponent(id),{method:'DELETE'});}
+  catch(e){nwToast('Could not remove it: '+((e&&e.message)||e));return;}
+  V132.src=(V132.src||[]).filter(function(x){return x.id!==id;});v132Paint();
+  if(r.file_path)fetch(SUPABASE_URL+'/storage/v1/object/guide-files/'+r.file_path,{method:'DELETE',headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+SUPABASE_ANON_KEY}}).catch(function(){});
+}
+function v132Over(ev,on){ev.preventDefault();const d=document.getElementById('v132Drop');if(d)d.classList.toggle('over',!!on);}
+function v132Drop(ev){ev.preventDefault();v132Over(ev,0);v132Add(ev.dataTransfer&&ev.dataTransfer.files);}
+
+/* ---------- the card on Templates ---------- */
+const V132_UP='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M6 10l6-6 6 6"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>';
+function v132KindSel(kind){return V132_KINDS.map(function(x){return '<option value="'+x.k+'"'+(x.k===kind?' selected':'')+'>'+esc(x.name)+'</option>';}).join('');}
+function v132RowHtml(r){
+  const k=v132Kind(r.kind),use=v132InUse(r.kind),inUse=!!use&&use.id===r.id,b=r.brand||{},c=b.colors||{},f=b.fonts||{},found=b.found||[],secs=r.sections||[];
+  const ext=String(r.file_type||'').toLowerCase(),id=esc(r.id);
+  const bits=['logo','colors','fonts'].filter(function(x){return found.indexOf(x)>=0;});
+  const sw=['primary','accent','text'].map(function(x){return c[x]?'<span class="v132-sw" title="'+esc(c[x])+'" style="background:'+esc(c[x])+'"></span>':'';}).join('');
+  const fonts=[f.heading,f.body].filter(function(x,i,a){return x&&a.indexOf(x)===i;});
+  return '<div class="v132-row'+(V132.fresh[r.id]?' v132-new':'')+(inUse?'':' v132-old')+'" data-id="'+id+'">'+
+    '<div class="v132-r1"><span class="v132-ext '+esc(ext)+'">'+esc((ext||'file').toUpperCase())+'</span><b class="nm">'+esc(r.file_name)+'</b><span class="sp"></span>'+
+      '<select class="v132-kind" data-nofill="1" aria-label="What '+esc(r.file_name)+' is" onchange="v132SetKind(\''+id+'\',this.value)">'+v132KindSel(r.kind)+'</select>'+
+      (inUse?'<span class="v132-use" title="The newest one of each kind is the one Catalyst uses">In use</span>':'<button class="rd-btn sm" onclick="v132Use(\''+id+'\')">Use this one</button>')+
+      '<button class="v132-x" title="Remove" aria-label="Remove '+esc(r.file_name)+'" onclick="v132Del(\''+id+'\')">✕</button></div>'+
+    '<div class="v132-learn">'+
+      '<div class="v132-l"><span class="v132-ck'+(secs.length?'':' no')+'">'+(secs.length?'✓':'–')+'</span>'+(secs.length?'<span>Structure detected: <b>'+secs.length+' section'+(secs.length===1?'':'s')+'</b></span>'+
+        secs.slice(0,8).map(function(s){return '<span class="v132-chip">'+esc(s.title)+'</span>';}).join('')+(secs.length>8?'<span class="v132-chip">+'+(secs.length-8)+' more</span>':''):'<span>No headings found, so Catalyst keeps its own sections</span>')+'</div>'+
+      '<div class="v132-l"><span class="v132-ck'+(bits.length?'':' no')+'">'+(bits.length?'✓':'–')+'</span>'+(bits.length?'<span>Brand detected: <b>'+bits.join(', ')+'</b></span>'+
+        (b.logo_url?'<img class="v132-logo" alt="Logo found in '+esc(r.file_name)+'" src="'+esc(b.logo_url)+'">':'')+sw+(fonts.length?'<span class="v132-ff">'+esc(fonts.join(' · '))+'</span>':''):'<span>No logo, colors or fonts found</span>')+'</div>'+
+      '<div class="v132-what">'+esc(k.use)+'</div>'+
+    '</div></div>';
+}
+function v132PendHtml(p){
+  return '<div class="v132-row" data-pid="'+p.pid+'"><div class="v132-r1"><span class="v132-ext '+esc(p.ext)+'">'+esc((p.ext||'file').toUpperCase())+'</span><b class="nm">'+esc(p.file_name)+'</b><span class="sp"></span>'+
+      (p.state==='err'?'<button class="v132-x" aria-label="Dismiss" onclick="v132PendDrop(\''+p.pid+'\')">✕</button>':
+        '<select class="v132-kind" data-nofill="1" aria-label="What '+esc(p.file_name)+' is" onchange="v132PendKind(\''+p.pid+'\',this.value)">'+v132KindSel(p.kind)+'</select>')+'</div>'+
+    (p.state==='err'?'<div class="v132-err">'+esc(p.msg)+'</div>':'<div class="v132-busy"><span class="v132-spin"></span>'+(p.state==='save'?'Saving…':'Reading its structure and branding…')+'</div>')+'</div>';
+}
+function v132Card(){
+  const rows=V132.src||[];
+  return '<div class="rd-card v132-src" id="v132Src">'+
+    '<div class="rd-sec-h gold"><div><div class="k">Catalyst</div><h3>Your past documents</h3></div>'+(rows.length?'<span class="rd-secn">'+rows.length+'</span>':'')+'</div>'+
+    '<div class="v132-in"><p class="v132-lead">Upload a past proposal, your discovery call questions or a past assessment. Catalyst writes the client proposal in your proposal\'s sections and branding, asks questions the way your discovery call questions do, and follows your assessment\'s order and tone.</p>'+
+    '<label class="v132-drop" id="v132Drop" tabindex="0" ondragover="v132Over(event,1)" ondragenter="v132Over(event,1)" ondragleave="v132Over(event,0)" ondrop="v132Drop(event)" '+
+      'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();document.getElementById(\'v132File\').click();}">'+
+      '<input type="file" id="v132File" multiple accept=".docx,.pdf,.txt,.md" hidden onchange="v132Add(this.files);this.value=\'\'">'+
+      '<span class="ic">'+V132_UP+'</span><span><b>Drop past documents here</b><small>or <u>choose files</u>. Word, PDF or text, up to 25 MB each.</small></span></label>'+
+    (V132.err?'<div class="v132-err">Could not read your past documents: '+esc(V132.err)+'</div>':'')+
+    '<div class="v132-list">'+V132.pend.map(v132PendHtml).join('')+rows.map(v132RowHtml).join('')+'</div></div></div>';
+}
+function v132Paint(){
+  const old=document.getElementById('v132Src');if(!old)return;
+  const box=document.createElement('div');box.innerHTML=v132Card();old.replaceWith(box.firstElementChild);
+}
+function v132Mount(){
+  const el=document.getElementById('rd-templates');if(!el||typeof S==='undefined'||S.page!=='templates')return;
+  if(document.getElementById('v132Src')){v132Paint();return;}
+  const head=el.querySelector('.rd-head');if(!head)return;
+  const sub=head.querySelector('p');if(sub)sub.textContent='Your past documents for Catalyst, and the structures Content Transformation drafts follow.';
+  const box=document.createElement('div');box.innerHTML=v132Card()+'<div class="v132-ctpl"><div class="k">Pipeline</div><h3>Content templates</h3></div>';
+  const at=head.nextSibling;[...box.childNodes].forEach(function(n){el.insertBefore(n,at);});
+  el.querySelectorAll('.rd-card .rd-blank').forEach(function(b){
+    if(/have their formats set inside their n8n workflows/.test(b.textContent))
+      b.innerHTML='The Catalyst documents (research brief, interview script, assessment, discovery call, growth plan) and the Pipeline briefs keep the formats set in their n8n workflows. '+
+        'The client proposal takes its sections and branding from your proposal template, your past documents above shape how the interview script, the assessment and the discovery call are written, '+
+        'and house rules in <a onclick="navPm(\'learning\')">Dashboard AI settings</a> steer them all.';});
+}
+(function(){
+  const _t=apRenderTemplates2;
+  apRenderTemplates2=async function(quick){
+    const p=v132Load(!quick);
+    const r=await _t.apply(this,arguments);
+    try{await p;v132Mount();}catch(e){console.warn('v132',e&&e.message);}
+    return r;
+  };
+})();
+
+/* ---------- the client proposal on a lead ---------- */
+async function v132Proposals(emails){
+  const ids=(emails||[]).filter(Boolean).map(function(e){return '"'+String(e).replace(/["\\]/g,'')+'"';}).join(',');
+  if(!ids)return [];
+  try{return (await apSb('agent_outputs?select=*&agent=eq.client_proposal&run_id=in.('+encodeURIComponent(ids)+')&order=created_at.desc&limit=10'))||[];}
+  catch(e){return [];}
+}
+function v132LeadOf(email){
+  const X=apE1Lead();const l=X.lead;
+  return l&&(l.email===email||(l.emails||[]).indexOf(email)>=0)?X:null;
+}
+/* the growth plan tab: its own section 5 */
+function v132Sec(){
+  const main=document.getElementById('main');if(!main)return null;
+  return [...main.querySelectorAll('section.block')].find(function(x){const h=x.querySelector('h2');return h&&/^\s*5\./.test(h.textContent);})||null;
+}
+async function v132Lead(){
+  if(typeof state==='undefined'||state.view!=='e1lead')return;
+  const X=apE1Lead();if(!X.lead)return;
+  const email=X.lead.email;
+  const r=await Promise.all([v132Proposals(X.lead.emails||[email]),v132Load(),typeof v125Load==='function'?v125Load():null]);
+  if(state.view!=='e1lead'||!apE1Lead().lead||apE1Lead().lead.email!==email)return;
+  const sec=v132Sec();if(!sec)return;
+  const outs=r[0];V132.props[email]=outs;
+  const old=sec.querySelector('.v132-pc');if(old)old.remove();
+  /* nothing to show before the assessment, unless a proposal is already on file or being written */
+  if(!outs.length&&!e1StageState(X.lead,X.D.outs,E1_STAGES[2]).done&&!V132.run[email])return;
+  const card=document.createElement('div');card.className='card v132-pc';card.dataset.email=email;
+  card.innerHTML=v132CardHtml(X.lead,outs[0]||null);
+  sec.appendChild(card);
+  if(V132.open[email]&&outs[0])v132Open(email,true);
+}
+function v132CardHtml(lead,o){
+  const em=esc(lead.email),run=V132.run[lead.email],d=apJson(o&&o.data),src=d.sources||[],tp=v132InUse('proposal_template');
+  const asks=typeof v125For==='function'?v125For(lead,'client_proposal').length:0;
+  return '<div class="ap-doc-t"><b>'+esc(o?(o.title||'Client proposal'):'Client proposal')+'</b><small>'+
+      (o?'Written '+fmtDate(o.created_at)+(d.edited&&d.edited.at?' · edited '+fmtDate(d.edited.at):'')+(src.length?' · from '+esc(src.map(function(s){return s.label;}).join(', ')):''):
+        'The proposal the client receives, from the call and the assessment'+(tp?', in the sections and branding of '+esc(tp.file_name):'. Add a past proposal in Templates and it follows its sections and branding')+'. It is written after the growth plan.')+'</small></div>'+
+    '<div class="statline" style="margin-top:4px">'+
+      (o?'<button class="btn navy v132-read" onclick="v132Open(\''+em+'\')">'+(V132.open[lead.email]?'Hide ▴':'Read here ▾')+'</button>':'')+
+      (o?'<button class="rd-btn sm v132-pdf" onclick="v132Print(\''+em+'\')">Save as PDF</button>':'')+
+      (o?'<button class="rd-btn sm v132-ask" onclick="v132Change(\''+em+'\')">What should change?</button>':'')+
+      (run?'':'<button class="rd-btn sm'+(o?'':' pri')+' v132-write" onclick="v132Ask(\''+em+'\')">'+(o?'Write it again':'Write the client proposal')+'</button>')+
+      (asks?'<button class="v132-n" onclick="apGo(\'learning\')" title="See them on AI settings, under From your feedback">'+asks+(asks===1?' change asked':' changes asked')+'</button>':'')+
+    '</div>'+
+    (run?'<div class="v132-run" role="status"><b>Writing the client proposal…</b><div class="v132-bar"><i></i></div>'+v132UsesHtml(run.uses)+
+      '<small class="v132-what">It takes a few minutes and shows here when it is ready. Nothing goes to the client: you review it first.</small></div>':'')+
+    '<div class="v132-dv" hidden></div>';
+}
+function v132Repaint(email){
+  const card=document.querySelector('.v132-pc[data-email="'+CSS.escape(email)+'"]');const X=v132LeadOf(email);
+  if(!card||!X)return;
+  card.innerHTML=v132CardHtml(X.lead,(V132.props[email]||[])[0]||null);
+  if(V132.open[email]&&(V132.props[email]||[])[0])v132Open(email,true);
+}
+/* what a run is built from: "Using 3 past documents and the call transcript", then each one */
+function v132UsesHtml(u){
+  u=u||[];
+  const nd=u.filter(function(x){return x.doc&&!x.off;}).length,call=u.some(function(x){return x.call&&!x.off;});
+  const sum=nd||call?'Using '+(nd?nd+' past document'+(nd===1?'':'s'):'')+(nd&&call?' and ':'')+(call?'the call transcript':''):'Built from';
+  return '<div class="v132-uses"><div class="t">'+esc(sum)+'</div>'+u.map(function(x){
+    return '<div class="u'+(x.off?' v132-off':'')+(x.call?' v132-cl':'')+(x.doc?' v132-pd':'')+'"><span class="v132-ck">'+(x.off?'–':'✓')+'</span><span>'+esc(x.label)+'</span></div>';}).join('')+'</div>';
+}
+
+/* ---------- the document, as the client sees it ---------- */
+function v132DocOf(o){
+  const d=apJson(o&&o.data);
+  if(d.doc&&Array.isArray(d.doc.sections))return d.doc;
+  return v132MdToDoc(o&&o.content_md||'');
+}
+/* a proposal kept only as markdown: # title, then ## sections */
+function v132MdToDoc(md){
+  const doc={title:'',sections:[]};let cur=null;
+  String(md||'').replace(/\r\n?/g,'\n').split('\n').forEach(function(l){
+    let m;
+    if(!doc.title&&(m=l.match(/^#\s+(.+)/))){doc.title=m[1].trim();return;}
+    if((m=l.match(/^##\s+(.+)/))){cur={title:m[1].trim(),body:'',sources:[]};doc.sections.push(cur);return;}
+    if(cur)cur.body+=l+'\n';
+  });
+  doc.sections.forEach(function(s){s.body=s.body.trim();});
+  return doc;
+}
+function v132DocMd(doc){
+  const L=['# '+(doc.title||'Proposal')];
+  if(doc.subtitle)L.push('',doc.subtitle);
+  const meta=[doc.prepared_for?'Prepared for '+doc.prepared_for:'',doc.prepared_by?'Prepared by '+doc.prepared_by:'',doc.date||''].filter(Boolean);
+  if(meta.length)L.push('',meta.join(' · '));
+  (doc.sections||[]).forEach(function(s){L.push('','## '+s.title,'',s.body||'');});
+  return L.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+function v132BrandOf(o){
+  const d=apJson(o&&o.data);
+  if(d.brand&&((d.brand.colors&&Object.keys(d.brand.colors).length)||d.brand.logo_url))return d.brand;
+  const t=v132InUse('proposal_template');return (t&&t.brand)||{};
+}
+function v132Tint(h){const x=v132Hex(h);if(!x)return '#F2F4F8';const m=function(i){return Math.round(parseInt(x.slice(i,i+2),16)*.1+255*.9);};return 'rgb('+m(1)+','+m(3)+','+m(5)+')';}
+function v132Stack(name,kind){
+  const fb=kind==='serif'?'Georgia,"Times New Roman",serif':'"Helvetica Neue",Arial,sans-serif';
+  name=v132Font(name).replace(/[^\w \-]/g,'');return name?'"'+name+'",'+fb:fb;
+}
+function v132FontLinks(b){
+  const f=(b&&b.fonts)||{},out=[];
+  [f.heading,f.body].forEach(function(n){
+    n=v132Font(n);if(!n||!/^[A-Za-z0-9 ]{2,40}$/.test(n)||V132_SYS.test(n)||out.some(function(x){return x.n===n;}))return;
+    const fam=encodeURIComponent(n).replace(/%20/g,'+');
+    out.push({n:n,id:'v132f-'+n.replace(/\s+/g,'-').toLowerCase(),urls:['https://fonts.googleapis.com/css2?family='+fam+':wght@400;600;700&display=swap','https://fonts.googleapis.com/css2?family='+fam+'&display=swap']});
+  });
+  return out;
+}
+function v132Fonts(b){
+  v132FontLinks(b).forEach(function(x){
+    if(document.getElementById(x.id))return;
+    x.urls.forEach(function(u,i){const l=document.createElement('link');l.rel='stylesheet';l.href=u;if(!i)l.id=x.id;document.head.appendChild(l);});
+  });
+}
+function v132Inline(s){
+  s=esc(String(s||''));
+  s=s.replace(/\[((?:FILL IN|ASSUMED|TO CONFIRM)[^\]]*)\]/gi,'<span class="v132-fill">[$1]</span>');
+  return s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>');
+}
+/* the proposal's markdown, safely: paragraphs (a single line break kept), lists, small headings, bold and italic */
+function v132Md(md){
+  const out=[];let list=null,para=[];
+  const fp=function(){if(para.length){out.push('<p>'+para.map(v132Inline).join('<br>')+'</p>');para=[];}};
+  const fl=function(){if(list){out.push('<'+list.t+'>'+list.items.map(function(i){return '<li>'+v132Inline(i)+'</li>';}).join('')+'</'+list.t+'>');list=null;}};
+  String(md||'').replace(/\r\n?/g,'\n').split('\n').forEach(function(line){
+    const s=line.trim();let m;
+    if(!s){fp();fl();return;}
+    if((m=s.match(/^#{1,6}\s+(.*)$/))){fp();fl();out.push('<h3>'+v132Inline(m[1])+'</h3>');return;}
+    if((m=s.match(/^[-*•]\s+(.*)$/))){fp();if(!list||list.t!=='ul'){fl();list={t:'ul',items:[]};}list.items.push(m[1]);return;}
+    if((m=s.match(/^\d{1,2}[.)]\s+(.*)$/))){fp();if(!list||list.t!=='ol'){fl();list={t:'ol',items:[]};}list.items.push(m[1]);return;}
+    fl();para.push(s);
+  });
+  fp();fl();return out.join('');
+}
+/* an edited section back to markdown */
+function v132ToMd(el){
+  const out=[];
+  const inline=function(n){let s='';n.childNodes.forEach(function(c){
+    if(c.nodeType===3)s+=c.nodeValue;
+    else if(c.nodeType===1){const t=c.tagName;
+      if(t==='STRONG'||t==='B'){const x=inline(c).trim();if(x)s+='**'+x+'**';}
+      else if(t==='EM'||t==='I'){const x=inline(c).trim();if(x)s+='*'+x+'*';}
+      else if(t==='BR')s+='\n';else s+=inline(c);}});return s;};
+  const flat=function(s){return s.replace(/\s+/g,' ').trim();};
+  el.childNodes.forEach(function(n){
+    if(n.nodeType===3){const t=flat(n.nodeValue);if(t)out.push(t,'');return;}
+    if(n.nodeType!==1)return;const t=n.tagName;
+    if(t==='UL'||t==='OL'){let k=0;[...n.children].filter(function(c){return c.tagName==='LI';}).forEach(function(li){const x=flat(inline(li));if(x)out.push((t==='OL'?(++k)+'. ':'- ')+x);});out.push('');}
+    else if(/^H[1-6]$/.test(t)){const x=flat(inline(n));if(x)out.push('### '+x,'');}
+    else{const x=inline(n).split('\n').map(flat).filter(Boolean).join('\n');if(x)out.push(x,'');}
+  });
+  return out.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+/* where each section came from, as the chips above it say */
+function v132SrcLabels(d){
+  return {template:'Structure from your template',questions:'Sorted by your discovery call questions',past:'Written like your past assessment',
+    call:d.call&&d.call.date?'From the call on '+v132Day(d.call.date):'From the call',assessment:'From the assessment',research:'From the research brief',
+    discovery:'From the discovery call framework',growth_plan:'From the growth plan'};
+}
+function v132DocHtml(o){
+  const doc=v132DocOf(o),b=v132BrandOf(o),c=b.colors||{},f=b.fonts||{},d=apJson(o&&o.data);
+  const p1=v132Hex(c.primary)||'#1C2647',p2=v132Hex(c.accent)||v132Hex(c.primary)||'#B08A3E';
+  const style='--b1:'+p1+';--b2:'+p2+';--bt:'+(v132Hex(c.text)||'#1D2433')+';--bs:'+v132Tint(p1)+';--bh:'+v132Stack(f.heading,'sans')+';--bb:'+v132Stack(f.body,'serif');
+  const firm=doc.prepared_by||'',lbl=v132SrcLabels(d);
+  const secs=(doc.sections||[]).map(function(s,i){
+    const tags=(s.sources||[]).filter(function(k,j,a){return lbl[k]&&a.indexOf(k)===j;}).map(function(k){return '<span>'+esc(lbl[k])+'</span>';}).join('');
+    return '<section class="v132-sec" data-i="'+i+'"><div class="hd"><span class="no">'+String(i+1).padStart(2,'0')+'</span><h2 class="t">'+esc(s.title||'')+'</h2></div>'+
+      (tags?'<div class="src">'+tags+'</div>':'')+'<div class="bd">'+v132Md(s.body||'')+'</div></section>';
+  }).join('');
+  const logo=/^https:\/\//.test(String(b.logo_url||''))?b.logo_url:'';
+  return '<div class="v132-doc" style="'+esc(style)+'">'+
+    '<div class="v132-page v132-cover">'+(logo?'<img class="lg" alt="'+esc(firm||'Logo')+'" src="'+esc(logo)+'">':(firm?'<div class="firm">'+esc(firm)+'</div>':''))+
+      '<div class="kick">'+esc(doc.kicker||'Proposal and Scope of Work')+'</div><h1 class="cv-t">'+esc(doc.title||'Proposal')+'</h1>'+
+      (doc.subtitle?'<p class="sub cv-s">'+esc(doc.subtitle)+'</p>':'')+'<div class="rule"></div>'+
+      '<div class="meta">'+(doc.prepared_for?'<b>Prepared for</b><span>'+esc(doc.prepared_for)+'</span>':'')+(firm?'<b>Prepared by</b><span>'+esc(firm)+'</span>':'')+(doc.date?'<b>Date</b><span>'+esc(doc.date)+'</span>':'')+'</div>'+
+      '<div class="foot">'+esc(doc.note||('Confidential. Prepared for '+(doc.client||'the client')+'.'))+'</div><div class="band"></div></div>'+
+    '<div class="v132-page v132-body">'+secs+'<div class="v132-pfoot"><span>'+esc(firm)+'</span><span>'+esc(doc.kicker||'Proposal and Scope of Work')+(doc.client?' · '+esc(doc.client):'')+'</span></div></div>'+
+  '</div>';
+}
+function v132Box(email){const c=document.querySelector('.v132-pc[data-email="'+CSS.escape(email)+'"]');return c?c.querySelector('.v132-dv'):null;}
+function v132DocBar(email){
+  const o=(V132.props[email]||[])[0],d=apJson(o&&o.data),em=esc(email);
+  if(V132.edit===email)return '<div class="v132-dbar"><button class="rd-btn sm pri" onclick="v132EditSave(\''+em+'\')">Save changes</button>'+
+    '<button class="rd-btn sm" onclick="v132EditStop(\''+em+'\')">Cancel</button><span class="note">Click any heading or paragraph to change it.</span></div>';
+  return '<div class="v132-dbar"><button class="rd-btn sm v132-edit" onclick="v132EditGo(\''+em+'\')">✎ Edit</button>'+
+    '<button class="rd-btn sm v132-dpdf" onclick="v132Print(\''+em+'\')">Save as PDF</button><span class="note">'+
+    esc(d.edited&&d.edited.at?'Edited '+fmtDate(d.edited.at)+' by '+String(d.edited.by||'').split('@')[0]+'. Save as PDF prints this version.':'Change anything in place. Save as PDF prints what you see.')+'</span></div>';
+}
+function v132Open(email,keep){
+  const card=document.querySelector('.v132-pc[data-email="'+CSS.escape(email)+'"]');if(!card)return;
+  const box=card.querySelector('.v132-dv'),btn=card.querySelector('.v132-read'),o=(V132.props[email]||[])[0];
+  const open=keep?true:box.hidden;
+  V132.open[email]=open&&!!o;box.hidden=!V132.open[email];if(btn)btn.textContent=V132.open[email]?'Hide ▴':'Read here ▾';
+  if(!V132.open[email]){if(V132.edit===email)V132.edit=null;box.innerHTML='';return;}
+  box.innerHTML=v132DocBar(email)+v132DocHtml(o);
+  if(V132.edit===email)v132EditOn(box);
+  v132Fonts(v132BrandOf(o));
+}
+function v132EditOn(box){
+  const dv=box.querySelector('.v132-doc');if(!dv)return;dv.classList.add('edit');
+  dv.querySelectorAll('.v132-sec .t,.v132-sec .bd,.cv-t,.cv-s').forEach(function(el){el.setAttribute('contenteditable','true');el.spellcheck=true;});
+}
+function v132EditGo(email){
+  const box=v132Box(email);if(!box||!box.querySelector('.v132-doc'))return;
+  V132.edit=email;
+  const bar=box.querySelector('.v132-dbar');if(bar)bar.outerHTML=v132DocBar(email);
+  v132EditOn(box);
+}
+function v132EditStop(email){V132.edit=null;v132Open(email,true);}
+async function v132EditSave(email){
+  const box=v132Box(email),o=(V132.props[email]||[])[0];if(!box||!o)return;
+  const before=v132DocOf(o),doc=JSON.parse(JSON.stringify(before)),dv=box.querySelector('.v132-doc');
+  const clean=function(el){return el?el.textContent.replace(/\s+/g,' ').trim():'';};
+  const t=clean(dv.querySelector('.cv-t')),s=dv.querySelector('.cv-s');
+  if(t)doc.title=t;if(s)doc.subtitle=clean(s);
+  dv.querySelectorAll('.v132-sec').forEach(function(sec){const x=doc.sections[+sec.dataset.i];if(!x)return;
+    x.title=clean(sec.querySelector('.t'))||x.title;x.body=v132ToMd(sec.querySelector('.bd'));});
+  if(JSON.stringify(doc)===JSON.stringify(before)){V132.edit=null;v132Open(email,true);nwToast('Nothing changed.');return;}
+  const d=apJson(o.data),body={data:Object.assign({},d,{doc:doc,edited:{at:new Date().toISOString(),by:apCfMe()}}),content_md:v132DocMd(doc),edited_by_human:true};
+  if(!o.snapshot)body.snapshot={doc:before,content_md:o.content_md||null,written_at:o.created_at};
+  const btn=box.querySelector('.v132-dbar .pri');if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  try{await apPatch('agent_outputs','id=eq.'+encodeURIComponent(o.id),body);}
+  catch(e){if(btn){btn.disabled=false;btn.textContent='Save changes';}nwToast('Could not save it: '+((e&&e.message)||e));return;}
+  Object.assign(o,body);V132.edit=null;v132Repaint(email);
+  nwToast('Saved. Save as PDF prints this version.');
+}
+/* Save as PDF: the document alone in a new window, printed with the brand's fonts */
+function v132Print(email){
+  const o=(V132.props[email]||[])[0];if(!o)return;
+  const b=v132BrandOf(o),doc=v132DocOf(o);
+  const css=(document.getElementById('v132css')||{}).textContent||'';
+  const links=v132FontLinks(b).map(function(x){return x.urls.map(function(u){return '<link rel="stylesheet" href="'+esc(u)+'">';}).join('');}).join('');
+  const w=window.open('','_blank');
+  if(!w){nwToast('Allow pop-ups for this site to save the PDF.');return;}
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc((doc.kicker||'Proposal')+(doc.client?' · '+doc.client:''))+'</title>'+links+
+    '<style>'+css+'@page{size:letter;margin:0}html,body{margin:0;background:#fff}.v132-doc{background:none;padding:0;gap:0;display:block;border-radius:0}'+
+    '.v132-page{box-shadow:none;border-radius:0;max-width:none;width:auto;break-after:page;padding:.9in .85in}.v132-cover{min-height:11in;padding-top:1in}'+
+    '.v132-sec{break-inside:avoid-page}</style></head><body>'+v132DocHtml(o)+'</body></html>');
+  w.document.close();
+  /* printed once its fonts are in (or a moment later if they never come) */
+  const go=function(){if(go.done)return;go.done=1;try{V132.printer(w);}catch(e){}};
+  try{(w.document.fonts&&w.document.fonts.ready||Promise.resolve()).then(function(){setTimeout(go,350);});}catch(e){}
+  setTimeout(go,4000);
+}
+
+/* ---------- write it: what it is built from, then the run ---------- */
+async function v132Call(l){
+  const ems=(l.emails||[l.email]).map(function(e){return String(e||'').toLowerCase();});
+  let items=[];try{items=await apFtLoad();}catch(e){items=(typeof AP_FT!=='undefined'&&AP_FT.items)||[];}
+  try{await apCxLoad();}catch(e){}
+  const mine=(items||[]).filter(function(c){return apCmGuests(c).some(function(g){return ems.indexOf(String(g.email||'').toLowerCase())>=0;});})
+    .sort(function(a,b){return String(b.start||'').localeCompare(String(a.start||''));});
+  const c=mine[0];
+  return c?{id:String(c.id),title:c.title||'',start:c.start||c.created_at||''}:null;
+}
+function v132Uses(X,call){
+  const as=e1StageState(X.lead,X.D.outs,E1_STAGES[2]),rs=e1StageState(X.lead,X.D.outs,E1_STAGES[0]);
+  const u=[],tp=v132InUse('proposal_template'),dt=v132InUse('discovery_template'),pa=v132InUse('past_assessment');
+  if(tp){const n=(tp.sections||[]).length,br=((tp.brand||{}).found||[]).length;
+    u.push({doc:true,label:'Proposal template: '+tp.file_name+(n||br?' ('+[n?n+' sections':'',br?'your branding':''].filter(Boolean).join(', ')+')':'')});}
+  else u.push({off:true,label:'No proposal template yet, so a standard layout. Add one in Templates.'});
+  if(dt)u.push({doc:true,label:'Discovery call questions: '+dt.file_name});
+  if(pa)u.push({doc:true,label:'Past assessment: '+pa.file_name});
+  u.push(call?{call:true,label:'The call on '+v132Day(call.start)+': '+call.title+' (transcript)'}:{off:true,label:'No recorded call with this lead, so the documents on file.'});
+  if(as.done)u.push({label:'The assessment'+(as.out&&as.out.created_at?' of '+v132Day(as.out.created_at):'')});
+  if(rs.done)u.push({label:'The research brief'});
+  return u;
+}
+async function v132Ask(email){
+  const X=v132LeadOf(email);if(!X)return;
+  const l=X.lead,name=l.prospect_name||email;
+  await v132Load();
+  const call=await v132Call(l),uses=v132Uses(X,call);
+  V132.ask={email:l.email,call:call,uses:uses};
+  nwModal('v132M','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · '+esc(name)+'</div><h2>Write the client proposal for '+esc(name)+'?</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v132-m">'+v132UsesHtml(uses)+
+      '<p>It writes the proposal the client receives, in your template\'s sections and branding. It takes a few minutes and shows on this page when it is ready. Nothing goes to the client: you review it first.</p>'+
+      '<p class="v132-msg" id="v132Msg" role="status" aria-live="polite"></p>'+
+      '<div class="nw-m-foot"><span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button>'+
+        '<button type="button" class="nw-btn nw-btn-primary" id="v132Go" onclick="v132Go()">'+nwIc('check',15)+'Write it</button></div>'+
+    '</div>');
+}
+async function v132Go(){
+  const a=V132.ask;if(!a)return;
+  const btn=document.getElementById('v132Go'),msg=document.getElementById('v132Msg');
+  const say=function(t,err){if(msg){msg.textContent=t;msg.classList.toggle('err',!!err);}};
+  if(btn)btn.disabled=true;say('Starting…');
+  let call=null;const uses=a.uses.slice();
+  if(a.call){
+    call={id:a.call.id,title:a.call.title,date:a.call.start,transcript:''};
+    try{call.transcript=apFtText(await apFtTranscript(a.call.id)).slice(0,60000);}catch(e){}
+    /* no transcript after all: the run says so, and works from the documents */
+    if(!call.transcript){const i=uses.findIndex(function(x){return x.call;});
+      if(i>=0)uses[i]={off:true,label:'The call on '+v132Day(a.call.start)+': its transcript could not be read, so the documents on file.'};}
+  }
+  try{
+    const j=await apXTimed(apX(V132_HOOK,{leadEmail:a.email,call:call},'Catalyst · Client Proposal'),30000);
+    if(!j||j.ok===false)throw new Error((j&&j.message)||'n8n did not start it.');
+  }catch(e){if(btn)btn.disabled=false;say('Could not start it: '+((e&&e.message)||e),true);return;}
+  V132.run[a.email]={t0:new Date(Date.now()-5000).toISOString(),uses:uses};V132.ask=null;nwModalClose();
+  nwToast('Writing the client proposal. It shows here when it is ready.');
+  if(!document.querySelector('.v132-pc[data-email="'+CSS.escape(a.email)+'"]'))await v132Lead();
+  v132Repaint(a.email);v132Poll(a.email);
+}
+function v132Poll(email){
+  const run=V132.run[email];if(!run)return;
+  clearTimeout(run.timer);
+  run.timer=setTimeout(async function(){
+    if(!V132.run[email])return;
+    let got=[];
+    try{got=(await apSb('agent_outputs?select=id&agent=eq.client_proposal&run_id=eq.'+encodeURIComponent(email)+'&created_at=gt.'+encodeURIComponent(run.t0)+'&limit=1'))||[];}catch(e){}
+    if(got.length){delete V132.run[email];V132.open[email]=true;nwToast('The client proposal is ready.');if(typeof state!=='undefined'&&state.view==='e1lead')v132Lead();return;}
+    if(Date.now()-Date.parse(run.t0)>15*60e3){delete V132.run[email];v132Repaint(email);nwToast('The client proposal is taking longer than usual. Check back in a few minutes.');return;}
+    v132Poll(email);
+  },8000);
+}
+
+/* ---------- what should change in the client proposal (the v125 dialog, for this document) ---------- */
+function v132Change(email){
+  const X=v132LeadOf(email);if(!X)return;
+  const name=X.lead.prospect_name||email;
+  V132.chg=X.lead.email;
+  nwModal('v132C','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · '+esc(name)+'</div><h2>What should change in the client proposal?</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v125-m">'+
+      '<label class="nw-field"><span class="nw-lbl">Your reason<small>Say what to add, cut or do differently next time. It shows on AI settings, where it can become a house rule that every Catalyst agent follows.</small></span>'+
+        '<textarea class="nw-input nw-textarea" id="v132Ta" rows="4" maxlength="600"></textarea></label>'+
+      '<p class="v125-msg" id="v132CMsg" role="status" aria-live="polite"></p>'+
+      '<div class="nw-m-foot"><span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button>'+
+        '<button type="button" class="nw-btn nw-btn-primary" id="v132CGo" onclick="v132ChangeSave()">'+nwIc('check',15)+'Save the reason</button></div>'+
+    '</div>');
+  setTimeout(function(){const t=document.getElementById('v132Ta');if(t)try{t.focus({preventScroll:true});}catch(e){}},0);
+}
+async function v132ChangeSave(){
+  const email=V132.chg;if(!email)return;
+  const ta=document.getElementById('v132Ta'),btn=document.getElementById('v132CGo'),msg=document.getElementById('v132CMsg');
+  const say=function(t,err){if(msg){msg.textContent=t;msg.classList.toggle('err',!!err);}};
+  const t=String((ta&&ta.value)||'').replace(/\s+/g,' ').trim();
+  if(t.length<12){say('Write a sentence or two, so it can become a rule.',true);if(ta)ta.focus();return;}
+  if(btn)btn.disabled=true;say('Saving…');
+  try{await apPost('agent_feedback',{agent:'client_proposal',target_type:V125_TT,target_id:v125Key(email,'client_proposal'),action:'changes',feedback:t.slice(0,600),author:apCfMe()});}
+  catch(e){if(btn)btn.disabled=false;say('Could not save it: '+((e&&e.message)||e),true);return;}
+  V132.chg=null;nwModalClose();nwToast('Saved. Make it a rule on AI settings.');
+  try{await v125Load(true);}catch(e){}
+  v132Repaint(email);
+}
+/* Deliverables opens the proposal on its lead */
+function v132OpenLead(email){V132.open[email]=true;openE1LeadStage(email,4);}
+
+/* ---------- on the lead page, and in the question before a run ---------- */
+(function(){
+  const _r=renderE1Lead;
+  renderE1Lead=function(){
+    const r=_r.apply(this,arguments);
+    Promise.resolve(r).then(function(){return v132Lead();}).catch(function(e){console.warn('v132 lead',e&&e.message);});
+    return r;
+  };
+  const _a=v120Ask;
+  v120Ask=async function(email,k){
+    const r=await _a.apply(this,arguments);
+    try{await v132Load();v132AskLine(k);}catch(e){}
+    return r;
+  };
+})();
+function v132AskLine(k){
+  const m=document.getElementById('v120M');if(!m||m.querySelector('.v132-uses'))return;
+  const dt=v132InUse('discovery_template'),pa=v132InUse('past_assessment'),pt=v132InUse('proposal_template'),u=[];
+  if(dt&&k<=3)u.push({doc:true,label:'Discovery call questions: '+dt.file_name+', for how the interview script and the discovery framework ask questions'});
+  if(pa&&k<=2)u.push({doc:true,label:'Past assessment: '+pa.file_name+', for the assessment\'s order and tone'});
+  if(pt&&k<=4)u.push({doc:true,label:'Proposal template: '+pt.file_name+', for the client proposal written after the growth plan'});
+  if(!u.length)return;
+  const box=document.createElement('div');box.innerHTML=v132UsesHtml(u);
+  const body=m.querySelector('.v120-m'),p=body&&body.querySelector(':scope > p');
+  if(p)p.before(box.firstElementChild);else if(body)body.prepend(box.firstElementChild);
+}
 </script>
 <script>
 /* ===================================================================
