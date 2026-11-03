@@ -27884,7 +27884,8 @@ const AP_WHERE=[
   ['Ad upload analyzer','Not yet','no']];
 async function apRenderAiSettings(){
   const pg=document.getElementById('page-learning');if(!pg)return;
-  pg.innerHTML='<div class="rd-page"><div class="loading">Loading your AI settings…</div></div>';
+  /* v134: drawn again in place (window.V134.keep, see v134js), the page stays on screen until the new one is ready, so the window keeps its place */
+  if(!(window.V134&&window.V134.keep&&pg.querySelector('.ap-ais')))pg.innerHTML='<div class="rd-page"><div class="loading">Loading your AI settings…</div></div>';
   const r=await Promise.all([apRulesLoad(true),apAiSettingsLoad(true),apSb('agent_feedback?select=id,agent,target_type,action,feedback,author,created_at&feedback=not.is.null&order=created_at.desc&limit=100').catch(function(){return [];})]);
   if(S.page!=='learning')return;
   const seenFb={};const rules=r[0],set=r[1],fb=(r[2]||[]).filter(function(f){const t=String(f.feedback||'').trim();
@@ -52937,6 +52938,53 @@ function v132AskLine(k){
   const body=m.querySelector('.v120-m'),p=body&&body.querySelector(':scope > p');
   if(p)p.before(box.firstElementChild);else if(body)body.prepend(box.firstElementChild);
 }
+</script>
+<script id="v134js">
+/* ===================================================================
+   v134: AI settings keeps its place when it draws itself again. Add
+   rule, Save changes, Cancel and Delete draw the page again in place,
+   and it used to put its loading screen up first: the page emptied for
+   a moment, so the window jumped to the top and the rule just added
+   (Make it a rule brings the box into view lower down) was out of
+   sight. Now a redraw in place keeps the page on screen until the new
+   one is ready (V134.keep, read by apRenderAiSettings; meanwhile it
+   takes no clicks and the rule box no typing, as under the loading
+   screen) and keeps the scroll, and a rule just added is brought into
+   view when it is not on screen. Opening AI settings from another page
+   still starts at the top: a page change draws it from inside nav(),
+   which V134.nav counts.
+   =================================================================== */
+var V134={nav:0,keep:false};
+(function(){
+  const _nav=nav;
+  nav=function(){V134.nav++;try{return _nav.apply(this,arguments);}finally{V134.nav--;}};
+  if(typeof apRenderAiSettings!=='function')return;
+  const _r=apRenderAiSettings;
+  apRenderAiSettings=async function(){
+    const pg=document.getElementById('page-learning');
+    const again=!V134.nav&&S.page==='learning'&&!!(pg&&pg.querySelector('.ap-ais'));
+    const y=window.scrollY,before={};
+    (AP_RULES||[]).forEach(function(r){if(r&&r.id)before[r.id]=1;});
+    /* until the new page is ready the one on screen takes no clicks and the rule box no typing, as under the loading screen */
+    const ta=again&&document.getElementById('apRuleTa');
+    if(again){pg.style.pointerEvents='none';if(ta)ta.readOnly=true;}
+    let v;
+    try{
+      let p;V134.keep=again;
+      try{p=_r.apply(this,arguments);}finally{V134.keep=false;}
+      v=await p;
+    }finally{if(again){pg.style.pointerEvents='';if(ta)ta.readOnly=false;}}
+    if(again&&S.page==='learning'){
+      if(Math.abs(window.scrollY-y)>1)window.scrollTo(0,y);
+      const fresh=(AP_RULES||[]).filter(function(r){return r&&r.id&&!before[r.id];});
+      if(fresh.length===1){
+        const t=pg.querySelector('.ap-rule input[onchange*="'+String(fresh[0].id).replace(/["\\]/g,'')+'"]'),row=t&&t.closest('.ap-rule');
+        if(row){const b=row.getBoundingClientRect();if(b.top<72||b.bottom>window.innerHeight-8)row.scrollIntoView({block:'center'});}
+      }
+    }
+    return v;
+  };
+})();
 </script>
 <script>
 /* ===================================================================
