@@ -454,15 +454,15 @@
     <h2><span class="num">3.</span>Google Calendar Integration</h2>
     <p>With your permission, the dashboard uses the Google Calendar API to:</p>
     <ul>
-      <li>Show your Google Calendar events alongside your dashboard appointments;</li>
-      <li>Create a Google Calendar event when you create an appointment in the dashboard;</li>
-      <li>Update, cancel, or delete that Google Calendar event when you change the appointment in the dashboard;</li>
-      <li>Add the attendees you choose to an appointment, which lets Google send them an invitation; and</li>
-      <li>Check your calendar for changes made in Google to events the dashboard created (new date, time, length, location, or cancellation) and apply those changes to the matching dashboard appointment.</li>
+      <li>Show your Google Calendar events, from a week ago to 45 days ahead, alongside your dashboard appointments;</li>
+      <li>Create a Google Calendar event when you create an appointment in the dashboard and tick "Also send to Google Calendar";</li>
+      <li>Update that Google Calendar event when you change the appointment in the dashboard, and remove it when you cancel the appointment; and</li>
+      <li>Check your calendar for changes made in Google to events the dashboard created (a new date, time, or length, or a cancellation) and apply those changes to the matching dashboard appointment.</li>
     </ul>
+    <p>The dashboard does this from your browser while you have it open: it reads your calendar about every five minutes and whenever you come back to it.</p>
     <p><span class="label">Calendar events not created through the dashboard.</span> Other events on your connected Google Calendar may be retrieved and displayed temporarily in the dashboard so you can view your schedule. These events are not copied into or persistently stored in our dashboard database.</p>
     <p><span class="label">Calendar events created through the dashboard.</span> When an appointment is created through the dashboard, we store the corresponding appointment information and Google Calendar event ID so the two records can remain synchronized.</p>
-    <p>Events the dashboard creates identify clients by initials and a client ID number only, not by full name.</p>
+    <p>Events the dashboard creates on your Google Calendar carry no client details: the appointment's title and place with any client names, initials, and ID numbers taken out, its time, and the note "From the care portal. Client details stay in the portal." They have no attendees, so Google sends no invitations.</p>
   </section>
 
   <section id="use">
@@ -475,15 +475,16 @@
   <section id="storage">
     <h2><span class="num">5.</span>Where Google User Data Is Stored</h2>
     <p><span class="label">Dashboard database.</span> For appointments created in the dashboard, we store the appointment details (title, date, time, length, location, attendees, and status) together with the matching Google Calendar event ID. Our database is hosted by Supabase.</p>
-    <p><span class="label">Your browser.</span> When you connect Google Calendar in the dashboard, Google gives your browser a short-lived access token. It is held in memory for your current session and is not saved by us.</p>
-    <p><span class="label">Calendar sync service.</span> Keeping your organization's calendar in sync runs on our automation platform (a self-hosted n8n instance). It holds an authorized Google Calendar connection for your organization, stored encrypted, and uses it only for syncing. Every 10 minutes it reads events in a window from 30 days in the past to 180 days ahead to find changes to dashboard-created events. The platform keeps a log of each run, which can include the event details it read. These logs are deleted automatically after about 14 days.</p>
+    <p><span class="label">Your Google Calendar connection.</span> When you connect, Google gives the dashboard a one-time code, and our server exchanges it with Google for a lasting connection (a refresh token). We keep that connection encrypted in our database, together with your Google account's ID, the email address on your calendar, and the permission you granted, so you stay connected on any device until you disconnect. The refresh token never leaves our server. We use it only to give your browser short-lived access to your own calendar, about an hour at a time, while you are signed in to the dashboard.</p>
+    <p><span class="label">Your browser.</span> The short-lived access token is held in your browser's memory and is not saved on your device. The dashboard uses it to read and update your calendar directly with Google. Your Google Calendar events are read live and are not stored with the connection.</p>
+    <p><span class="label">Our automation platform.</span> Our automation platform (a self-hosted n8n instance) does not connect to your Google Calendar. When you ask the AI assistant a question, the request, including any Google Calendar events in its snapshot (see section 6), passes through it on the way to Anthropic. The platform keeps a log of each run, which is deleted automatically after about 14 days.</p>
   </section>
 
   <section id="ai">
     <h2><span class="num">6.</span>AI Assistant</h2>
-    <p>The dashboard includes an optional AI assistant that answers questions about information currently available in your organization's dashboard. When you choose to use the assistant, your question is sent to Anthropic's Claude API together with a snapshot of the dashboard information the assistant uses to answer it. This information may include appointments and connected Google Calendar event information displayed in the dashboard.</p>
+    <p>The dashboard includes an optional AI assistant that answers questions about information currently available in your organization's dashboard. When you choose to use the assistant, your question is sent through our automation platform (see section 5) to Anthropic's Claude API, together with a snapshot of the dashboard information the assistant uses to answer it. This information may include appointments and up to 20 of the connected Google Calendar events displayed in the dashboard.</p>
     <p>Google user data is transferred to Anthropic only when you affirmatively use the AI assistant, and only for the purpose of generating the response you requested. We do not use Google user data to develop, improve, or train generalized artificial intelligence or machine-learning models.</p>
-    <p>Clients appear in the snapshot by initials and client ID number only. We keep a record of each question and answer in your organization's dashboard database.</p>
+    <p>Clients appear in the snapshot as Client 1, Client 2, and so on, and homes as Home A, Home B, and so on, never by name, initials, or client ID number. Identity details on forms, email addresses, and phone numbers are left out. The dashboard puts the real names back only when it shows you the answer. We keep a record of each question and answer in your organization's dashboard database.</p>
   </section>
 
   <section id="sharing">
@@ -528,9 +529,9 @@
     <h2><span class="num">11.</span>Data Retention</h2>
     <ul>
       <li><span class="label">Dashboard appointments and event IDs:</span> kept until you or your organization delete them, or until your organization's account is closed.</li>
-      <li><span class="label">Calendar sync logs:</span> deleted automatically after about 14 days.</li>
-      <li><span class="label">Google access in your browser:</span> ends when your session ends or the token expires.</li>
-      <li><span class="label">Your organization's Google Calendar connection:</span> kept until it is disconnected or access is revoked.</li>
+      <li><span class="label">Automation platform logs, including AI assistant requests:</span> deleted automatically after about 14 days.</li>
+      <li><span class="label">Google access tokens in your browser:</span> last about an hour, and end sooner when you close the dashboard, sign out, or disconnect.</li>
+      <li><span class="label">Your Google Calendar connection:</span> kept until you disconnect it in the dashboard, remove the dashboard's access in your Google Account, or Google ends it. Disconnecting deletes it from our server and asks Google to revoke the permission, unless another dashboard login uses the same Google account.</li>
       <li><span class="label">AI assistant questions and answers:</span> kept in your organization's dashboard until deleted or the account is closed.</li>
       <li><span class="label">Other information you give us:</span> kept as long as reasonably needed to provide our services, keep business records, meet legal requirements, resolve disputes, or enforce agreements.</li>
     </ul>
