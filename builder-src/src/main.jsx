@@ -895,4 +895,10 @@ if (window.__SB_TEST__ === true) {
 
 store.init();
 canonicalize();
+// The AI Paragon logo (also the tab icon, see index.html) stands in for the P mark in the top bar
+// once it has loaded; if it can't load, the P stays.
+const logo = new Image();
+logo.onload = () => { if (logo.naturalWidth) document.documentElement.classList.add('ap-logo-ok'); };
+logo.src = 'https://www.aiparagonconsulting.com/logo.png';
+
 createRoot(document.getElementById('root')).render(<App />);
