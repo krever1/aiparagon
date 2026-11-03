@@ -518,6 +518,29 @@ function check(label, ok, detail) {
     await ctx.close();
   }
 
+  // 17. hang-ups (Nov 3): end_call replaces Vapi's endCall; the tool server hangs up only once the caller is done, and
+  //     the timeline says when it didn't and why.
+  {
+    const { ctx, page } = await open(BASE + '/voice/conversations', { testHook: true });
+    const h = await page.evaluate(() => {
+      const T = window.__VC_TEST__;
+      const text = (html) => { const d = document.createElement('div'); d.innerHTML = html; document.body.appendChild(d); const t = d.innerText.replace(/\s+/g, ' ').trim(); d.remove(); return t; };
+      const c = { id: 't', transcript: [['Caller', 'hi'], ['Agent', 'hello'], ['Caller', 'wait']], actions: [] };
+      const card = (st) => T.stepCard(c, Object.assign({ after: 0 }, st), 0, [st], false);
+      const cls = (html) => { const d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild.className; };
+      const no = card({ tool: 'end_call', result: 'NOT YET. Don\'t hang up: the call is still on. The caller isn\'t done: they said "That\'s all. But don\'t you wanna". You already said goodbye, so start with a few words like "Oh, sorry, go ahead," then answer what they said, and ask if there\'s anything else you can help with.' });
+      const yes = card({ tool: 'end_call', result: 'Ending the call. Say nothing more.' });
+      const old = card({ tool: 'endCall' });
+      return { no: text(no), noCls: cls(no), yes: text(yes), old: text(old), oldCls: cls(old),
+        ended: ['assistant-ended-call', 'assistant-ended-call-after-message-spoken', 'customer-ended-call', 'silence-timed-out'].map(T.ended) };
+    });
+    check('hang-ups: a refused end_call reads Didn\'t hang up yet, with what the caller said', /^× Didn't hang up yet end_call/.test(h.no) && /the call went on\. The caller isn't done: they said "That's all\. But don't you wanna"\./.test(h.no) && /changed/.test(h.noCls) && !/You already said goodbye/.test(h.no), h.no);
+    check('hang-ups: an end_call that went through reads Hung up', /^× Hung up end_call/.test(h.yes) && /hung up a second after her goodbye/.test(h.yes), h.yes);
+    check('hang-ups: older calls with Vapi\'s endCall read as before', /^× Ended the call endCall/.test(h.old) && /caller was still talking afterwards/.test(h.old) && /warn/.test(h.oldCls), h.old);
+    check('hang-ups: every agent-ended reason reads Agent ended the call', JSON.stringify(h.ended) === JSON.stringify(['Agent ended the call', 'Agent ended the call', 'Caller hung up', 'Went quiet, call timed out']), JSON.stringify(h.ended));
+    await ctx.close();
+  }
+
   // without a baseline any page error fails; with one, only errors the baseline did not have
   const newErrors = pageErrors.patched.filter((e) => !pageErrors.original.some((o) => o.split(' :: ')[1] === e.split(' :: ')[1]));
   check(BASELINE ? 'no new page errors' : 'no page errors', newErrors.length === 0, newErrors.slice(0, 3).join(' | '));
