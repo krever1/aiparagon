@@ -5292,9 +5292,11 @@ function stepCard(c, s, n, steps, canEdit) {
     const failed = !movedNow && !twice && (s.ok === false || /taken|not one of|switched off|not booked yet/i.test(res));
     cls = failed ? " changed" : "";
     const gap = /The address has no (house number or city|house number|city)\./.exec(res);
+    // A browser call with no caller ID books only with a callback number (tool server, Nov 4).
+    const noNum = /no callback number for the booking/.test(res);
     if (movedNow) body += '<div class="sm">Moved the booking made on this call from <b>' + esc(movedNow[1]) + "</b> to <b>" + esc(movedNow[2]) + "</b>, so there is still one booking</div>";
     else if (twice) body += '<div class="sm">' + esc(twice[1]) + " was already booked on this call, so it wasn't booked twice</div>";
-    else body += '<div class="sm">' + (failed ? "Tried " : "Booked ") + esc(a.slot || (c.actions && c.actions[s.ai] ? actionResult(c.actions[s.ai], c) : "") || "a time") + (failed ? ", not booked" + (gap ? ": the address had no " + gap[1] : "") : "") + "</div>";
+    else body += '<div class="sm">' + (failed ? "Tried " : "Booked ") + esc(a.slot || (c.actions && c.actions[s.ai] ? actionResult(c.actions[s.ai], c) : "") || "a time") + (failed ? ", not booked" + (gap ? ": the address had no " + gap[1] : noNum ? ": no callback number yet" : "") : "") + "</div>";
     if (act) btns.push('<button class="btn sm" data-act="' + act + '">Open the booking</button>');
   } else if (tool === "reschedule_appointment") {
     const a = s.args || {};
@@ -5956,7 +5958,8 @@ function buildLive(raw) {
         const failed = !movedNow && !twice && /taken|not one of|switched off|no time was supplied|not booked yet/i.test(res);
         const ap = !failed && apptByCall[c.id];
         const gap = /The address has no (house number or city|house number|city)\./.exec(res);
-        return { t: e.tool, r: movedNow ? "Moved the booking made on this call from " + movedNow[1] : twice ? "Already booked on this call, not booked twice" : ap ? "" : "Asked for " + (a.slot || "a time") + (failed ? ", not booked" + (gap ? ": the address had no " + gap[1] : "") : ""), ok: !failed, ref: ap ? { kind: "appt", id: ap.id } : null };
+        const noNum = /no callback number for the booking/.test(res);
+        return { t: e.tool, r: movedNow ? "Moved the booking made on this call from " + movedNow[1] : twice ? "Already booked on this call, not booked twice" : ap ? "" : "Asked for " + (a.slot || "a time") + (failed ? ", not booked" + (gap ? ": the address had no " + gap[1] : noNum ? ": no callback number yet" : "") : ""), ok: !failed, ref: ap ? { kind: "appt", id: ap.id } : null };
       }
       if (e.tool === "check_availability") {
         const slots = parseOffered(e.result, e.created_at);

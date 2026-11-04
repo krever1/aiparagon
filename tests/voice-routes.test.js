@@ -604,6 +604,31 @@ function check(label, ok, detail) {
     await ctx.close();
   }
 
+  // 20. a browser call books only with a callback number (tool server, Nov 4): the refusal says why, like a missing
+  //     house number does, on the timeline card and on the live call row.
+  {
+    const { ctx, page } = await open(BASE + '/voice/conversations', { testHook: true });
+    const b = await page.evaluate(() => {
+      const T = window.__VC_TEST__;
+      const text = (html) => { const d = document.createElement('div'); d.innerHTML = html; document.body.appendChild(d); const t = d.innerText.replace(/\s+/g, ' ').trim(); d.remove(); return t; };
+      const cls = (html) => { const d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild.className; };
+      const c = { id: 't', transcript: [['Caller', 'hi'], ['Agent', 'hello']], actions: [] };
+      const NO = 'Not booked yet. There is no caller ID on this call and no callback number for the booking, so nobody could reach them and their next call would not find it. Ask for the best number to reach them (if they already gave it, read it back), and once they say yes, book again with the same time and every digit of it in phone.';
+      const GAP = 'Not booked yet. The address has no house number. Ask for the house number, then book again with the same time.';
+      const card = (result) => { const st = { tool: 'book_appointment', after: 0, args: { slot: 'Thursday, November 5 at 10:30 AM' }, result: result }; return T.stepCard(c, st, 0, [st], false); };
+      const at = (s) => '2026-11-04T18:0' + s + ':00Z';
+      const ev = (i, result) => ({ call_id: 'c1', created_at: at(i), tool: 'book_appointment', args: { slot: 'Thursday, November 5 at 10:30 AM' }, result: result });
+      const V = T.buildLive({ calls: [{ id: 'c1', started_at: at(0), ended_at: at(9), source: 'web', customer_name: 'Sam Lee', transcript: 'AI: Hi\nUser: Hi', outcome: 'no_booking' }],
+        events: [ev(1, NO), ev(2, GAP)], missions: [], approvals: [], escalations: [], knowledge: [], caseUpdates: [], suggestions: [], authority: [], feedback: [], rules: [], versions: [], collections: [], library: [], notifications: [], appointments: [] });
+      const call = V.calls.find((x) => x.id === 'c1');
+      return { no: text(card(NO)), noCls: cls(card(NO)), gap: text(card(GAP)), live: (call.actions || []).filter((a) => a.t === 'book_appointment').map((a) => ({ r: a.r, ok: a.ok })) };
+    });
+    check('no callback number: the card says the booking was refused and why', /Tried Thursday, November 5 at 10:30 AM, not booked: no callback number yet/.test(b.no) && /changed/.test(b.noCls), b.no);
+    check('no callback number: a missing house number still reads as before', /not booked: the address had no house number/.test(b.gap) && !/callback/.test(b.gap), b.gap);
+    check('no callback number: the live rows say so', JSON.stringify(b.live) === JSON.stringify([{ r: 'Asked for Thursday, November 5 at 10:30 AM, not booked: no callback number yet', ok: false }, { r: 'Asked for Thursday, November 5 at 10:30 AM, not booked: the address had no house number', ok: false }]), JSON.stringify(b.live));
+    await ctx.close();
+  }
+
   // without a baseline any page error fails; with one, only errors the baseline did not have
   const newErrors = pageErrors.patched.filter((e) => !pageErrors.original.some((o) => o.split(' :: ')[1] === e.split(' :: ')[1]));
   check(BASELINE ? 'no new page errors' : 'no page errors', newErrors.length === 0, newErrors.slice(0, 3).join(' | '));
