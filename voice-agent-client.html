@@ -5220,7 +5220,7 @@ function stepsFor(c) {
 }
 
 function clock(sec) { sec = Math.max(0, Math.round(Number(sec) || 0)); return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"); }
-const STEP_TITLE = { lookup_knowledge: "Looked up an answer", escalate_to_human: "Flagged for a person", check_availability: "Checked the calendar", book_appointment: "Booking", reschedule_appointment: "Moved a booking", add_case_details: "Added to their file", find_caller: "Looked for their file", endCall: "Ended the call", send_confirmation: "Sent a confirmation" };
+const STEP_TITLE = { lookup_knowledge: "Looked up an answer", escalate_to_human: "Flagged for a person", check_availability: "Checked the calendar", book_appointment: "Booking", reschedule_appointment: "Moved a booking", add_case_details: "Added to their file", find_caller: "Looked for their file", read_back_number: "Read the number back", endCall: "Ended the call", send_confirmation: "Sent a confirmation" };
 
 function kbName(id) {
   const k = kbList().find((x) => x.id === id);
@@ -5340,6 +5340,21 @@ function stepCard(c, s, n, steps, canEdit) {
       : "She couldn't check the file, so she took them as a new caller.") + "</div>";
     if (kind === "match") { const cu = customerForCall(c); btns.push('<button class="btn sm" data-client="' + esc(cu ? cu.id : "call:" + c.id) + '" data-tab="timeline">Open their file</button>'); }
     if (s.result) body += '<details class="sres"><summary>What the agent was told</summary><div>' + esc(s.result) + "</div></details>";
+  } else if (tool === "read_back_number") {
+    // Nov 5: the read-back comes from the caller's own digits, so a number the agent heard wrong is put right before she reads it.
+    const a = s.args || {};
+    const res = String(s.result || "");
+    const m = /"([\d. ]+?)\. Is that right\?"/.exec(res);
+    const told = m ? m[1].replace(/\D/g, "") : "";
+    const heard = String(a.phone || "").replace(/\D/g, "");
+    if (!m) {
+      cls = " changed";
+      body += '<div class="sm">' + (/no full number to read back/.test(res) ? "There was no full number to read back yet, so she was told to ask for it." : esc(res.slice(0, 160))) + "</div>";
+    } else {
+      if (heard && told !== heard) cls = " changed";
+      body += '<div class="sq">' + esc(heard ? "She heard " + heard : "No digits passed") + "</div>";
+      body += '<div class="sm">' + (heard && told !== heard ? "That isn't what the caller said, so she read back the caller's own digits: " : "She read back the caller's digits: ") + esc(m[1]) + (/only \d+ digits/.test(res) ? ". That's short, so she checked for missing digits." : "") + "</div>";
+    }
   } else if (tool === "endCall") {
     const res = String(s.result || "");
     if (/^NOT YET\b/.test(res)) {
@@ -5350,7 +5365,8 @@ function stepCard(c, s, n, steps, canEdit) {
       body += '<div class="sm">She went to hang up, but the caller was still talking or hadn\'t said they were done, so the call went on. ' + esc(why) + "</div>";
     } else if (/^Ending the call\b/.test(res)) {
       title = "Hung up";
-      body += '<div class="sm">The caller was done, so she hung up a second after her goodbye.</div>';
+      // Since Nov 5 the goodbye is said through call control once the caller is done, so a NOT YET says nothing.
+      body += '<div class="sm">' + (/goodbye is said for you/.test(res) ? "The caller was done, so the goodbye was said and the call ended after it." : "The caller was done, so she hung up a second after her goodbye.") + "</div>";
     } else {
       const after = (c.transcript || []).slice(s.after + 1);
       const callerAfter = after.some((l) => l[0] === "Caller");
@@ -5363,7 +5379,7 @@ function stepCard(c, s, n, steps, canEdit) {
     if (act) btns.push('<button class="btn sm" data-act="' + act + '">' + esc(actionOpen(c.actions[s.ai])) + "</button>");
   }
   if (s.mid) body += '<div class="sm faint">This happened partway through the reply below.</div>';
-  return '<div class="step' + cls + '" data-step="' + n + '"><div class="sh"><span class="sic" aria-hidden="true">' + (tool === "lookup_knowledge" ? "?" : tool === "escalate_to_human" ? "!" : tool === "endCall" ? "×" : tool === "reschedule_appointment" ? "↻" : tool === "add_case_details" ? "+" : tool === "find_caller" ? "#" : "·") + "</span><b>" + esc(title) + "</b>" +
+  return '<div class="step' + cls + '" data-step="' + n + '"><div class="sh"><span class="sic" aria-hidden="true">' + (tool === "lookup_knowledge" ? "?" : tool === "escalate_to_human" ? "!" : tool === "endCall" ? "×" : tool === "reschedule_appointment" ? "↻" : tool === "add_case_details" ? "+" : tool === "find_caller" || tool === "read_back_number" ? "#" : "·") + "</span><b>" + esc(title) + "</b>" +
     toolChip(s.tool || tool) + time + "</div>" + body + (btns.length ? '<div class="row">' + btns.join("") + "</div>" : "") + "</div>";
 }
 
@@ -5475,6 +5491,7 @@ function toolLine(name, args, id) {
   else if (name === "reschedule_appointment") { l.title = "Moving their booking"; l.detail = args.slot ? "to " + args.slot : ""; }
   else if (name === "add_case_details") { l.title = "Adding to their file"; l.detail = args.details ? "“" + args.details + "”" : ""; }
   else if (name === "find_caller") { l.title = "Looking for their file"; l.detail = [args.name, args.phone].filter(Boolean).join(", "); }
+  else if (name === "read_back_number") { l.title = "Reading the number back"; l.detail = String(args.phone || ""); }
   else if (/^end_?call$/i.test(name)) { l.title = "Going to hang up"; l.detail = "once the caller is done"; }
   else { l.title = name; l.detail = ""; }
   l.text = l.title + (l.q ? " “" + l.q + "”" : "") + (l.detail ? " " + l.detail : "");

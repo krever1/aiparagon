@@ -629,6 +629,32 @@ function check(label, ok, detail) {
     await ctx.close();
   }
 
+  // 21. the read-back tool and the goodbye said for her (Nov 5): the timeline says what she heard and what she read back,
+  //     flags a number she heard wrong, and says the call ended after the goodbye.
+  {
+    const { ctx, page } = await open(BASE + '/voice/conversations', { testHook: true });
+    const b = await page.evaluate(() => {
+      const T = window.__VC_TEST__;
+      const text = (html) => { const d = document.createElement('div'); d.innerHTML = html; document.body.appendChild(d); const t = d.innerText.replace(/\s+/g, ' ').trim(); d.remove(); return t; };
+      const cls = (html) => { const d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild.className; };
+      const c = { id: 't', transcript: [['Caller', 'hi'], ['Agent', 'hello']], actions: [] };
+      const card = (tool, args, result) => { const st = { tool: tool, after: 0, args: args, result: result }; return T.stepCard(c, st, 0, [st], false); };
+      const RB = (d) => 'Read it back exactly like this, slowly, then stop and wait for their answer: "' + d + '. Is that right?" After they say yes, do not say the number again; say "the number you gave" instead.';
+      const fixed = card('read_back_number', { phone: '44770090012' }, RB('4 4 7... 7 0 0... 9 0 0... 1 2 3'));
+      const same = card('read_back_number', { phone: '5550101234' }, RB('5 5 5... 0 1 0... 1 2 3 4'));
+      const none = card('read_back_number', {}, 'There is no full number to read back yet. Ask for the best number to reach them.');
+      const short = card('read_back_number', { phone: '55501012' }, RB('5 5 5... 0 1 0... 1 2') + ' That is only 8 digits, so if they say it is right, ask whether any digits are missing.');
+      const bye = card('end_call', {}, 'Ending the call. Say nothing more: the goodbye is said for you.');
+      const oldBye = card('end_call', {}, 'Ending the call. Say nothing more.');
+      return { fixed: text(fixed), fixedCls: cls(fixed), same: text(same), sameCls: cls(same), none: text(none), short: text(short), bye: text(bye), oldBye: text(oldBye) };
+    });
+    check('read-back: a number she heard wrong reads as put right', /Read the number back/.test(b.fixed) && /She heard 44770090012/.test(b.fixed) && /isn't what the caller said, so she read back the caller's own digits: 4 4 7\.\.\. 7 0 0\.\.\. 9 0 0\.\.\. 1 2 3/.test(b.fixed) && /changed/.test(b.fixedCls), b.fixed);
+    check('read-back: a number she heard right reads plainly', /She read back the caller's digits: 5 5 5\.\.\. 0 1 0\.\.\. 1 2 3 4/.test(b.same) && !/changed/.test(b.sameCls), b.same);
+    check('read-back: no number yet and a short one say so', /no full number to read back yet/.test(b.none) && /That's short, so she checked for missing digits/.test(b.short), b.none + ' | ' + b.short);
+    check('hang-up: the goodbye said for her, and the old wording for older calls', /Hung up/.test(b.bye) && /the goodbye was said and the call ended after it/.test(b.bye) && /hung up a second after her goodbye/.test(b.oldBye), b.bye + ' | ' + b.oldBye);
+    await ctx.close();
+  }
+
   // without a baseline any page error fails; with one, only errors the baseline did not have
   const newErrors = pageErrors.patched.filter((e) => !pageErrors.original.some((o) => o.split(' :: ')[1] === e.split(' :: ')[1]));
   check(BASELINE ? 'no new page errors' : 'no page errors', newErrors.length === 0, newErrors.slice(0, 3).join(' | '));
