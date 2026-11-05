@@ -51,7 +51,7 @@ function check(label, ok, detail) {
     const intel = r.find((x) => /Intel Tracker/.test(x.name)) || {};
     const later = r.find((x) => /Ad upload analyzer/.test(x.name)) || {};
     const green = (r.find((x) => /^Ad Strategist/.test(x.name)) || {}).color;
-    check('Catalyst agents and post-call actions are listed' + at, cat.name === 'Catalyst agents (research, interview, anonymizer, discovery, growth plan, post-call actions)', cat.name);
+    check('Catalyst agents and post-call actions are listed' + at, cat.name === 'Catalyst agents (prospect brief, consultation guide, assessment, proposal, onboarding and client review prep, post-call actions)', cat.name);
     // v132: and the interview script, the assessment and the discovery framework follow the firm's past documents
     check('they read the rules on every run' + at, /^Rules, on every run\./.test(cat.says), cat.says);
     check('with the live dot, drawn like the other live agents' + at, cat.dot === 'live' && !!green && cat.color === green, cat.dot + ' ' + cat.color + ' vs ' + green);
@@ -62,7 +62,7 @@ function check(label, ok, detail) {
     // v127: the campaigns follow the company profile and the reasons pages were denied too, and the funnel builder has its own line
     check('the other lines are as they were' + at, JSON.stringify(r.map((x) => [x.says, x.dot])) === JSON.stringify([['Rules, the chosen template, the knowledge base and what the team asked to change in earlier drafts', 'live'], ['Rules', 'live'],
       ['Rules, on every scheduled and custom run', 'live'], ['Rules, sent with each question', 'live'],
-      ['Rules, on every run. The interview script and the discovery framework also follow your discovery call questions, and the assessment your past assessment, from Templates', 'live'],
+      ['Rules, on every run. The consultation guide also follows your discovery call questions, and the assessment your past assessment, from Templates', 'live'],   /* v136 */
       ['Rules, your past documents from Templates, the call transcript and the lead\'s documents', 'live'],
       ['Not the rules yet. They follow the company profile and the reasons ads and pages were denied', 'no'], ['Not the rules yet. It follows the company profile and the reasons ads and pages were denied', 'no'], ['Not yet', 'no']]), JSON.stringify(r.map((x) => [x.says, x.dot])));
     if (width === 390) check('the card fits a phone', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), String(await page.evaluate(() => document.documentElement.scrollWidth)));
