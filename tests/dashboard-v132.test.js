@@ -468,16 +468,18 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
       return { t, u };
     };
     const k1 = await ask('consultation'), k2 = await ask('assessment'), k4 = await ask('proposal');
-    check('the consultation guide: the discovery call questions, and what they are for', k1.t === 'Using 1 past document' && JSON.stringify(k1.u) === JSON.stringify([
-      'Discovery call questions: Summit discovery call questions.docx, for how the consultation guide asks its questions']), JSON.stringify(k1));
-    check('the assessment: only the past assessment', k2.u.length === 1 && /^Past assessment: Summit past assessment\.docx, for the assessment’s order and tone$/.test(k2.u[0]), JSON.stringify(k2));
-    check('the proposal: only the proposal template', k4.u.length === 1 && /^Proposal template:/.test(k4.u[0]), JSON.stringify(k4));
+    /* v137: the question lists everything the stage reads, its own template first */
+    const tpl = (k) => k.u.filter((x) => /^Template: /.test(x));
+    check('the consultation guide: the discovery call questions, as its template', k1.t === 'Reads' && JSON.stringify(tpl(k1)) === '["Template: Summit discovery call questions.docx"]' && k1.u[0] === tpl(k1)[0], JSON.stringify(k1));
+    check('the assessment: only the past assessment', JSON.stringify(tpl(k2)) === '["Template: Summit past assessment.docx"]' && !k2.u.some((x) => /discovery call questions:/i.test(x)), JSON.stringify(k2));
+    check('the proposal: only the proposal template', JSON.stringify(tpl(k4)) === '["Template: Summit proposal template.docx"]', JSON.stringify(k4));
     await ctx.close();
     const none = await open(1440, makeStore(tables()), '/dashboard/lead-pipeline');
     await none.page.evaluate((e) => v136Ask(e, 'consultation'), L1);
     await none.page.waitForSelector('#v120M', { timeout: 10000 });
     await none.page.waitForTimeout(500);
-    check('with no past documents the question is as it was', !(await none.page.$('#v120M .v132-uses')), '');
+    const first = await none.page.$eval('#v120M .v137-reads .u', (e) => e.lastElementChild.textContent.trim()).catch(() => '');
+    check('with no past documents the question says there is no template yet', first === 'No template for this stage yet, so the usual sections. Add one on Templates.', first);   /* v137 */
     await none.ctx.close();
   }
 
