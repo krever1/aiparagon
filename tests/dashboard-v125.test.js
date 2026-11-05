@@ -80,7 +80,7 @@ const REASON = 'Ask about their compliance review date before any pricing questi
     await btn(page, 3).click();
     await page.waitForSelector('#v125M', { state: 'visible', timeout: 5000 });
     const head = await page.$eval('#v125M', (m) => ({ k: (m.querySelector('.nw-kicker') || {}).textContent, h: (m.querySelector('h2') || {}).textContent, focus: document.activeElement && document.activeElement.id }));
-    check('it asks what should change in the discovery framework, for this lead', head.k === 'Catalyst · Pat QA' && head.h === 'What should change in the discovery framework?', JSON.stringify(head));
+    check('it asks what should change in the follow-up guide, for this lead', head.k === 'Catalyst · Pat QA' && head.h === 'What should change in the follow-up guide?', JSON.stringify(head));   /* v136: renamed */
     check('the reason box has the focus', head.focus === 'v125Ta', head.focus);
     await page.click('#v125Go');
     await page.waitForTimeout(300);
@@ -103,7 +103,7 @@ const REASON = 'Ask about their compliance review date before any pricing questi
     await tab(page, 1);
     await btn(page, 1).click();
     await page.waitForSelector('#v125M', { state: 'visible', timeout: 5000 });
-    check('the call guide asks about the call guide', (await page.textContent('#v125M h2')) === 'What should change in the call guide?', await page.textContent('#v125M h2'));
+    check('the consultation guide asks about the consultation guide', (await page.textContent('#v125M h2')) === 'What should change in the consultation guide?', await page.textContent('#v125M h2'));
     await page.fill('#v125Ta', 'Not saved because this one is cancelled.');
     await page.click('#v125M .nw-btn-ghost');
     await page.waitForTimeout(400);
@@ -116,7 +116,7 @@ const REASON = 'Ask about their compliance review date before any pricing questi
     check('the count opens AI settings', await page.evaluate(() => location.pathname) === '/dashboard/ai-settings', await page.evaluate(() => location.pathname));
     const fb = await page.$$eval('#apFbList .ap-fb', (els) => els.map((e) => e.innerText.replace(/\s+/g, ' ')));
     const mine = fb.find((t) => t.indexOf(REASON) >= 0) || '';
-    check('the reason is listed as asked for changes on the Discovery Call Framework', /Discovery Call Framework · asked for changes · qa/.test(mine), mine || JSON.stringify(fb));
+    check('the reason is listed as asked for changes on the follow-up guide', /Follow-up guide · asked for changes · qa/.test(mine), mine || JSON.stringify(fb));
     await page.locator('#apFbList .ap-fb', { hasText: REASON }).locator('button', { hasText: 'Make it a rule' }).click();
     await page.waitForTimeout(500);
     const box = await page.evaluate(() => ({ v: document.getElementById('apRuleTa').value, on: [...document.querySelectorAll('.ap-rule-opts input')].filter((i) => i.checked).map((i) => i.value) }));
@@ -162,7 +162,7 @@ const REASON = 'Ask about their compliance review date before any pricing questi
     await page.waitForSelector('#v125M', { state: 'visible', timeout: 5000 });
     const fit = await page.evaluate(() => { const r = document.getElementById('v125M').getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth, sw: document.documentElement.scrollWidth }; });
     check('the dialog fits the phone', fit.l >= 0 && fit.r <= fit.w + 1 && fit.sw <= fit.w + 1, JSON.stringify(fit));
-    check('and asks about the lead research', (await page.textContent('#v125M h2')) === 'What should change in the lead research?', await page.textContent('#v125M h2'));
+    check('and asks about the prospect brief', (await page.textContent('#v125M h2')) === 'What should change in the prospect brief?', await page.textContent('#v125M h2'));
     await page.fill('#v125Ta', REASON);
     await page.click('#v125Go');
     await page.waitForTimeout(1500);
