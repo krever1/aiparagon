@@ -62,7 +62,7 @@ function check(label, ok, detail) {
     // v127: the campaigns follow the company profile and the reasons pages were denied too, and the funnel builder has its own line
     check('the other lines are as they were' + at, JSON.stringify(r.map((x) => [x.says, x.dot])) === JSON.stringify([['Rules, the chosen template, the knowledge base and what the team asked to change in earlier drafts', 'live'], ['Rules', 'live'],
       ['Rules, on every scheduled and custom run', 'live'], ['Rules, sent with each question', 'live'],
-      ['Rules, on every run. The consultation guide also follows your discovery call questions, and the assessment your past assessment, from Templates', 'live'],   /* v136 */
+      ['Rules, on every run. Each meeting stage also follows its template from Templates and reads what its setup there says: the call transcripts, the CRM record, your discovery call questions', 'live'],   /* v137 */
       ['Rules, your past documents from Templates, the call transcript and the lead\'s documents', 'live'],
       ['Not the rules yet. They follow the company profile and the reasons ads and pages were denied', 'no'], ['Not the rules yet. It follows the company profile and the reasons ads and pages were denied', 'no'], ['Not yet', 'no']]), JSON.stringify(r.map((x) => [x.says, x.dot])));
     if (width === 390) check('the card fits a phone', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), String(await page.evaluate(() => document.documentElement.scrollWidth)));
