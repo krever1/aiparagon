@@ -214,7 +214,7 @@ function tables(o) {
   {
     const { ctx, page } = await open('/dashboard/deliverables');
     const rows = await page.evaluate(() => [...document.querySelectorAll('#v115DlList .v115-dl-row')].map((r) => r.querySelector('.nw-row-title').textContent + ' | ' + r.querySelector('.nw-row-prev').textContent));
-    check('someone who only has Engine 1 documents (no lead row yet) is listed', rows.some((x) => /Discovery Call Framework \| Olive Orphan · Orphan Advisory/.test(x)), JSON.stringify(rows));
+    check('someone who only has Engine 1 documents (no lead row yet) is listed', rows.some((x) => /Follow-up guide \| Olive Orphan · Orphan Advisory/.test(x)), JSON.stringify(rows));
     check('and the people with lead rows still are', rows.filter((x) => /Pat QA|Robin Test/.test(x)).length === 6, JSON.stringify(rows));
     await page.click('#v115DlList .v115-dl-row:has-text("Olive Orphan") button:has-text("Open")'); await wait(page, 1300);
     const s = await page.evaluate(() => ({ cur: apCurrentView(), view: state.view, lead: state.e1Lead }));
@@ -240,13 +240,13 @@ function tables(o) {
   // 6. Open on an Engine 1 document goes to that document's tab on the lead page
   {
     const { ctx, page } = await open('/dashboard/deliverables');
-    await page.click('#v115DlList .v115-dl-row:has-text("Growth Plan Proposal"):has-text("Pat QA") button:has-text("Open")'); await wait(page, 2200);
+    await page.click('#v115DlList .v115-dl-row:has-text("Proposal presentation"):has-text("Pat QA") button:has-text("Open")'); await wait(page, 2200);
     const tab = await page.evaluate(() => { const b = document.querySelector('#apChrome .rd-tab.on'); return b ? b.dataset.tab + '|' + b.textContent.trim() : ''; });
-    check('Open on a Growth Plan opens the lead on its Growth Plan tab', /^s4\|/.test(tab) && /Growth Plan/.test(tab), tab);
+    check('Open on a proposal presentation opens the lead on its Proposal tab', /^s4\|/.test(tab) && /Proposal/.test(tab), tab);   /* v136: the documents' new names */
     await page.evaluate(() => apGo('deliverables')); await wait(page, 1200);
-    await page.click('#v115DlList .v115-dl-row:has-text("Interview Script"):has-text("Pat QA") button:has-text("Open")'); await wait(page, 2200);
+    await page.click('#v115DlList .v115-dl-row:has-text("Consultation guide"):has-text("Pat QA") button:has-text("Open")'); await wait(page, 2200);
     const tab2 = await page.evaluate(() => { const b = document.querySelector('#apChrome .rd-tab.on'); return b ? b.dataset.tab + '|' + b.textContent.trim() : ''; });
-    check('and on an Interview Script, its Interview tab', /^s1\|/.test(tab2) && /Interview/.test(tab2), tab2);
+    check('and on a consultation guide, its Consultation guide tab', /^s1\|/.test(tab2) && /Consultation guide/.test(tab2), tab2);
     await ctx.close();
   }
 

@@ -92,21 +92,21 @@ function tables() {
     await o.ctx.close();
   }
 
-  // 3. Lead pipeline: a New tab, and stage headings that match what each tab counts
+  // 3. Lead pipeline: a tab per meeting stage (v136; they were New, At Research ... Completed), headings to match
   {
     const { ctx, page } = await open('/dashboard/lead-pipeline');
     const tb = await tabs(page);
-    check('the stage tabs put every lead in one of them (New for nothing run yet)',
+    check('the stage tabs put every lead in one of them (Prospect research for nothing run yet)',
       /* v120: the board comes first, with no count */
-      JSON.stringify(tb) === JSON.stringify(['Board', 'All 3', 'New 1', 'At Research 1', 'At Interview 0', 'At Assessment 0', 'At Discovery 0', 'Completed 1']), JSON.stringify(tb));
+      JSON.stringify(tb) === JSON.stringify(['Board', 'All 3', 'Prospect research 2', 'Discovery consultation 0', 'Assessment 0', 'Proposal 1', 'Onboarding 0', 'Client review 0']), JSON.stringify(tb));
     const rowsOf = () => txt(page, '#apE1List tbody');
-    await tab(page, 'New'); await wait(page, 700);
+    await tab(page, 'Prospect research'); await wait(page, 700);
     let t = await txt(page, '#apE1List'), rows = await rowsOf();
-    check('New lists the lead with nothing run yet', /Sam Sample/.test(rows) && !/Robin Test/.test(rows) && !/Pat QA/.test(rows), rows.slice(0, 300));
-    check('and says lead research is next', /Nothing run yet, lead research is next/.test(t), t.slice(0, 300));
-    await tab(page, 'At Research'); await wait(page, 700);
+    check('Prospect research lists the lead with nothing run yet and the researched one', /Sam Sample/.test(rows) && /Robin Test/.test(rows) && !/Pat QA/.test(rows), rows.slice(0, 300));
+    check('and says what its prep is', /In prospect research, prep: pre-meeting prospect brief/.test(t), t.slice(0, 300));
+    await tab(page, 'Proposal'); await wait(page, 700);
     t = await txt(page, '#apE1List'); rows = await rowsOf();
-    check('At Research lists the researched lead and says the interview script is next', /Robin Test/.test(rows) && !/Sam Sample/.test(rows) && /Researched, the interview script is next/.test(t), rows.slice(0, 200) + ' / ' + t.slice(0, 200));
+    check('Proposal lists the lead with the proposal and says what its prep is', /Pat QA/.test(rows) && !/Sam Sample/.test(rows) && /In proposal, prep: proposal presentation/.test(t), rows.slice(0, 200) + ' / ' + t.slice(0, 200));
     await ctx.close();
   }
 

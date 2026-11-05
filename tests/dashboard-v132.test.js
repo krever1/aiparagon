@@ -170,7 +170,7 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     check('the colors are the brand\'s own (no greys)', JSON.stringify(pt.sw) === '["#0E5A63","#D9902F","#1E2A33"]', JSON.stringify(pt.sw));
     check('the fonts are named', pt.fonts === 'Montserrat · Source Serif 4', pt.fonts);
     check('the logo from the page header is shown', /guide-files\/sources\/\d+-logo\.png$/.test(pt.logo), pt.logo);
-    check('each says what Catalyst does with it', /client proposal follows its sections, wording and branding/.test(pt.what) && /interview script and the discovery framework ask questions/.test(dq.what) && /assessment follows its order and tone/.test(pa.what), JSON.stringify(r.map((x) => x.what)));
+    check('each says what Catalyst does with it', /client proposal follows its sections, wording and branding/.test(pt.what) && /consultation guide asks questions the way it does/.test(dq.what) && /assessment follows its order and tone/.test(pa.what), JSON.stringify(r.map((x) => x.what)));
     check('each is the one in use', r.every((x) => x.inUse && !x.useBtn), JSON.stringify(r.map((x) => [x.inUse, x.useBtn])));
     check('the kind picker has no Type your own', r.every((x) => x.opts.length === 3 && !x.opts.some((o) => /Type your own/.test(o))), JSON.stringify(r[0].opts));
     const saved = store.db.catalyst_sources || [];
@@ -264,7 +264,7 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     await lead(page, L1);
     let c = await card(page);
     check('the growth plan tab has the client proposal card', !!c && c.visible && c.title === 'Client proposal' && JSON.stringify(c.btns) === '["Write the client proposal"]', JSON.stringify(c));
-    check('it says what it is written from, and in whose sections and branding', /from the call and the assessment, in the sections and branding of Summit proposal template\.docx\. It is written after the growth plan\./.test(c.sub), c.sub);
+    check('it says what it is written from, and in whose sections and branding', /from the call and the assessment, in the sections and branding of Summit proposal template\.docx\. It is written after the proposal presentation\./.test(c.sub), c.sub);
     check('it sits under the growth plan\'s own document, which keeps its buttons', await page.evaluate(() => {
       const s = [...document.querySelectorAll('#main section.block')].find((x) => /^\s*5\./.test(x.querySelector('h2').textContent));
       const kids = [...s.children]; const g = s.querySelector('.ap-docc'), p = s.querySelector('.v132-pc');
@@ -279,7 +279,7 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     check('the run says what it uses: 3 past documents and the call transcript', m.t === 'Using 3 past documents and the call transcript', m.t);
     check('each past document by name, then the call, the assessment and the research', JSON.stringify(m.u.map((x) => x[1])) === JSON.stringify([
       'Proposal template: Summit proposal template.docx (7 sections, your branding)', 'Discovery call questions: Summit discovery call questions.docx', 'Past assessment: Summit past assessment.docx',
-      'The call on Oct 22: QA Firm · discovery consultation (transcript)', 'The assessment of Oct 3', 'The research brief']), JSON.stringify(m.u));
+      'The call on Oct 22: QA Firm · discovery consultation (transcript)', 'The assessment of Oct 3', 'The prospect brief']), JSON.stringify(m.u));
     await page.click('#v132Go');
     await page.waitForTimeout(1500);
     const hk = sent.filter((s) => /catalyst-proposal$/.test(s.u));
@@ -356,7 +356,7 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     check('who it is for, from whom and when, and a confidential line', d.meta === 'Prepared for Marcus Hale, COO, Corbell Logistics Prepared by Summit Business Advisors Date October 28, 2026' && d.foot === 'Confidential. Prepared for Corbell Logistics.', d.meta + ' | ' + d.foot);
     check('every section of the template, numbered, in its order', JSON.stringify(d.secs.map((s) => s[0] + ' ' + s[1])) === JSON.stringify(SECS.map((t, i) => '0' + (i + 1) + ' ' + t)), JSON.stringify(d.secs));
     check('each section says where it came from', JSON.stringify(d.secs[0][2]) === '["Structure from your template","From the call on Oct 22","From the assessment"]' &&
-      JSON.stringify(d.secs[1][2]) === '["From the research brief","From the assessment","Written like your past assessment"]' && JSON.stringify(d.secs[2][2]) === '["From the call on Oct 22","Sorted by your discovery call questions"]', JSON.stringify(d.secs.map((s) => s[2])));
+      JSON.stringify(d.secs[1][2]) === '["From the prospect brief","From the assessment","Written like your past assessment"]' && JSON.stringify(d.secs[2][2]) === '["From the call on Oct 22","Sorted by your discovery call questions"]', JSON.stringify(d.secs.map((s) => s[2])));
     check('the headings are in the brand\'s color and heading font, the text in its body font', d.h2 === 'rgb(14, 90, 99)' && /^"?Montserrat/.test(d.h2f) && /^"?Source Serif 4/.test(d.body) && d.kc === 'rgb(217, 144, 47)', JSON.stringify([d.h2, d.h2f, d.body, d.kc]));
     check('the brand\'s fonts are asked for (Google Fonts)', JSON.stringify(d.fonts) === '["v132f-montserrat","v132f-source-serif-4"]', JSON.stringify(d.fonts));
     check('what still needs filling in stands out', d.fills.length === 4 && d.fills[1] === '[FILL IN: fee]', JSON.stringify(d.fills));
@@ -449,17 +449,17 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     check('Make it a rule scopes it to the Catalyst agents', JSON.stringify(box) === '["engine1"]', JSON.stringify(box));
     const where = await page.$$eval('.ap-ais .ap-where > div', (els) => els.map((el) => [(el.querySelector('b') || {}).textContent || '', (el.querySelector('small') || {}).textContent || '', ((el.querySelector('.d') || {}).className || '').replace(/\bd\b/, '').trim()]));
     const ci = where.findIndex((w) => /^Catalyst agents/.test(w[0]));
-    check('Where these apply: the Catalyst agents also follow your past documents', ci >= 0 && where[ci][1] === 'Rules, on every run. The interview script and the discovery framework also follow your discovery call questions, and the assessment your past assessment, from Templates' && where[ci][2] === 'live', JSON.stringify(where[ci]));
+    check('Where these apply: the Catalyst agents also follow your past documents', ci >= 0 && where[ci][1] === 'Rules, on every run. The consultation guide also follows your discovery call questions, and the assessment your past assessment, from Templates' && where[ci][2] === 'live', JSON.stringify(where[ci]));
     check('and the client proposal has its own line, right after', JSON.stringify(where[ci + 1]) === JSON.stringify(['Client proposal', 'Rules, your past documents from Templates, the call transcript and the lead\'s documents', 'live']), JSON.stringify(where[ci + 1]));
     await ctx.close();
   }
 
-  // 6. the board's run question names the past documents its steps use
+  // 6. the board's run question names the past document its stage follows (v136: only that stage runs)
   {
     const store = makeStore(tables((t) => { t.catalyst_sources = sourceRows(); }));
     const { ctx, page } = await open(1440, store, '/dashboard/lead-pipeline');
     const ask = async (k) => {
-      await page.evaluate((a) => v120Ask(a[0], a[1]), [L1, k]);
+      await page.evaluate((a) => v136Ask(a[0], a[1]), [L1, k]);
       await page.waitForSelector('#v120M', { timeout: 10000 });
       await page.waitForTimeout(500);
       const u = await page.$$eval('#v120M .v132-uses .u', (els) => els.map((e) => e.lastElementChild.textContent.trim()));
@@ -467,16 +467,14 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
       await page.evaluate(() => nwModalClose());
       return { t, u };
     };
-    const k1 = await ask(1), k3 = await ask(3), k4 = await ask(4);
-    check('from the interview on: all three past documents, each with what it is for', k1.t === 'Using 3 past documents' && JSON.stringify(k1.u) === JSON.stringify([
-      'Discovery call questions: Summit discovery call questions.docx, for how the interview script and the discovery framework ask questions',
-      'Past assessment: Summit past assessment.docx, for the assessment\'s order and tone',
-      'Proposal template: Summit proposal template.docx, for the client proposal written after the growth plan']), JSON.stringify(k1));
-    check('from the discovery call on: no past assessment', k3.u.length === 2 && !k3.u.some((x) => /Past assessment/.test(x)), JSON.stringify(k3));
-    check('the growth plan alone: only the proposal template', k4.u.length === 1 && /^Proposal template:/.test(k4.u[0]), JSON.stringify(k4));
+    const k1 = await ask('consultation'), k2 = await ask('assessment'), k4 = await ask('proposal');
+    check('the consultation guide: the discovery call questions, and what they are for', k1.t === 'Using 1 past document' && JSON.stringify(k1.u) === JSON.stringify([
+      'Discovery call questions: Summit discovery call questions.docx, for how the consultation guide asks its questions']), JSON.stringify(k1));
+    check('the assessment: only the past assessment', k2.u.length === 1 && /^Past assessment: Summit past assessment\.docx, for the assessment’s order and tone$/.test(k2.u[0]), JSON.stringify(k2));
+    check('the proposal: only the proposal template', k4.u.length === 1 && /^Proposal template:/.test(k4.u[0]), JSON.stringify(k4));
     await ctx.close();
     const none = await open(1440, makeStore(tables()), '/dashboard/lead-pipeline');
-    await none.page.evaluate((e) => v120Ask(e, 1), L1);
+    await none.page.evaluate((e) => v136Ask(e, 'consultation'), L1);
     await none.page.waitForSelector('#v120M', { timeout: 10000 });
     await none.page.waitForTimeout(500);
     check('with no past documents the question is as it was', !(await none.page.$('#v120M .v132-uses')), '');

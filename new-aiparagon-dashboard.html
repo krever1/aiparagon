@@ -13499,11 +13499,11 @@ const AP_PROFILE={business_name:'AI Paragon',contact_name:'Kaeser',website:'http
 
 /* Engine 1 — client delivery, five sequential agents per lead */
 const AP_E1_STAGES=[
-  {agent:'lead_research',    label:'Lead Research',            short:'Research',   col:'lead_research_url', kind:'Agent 1 · Prospect intelligence'},
-  {agent:'interview_script', label:'Interview Script',         short:'Interview',  col:'interview_url',     kind:'Agent 2 · Prequal call guide'},
-  {agent:'anonymizer',       label:'Assessment + Anonymizer',  short:'Assessment', col:'assessment_url',    kind:'Agent 3 · Anonymized synthesis'},
-  {agent:'discovery_call',   label:'Discovery Call Framework', short:'Discovery',  col:'discovery_url',     kind:'Agent 4 · Discovery framework'},
-  {agent:'growth_plan',      label:'Growth Plan Proposal',     short:'Growth Plan',col:'growth_plan_url',   kind:'Agent 5 · Proposal & deck'}
+  {agent:'lead_research',    label:'Pre-meeting prospect brief', short:'Prospect brief',     col:'lead_research_url', kind:'Agent 1 · Prospect research'},
+  {agent:'interview_script', label:'Consultation guide',         short:'Consultation guide', col:'interview_url',     kind:'Agent 2 · Discovery consultation'},
+  {agent:'anonymizer',       label:'Assessment report',          short:'Assessment',         col:'assessment_url',    kind:'Agent 3 · Assessment'},
+  {agent:'discovery_call',   label:'Follow-up guide',            short:'Follow-up guide',    col:'discovery_url',     kind:'Agent 4 · Follow-up (earlier runs)'},
+  {agent:'growth_plan',      label:'Proposal presentation',      short:'Proposal',           col:'growth_plan_url',   kind:'Agent 5 · Proposal'}
 ];
 const AP_LEADS=[
   {email:'owen.hale@example.com',prospect_name:'Owen Hale',prospect_title:'CEO & Chief Compliance Officer',
@@ -13552,11 +13552,12 @@ const AP_RUNS=[
   {run_id:'e1_2026-08-19_0930',agent:'discovery_call',run_date:'2026-08-19',started_at:'2026-08-19T09:30:00Z',finished_at:'2026-08-19T09:40:18Z',status:'success',stats:{lead:'Lena Marsh',questions:14,sources:5}}
 ];
 const AP_AGENTS={
-  lead_research:{label:'Lead Research',engine:'e1',kind:'Agent 1 · Prospect intelligence'},
-  interview_script:{label:'Interview Script',engine:'e1',kind:'Agent 2 · Prequal call guide'},
-  anonymizer:{label:'Assessment + Anonymizer',engine:'e1',kind:'Agent 3 · Anonymized synthesis'},
-  discovery_call:{label:'Discovery Call Framework',engine:'e1',kind:'Agent 4 · Discovery framework'},
-  growth_plan:{label:'Growth Plan Proposal',engine:'e1',kind:'Agent 5 · Proposal & deck'},
+  lead_research:{label:'Pre-meeting prospect brief',engine:'e1',kind:'Agent 1 · Prospect research'},
+  interview_script:{label:'Consultation guide',engine:'e1',kind:'Agent 2 · Discovery consultation'},
+  anonymizer:{label:'Assessment report',engine:'e1',kind:'Agent 3 · Assessment'},
+  discovery_call:{label:'Follow-up guide',engine:'e1',kind:'Agent 4 · Follow-up (earlier runs)'},
+  growth_plan:{label:'Proposal presentation',engine:'e1',kind:'Agent 5 · Proposal'},
+  meeting_prep:{label:'Meeting prep',engine:'e1',kind:'Agent 6 · Onboarding and client review'},
   intel_tracker:{label:'Competitor Intelligence Tracker',engine:'e3',kind:'Agent 1 · Organic intelligence'},
   ad_strategist:{label:'Ad Strategist',engine:'e3',kind:'Agent 2 · Paid-ad intelligence'},
   low_ticket_content:{label:'Content Generation Agent',engine:'e3',kind:'Agent 3 · Funnel production'}
@@ -13914,7 +13915,7 @@ function apLeadPanel(l){
       return '<div class="rd-src"><span class="tx"><b>'+esc(c.author)+'</b><small>'+esc(c.body)+'</small></span>'+
         '<span class="rd-status '+(c.resolved?'client':'blocked')+'">'+(c.resolved?'resolved':'open')+'</span></div>';}).join(''):'')+
     '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">'+
-      (nx?'<button class="rd-btn pri" onclick="apRunStage(\''+l.email+'\',\''+nx.agent+'\')">Run '+esc(nx.label)+'</button>':'<button class="rd-btn pri" onclick="nav(\'delivs\')">Open the growth plan</button>')+
+      (nx?'<button class="rd-btn pri" onclick="apRunStage(\''+l.email+'\',\''+nx.agent+'\')">Run '+esc(nx.label)+'</button>':'<button class="rd-btn pri" onclick="nav(\'delivs\')">Open the proposal</button>')+
       '<button class="rd-btn" onclick="nav(\'delivs\')">See documents in Canvas</button></div>'+
   '</div>';
 }
@@ -14718,11 +14719,12 @@ const E1_VIEWS = [
 ];
 /* Engine 1 pipeline stages, in order. urlCol maps to e1_leads columns. */
 const E1_STAGES = [
-  {agent:"lead_research",    label:"Lead Research",              short:"Research",   urlCol:"lead_research_url", kind:"Agent 1 · Prospect intelligence"},
-  {agent:"interview_script", label:"Interview Script",           short:"Interview",  urlCol:"interview_url",     kind:"Agent 2 · Prequal call guide"},
-  {agent:"anonymizer",       label:"Assessment + Anonymizer",    short:"Assessment", urlCol:"assessment_url",    kind:"Agent 3 · Anonymized synthesis"},
-  {agent:"discovery_call",   label:"Discovery Call Framework",   short:"Discovery",  urlCol:"discovery_url",     kind:"Agent 4 · Discovery framework"},
-  {agent:"growth_plan",      label:"Growth Plan Proposal",       short:"Growth Plan",urlCol:"growth_plan_url",   kind:"Agent 5 · Proposal & deck"},
+  /* v136: named for the meeting stage each one prepares (the follow-up guide is no stage's any more; earlier runs keep it) */
+  {agent:"lead_research",    label:"Pre-meeting prospect brief", short:"Prospect brief",     urlCol:"lead_research_url", kind:"Agent 1 · Prospect research"},
+  {agent:"interview_script", label:"Consultation guide",         short:"Consultation guide", urlCol:"interview_url",     kind:"Agent 2 · Discovery consultation"},
+  {agent:"anonymizer",       label:"Assessment report",          short:"Assessment",         urlCol:"assessment_url",    kind:"Agent 3 · Assessment"},
+  {agent:"discovery_call",   label:"Follow-up guide",            short:"Follow-up guide",    urlCol:"discovery_url",     kind:"Agent 4 · Follow-up (earlier runs)"},
+  {agent:"growth_plan",      label:"Proposal presentation",      short:"Proposal",           urlCol:"growth_plan_url",   kind:"Agent 5 · Proposal"},
 ];
 const E1_AGENT_FILTER = "agent=in.(" + E1_STAGES.map(s=>s.agent).join(",") + ")";
 const E3_VIEWS = [
@@ -15832,16 +15834,16 @@ function openE1RunModal(prefill){
     <div class="e1p-head"><div class="e1p-name">New Catalyst run</div>
       <button class="e1p-x" onclick="closeE1RunModal()">✕</button></div>
     <div class="e1p-body">
-      <div class="e1p-sec">Where should the pipeline start?</div>
+      <div class="e1p-sec">Which stage is this client at?</div>
       <div class="e1run-opts">
         <label class="e1run-opt"><input type="radio" name="e1entry" value="full" checked>
-          <div><b>Full pipeline</b><small>Lead Research → Interview → Anonymizer → Discovery → Growth Plan</small></div></label>
+          <div><b>Prospect research</b><small>Writes the pre-meeting prospect brief from the lead's details</small></div></label>
         <label class="e1run-opt"><input type="radio" name="e1entry" value="interview_script">
-          <div><b>Skip Lead Research</b><small>Start at Interview Script — your transcript/doc replaces the research brief</small></div></label>
+          <div><b>Discovery consultation</b><small>Writes the consultation guide. Paste what was said in the first meeting: it stands in for a prospect brief</small></div></label>
         <label class="e1run-opt"><input type="radio" name="e1entry" value="anonymizer">
-          <div><b>Skip Research + Interview</b><small>Start at Anonymizer — e.g. you already met the lead. Then Discovery + Growth Plan run automatically</small></div></label>
+          <div><b>Assessment</b><small>Writes the assessment report from the consultation. Paste its transcript or notes</small></div></label>
       </div>
-      <div style="font-size:.72rem;color:var(--muted);margin:4px 0 14px">The Anonymizer always runs — every downstream output stays anonymized. Stages after the entry point always follow automatically.</div>
+      <div style="font-size:.72rem;color:var(--muted);margin:4px 0 14px">Only that stage runs. When the client gets to the next meeting, move them on the Lead pipeline board and Catalyst writes that stage's prep.</div>
       <div class="e1p-sec">Lead details</div>
       <div class="e1run-2col">${fld("First name","rFirst")}${fld("Last name","rLast")}</div>
       ${fld("Title","rTitle","e.g. Managing Partner")}
@@ -15862,7 +15864,7 @@ function openE1RunModal(prefill){
       </div>
     </div>`;
   document.body.appendChild(bg); document.body.appendChild(m);
-  const modeLbl = {full:"Full pipeline \u00b7 starts at Lead Research", interview_script:"Skip Research \u00b7 starts at Interview", anonymizer:"Skip Research + Interview \u00b7 starts at Anonymizer"};
+  const modeLbl = {full:"Prospect research \u00b7 writes the prospect brief", interview_script:"Discovery consultation \u00b7 writes the consultation guide", anonymizer:"Assessment \u00b7 writes the assessment"};
   const updMode = ()=>{ const e=document.querySelector('input[name="e1entry"]:checked')?.value||"full"; const el=document.getElementById("rMode"); if(el) el.textContent = modeLbl[e]; };
   m.querySelectorAll('input[name="e1entry"]').forEach(r=>r.addEventListener("change", updMode)); updMode();
   if(prefill && typeof prefill === "object"){
@@ -15894,22 +15896,25 @@ async function submitE1Run(){
   const email = v("rEmail");
   if(!email){ msg.textContent = "Email is required — it's the run ID across the pipeline."; return; }
   if(entry==="full" && (v("rTranscript") || _e1RunFileText)){
-    if(!confirm("You added a transcript/document, but 'Full pipeline' is selected \u2014 source material is only used on skip runs (it replaces the skipped stages). Start a FULL run anyway and ignore it?\n\nTip: pick 'Skip Lead Research' or 'Skip Research + Interview' at the top of this form to use your material.")) { msg.textContent="Pick a start option at the top of the form."; return; }
+    if(!confirm("You added a transcript/document, but 'Prospect research' is selected \u2014 the prospect brief works from the lead's details only. Write it anyway and leave the material out?\n\nTip: pick 'Discovery consultation' or 'Assessment' at the top of this form to use your material.")) { msg.textContent="Pick a start option at the top of the form."; return; }
   }
   if(entry!=="full" && !v("rTranscript") && !_e1RunFileText){
-    msg.textContent = "Add a transcript or document — the AI needs it in place of the skipped stages."; return;
+    msg.textContent = "Add a transcript or document — Catalyst works from it for this stage."; return;
   }
   const base = { firstName:v("rFirst"), lastName:v("rLast"), prospectName:(v("rFirst")+" "+v("rLast")).trim(),
     prospectTitle:v("rTitle"), firmName:v("rCompany"), companyName:v("rCompany"), companyUrl:v("rUrl"),
     emailAddress:email, email:email, website:v("rUrl"), phone:v("rPhone"), firmType:v("rFirmType"), firmSize:v("rFirmSize"),
     hearAboutUs:"Dashboard run", whatBringsYouHere:"", aiInterests:[], currentAIStage:"", preferredFollowUp:"" };
   const url  = entry==="full" ? E1_FULL_RUN_WEBHOOK : E1_CUSTOM_RUN_WEBHOOK;
-  const body = entry==="full" ? base : { ...base, entry, transcript:v("rTranscript"), extraDoc:_e1RunFileText };
+  /* v136: only the stage the client is at runs */
+  const stage = entry==="full" ? "research" : entry==="interview_script" ? "consultation" : "assessment";
+  const body = entry==="full" ? { ...base, only:true, stage } : { ...base, entry, transcript:v("rTranscript"), extraDoc:_e1RunFileText, only:true, stage };
   btn.disabled = true; msg.textContent = "Starting run…";
   try{
     const res = await fetch(url, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
     if(!res.ok) throw new Error("Webhook returned " + res.status);
-    msg.textContent = "Run started ✓ — outputs land here as each agent finishes (refresh to check).";
+    if(typeof v136FormStage==="function") v136FormStage(body, stage);
+    msg.textContent = "Started ✓ — the document lands on the lead when it is done (refresh to check).";
     btn.textContent = "Run started ✓";
   }catch(e){
     btn.disabled = false;
@@ -16186,7 +16191,7 @@ function hsRowsHtml(rows){
       </div>
       ${c.lifecycle_stage?`<span class="pill">${esc(c.lifecycle_stage)}</span>`:""}
       ${c.lead_status?`<span class="chip">${esc(c.lead_status)}</span>`:""}
-      <button class="chip hs-cta" title="Start a Catalyst run for this contact, from lead research to the growth plan" onclick="hsRunE1('${esc(c.email)}')">▶ Run Catalyst</button>
+      <button class="chip hs-cta" title="Write the pre-meeting prospect brief for this contact" onclick="hsRunE1('${esc(c.email)}')">▶ Run Catalyst</button>
       <button class="chip hs-cta" title="Follow this company: the Intel Tracker reads its posts and the Ad Strategist its Meta ads" onclick="hsTrackE3('${esc(c.email)}')">◎ Follow</button>
       ${isLead?`<button class="chip" style="cursor:pointer" onclick="openE1Lead('${esc(c.email)}')">Open lead →</button>`:""}
     </div>`;
@@ -18824,7 +18829,7 @@ const OB_STEPS = [
       <div style="font-size:.8rem;color:var(--gold);margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><b>✦ The system learns as you use it.</b> <span style="color:var(--muted)">Feedback and comments you leave on outputs are fed back to the agents, so briefs and creative keep getting sharper with every run.</span></div>` } },
   { key:"guides", title:"Show us your preferred output", sub:"Upload a document that represents how you want deliverables to look, and every agent on that engine will follow its structure and tone. Optional, but it's the single biggest quality lever.",
     body: d => `
-      ${obGuideBox("e1","Engine 1 · Client Delivery","A lead research brief, discovery framework, or growth plan in the format you like. Applies to all five Engine 1 agents.")}
+      ${obGuideBox("e1","Engine 1 · Client Delivery","A prospect brief, consultation guide, assessment or proposal in the format you like. Applies to the Catalyst agents.")}
       ${obGuideBox("e3","Engine 3 · Lead Generation & Marketing","An ad brief, competitor report, or funnel doc that shows your preferred structure.")}
       ${obGuideBox("all","Company-wide","Brand guidelines, a tone-of-voice doc, or anything every agent should respect.")}
       <div style="font-size:.78rem;color:var(--muted);margin-top:6px">PDF and plain-text formats work best — we extract the text so agents can read it. Word files should be exported to PDF first.</div>` }
@@ -27998,7 +28003,7 @@ async function apRenderTemplates2(quick){
       '<button onclick="apGo(\'e3create\')"><span class="n">'+T.reduce(function(a,t){return a+(t.uses||0);},0)+'</span><span class="rd-sl">Drafts built<small>from a template</small></span></button></div>'+
     '<div class="ap-tpl-grid">'+(T.length?(v112TplShow(T).map(apTplCard).join('')||'<div class="rd-card rd-empty">No templates of this kind yet. Press the tile again to see them all.</div>'):'<div class="rd-card rd-empty">No templates yet. Create one and it appears in Create content.</div>')+'</div>'+
     '<div class="rd-card" style="margin-top:18px"><div class="rd-sec-h gold"><div><div class="k">Agent output formats</div><h3>Fixed formats in n8n</h3></div></div>'+
-      '<div class="rd-blank">The Catalyst documents (research brief, interview script, discovery call, growth plan) and the Pipeline briefs have their formats set inside their n8n workflows. House rules in <a onclick="navPm(\'learning\')">Dashboard AI settings</a> are how you steer those today.</div></div>';
+      '<div class="rd-blank">The Catalyst documents (prospect brief, consultation guide, assessment, proposal) and the Pipeline briefs have their formats set inside their n8n workflows. House rules in <a onclick="navPm(\'learning\')">Dashboard AI settings</a> are how you steer those today.</div></div>';
 }
 function apTplCard(t){
   const secs=t.sections||[];
@@ -29939,9 +29944,9 @@ function apCxPostPaint(box,c){
         (ext.length?'<a class="rd-btn sm" href="'+esc('mailto:'+ext.map(function(g){return g.email;}).join(',')+'?subject='+encodeURIComponent(fu.subject||'')+'&body='+encodeURIComponent(fu.body||''))+'">Open in email</a>':'')+'</div>'+
       (fu.subject?'<div class="ap-cx-subj">Subject: '+esc(fu.subject)+'</div>':'')+'<div class="ap-cx-mail">'+esc(fu.body)+'</div></section>':'')+
     (e1?'<section class="ap-cx-card ap-cx-e1"><div><h4>'+(type==='interview'?'Next: the Assessment':'Next: the Growth Plan')+'</h4>'+
-        '<p>'+(type==='interview'?'Run Catalyst from the Assessment with this call as the source. Discovery and the Growth Plan follow automatically.'
-          :'Run Catalyst from this call. It runs from the Assessment, then Discovery and the Growth Plan follow, using this call as the source.')+'</p></div>'+
-        '<button class="rd-btn pri" onclick="apCxE1(\''+ide+'\',this)">Run Catalyst from this call</button></section>':'');
+        '<p>'+(type==='interview'?'Write the assessment from this call, for the lead\u2019s Assessment stage. Only the assessment runs.'
+          :'Write the assessment from this call. Only the assessment runs, with this call as what was said.')+'</p></div>'+
+        '<button class="rd-btn pri" onclick="apCxE1(\''+ide+'\',this)">Run the assessment from this call</button></section>':'');
 }
 function apCxAuto(on){apAiSettingsLoad().then(function(){apAiSet('call_auto_actions',!!on);});}
 async function apCxGen(id,btn,typeArg){
@@ -51594,7 +51599,7 @@ document.addEventListener('click',function(e){const b=e.target.closest&&e.target
    =================================================================== */
 const V125={fb:null,ask:null};
 const V125_TT='e1_document';
-const V125_DOC={lead_research:'lead research',interview_script:'call guide',anonymizer:'assessment',discovery_call:'discovery framework',growth_plan:'growth plan'};
+const V125_DOC={lead_research:'prospect brief',interview_script:'consultation guide',anonymizer:'assessment',discovery_call:'follow-up guide',growth_plan:'proposal presentation'};
 function v125Key(email,agent){return String(email||'').toLowerCase()+':'+agent;}
 async function v125Load(force){
   if(V125.fb&&!force)return V125.fb;
@@ -52193,7 +52198,7 @@ const V132={src:null,err:null,pend:[],n:0,fresh:{},props:{},run:{},open:{},edit:
   printer:function(w){w.focus();w.print();}};
 const V132_KINDS=[
   {k:'proposal_template',name:'Proposal template',use:'The client proposal follows its sections, wording and branding.'},
-  {k:'discovery_template',name:'Discovery call questions',use:'The interview script and the discovery framework ask questions the way it does, and the proposal sorts what the client said by its topics.'},
+  {k:'discovery_template',name:'Discovery call questions',use:'The consultation guide asks questions the way it does, and the proposal sorts what the client said by its topics.'},
   {k:'past_assessment',name:'Past assessment',use:'The assessment follows its order and tone, and the proposal writes findings the same way.'}];
 const V132_HOOK=AP_N8N+'catalyst-proposal';
 const V132_MAX=25*1024*1024;
@@ -52547,7 +52552,7 @@ function v132Mount(){
   const at=head.nextSibling;[...box.childNodes].forEach(function(n){el.insertBefore(n,at);});
   el.querySelectorAll('.rd-card .rd-blank').forEach(function(b){
     if(/have their formats set inside their n8n workflows/.test(b.textContent))
-      b.innerHTML='The Catalyst documents (research brief, interview script, assessment, discovery call, growth plan) and the Pipeline briefs keep the formats set in their n8n workflows. '+
+      b.innerHTML='The Catalyst documents (prospect brief, consultation guide, assessment, proposal) and the Pipeline briefs keep the formats set in their n8n workflows. '+
         'The client proposal takes its sections and branding from your proposal template, your past documents above shape how the interview script, the assessment and the discovery call are written, '+
         'and house rules in <a onclick="navPm(\'learning\')">Dashboard AI settings</a> steer them all.';});
 }
@@ -52598,7 +52603,7 @@ function v132CardHtml(lead,o){
   const asks=typeof v125For==='function'?v125For(lead,'client_proposal').length:0;
   return '<div class="ap-doc-t"><b>'+esc(o?(o.title||'Client proposal'):'Client proposal')+'</b><small>'+
       (o?'Written '+fmtDate(o.created_at)+(d.edited&&d.edited.at?' · edited '+fmtDate(d.edited.at):'')+(src.length?' · from '+esc(src.map(function(s){return s.label;}).join(', ')):''):
-        'The proposal the client receives, from the call and the assessment'+(tp?', in the sections and branding of '+esc(tp.file_name):'. Add a past proposal in Templates and it follows its sections and branding')+'. It is written after the growth plan.')+'</small></div>'+
+        'The proposal the client receives, from the call and the assessment'+(tp?', in the sections and branding of '+esc(tp.file_name):'. Add a past proposal in Templates and it follows its sections and branding')+'. It is written after the proposal presentation.')+'</small></div>'+
     '<div class="statline" style="margin-top:4px">'+
       (o?'<button class="btn navy v132-read" onclick="v132Open(\''+em+'\')">'+(V132.open[lead.email]?'Hide ▴':'Read here ▾')+'</button>':'')+
       (o?'<button class="rd-btn sm v132-pdf" onclick="v132Print(\''+em+'\')">Save as PDF</button>':'')+
@@ -52718,8 +52723,8 @@ function v132ToMd(el){
 /* where each section came from, as the chips above it say */
 function v132SrcLabels(d){
   return {template:'Structure from your template',questions:'Sorted by your discovery call questions',past:'Written like your past assessment',
-    call:d.call&&d.call.date?'From the call on '+v132Day(d.call.date):'From the call',assessment:'From the assessment',research:'From the research brief',
-    discovery:'From the discovery call framework',growth_plan:'From the growth plan'};
+    call:d.call&&d.call.date?'From the call on '+v132Day(d.call.date):'From the call',assessment:'From the assessment',research:'From the prospect brief',
+    discovery:'From the follow-up guide',growth_plan:'From the proposal presentation'};
 }
 function v132DocHtml(o){
   const doc=v132DocOf(o),b=v132BrandOf(o),c=b.colors||{},f=b.fonts||{},d=apJson(o&&o.data);
@@ -52827,7 +52832,7 @@ function v132Uses(X,call){
   if(pa)u.push({doc:true,label:'Past assessment: '+pa.file_name});
   u.push(call?{call:true,label:'The call on '+v132Day(call.start)+': '+call.title+' (transcript)'}:{off:true,label:'No recorded call with this lead, so the documents on file.'});
   if(as.done)u.push({label:'The assessment'+(as.out&&as.out.created_at?' of '+v132Day(as.out.created_at):'')});
-  if(rs.done)u.push({label:'The research brief'});
+  if(rs.done)u.push({label:'The prospect brief'});
   return u;
 }
 async function v132Ask(email){
@@ -52930,9 +52935,9 @@ function v132OpenLead(email){V132.open[email]=true;openE1LeadStage(email,4);}
 function v132AskLine(k){
   const m=document.getElementById('v120M');if(!m||m.querySelector('.v132-uses'))return;
   const dt=v132InUse('discovery_template'),pa=v132InUse('past_assessment'),pt=v132InUse('proposal_template'),u=[];
-  if(dt&&k<=3)u.push({doc:true,label:'Discovery call questions: '+dt.file_name+', for how the interview script and the discovery framework ask questions'});
+  if(dt&&k<=3)u.push({doc:true,label:'Discovery call questions: '+dt.file_name+', for how the consultation guide asks its questions'});
   if(pa&&k<=2)u.push({doc:true,label:'Past assessment: '+pa.file_name+', for the assessment\'s order and tone'});
-  if(pt&&k<=4)u.push({doc:true,label:'Proposal template: '+pt.file_name+', for the client proposal written after the growth plan'});
+  if(pt&&k<=4)u.push({doc:true,label:'Proposal template: '+pt.file_name+', for the client proposal written after the proposal presentation'});
   if(!u.length)return;
   const box=document.createElement('div');box.innerHTML=v132UsesHtml(u);
   const body=m.querySelector('.v120-m'),p=body&&body.querySelector(':scope > p');
@@ -53031,6 +53036,540 @@ var V135={ids:null};
     return v;
   };
 })();
+</script>
+<style id="v136css">
+/* v136: the Lead pipeline by meeting stage */
+.v120-card .v136-ok{display:flex;align-items:center;gap:6px;width:100%;margin-top:8px;padding:6px 8px;border:0;border-radius:8px;background:#E7F3EC;color:#1F6B45;font:inherit;font-size:12.5px;font-weight:600;line-height:1.35;text-align:left;cursor:pointer}
+.v120-card .v136-ok:hover{background:#D6EBDF}
+.v120-card .v136-ok:focus-visible{outline:2px solid var(--rd-blue);outline-offset:2px}
+.v120-m .v120-steps li.cur{box-shadow:inset 0 0 0 1.5px #C7CDD6}
+.v136-move{display:inline-flex;align-items:center;gap:6px;margin-right:8px;font-size:13px;font-weight:600;color:var(--rd-muted)}
+.v136-move select{height:32px;max-width:220px;border:1px solid var(--rd-line);border-radius:8px;padding:0 8px;font:inherit;font-size:13px;font-weight:400;color:var(--rd-ink);background:#fff}
+.ap-a5s.v136-six{grid-template-columns:repeat(3,minmax(0,1fr))}
+.ap-a5s.v136-six .ap-a3:nth-child(3n)::after{display:none}
+@media(max-width:860px){.ap-a5s.v136-six{grid-template-columns:1fr}.ap-a5s.v136-six .ap-a3::after{display:none}}
+.v136-prep[hidden]{display:none}
+.v120-tools .v136-rn{margin-left:auto;display:inline-flex;align-items:center;gap:6px}
+.v136-rns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;margin:0 0 6px}
+@media(max-width:640px){.v136-rns{grid-template-columns:1fr}}
+.v136-st{display:inline-flex;align-items:center;gap:7px;font-weight:600;color:var(--rd-ink);font-size:13.5px}
+.v136-st i{width:8px;height:8px;border-radius:50%;flex:none}
+.v136-n{display:block;margin-top:2px;font-size:12px;color:var(--rd-muted)}
+.v136-none .rd-btn{margin-left:8px}
+</style>
+<script id="v136js">
+/* ===================================================================
+   v136: the Lead pipeline by meeting stage (Erica's notes, Nov 5). The
+   board's columns are the six meetings a client goes through (Prospect
+   research, Discovery consultation, Assessment, Proposal, Onboarding,
+   Client review; the names are the team's, a click on one renames it,
+   ai_settings catalyst_stages). A lead sits in the stage it is in
+   (e1_leads.stage; until someone moves it, the furthest stage it has a
+   document for), and moving it into a stage writes that stage's
+   document, after the question, and only that one: the runs carry
+   only:true, so Erica's chain stops after its own step, and what was said
+   in the last meeting rides along as the transcript. Onboarding and
+   Client review are written by Catalyst · Meeting Prep. A card shows its
+   own stage's document (written, being written, or Run), never the next
+   one. The board is v120's (host, polling, reload), drawn by stage here.
+   =================================================================== */
+const V136_STAGES=[
+  {key:'research',short:'Prospect brief',name:'Prospect research',doc:'Pre-meeting prospect brief',what:'the pre-meeting prospect brief',agent:'lead_research',k:0,c:'#4F7DC0',
+    from:'the lead’s details and what is public about the firm',role:'Researches the firm and the person before the first meeting.'},
+  {key:'consultation',short:'Consultation guide',name:'Discovery consultation',doc:'Consultation guide',what:'the consultation guide',agent:'interview_script',k:1,c:'#6C5DD3',
+    from:'the prospect brief and what was said in the first meeting',role:'Writes the questions for the discovery consultation, from the brief and the first meeting.'},
+  {key:'assessment',short:'Assessment',name:'Assessment',doc:'Assessment report',what:'the assessment report',agent:'anonymizer',k:2,c:'#C08A2E',
+    from:'the prospect brief, the consultation guide and what was said in the consultation',role:'Turns the consultation into an assessment and recommendations, with the firm masked for later agents.'},
+  {key:'proposal',short:'Proposal',name:'Proposal',doc:'Proposal presentation',what:'the proposal presentation and the client proposal',agent:'growth_plan',k:4,c:'#2E7D5B',
+    from:'the assessment report; the client proposal also uses the prospect brief, your templates and what was said in the meetings',role:'Writes the proposal presentation from the assessment, then the client proposal from everything before it.'},
+  {key:'onboarding',short:'Onboarding plan',name:'Onboarding',doc:'Onboarding plan',what:'the onboarding plan',agent:'meeting_prep',c:'#2E8B83',
+    from:'every document so far, the proposal above all, and what was said in the meetings',role:'Prepares the onboarding meeting: what was agreed, the first weeks, who does what.'},
+  {key:'review',short:'Review brief',name:'Client review',doc:'Client review brief',what:'the client review brief',agent:'meeting_prep',c:'#8A6BB5',
+    from:'every document so far and what was said in the meetings',role:'Prepares the client review: what was planned, what happened since, what to decide next.'}];
+const V136_HOOK=AP_N8N+'catalyst-meeting-prep';
+const V136={names:null,namesAt:0,ask:null};
+
+/* ---------- the stages, with the team's names ---------- */
+function v136Stages(){
+  const n=V136.names||{};
+  return V136_STAGES.map(function(s){const o=n[s.key]||{},nm=String(o.name||'').replace(/\s+/g,' ').trim();return Object.assign({},s,{name:nm||s.name});});
+}
+function v136St(k){return v136Stages().find(function(s){return s.key===k;})||null;}
+function v136Key(k){k=String(k||'');return V136_STAGES.some(function(s){return s.key===k;})?k:'';}
+function v136Cap(t){t=String(t||'');return t.charAt(0).toUpperCase()+t.slice(1);}
+function v136Btn(s){return 'Run '+s.short.charAt(0).toLowerCase()+s.short.slice(1);}
+async function v136LoadNames(force){
+  if(V136.names&&!force&&Date.now()-V136.namesAt<60e3)return V136.names;
+  try{const r=await apSb('ai_settings?select=value&key=eq.catalyst_stages');V136.names=v96Json(((r||[])[0]||{}).value,{})||{};}
+  catch(e){V136.names=V136.names||{};}
+  V136.namesAt=Date.now();
+  return V136.names;
+}
+
+/* ---------- where a lead is, and its stage's document ---------- */
+function v136Emails(l){return l&&l.emails&&l.emails.length?l.emails:[l&&l.email];}
+/* the stage's newest document for a lead: {at, out}; Engine 1's own also count a link saved on the lead */
+function v136Doc(l,s){
+  const st=typeof s==='string'?v136St(s):s;if(!l||!st)return null;
+  const outs=v120Data().outs||[],em=v136Emails(l);let best=null;
+  outs.forEach(function(o){
+    if(o.agent!==st.agent||em.indexOf(o.run_id)<0)return;
+    if(st.agent==='meeting_prep'&&asObj(o.data).stage!==st.key)return;
+    const t=Date.parse(o.created_at)||0;if(!best||t>best.at)best={at:t,out:o};
+  });
+  if(!best&&st.agent!=='meeting_prep'){const e=E1_STAGES.find(function(x){return x.agent===st.agent;});if(e&&l[e.urlCol])best={at:0,out:null};}
+  return best;
+}
+function v136Derived(l){let k='research';V136_STAGES.forEach(function(s){if(v136Doc(l,s))k=s.key;});return k;}
+function v136StageOf(l){const r=v120RunState(l);if(r)return r.s;return v136Key(l&&l.stage)||v136Derived(l);}
+function v136AnyDoc(l){return V136_STAGES.some(function(s){return !!v136Doc(l,s);});}
+
+/* ---------- runs started from the board, by lead: {s: the stage, t0, seen: its document's time when it started} ---------- */
+function v120RunState(l){
+  const R=v120Runs(),r=R[l.email]||v136Emails(l).map(function(e){return R[e];}).find(Boolean);
+  if(!r||!r.s||Date.now()-r.t0>V120_STALE)return null;
+  const st=v136St(r.s);if(!st)return null;
+  const d=v136Doc(l,st);
+  if(d&&d.at>(r.seen||0))return null;
+  return {s:r.s,st:st,r:r};
+}
+
+/* ---------- what a stage needs ---------- */
+/* the consultation guide works from the prospect brief, the assessment from the brief and the guide, the proposal
+   from the assessment; notes stand in for a document the lead does not have. Onboarding and Client review need
+   something to work from. */
+function v136Plan(l,s){
+  const d=v120Docs(l),p={done:v136Doc(l,s),blocked:'',need:'',notes:s!=='research'};
+  if(s==='consultation'){if(!d.researchDocId)p.need='prospect brief';}
+  else if(s==='assessment'){if(!d.researchDocId||!d.interviewDocId)p.need=!d.interviewDocId?'consultation guide':'prospect brief';}
+  else if(s==='proposal'){if(!d.anonymizedDocId)p.blocked='The proposal works from the assessment report, and this lead has none yet. Run the assessment first.';}
+  else if(s==='onboarding'||s==='review'){if(!v136AnyDoc(l))p.need='documents';}
+  return p;
+}
+
+/* ---------- the board ---------- */
+function v120BoardHtml(){
+  const rows=v120Rows(),S=v136Stages(),by={};
+  S.forEach(function(s){by[s.key]=[];});
+  rows.forEach(function(l){(by[v136StageOf(l)]||by.research).push(l);});
+  return '<div class="v120-kan">'+S.map(function(s){
+    const L=by[s.key],k=esc(nwJs(s.key));
+    return '<section class="v120-col" data-s="'+s.key+'" aria-label="'+esc(s.name+', '+nwPlural(L.length,'lead'))+'" ondragover="v136Over(event,'+k+')" ondragleave="v120Leave(event)" ondrop="v136Drop(event,'+k+')">'+
+      '<div class="v120-col-h"><i style="background:'+s.c+'"></i>'+esc(s.name)+'<span class="c">'+L.length+'</span></div>'+
+      '<div class="v120-cards">'+(L.length?L.map(function(l){return v136CardHtml(l,s);}).join(''):'<div class="v120-empty">No leads here</div>')+'</div></section>';
+  }).join('')+'</div>';
+}
+function v136CardHtml(l,s){
+  const run=v120RunState(l),d=run?null:v136Doc(l,s);
+  const meta=[l.company_name,typeof apFirmType==='function'?apFirmType(l.firm_type):l.firm_type].filter(Boolean).join(' · ');
+  const em=esc(nwJs(l.email)),sk=esc(nwJs(s.key)),when=l.updated_at||l.created_at,name=l.prospect_name||l.email;
+  const doc=run?'<div class="run" role="status"><i></i>Writing '+esc(run.st.what)+'</div>'
+    :d?'<button type="button" class="v136-ok" onclick="event.stopPropagation();v136Open('+em+','+sk+')" title="'+esc('Open the '+s.doc.toLowerCase())+'"><span aria-hidden="true">✓</span> '+esc(s.short)+' ready</button>'
+    :'<button type="button" class="rd-btn sm v120-next" onclick="event.stopPropagation();v136Ask('+em+','+sk+')">'+esc(v136Btn(s))+'</button>';
+  return '<div class="v120-card'+(run?' is-run':'')+'" style="--v120c:'+s.c+'" data-email="'+esc(l.email)+'" tabindex="0" role="button"'+
+      ' aria-label="'+esc(name+', '+s.name+(run?', writing '+run.st.what:d?', '+s.doc+' ready':'')+'. Open the lead')+'"'+
+      (run?'':' draggable="true" ondragstart="v136DragStart(event,'+em+')" ondragend="v120DragEnd()"')+
+      ' onclick="openE1Lead('+em+')" onkeydown="if(event.key===\'Enter\'&&event.target===this)openE1Lead('+em+')">'+
+    '<b>'+esc(name)+'</b>'+(meta?'<div class="meta">'+esc(meta)+'</div>':'')+
+    '<div class="foot"><span>'+(when?esc(nwDay(when)):'')+'</span>'+(typeof fitPill==='function'?fitPill(l.fit_rating):'')+'</div>'+doc+
+  '</div>';
+}
+function v120Host(h){
+  h.id='v120Board';
+  h.innerHTML='<p class="v120-help">Move a lead to the stage it is in. Catalyst writes that stage’s prep, and asks before it runs anything.</p>'+
+    '<div class="v120-tools"><input type="search" placeholder="Search prospect, company or email…" aria-label="Search leads" value="'+esc(V120.q)+'" oninput="V120.q=this.value;v120Paint()"><span class="v120-n"></span>'+
+      '<button type="button" class="rd-btn sm v136-rn" onclick="v136RenameAll()">'+nwIc('pen',14)+'Rename stages</button></div>'+
+    '<div class="v120-body"></div>';
+  v120Paint();
+  v136LoadNames().then(function(){v120Paint();}).catch(function(){});
+}
+
+/* ---------- a document's own tab on the lead's page ---------- */
+function v136Tab(s){const st=V136_STAGES.find(function(x){return x.key===s;});if(!st)return 's0';if(st.agent==='meeting_prep')return 'm_'+st.key;return 's'+E1_STAGES.findIndex(function(e){return e.agent===st.agent;});}
+function v136Open(email,s){
+  openE1Lead(email);
+  const key=v136Tab(s);let n=0;
+  const go=function(){if(typeof apTab==='function'&&document.querySelector('#apChrome .rd-tab[data-tab="'+key+'"]')){apTab(key);return;}if(++n<15)setTimeout(go,200);};
+  setTimeout(go,300);
+}
+
+/* ---------- renaming the stages (team-wide) ---------- */
+function v136RenameAll(){
+  const S=v136Stages();
+  nwModal('v136R','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · Lead pipeline</div><h2>Rename the stages</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v120-m"><p class="nw-muted nw-small">Your names for the meetings, for the whole team: on the board, the tabs and each lead’s page. What each stage writes stays the same.</p>'+
+      '<div class="v136-rns">'+S.map(function(s,i){const def=V136_STAGES[i];
+        return '<label class="nw-field"><span class="nw-lbl">'+esc((i+1)+'. '+def.name)+'<small>'+esc('Writes '+s.what)+'</small></span>'+
+          '<input class="nw-input" data-k="'+s.key+'" value="'+esc(s.name)+'" maxlength="40" placeholder="'+esc(def.name)+'"></label>';}).join('')+'</div>'+
+      '<p class="v120-msg" id="v136RMsg" role="status" aria-live="polite"></p>'+
+      '<div class="nw-m-foot"><button type="button" class="nw-btn nw-btn-ghost" onclick="v136RenameReset()">Use the usual names</button><span class="nw-grow"></span>'+
+        '<button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button>'+
+        '<button type="button" class="nw-btn nw-btn-primary" id="v136RGo" onclick="v136RenameSave()">'+nwIc('check',15)+'Save names</button></div></div>');
+}
+function v136RenameReset(){document.querySelectorAll('#v136R input[data-k]').forEach(function(i){const d=V136_STAGES.find(function(s){return s.key===i.dataset.k;});if(d)i.value=d.name;});}
+function v136Clean(t){return String(t||'').replace(/\s+/g,' ').trim().slice(0,40);}
+async function v136RenameSave(){
+  const btn=document.getElementById('v136RGo'),msg=document.getElementById('v136RMsg');
+  const say=function(t,err){if(msg){msg.textContent=t;msg.classList.toggle('err',!!err);}};
+  const next={};let changed=false;
+  document.querySelectorAll('#v136R input[data-k]').forEach(function(i){
+    const k=i.dataset.k,def=V136_STAGES.find(function(s){return s.key===k;});if(!def)return;
+    const nm=v136Clean(i.value)||def.name;
+    next[k]=nm===def.name?'':nm;if(nm!==v136St(k).name)changed=true;
+  });
+  if(!changed){nwModalClose();return;}
+  if(btn)btn.disabled=true;say('Saving…');
+  try{
+    const who=typeof AP_ME==='function'?AP_ME():'',at=new Date().toISOString();
+    const r=await v104SetPatch('catalyst_stages',function(cur){const o={};Object.keys(next).forEach(function(k){o[k]=Object.assign({},cur[k]||{},{name:next[k],by:who,at:at});});return o;});
+    V136.names=r||V136.names;V136.namesAt=Date.now();
+  }catch(e){if(btn)btn.disabled=false;say('Could not save the names: '+(e.message||e)+'. Try again in a minute.',true);return;}
+  nwModalClose();nwToast('Saved. The whole team sees the new names.');
+  v136TabNames();v120Paint();
+}
+
+/* ---------- drag and drop ---------- */
+function v136CanDrop(email,s){
+  const l=v120Lead(email);if(!l||!v136Key(s))return false;
+  if(v120RunState(l))return false;
+  return s!==v136StageOf(l);
+}
+function v136DragStart(e,email){
+  V120.drag=email;
+  try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',email);}catch(_){}
+  const card=e.currentTarget;setTimeout(function(){if(card)card.classList.add('dragging');},0);
+  document.querySelectorAll('#v120Board .v120-col').forEach(function(c){c.classList.toggle('no',!v136CanDrop(email,c.dataset.s));});
+}
+function v136Over(e,s){
+  const em=V120.drag;if(!em||!v136CanDrop(em,s))return;
+  e.preventDefault();try{e.dataTransfer.dropEffect='move';}catch(_){}
+  e.currentTarget.classList.add('over');
+}
+function v136Drop(e,s){
+  e.preventDefault();
+  let em=V120.drag;try{em=em||e.dataTransfer.getData('text/plain');}catch(_){}
+  v120DragEnd();
+  if(em&&v136CanDrop(em,s))v136Ask(em,s,true);
+}
+
+/* ---------- the question: what the stage writes, what it works from, then move and run, or just move ---------- */
+async function v136Ask(email,s,move){
+  if(!v120Lead(email)){try{await v120Reload();}catch(e){}}
+  await v136LoadNames();
+  const l=v120Lead(email),st=v136St(s);if(!l||!st)return;
+  const name=l.prospect_name||l.email;
+  if(v120RunState(l)){nwToast('Catalyst is still writing for '+name+'. It shows on the card when it is done.');return;}
+  const cur=v136StageOf(l),moving=!!move&&s!==cur,p=v136Plan(l,s);
+  V136.ask={email:l.email,s:s,move:moving};
+  const when=p.done&&p.done.at?nwDay(new Date(p.done.at).toISOString()):'';
+  const hint=p.need?'Needed: this lead has no '+p.need+' yet, so paste what Catalyst should work from, like the meeting transcript or your notes.'
+    :'If you had the meeting, paste its transcript or your notes. Optional.';
+  nwModal('v120M','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · Lead pipeline</div><h2>'+esc(moving?'Move '+name+' to '+st.name+'?':'Run '+st.what+' for '+name+'?')+'</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v120-m">'+
+      '<ul class="v120-steps" aria-label="Meeting stages">'+v136Stages().map(function(x){return '<li class="'+(x.key===s?'on':'')+(x.key===cur&&x.key!==s?' cur':'')+'"'+(x.key===cur?' title="Where the lead is now"':'')+'>'+esc(x.name)+'</li>';}).join('')+'</ul>'+
+      '<p>'+esc((moving?'In '+st.name+', Catalyst writes ':'Catalyst writes ')+st.what+'. Only that runs, and nothing goes to the client.')+'</p>'+
+      '<p class="nw-muted nw-small v136-from">'+esc('It works from '+st.from+'.')+'</p>'+
+      (p.done?'<p class="nw-muted nw-small">'+esc(v136Cap(st.doc)+' was written'+(when?' on '+when:'')+'. Running it again writes a new version; the earlier one stays in Files.')+'</p>':'')+
+      (p.blocked?'<p class="v120-msg err" role="alert">'+esc(p.blocked)+'</p>':'')+
+      (p.notes&&!p.blocked?'<label class="nw-field"><span class="nw-lbl">Transcript or notes from the last meeting<small>'+esc(hint)+'</small></span>'+
+        '<textarea class="nw-input nw-textarea" id="v120Note" rows="5"></textarea></label>':'')+
+      '<p class="v120-msg" id="v120Msg" role="status" aria-live="polite"></p>'+
+      '<div class="nw-m-foot"><span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button>'+
+        (moving?'<button type="button" class="nw-btn nw-btn-ghost" id="v136Move" onclick="v136Go(false)">Just move it</button>':'')+
+        (p.blocked?'':'<button type="button" class="nw-btn nw-btn-primary" id="v120Go" onclick="v136Go(true)">'+nwIc('check',15)+esc(moving?'Move and run it':p.done?'Run it again':'Run it')+'</button>')+'</div>'+
+    '</div>');
+  try{await v132Load();v136UsesLine(s);}catch(e){}
+}
+/* the firm's past documents the stage follows (Templates, v132) */
+function v136UsesLine(s){
+  const m=document.getElementById('v120M');if(!m||m.querySelector('.v132-uses')||typeof v132InUse!=='function')return;
+  const dt=v132InUse('discovery_template'),pa=v132InUse('past_assessment'),pt=v132InUse('proposal_template'),u=[];
+  if(dt&&s==='consultation')u.push({doc:true,label:'Discovery call questions: '+dt.file_name+', for how the consultation guide asks its questions'});
+  if(pa&&s==='assessment')u.push({doc:true,label:'Past assessment: '+pa.file_name+', for the assessment’s order and tone'});
+  if(pt&&s==='proposal')u.push({doc:true,label:'Proposal template: '+pt.file_name+', for the client proposal'});
+  if(!u.length)return;
+  const box=document.createElement('div');box.innerHTML=v132UsesHtml(u);
+  const f=m.querySelector('.v136-from');if(f&&box.firstElementChild)f.after(box.firstElementChild);
+}
+async function v136Go(run){
+  const a=V136.ask;if(!a)return;
+  const go=document.getElementById('v120Go'),mv=document.getElementById('v136Move'),msg=document.getElementById('v120Msg');
+  const say=function(t,err){if(msg){msg.textContent=t;msg.classList.toggle('err',!!err);}};
+  const busy=function(b){[go,mv].forEach(function(x){if(x)x.disabled=b;});};
+  const note=v115Str((document.getElementById('v120Note')||{}).value);
+  busy(true);say(run?'Starting…':'Moving…');
+  /* the newest documents on file go with the run */
+  try{await v120Reload();}catch(e){}
+  const l=v120Lead(a.email),st=v136St(a.s);
+  if(!l||!st){busy(false);say('Could not find this lead any more. Refresh the page.',true);return;}
+  if(run){
+    const p=v136Plan(l,a.s);
+    if(p.blocked){busy(false);say(p.blocked,true);return;}
+    if(p.need&&!note){busy(false);say('Paste the meeting transcript or your notes first. This lead has no '+p.need+' to work from yet.',true);return;}
+  }
+  if(a.move){try{await v136SetStage(l,a.s);}catch(e){busy(false);say('Could not move the lead: '+(e.message||e)+'. Try again in a minute.',true);return;}}
+  if(run){
+    try{await v136Start(l,a.s,note);}
+    catch(e){busy(false);say((a.move?'Moved to '+st.name+', but it could not start: ':'Could not start it: ')+(e.message||e)+'. Try again in a minute.',true);v120Paint();return;}
+  }
+  V136.ask=null;nwModalClose();
+  nwToast(run?'Started. '+v136Cap(st.doc)+' shows up on the card when it is done.':'Moved to '+st.name+'.');
+  v120Paint();try{paintE1Rows();}catch(e){}
+  /* asked from the lead's own page: it shows the new stage, and the prep being written */
+  if(typeof state!=='undefined'&&state.view==='e1lead'&&typeof renderE1Lead==='function'){
+    /* the older Supabase helper keeps every read for the session, so the lead's reads are dropped first */
+    try{Object.keys(cache).forEach(function(k){if(/^(e1_leads|agent_outputs)\?/.test(k))delete cache[k];});}catch(e){}
+    try{renderE1Lead();}catch(e){}
+  }
+}
+/* the lead's stage, on every row it has (a lead run under two emails has two), or a new row */
+async function v136SetStage(l,s){
+  const now=new Date().toISOString();let n=0;
+  for(const em of v136Emails(l)){
+    const rows=await apPatch('e1_leads','email=eq.'+encodeURIComponent(em),{stage:s,updated_at:now});
+    n+=(rows||[]).length;
+  }
+  if(!n)await apPost('e1_leads',{email:l.email,prospect_name:l.prospect_name||null,company_name:l.company_name||null,stage:s,lead_source:'Dashboard'});
+  l.stage=s;l.updated_at=now;
+  (window._e1&&window._e1.leads||[]).forEach(function(x){if(x!==l&&v136Emails(x).some(function(e){return v136Emails(l).indexOf(e)>=0;})){x.stage=s;x.updated_at=now;}});
+}
+/* only that stage: the full run (the prospect brief), Engine 1 Custom Run (the next three) or Meeting Prep */
+async function v136Start(l,s,note){
+  const st=v136St(s);let url,body;
+  if(s==='research'){url=AP_HOOKS.e1_full;body=Object.assign(v120Body(l,0,''),{only:true,stage:s});}
+  else if(st.agent==='meeting_prep'){url=V136_HOOK;body=v136PrepBody(l,st,note);}
+  else{url=AP_HOOKS.e1_custom;body=Object.assign(v120Body(l,st.k,note),{only:true,stage:s});}
+  await apHook(url,body);
+  const d=v136Doc(l,st);
+  v120Runs()[l.email]={s:s,t0:Date.now(),seen:d?d.at:0};
+  if(typeof rdSave==='function')rdSave();
+}
+function v136PrepBody(l,st,note){
+  return {leadEmail:l.email,email:l.email,emails:v136Emails(l),prospectName:l.prospect_name||'',prospectTitle:l.prospect_title||'',
+    companyName:l.company_name||'',firmType:l.firm_type||'',firmSize:l.firm_size||'',
+    stage:st.key,stageName:st.name,docName:st.doc,transcript:note||'',from:'board'};
+}
+
+/* the older New run form (and Run Catalyst on HubSpot contacts and Calls, which open it): the lead starts at the stage it picked */
+async function v136FormStage(body,stage){
+  const email=String(body&&(body.emailAddress||body.email)||'').trim();if(!email||!v136Key(stage))return;
+  try{
+    const rows=await apPatch('e1_leads','email=eq.'+encodeURIComponent(email),{stage:stage,updated_at:new Date().toISOString()});
+    if(!(rows||[]).length)await apSb('e1_leads',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({email:email,prospect_name:body.prospectName||null,company_name:body.companyName||null,stage:stage})});
+  }catch(e){console.warn('v136 stage',e&&e.message);}
+}
+/* AI settings: which documents the Catalyst agents write now */
+(function(){
+  const i=AP_WHERE.findIndex(function(r){return /^Catalyst agents/.test(r[0]);});
+  if(i<0)return;
+  AP_WHERE[i][0]='Catalyst agents (prospect brief, consultation guide, assessment, proposal, onboarding and client review prep, post-call actions)';
+  AP_WHERE[i][1]='Rules, on every run. The consultation guide also follows your discovery call questions, and the assessment your past assessment, from Templates';
+})();
+
+/* the older Run buttons (a document's own step), and v120's question by its column, ask the same question */
+v120Ask=function(email,k){
+  const a=(V120_COLS.find(function(c){return c.k===k;})||{}).agent,s=(V136_STAGES.find(function(x){return x.agent===a;})||{}).key;
+  if(!s){nwToast('That step is not a stage of its own any more: move the lead to the stage it is in.');return;}
+  return v136Ask(email,s);
+};
+(function(){
+  apRunStage=function(email,agent){
+    const s=(V136_STAGES.find(function(x){return x.agent===agent;})||{}).key;
+    if(!s){nwToast('That step is not a stage of its own any more: move the lead to the stage it is in.');return;}
+    return v136Ask(email,s);
+  };
+})();
+
+/* ---------- the Meeting Prep documents come with the pipeline's other documents ---------- */
+(function(){
+  const _d=e1Data;
+  e1Data=async function(){
+    const r=await _d.apply(this,arguments);
+    try{
+      const m=await apSb('agent_outputs?select=id,run_id,agent,title,created_at,data,content_md&agent=eq.meeting_prep&order=created_at.desc&limit=300');
+      if(r&&Array.isArray(m)&&m.length)r.outs=(r.outs||[]).concat(m);
+    }catch(e){}
+    return r;
+  };
+})();
+
+/* ---------- the list's tabs are the stages ---------- */
+AP_E1_TABS.length=0;
+AP_E1_TABS.push(['all','All','']);
+V136_STAGES.forEach(function(s){AP_E1_TABS.push(['st_'+s.key,s.name,'st:'+s.key]);});
+V136_STAGES.forEach(function(s){AP_E1_HEAD['st_'+s.key]=[s.name,'In '+s.name.toLowerCase()+', prep: '+s.doc.toLowerCase()];});
+function v136TabNames(){
+  v136Stages().forEach(function(s){
+    const t=AP_E1_TABS.find(function(x){return x[0]==='st_'+s.key;});if(t)t[1]=s.name;
+    AP_E1_HEAD['st_'+s.key]=[s.name,'In '+s.name.toLowerCase()+', prep: '+s.doc.toLowerCase()];
+  });
+}
+function v136Refresh(){
+  const o=window.__apDemo;if(!o||o.page!=='e1pipeline')return;
+  try{apDemoRefreshStrip();}catch(e){}
+  (o.tabs||[]).forEach(function(t){
+    const b=document.querySelector('#apChrome .rd-tab[data-tab="'+t.key+'"]');if(!b)return;
+    const x=AP_E1_TABS.find(function(a){return a[0]===t.key;});
+    if(x&&/^st_/.test(t.key)){t.label=x[1];if(b.firstChild&&b.firstChild.nodeType===3)b.firstChild.textContent=x[1];}
+    if(typeof t.count!=='function')return;
+    const c=t.count(),sp=b.querySelector('.c');
+    if(c===''||c==null){if(sp)sp.remove();return;}
+    if(sp)sp.textContent=String(c);else b.insertAdjacentHTML('beforeend','<span class="c">'+esc(String(c))+'</span>');
+  });
+}
+(function(){const _p=v120Paint;v120Paint=function(){const r=_p.apply(this,arguments);try{v136Refresh();}catch(e){}return r;};})();
+function apE1Count(v){
+  const d=window._e1;if(!d)return '';
+  if(v==='')return d.leads.length;
+  if(/^st:/.test(v)){const k=v.slice(3);return d.leads.filter(function(l){return v136StageOf(l)===k;}).length;}
+  return '';
+}
+(function(){
+  const _p=paintE1Rows;
+  paintE1Rows=function(){
+    const sf=state.e1Stage==null?'':String(state.e1Stage);
+    if(sf&&!/^st:/.test(sf)){state.e1Stage='';return _p.apply(this,arguments);}
+    if(!sf||!window._e1)return _p.apply(this,arguments);
+    const all=window._e1,k=sf.slice(3);
+    window._e1={leads:all.leads.filter(function(l){return v136StageOf(l)===k;}),outs:all.outs};
+    state.e1Stage='';
+    try{return _p.apply(this,arguments);}finally{window._e1=all;state.e1Stage=sf;}
+  };
+  const _q=paintE1Rows;
+  paintE1Rows=function(){const r=_q.apply(this,arguments);try{v136Rows();}catch(e){console.warn('v136 rows',e);}return r;};
+  /* the stage names are in place before the page draws its tabs */
+  const _r=renderE1Pipeline;
+  renderE1Pipeline=async function(){
+    try{await Promise.race([v136LoadNames(),new Promise(function(r){setTimeout(r,1500);})]);v136TabNames();}catch(e){}
+    return _r.apply(this,arguments);
+  };
+})();
+
+function v136Rows(){
+  const tb=document.querySelector('#e1Body table');if(!tb||!window._e1)return;
+  const th=tb.querySelectorAll('thead th')[2];if(th)th.textContent='Stage';
+  tb.querySelectorAll('tbody tr').forEach(function(tr){
+    const m=/openE1Panel\('([^']*)'\)/.exec(tr.getAttribute('onclick')||''),td=tr.children[2];if(!m||!td)return;
+    const l=v120Lead(m[1]);if(!l)return;
+    const st=v136St(v136StageOf(l));if(!st)return;
+    const n=E1_STAGES.filter(function(x){return e1StageState(l,window._e1.outs,x).done;}).length+(v136Doc(l,'onboarding')?1:0)+(v136Doc(l,'review')?1:0);
+    td.innerHTML='<span class="v136-st"><i style="background:'+st.c+'"></i>'+esc(st.name)+'</span><small class="v136-n">'+esc(nwPlural(n,'document'))+'</small>';
+  });
+}
+
+/* ---------- the pages that showed five steps show the six stages ---------- */
+(function(){
+  if(typeof apDemo!=='function')return;
+  const _d=apDemo;
+  apDemo=function(o){
+    try{
+      if(o&&o.page==='e1pipeline')v136PipelineDemo(o);
+      else if(o&&o.page==='e1overview')v136OverviewDemo(o);
+      else if(o&&typeof o.page==='string'&&o.page.indexOf('e1lead:')===0)v136LeadDemo(o);
+    }catch(e){console.warn('v136 stages',e);}
+    return _d.apply(this,arguments);
+  };
+})();
+function v136Counts(){
+  const d=window._e1||apE1Leads(),c={};
+  V136_STAGES.forEach(function(s){c[s.key]=0;});
+  (d.leads||[]).forEach(function(l){const k=v136StageOf(l);if(k in c)c[k]++;});
+  return c;
+}
+function v136PipelineDemo(o){
+  v136TabNames();
+  const ok=['board','all'].concat(V136_STAGES.map(function(s){return 'st_'+s.key;}));
+  if(RD.aptab&&RD.aptab.e1pipeline&&ok.indexOf(RD.aptab.e1pipeline)<0)RD.aptab.e1pipeline='board';
+  const sf=state.e1Stage==null?'':String(state.e1Stage);if(sf&&!/^st:/.test(sf))state.e1Stage='';
+  if(Array.isArray(o.tabs))o.tabs.forEach(function(t){const x=AP_E1_TABS.find(function(a){return a[0]===t.key;});if(x)t.label=x[1];});
+  o.strip=function(){
+    const d=window._e1||{leads:[]},c=v136Counts();
+    const strong=(d.leads||[]).filter(function(l){return /strong/i.test(l.fit_rating||'');}).length;
+    const clients=c.onboarding+c.review,going=(d.leads||[]).length-clients;
+    return [
+    {n:(d.leads||[]).length,l:'Leads',s:'all prospects and clients',tab:'all'},
+    {n:going,l:'In the sales stages',s:'research to proposal',tab:'board'},
+    {n:clients,l:'Clients',s:'onboarding and client review',tab:c.onboarding||!c.review?'st_onboarding':'st_review'},
+    {n:strong,l:'Strong fit',s:'rated before the call',tab:'all'}];};
+  o.sub='Every prospect and client, by meeting stage, with the prep for each meeting.';
+}
+function v136OverviewDemo(o){
+  const sec=document.querySelector('#main section[data-tp="agents"]');
+  const D=window._e1Last?apE1Leads():{leads:[],outs:[]},S=v136Stages(),c={};
+  S.forEach(function(s){c[s.key]=0;});
+  (D.leads||[]).forEach(function(l){const k=v136StageOf(l);if(k in c)c[k]++;});
+  if(sec){
+    const h=sec.querySelector('h2');if(h)h.textContent='Six meetings, prep for each';
+    const grid=sec.querySelector('.ap-a5s');
+    if(grid){grid.classList.add('v136-six');grid.innerHTML=S.map(function(s,i){
+      return '<div class="ap-a3"><div class="hd"><span class="num">'+(i+1)+'</span><span><span class="kind">'+esc(s.name)+'</span><b class="nm">'+esc(s.doc)+'</b></span></div>'+
+        '<p>'+esc(s.role)+'</p><div class="io"><b>Works from</b> '+esc(s.from)+'</div>'+
+        '<div class="ft"><span>'+nwPlural(c[s.key],'lead')+' in this stage</span></div></div>';}).join('');}
+  }
+  const leads=D.leads||[],strong=leads.filter(function(l){return /strong/i.test(l.fit_rating||'');}).length;
+  o.sub='Prep for every meeting, from the first research to the client review.';
+  if(o.purpose)o.purpose=Object.assign({},o.purpose,{bold:'From the first research to the client review',small:'A client moves through six meetings. Catalyst writes the prep for each one when the client gets there, from everything before it, and your team reviews it first.'});
+  o.strip=function(){return [
+    {n:leads.length,l:'Leads',s:'in the pipeline',tab:'leads'},
+    {n:strong,l:'Strong fit',s:'rated before the call',tab:'leads'},
+    {n:c.onboarding+c.review,l:'Clients',s:'onboarding and client review',tab:'leads'},
+    {n:S.length,l:'Stages',s:'a document for each',tab:'agents'}];};
+  if(Array.isArray(o.tabs))o.tabs.forEach(function(t){if(t.key==='agents')t.label='Stages';else if(t.key==='stages')t.label='Documents';});
+}
+/* the lead's page: its stage, the follow-up guide only when it has one, and the Onboarding and Client review prep */
+function v136LeadDemo(o){
+  const email=o.page.slice(7),D=apE1Leads();
+  const lead=D.leads.find(function(l){return v136Emails(l).indexOf(email)>=0;})||{email:email,emails:[email]};
+  const main=document.getElementById('main');
+  if(Array.isArray(o.tabs)&&!e1StageState(lead,D.outs,E1_STAGES[3]).done)o.tabs=o.tabs.filter(function(t){return t.key!=='s3';});
+  const cur=v136StageOf(lead),cst=v136St(cur),cd=v136Doc(lead,cur);
+  const files=[...main.querySelectorAll(':scope > section.block')].find(function(x){const h=x.querySelector(':scope > h2');return h&&/^Files/.test(h.textContent.trim());});
+  main.querySelectorAll(':scope > section[data-v136]').forEach(function(x){x.remove();});
+  ['onboarding','review'].forEach(function(k){
+    const st=v136St(k),d=v136Doc(lead,st);if(!d&&cur!==k)return;
+    const sec=document.createElement('section');sec.className='block';sec.dataset.v136=k;sec.innerHTML=v136PrepHtml(lead,st,d);
+    if(files)files.before(sec);else main.appendChild(sec);
+    if(Array.isArray(o.tabs)){
+      const at=o.tabs.findIndex(function(t){return t.key==='files'||/^x\d/.test(t.key);});
+      const tab={key:'m_'+k,label:(d?'✓ ':'')+st.doc,nodes:function(){return [sec];}};
+      if(at<0)o.tabs.push(tab);else o.tabs.splice(at,0,tab);
+    }
+  });
+  if(o.purpose&&cst)o.purpose=Object.assign({},o.purpose,{bold:'Stage: '+cst.name+' · '+(cd?cst.doc+' ready':cst.doc+' not written yet'),
+    alt:'<label class="v136-move">Stage <select data-nofill="1" aria-label="Move this lead to another stage" onchange="v136MoveFromLead('+esc(nwJs(lead.email))+',this)">'+
+      v136Stages().map(function(s){return '<option value="'+s.key+'"'+(s.key===cur?' selected':'')+'>'+esc(s.name)+'</option>';}).join('')+'</select></label>'+
+      (o.purpose.alt||'')});
+  if(typeof o.strip==='function'&&cst){
+    const _s=o.strip;
+    o.strip=function(){const r=_s.apply(this,arguments)||[];if(r[0])r[0]={n:cst.name,l:'Stage',s:cd?cst.doc+' ready':'prep not written yet',tab:v136Tab(cur)};return r;};
+  }
+}
+function v136MoveFromLead(email,sel){
+  const s=sel.value,l=v120Lead(email)||(apE1Leads().leads||[]).find(function(x){return v136Emails(x).indexOf(email)>=0;});
+  if(l)sel.value=v136StageOf(l);
+  if(!window._e1)window._e1=apE1Leads();
+  v136Ask(email,s,true);
+}
+function v136PrepHtml(lead,st,d){
+  const out=d&&d.out,md=out&&out.content_md,run=v120RunState(lead);
+  if(run&&run.s===st.key)return '<h2>'+esc(st.doc)+' <span class="chip" style="opacity:.75">writing</span></h2>'+
+    '<div class="empty v136-none" style="padding:22px" role="status">'+esc('Catalyst is writing '+st.what+'. It shows here when it is done.')+'</div>';
+  return '<h2>'+esc(st.doc)+' '+(d?'<span class="count">'+(out?esc(fmtDate(out.created_at)):'done')+'</span>':'<span class="chip" style="opacity:.6">not run yet</span>')+'</h2>'+
+    (d?'<div class="card ap-docc"><div class="ap-doc-t"><b>'+esc((out&&out.title)||st.doc)+'</b><small>'+esc('For the '+st.name.toLowerCase()+' meeting'+(out?' · produced '+fmtDate(out.created_at):''))+'</small></div>'+
+        (md?'<div class="statline" style="margin-top:4px"><button class="btn navy" onclick="v136ReadPrep(this)" aria-expanded="false">Read inline ▾</button></div>'+
+          '<div class="e1brief v136-prep" hidden><div class="brief">'+(typeof marked!=='undefined'?marked.parse(typeof e1MdClean==='function'?e1MdClean(md):md):esc(md))+'</div></div>':'')+'</div>'
+      :'<div class="empty v136-none" style="padding:22px">'+esc('This lead is in '+st.name+', and its prep has not been written yet.')+
+        ' <button type="button" class="rd-btn sm" onclick="v136Ask('+esc(nwJs(lead.email))+','+esc(nwJs(st.key))+')">'+esc(v136Btn(st))+'</button></div>');
+}
+function v136ReadPrep(btn){
+  const box=btn.closest('.card').querySelector('.v136-prep');if(!box)return;
+  const open=box.hasAttribute('hidden');
+  if(open)box.removeAttribute('hidden');else box.setAttribute('hidden','');
+  btn.setAttribute('aria-expanded',String(open));btn.textContent=open?'Hide ▴':'Read inline ▾';
+}
 </script>
 <script>
 /* ===================================================================

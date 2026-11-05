@@ -93,25 +93,24 @@ function tables() {
     await ctx.close();
   }
 
-  // 2. the stage bar and its count stay inside their cell, segments on one line, with and without the Fit column;
-  //    a phone keeps its wider table that scrolls sideways
+  // 2. the Stage column (v136: the lead's stage and how many documents it has, where the five-step bar was) stays inside
+  //    its cell, clear of the next column, with and without the Fit column; a phone keeps its wider table that scrolls
   for (const width of [390, 900, 1024, 1280, 1440]) {
     const { ctx, page } = await open('/dashboard/lead-pipeline', { width });
-    for (const name of ['All', 'New', 'At Research']) {
+    for (const name of ['All', 'Prospect research', 'Proposal']) {
       await tab(page, name); await wait(page, 800);
       const r = await page.evaluate(() => [...document.querySelectorAll('#e1Body tbody tr')].map((tr) => {
-        const td = tr.children[2], bar = td && td.querySelector('.ap-e1bar');
-        if (!bar) return null;
+        const td = tr.children[2], st = td && td.querySelector('.v136-st');
+        if (!st) return null;
         const cs = getComputedStyle(td), cr = td.getBoundingClientRect(), inner = cr.right - parseFloat(cs.paddingRight);
-        const right = Math.max(...[...bar.children].map((c) => c.getBoundingClientRect().right));
+        const right = Math.max(...[st, td.querySelector('.v136-n')].filter(Boolean).map((c) => { const rg = document.createRange(); rg.selectNodeContents(c); return rg.getBoundingClientRect().right; }));
         const next = [...tr.children].slice(3).find((c) => c.getClientRects().length && c.textContent.trim());
         let nextLeft = Infinity;
         if (next) { const rg = document.createRange(); rg.selectNodeContents(next); nextLeft = rg.getBoundingClientRect().left; }
-        const segs = [...bar.querySelectorAll('.seg')].map((x) => x.getBoundingClientRect());
-        return { right: Math.round(right), inner: Math.round(inner), gap: Math.round(nextLeft - right), rows: new Set(segs.map((x) => Math.round(x.top))).size, seg: Math.round(segs[0].width) };
+        return { right: Math.round(right), inner: Math.round(inner), gap: Math.round(nextLeft - right) };
       }).filter(Boolean));
-      check('at ' + width + ' wide on ' + name + ' the stage bar stays in its cell on one line, clear of the next column',
-        r.length > 0 && r.every((x) => x.right <= x.inner + 1 && x.gap >= 12 && x.rows === 1 && x.seg >= 10 && (width > 860 || x.seg === 22)), JSON.stringify(r));
+      check('at ' + width + ' wide on ' + name + ' the stage stays in its cell, clear of the next column',
+        r.length > 0 && r.every((x) => x.right <= x.inner + 1 && x.gap >= 12), JSON.stringify(r));
     }
     await ctx.close();
   }
@@ -143,10 +142,10 @@ function tables() {
   {
     const { ctx, page } = await open('/dashboard/deliverables');
     const t = await txt(page, '#main');
-    check('Deliverables counts and tags lead documents under Catalyst', /from Catalyst/.test(t) && /Catalyst documents for each lead/.test(t) && /Catalyst · Prospect intelligence/.test(t) && !ENGINE.test(t), (t.match(/.{0,60}engine [123].{0,40}/i) || [t.slice(0, 300)])[0]);
+    check('Deliverables counts and tags lead documents under Catalyst', /from Catalyst/.test(t) && /Catalyst documents for each lead/.test(t) && /Catalyst · Prospect research/.test(t) && !ENGINE.test(t), (t.match(/.{0,60}engine [123].{0,40}/i) || [t.slice(0, 300)])[0]);
     await ctx.close();
   }
-  for (const [slug, want] of [['ai-settings', /Catalyst agents \(research, interview, anonymizer, discovery, growth plan, post-call actions\)/], ['templates', /The Catalyst documents .*Pipeline briefs/],
+  for (const [slug, want] of [['ai-settings', /Catalyst agents \(prospect brief, consultation guide, assessment, proposal, onboarding and client review prep, post-call actions\)/], ['templates', /The Catalyst documents .*Pipeline briefs/],
     ['account', /Catalyst · Clients and meetings[\s\S]*Pipeline · Content and ads/i], ['files', null], ['knowledge-base', null]]) {
     const { ctx, page } = await open('/dashboard/' + slug);
     const t = await txt(page);
@@ -162,7 +161,7 @@ function tables() {
     ['Engine 3 · market reading', 'Pipeline · market reading'], ['Engine 3 \\u00b7 Custom run', 'Pipeline \\u00b7 Custom run'], ['ready for Engine 1.', 'ready for lead research.'],
     ['Engine 3 \\u00b7 Ad Strategist</div>', 'Pipeline \\u00b7 Ad Strategist</div>'], ['Engine 3 \\u00b7 Ad copy', 'Pipeline \\u00b7 Ad copy'], ['Save to Engine 3', 'Save to Pipeline'],
     ['Engine 3 · Competitor Intelligence Tracker</div>', 'Pipeline · Intel Tracker</div>'], ["g:'Engine 1 leads'", "g:'Leads'"],
-    ['Start Engine 1 from this call', 'Run Catalyst from this call'], ['Start Engine 1 at the Assessment', 'Run Catalyst from the Assessment'], ['Engine 1 lead: <b>', 'Catalyst lead: <b>'],
+    ['Start Engine 1 from this call', 'Run the assessment from this call'], ['Start Engine 1 at the Assessment', 'Write the assessment from this call'],   /* v136: one stage runs */ ['Engine 1 lead: <b>', 'Catalyst lead: <b>'],
     ['Engine 3 already posts its review messages', 'Pipeline already posts its review messages'], ['Meetings feed Engine 1 prep', 'Meetings feed Catalyst prep']]) {
     check('the source says ' + now.replace(/<[^>]+>/g, '') + ' where it said ' + old.replace(/<[^>]+>/g, ''), !SRC.includes(old) && SRC.includes(now));
   }
