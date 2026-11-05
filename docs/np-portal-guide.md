@@ -592,7 +592,7 @@ Printouts and PDFs are made by the browser on the person's computer. The SIR has
 - **Official form layouts.** The real regional center template layouts are not loaded yet.
 - **No medication tracking.** Medication records were removed; the MAR is only a printable blank form.
 - **Invite and alert emails.** As of Oct 27 none had been seen arriving in production. If an invite does not arrive, use Copy link or Gmail draft in the invite window and send the link another way.
-- **Google Calendar.** Google's verification of the calendar permission is still pending. The appointment form says staff listed under "Only these staff" get a Google Calendar invite; the server sync behind that does nothing for current teams (CLAUDE.md section 2), so do not promise it. Each person's own connection is what works.
+- **Google Calendar.** Google approved the calendar permission on Nov 5, 2026. Each person connects their own calendar. The appointment form says staff listed under "Only these staff" get a Google Calendar invite; the server sync behind that does nothing for current teams (CLAUDE.md section 2), so do not promise it. Each person's own connection is what works.
 - **No phone app.** It runs in the phone's browser.
 - **Sign-out** ends the sign-in on this device only.
 - **If a sign-in runs out** (for example after a laptop sleeps), the portal shows the sign-in page with the reason, and changes that did not save are sent once the person signs back in.
