@@ -52441,9 +52441,9 @@ async function v132Store(path,blob,type){
   return SUPABASE_URL+'/storage/v1/object/public/guide-files/'+path;
 }
 function v132Add(list){[...(list||[])].forEach(function(f){v132AddOne(f);});}
-async function v132AddOne(f){
+async function v132AddOne(f,kind){/* v137: a meeting stage's drop zone names the kind */
   const ext=String((String(f.name).match(/\.([a-z0-9]+)$/i)||[])[1]||'').toLowerCase();
-  const p={pid:'p'+(++V132.n),file_name:f.name,ext:ext,kind:v132Guess(f.name),state:'read',msg:''};
+  const p={pid:'p'+(++V132.n),file_name:f.name,ext:ext,kind:kind||v132Guess(f.name),fixed:!!kind,state:'read',msg:''};
   V132.pend.push(p);v132Paint();
   try{
     if(f.size>V132_MAX)throw new Error('Keep each file under 25 MB.');
@@ -52502,7 +52502,7 @@ function v132Drop(ev){ev.preventDefault();v132Over(ev,0);v132Add(ev.dataTransfer
 /* ---------- the card on Templates ---------- */
 const V132_UP='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M6 10l6-6 6 6"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>';
 function v132KindSel(kind){return V132_KINDS.map(function(x){return '<option value="'+x.k+'"'+(x.k===kind?' selected':'')+'>'+esc(x.name)+'</option>';}).join('');}
-function v132RowHtml(r){
+function v132RowHtml(r,fixed){/* v137: fixed, in a meeting stage's card, where the stage is the kind */
   const k=v132Kind(r.kind),use=v132InUse(r.kind),inUse=!!use&&use.id===r.id,b=r.brand||{},c=b.colors||{},f=b.fonts||{},found=b.found||[],secs=r.sections||[];
   const ext=String(r.file_type||'').toLowerCase(),id=esc(r.id);
   const bits=['logo','colors','fonts'].filter(function(x){return found.indexOf(x)>=0;});
@@ -52510,7 +52510,7 @@ function v132RowHtml(r){
   const fonts=[f.heading,f.body].filter(function(x,i,a){return x&&a.indexOf(x)===i;});
   return '<div class="v132-row'+(V132.fresh[r.id]?' v132-new':'')+(inUse?'':' v132-old')+'" data-id="'+id+'">'+
     '<div class="v132-r1"><span class="v132-ext '+esc(ext)+'">'+esc((ext||'file').toUpperCase())+'</span><b class="nm">'+esc(r.file_name)+'</b><span class="sp"></span>'+
-      '<select class="v132-kind" data-nofill="1" aria-label="What '+esc(r.file_name)+' is" onchange="v132SetKind(\''+id+'\',this.value)">'+v132KindSel(r.kind)+'</select>'+
+      (fixed?'':'<select class="v132-kind" data-nofill="1" aria-label="What '+esc(r.file_name)+' is" onchange="v132SetKind(\''+id+'\',this.value)">'+v132KindSel(r.kind)+'</select>')+
       (inUse?'<span class="v132-use" title="The newest one of each kind is the one Catalyst uses">In use</span>':'<button class="rd-btn sm" onclick="v132Use(\''+id+'\')">Use this one</button>')+
       '<button class="v132-x" title="Remove" aria-label="Remove '+esc(r.file_name)+'" onclick="v132Del(\''+id+'\')">✕</button></div>'+
     '<div class="v132-learn">'+
@@ -52524,7 +52524,7 @@ function v132RowHtml(r){
 function v132PendHtml(p){
   return '<div class="v132-row" data-pid="'+p.pid+'"><div class="v132-r1"><span class="v132-ext '+esc(p.ext)+'">'+esc((p.ext||'file').toUpperCase())+'</span><b class="nm">'+esc(p.file_name)+'</b><span class="sp"></span>'+
       (p.state==='err'?'<button class="v132-x" aria-label="Dismiss" onclick="v132PendDrop(\''+p.pid+'\')">✕</button>':
-        '<select class="v132-kind" data-nofill="1" aria-label="What '+esc(p.file_name)+' is" onchange="v132PendKind(\''+p.pid+'\',this.value)">'+v132KindSel(p.kind)+'</select>')+'</div>'+
+        p.fixed?'':'<select class="v132-kind" data-nofill="1" aria-label="What '+esc(p.file_name)+' is" onchange="v132PendKind(\''+p.pid+'\',this.value)">'+v132KindSel(p.kind)+'</select>')+'</div>'+
     (p.state==='err'?'<div class="v132-err">'+esc(p.msg)+'</div>':'<div class="v132-busy"><span class="v132-spin"></span>'+(p.state==='save'?'Saving…':'Reading its structure and branding…')+'</div>')+'</div>';
 }
 function v132Card(){
@@ -52547,14 +52547,14 @@ function v132Mount(){
   const el=document.getElementById('rd-templates');if(!el||typeof S==='undefined'||S.page!=='templates')return;
   if(document.getElementById('v132Src')){v132Paint();return;}
   const head=el.querySelector('.rd-head');if(!head)return;
-  const sub=head.querySelector('p');if(sub)sub.textContent='Your past documents for Catalyst, and the structures Content Transformation drafts follow.';
+  const sub=head.querySelector('p');if(sub)sub.textContent='The prep Catalyst writes for each meeting stage, and the structures Content Transformation drafts follow.';/* v137 */
   const box=document.createElement('div');box.innerHTML=v132Card()+'<div class="v132-ctpl"><div class="k">Pipeline</div><h3>Content templates</h3></div>';
   const at=head.nextSibling;[...box.childNodes].forEach(function(n){el.insertBefore(n,at);});
   el.querySelectorAll('.rd-card .rd-blank').forEach(function(b){
     if(/have their formats set inside their n8n workflows/.test(b.textContent))
-      b.innerHTML='The Catalyst documents (prospect brief, consultation guide, assessment, proposal) and the Pipeline briefs keep the formats set in their n8n workflows. '+
-        'The client proposal takes its sections and branding from your proposal template, your past documents above shape how the interview script, the assessment and the discovery call are written, '+
-        'and house rules in <a onclick="navPm(\'learning\')">Dashboard AI settings</a> steer them all.';});
+      b.innerHTML='The Catalyst documents keep the sections their n8n workflows set, listed under each meeting stage above. The client proposal, the onboarding plan and the client review brief '+
+        'take the sections of your template when you add one, and the Pipeline briefs keep their own formats. '+
+        'House rules in <a onclick="navPm(\'learning\')">Dashboard AI settings</a> steer them all.';});/* v137 */
 }
 (function(){
   const _t=apRenderTemplates2;
@@ -53524,7 +53524,12 @@ function v136LeadDemo(o){
   const email=o.page.slice(7),D=apE1Leads();
   const lead=D.leads.find(function(l){return v136Emails(l).indexOf(email)>=0;})||{email:email,emails:[email]};
   const main=document.getElementById('main');
-  if(Array.isArray(o.tabs)&&!e1StageState(lead,D.outs,E1_STAGES[3]).done)o.tabs=o.tabs.filter(function(t){return t.key!=='s3';});
+  if(Array.isArray(o.tabs)&&!e1StageState(lead,D.outs,E1_STAGES[3]).done){
+    /* v137: its section had no tab left, so it showed under every tab; it stays hidden now */
+    const t3=o.tabs.find(function(t){return t.key==='s3';});
+    try{((t3&&t3.nodes&&t3.nodes())||[]).filter(Boolean).forEach(function(n){n.dataset.tp='v136-none';});}catch(e){}
+    o.tabs=o.tabs.filter(function(t){return t.key!=='s3';});
+  }
   const cur=v136StageOf(lead),cst=v136St(cur),cd=v136Doc(lead,cur);
   const files=[...main.querySelectorAll(':scope > section.block')].find(function(x){const h=x.querySelector(':scope > h2');return h&&/^Files/.test(h.textContent.trim());});
   main.querySelectorAll(':scope > section[data-v136]').forEach(function(x){x.remove();});
@@ -53570,6 +53575,700 @@ function v136ReadPrep(btn){
   if(open)box.removeAttribute('hidden');else box.setAttribute('hidden','');
   btn.setAttribute('aria-expanded',String(open));btn.textContent=open?'Hide ▴':'Read inline ▾';
 }
+</script>
+<style id="v137css">
+/* v137: Templates per meeting stage, the new client and new transcript questions, a lead's calls */
+.v137-stages{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media(max-width:1100px){.v137-stages{grid-template-columns:minmax(0,1fr)}}
+.v137-st{border:1px solid var(--rd-line-soft,#EEF0F3);border-top:3px solid var(--v137c,#4F7DC0);border-radius:14px;padding:14px 16px 16px;background:#fff;display:grid;gap:12px;min-width:0}
+.v137-st-h{display:flex;align-items:center;gap:10px}
+.v137-st-h .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--v137c,#4F7DC0);color:#fff;font-size:13px;font-weight:700}
+.v137-st-h b{display:block;font-size:15.5px;color:var(--rd-ink,#101828)}
+.v137-st-h small{display:block;font-size:12.5px;color:var(--rd-muted,#667085)}
+.v137-f{display:grid;grid-template-columns:104px minmax(0,1fr);gap:10px;align-items:start}
+@media(max-width:560px){.v137-f{grid-template-columns:minmax(0,1fr);gap:6px}}
+.v137-l{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#7A8394;padding-top:7px}
+.v137-type{height:34px;max-width:100%;border:1px solid var(--rd-line,#D0D5DD);border-radius:8px;padding:0 8px;font:inherit;font-size:13.5px;color:var(--rd-ink,#101828);background:#fff}
+.v137-tp{display:grid;gap:8px;min-width:0}
+.v137-tpw{margin:0;font-size:13px;color:var(--rd-muted,#667085)}
+.v137-tpw b{color:var(--rd-ink-2,#344054)}
+.v137-tp .v132-row{padding:10px 12px}
+.v137-tp .v132-drop{padding:10px 12px;gap:10px;border-radius:11px}
+.v137-tp .v132-drop .ic{width:32px;height:32px;border-radius:9px}
+.v137-tp .v132-drop .ic svg{width:16px;height:16px}
+.v137-tp .v132-drop b{font-size:13.5px}
+.v137-tp .v132-drop small{font-size:12px}
+.v137-rd{display:grid;gap:6px;min-width:0}
+.v137-ck{display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-size:13.5px;color:var(--rd-ink-2,#344054)}
+.v137-ck input{margin:3px 0 0;flex:none;width:15px;height:15px;accent-color:#1C2647}
+.v137-ck b{font-weight:600}
+.v137-ck small{display:block;font-size:12px;color:var(--rd-muted,#667085)}
+.v137-ck.dis{cursor:default;opacity:.65}
+.v137-always{margin:2px 0 0;font-size:12.5px;color:var(--rd-muted,#667085)}
+.v137-wr summary{cursor:pointer;font-size:13.5px;color:var(--rd-ink-2,#344054);padding-top:6px;list-style-position:outside}
+.v137-wr summary span{color:var(--rd-muted,#667085)}
+.v137-wr ol{margin:8px 0 0;padding-left:20px;display:grid;gap:3px;font-size:13px;color:var(--rd-ink-2,#344054)}
+.v137-wn{margin:6px 0 0;font-size:12.5px;color:var(--rd-muted,#667085)}
+/* the questions */
+.v137-reads{margin:2px 0 12px}
+.v137-rbox .v137-reads{margin:2px 0 12px}
+.v137-call{border:1px solid var(--rd-line-soft,#EEF0F3);border-radius:12px;padding:12px 14px;margin:0 0 12px;background:#FAFBFC}
+.v137-call b{display:block;font-size:14.5px;color:var(--rd-ink,#101828)}
+.v137-call small{display:block;font-size:12.5px;color:var(--rd-muted,#667085);margin-top:2px}
+.v137-call ul{margin:8px 0 0;padding-left:18px;font-size:13px;color:var(--rd-ink-2,#344054);display:grid;gap:3px}
+.v137-by{display:block;margin-top:6px;font-size:11.5px;color:#98A2B3}
+/* Today */
+.v137-inbox{display:grid;gap:8px}
+.v137-in-r{display:flex;align-items:center;gap:12px;border:1px solid var(--rd-line-soft,#EEF0F3);border-radius:12px;padding:10px 12px;background:#fff;min-width:0}
+.v137-in-r .nw-mr-ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:#EEF2FB;color:#2D4A7A;flex:none}
+.v137-in-r .t{flex:1;min-width:0}
+.v137-in-r .t b{display:block;font-size:14px;color:var(--rd-ink,#101828);overflow-wrap:anywhere}
+.v137-in-r .t small{display:block;font-size:12.5px;color:var(--rd-muted,#667085)}
+.v137-in-r .nw-btn{flex:none}
+@media(max-width:560px){.v137-in-r{flex-wrap:wrap}.v137-in-r .nw-btn{margin-left:44px}}
+/* a lead's calls */
+.v137-lcp{margin:0 0 10px;font-size:13.5px;color:var(--rd-muted,#667085)}
+.v137-lcl{display:grid;gap:8px}
+.v137-lc{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--rd-line-soft,#EEF0F3);border-radius:12px;padding:10px 12px;background:#fff}
+.v137-dot{width:9px;height:9px;border-radius:50%;flex:none}
+.v137-lc .t{flex:1;min-width:180px}
+.v137-lc .t b{display:block;font-size:14px;color:var(--rd-ink,#101828);overflow-wrap:anywhere}
+.v137-lc .t small{display:block;font-size:12.5px;color:var(--rd-muted,#667085)}
+.v137-chip{font-size:12px;font-weight:600;border-radius:999px;padding:3px 9px;background:#EEF2F6;color:#344054}
+.v137-chip.new{background:#FFF4E5;color:#9A5B00}
+</style>
+<script id="v137js">
+/* ===================================================================
+   v137: between the meetings (Erica's Nov 5 notes, the second part).
+   A contact that is new in HubSpot asks to run the pre-meeting
+   prospect brief; a recorded call with a lead asks to file its
+   transcript under the stage the lead is in and run the next stage
+   with it; and on Templates each meeting stage has its own setup: the
+   meeting type, a template document, what it reads and what it
+   writes. Every stage run sends what its setup says it reads: the
+   lead's call transcripts, its CRM record and the team's notes.
+   =================================================================== */
+const V137_DAYS=14;
+/* what a run's notes hold at most: House Rules and Meeting Prep read up to 45,000 characters */
+const V137_BUDGET=44000;
+const V137_TEAM=/@aiparagonconsulting\.com$/i;
+/* each stage: its template (a catalyst_sources kind), what the template does, its usual meeting type and inputs, what it
+   always reads, and what it writes (the sections its n8n workflow writes) */
+const V137_TPL={
+  research:{kind:'past_brief',tpl:'A past prospect brief',how:'Catalyst matches its tone and level of detail, in the brief’s own sections.',
+    type:'sales',calls:false,crm:true,questions:null,
+    always:'The lead’s details from HubSpot (name, title, company, website), what is public about the firm, and your house rules',alwaysRun:'What is public about the firm, and your house rules',
+    writes:'Pre-meeting prospect brief',secs:['Company snapshot','Prospect profile','Recent news and milestones','Industry context','AI and technology signals',
+      'Important considerations','Department-by-department notes','AI opportunity notes','Mission, vision and strategic priorities','Quick intel card','Sources used']},
+  consultation:{kind:'discovery_template',tpl:'Your discovery call questions',how:'The guide asks your questions, in your order and your way of asking.',
+    type:'discovery',calls:true,crm:true,questions:null,
+    always:'The prospect brief and your house rules',
+    writes:'Consultation guide',secs:['Call objective','Pre-call sensitivity flag, when there is one','1-minute mental prep','Open','Theme A: Business context',
+      'Theme B: Operational pain and bottlenecks','Theme C: AI awareness and mindset','Theme D: Decision-making and timeline','Pivot and positioning','Qualify and close','Post-call scoring card']},
+  assessment:{kind:'past_assessment',tpl:'A past assessment',how:'Catalyst follows its order and tone, never its facts.',
+    type:'',calls:true,crm:false,questions:false,
+    always:'The prospect brief, the consultation guide and your house rules',
+    writes:'Assessment report',secs:['AI readiness signal','Known pain points','Notable quotes','Question themes already covered','Key rapport angles','Known tech stack',
+      'Decision-maker notes','Compliance flags','Content load evidence']},
+  proposal:{kind:'proposal_template',tpl:'Your proposal template',how:'The client proposal follows its sections, wording and branding.',
+    type:'proposal',calls:true,crm:false,questions:null,
+    always:'The assessment report. The client proposal also reads the prospect brief, your discovery call questions, your past assessment and your house rules',
+    writes:'Proposal presentation and client proposal',secs:['Presenter script: pre-call prep, then each slide (on screen, what to say, the transition)',
+      'Objections and what to say','Slide notes for the deck','Client proposal: Executive summary, Where you are today, What we heard, Our recommendation, Scope of work, Timeline and investment, Next steps']},
+  onboarding:{kind:'past_onboarding',tpl:'A past onboarding plan',how:'Catalyst writes the plan in its sections and tone, never its facts.',
+    type:'onboarding',calls:true,crm:true,questions:false,
+    always:'Every document so far and your house rules',
+    writes:'Onboarding plan',secs:['What we agreed','Goals and how we will measure them','The first 30 days','Who does what','What we need from the client','Risks to watch','Questions for the onboarding meeting']},
+  review:{kind:'past_review',tpl:'A past client review',how:'Catalyst writes the brief in its sections and tone, never its facts.',
+    type:'checkin',calls:true,crm:true,questions:false,
+    always:'Every document so far and your house rules',
+    writes:'Client review brief',secs:['What we set out to do','What has happened since','Results against the goals','What is working','What is not','What to decide in this meeting','Questions to ask']}};
+const V137={setup:null,setupAt:0,inbox:null,inboxAt:0,hs:null,hsAt:0,items:null,itemsAt:0,p:null,ask:null,L:null};
+V132_KINDS.push(
+  {k:'past_brief',name:'Past prospect brief',use:'The pre-meeting prospect brief matches its tone and level of detail, in its own sections.'},
+  {k:'past_onboarding',name:'Past onboarding plan',use:'The onboarding plan is written in its sections and tone, never its facts.'},
+  {k:'past_review',name:'Past client review',use:'The client review brief is written in its sections and tone, never its facts.'});
+
+function v137Low(e){return String(e||'').trim().toLowerCase();}
+function v137Name(c){return [c&&c.first_name,c&&c.last_name].filter(Boolean).join(' ').trim()||(c&&c.email)||'';}
+function v137Recent(v){const t=Date.parse(v);return !!t&&Date.now()-t<=V137_DAYS*864e5;}
+function v137Day(v){const d=new Date(v);return isNaN(d)?'':d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+function v137D(v){const d=new Date(v);if(isNaN(d))return '';const o={month:'short',day:'numeric'};if(d.getFullYear()!==new Date().getFullYear())o.year='numeric';return d.toLocaleDateString('en-US',o);}
+function v137Next(k){const i=V136_STAGES.findIndex(function(s){return s.key===k;});return (V136_STAGES[Math.min(i+1,V136_STAGES.length-1)]||V136_STAGES[0]).key;}
+function v137Lc(t){t=String(t||'');return t.charAt(0).toLowerCase()+t.slice(1);}
+
+/* ---------- each stage's setup: the team's choices over the usual ones (ai_settings catalyst_stage_setup) ---------- */
+async function v137SetupLoad(force){
+  if(V137.setup&&!force&&Date.now()-V137.setupAt<60e3)return V137.setup;
+  try{const r=await apSb('ai_settings?select=value&key=eq.catalyst_stage_setup');V137.setup=v96Json(((r||[])[0]||{}).value,{})||{};}
+  catch(e){V137.setup=V137.setup||{};}
+  V137.setupAt=Date.now();
+  return V137.setup;
+}
+function v137Setup(k){
+  const d=V137_TPL[k]||{},o=(V137.setup||{})[k]||{};
+  const pick=function(x,def){return typeof o[x]==='boolean'?o[x]:def;};
+  return {type:typeof o.type==='string'?o.type:(d.type||''),
+    calls:k==='research'?false:pick('calls',!!d.calls),
+    crm:k==='research'?true:pick('crm',!!d.crm),
+    questions:typeof d.questions==='boolean'?pick('questions',d.questions):null};
+}
+async function v137SetupSave(k,patch){
+  const by=apCfMe(),at=new Date().toISOString(),st=v136St(k);
+  V137.setup=V137.setup||{};
+  V137.setup[k]=Object.assign({},V137.setup[k]||{},patch,{by:by,at:at});
+  try{
+    await v104SetPatch('catalyst_stage_setup',function(cur){const o={};o[k]=Object.assign({},cur[k]||{},patch,{by:by,at:at});return o;});
+    nwToast('Saved. '+(st?st.name:'This stage')+' follows it from its next run.');
+  }catch(e){
+    nwToast('Could not save it: '+((e&&e.message)||e));
+    await v137SetupLoad(true);
+  }
+  v132Paint();
+}
+
+/* ---------- Templates: a card for each meeting stage ---------- */
+/* Templates' Catalyst card (v132's past documents) is now one card per meeting stage: its meeting type, its template
+   document (v132 reads and stores it, the kind is the stage's), what it reads and what it writes */
+v132Card=function(){
+  const S=v136Stages();
+  return '<div class="rd-card v132-src v137-src" id="v132Src">'+
+    '<div class="rd-sec-h gold"><div><div class="k">Catalyst</div><h3>Meeting stages</h3></div><span class="rd-secn">'+S.length+'</span></div>'+
+    '<div class="v132-in"><p class="v132-lead">Each meeting stage writes its own prep. For each one, pick the meeting it prepares for, add a past document as its template, and choose what it reads. Catalyst follows this on every run of that stage.</p>'+
+    (V132.err?'<div class="v132-err">Could not read your templates: '+esc(V132.err)+'</div>':'')+
+    '<div class="v137-stages">'+S.map(v137StageHtml).join('')+'</div></div></div>';
+};
+function v137StageHtml(s,i){
+  const T=V137_TPL[s.key],set=v137Setup(s.key),k=esc(nwJs(s.key)),use=v132InUse(T.kind);
+  const rows=(V132.src||[]).filter(function(r){return r.kind===T.kind;})
+    .sort(function(a,b){return (use&&b.id===use.id?1:0)-(use&&a.id===use.id?1:0)||String(b.created_at||'').localeCompare(String(a.created_at||''));});
+  const pend=(V132.pend||[]).filter(function(p){return p.kind===T.kind;});
+  const w=v137Secs(s.key);
+  return '<section class="v137-st" data-s="'+s.key+'" style="--v137c:'+s.c+'" aria-label="'+esc(s.name)+'">'+
+    '<div class="v137-st-h"><span class="n">'+(i+1)+'</span><div><b>'+esc(s.name)+'</b><small>'+esc(T.writes)+'</small></div></div>'+
+    '<div class="v137-f"><span class="v137-l" id="v137Lt_'+s.key+'">Meeting type</span>'+
+      '<select class="v137-type" data-nofill="1" aria-labelledby="v137Lt_'+s.key+'" onchange="v137SetType('+k+',this.value)">'+v121TypeOpts(set.type,'No meeting type',false)+'</select></div>'+
+    '<div class="v137-f"><span class="v137-l">Template</span><div class="v137-tp">'+
+      '<p class="v137-tpw"><b>'+esc(T.tpl)+'.</b> '+esc(T.how)+'</p>'+
+      pend.map(v132PendHtml).join('')+rows.map(function(r){return v132RowHtml(r,true);}).join('')+
+      '<label class="v132-drop v137-drop" id="v137Drop_'+s.key+'" tabindex="0" ondragover="v137Over(event,'+k+',1)" ondragenter="v137Over(event,'+k+',1)" ondragleave="v137Over(event,'+k+',0)" ondrop="v137Drop(event,'+k+')" '+
+        'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();document.getElementById(\'v137File_'+s.key+'\').click();}">'+
+        '<input type="file" id="v137File_'+s.key+'" accept=".docx,.pdf,.txt,.md" multiple hidden onchange="v137Add('+k+',this.files);this.value=\'\'">'+
+        '<span class="ic">'+V132_UP+'</span><span><b>'+esc(use?'Add a newer one':'Add '+v137Lc(T.tpl))+'</b><small>Drop it here or <u>choose a file</u>. Word, PDF or text, up to 25 MB.</small></span></label>'+
+    '</div></div>'+
+    '<div class="v137-f"><span class="v137-l">Reads</span><div class="v137-rd">'+v137ReadOpts(s.key,set)+'<p class="v137-always">'+esc((s.key==='research'?'':'Always: ')+T.always+'.')+'</p></div></div>'+
+    '<div class="v137-f"><span class="v137-l">Writes</span><details class="v137-wr"><summary><b>'+esc(T.writes)+'</b><span> · '+esc(w.label)+'</span></summary>'+
+      '<ol>'+w.list.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ol>'+(w.note?'<p class="v137-wn">'+esc(w.note)+'</p>':'')+'</details></div>'+
+  '</section>';
+}
+function v137ReadOpts(k,set){
+  if(k==='research')return '';
+  const box=function(x,label,small,on,dis){
+    return '<label class="v137-ck'+(dis?' dis':'')+'"><input type="checkbox"'+(on?' checked':'')+(dis?' disabled':'')+' onchange="v137SetRead('+esc(nwJs(k))+','+esc(nwJs(x))+',this.checked)">'+
+      '<span><b>'+esc(label)+'</b><small>'+esc(small)+'</small></span></label>';};
+  const dt=v132InUse('discovery_template');
+  return box('calls','Call transcripts','The lead’s recorded calls from Fathom, newest first',set.calls)+
+    box('crm','CRM record','The lead’s contact in HubSpot',set.crm)+
+    (set.questions===null?'':box('questions','Your discovery call questions',dt?dt.file_name+', from Discovery consultation':'None added yet: add them under Discovery consultation',set.questions&&!!dt,!dt));
+}
+/* what a stage writes: the sections of its workflow, or of the template where the template sets them */
+function v137Secs(k){
+  const T=V137_TPL[k],use=v132InUse(T.kind);
+  const ts=((use&&use.sections)||[]).map(function(x){return String((x&&x.title)||x||'').trim();}).filter(Boolean).slice(0,14);
+  const unit=function(n){return n+(k==='proposal'?' parts':' sections');};
+  if(ts.length>=2&&(k==='onboarding'||k==='review'))return {list:ts,label:unit(ts.length)+', from your template',note:'Your template’s sections replace the usual ones.'};
+  if(ts.length>=2&&k==='proposal'){const l=T.secs.slice(0,3).concat(['Client proposal, in your template’s sections: '+ts.join(', ')]);return {list:l,label:unit(l.length)};}
+  return {list:T.secs,label:unit(T.secs.length)};
+}
+function v137Add(k,files){const T=V137_TPL[k];if(!T)return;[...(files||[])].forEach(function(f){v132AddOne(f,T.kind);});}
+function v137Over(ev,k,on){ev.preventDefault();const d=document.getElementById('v137Drop_'+k);if(d)d.classList.toggle('over',!!on);}
+function v137Drop(ev,k){ev.preventDefault();v137Over(ev,k,0);v137Add(k,ev.dataTransfer&&ev.dataTransfer.files);}
+function v137SetType(k,v){v137SetupSave(k,{type:String(v||'')});}
+function v137SetRead(k,x,on){const p={};p[x]=!!on;v137SetupSave(k,p);}
+/* Templates reads the setup, the stage names and the team's call types with its templates */
+(function(){
+  const _l=v132Load;
+  v132Load=async function(force){
+    const r=await Promise.all([_l.apply(this,arguments),v137SetupLoad(force),v136LoadNames(force),
+      (typeof apAiSettingsLoad==='function'&&typeof AP_AISET!=='undefined'&&!AP_AISET)?apAiSettingsLoad().catch(function(){}):null]);
+    return r[0];
+  };
+})();
+
+/* ---------- a lead's calls, its HubSpot contact ---------- */
+async function v137CallsLoad(){await apFtLoad();try{await apCxLoad();}catch(e){}return AP_FT.items||[];}
+/* the recorded calls a lead was on (one of its emails is a guest), newest first, with where each is filed */
+function v137CallsOf(l){
+  const em=v136Emails(l).map(v137Low).filter(Boolean);
+  return (AP_FT.items||[]).filter(function(c){
+    const m=apCm(c.id)||{};if(m.lead_email&&em.indexOf(v137Low(m.lead_email))<0)return false;
+    return apCmGuests(c).some(function(g){return em.indexOf(v137Low(g.email))>=0;});
+  }).map(function(c){const m=apCm(c.id)||{};return {id:String(c.id),c:c,start:c.start||c.created_at||'',title:c.title||'',stage:m.lead_stage||''};})
+    .sort(function(a,b){return String(b.start).localeCompare(String(a.start));});
+}
+async function v137Contacts(force){
+  if(V137.hs&&!force&&Date.now()-V137.hsAt<60e3)return V137.hs;
+  try{V137.hs=(await apSb('hubspot_contacts?select=email,first_name,last_name,company,job_title,website,lifecycle_stage,lead_status,first_seen&order=first_seen.desc.nullslast&limit=2000'))||[];}
+  catch(e){V137.hs=V137.hs||[];}
+  V137.hsAt=Date.now();
+  return V137.hs;
+}
+function v137Contact(l){const em=v136Emails(l).map(v137Low);return (V137.hs||[]).find(function(c){return em.indexOf(v137Low(c.email))>=0;})||null;}
+function v137CrmLine(c){
+  return [v137Name(c),c.job_title,c.company,c.lifecycle_stage?'lifecycle stage: '+c.lifecycle_stage:'',c.lead_status?'lead status: '+c.lead_status:'',c.website?'website: '+c.website:'']
+    .map(function(x){return String(x||'').replace(/\s+/g,' ').trim();}).filter(Boolean).join(' · ');
+}
+
+/* ---------- what a stage run reads, then the notes it sends ---------- */
+async function v137Gather(l,s,withText){
+  await Promise.all([v137SetupLoad(),v137Contacts(),v132Load()]);
+  const set=v137Setup(s),g={s:s,set:set,calls:[],crm:null,ftErr:''};
+  if(set.crm)g.crm=v137Contact(l);
+  if(set.calls){
+    try{await v137CallsLoad();}catch(e){g.ftErr=(e&&e.message)||String(e);}
+    g.calls=v137CallsOf(l).filter(function(x){return x.stage!=='none';});
+    if(withText)for(const x of g.calls.slice(0,4)){
+      try{x.text=apFtText(await apFtTranscript(x.id)).trim();}catch(e){x.text='';}
+    }
+  }
+  return g;
+}
+/* the team's notes first, then the CRM record, then the transcripts (newest first) as far as the budget goes; with
+   neither a CRM record nor a transcript, the notes go as they always did */
+function v137Note(g,typed){
+  typed=String(typed||'').trim();
+  const crm=g&&g.crm?v137CrmLine(g.crm):'',calls=((g&&g.calls)||[]).filter(function(x){return x.text;});
+  if(!crm&&!calls.length)return typed;
+  const parts=[];
+  if(typed)parts.push('NOTES FROM THE TEAM\n'+typed);
+  if(crm)parts.push('THE CRM RECORD (HubSpot)\n'+crm);
+  let left=V137_BUDGET-parts.join('\n\n').length-120;
+  const out=[];
+  calls.forEach(function(x){
+    if(left<300)return;
+    const st=x.stage&&x.stage!=='none'?v136St(x.stage):null;
+    const head='Call on '+v137Day(x.start)+': '+(x.title||'untitled')+(st?' (filed under '+st.name+')':'');
+    let t=x.text;
+    if(head.length+t.length+2>left)t=t.slice(0,Math.max(0,left-head.length-60))+'\n[the rest of this call is left out]';
+    out.push(head+'\n'+t);left-=head.length+t.length+2;
+  });
+  if(out.length)parts.push('WHAT WAS SAID IN THE MEETINGS (call transcripts, newest first)\n\n'+out.join('\n\n'));
+  return parts.join('\n\n');
+}
+/* the prospect brief takes the CRM record as the lead's details; the other stages take it all as their notes */
+async function v137Start(l,s,typed,g){
+  if(s!=='research')return v136Start(l,s,v137Note(g,typed));
+  const c=g&&g.crm,L=c?Object.assign({},l,{prospect_title:l.prospect_title||c.job_title||'',company_name:l.company_name||c.company||'',website:l.website||c.website||''}):l;
+  const body=Object.assign(v120Body(L,0,''),{only:true,stage:'research'});
+  if(g&&g.intake)body.hearAboutUs='HubSpot';
+  await apHook(AP_HOOKS.e1_full,body);
+  const d=v136Doc(l,v136St('research'));
+  v120Runs()[l.email]={s:'research',t0:Date.now(),seen:d?d.at:0};
+  if(typeof rdSave==='function')rdSave();
+}
+/* a call filed under a lead's stage; the stage's meeting type goes on the call when the team has set none */
+async function v137File(id,email,stage){
+  const m=apCm(id)||{},set=stage&&stage!=='none'?v137Setup(stage):null;
+  const patch={lead_email:email,lead_stage:stage};
+  if(set&&set.type&&!m.meeting_type)patch.meeting_type=set.type;
+  return apCxSaveMeta(id,patch);
+}
+/* the calls a run read that were not filed yet go under the stage the lead was in */
+async function v137FileUsed(l,g,stage){
+  for(const x of ((g&&g.calls)||[]).filter(function(c){return c.text&&!c.stage;})){try{await v137File(x.id,l.email,stage);}catch(e){}}
+}
+/* the list of what a run reads, in the question */
+function v137ReadsHtml(s,g){
+  const T=V137_TPL[s],set=g.set||v137Setup(s),use=v132InUse(T.kind),u=[];
+  u.push(use?{doc:true,label:'Template: '+use.file_name}:{off:true,label:'No template for this stage yet, so the usual sections. Add one on Templates.'});
+  if(s!=='research'&&set.calls){
+    if(g.ftErr&&!g.calls.length)u.push({off:true,label:'Call transcripts: Fathom could not be read ('+g.ftErr+').'});
+    else if(!g.calls.length)u.push({off:true,label:'No recorded calls with this lead yet.'});
+    else g.calls.slice(0,4).forEach(function(x){u.push({call:true,label:'The call on '+v137D(x.start)+': '+(x.title||'untitled')+(x.text===''?' (its transcript could not be read)':' (transcript)')});});
+  }
+  if(set.crm)u.push(g.crm?{label:'The CRM record: '+v137CrmLine(g.crm)}:{off:true,label:'No HubSpot contact with this lead’s email.'});
+  if(set.questions){const dt=v132InUse('discovery_template');if(dt)u.push({doc:true,label:'Your discovery call questions: '+dt.file_name});}
+  u.push({label:T.alwaysRun||T.always});
+  return '<div class="v132-uses v137-reads"><div class="t">Reads</div>'+u.map(function(x){
+    return '<div class="u'+(x.off?' v132-off':'')+(x.call?' v132-cl':'')+(x.doc?' v132-pd':'')+'"><span class="v132-ck">'+(x.off?'–':'✓')+'</span><span>'+esc(x.label)+'</span></div>';}).join('')+'</div>';
+}
+
+/* ---------- the board's question says what the stage reads, and its run sends it ---------- */
+v136UsesLine=function(s){
+  const m=document.getElementById('v120M'),a=V136.ask;if(!m||!a||m.querySelector('.v137-reads'))return;
+  const l=v120Lead(a.email);if(!l)return;
+  const box=document.createElement('div');box.className='v137-rbox';
+  box.innerHTML='<div class="v132-uses v137-reads"><div class="t">Reads</div><div class="u v132-off"><span class="v132-ck">…</span><span>Checking for call transcripts…</span></div></div>';
+  const f=m.querySelector('.v136-from');if(f)f.after(box);else{const b=m.querySelector('.nw-m-body');if(b)b.prepend(box);}
+  v137Gather(l,s,false).then(function(g){
+    if(!document.body.contains(box)||!V136.ask||V136.ask.email!==a.email||V136.ask.s!==s)return;
+    box.innerHTML=v137ReadsHtml(s,g);
+    const hint=m.querySelector('label.nw-field small');
+    if(hint&&g.calls.length)hint.textContent='Optional: the call transcripts above go with it. Add anything else from the meeting.';
+  }).catch(function(){box.remove();});
+};
+v136Go=async function(run){
+  const a=V136.ask;if(!a)return;
+  const go=document.getElementById('v120Go'),mv=document.getElementById('v136Move'),msg=document.getElementById('v120Msg');
+  const say=function(t,err){if(msg){msg.textContent=t;msg.classList.toggle('err',!!err);}};
+  const busy=function(b){[go,mv].forEach(function(x){if(x)x.disabled=b;});};
+  const note=v115Str((document.getElementById('v120Note')||{}).value);
+  busy(true);say(run?'Starting…':'Moving…');
+  try{await v120Reload();}catch(e){}
+  const l=v120Lead(a.email),st=v136St(a.s),was=l?v136StageOf(l):'';
+  if(!l||!st){busy(false);say('Could not find this lead any more. Refresh the page.',true);return;}
+  let g=null;
+  if(run){
+    const p=v136Plan(l,a.s);
+    if(p.blocked){busy(false);say(p.blocked,true);return;}
+    if(a.s!=='research')say('Reading the call transcripts…');
+    try{g=await v137Gather(l,a.s,true);}catch(e){g=null;}
+    const has=!!note||!!(g&&g.calls.some(function(x){return x.text;}));
+    if(p.need&&!has){busy(false);say('Paste the meeting transcript or your notes first. This lead has no '+p.need+' to work from yet, and no recorded call with it.',true);return;}
+    say('Starting…');
+  }
+  if(a.move){try{await v136SetStage(l,a.s);}catch(e){busy(false);say('Could not move the lead: '+(e.message||e)+'. Try again in a minute.',true);return;}}
+  if(run){
+    try{await v137Start(l,a.s,note,g);}
+    catch(e){busy(false);say((a.move?'Moved to '+st.name+', but it could not start: ':'Could not start it: ')+(e.message||e)+'. Try again in a minute.',true);v120Paint();return;}
+    try{await v137FileUsed(l,g,a.move?was:a.s);}catch(e){}
+  }
+  V136.ask=null;nwModalClose();
+  nwToast(run?'Started. '+v136Cap(st.doc)+' shows up on the card when it is done.':'Moved to '+st.name+'.');
+  v120Paint();try{paintE1Rows();}catch(e){}
+  if(typeof state!=='undefined'&&state.view==='e1lead'&&typeof renderE1Lead==='function'){
+    try{Object.keys(cache).forEach(function(k){if(/^(e1_leads|agent_outputs)\?/.test(k))delete cache[k];});}catch(e){}
+    try{renderE1Lead();}catch(e){}
+  }
+  v137Refresh();
+};
+
+/* ---------- what is new: contacts from HubSpot, recorded calls with a lead ---------- */
+async function v137InboxLoad(force){
+  if(V137.inbox&&!force&&Date.now()-V137.inboxAt<60e3)return V137.inbox;
+  try{const r=await apSb('ai_settings?select=value&key=eq.catalyst_inbox');V137.inbox=v96Json(((r||[])[0]||{}).value,{})||{};}
+  catch(e){V137.inbox=V137.inbox||{};}
+  V137.inboxAt=Date.now();
+  return V137.inbox;
+}
+/* the leads, light: the e1_leads rows and anyone with a Catalyst document (for some, the documents are all there is) */
+function v137Leads(rows,outs){
+  const by={},list=[];
+  (rows||[]).forEach(function(r){const e=v137Low(r.email);if(!e||by[e])return;const x=Object.assign({},r,{email:e,emails:[e]});by[e]=x;list.push(x);});
+  (outs||[]).forEach(function(o){
+    const e=v137Low(o.run_id);if(!e||by[e]||e.indexOf('@')<0||e==='contact@deltaadvisory.com')return;
+    const d=asObj(o.data);
+    const x={email:e,emails:[e],prospect_name:o.prospectName||d.prospectName||'',company_name:o.companyName||d.companyName||'',updated_at:o.created_at};
+    by[e]=x;list.push(x);
+  });
+  return {list:list,by:by};
+}
+function v137StageLight(l,outs){
+  const full=window._e1&&v120Lead(l.email);if(full)return v136StageOf(full);
+  if(v136Key(l.stage))return l.stage;
+  const em=v136Emails(l).map(v137Low);let k='research';
+  V136_STAGES.forEach(function(s){
+    const e=E1_STAGES.find(function(x){return x.agent===s.agent;});
+    const has=(outs||[]).some(function(o){return o.agent===s.agent&&em.indexOf(v137Low(o.run_id))>=0&&(s.agent!=='meeting_prep'||(o.stage||asObj(o.data).stage)===s.key);})||
+      (s.agent!=='meeting_prep'&&!!e&&!!l[e.urlCol]);
+    if(has)k=s.key;
+  });
+  return k;
+}
+/* the lead on a call: the first guest (not the team) whose email a lead has; find(email) looks it up */
+function v137LeadOfCall(c,find){
+  const g=apCmGuests(c).map(function(x){return v137Low(x.email);}).filter(function(e){return e&&!V137_TEAM.test(e);});
+  for(const e of g){const l=find(e);if(l)return l;}
+  return null;
+}
+function v137FullLead(e){return (v120Data().leads||[]).find(function(l){return v136Emails(l).map(v137Low).indexOf(e)>=0;})||null;}
+async function v137Load(force){
+  if(V137.p)return V137.p;
+  if(V137.items&&!force&&Date.now()-V137.itemsAt<60e3)return V137.items;
+  V137.p=(async function(){
+    const r=await Promise.all([
+      v137Contacts(force),
+      apSb('e1_leads?select=email,prospect_name,prospect_title,company_name,stage,updated_at,lead_research_url,interview_url,assessment_url,discovery_url,growth_plan_url&order=updated_at.desc&limit=300').catch(function(){return [];}),
+      apSb('agent_outputs?select=run_id,agent,created_at,stage:data->>stage,prospectName:data->>prospectName,companyName:data->>companyName&agent=in.(lead_research,interview_script,anonymizer,discovery_call,growth_plan,meeting_prep)&order=created_at.desc&limit=2000').catch(function(){return [];}),
+      v137InboxLoad(force),
+      v136LoadNames()]);
+    try{await v137CallsLoad();}catch(e){}
+    const hs=r[0]||[],outs=r[2]||[],L=v137Leads(r[1],outs),aside=(r[3]&&r[3].crm)||{},items=[];
+    hs.forEach(function(c){
+      const e=v137Low(c.email);
+      if(!e||!c.first_seen||!v137Recent(c.first_seen)||L.by[e]||aside[e]||V137_TEAM.test(e))return;
+      items.push({kind:'crm',key:'v137:crm:'+e,email:e,c:c,at:c.first_seen});
+    });
+    (AP_FT.items||[]).forEach(function(c){
+      const at=c.start||c.created_at;if(!v137Recent(at))return;
+      const m=apCm(c.id)||{};if(m.lead_stage)return;
+      const lead=v137LeadOfCall(c,function(e){return L.by[e];});if(!lead)return;
+      const cur=v137StageLight(lead,outs);
+      items.push({kind:'call',key:'v137:call:'+c.id,id:String(c.id),email:lead.email,lead:lead,cur:cur,nx:v137Next(cur),c:c,at:at});
+    });
+    items.sort(function(a,b){return String(b.at).localeCompare(String(a.at));});
+    V137.items=items;V137.itemsAt=Date.now();V137.L=L;
+    return items;
+  })().finally(function(){V137.p=null;});
+  return V137.p;
+}
+function v137Refresh(){
+  v137Load(true).then(function(){
+    try{apBuildNotifs();}catch(e){}
+    try{if(typeof nwOn==='function'&&nwOn('home.today'))nwRepaint();}catch(e){}
+  }).catch(function(){});
+}
+function v137ItemText(x){
+  if(x.kind==='crm'){const c=x.c;return {t:'New client from HubSpot: '+v137Name(c)+(c.company?', '+c.company:''),s:'Run the pre-meeting prospect brief?',b:'Run the brief'};}
+  const who=x.lead.prospect_name||x.email,cur=v136St(x.cur),nx=v136St(x.nx),same=x.nx===x.cur;
+  return {t:'New transcript: your call with '+who+(v137D(x.at)?' on '+v137D(x.at):''),
+    s:(cur?'In '+cur.name+'. ':'')+(same?'Run '+nx.what+' again with it?':'Run the '+v137Lc(nx.name)+' stage?'),b:same?'Run it again':'Run '+v137Lc(nx.name)};
+}
+function v137Open(key){
+  const x=(V137.items||[]).find(function(i){return i.key===key;});
+  if(/^v137:crm:/.test(key))return v137AskCrm(x?x.email:key.slice(9));
+  if(/^v137:call:/.test(key))return v137AskCall(x?x.id:key.slice(10));
+}
+
+/* ---------- Today: Catalyst's new clients and transcripts come first ---------- */
+function v137TodayCard(){
+  const it=V137.items||[];if(!it.length)return '';
+  return v115Card(3,'Catalyst · Before your next meetings','<div class="v137-inbox">'+it.slice(0,4).map(function(x){
+    const T=v137ItemText(x);
+    return '<div class="v137-in-r"><span class="nw-mr-ic">'+nwIc(x.kind==='crm'?'user':'msg',17)+'</span><span class="t"><b>'+esc(T.t)+'</b><small>'+esc(T.s)+'</small></span>'+
+      '<button type="button" class="nw-btn nw-btn-sm nw-btn-primary" onclick="v137Open('+esc(nwJs(x.key))+')">'+esc(T.b)+'</button></div>';}).join('')+'</div>'+
+    (it.length>4?'<div class="nw-card-foot"><span class="nw-faint nw-small">'+esc(nwPlural(it.length-4,'more')+' in your notifications')+'</span></div>':''),'v137-today');
+}
+v115TodayHtml=function(){
+  const h=new Date().getHours(),greet=h<12?'Good morning':h<18?'Good afternoon':'Good evening',name=nwFirstName();
+  const n=nwApprovalItems().length+(V137.items||[]).length;
+  const sub=n?(n===1?'1 thing needs you.':n+' things need you.'):'Nothing needs you right now.';
+  return '<div class="nw-content v115-today">'+
+    '<section class="nw-hello"><div class="nw-hello-t"><div class="nw-ph-eyebrow">Touchpoint · '+esc(nwToday())+'</div>'+
+      '<h1>'+esc(greet+(name?', '+name:'')+'.')+'</h1><p class="nw-muted">'+esc(sub)+'</p></div>'+
+      '<div class="nw-ph-actions"><button type="button" class="nw-btn nw-btn-ghost" onclick="nwTourOpen()">'+nwIc('help',17)+'Take the tour</button></div></section>'+
+    '<div class="nw-widgets">'+[v137TodayCard,nwOvNeeds,v115OvQuick,v115OvProducts,nwOvRuns,v115OvSignups].map(function(f){try{return f();}catch(e){console.error(e);return '';}}).join('')+'</div>'+
+  '</div>';
+};
+(function(){
+  const _p=NW_PAGES['home.today'];
+  NW_PAGES['home.today']=function(m,again){
+    const r=_p.apply(this,arguments);
+    if(!again)v137Load().then(function(){try{apBuildNotifs();}catch(e){}if(nwOn('home.today'))nwRepaint();}).catch(function(){});
+    return r;
+  };
+})();
+/* the bell: one notification for each */
+(function(){
+  const _b=apBuildNotifs;
+  apBuildNotifs=function(){
+    const r=_b.apply(this,arguments);
+    try{
+      const gone=new Set(apNotifGone()),add=[];
+      (V137.items||[]).forEach(function(x){
+        if(gone.has(x.key)||NOTIFS.some(function(n){return n.key===x.key;}))return;
+        const T=v137ItemText(x);
+        add.push({key:x.key,t:T.t,s:'Catalyst · '+T.s,when:apWhen(x.at),k:'blue',go:'v137Open('+nwJs(x.key)+')'});
+      });
+      if(add.length){
+        NOTIFS.unshift.apply(NOTIFS,add);
+        const b=document.getElementById('rdNotifBdg');if(b){b.textContent=NOTIFS.length;b.style.display=NOTIFS.length?'':'none';}
+        const b2=document.getElementById('notifBdg');if(b2)b2.textContent=NOTIFS.length;
+      }
+    }catch(e){}
+    return r;
+  };
+})();
+/* looked at once signed in, then every ten minutes while the page is open */
+function v137Tick(){
+  try{if(typeof AP_USER==='undefined'||!AP_USER||document.hidden)return;}catch(e){return;}
+  v137Refresh();
+}
+(function(){
+  if(typeof apAfterLogin==='function'){const _a=apAfterLogin;apAfterLogin=function(){const r=_a.apply(this,arguments);setTimeout(v137Tick,2500);return r;};}
+  setTimeout(v137Tick,4000);
+  setInterval(v137Tick,10*60e3);
+})();
+
+/* ---------- the question for a new HubSpot contact ---------- */
+async function v137AskCrm(email){
+  email=v137Low(email);
+  await Promise.all([v137Contacts(),v136LoadNames(),v137SetupLoad(),v132Load()]);
+  const c=(V137.hs||[]).find(function(x){return v137Low(x.email)===email;});
+  if(!c){nwToast('This contact is not in HubSpot contacts any more.');return;}
+  const name=v137Name(c),st=v136St('research');
+  V137.ask={kind:'crm',email:email,c:c};
+  const who=[name,c.job_title,c.company].filter(Boolean).join(', ');
+  nwModal('v137M','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · New client from HubSpot</div><h2>'+esc('Run the pre-meeting prospect brief for '+name+'?')+'</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v120-m">'+
+      '<p>'+esc(who+' is new in HubSpot'+(c.first_seen?' since '+v137D(c.first_seen):'')+'. Catalyst adds them to the Lead pipeline in '+st.name+' and writes the pre-meeting prospect brief. Only that runs, and nothing goes to the client.')+'</p>'+
+      v137ReadsHtml('research',{set:v137Setup('research'),calls:[],crm:c})+
+      '<p class="v120-msg" id="v137Msg" role="status" aria-live="polite"></p>'+
+      '<div class="nw-m-foot"><button type="button" class="nw-btn nw-btn-ghost" onclick="v137CrmGo(\'skip\')">Not a client</button><span class="nw-grow"></span>'+
+        '<button type="button" class="nw-btn nw-btn-ghost" onclick="v137CrmGo(\'add\')">Add without running</button>'+
+        '<button type="button" class="nw-btn nw-btn-primary" id="v137Go" onclick="v137CrmGo(\'run\')">'+nwIc('check',15)+'Run the prospect brief</button></div>'+
+    '</div>');
+}
+async function v137SetAside(email){
+  email=v137Low(email);
+  const v={by:apCfMe(),at:new Date().toISOString()};
+  V137.inbox=V137.inbox||{};V137.inbox.crm=Object.assign({},V137.inbox.crm||{});V137.inbox.crm[email]=v;
+  await v104SetPatch('catalyst_inbox',function(cur){const crm=Object.assign({},cur.crm||{});crm[email]=v;return {crm:crm};});
+}
+/* the lead in Prospect research, from the HubSpot contact; a row that is there already keeps what it has */
+async function v137AddLead(c){
+  const e=v137Low(c.email),now=new Date().toISOString();
+  const got=await apSb('e1_leads?select=email,stage&email=eq.'+encodeURIComponent(e));
+  if(got&&got.length){if(!got[0].stage)await apPatch('e1_leads','email=eq.'+encodeURIComponent(e),{stage:'research',updated_at:now});}
+  else await apPost('e1_leads',{email:e,prospect_name:v137Name(c),prospect_title:c.job_title||null,company_name:c.company||null,lead_source:'HubSpot',stage:'research',updated_at:now});
+  try{await v120Reload();}catch(e2){}
+  return v120Lead(e)||{email:e,emails:[e],prospect_name:v137Name(c),prospect_title:c.job_title||'',company_name:c.company||'',stage:'research'};
+}
+async function v137CrmGo(action){
+  const a=V137.ask;if(!a||a.kind!=='crm')return;
+  const btns=[...document.querySelectorAll('#v137M .nw-m-foot button')],msg=document.getElementById('v137Msg');
+  const say=function(t,err){if(msg){msg.textContent=t;msg.classList.toggle('err',!!err);}};
+  const busy=function(b){btns.forEach(function(x){x.disabled=b;});};
+  const name=v137Name(a.c),st=v136St('research');
+  busy(true);
+  if(action==='skip'){
+    say('Setting it aside…');
+    try{await v137SetAside(a.email);}catch(e){busy(false);say('Could not save it: '+((e&&e.message)||e),true);return;}
+    V137.ask=null;nwModalClose();nwToast('Set aside. '+name+' stays in HubSpot contacts.');v137Refresh();return;
+  }
+  say(action==='run'?'Adding '+name+' and starting…':'Adding '+name+'…');
+  let l;
+  try{l=await v137AddLead(a.c);}catch(e){busy(false);say('Could not add the lead: '+((e&&e.message)||e),true);return;}
+  if(action==='run'){
+    try{await v137Start(l,'research','',{s:'research',set:v137Setup('research'),calls:[],crm:a.c,intake:true});}
+    catch(e){busy(false);say('Added to '+st.name+', but it could not start: '+((e&&e.message)||e)+'. Run it from the Lead pipeline.',true);v137Refresh();return;}
+  }
+  V137.ask=null;nwModalClose();
+  nwToast(action==='run'?'Started. The prospect brief shows on the Lead pipeline when it is done.':'Added to '+st.name+' on the Lead pipeline.');
+  try{v120Paint();}catch(e){}
+  v137Refresh();
+}
+
+/* ---------- the question for a new transcript ---------- */
+async function v137AskCall(id){
+  id=String(id);
+  try{await v137CallsLoad();}catch(e){}
+  await Promise.all([v136LoadNames(),v137SetupLoad(),v132Load(),v137Contacts()]);
+  try{await v120Reload();}catch(e){}
+  const c=apFtCall(id);
+  if(!c){nwToast('This call is not in the list from Fathom any more.');return;}
+  const lead=v137LeadOfCall(c,v137FullLead);
+  if(!lead){nwToast('None of the people on this call is a lead on the Lead pipeline.');return;}
+  const cur=v136StageOf(lead),nx=v137Next(cur),same=nx===cur,st=v136St(nx),cst=v136St(cur),name=lead.prospect_name||lead.email;
+  const run=v120RunState(lead),p=v136Plan(lead,nx),m=apCm(id)||{};
+  V137.ask={kind:'call',id:id,email:lead.email,cur:cur,s:nx};
+  const o=apCo(id),sum=o?apCxArr(o.summary).slice(0,3):[],mins=apFtMins(c);
+  const meta=[v137D(c.start||c.created_at),mins?mins+' min':'',c.title||''].filter(Boolean).join(' · ');
+  const filed=m.lead_stage&&m.lead_stage!=='none'?v136St(m.lead_stage):null;
+  const stop=run?'Catalyst is still writing '+run.st.what+' for '+name+'. File the transcript now, and run the next stage once that is done.':p.blocked;
+  nwModal('v137M','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · New transcript</div><h2>'+esc(same?'Run '+st.what+' again with this call?':'Run the '+v137Lc(st.name)+' stage for '+name+'?')+'</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v120-m">'+
+      '<div class="v137-call"><b>'+esc('Your call with '+name)+'</b><small>'+esc(meta)+'</small>'+
+        (sum.length?'<ul>'+sum.map(function(x){return '<li>'+esc(typeof x==='string'?x:(x&&(x.text||x.point))||'')+'</li>';}).join('')+'</ul><span class="v137-by">From the post-call summary</span>':'')+'</div>'+
+      '<p>'+esc((filed?'Its transcript is filed under '+filed.name+'. ':'Its transcript is filed under '+cst.name+', where '+name+' is now. ')+
+        (same?'Catalyst writes '+st.what+' again, with this call.':'In '+st.name+', Catalyst writes '+st.what+' from everything so far and this call.')+' Only that runs, and nothing goes to the client.')+'</p>'+
+      '<div class="v137-rbox"><div class="v132-uses v137-reads"><div class="t">Reads</div><div class="u v132-off"><span class="v132-ck">…</span><span>Checking for call transcripts…</span></div></div></div>'+
+      (stop?'<p class="v120-msg err" role="alert">'+esc(stop)+'</p>':
+        '<label class="nw-field"><span class="nw-lbl">Anything to add from the meeting?<small>Optional. The transcript goes with it.</small></span><textarea class="nw-input nw-textarea" id="v137Note" rows="3"></textarea></label>')+
+      '<p class="v120-msg" id="v137Msg" role="status" aria-live="polite"></p>'+
+      '<div class="nw-m-foot"><button type="button" class="nw-btn nw-btn-ghost" onclick="v137CallGo(\'skip\')">Not about this client</button><span class="nw-grow"></span>'+
+        '<button type="button" class="nw-btn nw-btn-ghost" onclick="v137CallGo(\'file\')">Just file it</button>'+
+        (stop?'':'<button type="button" class="nw-btn nw-btn-primary" id="v137Go" onclick="v137CallGo(\'run\')">'+nwIc('check',15)+esc(same?'Run it again':'Move and run it')+'</button>')+'</div>'+
+    '</div>');
+  v137Gather(lead,nx,false).then(function(g){
+    const box=document.querySelector('#v137M .v137-rbox');
+    if(box&&V137.ask&&V137.ask.id===id)box.innerHTML=v137ReadsHtml(nx,g);
+  }).catch(function(){});
+}
+async function v137CallGo(action){
+  const a=V137.ask;if(!a||a.kind!=='call')return;
+  const btns=[...document.querySelectorAll('#v137M .nw-m-foot button')],msg=document.getElementById('v137Msg');
+  const say=function(t,err){if(msg){msg.textContent=t;msg.classList.toggle('err',!!err);}};
+  const busy=function(b){btns.forEach(function(x){x.disabled=b;});};
+  const typed=v115Str((document.getElementById('v137Note')||{}).value);
+  const cst=v136St(a.cur),st=v136St(a.s);
+  busy(true);
+  if(action!=='run'){
+    say(action==='skip'?'Setting it aside…':'Filing it…');
+    try{await v137File(a.id,a.email,action==='skip'?'none':a.cur);}catch(e){busy(false);say('Could not save it: '+((e&&e.message)||e),true);return;}
+    V137.ask=null;nwModalClose();
+    nwToast(action==='skip'?'Set aside. The call stays on Calls.':'Filed under '+cst.name+'.');
+    v137Refresh();return;
+  }
+  say('Filing the transcript…');
+  try{await v137File(a.id,a.email,a.cur);}catch(e){busy(false);say('Could not file it: '+((e&&e.message)||e),true);return;}
+  try{await v120Reload();}catch(e){}
+  const l=v120Lead(a.email);
+  if(!l){busy(false);say('Could not find this lead any more. Refresh the page.',true);return;}
+  const p=v136Plan(l,a.s);
+  if(p.blocked){busy(false);say(p.blocked,true);return;}
+  say('Reading the call transcripts…');
+  let g=null;try{g=await v137Gather(l,a.s,true);}catch(e){g=null;}
+  if(p.need&&!typed&&!(g&&g.calls.some(function(x){return x.text;}))){busy(false);say('The transcript could not be read from Fathom, and this lead has no '+p.need+' to work from. Add your notes from the meeting.',true);return;}
+  if(a.s!==a.cur){try{await v136SetStage(l,a.s);}catch(e){busy(false);say('Filed, but the lead could not be moved: '+((e&&e.message)||e),true);return;}}
+  say('Starting…');
+  try{await v137Start(l,a.s,typed,g);}
+  catch(e){busy(false);say((a.s!==a.cur?'Moved to '+st.name+', but it could not start: ':'Could not start it: ')+((e&&e.message)||e)+'. Try again in a minute.',true);v137Refresh();return;}
+  try{await v137FileUsed(l,g,a.cur);}catch(e){}
+  V137.ask=null;nwModalClose();
+  nwToast('Started. '+v136Cap(st.doc)+' shows on the Lead pipeline when it is done.');
+  try{v120Paint();}catch(e){}
+  v137Refresh();
+}
+
+/* ---------- a lead's page: its calls, and the stage each is filed under ---------- */
+(function(){
+  if(typeof apDemo!=='function')return;
+  const _d=apDemo;
+  apDemo=function(o){
+    try{
+      if(o&&typeof o.page==='string'&&o.page.indexOf('e1lead:')===0&&Array.isArray(o.tabs)&&!o.tabs.some(function(t){return t.key==='v137calls';})){
+        const email=o.page.slice(7);
+        o.tabs.push({key:'v137calls',label:'Calls',count:function(){const l=v137LeadByEmail(email);return AP_FT.loaded?(v137CallsOf(l).length||''):'';},
+          render:function(h){v137LeadCalls(h,email);}});
+      }
+    }catch(e){console.warn('v137 calls',e);}
+    return _d.apply(this,arguments);
+  };
+})();
+function v137LeadByEmail(email){
+  let D={leads:[]};try{D=apE1Leads();}catch(e){}
+  return (D.leads||[]).find(function(l){return v136Emails(l).indexOf(email)>=0;})||{email:email,emails:[email]};
+}
+async function v137LeadCalls(h,email){
+  h.innerHTML='<section class="block v137-lcs"><h2>Calls</h2><div class="empty" style="padding:22px" role="status">Reading the calls from Fathom…</div></section>';
+  let err='';
+  try{await v137CallsLoad();}catch(e){err=(e&&e.message)||String(e);}
+  try{await v136LoadNames();}catch(e){}
+  const l=v137LeadByEmail(email),name=l.prospect_name||email,calls=v137CallsOf(l);
+  const row=function(x){
+    const st=x.stage&&x.stage!=='none'?v136St(x.stage):null,mins=apFtMins(x.c),id=esc(nwJs(x.id));
+    return '<div class="v137-lc"><span class="v137-dot" style="background:'+(st?st.c:'#C7CDD6')+'"></span>'+
+      '<span class="t"><b>'+esc(x.title||'A call')+'</b><small>'+esc([v137D(x.start),mins?mins+' min':''].filter(Boolean).join(' · '))+'</small></span>'+
+      '<span class="v137-chip'+(st?'':' new')+'">'+esc(st?'Filed under '+st.name:x.stage==='none'?'Set aside':'Not filed yet')+'</span>'+
+      (x.stage?'':'<button type="button" class="rd-btn sm" onclick="v137AskCall('+id+')">File it</button>')+
+      '<button type="button" class="rd-btn sm" onclick="apCxOpenCall('+id+')">Open on Calls</button></div>';
+  };
+  h.innerHTML='<section class="block v137-lcs"><h2>Calls <span class="count">'+calls.length+'</span></h2>'+
+    (err&&!calls.length?'<div class="empty" style="padding:22px">'+esc('Could not read the calls from Fathom: '+err)+'</div>':
+    calls.length?'<p class="v137-lcp">'+esc('Calls recorded in Fathom with '+name+'. Each is filed under the stage '+name+' was in, and the stages after it read its transcript.')+'</p><div class="v137-lcl">'+calls.map(row).join('')+'</div>':
+    '<div class="empty" style="padding:22px">'+esc('No recorded calls with '+name+' yet. A call recorded in Fathom with '+name+'’s email shows up here, and Catalyst asks to run the next stage with it.')+'</div>')+
+  '</section>';
+}
+
+/* AI settings: what the Catalyst agents read now */
+(function(){
+  const i=AP_WHERE.findIndex(function(r){return /^Catalyst agents/.test(r[0]);});
+  if(i<0)return;
+  AP_WHERE[i][1]='Rules, on every run. Each meeting stage also follows its template from Templates and reads what its setup there says: the call transcripts, the CRM record, your discovery call questions';
+})();
 </script>
 <script>
 /* ===================================================================

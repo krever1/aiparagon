@@ -141,7 +141,7 @@ const KEYS = ['research', 'consultation', 'assessment', 'proposal', 'onboarding'
     check('its Run asks without moving it, and needs notes: the lead has no consultation guide', m && m.h === 'Run the assessment report for Sam Sample?' && m.note && /^Needed: this lead has no consultation guide yet/.test(m.hint) &&
       !m.btns.includes('Just move it') && m.btns.includes('Run it'), JSON.stringify(m));
     await page.click('#v120Go'); await wait(page, 900);
-    check('it will not start without notes', hookTo(hooks, CUSTOM).length === 0 && /Paste the meeting transcript or your notes first\. This lead has no consultation guide to work from yet\./.test(await txt(page, '#v120Msg')), await txt(page, '#v120Msg'));
+    check('it will not start without notes', hookTo(hooks, CUSTOM).length === 0 && /Paste the meeting transcript or your notes first\. This lead has no consultation guide to work from yet, and no recorded call with it\./.test(await txt(page, '#v120Msg'))   /* v137: and no recorded call */, await txt(page, '#v120Msg'));
     await page.fill('#v120Note', 'Synthetic consultation notes.');
     await page.click('#v120Go'); await wait(page, 1300);
     const h = hookTo(hooks, CUSTOM)[0];
@@ -166,7 +166,7 @@ const KEYS = ['research', 'consultation', 'assessment', 'proposal', 'onboarding'
     await page.click('#v120Go'); await wait(page, 1300);
     const h = hookTo(hooks, PREP)[0];
     check('it goes to Catalyst · Meeting Prep with the stage, its name, the lead and the notes', h && h.b.stage === 'onboarding' && h.b.stageName === 'Onboarding' && h.b.docName === 'Onboarding plan' &&
-      h.b.leadEmail === L1 && JSON.stringify(h.b.emails) === JSON.stringify([L1]) && h.b.transcript === 'Synthetic kickoff notes.' && h.b.companyName === 'QA Firm LLC' && !!h.b.auth && hookTo(hooks, CUSTOM).length === 0, JSON.stringify(h && h.b));
+      h.b.leadEmail === L1 && JSON.stringify(h.b.emails) === JSON.stringify([L1]) && h.b.transcript === 'NOTES FROM THE TEAM\nSynthetic kickoff notes.\n\nTHE CRM RECORD (HubSpot)\nPat QA · Managing Partner · QA Firm LLC · lifecycle stage: lead · lead status: NEW · website: https://qafirm.example' && h.b.companyName === 'QA Firm LLC'   /* v137: Onboarding reads the CRM record too */ && !!h.b.auth && hookTo(hooks, CUSTOM).length === 0, JSON.stringify(h && h.b));
     check('and saves the stage', leadWrites(store).some((w) => w.body.stage === 'onboarding'));
     check('the card shows the onboarding plan being written', docOf(await board(page), 'Pat QA') === 'Writing the onboarding plan', docOf(await board(page), 'Pat QA'));
     await page.click(card(L3) + ' .v120-next'); await wait(page, 800);

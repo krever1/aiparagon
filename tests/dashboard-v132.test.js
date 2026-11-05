@@ -111,7 +111,8 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     return { ctx, page, sent, storage };
   }
   const rows = (page) => page.$$eval('#v132Src .v132-row', (els) => els.map((e) => ({
-    name: (e.querySelector('.nm') || {}).textContent || '', kind: (e.querySelector('select') || {}).value || '', busy: !!e.querySelector('.v132-busy'),
+    name: (e.querySelector('.nm') || {}).textContent || '', busy: !!e.querySelector('.v132-busy'),
+    kind: (e.closest('.v137-st') && typeof V137_TPL !== 'undefined' ? (V137_TPL[e.closest('.v137-st').dataset.s] || {}).kind : (e.querySelector('select') || {}).value) || '',   /* v137: the stage card is the kind */
     err: (e.querySelector('.v132-err') || {}).textContent || '', inUse: !!e.querySelector('.v132-use'), useBtn: !![...e.querySelectorAll('button')].find((b) => b.textContent === 'Use this one'),
     lines: [...e.querySelectorAll('.v132-l')].map((l) => l.innerText.replace(/\s+/g, ' ').trim()),
     chips: [...e.querySelectorAll('.v132-chip')].map((c) => c.textContent), sw: [...e.querySelectorAll('.v132-sw')].map((s) => s.title),
@@ -137,10 +138,10 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
       order: [...document.querySelectorAll('#rd-templates > *')].map((e) => e.id || e.className.split(' ')[0]).slice(0, 4),
       fixed: [...document.querySelectorAll('#rd-templates .rd-card .rd-blank')].map((b) => b.textContent).find((t) => /n8n workflows/.test(t)) || '',
       head: document.querySelector('.page.on h1') && document.querySelector('.page.on h1').textContent }));
-    check('Templates has Your past documents, for Catalyst', top.card && top.h === 'Your past documents' && top.k === 'Catalyst', JSON.stringify(top));
+    check('Templates has its Catalyst card (v137: one card per meeting stage)', top.card && top.h === 'Meeting stages' && top.k === 'Catalyst', JSON.stringify(top));
     check('it comes first, then the content templates under their own heading', JSON.stringify(top.order) === '["rd-head","v132Src","v132-ctpl","ap-fhead-acts"]' && top.ctpl === 'Content templates', JSON.stringify(top.order));
-    check('the page says what it holds now', top.sub === 'Your past documents for Catalyst, and the structures Content Transformation drafts follow.', top.sub);
-    check('the fixed formats note names the client proposal and still covers the other Catalyst documents', /^The Catalyst documents .*Pipeline briefs/.test(top.fixed) && /client proposal takes its sections and branding from your proposal template/.test(top.fixed), top.fixed);
+    check('the page says what it holds now', top.sub === 'The prep Catalyst writes for each meeting stage, and the structures Content Transformation drafts follow.', top.sub);   /* v137 */
+    check('the fixed formats note names the client proposal and still covers the other Catalyst documents', /^The Catalyst documents .*Pipeline briefs/.test(top.fixed) && /The client proposal, the onboarding plan and the client review brief take the sections of your template/.test(top.fixed), top.fixed);
     check('the product header stays Templates', top.head === 'Templates', top.head);
     // every row that shows the reading state is noted as it appears (three small files can be read in well under
     // the 150 ms a single look waited, so that look sometimes came after the reading was done)
@@ -152,7 +153,10 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
       }));
       window.__v132Mo.observe(root, { childList: true, subtree: true, characterData: true });
     });
-    await page.setInputFiles('#v132File', DOCX.map((f) => path.join(FIX, f)));
+    /* v137: each file goes to its meeting stage's drop zone */
+    await page.setInputFiles('#v137File_proposal', [path.join(FIX, DOCX[0])]);
+    await page.setInputFiles('#v137File_consultation', [path.join(FIX, DOCX[1])]);
+    await page.setInputFiles('#v137File_assessment', [path.join(FIX, DOCX[2])]);
     await page.waitForTimeout(150);
     const busy = await rows(page);
     check('the three files show at once', busy.length === 3, JSON.stringify(busy.map((r) => [r.name, r.busy])));
@@ -162,7 +166,7 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     const r = await rows(page);
     const by = (n) => r.find((x) => x.name === n) || {};
     const pt = by(DOCX[0]), dq = by(DOCX[1]), pa = by(DOCX[2]);
-    check('the kind comes from the file name', pt.kind === 'proposal_template' && dq.kind === 'discovery_template' && pa.kind === 'past_assessment', JSON.stringify(r.map((x) => [x.name, x.kind])));
+    check('each is kept as its stage\'s kind', pt.kind === 'proposal_template' && dq.kind === 'discovery_template' && pa.kind === 'past_assessment', JSON.stringify(r.map((x) => [x.name, x.kind])));
     check('the proposal template: 7 sections, by name and in order', /^✓ Structure detected: 7 sections/.test(pt.lines[0] || '') && JSON.stringify(pt.chips) === JSON.stringify(SECS), JSON.stringify([pt.lines[0], pt.chips]));
     check('the discovery call questions: 6 sections', /Structure detected: 6 sections/.test(dq.lines[0] || '') && dq.chips[0] === 'Before the call' && dq.chips[5] === 'Close with', JSON.stringify(dq.chips));
     check('the past assessment: 5 sections', /Structure detected: 5 sections/.test(pa.lines[0] || '') && JSON.stringify(pa.chips) === '["Summary","What we found","What it costs","Recommendations","Readiness"]', JSON.stringify(pa.chips));
@@ -172,7 +176,7 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     check('the logo from the page header is shown', /guide-files\/sources\/\d+-logo\.png$/.test(pt.logo), pt.logo);
     check('each says what Catalyst does with it', /client proposal follows its sections, wording and branding/.test(pt.what) && /consultation guide asks questions the way it does/.test(dq.what) && /assessment follows its order and tone/.test(pa.what), JSON.stringify(r.map((x) => x.what)));
     check('each is the one in use', r.every((x) => x.inUse && !x.useBtn), JSON.stringify(r.map((x) => [x.inUse, x.useBtn])));
-    check('the kind picker has no Type your own', r.every((x) => x.opts.length === 3 && !x.opts.some((o) => /Type your own/.test(o))), JSON.stringify(r[0].opts));
+    check('a stage\'s files have no kind picker (the stage is the kind)', r.every((x) => x.opts.length === 0), JSON.stringify(r[0].opts));
     const saved = store.db.catalyst_sources || [];
     const sp = saved.find((x) => x.file_name === DOCX[0]) || {};
     check('three rows are saved, one per file', saved.length === 3 && writes(store, 'catalyst_sources', 'POST').length === 3, String(saved.length));
@@ -185,7 +189,7 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     check('the file and its logo are linked from the row', /^https:\/\/lesyptuwllcgajdxzjje\.supabase\.co\/storage\/v1\/object\/public\/guide-files\/sources\/\d+-Summit_proposal_template\.docx$/.test(sp.file_url || '') && /-logo\.png$/.test(sp.brand.logo_url || ''), sp.file_url + ' ' + sp.brand.logo_url);
 
     // a newer proposal template takes over; Use this one gives it back
-    await page.setInputFiles('#v132File', [{ name: 'Summit proposal 2025.md', mimeType: 'text/markdown', buffer: Buffer.from('# Proposal\n\n## Summary\nWhat we propose.\n\n## Scope\nThe work, in phases.\n\n## Fee\nThe fee and terms.\n') }]);
+    await page.setInputFiles('#v137File_proposal', [{ name: 'Summit proposal 2025.md', mimeType: 'text/markdown', buffer: Buffer.from('# Proposal\n\n## Summary\nWhat we propose.\n\n## Scope\nThe work, in phases.\n\n## Fee\nThe fee and terms.\n') }]);
     await settledRows(page, 4);
     let r2 = await rows(page);
     const md = r2.find((x) => x.name === 'Summit proposal 2025.md') || {}, old = r2.find((x) => x.name === DOCX[0]) || {};
@@ -199,11 +203,7 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     const pw = store.writes.slice(w0).filter((w) => w.table === 'catalyst_sources' && w.method === 'PATCH');
     check('Use this one turns the newer one off and keeps the older', pw.length === 1 && pw[0].body.active === false && (store.db.catalyst_sources.find((x) => x.file_name === 'Summit proposal 2025.md') || {}).active === false &&
       (r2.find((x) => x.name === DOCX[0]) || {}).inUse && !(r2.find((x) => x.name === 'Summit proposal 2025.md') || {}).inUse, JSON.stringify(pw.map((w) => w.body)));
-    // the kind can be changed, and a file removed (its stored file too)
-    await page.locator('#v132Src .v132-row', { hasText: 'Summit proposal 2025.md' }).locator('select').selectOption('past_assessment');
-    await page.waitForTimeout(600);
-    const kw = store.writes.filter((w) => w.table === 'catalyst_sources' && w.method === 'PATCH' && w.body.kind);
-    check('changing the kind saves it', kw.length === 1 && kw[0].body.kind === 'past_assessment' && (store.db.catalyst_sources.find((x) => x.file_name === 'Summit proposal 2025.md') || {}).kind === 'past_assessment', JSON.stringify(kw.map((w) => w.body)));
+    // a file removed (its stored file too); v137: there is no kind to change, the stage it was dropped on is its kind
     await page.locator('#v132Src .v132-row', { hasText: 'Summit proposal 2025.md' }).locator('.v132-x').click();
     await page.waitForTimeout(800);
     r2 = await rows(page);
@@ -212,7 +212,7 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
 
     // files it cannot use say why, and nothing is kept
     const before = store.db.catalyst_sources.length, upBefore = storage.filter((s) => s.method === 'POST').length;
-    await page.setInputFiles('#v132File', [
+    await page.setInputFiles('#v137File_proposal', [
       { name: 'Old proposal.doc', mimeType: 'application/msword', buffer: Buffer.from('not a docx') },
       { name: 'Broken proposal.docx', mimeType: 'application/octet-stream', buffer: Buffer.from('PK this is not really a zip file at all') },
       { name: 'Empty notes.txt', mimeType: 'text/plain', buffer: Buffer.from('   \n  ') },
@@ -229,7 +229,7 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     check('an error can be dismissed', (await rows(page)).filter((x) => x.err).length === 3, '');
 
     // a PDF: its headings by size, its fonts by name, its colors from the drawn page
-    await page.setInputFiles('#v132File', [path.join(FIX, 'Summit past proposal.pdf')]);
+    await page.setInputFiles('#v137File_proposal', [path.join(FIX, 'Summit past proposal.pdf')]);
     await page.waitForFunction(() => { const r = [...document.querySelectorAll('#v132Src .v132-row')].find((e) => /Summit past proposal\.pdf/.test(e.textContent)); return r && !r.querySelector('.v132-busy'); }, null, { timeout: 30000 }).catch(() => {});
     const pdf = (await rows(page)).find((x) => x.name === 'Summit past proposal.pdf') || {};
     check('a PDF is read: the proposal kind, 7 sections by heading size', pdf.kind === 'proposal_template' && /Structure detected: 7 sections/.test(pdf.lines[0] || '') && JSON.stringify(pdf.chips) === JSON.stringify(SECS), JSON.stringify(pdf).slice(0, 400));
@@ -252,7 +252,7 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
   {
     const store = makeStore(tables((t) => { t.catalyst_sources = sourceRows(); }));
     const { ctx, page } = await open(390, store);
-    const w = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, drop: !!document.getElementById('v132Drop').getClientRects().length, n: document.querySelectorAll('#v132Src .v132-row').length }));
+    const w = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, drop: !!document.getElementById('v137Drop_proposal').getClientRects().length, n: document.querySelectorAll('#v132Src .v132-row').length }));
     check('on a phone the card fits and lists the files', w.sw <= w.iw + 1 && w.drop && w.n === 3, JSON.stringify(w));
     await ctx.close();
   }
@@ -449,7 +449,7 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     check('Make it a rule scopes it to the Catalyst agents', JSON.stringify(box) === '["engine1"]', JSON.stringify(box));
     const where = await page.$$eval('.ap-ais .ap-where > div', (els) => els.map((el) => [(el.querySelector('b') || {}).textContent || '', (el.querySelector('small') || {}).textContent || '', ((el.querySelector('.d') || {}).className || '').replace(/\bd\b/, '').trim()]));
     const ci = where.findIndex((w) => /^Catalyst agents/.test(w[0]));
-    check('Where these apply: the Catalyst agents also follow your past documents', ci >= 0 && where[ci][1] === 'Rules, on every run. The consultation guide also follows your discovery call questions, and the assessment your past assessment, from Templates' && where[ci][2] === 'live', JSON.stringify(where[ci]));
+    check('Where these apply: the Catalyst agents also follow your past documents', ci >= 0 && where[ci][1] === 'Rules, on every run. Each meeting stage also follows its template from Templates and reads what its setup there says: the call transcripts, the CRM record, your discovery call questions' && where[ci][2] === 'live', JSON.stringify(where[ci]));   /* v137 */
     check('and the client proposal has its own line, right after', JSON.stringify(where[ci + 1]) === JSON.stringify(['Client proposal', 'Rules, your past documents from Templates, the call transcript and the lead\'s documents', 'live']), JSON.stringify(where[ci + 1]));
     await ctx.close();
   }
@@ -468,16 +468,18 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
       return { t, u };
     };
     const k1 = await ask('consultation'), k2 = await ask('assessment'), k4 = await ask('proposal');
-    check('the consultation guide: the discovery call questions, and what they are for', k1.t === 'Using 1 past document' && JSON.stringify(k1.u) === JSON.stringify([
-      'Discovery call questions: Summit discovery call questions.docx, for how the consultation guide asks its questions']), JSON.stringify(k1));
-    check('the assessment: only the past assessment', k2.u.length === 1 && /^Past assessment: Summit past assessment\.docx, for the assessment’s order and tone$/.test(k2.u[0]), JSON.stringify(k2));
-    check('the proposal: only the proposal template', k4.u.length === 1 && /^Proposal template:/.test(k4.u[0]), JSON.stringify(k4));
+    /* v137: the question lists everything the stage reads, its own template first */
+    const tpl = (k) => k.u.filter((x) => /^Template: /.test(x));
+    check('the consultation guide: the discovery call questions, as its template', k1.t === 'Reads' && JSON.stringify(tpl(k1)) === '["Template: Summit discovery call questions.docx"]' && k1.u[0] === tpl(k1)[0], JSON.stringify(k1));
+    check('the assessment: only the past assessment', JSON.stringify(tpl(k2)) === '["Template: Summit past assessment.docx"]' && !k2.u.some((x) => /discovery call questions:/i.test(x)), JSON.stringify(k2));
+    check('the proposal: only the proposal template', JSON.stringify(tpl(k4)) === '["Template: Summit proposal template.docx"]', JSON.stringify(k4));
     await ctx.close();
     const none = await open(1440, makeStore(tables()), '/dashboard/lead-pipeline');
     await none.page.evaluate((e) => v136Ask(e, 'consultation'), L1);
     await none.page.waitForSelector('#v120M', { timeout: 10000 });
     await none.page.waitForTimeout(500);
-    check('with no past documents the question is as it was', !(await none.page.$('#v120M .v132-uses')), '');
+    const first = await none.page.$eval('#v120M .v137-reads .u', (e) => e.lastElementChild.textContent.trim()).catch(() => '');
+    check('with no past documents the question says there is no template yet', first === 'No template for this stage yet, so the usual sections. Add one on Templates.', first);   /* v137 */
     await none.ctx.close();
   }
 

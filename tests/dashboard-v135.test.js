@@ -22,7 +22,7 @@ function check(label, ok, detail) {
   console.log((ok ? 'PASS ' : 'FAIL ') + label + (ok || !detail ? '' : '   [' + detail + ']'));
 }
 
-const SUB = 'Your past documents for Catalyst, and the structures Content Transformation drafts follow.';
+const SUB = 'The prep Catalyst writes for each meeting stage, and the structures Content Transformation drafts follow.';   /* v137 */
 // enough templates that the page scrolls well past one screen, and three past documents above them
 function tables() {
   const t = FX.tables();
