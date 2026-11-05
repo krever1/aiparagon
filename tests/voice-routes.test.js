@@ -412,7 +412,7 @@ function check(label, ok, detail) {
       return { heads, cols, grid: document.getElementById('calAvail').innerText.replace(/\s+/g, ' ') };
     });
     check('calendar: Thanksgiving week shows Thursday closed with no open times', wk.heads.length === 6 && wk.heads[3].closed && /Thanksgiving/.test(wk.heads[3].text) && wk.cols[3].open === 0 && /Closed for Thanksgiving/.test(wk.cols[3].tag) && wk.cols[2].open === 4 && !wk.heads[2].closed, JSON.stringify(wk.heads) + JSON.stringify(wk.cols));
-    check('calendar: the grid says Closed for the holiday and the note names the times and links to Settings', /Closed/.test(wk.grid) && /These are the times the agent offers: Monday to Saturday at 8:00 AM, 10:30 AM, 1:00 PM and 3:30 PM, Pacific\. Closed all day on Thanksgiving, Christmas Day and New Year.s Day\. Change them in Settings/.test(wk.grid), wk.grid);
+    check('calendar: the grid says Closed for the holiday and the note names the times and links to Settings', /Closed/.test(wk.grid) && /These are the times Ava offers: Monday to Saturday at 8:00 AM, 10:30 AM, 1:00 PM and 3:30 PM, Pacific\. Closed all day on Thanksgiving, Christmas Day and New Year.s Day\. Change them in Settings/.test(wk.grid), wk.grid);
     await page.click('#calAvail [data-go="settings"]'); await settle(page);
     const ed = await page.evaluate(() => ({
       path: location.pathname,
@@ -424,7 +424,7 @@ function check(label, ok, detail) {
     }));
     check('settings: Change them in Settings opens the Availability section', ed.path === '/voice/settings' && ed.rows.length === 7, ed.path + ' ' + ed.rows.length);
     check('settings: each day with its times, Monday first, Sunday without inspections', /^Monday 8:00 AM.*10:30 AM.*1:00 PM.*3:30 PM/.test(ed.rows[0]) && /^Sunday No inspections/.test(ed.rows[6]), JSON.stringify(ed.rows));
-    check('settings: the closed days with their dates, and the default message', /Closed all day on Thanksgiving \(Thursday, November 26\), Christmas Day \(Friday, December 25\) and New Year.s Day \(Friday, January 1\)/.test(ed.closed) && ed.msg === "Thanks for calling Arrington Roofing. We're closed today for {holiday}. Please call us back on our next business day." && /On Thanksgiving callers hear: .Thanks for calling Arrington Roofing\. We're closed today for Thanksgiving\./.test(ed.preview) && /Sign in to change the live agent/.test(ed.state), JSON.stringify(ed));
+    check('settings: the closed days with their dates, and the default message', /Closed all day on Thanksgiving \(Thursday, November 26\), Christmas Day \(Friday, December 25\) and New Year.s Day \(Friday, January 1\)/.test(ed.closed) && ed.msg === "Thanks for calling Pinecrest Roofing. We're closed today for {holiday}. Please call us back on our next business day." && /On Thanksgiving callers hear: .Thanks for calling Pinecrest Roofing\. We're closed today for Thanksgiving\./.test(ed.preview) && /Sign in to change what Ava uses/.test(ed.state), JSON.stringify(ed));
     // change it: Saturday closed, Sunday at 9, a time outside the day refused, the team's own message
     for (const t of ['08:00', '10:30', '13:00', '15:30']) await page.click('[data-avail-del="sat|' + t + '"]');
     await page.fill('[data-avail-new="sun"]', '09:00'); await page.click('[data-avail-add="sun"]');
@@ -438,7 +438,7 @@ function check(label, ok, detail) {
     check('settings: changes show at once and wait for Save', /^Saturday No inspections/.test(ch.rows[5]) && /^Sunday 9:00 AM/.test(ch.rows[6]) && /Happy Thanksgiving! We are closed today, call us tomorrow\./.test(ch.preview) && ch.state === 'Not saved yet', JSON.stringify(ch));
     await page.click('#saveAvail'); await settle(page);
     const saved = await page.evaluate(() => ({ toast: document.getElementById('toastMsg').textContent, state: document.getElementById('availState').innerText }));
-    check('settings: Save keeps it (in this browser when signed out)', /Saved in this browser/.test(saved.toast) && /Sign in to change the live agent/.test(saved.state), JSON.stringify(saved));
+    check('settings: Save keeps it (in this browser when signed out)', /Saved in this browser/.test(saved.toast) && /Sign in to change what Ava uses/.test(saved.state), JSON.stringify(saved));
     await page.click('.nav[data-go="appointments"]'); await settle(page);
     await page.click('#calNext'); await settle(page);
     const wk2 = await page.evaluate(() => ({
@@ -539,7 +539,7 @@ function check(label, ok, detail) {
     check('hang-ups: asked to hold reads as such, without the agent\'s instructions', /^× Didn't hang up yet end_call/.test(h.hold) && /The caller asked her to hold: they said "No thanks, hold on"\.$/.test(h.hold) && !/Sure, take your time|end_call until/.test(h.hold.replace(/^× Didn't hang up yet end_call/, '')), h.hold);
     check('hang-ups: an end_call that went through reads Hung up', /^× Hung up end_call/.test(h.yes) && /hung up a second after her goodbye/.test(h.yes), h.yes);
     check('hang-ups: older calls with Vapi\'s endCall read as before', /^× Ended the call endCall/.test(h.old) && /caller was still talking afterwards/.test(h.old) && /warn/.test(h.oldCls), h.old);
-    check('hang-ups: every agent-ended reason reads Agent ended the call', JSON.stringify(h.ended) === JSON.stringify(['Agent ended the call', 'Agent ended the call', 'Caller hung up', 'Went quiet, call timed out']), JSON.stringify(h.ended));
+    check('hang-ups: every agent-ended reason reads Ava ended the call', JSON.stringify(h.ended) === JSON.stringify(['Ava ended the call', 'Ava ended the call', 'Caller hung up', 'Went quiet, call timed out']), JSON.stringify(h.ended));
     await ctx.close();
   }
 
@@ -626,6 +626,108 @@ function check(label, ok, detail) {
     check('no callback number: the card says the booking was refused and why', /Tried Thursday, November 5 at 10:30 AM, not booked: no callback number yet/.test(b.no) && /changed/.test(b.noCls), b.no);
     check('no callback number: a missing house number still reads as before', /not booked: the address had no house number/.test(b.gap) && !/callback/.test(b.gap), b.gap);
     check('no callback number: the live rows say so', JSON.stringify(b.live) === JSON.stringify([{ r: 'Asked for Thursday, November 5 at 10:30 AM, not booked: no callback number yet', ok: false }, { r: 'Asked for Thursday, November 5 at 10:30 AM, not booked: the address had no house number', ok: false }]), JSON.stringify(b.live));
+    await ctx.close();
+  }
+
+  // 21. the read-back tool and the goodbye said for her (Nov 5): the timeline says what she heard and what she read back,
+  //     flags a number she heard wrong, and says the call ended after the goodbye.
+  {
+    const { ctx, page } = await open(BASE + '/voice/conversations', { testHook: true });
+    const b = await page.evaluate(() => {
+      const T = window.__VC_TEST__;
+      const text = (html) => { const d = document.createElement('div'); d.innerHTML = html; document.body.appendChild(d); const t = d.innerText.replace(/\s+/g, ' ').trim(); d.remove(); return t; };
+      const cls = (html) => { const d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild.className; };
+      const c = { id: 't', transcript: [['Caller', 'hi'], ['Agent', 'hello']], actions: [] };
+      const card = (tool, args, result) => { const st = { tool: tool, after: 0, args: args, result: result }; return T.stepCard(c, st, 0, [st], false); };
+      const RB = (d) => 'Read it back exactly like this, slowly, then stop and wait for their answer: "' + d + '. Is that right?" After they say yes, do not say the number again; say "the number you gave" instead.';
+      const fixed = card('read_back_number', { phone: '44770090012' }, RB('4 4 7... 7 0 0... 9 0 0... 1 2 3'));
+      const same = card('read_back_number', { phone: '5550101234' }, RB('5 5 5... 0 1 0... 1 2 3 4'));
+      const none = card('read_back_number', {}, 'There is no full number to read back yet. Ask for the best number to reach them.');
+      const short = card('read_back_number', { phone: '55501012' }, RB('5 5 5... 0 1 0... 1 2') + ' That is only 8 digits, so if they say it is right, ask whether any digits are missing.');
+      const bye = card('end_call', {}, 'Ending the call. Say nothing more: the goodbye is said for you.');
+      const oldBye = card('end_call', {}, 'Ending the call. Say nothing more.');
+      return { fixed: text(fixed), fixedCls: cls(fixed), same: text(same), sameCls: cls(same), none: text(none), short: text(short), bye: text(bye), oldBye: text(oldBye) };
+    });
+    check('read-back: a number she heard wrong reads as put right', /Read the number back/.test(b.fixed) && /She heard 44770090012/.test(b.fixed) && /isn't what the caller said, so she read back the caller's own digits: 4 4 7\.\.\. 7 0 0\.\.\. 9 0 0\.\.\. 1 2 3/.test(b.fixed) && /changed/.test(b.fixedCls), b.fixed);
+    check('read-back: a number she heard right reads plainly', /She read back the caller's digits: 5 5 5\.\.\. 0 1 0\.\.\. 1 2 3 4/.test(b.same) && !/changed/.test(b.sameCls), b.same);
+    check('read-back: no number yet and a short one say so', /no full number to read back yet/.test(b.none) && /That's short, so she checked for missing digits/.test(b.short), b.none + ' | ' + b.short);
+    check('hang-up: the goodbye said for her, and the old wording for older calls', /Hung up/.test(b.bye) && /the goodbye was said and the call ended after it/.test(b.bye) && /hung up a second after her goodbye/.test(b.oldBye), b.bye + ' | ' + b.oldBye);
+    await ctx.close();
+  }
+
+  // 22. Pinecrest Roofing and Ava (Nov 5), and the winter emergency sample call: the call reads end to end, every page says
+  //     Ava where it names her and nothing says Arrington Roofing, the knowledge sends snow and ice questions to the new
+  //     answers, and demo data saved before the rename picks all of it up once (an answer someone edited keeps its words).
+  {
+    const { ctx, page } = await open(BASE + '/voice/conversations', { testHook: true });
+    const row = await page.$('[data-conv="c7"]');
+    check('winter: the sample call is in Conversations', !!row, '');
+    if (row) { await row.click(); await settle(page); }
+    const w = await page.evaluate(() => {
+      const d = document.getElementById('convDetail');
+      const t = d ? d.innerText.replace(/\s+/g, ' ') : '';
+      const who = [...new Set([...document.querySelectorAll('#convDetail .bubble b')].map((b) => b.textContent.trim()))];
+      const T = window.__VC_TEST__;
+      const q = (x) => { const r = T.kbResolve(x, null, {}); return r && r.primary ? r.primary.id : null; };
+      return { t, who, kb: { ice: q('Melting snow is leaking through my kitchen ceiling'), dam: q('There is water dripping into the bedroom from the ice dam'), load: q('The roof is sagging under all this snow'),
+        icicle: q('There are huge icicles hanging off the gutters'), service: q('Can you remove the snow from my roof?'), gutter: q('The gutter is sagging with ice'),
+        ceiling: q('The ceiling is bulging over the couch'), person: q('Are you a real person?'), panel: q('Water is leaking near the electrical panel'), today: q('Can you guys clear the snow off the roof today?'), when: q('When can someone come out?') } };
+    });
+    check('winter: the transcript says Ava and Caller, never Agent', JSON.stringify(w.who.sort()) === JSON.stringify(['Ava', 'Caller']), JSON.stringify(w.who));
+    check('winter: Ava greets as the virtual assistant, and the safety steps come before anything else', /This is Ava, the virtual assistant/.test(w.t) && /keep everyone out of the living room and don't touch the light switch/.test(w.t) && /leave the house and call 911/.test(w.t), w.t.slice(0, 300));
+    check('winter: the steps name the winter answers, and the call ended after the goodbye said for her', /icicles-gutters/.test(w.t) && /snow-ice-service/.test(w.t) && /the goodbye was said and the call ended after it/.test(w.t) && /Ava ended the call/.test(w.t), w.t.slice(-600));
+    check('winter: snow and ice questions go to the new answers, and the old ones keep theirs', w.kb.ice === 'ice-dam-leak' && w.kb.dam === 'ice-dam-leak' && w.kb.load === 'snow-load' && w.kb.icicle === 'icicles-gutters' && w.kb.service === 'snow-ice-service' && w.kb.gutter === 'icicles-gutters' && w.kb.ceiling === 'safety-sagging' && w.kb.person === 'ai-disclosure' && w.kb.panel === 'safety-electrical' && w.kb.today === 'snow-ice-service' && w.kb.when === 'how-soon', JSON.stringify(w.kb));
+    check('winter: every step matches what today\'s knowledge would pick', !/With today's knowledge she'd use/.test(w.t), (w.t.match(/With today's knowledge[^.]*\./) || [''])[0]);
+    // Every page: Ava by name, never "the agent", "Agent training" or Arrington Roofing (the customer Brian Arrington stays).
+    const bad = [];
+    for (const pg of ['overview', 'conversations', 'messages', 'opportunities', 'calendar', 'quality', 'training', 'knowledge', 'library', 'analytics', 'portal', 'tiers', 'settings']) {
+      await page.goto(BASE + '/voice/' + pg, { waitUntil: 'load' }); await settle(page);
+      const t = await page.evaluate(() => document.body.innerText.replace(/\s+/g, ' '));
+      const m = t.match(/.{0,40}(\bthe (live )?agent\b|Agent training|Arrington Roofing|arringtonroofing|AI assistant).{0,40}/i);
+      if (m) bad.push(pg + ': ' + m[0]);
+    }
+    check('names: no page says the agent, Agent training or Arrington Roofing', bad.length === 0, bad.join(' | '));
+    const names = await page.evaluate(() => ({ call: document.getElementById('callAgent') && document.getElementById('callAgent').textContent.trim(), nav: [...document.querySelectorAll('nav button, nav a, .nav button, .nav a')].map((b) => b.textContent.replace(/\s+/g, ' ').trim()).filter((x) => /training/i.test(x)) }));
+    check('names: Call Ava, and Ava\'s training in the menu', names.call === 'Call Ava' && names.nav.some((x) => /Ava's training/.test(x)), JSON.stringify(names));
+    // Demo data saved before the rename (same day), with one answer someone edited.
+    const old = await page.evaluate(() => {
+      const st = JSON.parse(JSON.stringify(window.__VC_TEST__.state()));
+      const back = (x) => JSON.parse(JSON.stringify(x).replace(/Pinecrest Roofing/g, 'Arrington Roofing').replace(/pinecrestroofing\.com/g, 'arringtonroofing.com'));
+      ['settings', 'team', 'automations', 'playbooks', 'docTemplates', 'library', 'suggestions', 'training', 'collections'].forEach((f) => { if (st[f]) st[f] = back(st[f]); });
+      st.settings.assistant = 'Arrington Roofing Assistant';
+      delete st.pinecrestDemo;
+      st.calls = st.calls.filter((c) => c.id !== 'c7');
+      st.training.kb = st.training.kb.filter((e) => ['snow-load', 'snow-on-roof', 'ice-dam-leak', 'icicles-gutters', 'snow-ice-service'].indexOf(e.id) === -1);
+      const f = (id) => st.training.kb.find((e) => e.id === id);
+      f('ai-disclosure').answer = "I'm an AI assistant for Arrington Roofing. A real person does the inspection and handles anything I can't.";
+      f('safety-sagging').pattern = String.raw`sag|bulg|ceiling (is )?(falling|coming down|caving)|collaps|drooping`;
+      f('what-to-do-now').answer = 'Our own words about buckets.';
+      f('roof-access').answer = "The inspector goes up and photographs everything. You shouldn't, especially with wet decking after wind.";
+      const col = (id) => st.collections.find((c) => c.id === id);
+      col('company').guideline = 'Be straight about who we are: a licensed residential roofer, and you are an AI assistant. A person does every inspection.';
+      col('handoff').guideline = 'Topics the agent never answers. It says the approved line and flags the call for a person.';
+      col('health-safety').escalate_when = col('health-safety').escalate_when.filter((x) => !/Snow or ice/.test(x));
+      st.seededAt = Date.now();
+      return st;
+    });
+    const read = async () => {
+      await page.reload({ waitUntil: 'load' }); await settle(page);
+      return page.evaluate(() => {
+        const st = window.__VC_TEST__.state();
+        const kb = st.training.kb, f = (id) => kb.find((e) => e.id === id), col = (id) => st.collections.find((c) => c.id === id);
+        const flat = JSON.stringify(st);
+        return { c7: st.calls.some((c) => c.id === 'c7'), assistant: st.settings.assistant, emails: st.team.map((t) => t.email), arrington: (flat.match(/Arrington Roofing|arringtonroofing/g) || []).length,
+          brian: /Brian Arrington/.test(flat), winter: ['snow-load', 'snow-on-roof', 'ice-dam-leak', 'icicles-gutters', 'snow-ice-service'].map((id) => kb.filter((e) => e.id === id).length).join(),
+          ids: kb.length === new Set(kb.map((e) => e.id)).size, ai: f('ai-disclosure').answer, sag: f('safety-sagging').pattern, todo: f('what-to-do-now').answer, access: f('roof-access').answer,
+          company: col('company').guideline, handoff: col('handoff').guideline, snow: col('health-safety').escalate_when.filter((x) => /Snow or ice/.test(x)).length, flag: st.pinecrestDemo };
+      });
+    };
+    await page.evaluate((v) => localStorage.setItem('paragon-command-center-v2', JSON.stringify(v)), old);
+    const up = await read();
+    check('saved demo: the winter call, Ava and Pinecrest arrive once', up.c7 && up.assistant === "Ava, Pinecrest Roofing's virtual assistant" && up.arrington === 0 && up.brian && up.emails.every((e) => !/arrington/.test(e)) && up.flag === true, JSON.stringify(up).slice(0, 400));
+    check('saved demo: the snow and ice answers are added once, the old wording updated, an edited answer kept', up.winter === '1,1,1,1,1' && up.ids && /^I'm Ava, Pinecrest Roofing's virtual assistant/.test(up.ai) && /gutters\?/.test(up.sag) && /icy or covered in snow/.test(up.access) && up.todo === 'Our own words about buckets.' && /you are Ava, a virtual assistant/.test(up.company) && /^Topics Ava never answers\. She says/.test(up.handoff) && up.snow === 1, JSON.stringify(up).slice(0, 600));
+    const again = await read();
+    check('saved demo: loading again changes nothing more', again.winter === '1,1,1,1,1' && again.ids && again.snow === 1 && again.todo === 'Our own words about buckets.' && again.c7, JSON.stringify(again).slice(0, 300));
     await ctx.close();
   }
 
