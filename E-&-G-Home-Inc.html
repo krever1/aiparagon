@@ -3219,6 +3219,117 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
 .ov-ed-note{flex-basis:100%;margin-top:-6px}
 .ov-done[hidden],.ov-blank[hidden],#ovDoneWhoF[hidden]{display:none!important}
 @media(max-width:600px){.ov-what-os{grid-template-columns:1fr}}
+/* ══ v12.42: phones and tablets ══
+   What the Nov 5 mobile QA pass found (tests/portal-mobile.test.js). Every rule here applies below 1280 px,
+   or only changes a box whose content did not fit, so a desktop screen that fitted before looks the same.
+   Tap targets on a phone are at least 32 x 32 px. */
+/* a toolbar beside a section title wraps under it instead of running out of its card and widening the page
+   (the Fire drill and Water temperature logs, a client's Care tab, Categories / Write note) */
+@media (min-width:901px){
+  .sec-head{flex-wrap:wrap}
+  .sec-head .head-act{flex:0 1 auto;flex-wrap:wrap;justify-content:flex-end;max-width:100%;min-width:0}
+}
+/* the setup screen's workspace preview: a long team name is cut short, it never widens the screen */
+@media (min-width:601px){ #onbRoot .pv{grid-template-columns:172px minmax(0,1fr)} }
+#onbRoot .pv-hello{min-width:0}
+@media (max-width:1000px){ #onbRoot .onb-pv-hint{display:none} }   /* the preview is below the questions, or hidden */
+/* the week view's titles: one line each, cut short with an ellipsis, in a narrow week */
+.cx-wt{font-style:normal}
+@media (min-width:901px) and (max-width:1279px){
+  .cx-wev{grid-template-columns:minmax(0,1fr)}
+  .cx-wt,.cx-wev span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+/* Create new template on a phone held sideways: its toolbars scroll away with the form instead of filling the window */
+@media (max-height:500px) and (max-width:1100px){ .tpe-top,.tpe-dock{position:static} }
+/* edit mode: the last "Add a section" tile scrolls clear of the floating Reset and Done buttons */
+@media (min-width:901px) and (max-width:1279px){ body:has(#layFab2) #view{padding-bottom:150px} }
+@media (max-width:1279px){
+  /* a staff page's header line runs on as one line of text, never as two columns side by side */
+  .page-h .sub[style*="display:flex;align-items:center;gap:6px"]{display:block!important}
+  .page-h .sub[style*="display:flex;align-items:center;gap:6px"]>span{vertical-align:middle;margin:0 4px 2px 0}
+  /* labels that broke one word per line */
+  .sprog-row .sp-l b{white-space:nowrap}
+  .tb .spill{white-space:nowrap}
+  .team-i .ti b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat-log .msg{overflow-wrap:anywhere}
+  .app.on>.sidebar .nav-item{white-space:nowrap}
+  .tb td .btn.sm{white-space:nowrap}
+  /* an open binder's "Forms that file here": each form one rounded box with its words wrapping inside it */
+  .pill[onclick^="event.stopPropagation();tplOpenDoc"]{display:inline-block;max-width:100%;white-space:normal;text-align:left;border-radius:12px;line-height:1.35;padding-top:6px;padding-bottom:6px;min-height:32px}
+  .btn[onclick="event.stopPropagation();go('forms')"]{flex:none;white-space:nowrap}
+  /* placeholders and pick lists that do not fit end in an ellipsis */
+  input,select{text-overflow:ellipsis}
+}
+@media (max-width:900px){
+  /* the Customize layout button never sits on Ask Spectrum */
+  body:has(#askPanel.on) #layFab,body:has(#askPanel.on) #layFab2{visibility:hidden}
+  /* page header actions keep their whole label: one too wide for half a row takes a row of its own */
+  .page-acts .btn,.page-hd .right .btn,.hero-acts .btn,.page-h .right .btn{flex:1 1 auto}
+  .tpl-head-acts{flex:1 1 auto}
+  /* tick boxes and round choices keep their size (the rule for inputs with an inline width stretched them) */
+  .md-b input[type=checkbox][style*="width"],.md-b input[type=radio][style*="width"],.dr-b input[type=checkbox][style*="width"],
+  .card input[type=checkbox][style*="width"]{width:16px!important;max-width:16px!important;min-width:16px!important;flex:none}
+  /* a client's week strip: the arrows and the date button on one row, the seven days on the next */
+  .cal-strip{flex-wrap:wrap}
+  .cal-strip>.cal-nav:first-child{order:-3}
+  .cal-strip>.cal-jump{order:-2;flex:1 1 0;width:auto;min-width:0}
+  .cal-strip>.cal-days+.cal-nav{order:-1}
+  .cal-strip>.cal-days{flex:1 1 100%;gap:4px}
+  .cal-nav{width:40px}
+  /* a window's header and footer stay put and only its body scrolls, so the last field is never under Save */
+  .modal:not(.ov-modal){display:flex;flex-direction:column}
+  .modal:not(.ov-modal)>.md-h,.modal:not(.ov-modal)>.md-f{flex:none}
+  .modal:not(.ov-modal)>.md-b{flex:1 1 auto;min-height:0;max-height:none}
+  /* two-column tables read at the width of their card (mobileTables marks them); names wrap inside list cards */
+  table.tb.tb-narrow{min-width:0}
+  table.tb.tb-narrow td{white-space:normal}
+  table.tb.tb-narrow td:first-child{min-width:0;overflow-wrap:anywhere}
+  table.tb.tb-narrow .pill{white-space:nowrap}
+  .mcards .tb-name{white-space:normal;min-width:0}
+  .mcards .tb-name>div,.mcard .mc-main{min-width:0;overflow-wrap:anywhere}
+  /* a log or inspection's lines: the question gets a row of its own */
+  #formFull div:has(>input.inp[placeholder^="Question "]){flex-wrap:wrap}
+  #formFull input.inp[placeholder^="Question "]{flex:1 1 100%!important}
+  /* a binder's name and its count: the count drops under the name rather than beside it in a column */
+  .binder-head{flex-wrap:wrap}
+  /* short labels stay on one line */
+  .seg>button,.cal-pop-h .mo-btn,.cx-add-b{white-space:nowrap}
+  .modal.tpe-wide .md-f .btn:not(.navy){flex:1 1 auto}
+  /* tap targets of at least 32 x 32 px */
+  .x,.ask-h .xw,.sig-x,.gear.sm{min-width:36px;min-height:36px}
+  .topbar .search input{min-height:36px}
+  .btn.sm{min-width:32px;flex-shrink:0}
+  .cb{min-width:32px!important;min-height:32px!important}
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select{min-height:32px}
+  .cx-open,.cx-ty,.cx-lg,.cx-pp,.cal-chip,.fb-k,.tc-skip,.crumb button,#askSug button,span.spill[onclick],.fmt-btn,.fmt-clear{min-height:32px}
+  #mdBody .tpe-rows button,#mdBody .tpe-rows .tpe-link,#mdBody .tpe-rowbar button{min-height:32px}
+  .cx-open,.tc-skip,.tpe-link,.tpe-signhere,span.tiny[onclick],.rn.rn-live,span.inline-ed{display:inline-flex;align-items:center;min-height:32px}
+  .cx-ti,.ct[onclick],.ct.inline-ed{min-height:32px}
+  .fmt-btn{min-width:32px}
+  .fmt-sw{width:32px;height:32px}
+  label:has(>input[type=checkbox]),label:has(>input[type=radio]){min-height:32px}
+  .side-foot a,#login a,#onbRoot a{display:inline-flex;align-items:center;min-height:32px}
+}
+@media (max-width:600px){
+  /* the Profile's header: Settings drops under the name instead of off the edge */
+  #view section.hero[style*="gap:18px"]{flex-wrap:wrap;row-gap:12px}
+  #view section.hero[style*="gap:18px"]>div[style*="flex:1"]{flex:1 1 170px!important;min-width:0}
+  #view section.hero[style*="gap:18px"]>.btn{margin-left:auto}
+}
+@media (max-width:480px){
+  /* a staff page's training rows: Unassign moves under the course instead of off the card */
+  .checkrow:has(>.btn){flex-wrap:wrap;row-gap:6px}
+  .checkrow:has(>.btn)>.ct{flex:1 1 150px;min-width:0}
+  .checkrow:has(>.btn)>.btn{margin-left:auto}
+}
+/* a list row's View details window on a phone: a name and its line under it wrap inside the window
+   (the phone table rule keeps .tb-name on one line, and the window inherited it) */
+.mrow .mv .tb-name{white-space:normal;min-width:0;flex-wrap:wrap;gap:4px 10px}
+.mrow .mv .tb-name>div{min-width:0;overflow-wrap:anywhere}
+/* a name box that resets its own look (New category and the like) ends a long placeholder in an ellipsis too */
+.gp-name{min-width:0}
+.gp-name input{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+@media (max-width:400px){ .gp-name input{font-size:17px} }
 </style>
 </head>
 <body>
@@ -3302,7 +3413,7 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
       <!-- ─────── STEP: WHO ─────── -->
       <div class="ob-q on" data-q="who">
         <h2 id="whoTitle">What's your role?</h2>
-        <p class="help">Spectrum shows a different workspace depending on your role. This sets what you see when you sign in — watch the panel on the right build as you answer.</p>
+        <p class="help">Spectrum shows a different workspace depending on your role. This sets what you see when you sign in<span class="onb-pv-hint"> — watch the panel on the right build as you answer</span>.</p>
         <div class="opts" data-group="who">
           <button class="opt" data-val="leadership" data-role="director">
             <span class="glyph"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v5.2c0 4.9 3.3 8.3 8 9.8 4.7-1.5 8-4.9 8-9.8V6l-8-3Z"/><path d="m8.8 12 2.2 2.2 4.2-4.4"/></svg></span>
@@ -3512,7 +3623,7 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
         <span class="pill neutral" style="position:absolute;top:10px;right:10px;font-size:10.5px">Demo preview</span>
         <div class="rc-ic" style="background:var(--gold-soft);color:#7A5E12">◇</div>
         <h3>Family member</h3>
-        <p>One person only: their medications, appointments, documents and a line to the care team.</p>
+        <p>One person only: their appointments, documents and a line to the care team.</p>
         <div class="rc-who" id="rcWhoF"><b>Preview</b> · what a family member sees</div>
       </button>
     </div>
@@ -3674,8 +3785,17 @@ const yearOf = v => { const m=String(v||'').match(/^(\d{4})/); if(m) return m[1]
 function tsFmt(v,o){ const d=new Date(v); if(isNaN(d)) return '';    // a saved moment, shown on the chosen zone's clock
   try{ return d.toLocaleString(undefined,TZ_FORCE?Object.assign({},o,{timeZone:TZ_FORCE}):o); }catch(e){ return d.toLocaleString(undefined,o); } }
 const addDays = (d,n) => { const x=dParse(d); x.setDate(x.getDate()+n); return x; };
-const fmtDate = d => dParse(d).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
-const fmtLong = d => dParse(d).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+/* v12.42: Preferences > Date format orders the day and month (lists keep no year, as before) */
+const fmtDate = d => fmtPref(dParse(d),'short');
+const fmtLong = d => fmtPref(dParse(d),'long');
+function fmtPref(x,w){
+  let f=''; try{ f=PREFS.dateFmt||''; }catch(e){}
+  const wd=x.toLocaleDateString(undefined,{weekday:w}), mo=x.toLocaleDateString(undefined,{month:w}), dd=x.getDate(), mm=String(x.getMonth()+1).padStart(2,'0'), d2=String(dd).padStart(2,'0');
+  if(f==='d MMM yyyy') return `${wd}, ${dd} ${mo}`;
+  if(f==='MM/DD/YYYY') return w==='long'?`${wd}, ${mm}/${d2}/${x.getFullYear()}`:`${wd}, ${mm}/${d2}`;
+  if(f==='DD/MM/YYYY') return w==='long'?`${wd}, ${d2}/${mm}/${x.getFullYear()}`:`${wd}, ${d2}/${mm}`;
+  return x.toLocaleDateString(undefined,{weekday:w,month:w,day:'numeric'});
+}
 const T = iso(TODAY);
 
 /* ══════════════ np-demo BACKEND (Supabase + n8n) ══════════════
@@ -4819,22 +4939,22 @@ let TEMPLATES5=[
  {id:'tp20',dest:'Agency',sub:'Face Sheet',name:'Face sheet',desc:'Front page of the client file: identity, placement and key contacts',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date of birth',ty:'date'},{l:'Home / placement',ty:'text'},{l:'Date of admission',ty:'date'},{l:'Regional center & service coordinator',ty:'text'},{l:'Guardian / conservator',ty:'text'},{l:'Primary physician',ty:'text'},{l:'Diagnoses',ty:'long text'},{l:'Allergies',ty:'text'},{l:'Prepared by',ty:'text'},{l:'Staff signature',ty:'signature'}]},
  {id:'tp21',dest:'Agency',sub:'Emergency Information',name:'Emergency information',desc:'Who to call and what to know in an emergency',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Emergency contact 1 (name, relationship, phone)',ty:'text'},{l:'Emergency contact 2',ty:'text'},{l:'Physician and phone',ty:'text'},{l:'Preferred hospital',ty:'text'},{l:'Medical conditions to know',ty:'long text'},{l:'Current medications',ty:'long text'},{l:'Allergies',ty:'text'},{l:'Insurance / Medi-Cal number',ty:'text'},{l:'Updated on',ty:'date'},{l:'Staff signature',ty:'signature'}]},
  {id:'tp22',dest:'Agency',sub:'Insurance',name:'Insurance information',desc:'Coverage on file: Medi-Cal, Medicare, private plans',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Medi-Cal number',ty:'text'},{l:'Medicare number',ty:'text'},{l:'Private insurance carrier',ty:'text'},{l:'Policy / member number',ty:'text'},{l:'Group number',ty:'text'},{l:'Effective date',ty:'date'},{l:'Card copy on file',ty:'checkbox'},{l:'Verified by',ty:'text'},{l:'Date',ty:'date'}]},
- {id:'tp23',dest:'Agency',sub:'Physical Report (CCF)',name:'Physical report (Community Care Facilities)',desc:'Physician report for licensing, LIC 602A equivalent',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date of examination',ty:'date'},{l:'Physician name',ty:'text'},{l:'Height / weight',ty:'text'},{l:'Blood pressure',ty:'text'},{l:'Tuberculosis test result and date',ty:'text'},{l:'Communicable disease',ty:'checkbox'},{l:'Ambulatory',ty:'checkbox'},{l:'Physical limitations',ty:'long text'},{l:'Mental / emotional conditions',ty:'long text'},{l:'Medications prescribed',ty:'long text'},{l:'Special diet',ty:'text'},{l:'Physician signature',ty:'signature'}]},
+ {id:'tp23',dest:'Agency',sub:'Physical Report Community Care Facilities',name:'Physical report (Community Care Facilities)',desc:'Physician report for licensing, LIC 602A equivalent',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date of examination',ty:'date'},{l:'Physician name',ty:'text'},{l:'Height / weight',ty:'text'},{l:'Blood pressure',ty:'text'},{l:'Tuberculosis test result and date',ty:'text'},{l:'Communicable disease',ty:'checkbox'},{l:'Ambulatory',ty:'checkbox'},{l:'Physical limitations',ty:'long text'},{l:'Mental / emotional conditions',ty:'long text'},{l:'Medications prescribed',ty:'long text'},{l:'Special diet',ty:'text'},{l:'Physician signature',ty:'signature'}]},
  {id:'tp24',dest:'Agency',sub:'IPP',name:'Individual program plan (IPP)',desc:'Goals, services and supports agreed with the regional center',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'IPP meeting date',ty:'date'},{l:'Service coordinator',ty:'text'},{l:'Participants',ty:'long text'},{l:'Strengths and preferences',ty:'long text'},{l:'Goal 1',ty:'long text'},{l:'Goal 2',ty:'long text'},{l:'Goal 3',ty:'long text'},{l:'Services and supports',ty:'long text'},{l:'Next review date',ty:'date'},{l:'Client / guardian signature',ty:'signature'},{l:'Staff signature',ty:'signature'}]},
  {id:'tp25',dest:'Agency',sub:'Quarterly',name:'Quarterly progress',desc:'Progress against IPP goals for the quarter',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Quarter',ty:'text'},{l:'Period from',ty:'date'},{l:'Period to',ty:'date'},{l:'Goal 1 progress',ty:'long text'},{l:'Goal 2 progress',ty:'long text'},{l:'Goal 3 progress',ty:'long text'},{l:'Health and medical updates',ty:'long text'},{l:'Behavioral notes',ty:'long text'},{l:'Recommendations',ty:'long text'},{l:'Prepared by',ty:'text'},{l:'Staff signature',ty:'signature'}]},
  {id:'tp26',dest:'Agency',sub:'Placement Packet',name:'Placement packet',desc:'Admission agreement and intake checklist',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Admission date',ty:'date'},{l:'Referral source',ty:'text'},{l:'Admission agreement signed',ty:'checkbox'},{l:'Needs and services plan received',ty:'checkbox'},{l:'Physical report received',ty:'checkbox'},{l:'Medication list received',ty:'checkbox'},{l:'Personal rights explained',ty:'checkbox'},{l:'House rules explained',ty:'checkbox'},{l:'Notes',ty:'long text'},{l:'Client / guardian signature',ty:'signature'},{l:'Staff signature',ty:'signature'}]},
- {id:'tp27',dest:'Agency',sub:'Grievance & Acknowledgement',name:'Grievance procedure & acknowledgement',desc:'The complaint process, explained and acknowledged',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date reviewed',ty:'date'},{l:'Grievance procedure explained to',ty:'text'},{l:'Explained by',ty:'text'},{l:'Copy provided',ty:'checkbox'},{l:'Questions or concerns raised',ty:'long text'},{l:'Client / guardian signature',ty:'signature'},{l:'Staff signature',ty:'signature'}]},
- {id:'tp28',dest:'Agency',sub:'Personal Rights / Exit Criteria / House Rules',name:'Personal rights, exit criteria & house rules acknowledgement',desc:'Rights, the exit criteria and the house rules, acknowledged',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date',ty:'date'},{l:'Personal rights reviewed',ty:'checkbox'},{l:'Exit criteria reviewed',ty:'checkbox'},{l:'House rules reviewed',ty:'checkbox'},{l:'Reviewed by',ty:'text'},{l:'Comments',ty:'long text'},{l:'Client / guardian signature',ty:'signature'},{l:'Staff signature',ty:'signature'}]},
- {id:'tp29',dest:'Agency',sub:'HCBS Survey & Acknowledgement',name:'HCBS survey & acknowledgement',desc:'Home and community-based services setting survey',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Survey date',ty:'date'},{l:'Chooses own daily schedule',ty:'checkbox'},{l:'Access to food at any time',ty:'checkbox'},{l:'Privacy in bedroom / lockable door',ty:'checkbox'},{l:'Visitors at any time',ty:'checkbox'},{l:'Community access and transportation',ty:'checkbox'},{l:'Comments',ty:'long text'},{l:'Client / guardian signature',ty:'signature'},{l:'Staff signature',ty:'signature'}]},
+ {id:'tp27',dest:'Agency',sub:'Grievance / Grievance Acknowledgement',name:'Grievance procedure & acknowledgement',desc:'The complaint process, explained and acknowledged',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date reviewed',ty:'date'},{l:'Grievance procedure explained to',ty:'text'},{l:'Explained by',ty:'text'},{l:'Copy provided',ty:'checkbox'},{l:'Questions or concerns raised',ty:'long text'},{l:'Client / guardian signature',ty:'signature'},{l:'Staff signature',ty:'signature'}]},
+ {id:'tp28',dest:'Agency',sub:'Acknowledgement of Personal Rights / Exit Criteria / House Rules',name:'Personal rights, exit criteria & house rules acknowledgement',desc:'Rights, the exit criteria and the house rules, acknowledged',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date',ty:'date'},{l:'Personal rights reviewed',ty:'checkbox'},{l:'Exit criteria reviewed',ty:'checkbox'},{l:'House rules reviewed',ty:'checkbox'},{l:'Reviewed by',ty:'text'},{l:'Comments',ty:'long text'},{l:'Client / guardian signature',ty:'signature'},{l:'Staff signature',ty:'signature'}]},
+ {id:'tp29',dest:'Agency',sub:'HCBS Survey / Acknowledgement',name:'HCBS survey & acknowledgement',desc:'Home and community-based services setting survey',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Survey date',ty:'date'},{l:'Chooses own daily schedule',ty:'checkbox'},{l:'Access to food at any time',ty:'checkbox'},{l:'Privacy in bedroom / lockable door',ty:'checkbox'},{l:'Visitors at any time',ty:'checkbox'},{l:'Community access and transportation',ty:'checkbox'},{l:'Comments',ty:'long text'},{l:'Client / guardian signature',ty:'signature'},{l:'Staff signature',ty:'signature'}]},
  {id:'tp30',dest:'Agency',sub:'Release of Information',name:'Release of information',desc:'Authorization to share records',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Release records to (name / agency)',ty:'text'},{l:'Purpose',ty:'text'},{l:'Records covered',ty:'long text'},{l:'Valid from',ty:'date'},{l:'Expires',ty:'date'},{l:'May be revoked in writing at any time',ty:'checkbox'},{l:'Client / guardian signature',ty:'signature'},{l:'Witness',ty:'text'}]},
  {id:'tp31',dest:'Agency',sub:'Personal Property',name:'Personal property',desc:'What the client brought and what they keep',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date',ty:'date'},{l:'Cash and valuables on hand',ty:'text'},{l:'Items (one per line, with condition)',ty:'long text'},{l:'Items removed since last inventory',ty:'long text'},{l:'Client / guardian signature',ty:'signature'},{l:'Staff signature',ty:'signature'}]},
  {id:'tp32',dest:'Agency',sub:'Quality of Life Questionnaire',name:'Quality of life questionnaire',desc:'How the client feels about their home and day',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date',ty:'date'},{l:'Completed with',ty:'text'},{l:'I like where I live',ty:'checkbox'},{l:'I choose my own activities',ty:'checkbox'},{l:'I feel safe',ty:'checkbox'},{l:'Staff listen to me',ty:'checkbox'},{l:'I see friends and family when I want',ty:'checkbox'},{l:'What would make things better',ty:'long text'},{l:'Client signature',ty:'signature'}]},
- {id:'tp33',dest:'Agency',sub:'Rights of Individuals',name:'Rights of individuals with developmental disabilities',desc:'Acknowledgement of rights under the Lanterman Act',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date',ty:'date'},{l:'Rights reviewed with',ty:'text'},{l:'Reviewed by',ty:'text'},{l:'Copy provided',ty:'checkbox'},{l:'Questions',ty:'long text'},{l:'Client / guardian signature',ty:'signature'},{l:'Staff signature',ty:'signature'}]},
- {id:'tp40',dest:'Medical',sub:'Lab Work',name:'Lab work',desc:'Orders, results and follow-up',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date drawn',ty:'date'},{l:'Ordered by',ty:'text'},{l:'Tests ordered',ty:'long text'},{l:'Results summary',ty:'long text'},{l:'Abnormal values',ty:'long text'},{l:'Follow-up required',ty:'checkbox'},{l:'Follow-up plan',ty:'long text'},{l:'Staff signature',ty:'signature'}]},
- {id:'tp41',dest:'Medical',sub:'Physician Visits',name:'Physician visit',desc:'What happened at the appointment',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Visit date',ty:'date'},{l:'Physician',ty:'text'},{l:'Reason for visit',ty:'text'},{l:'Findings',ty:'long text'},{l:'Medication changes',ty:'long text'},{l:'Orders / referrals',ty:'long text'},{l:'Next appointment',ty:'date'},{l:'Accompanied by',ty:'text'},{l:'Staff signature',ty:'signature'}]},
- {id:'tp42',dest:'Medical',sub:'Dental Visits',name:'Dental visit',desc:'Dental exams, cleanings and treatment',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Visit date',ty:'date'},{l:'Dentist',ty:'text'},{l:'Reason for visit',ty:'text'},{l:'Treatment performed',ty:'long text'},{l:'Follow-up needed',ty:'long text'},{l:'Next appointment',ty:'date'},{l:'Accompanied by',ty:'text'},{l:'Staff signature',ty:'signature'}]},
+ {id:'tp33',dest:'Agency',sub:'Rights of Individuals with Developmental Disabilities',name:'Rights of individuals with developmental disabilities',desc:'Acknowledgement of rights under the Lanterman Act',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date',ty:'date'},{l:'Rights reviewed with',ty:'text'},{l:'Reviewed by',ty:'text'},{l:'Copy provided',ty:'checkbox'},{l:'Questions',ty:'long text'},{l:'Client / guardian signature',ty:'signature'},{l:'Staff signature',ty:'signature'}]},
+ {id:'tp40',dest:'Medical',sub:'Lab Works',name:'Lab work',desc:'Orders, results and follow-up',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date drawn',ty:'date'},{l:'Ordered by',ty:'text'},{l:'Tests ordered',ty:'long text'},{l:'Results summary',ty:'long text'},{l:'Abnormal values',ty:'long text'},{l:'Follow-up required',ty:'checkbox'},{l:'Follow-up plan',ty:'long text'},{l:'Staff signature',ty:'signature'}]},
+ {id:'tp41',dest:'Medical',sub:'Physician Visit',name:'Physician visit',desc:'What happened at the appointment',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Visit date',ty:'date'},{l:'Physician',ty:'text'},{l:'Reason for visit',ty:'text'},{l:'Findings',ty:'long text'},{l:'Medication changes',ty:'long text'},{l:'Orders / referrals',ty:'long text'},{l:'Next appointment',ty:'date'},{l:'Accompanied by',ty:'text'},{l:'Staff signature',ty:'signature'}]},
+ {id:'tp42',dest:'Medical',sub:'Dental',name:'Dental visit',desc:'Dental exams, cleanings and treatment',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Visit date',ty:'date'},{l:'Dentist',ty:'text'},{l:'Reason for visit',ty:'text'},{l:'Treatment performed',ty:'long text'},{l:'Follow-up needed',ty:'long text'},{l:'Next appointment',ty:'date'},{l:'Accompanied by',ty:'text'},{l:'Staff signature',ty:'signature'}]},
  {id:'tp43',dest:'Medical',sub:'Vaccines',name:'Immunizations',desc:'Vaccines given, with dates and lot numbers',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Vaccine',ty:'text'},{l:'Date given',ty:'date'},{l:'Dose',ty:'text'},{l:'Lot number',ty:'text'},{l:'Administered by',ty:'text'},{l:'Site / reaction',ty:'text'},{l:'Next dose due',ty:'date'},{l:'Staff signature',ty:'signature'}]},
- {id:'tp44',dest:'Medical',sub:'Medication Reason for Use',name:'Medication reason for use',desc:'Why each medication is prescribed \u2014 one row per medication',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Medications',ty:'table',rows:10,cols:['Medication','Dose and route','Prescribed by','Reason for use / diagnosis','Start date','Review date','Side effects to watch']},{l:'Notes',ty:'long text'},{l:'Staff signature',ty:'signature'}]},
+ {id:'tp44',dest:'Medical',sub:'Medication Reason For Use',name:'Medication reason for use',desc:'Why each medication is prescribed \u2014 one row per medication',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Medications',ty:'table',rows:10,cols:['Medication','Dose and route','Prescribed by','Reason for use / diagnosis','Start date','Review date','Side effects to watch']},{l:'Notes',ty:'long text'},{l:'Staff signature',ty:'signature'}]},
  {id:'tp50',dest:'Daily',sub:'Vital Signs',name:'Vital signs',desc:'Temperature, pulse, blood pressure, respiration',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date',ty:'date'},{l:'Time',ty:'time'},{l:'Temperature (°F)',ty:'text'},{l:'Pulse',ty:'text'},{l:'Blood pressure',ty:'text'},{l:'Respiration',ty:'text'},{l:'Weight',ty:'text'},{l:'Notes',ty:'long text'},{l:'Staff signature',ty:'signature'}]},
  {id:'tp51',dest:'Daily',sub:'ADL',name:'Activities of daily living (ADL)',desc:'Daily support given with personal care',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date',ty:'date'},{l:'Bathing',ty:'checkbox'},{l:'Dressing',ty:'checkbox'},{l:'Grooming / oral care',ty:'checkbox'},{l:'Toileting',ty:'checkbox'},{l:'Meals / eating',ty:'checkbox'},{l:'Mobility',ty:'checkbox'},{l:'Level of assistance and notes',ty:'long text'},{l:'Staff signature',ty:'signature'}]},
  {id:'tp52',dest:'Daily',sub:'Staff Notes',name:'Staff notes',desc:'Shift note for the client record',fields:[{l:'Client ID (UCI)',ty:'text'},{l:'Date',ty:'date'},{l:'Shift',ty:'text'},{l:'Notes',ty:'long text'},{l:'Follow-up for next shift',ty:'long text'},{l:'Staff signature',ty:'signature'}]},
@@ -4929,6 +5049,10 @@ function mentionTargets(text){
       const full=st.name.toLowerCase().replace(/[\s.]/g,'');
       if((key===first||key===init||key===full)&&!seen[st.id]){ seen[st.id]=1; hits.push(st); }
     });
+    /* v12.42: @director, or a director's first or full name, reaches the directors (they have no staff record) */
+    const dirs=realSession()?Object.values(USERS).filter(u=>u&&u.role==='director').map(u=>String(u.name||'')):[String((ME.director||{}).name||'')];
+    const isDir=key==='director'||key==='directors'||dirs.some(n=>n&&(key===n.split(' ')[0].toLowerCase()||key===n.toLowerCase().replace(/[\s.]/g,'')));
+    if(isDir&&!seen['@director']&&!hits.some(h=>dirs.some(n=>n&&n===h.name))){ seen['@director']=1; hits.push({id:'@director',init:'Director',name:'the director'}); }
   });
   return hits;
 }
@@ -4949,7 +5073,7 @@ function cnEditSave(cid,i){
   const v=(el('cnE').value||'').trim(); if(!v) return toast('The note cannot be empty.');
   const n=(CLIENT_NOTES[cid]||[])[i]; if(!n) return;
   const was=n.text; n.text=v; n.edited=nowStamp();
-  sbUpsert('np_demo_program',{key:'clientnotes',value:{map:CLIENT_NOTES},updated_by:auditActor()});
+  sbUpsert('np_demo_program',{key:'clientnotes',value:{map:noSeedKeys(CLIENT_NOTES,'client')},updated_by:auditActor()});
   if(n.dbId!=null) sbPatch('np_demo_client_notes',n.dbId,{note:v});   // v12.22: the notes are read back from this table
   else sbPatchWhere('np_demo_client_notes',`cid=eq.${encodeURIComponent(cid)}&note=eq.${encodeURIComponent(was)}`,{note:v});
   logAudit('Edited internal note',(client(cid)||{}).uci||cid);
@@ -4960,7 +5084,7 @@ function cnDel(cid,i){
   if(!cnMine(n)) return toast('Only a director or the person who wrote it can delete this note.');
   askDelete('Delete this note?',esc(n.text).slice(0,90),()=>{
     CLIENT_NOTES[cid].splice(i,1);
-    sbUpsert('np_demo_program',{key:'clientnotes',value:{map:CLIENT_NOTES},updated_by:auditActor()});
+    sbUpsert('np_demo_program',{key:'clientnotes',value:{map:noSeedKeys(CLIENT_NOTES,'client')},updated_by:auditActor()});
     sbDel('np_demo_client_notes',n.dbId!=null?'id=eq.'+encodeURIComponent(n.dbId):`cid=eq.${encodeURIComponent(cid)}&note=eq.${encodeURIComponent(n.text)}`);   // v12.22: or it comes back
     logAudit('Deleted internal note',(client(cid)||{}).uci||cid);
     render(); toast('Note deleted.');
@@ -5339,7 +5463,7 @@ function taskCfgApply(t){
 let TASK_PRIS=['High','Medium','Low'];
 function managePriorities(){
   listManage('Task priorities',()=>TASK_PRIS.slice(),
-    (o,n)=>{ TASK_PRIS[TASK_PRIS.indexOf(o)]=n; TASKS.forEach(t=>{ if(t.pri===o) t.pri=n; });
+    (o,n)=>{ TASK_PRIS[TASK_PRIS.indexOf(o)]=n; TASKS.forEach(t=>{ if(t.pri===o){ t.pri=n; if(!t._seed) sbPatch('np_demo_tasks',t.id,{pri:n}); } });   // v12.42: saved on each task too
       sbUpsert('np_demo_program',{key:'taskpris',value:{list:TASK_PRIS},updated_by:auditActor()});
       logAudit('Renamed task priority',o+' → '+n); render(); },
     o=>{ TASK_PRIS=TASK_PRIS.filter(x=>x!==o);
@@ -5352,7 +5476,7 @@ function managePriorities(){
 function manageTaskCats(){
   listManage('Task categories',()=>TASK_CATS.slice(),
     (o,n)=>{ TASK_CATS[TASK_CATS.indexOf(o)]=n;
-      TASKS.forEach(t=>{ if(t.cat===o) t.cat=n; });
+      TASKS.forEach(t=>{ if(t.cat===o){ t.cat=n; if(!t._seed) sbPatch('np_demo_tasks',t.id,{category:n}); } });   // v12.42: saved on each task too
       sbUpsert('np_demo_program',{key:'taskcats',value:{list:TASK_CATS},updated_by:auditActor()});
       logAudit('Renamed task category',o+' → '+n); render(); },
     o=>{ TASK_CATS=TASK_CATS.filter(x=>x!==o);
@@ -5431,6 +5555,7 @@ function threadTo(t){                                                // {kind, r
 }
 function threadMine(t){
   if(!realSession()||isSampleThread(t)){                             // the sample conversations keep their old rule
+    if(state.role==='family') return t.role==='Guardian'||t.fromRole==='family'||(t.msgs||[]).some(m=>m.role==='family');   // v12.42: not the staff and director talking about their client
     if(state.role!=='staff') return true;
     const me=ME.staff.name; return t.who===me||t.role==='Group'||(t.msgs||[]).some(m=>m.w===me)||(USERS[(AUTH.email||'').toLowerCase()]||{}).sid&&t.who===stName(staff(meSid())||{});
   }
@@ -5539,7 +5664,7 @@ function listReg(){                                                  // listKey 
     'note category':{get:()=>NOTE_CATS,    add:v=>{NOTE_CATS.push(v); noteCatsSave();}},   // v12.22: it used to land in a side list
     /* v12.22: a new incident type from the report form, in the same name box as every other list */
     'incident type':{make:v=>{ const k=v.replace(/\s+/g,' ').trim(); const hit=Object.keys(PROTOCOLS).find(x=>x.toLowerCase()===k.toLowerCase()&&!hid('protocol',x));
-                        if(!hit){ PROTOCOLS[k]=Object.assign({first:[],call:[],hours:24},PROTOCOLS[k]||{},{own:1}); unhide('protocol',k); protoSave(); logAudit('Created incident protocol',k); }
+                        if(!hit){ PROTOCOLS[k]=protoOwn(k); unhide('protocol',k); protoSave(); logAudit('Created incident protocol',k); }
                         return {value:hit||k,label:hit||k,msg:hit?`${hit} is already an incident type. It is picked.`:`New incident type: ${k}.`}; }, what:'incident type'},
     'task category':{get:()=>TASK_CATS,    add:v=>{TASK_CATS.push(v); sbUpsert('np_demo_program',{key:'taskcats',value:{list:TASK_CATS},updated_by:auditActor()});}},
     'task priority':{get:()=>TASK_PRIS,    add:v=>{TASK_PRIS.push(v); sbUpsert('np_demo_program',{key:'taskpris',value:{list:TASK_PRIS},updated_by:auditActor()});}},
@@ -5757,8 +5882,27 @@ function auditScrub(t){
     CLIENTS.forEach(c=>swap(c.name,c.uci));
     STAFF.forEach(x=>swap(x.name,x.init));
     if(!realSession()) Object.keys(ME).forEach(k=>swap(ME[k].name,ME[k].label));
+    s=auditClientBits(s);
   }catch(e){}
   return s;
+}
+/* v12.42: whole names were swapped, so "Maria refused lunch" kept the client's first name. A client's first or last
+   name on its own (not a common word: EXT_COMMON), and their initials (M.G., or MG when not after a number, as in
+   500 MG), become their UCI as well. Staff initials already in the text are held aside first, so a client with the
+   same letters never takes them. */
+function auditClientBits(s){
+  const hold=[], keep=x=>{ hold.push(x); return '\uE000'+(hold.length-1)+'\uE001'; };
+  STAFF.forEach(x=>{ const i=String(x.init||'').trim(); if(i.length<2) return;
+    s=s.replace(new RegExp('(^|[^\\w])'+extRe(i)+'(?!\\w)','g'),(m,p)=>p+keep(i)); });
+  CLIENTS.forEach(c=>{ const u=String(c.uci||''); if(!u) return;
+    String(c.name||'').trim().split(/\s+/).filter(p=>/^[A-Z][a-z'\u2019-]{2,}$/.test(p)&&!EXT_COMMON.has(p)).forEach(p=>{
+      s=s.replace(new RegExp('(^|[^\\w])'+extRe(p)+'(?!\\w)','g'),(m,q)=>q+keep(u)); });
+    const raw=String(c.init||'').trim(), L=raw.replace(/[^A-Za-z]/g,'');
+    if(!/^[A-Z]{2,3}$/.test(L)) return;
+    s=s.replace(new RegExp('(^|[^\\w])'+L.split('').join('\\.\\s?')+'\\.?(?!\\w)','g'),(m,q)=>q+keep(u));
+    if(raw===L) s=s.replace(new RegExp('(^|[^\\w])(?<!\\d\\s)'+L+'(?!\\w)','g'),(m,q)=>q+keep(u));
+  });
+  return s.replace(/\uE000(\d+)\uE001/g,(m,i)=>hold[+i]);
 }
 /* v12.13: who is actually signed in. Every name the portal writes onto a record (signatures,
    the audit trail, notes, messages, sign-offs, acknowledgements) comes from here. It is worked
@@ -5826,14 +5970,16 @@ function logAudit(act,obj,cat){
   sbPush('np_demo_audit_log',{who:entry.who,act:entry.act,obj:entry.obj,role:state.role,category:entry.cat||null});
 }
 /* v12.30: a message that something went wrong, or is needed first, shows ! (not ✓), and a long one stays long enough to read */
-const TOAST_WARN=/could(?:n['\u2019]t| not)|can(?:no|['\u2019])t|did(?:n['\u2019]t| not)|do(?:n['\u2019]t| not)|would not|won['\u2019]t|isn['\u2019]t|is not|was not|are not|not (?:valid|saved|linked|set up|allowed)|failed|expired|blocked|unavailable|offline|no longer|needs? |already|over \d+ ?MB|^(?:add a|add at|choose|enter|finish|give|name|pick|select|write|sign it first|type (?:a|just|their|your|the))\b|^(?:only|nothing|no )|^another |^there (?:is|are) no/i;
+const TOAST_WARN=/could(?:n['\u2019]t| not)|can(?:no|['\u2019])t|did(?:n['\u2019]t| not)|do(?:n['\u2019]t| not)|would not|won['\u2019]t|isn['\u2019]t|is not|was not|are not|not (?:valid|saved|linked|set up|allowed)|failed|expired|blocked|unavailable|offline|no longer|needs? |already|over \d+ ?MB|^(?:add a|add at|choose|enter|finish|give|name|pick|select|write|sign it first|use at least|check the|type (?:a|just|their|your|the))\b|^(?:only|nothing|no )|^another |^there (?:is|are) no/i;
 function toast(msg){ msg=String(msg==null?'':msg); const w=TOAST_WARN.test(msg), t=el('toast');
   el('toastTxt').textContent=msg; t.classList.toggle('warn',w); const b=t.querySelector('b'); if(b) b.textContent=w?'!':'\u2713';
   t.classList.add('on'); clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('on'),Math.min(8000,Math.max(2400,msg.length*55)+(w?1000:0))); }
 function toMin(hm){ if(!hm||typeof hm!=='string') return 0; const [h,m]=hm.split(':').map(Number); return h*60+(m||0); }
 function pctOfDay(hm){ const START=6*60, END=22*60; return Math.max(0,Math.min(100,(toMin(hm)-START)/(END-START)*100)); }
 function hm12(hm){ if(!hm||typeof hm!=='string') return ''; const [h,m]=hm.split(':').map(Number);   // v12.15: a time-less entry (from another app) shows no time instead of breaking the page
+  if(prefOf('timeFmt')==='24-hour') return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;   // v12.42: Preferences > Time format
   const ap=h>=12?'PM':'AM'; const hh=h%12||12; return `${hh}:${String(m).padStart(2,'0')} ${ap}`; }
+function prefOf(k){ try{ return (PREFS||{})[k]||''; }catch(e){ return ''; } }   // v12.42: PREFS is declared further down the page
 function relDay(d){ const diff=Math.round((new Date(d)-new Date(T))/864e5); return diff===0?'Today':diff===1?'Tomorrow':diff===-1?'Yesterday':fmtDate(d); }
 
 function toggleNav(force){
@@ -6229,7 +6375,7 @@ function ico(name,size){
 }
 const NAV_ICON={home:'house',tasks:'circle-check',calendar:'calendar',clients:'heart',team:'users',trainhub:'graduation-cap',
   safety:'shield',templates:'folder',forms:'file-text',directory:'book-user',changelog:'history',compliance:'chart',
-  messages:'clipboard',weekly:'circle-check',profile:'id-card',acct:'map-pin'};
+  messages:'clipboard',weekly:'circle-check',profile:'id-card',acct:'map-pin',docs:'file-text'};   // v12.42: docs (the family's Documents)
 const PAGE_ICON={home:['house','sage'],tasks:['circle-check','honey'],calendar:['calendar-range','blue'],clients:['heart','peach'],
   team:['users','sage'],trainhub:['graduation-cap','lilac'],safety:['shield','sage'],templates:['folder','honey'],
   forms:['file-text','blue'],directory:['book-user','lilac'],changelog:['history','sage'],messages:['clipboard','blue'],
@@ -6273,6 +6419,9 @@ window.onboardingDone=function(setup){
   if(!ONB.domain) ONB.domain=carried.domain;
   if(!ONB.roleTitle&&carried.roleTitle) ONB.roleTitle=carried.roleTitle;
   hideWelcome();
+  /* v12.42: signed in, whoever sets up a team is its director (the database makes them one); the
+     role picked in setup ("Care provider") used to open their own team in the staff view */
+  if(realSession()){ ONB.setupRole=ONB.role||''; ONB.role=MEMBER_ROLE==='staff'?'staff':'director'; }
   lsSet('np_onboarding',JSON.stringify(ONB));
   const r=(ONB.role&&ME[ONB.role])?ONB.role:'director';
   applySetup();
@@ -6329,11 +6478,12 @@ window.welcomeDone=function(info){
   if(typeof window.onboardingSetIdentity==='function') window.onboardingSetIdentity(window.__welcome);
 };
 function restartOnboarding(){
+  const kept={name:ONB.name||'',domain:ONB.domain||'',email:ONB.email||'',org:(ONB.org&&ONB.org!=='Spectrum')?ONB.org:''};   // v12.42: a typo on the first question renamed the team
   try{ lsDel('np_onboarding'); lsDel('np_welcome'); }catch(e){}
   ONB={}; window.__welcome={}; closeAll();
   if(typeof window.welcomeReset==='function') window.welcomeReset();
-  if(typeof window.onboardingSetIdentity==='function') window.onboardingSetIdentity({});
   if(typeof window.onboardingReset==='function') window.onboardingReset();
+  if(typeof window.onboardingSetIdentity==='function') window.onboardingSetIdentity(kept);
   if(!showWelcome()) showOnboarding();
 }
 let SAMPLE={};
@@ -6454,7 +6604,7 @@ function bootPortal(){
     if(authReady() && AUTH.session && lsGet('np_resume')){ const pre=USERS[(AUTH.email||'').toLowerCase()];   // active session resumes
       signIn(pre&&ME[pre.role]?pre.role:ONB.role);
       whenHydrated(()=>{ if(ORG_NONE&&realSession()) return noAgencyOut();   // v12.15: removed from the agency since the last visit
-        const r=roleFor(); if(r==='staff'&&state.role!=='staff') signIn('staff'); },5000);   // a staff account never opens the director view
+        const r=roleFor(); if((r==='staff'||r==='director')&&state.role!==r) signIn(r); },5000);   // a staff account never opens the director view; v12.42: a director's never the staff view
       return; }
     el('login').style.display='flex';
     showLoginPage(); return;                                        // v12.11: the full sign-in page, with "use a different account" and "create an agency" 
@@ -6587,7 +6737,8 @@ function labelsForm(){
 function labelsApply(){
   LABELS={};
   document.querySelectorAll('input[data-lbl]').forEach(i=>{ const v=(i.value||'').trim(); if(v) LABELS[i.getAttribute('data-lbl')]=v; });
-  document.querySelectorAll('input[data-bnd]').forEach(i=>{ const v=(i.value||'').trim(); if(v) FOLDER_NAMES[i.getAttribute('data-bnd')]=v; });
+  document.querySelectorAll('input[data-bnd]').forEach(i=>{ const k=i.getAttribute('data-bnd'), v=(i.value||'').trim();
+    if(v) FOLDER_NAMES[k]=v; else if(FOLDER_STD[k]) FOLDER_NAMES[k]=FOLDER_STD[k]; });   // v12.42: blank gives the standard name back
   labelsSave(); if(typeof bindersSave==='function') bindersSave(); else sbUpsert('np_demo_program',{key:'binders',value:{names:FOLDER_NAMES,order:BINDER_ORDER||[],hidden:BINDER_HIDDEN||[]},updated_by:auditActor()});
   logAudit('Renamed menus or binders','');
   closeAll(); renderNav(); render(); toast('Names saved — they show for everyone in the workspace.');
@@ -6615,7 +6766,7 @@ function renderNav(){
   const un=visThreads().reduce((a,t)=>a+t.unread,0);
   const mb=el('msgBadge'); if(mb){ mb.style.display=un?'grid':'none'; mb.textContent=un; }
   const nd=el('notifDot'); if(nd){ const rem=(typeof upcomingReminders==='function')?upcomingReminders().length:0;
-    nd.style.display=(un||rem||visIncidents().some(i=>i.status!=='Closed'&&!hid('incident',i.id))||myTasks().some(t=>t.stage==='Overdue'))?'block':'none'; }   // v12.22: hidden sample records do not count
+    nd.style.display=(un||rem||visIncidents().some(i=>i.status!=='Closed'&&!hid('incident',i.id))||myTasks().some(taskOver))?'block':'none'; }   // v12.22: hidden sample records do not count
 }
 let WEEKLY_CFG={metrics:['checklist','tasks','temps'],targets:{temps:7}};
 function weeklyCfgOpen(){
@@ -6657,8 +6808,18 @@ function weeklyMetricDefs(){
   return defs;
 }
 function lineCount(tid,qid){                                          // how many times this one line was recorded this week
-  return INSP_DONE.filter(x=>x.tid===tid&&x.date&&inWeek(x.date)&&x.responses&&x.responses[qid]&&
-    (x.responses[qid].v!=null||x.responses[qid].note)).length;
+  return INSP_DONE.filter(x=>{ if(x.tid!==tid||!x.date||!inWeek(x.date)) return false;
+    const r=inspAnswer(x,qid); return !!r&&((r.v!=null&&r.v!=='')||!!r.note); }).length;
+}
+/* v12.42: a completed run keeps its answers as a list in question order (with each line's id since
+   v12.42); the count used to look them up by id in an object, so it was always 0 */
+function inspAnswer(x,qid){
+  const r=x&&x.responses; if(!r) return null;
+  if(!Array.isArray(r)) return r[qid]||null;
+  const hit=r.find(y=>y&&y.id===qid); if(hit) return hit;
+  if(r.some(y=>y&&y.id)) return null;
+  const t=inspTpl(x.tid), i=t?(t.questions||[]).findIndex(q=>q.id===qid):-1;
+  return i>=0?(r[i]||null):null;
 }
 /* v12.24: the rows of This week, shared by the sidebar and the home page's progress card */
 function weekRows(){
@@ -6775,6 +6936,17 @@ function famEmptyView(){
       The demo dashboard shows what a family member would see, with sample data.</div>
       <div style="display:flex;justify-content:center;gap:8px;margin-top:6px"><button class="btn navy sm" onclick="signIn('director')">Back to the director view</button></div></div></section>`;
 }
+/* v12.42: each role sees only its own pages. Search hits, notices, attachments and Ask's Go to buttons
+   could open a director page for staff (Documents, Templates, a colleague's staff file) or the staff
+   view of a client for a family member; the menu was the only thing that kept them apart. */
+const STAFF_NO=['team','trainhub','templates','forms','directory','changelog','stafffiles','compliance','billing','integrations','newclient','staffpage'];
+const FAMILY_OK=['home','calendar','docs','messages','profile','meds'];
+let ROLE_NOTE='';                                                      // v12.42: why the page asked for did not open
+function roleMayView(){
+  if(state.role==='family') return !state.client&&FAMILY_OK.includes(state.view);
+  if(state.role==='staff') return state.client?true:!STAFF_NO.includes(state.view);
+  return true;
+}
 function render(){
   const v = el('view');
   navRemember();
@@ -6786,6 +6958,11 @@ function render(){
   try{ docEditSync(); }catch(e){}                                    // template dragging follows page edit mode
   try{ renderNav(); }catch(e){}                                      // nav counts never go stale behind the page
   if(famEmpty()){ v.innerHTML=famEmptyView(); return; }              // v12.22
+  if(!roleMayView()){                                                // v12.42: a link to a page this role has no place on lands on home
+    const own=state.role==='staff'&&state.view==='staffpage'&&state.staffPage&&state.staffPage===meSid();
+    state.client=null; state.view=own?'profile':'home';
+    if(!own) ROLE_NOTE=state.role==='family'?'That page is for the care team.':'That page is limited to the director.';
+  }
   if(state.client){ v.innerHTML = backBar()+viewClient(state.client); if(typeof layoutApply==='function') layoutApply(); if(typeof clientEditGate==='function') clientEditGate(); if(typeof rowDragWire==='function') rowDragWire(); if(typeof mobileTables==='function') mobileTables(); return; }
 
   const map = {
@@ -6796,6 +6973,7 @@ function render(){
     acct:viewAccountability, profile:viewProfile
   };
   v.innerHTML = (state.view==='home'?'':backBar()) + (map[state.view]||viewHome)();
+  if(ROLE_NOTE){ v.insertAdjacentHTML('afterbegin',`<div class="sec-note role-note" role="status" style="margin-bottom:14px"><span>!</span><div><b>${esc(ROLE_NOTE)}</b>You are on your own home page instead.</div></div>`); ROLE_NOTE=''; }   // v12.42: once
   if(typeof layoutApply==='function') layoutApply();
   if(typeof clientEditGate==='function') clientEditGate();
   if(typeof rowDragWire==='function') rowDragWire();
@@ -6853,7 +7031,8 @@ function mobileIsPhone(){ try{ return window.matchMedia('(max-width:900px)').mat
 function mobileTables(){
   const root=el('view'); if(!root) return;
   root.querySelectorAll('.mcards').forEach(n=>n.remove());
-  root.querySelectorAll('table.tb').forEach(t=>{ t.style.display=''; });
+  root.querySelectorAll('table.tb').forEach(t=>{ t.style.display='';
+    t.classList.toggle('tb-narrow',Math.max(0,...[...t.rows].map(r=>r.cells.length))<3); });   // v12.42
   if(!mobileIsPhone()) return;
   MTAB=[];
   root.querySelectorAll('table.tb').forEach(t=>{
@@ -6905,9 +7084,10 @@ function mtabOpen(i){
   const r=MTAB[i]; if(!r) return;
   const title=(r.cells[0]||'').replace(/<[^>]+>/g,' ').trim().slice(0,60)||'Details';
   const body=r.cells.map((c,ci)=>{
-    const label=r.heads[ci]||'';
+    const label=(r.heads[ci]||'').replace(/[↕↑↓▲▼⇅]/g,'').trim();   // v12.42: no sort arrows
     const val=String(c||'').trim();
     if(!val||!val.replace(/<[^>]+>/g,'').trim()&&!/<(img|input|button|svg)/i.test(val)) return '';
+    if(!label&&/^[\s›»>]*$/.test(val.replace(/<[^>]+>/g,''))&&!/<(input|button)/i.test(val)) return '';   // v12.42: the row's › is the Open button
     return `<div class="mrow"><div class="mk">${esc(label||' ')}</div><div class="mv">${val}</div></div>`;
   }).join('');
   const act=r.tr&&r.tr.getAttribute('onclick');
@@ -7872,7 +8052,7 @@ function attentionItems(){
   APPTS.filter(a=>calMine(a)&&a.flag&&a.date>=T&&cl.includes(a.cid)&&client(a.cid)&&(!state.hideSample||!a._seed)).forEach(a=>out.push({k:'warn',ic:attnIcon(/result|lab|inr|blood/i.test(a.flag)?'review':/plan|renew|expir|annual/i.test(a.flag)?'renewal':'flag'),
   col:attnColor(/result|lab|inr|blood/i.test(a.flag)?'review':/plan|renew|expir|annual/i.test(a.flag)?'renewal':'flag'),t:esc(a.flag),s:`${(client(a.cid)||{}).uci||''} · ${a.title} · ${relDay(a.date)} ${hm12(a.time)}`,a:'Open appointment',go:()=>openAppt(a.id)}));
   if(state.role!=='family'){
-    TASKS.filter(t=>t.stage==='Overdue'&&staff(t.sid)&&(!state.hideSample||!t._seed)).forEach(t=>out.push({k:'bad',ic:attnIcon('task'),col:attnColor('task'),t:`Overdue task — ${t.title}`,s:`Assigned to ${(staff(t.sid)||{}).init||''} · due ${relDay(t.due)}`,a:'Open task',go:()=>openTask(t.id)}));
+    myTasks_all().filter(t=>taskOver(t)&&staff(t.sid)&&(!state.hideSample||!t._seed)).forEach(t=>out.push({k:'bad',ic:attnIcon('task'),col:attnColor('task'),t:`Overdue task — ${t.title}`,s:`Assigned to ${(staff(t.sid)||{}).init||''} · due ${relDay(t.due)}`,a:'Open task',go:()=>openTask(t.id)}));
     APPTS.filter(a=>a.date===T&&a.ride===''&&client(a.cid)&&calMine(a)&&(!state.hideSample||!a._seed)).forEach(a=>out.push({k:'warn',ic:attnIcon('ride'),col:attnColor('ride'),t:`No ride arranged — ${a.title}`,s:`${(client(a.cid)||{}).uci||''} · today at ${hm12(a.time)} · ${a.loc}`,a:'Open appointment',go:()=>openAppt(a.id)}));
     if(state.role==='staff'){
       trainPending(meSid()).t.forEach(t=>out.push({k:'info',ic:attnIcon('training'),col:attnColor('training'),t:`Training due — ${t.n}`,s:`${t.mins} minutes${t.due?' · due '+t.due:''}`,a:'Start course',go:()=>go('training')}));
@@ -8023,7 +8203,7 @@ function hmData(){
 function hmWeekRows(){ try{ return weekRows(); }catch(e){ return []; } }
 function hmTile(id,d){
   const r=hmRole(), open=myTasks().filter(t=>t.stage!=='Done');
-  if(id==='tasks'){ const od=open.filter(t=>t.stage==='Overdue'||t.due<T).length, dt=open.filter(t=>t.due===T).length;
+  if(id==='tasks'){ const od=open.filter(taskOver).length, dt=open.filter(t=>t.due===T).length;
     return {lb:HM_TILE_NAME.tasks,ic:'check',vl:open.length,sub:od?od+' overdue':dt?dt+' due today':'None overdue',dot:od||dt?'warn':'',go:"go('tasks')"}; }
   if(id==='staff'){ const n=shiftsNow().length, tot=visShifts().length;
     return {lb:HM_TILE_NAME.staff,ic:'users',vl:n,of:tot?'of '+tot+' today':'',sub:tot?(d.change?'Next change at '+hm12(d.change):'No more changes today'):'No shifts scheduled',go:"go('team')"}; }
@@ -8222,8 +8402,8 @@ function hmSecComing(){
 function hmSecMyTasks(){
   const ts=myTasks().filter(t=>t.stage!=='Done').slice(0,5);
   return `<section class="hm-card" data-hm="mytasks"><div class="hm-ch"><h2>Your tasks</h2><a href="#" class="hm-link" onclick="event.preventDefault();go('tasks')">See all${hmI('chev',16)}</a></div>
-    ${ts.length?`<ul class="hm-up">${ts.map(t=>`<li onclick="openTask('${t.id}')" role="button" tabindex="0"><span class="hm-kic" style="background:${t.stage==='Overdue'?'#FBE9E6':'#FBEFD9'};color:${t.stage==='Overdue'?'#A3261B':'#8A5300'}">${hmI('check',18)}</span>
-      <span class="hm-what"><b>${esc(t.title)}</b><span>Due ${relDay(t.due)} · ${esc(t.stage)}</span></span></li>`).join('')}</ul>`:'<div class="hm-muted">No open tasks.</div>'}</section>`;
+    ${ts.length?`<ul class="hm-up">${ts.map(t=>`<li onclick="openTask('${t.id}')" role="button" tabindex="0"><span class="hm-kic" style="background:${taskOver(t)?'#FBE9E6':'#FBEFD9'};color:${taskOver(t)?'#A3261B':'#8A5300'}">${hmI('check',18)}</span>
+      <span class="hm-what"><b>${esc(t.title)}</b><span>Due ${relDay(t.due)} · ${esc(taskStageShown(t))}</span></span></li>`).join('')}</ul>`:'<div class="hm-muted">No open tasks.</div>'}</section>`;
 }
 function hmSecAsk(){
   const sug=hmRole()==='family'?['When is the next appointment?','What changed today?']:hmRole()==='staff'?['What do I do if a client refuses a medication?','What is due on my shift?']
@@ -8559,7 +8739,17 @@ function autoFileLog(folderKey, name, sub, msg, subBinder, opts){ /* v11.6: comp
   if(msg) toast(msg);
   return item.fid||null;
 }
-function chkSave(){ sbUpsert('np_demo_program',{key:'weekly',value:{map:WEEKLY},updated_by:auditActor()}); }
+/* v12.42: the built-in sample records (made up) stay out of a real team's saved settings: a map keyed
+   by sample clients or appointments leaves those keys out, a list of people leaves the sample staff out.
+   The samples themselves are part of the page, so nothing is lost on a reload. */
+function noSeedKeys(map,kind){
+  if(!map||typeof map!=='object'||!realSession()) return map;
+  const s=(SAMPLE[kind]||[]).map(String), out={};
+  Object.keys(map).forEach(k=>{ if(!s.includes(String(k))) out[k]=map[k]; });
+  return out;
+}
+function noSeedPeople(a){ const s=(SAMPLE.staff||[]).map(String); return realSession()&&Array.isArray(a)?a.filter(x=>!s.includes(String(x))):a; }
+function chkSave(){ sbUpsert('np_demo_program',{key:'weekly',value:{map:noSeedKeys(WEEKLY,'client')},updated_by:auditActor()}); }
 function wkEdit(cid,i){
   const it=(WEEKLY[cid]||[])[i]; if(!it) return;
   openModal('Rename checklist item',`
@@ -9456,7 +9646,8 @@ function notifyRule(ev,title,body,opts){
   const r=ruleOf(ev); if(!r.who.length) return;
   let all=r.who.includes('all'), dir=r.who.includes('director');
   let sids=all?STAFF.filter(st=>!hid('staff',st.id)).map(st=>st.id):r.who.filter(x=>x!=='director'&&x!=='all');
-  if(opts&&typeof opts.canSee==='function'){ if(all){ all=false; dir=true; } sids=sids.filter(opts.canSee); }   // v12.20: one notice each, to those allowed to see it
+  if(opts&&typeof opts.canSee==='function'){ if(all){ all=false; dir=true; } sids=sids.filter(opts.canSee); }
+  if(opts&&opts.about&&all){ all=false; dir=true; sids=opts.told?[]:[opts.about]; }   // v12.42: about one person: them and the directors, not every staff member   // v12.20: one notice each, to those allowed to see it
   /* v12.13: "Director" means the directors only (it used to be saved for everyone, so staff saw it),
      and "All staff" is one notice for everyone rather than one each plus a copy */
   if(r.portal){                                                       // v12.20: the portal itself is a channel that can be turned off
@@ -9778,7 +9969,7 @@ let PROG_NOTES={
     {by:'N. Harding',at:'3 days ago',t:'Weight stable at monthly check. No changes to diet order.',rev:true}
   ]
 };
-function noteSave(){ sbUpsert('np_demo_program',{key:'prognotes',value:{map:PROG_NOTES},updated_by:auditActor()}); noteDaysSave(); }
+function noteSave(){ sbUpsert('np_demo_program',{key:'prognotes',value:{map:noSeedKeys(PROG_NOTES,'client')},updated_by:auditActor()}); noteDaysSave(); }
 /* v12.20: how many notes each client has on each of the last two weeks' days, and nothing else. The
    reminders workflow reads this instead of the notes, so no note text ever leaves the database. */
 function isoIn(ms,tz){ try{ return new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(ms)); }catch(e){ return iso(zOf(ms)); } }
@@ -10208,9 +10399,15 @@ function taskProgress(t){
   const subs=t.subs||[]; if(!subs.length) return null;
   return {done:subs.filter(x=>x.d).length,total:subs.length};
 }
+/* v12.42: a task is overdue once its due date has passed (nothing ever moved one to "Overdue" on its
+   own, so a late task never counted), and the "To do" filter means not started yet (new tasks are
+   saved as "Not started", which no filter choice matched) */
+function taskOver(t){ return !!t&&t.stage!=='Done'&&(t.stage==='Overdue'||(!!t.due&&t.due<T)); }
+function taskStageShown(t){ return taskOver(t)?'Overdue':t.stage; }
+function taskStageIs(t,s){ if(s==='Overdue') return taskOver(t); if(s==='To do') return t.stage==='Not started'||t.stage==='To do'; return t.stage===s; }
 function taskFiltered(list){
   const q=(state.taskQ||'').trim().toLowerCase();
-  let out=list.filter(t=>(!state.taskCat||t.cat===state.taskCat)&&(!state.taskWho||t.sid===state.taskWho)&&(!state.taskStage||t.stage===state.taskStage)
+  let out=list.filter(t=>(!state.taskCat||t.cat===state.taskCat)&&(!state.taskWho||t.sid===state.taskWho)&&(!state.taskStage||taskStageIs(t,state.taskStage))
     &&(!q||[t.title,t.cat,t.pri,t.stage,(staff(t.sid)||{}).name,(client(t.cid)||{}).uci,(t.notes||[]).map(n=>n.t||n).join(' ')]
         .some(f=>String(f||'').toLowerCase().includes(q))));
   const S=state.taskSort||'due', pr={High:0,Medium:1,Low:2};
@@ -10243,7 +10440,7 @@ function viewTasks(){
     <div class="card-b flush"><table class="tb">
       <thead><tr><th>Staff</th><th>Next due</th><th>Task</th><th>Open</th><th>Overdue</th><th>Progress</th></tr></thead>
       <tbody>${Object.entries(byStaff).map(([sid,ts])=>{
-        const o=ts.filter(t=>t.stage!=='Done'), d=o.filter(t=>t.due===T), ov=ts.filter(t=>t.stage==='Overdue');
+        const o=ts.filter(t=>t.stage!=='Done'), d=o.filter(t=>t.due===T), ov=ts.filter(taskOver);
         const pct=Math.round((ts.length-o.length)/ts.length*100);
         return `<tr class="click" onclick="filterStaffTasks('${sid}')">
           <td><div class="tb-name">${stAv(staff(sid))}<div><div>${staff(sid).init}</div><div class="tiny muted">${esc(staff(sid).role)}</div></div></div></td>
@@ -10295,7 +10492,7 @@ function viewTasks(){
           <td class="muted">${t.cid&&client(t.cid)?esc(client(t.cid).uci):'—'}</td>
           <td><span class="spill" style="${tint(catColor(t.cat))}">${t.cat||'—'}</span></td>
           <td>${duePill(t.due)}</td>
-          <td><span class="spill" style="${tint(stageColor(t.stage))}">${t.stage}</span></td>
+          <td><span class="spill" style="${tint(stageColor(taskStageShown(t)))}">${taskStageShown(t)}</span></td>
           <td><span class="spill" style="${tint(priColor(t.pri))}">${t.pri}</span></td>
         </tr>`).join('')}</tbody></table></div>
     ${pager(taskFiltered(open).length,'open')}
@@ -10312,7 +10509,7 @@ function filterStaffTasks(sid){
   const row=t=>`<div class="docrow" style="cursor:pointer" onclick="closeAll();openTask('${t.id}')">
     <div class="di">${t.stage==='Done'?'✓':'☑'}</div>
     <div class="dt"><b>${esc(t.title)}</b><span>Due ${fmtDate(t.due)} · ${t.cat||'Agency'}${t.signoff?' · signed off by '+esc(t.signoff.by):''}</span></div>
-    <span class="pill ${t.stage==='Done'?'ok':t.stage==='Overdue'?'bad':'info'}">${t.stage}</span>
+    <span class="pill ${t.stage==='Done'?'ok':taskOver(t)?'bad':'info'}">${taskStageShown(t)}</span>
     ${state.role==='director'&&t.stage!=='Done'?`<button class="btn ghost sm" onclick="event.stopPropagation();removeTask('${t.id}',false)" title="Remove">✕</button>`:''}</div>`;
   openDrawer(esc(staff(sid).name),`${esc(staff(sid).role)} · ${esc(staff(sid).home)}`,`
     <section class="card"><div class="card-h"><h2>Open tasks <span class="pill info">${TASKS.filter(t=>t.sid===sid&&t.stage!=='Done').length}</span></h2><div class="sub">Click any task to open it</div>
@@ -10786,9 +10983,10 @@ function obShare(){
   const lid=window._obList||(el('obList')&&el('obList').value)||'';
   const l=OB_LISTS.find(x=>x.id===lid)||OB_LISTS[0];
   const steps=l?(l.steps||[]):OB_MASTER.filter(o=>!hid('obitem',o.t));
-  OB_ASSIGN[sid]=steps.map(o=>({t:o.t,link:o.link||'',note:o.note||'',list:(l&&l.name)||'',d:0}));
+  { const had=(OB_ASSIGN[sid]||[]).slice();                          // v12.42: a second checklist adds to the first, ticks kept
+    OB_ASSIGN[sid]=had.concat(steps.filter(o=>!had.some(h=>h.t===o.t)).map(o=>({t:o.t,link:o.link||'',note:o.note||'',list:(l&&l.name)||'',d:0}))); }
   obSave();
-  notifyRule('onboard','Onboarding checklist shared',`${st.name} · ${OB_ASSIGN[sid].length} items`);
+  notifyRule('onboard','Onboarding checklist shared',`${st.name} · ${OB_ASSIGN[sid].length} items`,{about:sid,told:1});
   sbPush('np_demo_notifications',{title:'Onboarding checklist shared',body:`${OB_ASSIGN[sid].length} items to complete`,kind:'onboard',for_staff:sid});
   logAudit('Shared onboarding checklist',st.name);
   closeAll(); render(); toast('Checklist shared with '+st.name.split(' ')[0]+'.');
@@ -10809,7 +11007,7 @@ function obCard(sid){
       <div class="cb ${o.d?'on':''}">✓</div><div class="ct ${o.d?'done':''}">${esc(o.t)}${o.link?` <a href="${esc(o.link)}" target="_blank" onclick="event.stopPropagation()" class="tiny" style="color:var(--navy);font-weight:700">↗ link</a>`:''}${o.by?` <span class="tiny muted">· ${esc(o.by)}</span>`:''}</div>
     </div>`).join('')}</div></section>`;
 }
-function guidesSave(){ sbUpsert('np_demo_program',{key:'guides',value:{items:GUIDES},updated_by:auditActor()}); }
+function guidesSave(){ sbUpsert('np_demo_program',{key:'guides',value:{items:GUIDES.map(g=>Object.assign({},g,{ack:noSeedPeople(g.ack||[])}))},updated_by:auditActor()}); }
 function meSid(){
   const em=String(AUTH.email||'').toLowerCase();
   const b=USERS[em]||(realSession()?null:USERS[String(ONB.email||'').toLowerCase()]);   // v12.13: a signed-in account is only ever itself
@@ -10866,6 +11064,7 @@ async function guideAckMe(gi){
     if(!ok) return toast('Your acknowledgement did not save \u2014 check your connection and try again.');
     if(!g.ack.includes(sid)) g.ack.push(sid);
   } else { g.ack.push(sid); guidesSave(); }
+  notifyRule('guideack','Guide acknowledged',`${(staff(sid)||{}).name||sid} · ${g.t}`);   // v12.42: as when a director records it
   logAudit('Acknowledged readiness guide',g.t); toast('Acknowledged — thank you.');
   render();
 }
@@ -10961,10 +11160,10 @@ function staffPageBody(sid){
         ${state.role==='director'?`<button class="btn ghost sm" title="Remove credential" onclick="credDel('${sid}',${ci})">✕</button>`:''}</td></tr>`).join('')||'<tr><td class="empty">No credentials on file.</td></tr>'}
       </tbody></table>
       <div class="tiny muted" style="padding:10px 18px">Anything expiring within 90 days goes out in the Monday reminder email.</div></div></section>
-    <section class="card" id="sfTasks"><div class="sec-head soft-blue"><h2>Open tasks</h2><span class="hd-n ${tasks.some(t=>t.stage==='Overdue')?'rose':'blue'}">${tasks.length}</span><p>assigned to ${esc(st.name.split(' ')[0])}</p></div>
+    <section class="card" id="sfTasks"><div class="sec-head soft-blue"><h2>Open tasks</h2><span class="hd-n ${tasks.some(taskOver)?'rose':'blue'}">${tasks.length}</span><p>assigned to ${esc(st.name.split(' ')[0])}</p></div>
       <div class="card-b flush">${tasks.map(t=>`<div class="docrow" style="cursor:pointer" onclick="closeAll();openTask('${t.id}')">
-        <div class="di">☑</div><div class="dt"><b>${esc(t.title)}</b><span>${esc(t.cat||'')} · due ${fmtDate(t.due)} · ${t.stage}</span></div>
-        ${t.stage==='Overdue'?'<span class="pill bad">Overdue</span>':''}</div>`).join('')||'<div class="empty">Nothing open.</div>'}</div></section>
+        <div class="di">☑</div><div class="dt"><b>${esc(t.title)}</b><span>${esc(t.cat||'')} · due ${fmtDate(t.due)} · ${taskStageShown(t)}</span></div>
+        ${taskOver(t)?'<span class="pill bad">Overdue</span>':''}</div>`).join('')||'<div class="empty">Nothing open.</div>'}</div></section>
     <section class="card" id="sfShifts"><div class="sec-head soft-sage"><h2>Shifts this week</h2><span class="hd-n sage">${shifts.length}</span><p>next seven days · from the calendar</p>
       ${state.role==='director'?`<div class="right"><button class="btn ghost sm" onclick="openShiftForm(null,'${sid}')">＋ Add shift</button></div>`:''}<h2 style="display:none"></h2></div>
       <div class="card-b flush"><table class="tb"><tbody>
@@ -10996,6 +11195,7 @@ function addCredential(sid){
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveCredential('${sid}')">Save</button>`);
 }
 function saveCredential(sid){
+  if(state.role==='family'||(state.role==='staff'&&sid!==meSid())) return toast('Only a director can change a colleague\u2019s record.');   // v12.42
   const n=el('crName').value.trim(); if(!n) return toast('Give the credential a name.');
   const exp=el('crExp').value;
   const row=exp?credRowFromDb({cred_name:n,expires_on:exp}):{c:n,d:'On file',s:'ok'};
@@ -11033,7 +11233,7 @@ function assignPicker(sid){
   const avail=TRAINING.filter(t=>!hid('course',t.id));
   openModal('Assign a course — '+esc(stName(staff(sid))),
     avail.length?`
-      <div class="tiny muted" style="margin-bottom:8px">Pick what this person needs. It lands on their task list, due in two weeks.</div>
+      <div class="tiny muted" style="margin-bottom:8px">Pick what this person needs. It shows on their My shift page under Training to finish, and they are told.</div>
       ${avail.map(t=>`<label class="checkrow" style="cursor:pointer">
         <input type="checkbox" data-course="${t.id}" ${(t.asg||[]).includes(sid)?'checked':''}>
         <span>${esc(t.n)}${t.req?' <span class="pill neutral">Required</span>':''}<span class="tiny muted"> · ${t.mins} min</span></span></label>`).join('')}`
@@ -11050,7 +11250,7 @@ function assignPickerSave(sid){
     if(!cb.checked&&has){ t.asg=(t.asg||[]).filter(x=>x!==sid); removed++; }
   });
   trainSave();
-  if(added) notifyRule('training','Training assigned',`${stName(staff(sid))} · ${added} course${added>1?'s':''}`);
+  if(added) notifyRule('training','Training assigned',`${stName(staff(sid))} · ${added} course${added>1?'s':''}`,{about:sid,told:1});
   logAudit('Updated course assignments',`${(staff(sid)||{}).init||sid} · +${added} / -${removed}`);
   closeAll(); render();
   toast(added||removed?`Updated — ${added} assigned, ${removed} removed.`:'No changes.');
@@ -11069,10 +11269,11 @@ function obAssignPicker(sid){
 }
 function obAssignSave(sid){
   const picked=[...document.querySelectorAll('[data-ob]')].filter(cb=>cb.checked).map(cb=>cb.getAttribute('data-ob'));
-  const prev=OB_ASSIGN[sid]||[];
-  OB_ASSIGN[sid]=picked.map(t=>{ const was=prev.find(p=>p.t===t); return was||{t,link:(OB_MASTER.find(o=>o.t===t)||{}).link||'',d:0}; });
+  const prev=OB_ASSIGN[sid]||[], offered=[...document.querySelectorAll('[data-ob]')].map(cb=>cb.getAttribute('data-ob'));
+  OB_ASSIGN[sid]=prev.filter(p=>!offered.includes(p.t)).concat(   // v12.42: steps from a shared checklist that the picker does not list stay
+    picked.map(t=>{ const was=prev.find(p=>p.t===t); return was||{t,link:(OB_MASTER.find(o=>o.t===t)||{}).link||'',d:0}; }));
   obSave();
-  notifyRule('onboard','Onboarding checklist shared',`${stName(staff(sid))} · ${picked.length} items`);
+  notifyRule('onboard','Onboarding checklist shared',`${stName(staff(sid))} · ${picked.length} items`,{about:sid,told:1});
   pingStaff(sid,'Onboarding checklist shared',`${picked.length} items to complete`);
   logAudit('Shared onboarding steps',`${(staff(sid)||{}).init||sid} · ${picked.length}`);
   closeAll(); render(); toast(`Shared ${picked.length} step${picked.length===1?'':'s'}.`);
@@ -11090,7 +11291,7 @@ function assignCourse(sid,cn){
   const nt={id:'t'+Date.now(),title:cn,sid,cid:null,due:iso(addDays(TODAY,14)),stage:'Not started',pri:'Medium',cat:'Training',notes:[],subs:[]};
   TASKS.push(nt);
   sbPush('np_demo_tasks',{id:nt.id,title:cn,sid,cid:null,due:nt.due,stage:'Not started',pri:'Medium',category:'Training'});
-  notifyRule('training','Training assigned',`${staff(sid).name} · ${cn}`);
+  notifyRule('training','Training assigned',`${staff(sid).name} · ${cn}`,{about:sid});
   logAudit('Assigned training',`${staff(sid).name} · ${cn}`); toast(cn+' assigned as a training task, due in 2 weeks.');
 }
 function staffPhotoPick(sid){
@@ -11567,6 +11768,8 @@ function delClient(cid){
         if(f.refs.length!==n0){ ch=true; if(!f.refs.length) delete FILED_DOCS[f.id]; } });
       if(ch) filedSave(); }catch(e){}
     delete WEEKLY[cid]; delete CLIENT_NOTES[cid];
+    { delete PROG_NOTES[cid]; delete CLIENT_DIR[cid];                 // v12.42: "everything on their file goes with them", in the saved settings too
+      try{ chkSave(); noteSave(); goalsSave(); clientDirSave(); sbUpsert('np_demo_program',{key:'clientnotes',value:{map:noSeedKeys(CLIENT_NOTES,'client')},updated_by:auditActor()}); }catch(e){} }
     (async()=>{                                    // v12.15: everything filed under the client goes first, then the client
       const q='cid=eq.'+encodeURIComponent(cid);   // (the database refuses to delete a client who still has appointments or checklist ticks)
       await Promise.all(['np_demo_appointments','np_demo_client_notes','np_demo_checklist_logs','np_demo_meds','np_demo_med_logs',
@@ -11682,9 +11885,11 @@ function clearChangeLog(){
     render(); toast('Change log cleared.');
   },'Clear log');
 }
-function removeTask(id,reopenStaff){
+function removeTask(id,reopenStaff,sure){
   const i=TASKS.findIndex(x=>x.id===id); if(i<0) return;
-  const t=TASKS[i]; TASKS.splice(i,1);
+  const t=TASKS[i];
+  if(!sure) return askDelete('Delete this task?',esc(t.title)+(staff(t.sid)?' · '+esc(staff(t.sid).name):''),()=>removeTask(id,reopenStaff,1),'Delete task');   // v12.42: asks first, like every other delete
+  TASKS.splice(i,1);
   sbDel('np_demo_tasks','id=eq.'+encodeURIComponent(id));
   delMark('task',id);
   logAudit('Deleted task',`${t.title} · ${staff(t.sid)?staff(t.sid).init:''}`);
@@ -11749,6 +11954,7 @@ function openStaff(sid){
 /* ══════════════ MESSAGES ══════════════ */
 function viewMessages(){
   const th=visThreads().find(t=>t.id===state.thread)||visThreads()[0]||{id:'',who:'',msgs:[],unread:0};
+  if(th.id&&th.id===state.thread&&th.unread) t_unread(th.id);        /* v12.42: the conversation you were last on is on screen again, so it is read (the count stayed until it was clicked in the list) */
   if(th.id) state.thread=th.id;                                      // v12.13: what is on screen is what a reply goes to
   return `
   <div class="page-h">
@@ -11770,7 +11976,7 @@ function viewMessages(){
         <div class="card-h"><h2>${esc(th.sub)}</h2><div class="sub">${esc(threadView(th).title)}${threadView(th).label?' · '+esc(threadView(th).label):''}<span id="msgHeadPres">${msgHeadPres(th)}</span></div></div>
         <div class="chat-log">
           ${th.msgs.map(m=>`<div class="msg ${msgIsMe(m)?'me':'bot'}">${esc(m.t)}
-            ${m.att?`<div style="margin-top:6px"><button class="btn ghost sm" onclick="askOpenDoc('${m.att.id}')">◫ ${esc(m.att.name)}</button></div>`:''}
+            ${m.att&&attName(m.att)?`<div style="margin-top:6px"><button class="btn ghost sm" onclick="askOpenDoc('${esc(String(m.att.id).replace(/[\\'"]/g,''))}')">◫ ${esc(attName(m.att))}</button></div>`:''}
             <div style="font-size:11px;opacity:.65;margin-top:4px">${esc(m.w)} · ${esc(m.at)}</div></div>`).join('')}
         </div>
         ${state.msgAtt?`<div class="tiny" style="padding:6px 14px;color:var(--muted)">Attaching: <b>${esc(state.msgAtt.name)}</b> <button class="btn ghost sm" onclick="state.msgAtt=null;render()">✕</button></div>`:''}
@@ -11808,15 +12014,45 @@ function sendMsg(){
   logAudit('Sent message',`${th.who} · ${askTr(v,60)}`);
   render(); toast('Message sent and logged to the client record.');
 }
+/* v12.42: what can go with a message, each by a reference the other person's portal can open: the blank forms
+   (and a template's fill-in copy, as the template), plus the team's filed documents and uploads. It offered only
+   the blank forms and forms open in this browser, and a template's fill-in copy reached the other person with no
+   attachment. Staff offer the filed documents of the clients they may open and their own. */
+function attKey(s){ return encodeURIComponent(s).replace(/'/g,'%27'); }
+function attDoc(id){
+  id=String(id||''); if(!id) return null;
+  const d=docById(id);
+  if(d) return {id:d.id,name:d.name,key:d.key,tpl:d.tpl||null};
+  if(id.startsWith('tpl-')){ const t=tplById(id.slice(4)); return t?{id,name:t.name,key:t.dest||'Agency',tpl:t.id}:null; }
+  if(id.startsWith('fd:')){ const f=FILED_DOCS[id.slice(3)]; return f?{id,name:f.file||f.name,key:f.binder,fid:f.id}:null; }
+  if(id.startsWith('cp:')){ let v=''; try{ v=decodeURIComponent(id.slice(3)); }catch(e){ return null; }
+    const i=v.indexOf('|'), k=v.slice(0,i), n=v.slice(i+1), fl=(COMPLETED[k]||[]).find(x=>x.n===n);
+    return fl?{id,name:fl.n,key:k,comp:fl}:null; }
+  return null;
+}
+function attName(a){ return (a&&(a.name||(attDoc(a.id)||{}).name))||''; }
+function attChoices(){
+  const out=EXAMPLE_DOCS.concat(Object.values(USER_DOCS)).map(d=>({id:d.id,l:`${d.name} \u2014 ${FOLDER_NAMES[d.key]||d.key}`,g:'Blank forms'}));
+  if(state.role==='family') return out;
+  const dir=state.role==='director', mine=meSid(), cl=visibleClients().map(c=>c.id);
+  Object.values(FILED_DOCS).forEach(f=>{ if(!f||!f.id) return;
+    if(!dir&&!(f.cid&&cl.includes(f.cid))&&!(mine&&f.staff===mine)) return;
+    const c=f.cid&&client(f.cid);
+    out.push({id:'fd:'+f.id,l:`${f.file||f.name} \u2014 ${FOLDER_NAMES[f.binder]||f.binder||''}${f.sb?' / '+f.sb:''}${c?' \u00b7 '+c.uci:''}${filedIsFinal(f)?'':' \u00b7 draft'}`,g:'Filed documents'}); });
+  if(dir) Object.keys(COMPLETED).forEach(k=>(COMPLETED[k]||[]).forEach(fl=>{
+    if(!fl||!(fl.path||fl.url)||hid('completed',k+'|'+fl.n)) return;    // the uploads (a filed form is in the list above)
+    out.push({id:'cp:'+attKey(k+'|'+fl.n),l:`${fl.n} \u2014 ${FOLDER_NAMES[k]||k}${fl.sb?' / '+fl.sb:''}`,g:'Filed documents'}); }));
+  return out;
+}
 function msgAttach(){
-  const all=EXAMPLE_DOCS.concat(Object.values(USER_DOCS));
+  const all=attChoices(), grp=g=>all.filter(x=>x.g===g);
   openModal('Attach a document',`
     <div class="sec-note" style="margin-top:0"><span>🔒</span><div><b>Shared by reference</b>The recipient sees the document name and can open it in the portal — nothing leaves the system.</div></div>
-    <div class="field"><label>Document</label><select class="inp" id="msgDoc">${all.map(d=>`<option value="${d.id}">${esc(d.name)} — ${esc(FOLDER_NAMES[d.key]||d.key)}</option>`).join('')||'<option value="">No documents yet</option>'}</select></div>`,
+    <div class="field"><label>Document</label><select class="inp" id="msgDoc" data-nofill="1">${all.length?['Blank forms','Filed documents'].map(g=>grp(g).length?`<optgroup label="${g}">${grp(g).map(x=>`<option value="${esc(x.id)}">${esc(x.l)}</option>`).join('')}</optgroup>`:'').join(''):'<option value="">No documents yet</option>'}</select></div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="msgAttachPick()">Attach</button>`);
 }
 function msgAttachPick(){
-  const id=el('msgDoc').value; const d=docById(id); if(!d) return closeAll();
+  const id=el('msgDoc').value; const d=attDoc(id); if(!d) return closeAll();   // v12.42
   state.msgAtt={id:d.id,name:d.name};
   const draft=state._msgDraft||'';
   closeAll(); render();
@@ -11833,8 +12069,8 @@ function openNewThread(){
                     :(state.role!=='director'?[{v:'director:',l:'The director'}]:[]))
       : (state.role!=='director'?[{v:'director:1',l:ME.director.name+' · '+ME.director.role}]:[])),
     ...visibleStaff().filter(x=>!(state.role==='staff'&&(real?x.id===mySid:x.name===ME.staff.name))).map(x=>({v:'staff:'+x.id,l:x.name+' · '+x.role})),
-    ...(real?[]:[{v:'guardian:c1',l:'Guardian on file · client family'}]),
-    ...HOMES.filter(h=>h&&h!=='All homes').map(h=>({v:'group:'+h,l:h+' team · group'}))];
+    ...(real||state.role==='family'?[]:[{v:'guardian:c1',l:'Guardian on file · client family'}]),   // v12.42: a family member never writes to themselves
+    ...(state.role==='family'?[]:HOMES.filter(h=>h&&h!=='All homes').map(h=>({v:'group:'+h,l:h+' team · group'})))];   // ...or to every house's team
   if(!people.length) return toast('There is nobody to message yet — add staff or invite a director first.');
   try{ const tp=teamPeople(); people.forEach(p=>{ const x=tp.find(q=>q.key===p.v); if(x&&x.st==='on') p.l+=' · Online'; }); }catch(e){}   // v12.36
   openModal('New message',`
@@ -12401,7 +12637,7 @@ const CHG_GROUPS={
 function chgFilter(){ return state.chgTab||'all'; }
 function chgRows(){
   const k=chgFilter(); const re=CHG_GROUPS[k];
-  let rows=AUDIT.filter(a=>k==='all'||(re instanceof RegExp && re.test((a.act||'')+' '+(a.obj||''))));
+  let rows=AUDIT.filter(a=>k==='all'||(re instanceof RegExp && re.test(a.act||'')));   // v12.42: by what was done (a message that says “form” landed in Documents)
   if(state.hideSample) rows=rows.filter(a=>!a._seed);
   const q=(state.chgQ||'').trim().toLowerCase();
   if(q) rows=rows.filter(a=>((a.act||'')+' '+(a.obj||'')+' '+(a.who||'')).toLowerCase().includes(q));
@@ -12889,16 +13125,12 @@ function editPrefs(){
       <div class="field"><label>Date format</label>${fillSelect('pfDate','date format',['MMM d, yyyy','d MMM yyyy','MM/DD/YYYY','DD/MM/YYYY'],PREFS.dateFmt,{noAdd:true})}</div>
       <div class="field"><label>Time format</label>${fillSelect('pfTime','time format',['12-hour','24-hour'],PREFS.timeFmt,{noAdd:true})}</div>
     </div>
-    <div class="row2">
-      <div class="field"><label>Theme</label>${fillSelect('pfTheme','theme',['Light','Dark'],PREFS.theme,{noAdd:true})}</div>
-      <div class="field"><label>Language</label>${fillSelect('pfLang','language',['English (US)','English (UK)','Spanish','Tagalog'],PREFS.lang,{noAdd:true})}</div>
-    </div>
     <div class="tiny muted">Saved to your account — they follow you to any device, and each teammate keeps their own.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>
      <button class="btn navy" onclick="savePrefs()">Save</button>`);
 }
 function savePrefs(){
-  PREFS={dateFmt:el('pfDate').value,timeFmt:el('pfTime').value,theme:el('pfTheme').value,lang:el('pfLang').value};
+  PREFS=Object.assign({},PREFS,{dateFmt:el('pfDate').value,timeFmt:el('pfTime').value});   // v12.42: Theme and Language were never built, so they went
   userSetSave({prefs:PREFS}); if(!realSession()) prefsSave();          // v12.13: signed in, your preferences are yours alone
   logAudit('Updated preferences','');
   closeAll(); render(); toast('Preferences saved.');
@@ -13051,7 +13283,7 @@ function viewProfile(){
                : [['Email',state.role==='director'?((ONB.email||AUTH.email)?esc(ONB.email||AUTH.email)+' <button class="btn ghost sm" onclick="editEmail()">✎</button>':'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editEmail()">＋ Add email</button>'):state.role==='staff'?esc((ONB.email||AUTH.email)||'on file'):'guardian on file']]),
              ...(state.role==='director'?[[realSession()?'Team website':'Website',ONB.domain?`<a href="https://${esc(ONB.domain)}" target="_blank" style="color:var(--navy);font-weight:700">${esc(ONB.domain)}</a> <button class="btn ghost sm" onclick="editSite()">✎</button>`:'<span class="muted">Not provided</span> <button class="btn ghost sm" onclick="editSite()">＋ Add website</button>']]:[]),
              ['Role',esc(realSession()?((PERSON&&PERSON.title)||ME[state.role].role||ME[state.role].label||''):(ONB.roleTitle||ME[state.role].label||''))],
-             ['Phone','On file'],['Timezone',`${esc(tzEff().replace(/_/g,' '))}${TZ_FORCE?'':' (automatic)'} <button class="btn ghost sm" onclick="editTz()">✎</button>`],
+             ['Timezone',`${esc(tzEff().replace(/_/g,' '))}${TZ_FORCE?'':' (automatic)'} <button class="btn ghost sm" onclick="editTz()">✎</button>`],
              ['Permission',state.role==='director'?'Administrator — full control of the organization':state.role==='staff'?'Care staff — assigned clients only':'Family — one client only']]
             .map(([k,v])=>`<tr><td class="muted" style="width:110px">${k}</td><td>${v}</td></tr>`).join('')}
         </tbody></table></div>
@@ -13059,7 +13291,7 @@ function viewProfile(){
       <section class="card">
         <div class="card-h"><h2>Preferences</h2><div class="right"><button class="btn ghost sm" onclick="editPrefs()">✎ Edit</button></div></div>
         <div class="card-b flush"><table class="tb"><tbody>
-          ${[['Date format',PREFS.dateFmt||'MMM d, yyyy'],['Time format',PREFS.timeFmt||'12-hour'],['Theme',PREFS.theme||'Light'],['Language',PREFS.lang||'English (US)']]
+          ${[['Date format',PREFS.dateFmt||'MMM d, yyyy'],['Time format',PREFS.timeFmt||'12-hour']]
             .map(([k,v])=>`<tr><td class="muted" style="width:110px">${k}</td><td>${esc(v)}</td></tr>`).join('')}
         </tbody></table></div>
       </section>
@@ -13129,7 +13361,7 @@ function obStepsSave(){ sbUpsert('np_demo_program',{key:'onboarding',value:{step
 function obAdd(){ const v=(el('obNew').value||'').trim(); if(!v) return; ONBOARD.push(v); obStepsSave(); logAudit('Added onboarding step',v); render(); }
 function obDel(i){ const v=ONBOARD[i]; ONBOARD.splice(i,1); obStepsSave(); logAudit('Removed onboarding step',v); render(); }
 function obMove(i,dir){ const j=i+dir; if(j<0||j>=ONBOARD.length) return; const t=ONBOARD[i]; ONBOARD[i]=ONBOARD[j]; ONBOARD[j]=t; obStepsSave(); render(); }
-function trainSave(){ sbUpsert('np_demo_program',{key:'training',value:{courses:TRAINING,assign:TPL_ASSIGN},updated_by:auditActor()}); lsSet('np_training',JSON.stringify({courses:TRAINING,assign:TPL_ASSIGN})); }
+function trainSave(){ sbUpsert('np_demo_program',{key:'training',value:{courses:TRAINING.map(c=>Object.assign({},c,{asg:noSeedPeople(c.asg||[]),done:noSeedPeople(c.done||[])})),assign:TPL_ASSIGN},updated_by:auditActor()}); lsSet('np_training',JSON.stringify({courses:TRAINING,assign:TPL_ASSIGN})); }
 function loadProgram(){
   try{ const o=lsGet('np_onboard_steps'); if(o){ const a=JSON.parse(o); if(Array.isArray(a)&&a.length){ ONBOARD.length=0; a.forEach(x=>ONBOARD.push(x)); } } }catch(e){}
   try{ const t=lsGet('np_training'); if(t){ const d=JSON.parse(t)||{};
@@ -13339,7 +13571,7 @@ function renderInspRunner(){
 }
 function inspSnapshot(){ const t=inspTpl(inspRun.tid); const sc=inspScore(inspRun);
   return {tid:t.id, title:t.name, folder:t.folder, num:sc.num, den:sc.den, pct:sc.pct, by:actorName(), at:nowStamp(), date:T, obs:(inspRun&&inspRun.obs)||'',
-    responses:t.questions.map(q=>({label:q.label,type:q.type,v:(inspRun.resp[q.id]||{}).v||'',note:(inspRun.resp[q.id]||{}).note||''}))}; }
+    responses:t.questions.map(q=>({id:q.id,label:q.label,type:q.type,v:(inspRun.resp[q.id]||{}).v||'',note:(inspRun.resp[q.id]||{}).note||''}))}; }   // v12.42: each answer keeps its line's id
 function completeInspection(){
   const t=inspTpl(inspRun.tid);
   const missing=t.questions.filter(q=>q.req && !((inspRun.resp[q.id]||{}).v!=null));
@@ -14505,13 +14737,16 @@ let DOC_SIGS={};   // completed-form name -> {by, at}
 const FOLDER_NAMES={Agency:'Agency binder',Medical:'Medical binder',Daily:'Daily Logs binder',
   /* legacy keys — kept so older filed documents still show a label; folded into the three binders */
   Water:'Water temp logs',Attendance:'Attendance',Safety:'Health and safety',Compliance:'Compliance'};
+const FOLDER_STD=Object.assign({},FOLDER_NAMES);                     // v12.42: the standard names, for a field left blank
 const LEGACY_BINDERS={Water:{b:'Daily',sb:'Water Temp Logs'},Safety:{b:'Daily',sb:'Fire Drills & Safety'},Attendance:{b:'Daily',sb:'Attendance'},Compliance:{b:'Agency',sb:'SIR'}};
 function normBinder(key,sb){ const lg=LEGACY_BINDERS[key]; const b=lg?lg.b:key; return {b,sb:(typeof subAlias==='function'?subAlias(b,sb||(lg?lg.sb:'')):(sb||(lg?lg.sb:'')))}; }
 /* sub-binders mirror the physical binders' tab dividers */
 const DEFAULT_SUBS={
   Agency:['Face Sheet','Emergency Information','Insurance','Physical Report Community Care Facilities','IPP','Quarterly','SIR','Placement Packet','Grievance / Grievance Acknowledgement','Acknowledgement of Personal Rights / Exit Criteria / House Rules','HCBS Survey / Acknowledgement','Release of Information','Personal Property','Quality of Life Questionnaire','Rights of Individuals with Developmental Disabilities'],
   Medical:['Medication Reason For Use','Medical Professional Consult','Lab Works','Vaccines','Dental','Audiologist','Appointment Summary','Physician Visit','Medication Transfer Sheet','CDER','Weight','POLST'],
-  Daily:['MAR','Vital Signs','ADL','Daily Activity Log','Staff Notes','Central Storage','Medication Destruction Record']};
+  Daily:['MAR','Vital Signs','ADL','Daily Activity Log','Staff Notes','Central Storage','Medication Destruction Record',
+    /* v12.42: the drill, water temperature and attendance logs already file here (LEGACY_BINDERS), so they are tabs too */
+    'Fire Drills & Safety','Water Temp Logs','Attendance']};
 let SUB_BINDERS={};                                                 // binderKey -> [sub-binder names]
 function subBindersSave(){ sbUpsert('np_demo_program',{key:'subbinders',value:{map:SUB_BINDERS,alias:SUB_ALIAS},updated_by:auditActor()}); }
 function subsOf(key){ const own=SUB_BINDERS[key]; return (Array.isArray(own)?own:(typeof DEFAULT_SUBS!=='undefined'&&DEFAULT_SUBS[key])||[]).slice(); }
@@ -14607,7 +14842,7 @@ function bindersSave(){
 }
 /* each client keeps their own provider list — the directory tab of their binder */
 let CLIENT_DIR={};                                                   // cid -> [{n,role,phone,note}]
-function clientDirSave(){ sbUpsert('np_demo_program',{key:'clientdir',value:{map:CLIENT_DIR},updated_by:auditActor()}); }
+function clientDirSave(){ sbUpsert('np_demo_program',{key:'clientdir',value:{map:noSeedKeys(CLIENT_DIR,'client')},updated_by:auditActor()}); }
 function clientDirCard(c){
   const list=CLIENT_DIR[c.id]||[];
   return `<section class="card">
@@ -15181,7 +15416,7 @@ function docSave(id,asDraft,finalise){
     logAudit('Completed document',`${name} → ${FOLDER_NAMES[nb.b]||binder}${sub?' / '+sub:''}${cid?' + '+((client(cid)||{}).uci||'client file'):''}`);
     render();
     toast(`${finalise?'Signed and filed':'Draft saved'} into ${FOLDER_NAMES[nb.b]||binder}${sub?' / '+sub:''}${cid?' and '+((client(cid)||{}).uci||'the client')+'\u2019s file':''}${staffId?' and '+((staff(staffId)||{}).name||'the staff member')+'\u2019s file':''}${finalise?'':' \u2014 open it any time to carry on.'}`);
-  },{binder:d.key,client:true,extra:anyValue?'':'<div class="tiny muted" style="margin-bottom:8px">Nothing has been filled in yet — this will file an empty copy.</div>'});
+  },{binder:d.key,sub:/* v12.42: the template's own tab */normBinder(d.key,(tplById(d.tpl)||{}).sub||'').sb,client:true,extra:anyValue?'':'<div class="tiny muted" style="margin-bottom:8px">Nothing has been filled in yet — this will file an empty copy.</div>'});
   window._docFilled=filled;
 }
 function docFilledHtml(id){ return docSheet(id, EXAMPLE_VALUES[id]||{}); }
@@ -15783,8 +16018,9 @@ function signDoc(key,name){
     <div class="tiny muted">Your typed name, role and the date and time are recorded with the document and in the audit log. Once signed, the form is locked. Documents needing wet ink can still be printed for signature.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="signDocSave('${key}','${name.replace(/'/g,"\\'")}')">Sign document</button>`);
 }
-function signDocSave(key,name){ docAct('signed',name,FOLDER_NAMES[key]||key);
+function signDocSave(key,name){
   const by=el('sgName').value.trim(); if(!by) return toast('Type your full name to sign.');
+  docAct('signed',name,FOLDER_NAMES[key]||key);                     /* v12.42: only once there is a name (a refused try was logged as signed) */
   DOC_SIGS[name]={by, at:nowStamp(), folder:key};                   // v12.22: signed in this binder
   sbPush('np_demo_doc_signatures',{doc_name:name,folder:key,signed_by:by,signed_role:state.role});
   logAudit('Signed document',name);
@@ -15917,8 +16153,8 @@ function eraseAll(){
     await Promise.all(tables.filter(t=>!last.includes(t)).map(t=>sbDel('np_demo_'+t,wipeAll('np_demo_'+t)).catch(()=>false)));
     await Promise.all(last.map(t=>sbDel('np_demo_'+t,wipeAll('np_demo_'+t)).catch(()=>false)));
     await orgFilesDelete(_files);
-    try{ await sbDel('np_demo_program','key=not.in.(org,email,pilot,users,usersettings)'); }catch(e){}   // identity, agreement, everyone's accounts + personal settings/layouts survive
-    progForget(['org','email','pilot','users','usersettings']);      // v12.13: the rows written next start fresh
+    try{ await sbDel('np_demo_program','key=not.in.(org,email,pilot,users,usersettings,profile)'); }catch(e){}   // identity, agreement, everyone's accounts + personal settings/layouts survive; v12.42: and who set up the team
+    progForget(['org','email','pilot','users','usersettings','profile']);      // v12.13: the rows written next start fresh
     ['np_deleted','np_notif_prefs','np_training','np_onboard_steps','np_doc_activity'].forEach(k=>lsDel(k));
     try{ lsSet('np_hide_sample','1'); }catch(e){}
     [CLIENTS,STAFF,SHIFTS,TASKS,APPTS,INCIDENTS,DOCS,THREADS,WATERTEMP,FIREDRILLS,INSP_DONE,AUDIT,TEMPLATES5]
@@ -16031,7 +16267,8 @@ function resetWorkspace(mode){
     setTimeout(()=>location.reload(),300);
   }, empty?'Clear everything':'Restore sample data');
 }
-function delLoad(){ try{ DEL=JSON.parse(lsGet('np_deleted')||'{}')||{}; }catch(e){ DEL={}; } }
+function delLoad(){ if(DEMO_VIEW){ if(!DEL||typeof DEL!=='object') DEL={}; return; }   // v12.42: the demo starts from the samples on every load
+  try{ DEL=JSON.parse(lsGet('np_deleted')||'{}')||{}; }catch(e){ DEL={}; } }
 function delSave(){
   lsSet('np_deleted',JSON.stringify(DEL));
   sbUpsert('np_demo_program',{key:'deleted',value:DEL,updated_by:(typeof auditActor==='function'?auditActor():'director')});
@@ -18840,7 +19077,7 @@ function openGcalEvent(id){
 function openAppt(id){ if(String(id).startsWith('g_')){ return openGcalEvent(id); }
   const a=APPTS.find(x=>x.id===id), c=client(a.cid);
   const canEdit = state.role!=='family';
-  openDrawer(`${catGlyph(a.type,16)} ${esc(a.title)}`, `${esc((c||{}).uci||'')} · ${relDay(a.date)} at ${hm12(a.time)}`, `
+  openDrawer(`${catGlyph(a.type,16)} ${esc(a.title)}`, `${c?esc(c.uci)+' · ':(a.cid?'':'Whole team · ')}${relDay(a.date)} at ${hm12(a.time)}`, `
     ${a.flag?`<div class="sec-note" style="background:var(--warn-soft);border-color:#EBD7B2;color:#8A5A16;margin-bottom:14px"><span>⚑</span><div><b>Flagged for review</b>${esc(a.flag)}</div></div>`:''}
     ${a.cancelled?`<div class="sec-note" style="background:var(--cream);border-color:var(--line);color:#5C5A50;margin-bottom:14px"><span>✕</span><div><b>Canceled</b>${esc(a.cxBy||'')} — the record is kept for the client file.</div></div>`:''}
     ${canEdit&&!a.cancelled?`<section class="card"><div class="card-h"><h2>Reschedule</h2></div><div class="card-b">
@@ -18925,7 +19162,7 @@ function saveApptTime(id){
   if(!d||!t) return toast('Pick a date and a time.');
   a.date=d; a.time=t;
   sbPatch('np_demo_appointments',id,{appt_date:d,appt_time:t});
-  logAudit('Rescheduled appointment',`${(client(a.cid)||{}).uci} · ${a.title} → ${relDay(d)} ${hm12(t)}`);
+  logAudit('Rescheduled appointment',`${(client(a.cid)||{}).uci||'Whole team'} · ${a.title} → ${relDay(d)} ${hm12(t)}`);
   render(); openAppt(id);
   if(a.gid&&GCAL.connected){
     gcalUpdate(a).then(okd=>{ render(); toast(okd?`Moved to ${relDay(d).toLowerCase()} at ${hm12(t)} — Google Calendar updated too.`
@@ -18995,7 +19232,7 @@ function cancelAppt(id){
   a.cancelled=1; a.cxBy=`Canceled by ${meInit()} · just now`;
   sbPatch('np_demo_appointments',id,{cancelled:1,cx_by:a.cxBy});
   if(calSent(a.id)) n8nCal({event:'appointment.cancelled', id:a.id});   // v12.22: only one that was sent
-  logAudit('Canceled appointment',`${(client(a.cid)||{}).uci} · ${a.title}`);
+  logAudit('Canceled appointment',`${(client(a.cid)||{}).uci||'Whole team'} · ${a.title}`);
   render(); openAppt(id);
   if(a.gid&&GCAL.connected){
     gcalDelete(a).then(okd=>{ render(); toast(okd?'Appointment canceled and removed from your Google Calendar.'
@@ -19007,7 +19244,7 @@ function restoreAppt(id){ /* re-creates the Google event, since cancelling delet
   a.cancelled=0; a.cxBy='';
   sbPatch('np_demo_appointments',id,{cancelled:0,cx_by:''});
   if(calSent(a.id)) n8nCal({event:'appointment.created', id:a.id, uci:(client(a.cid)||{}).uci||'', init:(client(a.cid)||{}).init||'', title:a.title, type:a.type, date:a.date, time:a.time, dur:a.dur, provider:a.provider, loc:a.loc, attendees:apptInvitees(a)});
-  logAudit('Restored appointment',`${(client(a.cid)||{}).uci} · ${a.title}`);
+  logAudit('Restored appointment',`${(client(a.cid)||{}).uci||'Whole team'} · ${a.title}`);
   render(); openAppt(id);
   if(GCAL.connected){ a.gid=null; gcalPush(a); toast('Appointment restored and put back on your Google Calendar.'); }
   else toast('Appointment restored.');
@@ -19015,7 +19252,7 @@ function restoreAppt(id){ /* re-creates the Google event, since cancelling delet
 function apptExtrasSave(){
   const map={};
   APPTS.forEach(a=>{ if((a.notes||[]).length||(a.files||[]).length) map[a.id]={notes:a.notes||[],files:a.files||[]}; });
-  sbUpsert('np_demo_program',{key:'apptextras',value:{map},updated_by:auditActor()});
+  sbUpsert('np_demo_program',{key:'apptextras',value:{map:noSeedKeys(map,'appt')},updated_by:auditActor()});
 }
 function addApptNote(id){
   const v=el('apptNote').value.trim(); if(!v) return toast('Write something first.');
@@ -19147,7 +19384,7 @@ function signOffTask(id){
 function subsSave(t){ sbPatch('np_demo_tasks',t.id,{subs:t.subs}); }
 function toggleSub(id,i){
   const t=TASKS.find(x=>x.id===id); const s=t.subs[i]; s.d=s.d?0:1;
-  if(s.d){s.by=meInit();s.at='just now';}else{s.by='';s.at='';}
+  if(s.d){s.by=meInit();s.at=nowStamp();}   /* v12.42: saved, so the time it was ticked, not "just now" */else{s.by='';s.at='';}
   if(t.stage==='Not started'&&t.subs.some(x=>x.d)) t.stage='In progress';
   sbPatch('np_demo_tasks',t.id,{subs:t.subs,stage:t.stage}); openTask(id);   // v12.22: the stage it moved to is saved too
 }
@@ -19187,7 +19424,8 @@ function reopenTask(id){
 function saveTaskEdit(id){
   const t=TASKS.find(x=>x.id===id);
   const ti=el('tkTitle').value.trim(); if(!ti) return toast('The task needs a name.');
-  t.title=ti; t.due=el('tkDue').value; t.pri=el('tkPri').value; if(el('tkCat')) t.cat=el('tkCat').value; t.ed=`${meInit()} · just now`;
+  if(!el('tkDue').value) return toast('Pick a due date.');          // v12.42
+  t.title=ti; t.due=el('tkDue').value; t.pri=el('tkPri').value; if(el('tkCat')) t.cat=el('tkCat').value; t.ed=`${meInit()} · ${nowStamp()}`;
   const whoEl=el('tkWho');
   if(whoEl&&whoEl.value&&whoEl.value!==t.sid){
     const from=staff(t.sid)?staff(t.sid).init:'—'; t.sid=whoEl.value;
@@ -19202,8 +19440,8 @@ function saveTaskEdit(id){
 function setStage(id,s){ const t=TASKS.find(x=>x.id===id); t.stage=s;
   if(s==='Done'){ t.doneAt=T; } else { delete t.doneAt; }                 // completion date rides along
   sbPatch('np_demo_tasks',id,{stage:s,done_at:s==='Done'?T:null,updated_at:new Date().toISOString()}); renderNav(); render(); if(el('drawer').classList.contains('on')) openTask(id); toast(`Task moved to ${s.toLowerCase()}.`); }
-function openAssign(preSid){
-  openModal('Assign a task',`
+function openAssign(preSid){   // v12.42: staff add their own
+  openModal(state.role==='director'?'Assign a task':'Add a task',`
     <div class="field"><label>Task</label><input class="inp" id="ntTitle" placeholder="What needs doing?"></div>
     <div class="row2">
       ${state.role==='director'?`<div class="field"><label>Assign to</label><select class="inp" id="ntWho" data-list="staff" data-fmt="stname" onchange="fillSelectChange(this)">${visibleStaff().map(s=>`<option value="${s.id}" ${preSid===s.id?'selected':''}>${esc(stName(s))}</option>`).join('')}${addOpt('staff')}</select></div>`
@@ -19215,7 +19453,7 @@ function openAssign(preSid){
       <div class="field"><label>Priority</label>${fillSelect('ntPri','task priority',TASK_PRIS,TASK_PRIS[1]||TASK_PRIS[0])}</div>
     </div>
     <div class="field"><label>Category</label>${fillSelect('ntCat','task category',TASK_CATS,TASK_CATS[0])}</div>`,
-    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveTask()">Assign task</button>`);
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveTask()">${state.role==='director'?'Assign task':'Add task'}</button>`);
 }
 function absorbListOpt(listKey,arr,val,saveFn){
   if(val&&!arr.includes(val)){ arr.push(val); if(saveFn) saveFn(); }
@@ -19229,6 +19467,7 @@ function saveTask(){
     if(previewBlock()) return;
     if(!sid) return toast('Your account is not linked to a staff record yet \u2014 ask your director to link it.');
   }
+  if(!el('ntDue').value) return toast('Pick a due date.');          // v12.42: the database refuses a task with no date
   const nt={id:'t'+Date.now(),title:t,sid,cid:el('ntClient').value||null,
     due:el('ntDue').value,stage:'Not started',pri:el('ntPri').value,cat:el('ntCat').value,notes:[],subs:[],by:meInit(),at:'just now'};
   TASKS.unshift(nt);
@@ -19337,8 +19576,7 @@ function openIncidentForm(cid){
     <div id="icFields"></div>
     <div class="field"><label>Who has been told</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap">${['Shift lead','Nurse','Director','Guardian','Emergency services'].map(n=>
-        `<button class="btn ghost sm" onclick="this.classList.toggle('navy');this.classList.toggle('ghost')">${n}</button>`).join('')}</div></div>
-    <div class="checkrow" style="border-color:var(--line);cursor:pointer" onclick="const c=el('icAnon');c.classList.toggle('on')"><div class="cb" id="icAnon">✓</div><div class="ct">Use client ID (UCI) instead of the name on printed and shared copies</div></div>`,
+        `<button class="btn ghost sm" data-told="${n}" aria-pressed="false" onclick="this.classList.toggle('navy');this.classList.toggle('ghost');this.setAttribute('aria-pressed',this.classList.contains('navy'))">${n}</button>`).join('')}</div></div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn gold" onclick="saveIncident()">File report</button>`);
   setTimeout(icProtoShow,30);
 }
@@ -19412,12 +19650,18 @@ function delProtocol(k){
 function newProtocol(){
   const v=prompt('Name the incident type (e.g. Elopement):'); if(!v||!v.trim()) return;
   const k=v.trim();
-  PROTOCOLS[k]=Object.assign({first:[],call:[],hours:24},PROTOCOLS[k]||{},{own:1});   // v12.22: the agency's own
+  PROTOCOLS[k]=protoOwn(k);   // v12.22: the agency's own
   unhide('protocol',k);
   protoSave(); logAudit('Created incident protocol',k);
   render(); openProtocol(k);
 }
 const PROTO_SEED=JSON.stringify(PROTOCOLS);                          // v12.22: the stock protocols as shipped
+/* v12.42: a team making its own type with a sample protocol's name (hidden for a new team) keeps the
+   sample's steps and clock, never the sample's made-up people to call */
+function protoOwn(k){
+  const p=PROTOCOLS[k]||{}, sample=!p.own&&hid('protocol',k);
+  return Object.assign({first:[],call:[],hours:24},p,sample?{call:[]}:{},{own:1});
+}
 function protoSave(){ sbUpsert('np_demo_program',{key:'protocols',value:{map:PROTOCOLS},updated_by:auditActor()}); }
 function openProtocol(k){
   const p=PROTOCOLS[k]; if(!p) return;
@@ -19588,7 +19832,7 @@ function icProtoShow(){
     if(!v||!v.trim()){ sel.selectedIndex=0; }
     else{
       const k=v.trim();
-      PROTOCOLS[k]=Object.assign({first:[],call:[],hours:24},PROTOCOLS[k]||{},{own:1});   // v12.22: the agency's own
+      PROTOCOLS[k]=protoOwn(k);   // v12.22: the agency's own
       unhide('protocol',k); protoSave(); logAudit('Created incident protocol',k);
       sel.insertAdjacentHTML('afterbegin',`<option>${esc(k)}</option>`); sel.value=k;
     }
@@ -19661,7 +19905,7 @@ function saveIncident(){
     if(!s) return toast('Describe what happened before filing.');
   }
   const rec={id:'i'+Date.now(),cid:el('icClient').value,type:el('icType').value,date:el('icDate').value,
-    time:el('icTime').value,sev:el('icSev').value,status:'Follow-up due',by:meInit(),summary:s,notified:['Shift lead'],
+    time:el('icTime').value,sev:el('icSev').value,status:'Follow-up due',by:meInit(),summary:s,notified:[...document.querySelectorAll('#modal [data-told].navy')].map(b=>b.getAttribute('data-told')),   // v12.42: who was ticked
     recips:[{who:'Regional center',how:'Phone',at:null,by:null},{who:'Guardian',how:'Phone',at:null,by:null},{who:'Licensing (CCLD) — written report',how:'Written',at:null,by:null}],
     hoursLeft:(PROTOCOLS[el('icType').value]||{}).hours||24};
   rec.protoAck=(window._icAck||[]).slice();                          // v12.22: saved with the report itself
@@ -19852,6 +20096,32 @@ function openReminderPrefs(){
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveNotifPrefs()">Save reminders</button>`);
 }
 function render_np(){}
+/* v12.42: what a system notice in the bell opens. Notices carry a title and a line of text, no record id, so the
+   task, conversation or client is found from that text; otherwise the page it belongs to opens. */
+function notifTarget(n){
+  const t=String((n&&n.t)||''), s=String((n&&n.s)||''), k=String((n&&n.k)||''), dir=state.role==='director';
+  const cli=()=>visibleClients().find(c=>c.uci&&s.includes(c.uci));
+  if(profObList().length&&/^(Onboarding checklist shared|Welcome to the portal)$/.test(t)) return ()=>myOnboarding();   // v12.41
+  if(/^Task\b/.test(t)||k==='task'||k==='tasksign'){
+    const tk=myTasks().filter(x=>x.title&&s.startsWith(x.title)).sort((a,b)=>b.title.length-a.title.length)[0];
+    return ()=>{ go('tasks'); if(tk) openTask(tk.id); };
+  }
+  if(/^Document assigned/.test(t)) return ()=>go('home');
+  if(/mention/i.test(t)){ const c=cli(); return c?()=>openClient(c.id):()=>go('clients'); }
+  if(k==='msg'||/message/i.test(t)) return ()=>{
+    const th=visThreads().find(x=>(x.msgs||[]).some(m=>m.t&&s.includes(askTr(m.t,60))));
+    if(th){ state.thread=th.id; t_unread(th.id); }
+    go('messages'); };
+  if(k==='sir'||/incident|\bSIR\b/i.test(t)) return ()=>go('safety');
+  if(/progress note/i.test(t)){ const c=cli(); return c?()=>openClient(c.id):()=>go('clients'); }
+  if(/appointment|event|meeting|scheduled|shift/i.test(t)) return ()=>go('calendar');
+  if(k==='cert'||/certification/i.test(t)) return ()=>go(dir?'team':'profile');
+  if(/training|guide|onboarding/i.test(t)||['training','guideack','onboard'].includes(k)) return ()=>go(dir?'trainhub':'home');
+  if(/^Please acknowledge/.test(t)) return ()=>go(dir?'trainhub':'home');     // a guide to acknowledge
+  if(/^Document acknowledged/.test(t)) return ()=>go('forms');
+  return null;
+}
+function notifOpen(i){ const n=(window._sysN||[])[i], f=n&&notifTarget(n); closeAll(); if(f) f(); }
 function openAlerts(){
   const attn=attentionItems(); window._attn=attn;
   const rem=upcomingReminders();
@@ -19869,8 +20139,8 @@ function openAlerts(){
       <div class="aa">Open →</div></div>`).join('')}</div></section>`:'';
   const sysList=SYS_NOTIFS.filter(n=>!state.hideSample||!n._seed).filter(notifFor);
   const sysHtml=sysList.length?`<section class="card"><div class="card-h acc-navy"><h2>System notifications</h2><div class="sub">Delivered by the portal's automation backend</div></div>
-    <div class="card-b flush">${sysList.map(n=>{ const ob=profObList().length&&/^(Onboarding checklist shared|Welcome to the portal)$/.test(n.t);   // v12.41
-      return `<div class="attn"${ob?' style="cursor:pointer" onclick="myOnboarding()"':''}><div class="ai ${n.k==='bad'?'bad':'info'}">◈</div>
+    <div class="card-b flush">${(window._sysN=sysList).map((n,i)=>{ const ob=!!notifTarget(n);   // v12.41 onboarding; v12.42: every notice that is about something opens it
+      return `<div class="attn"${ob?` style="cursor:pointer" onclick="notifOpen(${i})"`:''}><div class="ai ${n.k==='bad'?'bad':'info'}">◈</div>
     <div class="at"><b>${esc(n.t)}</b><span>${esc(n.s)} · ${esc(n.at)}</span></div>${ob?'<div class="aa">Open →</div>':''}</div>`; }).join('')}</div></section>`:'';
   openDrawer('Notifications',`${rem.length?rem.length+' upcoming · ':''}${un.length?un.reduce((a,t)=>a+t.unread,0)+' unread messages · ':''}${attn.length} items need attention`,
     remHtml+sysHtml+msgHtml+(attn.length?attn.map((a,i)=>`<div class="card" style="margin-bottom:10px"><div class="attn" style="border:none" onclick="closeAll();_attn[${i}].go()">
@@ -20140,7 +20410,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.41.1 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.42 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -20700,7 +20970,7 @@ async function finishRegister(){
   const inv=window._joinInvite;
   const roleTxt=inv?(inv.role_title||'Staff'):(((el('regRole')&&el('regRole').value)||'').trim());
   const role=inv?(inv.access==='director'?'director':'staff'):(/\b(staff|dsp|support professional|aide|caregiver|nurse)\b/i.test(roleTxt)?'staff':'director');
-  if(!inv&&el('regOrg')&&!String(el('regOrg').value||'').trim()){ el('regOrg').focus(); return toast('Give your team a name.'); }
+  if(!inv&&el('regOrg')&&!String(el('regOrg').value||'').trim()){ el('regOrg').focus(); return regSay('Give your team a name.'); }   // v12.42: on the card, in place of an older message
   let r=await authRegister(em,pw);                                  // Supabase Auth when the backend is configured
   if(r.nosession||(!r.ok&&r.exists)){                                // v12.15/16: sign in with the password and look at the login before going on
     const li=await authSignInOnly(em,pw,inv?'join':'agency');
@@ -20711,7 +20981,9 @@ async function finishRegister(){
     }else{
     await orgResolve();
     const sp=(!ORG_NONE&&ORG_ID)?await orgIsSpare():false;
-    const spare=sp===true||(sp===undefined&&!!r.fresh);              // only an empty agency of its own (a brand-new login's, or a half-finished one) can still be used
+    let spare=sp===true||(sp===undefined&&!!r.fresh);                // only an empty agency of its own (a brand-new login's, or a half-finished one) can still be used
+    if(spare&&!inv&&!r.fresh){                                       // v12.42: a team that finished setup is not half-finished, even with no records yet
+      try{ const done=await sbGetStrict('np_demo_program','key=in.(pilot,org)&select=key'); if(Array.isArray(done)&&done.length) spare=false; }catch(e){} }
     if(!ORG_NONE&&!spare){                                           // it already opens an agency: joining would move it out of that one, and a second one is not supported
       const had=!!ORG_ID; orgForget(); AUTH.session=null; saveAuth();
       return regSay(!had?'Could not check this sign-in right now. Try again in a moment.'
@@ -21239,15 +21511,12 @@ async function inviteDirectorCreate(){
     <div class="tiny muted" style="margin-top:10px">The link works once, for ${esc(email)} only. If it goes astray, create a fresh one.</div>`,
     `<button class="btn navy" onclick="closeAll()">Done</button>`);
 }
-function inviteCreate(sid){
+async function inviteCreate(sid){
   const st=staff(sid); if(!st) return;
   const email=(el('ivEmail').value||'').trim().toLowerCase();
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Enter a valid email address.');
-  if(st.email!==email){ st.email=email; sbPatch('np_demo_staff',sid,{email}); }
-  const token='iv'+Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');   // v12.11: unguessable
-  sbPush('np_demo_invites',{token,workspace:NP_WS,org:ONB.org||'',email,sid,name:st.name,role_title:st.role||'',invited_by:auditActor()});
-  const link=location.origin+location.pathname+'?join='+token;
-  logAudit('Invited staff to the portal',`${st.name} · ${email}`);
+  const link=await inviteMake(sid,email);                            // v12.42: like Add staff, the link shows only once the invite is saved
+  if(!link) return toast('The invite did not save, so there is no link yet. Check your connection and try again.');
   const su=encodeURIComponent('You\u2019re invited to the '+(ONB.org&&ONB.org!=='Spectrum'?ONB.org:'team')+' dashboard');
   const bd=encodeURIComponent('Hi '+st.name.split(' ')[0]+',\n\nYou\u2019ve been invited to our dashboard portal. Create your account here:\n'+link+'\n\nThe link signs you up as '+st.name+' in the staff view. It works once.');
   openModal('Invite link ready',`
@@ -21263,7 +21532,7 @@ function inviteCreate(sid){
 }
 function goalsSave(){
   const map={}; CLIENTS.forEach(c=>{ if(Array.isArray(c.goals)) map[c.id]=c.goals; });   // empty lists count — deleting the last goal must stick everywhere
-  sbUpsert('np_demo_program',{key:'goals',value:{map},updated_by:auditActor()});
+  sbUpsert('np_demo_program',{key:'goals',value:{map:noSeedKeys(map,'client')},updated_by:auditActor()});
 }
 function goalForm(cid,gi){
   const c=client(cid); const g=gi==null?{g:'',p:0,notes:[]}:c.goals[gi];
@@ -21888,7 +22157,7 @@ function catEnsure(t){                                               // register
 function catsAudit(){                                                // never leave the picker empty
   let added=false;
   if(!Object.keys(APPT_CATS).length){ Object.keys(CAT_DEFAULTS).forEach(k=>{ APPT_CATS[k]=Object.assign({},CAT_DEFAULTS[k]); }); added=true; }
-  try{ APPTS.forEach(a=>{ if(catEnsure(a.type)) added=true; }); }catch(e){}
+  try{ APPTS.forEach(a=>{ if(!hid('appt',a.id)&&catEnsure(a.type)) added=true; }); }catch(e){}   // v12.42: not the hidden sample appointments' types
   if(added&&typeof catSave==='function') catSave();
   return added;
 }
@@ -22116,16 +22385,22 @@ function globalSearchGo(q){
   clearTimeout(window._sq);
   window._sq=setTimeout(()=>{
     const s=q.toLowerCase();
-    const cs=visibleClients().filter(c=>c.name.toLowerCase().includes(s));
+    /* v12.42: a client is found by UCI and initials too (the box says "Search clients by UCI"), and a search that
+       finds nothing says so instead of showing nothing */
+    const cs=visibleClients().filter(c=>[c.name,c.uci,c.init].some(f=>String(f||'').toLowerCase().includes(s)));
     const ss=state.role==='family'?[]:visibleStaff().filter(x=>x.name.toLowerCase().includes(s));
     const as=APPTS.filter(a=>a.title.toLowerCase().includes(s)&&visibleClients().some(c=>c.id===a.cid));
-    if(!cs.length&&!ss.length&&!as.length) return;
+    if(!cs.length&&!ss.length&&!as.length){
+      if(el('drawer').classList.contains('on')&&el('drTitle').textContent==='Search results') closeAll();
+      return toast(`Nothing matches \u201c${q}\u201d. Search looks at client UCIs and names${state.role==='family'?'':', staff names'} and appointments.`);
+    }
+    const stGo=id=>state.role==='director'?`openStaffPage('${id}')`:id===meSid()?`go('profile')`:`go('messages');msgWith('staff:${id}')`;   // v12.42: staff message a colleague; the staff file is the director's
     openDrawer('Search results',`"${esc(q)}"`,`
       ${cs.length?`<section class="card"><div class="card-h"><h2>Clients</h2></div><div class="card-b flush">
         ${cs.map(c=>`<div class="attn" onclick="closeAll();openClient('${c.id}')"><div class="ai info">☺</div>
-        <div class="at"><b>${esc(c.name)}</b><span>${esc(c.home)} · ${esc(c.dx)}</span></div></div>`).join('')}</div></section>`:''}
+        <div class="at"><b>${esc(c.name)}</b><span>${String(c.name||'').includes(c.uci)?'':'UCI '+esc(c.uci)+' · '}${esc(c.home)} · ${esc(c.dx)}</span></div></div>`).join('')}</div></section>`:''}
       ${ss.length?`<section class="card"><div class="card-h"><h2>Staff</h2></div><div class="card-b flush">
-        ${ss.map(x=>`<div class="attn" onclick="closeAll();openStaffPage('${x.id}')"><div class="ai info">⚇</div>
+        ${ss.map(x=>`<div class="attn" onclick="closeAll();${stGo(x.id)}"><div class="ai info">⚇</div>
         <div class="at"><b>${esc(x.name)}</b><span>${esc(x.role)}</span></div></div>`).join('')}</div></section>`:''}
       ${as.length?`<section class="card"><div class="card-h"><h2>Appointments</h2></div><div class="card-b flush">
         ${as.map(a=>`<div class="attn" onclick="closeAll();openAppt('${a.id}')"><div class="ai info">▤</div>
@@ -22173,32 +22448,32 @@ function askContext(lbl){
     sec('Today\'s med pass records', todaysLogs.slice(-20).map(l=>`- ${ci(l.cid)} ${hm12(l.time)} ${l.status||'given'}${l.by?' by '+l.by:''}`));
   }
 
-  const upAppts=APPTS.filter(a=>a.date>=T&&clIds.includes(a.cid)&&!a.cancelled).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).slice(0,25)
+  const upAppts=APPTS.filter(a=>a.date>=T&&clIds.includes(a.cid)&&!a.cancelled&&!hid('appt',a.id)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).slice(0,25)
     .map(a=>`- ${a.date} ${hm12(a.time)} · ${ci(a.cid)} · ${a.title} (${a.type}) · ${a.loc||''}${a.provider?' · '+a.provider:''}${a.flag?' · FLAG: '+askTr(a.flag,60):''}`);
   if(GCAL.connected) GCAL.events.slice(0,20).forEach(g=>upAppts.push(`- ${g.date} ${g.allday?'all day':hm12(g.time)} · ${g.cid?ci(g.cid)+' · ':''}${askTr(g.title,80)} (Google Calendar)`));
   sec('Appointments (portal + connected Google Calendar)', upAppts);
 
   if(role!=='family'){
-    sec('Tasks', TASKS.slice(0,30).map(t=>`- [${t.stage}] ${askTr(t.title,90)} · ${t.cat||'General'} · due ${t.due||'—'}${t.sid?' · assigned '+(staff(t.sid)||{}).init:''}${t.pri?' · '+t.pri:''}${t.signoff?' · signed off by '+askTr(t.signoff,40):''}${(t.notes||[]).length?' · notes: '+t.notes.slice(-2).map(n=>askTr(n.t||n,60)).join(' / '):''}`));
-    sec('Incidents', INCIDENTS.filter(i=>clIds.includes(i.cid)).map(i=>`- ${i.type} · ${ci(i.cid)} · ${i.date} · ${i.status}${i.summary?' · '+askTr(i.summary,100):''}`));
+    sec('Tasks', myTasks().slice(0,30).map(   /* v12.42: the tasks the viewer has, without hidden samples */t=>`- [${t.stage}] ${askTr(t.title,90)} · ${t.cat||'General'} · due ${t.due||'—'}${t.sid?' · assigned '+(staff(t.sid)||{}).init:''}${t.pri?' · '+t.pri:''}${t.signoff?' · signed off by '+askTr(t.signoff,40):''}${(t.notes||[]).length?' · notes: '+t.notes.slice(-2).map(n=>askTr(n.t||n,60)).join(' / '):''}`));
+    sec('Incidents', INCIDENTS.filter(i=>clIds.includes(i.cid)&&!hid('incident',i.id)).map(i=>`- ${i.type} · ${ci(i.cid)} · ${i.date} · ${i.status}${i.summary?' · '+askTr(i.summary,100):''}`));
     sec('Staff & certifications', visibleStaff().map(s=>{
       const cr=(CREDS[s.id]||[]).map(x=>`${x.c}: ${x.d}${x.s==='bad'?' (EXPIRED/PROBLEM)':x.s==='warn'?' (attention)':''}`).join('; ');
       return `- ${s.name} (${s.init}) · ${s.role} · ${s.home} · hired ${s.hired} · ${cr}`;
     }));
     sec('Shifts today', visShifts().map(x=>`- ${(staff(x.sid)||{}).name||x.sid}: ${hm12(x.start)}–${hm12(x.end)} at ${x.home}`));
     sec('Attendance today', ATTEND.filter(x=>clIds.includes(x.cid)).map(x=>`- ${ci(x.cid)}: ${x.st}${x.units?' · '+x.units+' units':''}${x.gap?' · claim blocked: '+askTr(x.gap,60):''}`));
-    sec('Fire drills (recent)', FIREDRILLS.slice(0,12).map(d=>`- ${d.date} ${hm12(d.time)} · ${d.home} · ${d.shift} · evac ${d.evac} · by ${d.by}`));
-    sec('Water temperature log (recent)', WATERTEMP.slice(0,14).map(w=>`- ${w.date} · ${w.home||''} · ${w.temp}°F${w.ok===false?' OUT OF RANGE':''}${w.by?' · '+w.by:''}`));
-    sec('Weekly checklist', Object.entries(WEEKLY).slice(0,20).map(([k,v])=>`- ${k}: ${Array.isArray(v)?v.filter(x=>x.d||x.done).length+'/'+v.length+' done':askTr(v,60)}`));
+    sec('Fire drills (recent)', FIREDRILLS.filter(d=>!hid('drill',drillKey(d))).slice(0,12).map(d=>`- ${d.date} ${hm12(d.time)} · ${d.home} · ${d.shift} · evac ${d.evac} · by ${d.by}`));
+    sec('Water temperature log (recent)', WATERTEMP.filter(w=>!hid('temp',tempKey(w))).slice(0,14).map(w=>`- ${w.date} · ${w.home||''} · ${w.temp}°F${w.ok===false?' OUT OF RANGE':''}${w.by?' · '+w.by:''}`));
+    sec('Weekly checklist', Object.entries(WEEKLY).filter(([k])=>clIds.includes(k)).slice(0,20).map(([k,v])=>`- ${ci(k)}: ${Array.isArray(v)?v.filter(x=>x.d||x.done).length+'/'+v.length+' done':askTr(v,60)}`));
     sec('Digital inspections', [
-      ...INSP_TEMPLATES.map(t=>`- template: ${t.name} · ${t.questions.length} questions · files to ${FOLDER_NAMES[t.folder]||t.folder}`),
-      ...INSP_DONE.slice(0,10).map(s=>`- completed: ${s.title} · score ${s.num}/${s.den} (${s.pct}%) · by ${s.by} · ${s.at}`)]);
-    sec('Training courses', TRAINING.map(t=>{
-      const appl=STAFF.filter(s=>t.req||(t.asg||[]).includes(s.id));
-      return `- ${t.n} · ${t.mins} min · ${t.req?'required for everyone':'assigned: '+((t.asg||[]).map(id=>(staff(id)||{}).init).join(', ')||'no one')} · ${appl.filter(s=>t.done.includes(s.id)).length}/${appl.length} complete`;
+      ...INSP_TEMPLATES.filter(t=>!hid('insp',String(t.id||t.name))).map(t=>`- template: ${t.name} · ${t.questions.length} questions · files to ${FOLDER_NAMES[t.folder]||t.folder}`),
+      ...INSP_DONE.filter(s=>!hid('insp',String(s.tid||''))).slice(0,10).map(s=>`- completed: ${s.title} · score ${s.num}/${s.den} (${s.pct}%) · by ${s.by} · ${s.at}`)]);
+    sec('Training courses', TRAINING.filter(t=>!hid('course',t.id)).map(t=>{
+      const appl=STAFF.filter(s=>!hid('staff',s.id)&&(t.req||(t.asg||[]).includes(s.id)));
+      return `- ${t.n} · ${t.mins} min · ${t.req?'required for everyone':'assigned: '+((t.asg||[]).filter(id=>!hid('staff',id)).map(id=>(staff(id)||{}).init).join(', ')||'no one')} · ${appl.filter(s=>(t.done||[]).includes(s.id)).length}/${appl.length} complete`;
     }));
-    sec('Onboarding steps for new hires', ONBOARD.map((o,i)=>`${i+1}. ${o}`));
-    sec('Audit trail (recent)', AUDIT.slice(0,15).map(a=>`- ${a.at} · ${a.who} · ${a.act}${a.obj?' · '+askTr(a.obj,70):''}`));
+    sec('Onboarding steps for new hires', (OB_MASTER.length?OB_MASTER.map(o=>o.t):ONBOARD).filter(o=>!hid('obitem',o)).map((o,i)=>`${i+1}. ${o}`));
+    sec('Audit trail (recent)', AUDIT.filter(a=>!(state.hideSample&&a._seed)).slice(0,15).map(a=>`- ${a.at} · ${a.who} · ${a.act}${a.obj?' · '+askTr(a.obj,70):''}`));
   }
 
   const docLines=[];
@@ -22212,7 +22487,7 @@ function askContext(lbl){
     (Lb.res||[]).forEach(x=>binder.push(`- ${FOLDER_NAMES[k]} / Resources: ${x[0]}`));
     ((USER_LIB[k]||{}).forms||[]).forEach(x=>binder.push(`- ${FOLDER_NAMES[k]} / Forms (uploaded): ${x.n}`));
     ((USER_LIB[k]||{}).res||[]).forEach(x=>binder.push(`- ${FOLDER_NAMES[k]} / Resources (uploaded): ${x.n}`));
-    (COMPLETED[k]||[]).slice(0,10).forEach(x=>binder.push(`- ${FOLDER_NAMES[k]} / Completed: ${x.n}${x.sub?' · '+askTr(x.sub,70):''}`));
+    (COMPLETED[k]||[]).filter(x=>!hid('completed',k+'|'+x.n)).slice(0,10).forEach(x=>binder.push(`- ${FOLDER_NAMES[k]} / Completed: ${x.n}${x.sub?' · '+askTr(x.sub,70):''}`));
   });
   if(role!=='family') sec('Binder folders (forms, resources, completed)', binder.slice(0,80));
 
@@ -22227,7 +22502,7 @@ function askContext(lbl){
     });
     sec('Editable documents & their filled content', filled.slice(0,120));
     sec('Report templates', (typeof TEMPLATES5!=='undefined'?TEMPLATES5:[]).map(t=>`- ${t.name}${t.dest?' → '+t.dest:''}`));
-    sec('Policy & guideline library', GUIDES.map(g=>`- ${g.t||g.n||''}${g.d?' · '+askTr(g.d,80):''}`));
+    sec('Policy & guideline library', GUIDES.filter(g=>!hid('guide',g.t)).map(g=>`- ${g.t||g.n||''}${g.d?' · '+askTr(g.d,80):''}`));
     sec('Message threads', visThreads().map(th=>`- ${askTr(th.sub||th.subject||'',70)}${th.msgs&&th.msgs.length?' · last: '+askTr((th.msgs[th.msgs.length-1]||{}).t||'',80):''}`));
   }
 
@@ -22244,8 +22519,13 @@ function askOpenFiled(id){                                           // v12.39: 
 }
 const askPageView=v=>v==='documents'?(state.role==='family'?'docs':'templates'):v==='staff'?'team':v;   // v12.39: the Documents page is 'templates' ('docs' for a family), Staff is 'team'
 function askOpenDoc(id){
-  const d=docById(id); if(!d) return toast('That document is no longer in the portal.');
-  const p={Medical:'Medical',Agency:'Agency'}[d.key]||d.key;
+  const d=attDoc(id); if(!d) return toast('That document is no longer in the portal.');   // v12.42: a filed document, an upload or a template too
+  if(d.fid){ const f=FILED_DOCS[d.fid];
+    const can=state.role==='director'||(f.cid&&visibleClients().some(c=>c.id===f.cid))||(!!f.staff&&f.staff===meSid());
+    return (!filedIsFinal(f)&&state.role!=='family'&&can)?filedEdit(f.id):openFiledDoc(f.id); }
+  if(d.comp) return compOpen(d.comp);
+  if(d.tpl&&!docById(id)) return tplOpenDoc(d.tpl);                 // a template's fill-in copy: the other person fills in their own
+  if(state.role==='staff') return openDocEditor(id);                 // v12.42: staff stay where they are (the Documents page is the director's)
   go(state.role==='family'?'docs':'templates'); state.openBinder=normBinder(d.key||'').b; render();   // v12.8: 'documents' is not a page, so this landed on Home
   setTimeout(()=>openDocEditor(id),120);
 }
@@ -23129,7 +23409,7 @@ async function sbHydrate(){
     }
     if(!th) return;
     if(th.msgs.some(m=>m._db===r.id)) return;
-    const d=docById(r.attach_doc);
+    const d=attDoc(r.attach_doc)||(r.attach_doc?{id:r.attach_doc,name:''}:null);   // v12.42: filed documents and templates too, named once they are read
     /* v12.13: "me" means the signed-in person wrote it, not whoever saved it */
     const mine=r.author_email?String(r.author_email).toLowerCase()===String(AUTH.email||'').toLowerCase():(realSession()?(r.author||'')===actorName():!!r.is_me);
     th.msgs.push({_db:r.id,me:mine,role:r.role||'',t:r.body||'',w:r.author||'',email:String(r.author_email||'').toLowerCase(),
@@ -23148,6 +23428,7 @@ async function sbHydrate(){
         const den=r.score_den||0, num=r.score_num||0;
         INSP_DONE.push({id:r.id,tid:r.template_id,title:r.title,folder:r.folder,num,den,pct:den?Math.round(num/den*100):0,
           by:r.created_by||'',at:tsFmt(r.created_at,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),
+          date:r.created_at?iso(new Date(r.created_at)):'',              // v12.42: or every weekly count drops to 0 after a reload
           responses:r.responses||[]});
       }
     }
@@ -23166,7 +23447,9 @@ async function sbHydrate(){
       EXAMPLE_VALUES[r.doc_id]=c;
     }
   });
-  lib.forEach(r=>{ ((USER_LIB[r.folder]=USER_LIB[r.folder]||{forms:[],res:[]})[r.sec]=USER_LIB[r.folder][r.sec]||[]).push({dbId:r.id,n:r.title,sub:r.sub||('Uploaded by '+(r.uploaded_by||'')),url:r.url}); });
+  lib.forEach(r=>{ const L=((USER_LIB[r.folder]=USER_LIB[r.folder]||{forms:[],res:[]})[r.sec]=USER_LIB[r.folder][r.sec]||[]);
+    const row={dbId:r.id,n:r.title,sub:r.sub||('Uploaded by '+(r.uploaded_by||'')),url:r.url}, was=L.find(x=>x.dbId===r.id);
+    if(was) Object.assign(was,row); else L.push(row); });            /* v12.42: the workspace is read twice at sign-in, so each row was added twice */
   sigs.forEach(r=>{ DOC_SIGS[r.doc_name]={by:r.signed_by, at:tsFmt(r.created_at,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}), folder:r.folder||''}; });   // v12.22: with its binder
   docs.forEach(r=>{
     if(r.storage_path&&!r.path) r.path=r.storage_path;
@@ -23380,9 +23663,10 @@ function msgTeamHtml(){
   if(!ppl.length) return `<div class="msg-sec">Team</div><div class="tiny muted team-none">Nobody else on the team yet.${state.role==='director'?' Staff you add show here.':''}</div>`;
   return `<div class="msg-sec">Team <span>${on} online</span></div><div class="team-list">${ppl.map(p=>{
     const s=presLabel(p), ini=String(p.name||'?').split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('');
-    return `<button type="button" class="team-i" data-key="${esc(p.key)}" onclick="msgWith(this.dataset.key)" title="Message ${esc(p.name)}">
+    const nm=(!p.dir&&p.sid&&staff(p.sid))?stName(staff(p.sid)):p.name;   // v12.42: Staff display > Initials only, as on the Staff page
+    return `<button type="button" class="team-i" data-key="${esc(p.key)}" onclick="msgWith(this.dataset.key)" title="Message ${esc(nm)}">
       <span class="av-sm ${p.dir?'':'gr'}">${esc(ini)}<i class="pres-dot ${p.st}" aria-hidden="true"></i></span>
-      <span class="ti"><b>${esc(p.name)}${p.isNew?'<em class="new-tag">New</em>':''}</b><span>${esc(p.title)}${s?' · '+esc(s):''}</span></span></button>`; }).join('')}</div>`;
+      <span class="ti"><b>${esc(nm)}${p.isNew?'<em class="new-tag">New</em>':''}</b><span>${esc(p.title)}${s?' · '+esc(s):''}</span></span></button>`; }).join('')}</div>`;
 }
 function msgTeamWrap(){ return state.role==='family'?'':`<div id="msgTeam" class="msg-team">${msgTeamHtml()}</div><div class="msg-sec">Conversations</div>`; }
 function msgHeadPres(th){
@@ -23452,7 +23736,7 @@ async function msgPull(){
       const mine=!!r.author_email&&String(r.author_email).toLowerCase()===me;
       const own=mine&&th.msgs.find(m=>m.me&&!m._db&&m.t===(r.body||''));   // sent from this page: it only lacked its id
       if(own){ own._db=r.id; return; }
-      const d=docById(r.attach_doc);
+      const d=attDoc(r.attach_doc)||(r.attach_doc?{id:r.attach_doc,name:''}:null);   // v12.42: filed documents and templates too, named once they are read
       th.msgs.push({_db:r.id,me:mine,role:r.role||'',t:r.body||'',w:r.author||'',email:String(r.author_email||'').toLowerCase(),
         at:r.created_at?tsFmt(r.created_at,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'',ts:r.created_at||'',att:d?{id:d.id,name:d.name}:null});
       changed=true;
@@ -23790,7 +24074,7 @@ function cxWeek(p,A){
   const cols=Array.from({length:7},(_,i)=>{ const d=iso(addDays(sun,i)), dt=addDays(sun,i), items=cxDayItems(p,d,A);
     return `<div class="cx-wcol${d===T?' is-today':''}${d===cxDay(p)?' is-on':''}">
       <button type="button" class="cx-wh" onclick="cxPick('${p}','${d}')"><span>${CX_DOW[i]}</span><b>${dt.getDate()}</b></button>
-      ${items.map(i=>`<button type="button" class="cx-wev${i.cx?' is-cx':''}" style="border-left-color:${cxKind(i.k).c}" ${i.go?`onclick="${i.go}"`:''}><span>${i.t?hm12(i.t):cxKind(i.k).one}</span>${esc(i.title)}</button>`).join('')||'<span class="cx-wnone">—</span>'}
+      ${items.map(i=>`<button type="button" class="cx-wev${i.cx?' is-cx':''}" style="border-left-color:${cxKind(i.k).c}" title="${esc(i.title)}" ${i.go?`onclick="${i.go}"`:''}><span>${i.t?hm12(i.t):cxKind(i.k).one}</span><i class="cx-wt">${esc(i.title)}</i></button>`).join('')||'<span class="cx-wnone">—</span>'}
     </div>`; }).join('');
   return `<div class="cx-cal">
     <div class="cx-mhead">

@@ -52603,7 +52603,7 @@ function v132CardHtml(lead,o){
   const asks=typeof v125For==='function'?v125For(lead,'client_proposal').length:0;
   return '<div class="ap-doc-t"><b>'+esc(o?(o.title||'Client proposal'):'Client proposal')+'</b><small>'+
       (o?'Written '+fmtDate(o.created_at)+(d.edited&&d.edited.at?' · edited '+fmtDate(d.edited.at):'')+(src.length?' · from '+esc(src.map(function(s){return s.label;}).join(', ')):''):
-        'The proposal the client receives, from the call and the assessment'+(tp?', in the sections and branding of '+esc(tp.file_name):'. Add a past proposal in Templates and it follows its sections and branding')+'. It is written after the proposal presentation.')+'</small></div>'+
+        'The proposal the client receives, from the meetings and the assessment'+(tp?', in the sections and branding of '+esc(tp.file_name):'. Add a past proposal in Templates and it follows its sections and branding')+'. It is written after the proposal presentation.')+'</small></div>'+
     '<div class="statline" style="margin-top:4px">'+
       (o?'<button class="btn navy v132-read" onclick="v132Open(\''+em+'\')">'+(V132.open[lead.email]?'Hide ▴':'Read here ▾')+'</button>':'')+
       (o?'<button class="rd-btn sm v132-pdf" onclick="v132Print(\''+em+'\')">Save as PDF</button>':'')+
@@ -52653,7 +52653,9 @@ function v132DocMd(doc){
   if(doc.subtitle)L.push('',doc.subtitle);
   const meta=[doc.prepared_for?'Prepared for '+doc.prepared_for:'',doc.prepared_by?'Prepared by '+doc.prepared_by:'',doc.date||''].filter(Boolean);
   if(meta.length)L.push('',meta.join(' · '));
-  (doc.sections||[]).forEach(function(s){L.push('','## '+s.title,'',s.body||'');});
+  /* v138: a chart stays in the markdown, as a line under its section */
+  (doc.sections||[]).forEach(function(s){L.push('','## '+s.title,'',s.body||'');
+    v138Vis(doc.visuals).filter(function(v){return v138Key(v.after)===v138Key(s.title);}).forEach(function(v){L.push('',v138ChartText(v));});});
   return L.join('\n').replace(/\n{3,}/g,'\n\n').trim();
 }
 function v132BrandOf(o){
@@ -52723,8 +52725,9 @@ function v132ToMd(el){
 /* where each section came from, as the chips above it say */
 function v132SrcLabels(d){
   return {template:'Structure from your template',questions:'Sorted by your discovery call questions',past:'Written like your past assessment',
-    call:d.call&&d.call.date?'From the call on '+v132Day(d.call.date):'From the call',assessment:'From the assessment',research:'From the prospect brief',
-    discovery:'From the follow-up guide',growth_plan:'From the proposal presentation'};
+    /* v138: notes with no single call are the meetings; the consultation guide has a chip of its own */
+    call:d.call&&d.call.date?'From the call on '+v132Day(d.call.date):d.call&&d.call.title?'From the call':'From the meetings',assessment:'From the assessment',research:'From the prospect brief',
+    consultation:'From the consultation guide',discovery:'From the follow-up guide',growth_plan:'From the proposal presentation'};
 }
 function v132DocHtml(o){
   const doc=v132DocOf(o),b=v132BrandOf(o),c=b.colors||{},f=b.fonts||{},d=apJson(o&&o.data);
@@ -52783,7 +52786,10 @@ async function v132EditSave(email){
   const t=clean(dv.querySelector('.cv-t')),s=dv.querySelector('.cv-s');
   if(t)doc.title=t;if(s)doc.subtitle=clean(s);
   dv.querySelectorAll('.v132-sec').forEach(function(sec){const x=doc.sections[+sec.dataset.i];if(!x)return;
-    x.title=clean(sec.querySelector('.t'))||x.title;x.body=v132ToMd(sec.querySelector('.bd'));});
+    const was=x.title;
+    x.title=clean(sec.querySelector('.t'))||x.title;x.body=v132ToMd(sec.querySelector('.bd'));
+    /* v138: a chart stays under its section when the section's title changes */
+    if(was!==x.title&&Array.isArray(doc.visuals))doc.visuals.forEach(function(v){if(v&&v138Key(v.after)===v138Key(was))v.after=x.title;});});
   if(JSON.stringify(doc)===JSON.stringify(before)){V132.edit=null;v132Open(email,true);nwToast('Nothing changed.');return;}
   const d=apJson(o.data),body={data:Object.assign({},d,{doc:doc,edited:{at:new Date().toISOString(),by:apCfMe()}}),content_md:v132DocMd(doc),edited_by_human:true};
   if(!o.snapshot)body.snapshot={doc:before,content_md:o.content_md||null,written_at:o.created_at};
@@ -52797,7 +52803,8 @@ async function v132EditSave(email){
 function v132Print(email){
   const o=(V132.props[email]||[])[0];if(!o)return;
   const b=v132BrandOf(o),doc=v132DocOf(o);
-  const css=(document.getElementById('v132css')||{}).textContent||'';
+  /* v138: the charts' styles go with it */
+  const css=((document.getElementById('v132css')||{}).textContent||'')+((document.getElementById('v138css')||{}).textContent||'');
   const links=v132FontLinks(b).map(function(x){return x.urls.map(function(u){return '<link rel="stylesheet" href="'+esc(u)+'">';}).join('');}).join('');
   const w=window.open('','_blank');
   if(!w){nwToast('Allow pop-ups for this site to save the PDF.');return;}
@@ -53049,6 +53056,9 @@ var V135={ids:null};
 .ap-a5s.v136-six .ap-a3:nth-child(3n)::after{display:none}
 @media(max-width:860px){.ap-a5s.v136-six{grid-template-columns:1fr}.ap-a5s.v136-six .ap-a3::after{display:none}}
 .v136-prep[hidden]{display:none}
+/* v139: an onboarding plan or client review brief opened with Read inline. Its box is an .e1brief, which the older
+   page styles keep hidden until it has .open, and Read inline only takes away [hidden], so it never showed. */
+.ap60 .e1brief.v136-prep:not([hidden]){display:block}
 .v120-tools .v136-rn{margin-left:auto;display:inline-flex;align-items:center;gap:6px}
 .v136-rns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;margin:0 0 6px}
 @media(max-width:640px){.v136-rns{grid-template-columns:1fr}}
@@ -53808,7 +53818,8 @@ function v137CallsOf(l){
 }
 async function v137Contacts(force){
   if(V137.hs&&!force&&Date.now()-V137.hsAt<60e3)return V137.hs;
-  try{V137.hs=(await apSb('hubspot_contacts?select=email,first_name,last_name,company,job_title,website,lifecycle_stage,lead_status,first_seen&order=first_seen.desc.nullslast&limit=2000'))||[];}
+  /* v138: hs_id too, so a run can ask HubSpot for the contact's emails */
+  try{V137.hs=(await apSb('hubspot_contacts?select=email,first_name,last_name,company,job_title,website,lifecycle_stage,lead_status,first_seen,hs_id&order=first_seen.desc.nullslast&limit=2000'))||[];}
   catch(e){V137.hs=V137.hs||[];}
   V137.hsAt=Date.now();
   return V137.hs;
@@ -53898,13 +53909,15 @@ v136UsesLine=function(s){
   const m=document.getElementById('v120M'),a=V136.ask;if(!m||!a||m.querySelector('.v137-reads'))return;
   const l=v120Lead(a.email);if(!l)return;
   const box=document.createElement('div');box.className='v137-rbox';
-  box.innerHTML='<div class="v132-uses v137-reads"><div class="t">Reads</div><div class="u v132-off"><span class="v132-ck">…</span><span>Checking for call transcripts…</span></div></div>';
+  box.innerHTML='<div class="v132-uses v137-reads"><div class="t">Reads</div><div class="u v132-off"><span class="v132-ck">…</span><span>Checking for call transcripts and emails…</span></div></div>';
   const f=m.querySelector('.v136-from');if(f)f.after(box);else{const b=m.querySelector('.nw-m-body');if(b)b.prepend(box);}
   v137Gather(l,s,false).then(function(g){
     if(!document.body.contains(box)||!V136.ask||V136.ask.email!==a.email||V136.ask.s!==s)return;
     box.innerHTML=v137ReadsHtml(s,g);
     const hint=m.querySelector('label.nw-field small');
-    if(hint&&g.calls.length)hint.textContent='Optional: the call transcripts above go with it. Add anything else from the meeting.';
+    /* v138: the emails go with it too */
+    const em=(g.emails||[]).length;
+    if(hint&&(g.calls.length||em))hint.textContent='Optional: the '+(g.calls.length&&em?'call transcripts and emails':g.calls.length?'call transcripts':'emails')+' above go with it. Add anything else from the meeting.';
   }).catch(function(){box.remove();});
 };
 v136Go=async function(run){
@@ -53921,9 +53934,10 @@ v136Go=async function(run){
   if(run){
     const p=v136Plan(l,a.s);
     if(p.blocked){busy(false);say(p.blocked,true);return;}
-    if(a.s!=='research')say('Reading the call transcripts…');
+    if(a.s!=='research')say('Reading the call transcripts and emails…');
     try{g=await v137Gather(l,a.s,true);}catch(e){g=null;}
-    const has=!!note||!!(g&&g.calls.some(function(x){return x.text;}));
+    /* v138: the emails count as something to work from */
+    const has=!!note||!!(g&&g.calls.some(function(x){return x.text;}))||!!(g&&(g.emails||[]).length);
     if(p.need&&!has){busy(false);say('Paste the meeting transcript or your notes first. This lead has no '+p.need+' to work from yet, and no recorded call with it.',true);return;}
     say('Starting…');
   }
@@ -54174,7 +54188,7 @@ async function v137AskCall(id){
         (sum.length?'<ul>'+sum.map(function(x){return '<li>'+esc(typeof x==='string'?x:(x&&(x.text||x.point))||'')+'</li>';}).join('')+'</ul><span class="v137-by">From the post-call summary</span>':'')+'</div>'+
       '<p>'+esc((filed?'Its transcript is filed under '+filed.name+'. ':'Its transcript is filed under '+cst.name+', where '+name+' is now. ')+
         (same?'Catalyst writes '+st.what+' again, with this call.':'In '+st.name+', Catalyst writes '+st.what+' from everything so far and this call.')+' Only that runs, and nothing goes to the client.')+'</p>'+
-      '<div class="v137-rbox"><div class="v132-uses v137-reads"><div class="t">Reads</div><div class="u v132-off"><span class="v132-ck">…</span><span>Checking for call transcripts…</span></div></div></div>'+
+      '<div class="v137-rbox"><div class="v132-uses v137-reads"><div class="t">Reads</div><div class="u v132-off"><span class="v132-ck">…</span><span>Checking for call transcripts and emails…</span></div></div></div>'+
       (stop?'<p class="v120-msg err" role="alert">'+esc(stop)+'</p>':
         '<label class="nw-field"><span class="nw-lbl">Anything to add from the meeting?<small>Optional. The transcript goes with it.</small></span><textarea class="nw-input nw-textarea" id="v137Note" rows="3"></textarea></label>')+
       '<p class="v120-msg" id="v137Msg" role="status" aria-live="polite"></p>'+
@@ -54209,9 +54223,10 @@ async function v137CallGo(action){
   if(!l){busy(false);say('Could not find this lead any more. Refresh the page.',true);return;}
   const p=v136Plan(l,a.s);
   if(p.blocked){busy(false);say(p.blocked,true);return;}
-  say('Reading the call transcripts…');
+  say('Reading the call transcripts and emails…');
   let g=null;try{g=await v137Gather(l,a.s,true);}catch(e){g=null;}
-  if(p.need&&!typed&&!(g&&g.calls.some(function(x){return x.text;}))){busy(false);say('The transcript could not be read from Fathom, and this lead has no '+p.need+' to work from. Add your notes from the meeting.',true);return;}
+  /* v138: the emails count as something to work from */
+  if(p.need&&!typed&&!(g&&(g.calls.some(function(x){return x.text;})||(g.emails||[]).length))){busy(false);say('The transcript could not be read from Fathom, and this lead has no '+p.need+' to work from. Add your notes from the meeting.',true);return;}
   if(a.s!==a.cur){try{await v136SetStage(l,a.s);}catch(e){busy(false);say('Filed, but the lead could not be moved: '+((e&&e.message)||e),true);return;}}
   say('Starting…');
   try{await v137Start(l,a.s,typed,g);}
@@ -54268,6 +54283,416 @@ async function v137LeadCalls(h,email){
   const i=AP_WHERE.findIndex(function(r){return /^Catalyst agents/.test(r[0]);});
   if(i<0)return;
   AP_WHERE[i][1]='Rules, on every run. Each meeting stage also follows its template from Templates and reads what its setup there says: the call transcripts, the CRM record, your discovery call questions';
+})();
+</script>
+<style id="v138css">
+/* v138: a stage card keeps its fields at the top when the card beside it grows (its Writes list opened) */
+.v137-st{align-content:start}
+.v138-wrc{display:grid;gap:8px;min-width:0}
+.v137-ck.v138-ch{margin-top:2px}
+/* an email in a reads list */
+.v132-uses .u.v138-ml .v132-ck{background:#2F7D6D}
+/* charts and visuals in a document, drawn from its own numbers; on a phone the table stands in for the drawing */
+.v138-fig{margin:16px 0 4px;padding:12px 14px 10px;border:1px solid #EAECF0;border-radius:10px;background:#fff;break-inside:avoid;page-break-inside:avoid}
+.v138-fig figcaption{margin:0 0 10px;font-size:13.5px;font-weight:700;line-height:1.35;color:#1D2433}
+.v132-doc .v138-fig{font-family:var(--bh)}
+.v132-doc .v138-fig figcaption{font-family:var(--bh);color:var(--bt,#1D2433)}
+.v138-fig svg{display:block;width:100%;height:auto;max-width:600px;font-family:inherit}
+.v138-fig .mk{transition:opacity .12s}
+.v138-fig .mk:hover{opacity:.78}
+.v138-tbl{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+@media(max-width:600px){
+  .v138-fig svg{display:none}
+  .v138-tbl{position:static;width:auto;height:auto;margin:0;overflow:visible;clip:auto;clip-path:none;white-space:normal}
+  .v138-tbl table{width:100%;border-collapse:collapse;font-size:13px}
+  .v138-tbl caption{display:none}
+  .v138-tbl th,.v138-tbl td{padding:6px 8px;border-bottom:1px solid #EAECF0;text-align:left;font-weight:400;color:#344054}
+  .v138-tbl thead th{font-size:12px;font-weight:700;color:#667085}
+  .v138-tbl td:last-child,.v138-tbl th:last-child{text-align:right;white-space:nowrap}
+}
+</style>
+<script id="v138js">
+/* ===================================================================
+   v138 (Nov 6, Erica's notes on the Meeting Intelligence video): the lead's emails logged in HubSpot are an input to
+   every stage that meets the client (Templates sets it per stage, on by default), the client proposal, the onboarding
+   plan and the client review draw charts from the documents' own numbers and dates, the client proposal reads the
+   consultation guide, Write the client proposal reads what the Proposal stage reads, and a stage card on Templates no
+   longer stretches when the card beside it opens its Writes list.
+   =================================================================== */
+const V138={mail:{}};
+const V138_HOOK=AP_N8N+'catalyst-emails';
+/* the charts each stage can draw (the Proposal stage's are the client proposal's) */
+const V138_CH={proposal:'a timeline of the engagement, and bars where the documents give numbers',onboarding:'a timeline of the first weeks',review:'the results against the goals, as bars'};
+const V138_INK='#1C2647',V138_TXT='#1D2433',V138_MUT='#667085';
+
+/* ---------- each stage's setup: the emails (every stage after Prospect research), the charts (proposal, onboarding, review) ---------- */
+(function(){
+  const _s=v137Setup;
+  v137Setup=function(k){
+    const r=_s.apply(this,arguments),o=((V137.setup||{})[k])||{};
+    r.emails=k==='research'?false:(typeof o.emails==='boolean'?o.emails:true);
+    r.charts=V138_CH[k]?(typeof o.charts==='boolean'?o.charts:true):null;
+    return r;
+  };
+})();
+v137ReadOpts=function(k,set){
+  if(k==='research')return '';
+  const box=function(x,label,small,on,dis){
+    return '<label class="v137-ck'+(dis?' dis':'')+'"><input type="checkbox"'+(on?' checked':'')+(dis?' disabled':'')+' onchange="v137SetRead('+esc(nwJs(k))+','+esc(nwJs(x))+',this.checked)">'+
+      '<span><b>'+esc(label)+'</b><small>'+esc(small)+'</small></span></label>';};
+  const dt=v132InUse('discovery_template');
+  return box('calls','Call transcripts','The lead’s recorded calls from Fathom, newest first',set.calls)+
+    box('emails','Emails','The lead’s emails logged in HubSpot, newest first',set.emails)+
+    box('crm','CRM record','The lead’s contact in HubSpot',set.crm)+
+    (set.questions===null?'':box('questions','Your discovery call questions',dt?dt.file_name+', from Discovery consultation':'None added yet: add them under Discovery consultation',set.questions&&!!dt,!dt));
+};
+/* Writes: the summary says when the stage draws charts (the parts keep their count; the box under it says which and turns them off) */
+(function(){
+  const _w=v137Secs;
+  v137Secs=function(k){
+    const w=_w.apply(this,arguments);
+    if(V138_CH[k]&&v137Setup(k).charts)w.label+=', with charts';
+    return w;
+  };
+  const _h=v137StageHtml;
+  v137StageHtml=function(s,i){
+    const h=_h.apply(this,arguments);
+    if(!V138_CH[s.key])return h;
+    const on=v137Setup(s.key).charts;
+    const box='<label class="v137-ck v138-ch"><input type="checkbox"'+(on?' checked':'')+' onchange="v137SetRead('+esc(nwJs(s.key))+','+esc(nwJs('charts'))+',this.checked)">'+
+      '<span><b>Charts and visuals</b><small>'+esc(v136Cap(V138_CH[s.key])+', drawn only from the numbers and dates in the documents')+'</small></span></label>';
+    /* the Writes list and the box share the field's second column */
+    return h.replace('<details class="v137-wr">','<div class="v138-wrc"><details class="v137-wr">').replace(/<\/details><\/div><\/section>$/,'</details>'+box+'</div></div></section>');
+  };
+})();
+/* what the client proposal reads: the consultation guide too */
+V137_TPL.proposal.always='The assessment report. The client proposal also reads the prospect brief, the consultation guide, your discovery call questions, your past assessment and your house rules';
+(function(){
+  const p=V136_STAGES.find(function(s){return s.key==='proposal';});
+  if(p)p.from='the assessment report; the client proposal also uses the prospect brief, the consultation guide, your templates and what was said in the meetings';
+})();
+
+/* ---------- the lead's emails logged in HubSpot (Dashboard · HubSpot Emails Proxy), kept a minute per lead ---------- */
+async function v138MailLoad(l,g){
+  const em=v136Emails(l).map(v137Low).filter(function(e){return e&&e.indexOf('@')>0&&e!=='contact@deltaadvisory.com';});
+  const c=v137Contact(l),ids=c&&c.hs_id?[String(c.hs_id)]:[];
+  if(!em.length&&!ids.length)return;
+  const key=em.concat(ids).join('|'),hit=V138.mail[key];
+  if(hit&&Date.now()-hit.at<60e3){g.emails=hit.items.slice();g.emErr=hit.err;return;}
+  try{
+    const r=await apProxy(V138_HOOK,{action:'list',emails:em,ids:ids,limit:8},'HubSpot Emails');
+    if(r&&r.ok)g.emails=(r.items||[]).filter(function(x){return x&&String(x.text||'').trim();});
+    else g.emErr=(r&&r.message)||'HubSpot did not answer.';
+  }catch(e){g.emErr=(e&&e.message)||String(e);}
+  V138.mail[key]={at:Date.now(),items:(g.emails||[]).slice(),err:g.emErr||''};
+}
+(function(){
+  const _g=v137Gather;
+  v137Gather=async function(l,s,withText){
+    const g=await _g.apply(this,arguments);
+    g.emails=[];g.emErr='';
+    if(g.set&&g.set.emails)await v138MailLoad(l,g);
+    return g;
+  };
+})();
+/* who an email is from or to: the HubSpot contact's name, else the address */
+function v138Who(addr){
+  const a=v137Low(addr);if(!a)return '';
+  const c=(V137.hs||[]).find(function(x){return v137Low(x.email)===a;});
+  return c?v137Name(c):a;
+}
+function v138MailLine(x){
+  const who=x.incoming?v138Who(x.from):v138Who((x.to||[])[0]);
+  return 'The email on '+v137D(x.at)+(who?(x.incoming?' from ':' to ')+who:'')+': '+(x.subject||'no subject');
+}
+/* a stage's emails in a reads list: the three newest, then how many more */
+function v138MailItems(g){
+  const ms=(g&&g.emails)||[],u=[];
+  if(g&&g.emErr&&!ms.length)u.push({off:true,label:'Emails: HubSpot could not be read ('+g.emErr+').'});
+  else if(!ms.length)u.push({off:true,label:'No emails with this lead logged in HubSpot.'});
+  else{
+    ms.slice(0,3).forEach(function(x){u.push({mail:true,label:v138MailLine(x)});});
+    if(ms.length>3)u.push({mail:true,more:ms.length-3,label:'and '+(ms.length-3)+' more email'+(ms.length-3===1?'':'s')});
+  }
+  return u;
+}
+function v138U(x){
+  return '<div class="u'+(x.off?' v132-off':'')+(x.call?' v132-cl':'')+(x.mail?' v138-ml':'')+(x.doc?' v132-pd':'')+'"><span class="v132-ck">'+(x.off?'–':'✓')+'</span><span>'+esc(x.label)+'</span></div>';
+}
+
+/* ---------- a run's notes: the team's notes, the CRM record, the emails, then the transcripts ---------- */
+/* the emails go after the CRM record and before the transcripts, newest first, up to 8,000 characters (3,000 each);
+   with no emails the notes are exactly what v137 sent */
+const V138_MAIL=8000,V138_MAIL1=3000;
+function v138MailHead(x){
+  return 'Email on '+(v137Day(x.at)||'an unknown day')+(x.from?' from '+x.from:'')+(x.to&&x.to.length?' to '+x.to.join(', '):'')+(x.subject?': '+x.subject:'');
+}
+function v138MailBlock(g){
+  const mails=((g&&g.emails)||[]).filter(function(x){return x&&String(x.text||'').trim();});
+  if(!mails.length)return '';
+  let left=V138_MAIL;const out=[];
+  mails.forEach(function(x){
+    if(left<300)return;
+    const head=v138MailHead(x);
+    let t=String(x.text).replace(/\r\n?/g,'\n').trim();
+    if(t.length>V138_MAIL1)t=t.slice(0,V138_MAIL1)+'\n[the rest of this email is left out]';
+    if(head.length+t.length+2>left)t=t.slice(0,Math.max(0,left-head.length-60))+'\n[the rest of this email is left out]';
+    out.push(head+'\n'+t);left-=head.length+t.length+2;
+  });
+  return out.length?'EMAILS WITH THE CLIENT (HubSpot, newest first)\n\n'+out.join('\n\n'):'';
+}
+v137Note=function(g,typed){
+  typed=String(typed||'').trim();
+  const crm=g&&g.crm?v137CrmLine(g.crm):'',calls=((g&&g.calls)||[]).filter(function(x){return x.text;}),mail=v138MailBlock(g);
+  if(!crm&&!calls.length&&!mail)return typed;
+  const parts=[];
+  if(typed)parts.push('NOTES FROM THE TEAM\n'+typed);
+  if(crm)parts.push('THE CRM RECORD (HubSpot)\n'+crm);
+  if(mail)parts.push(mail);
+  let left=V137_BUDGET-parts.join('\n\n').length-120;
+  const out=[];
+  calls.forEach(function(x){
+    if(left<300)return;
+    const st=x.stage&&x.stage!=='none'?v136St(x.stage):null;
+    const head='Call on '+v137Day(x.start)+': '+(x.title||'untitled')+(st?' (filed under '+st.name+')':'');
+    let t=x.text;
+    if(head.length+t.length+2>left)t=t.slice(0,Math.max(0,left-head.length-60))+'\n[the rest of this call is left out]';
+    out.push(head+'\n'+t);left-=head.length+t.length+2;
+  });
+  if(out.length)parts.push('WHAT WAS SAID IN THE MEETINGS (call transcripts, newest first)\n\n'+out.join('\n\n'));
+  return parts.join('\n\n');
+};
+/* the list of what a run reads, in the questions: the emails after the call transcripts */
+v137ReadsHtml=function(s,g){
+  const T=V137_TPL[s],set=g.set||v137Setup(s),use=v132InUse(T.kind),u=[];
+  u.push(use?{doc:true,label:'Template: '+use.file_name}:{off:true,label:'No template for this stage yet, so the usual sections. Add one on Templates.'});
+  if(s!=='research'&&set.calls){
+    const calls=g.calls||[];
+    if(g.ftErr&&!calls.length)u.push({off:true,label:'Call transcripts: Fathom could not be read ('+g.ftErr+').'});
+    else if(!calls.length)u.push({off:true,label:'No recorded calls with this lead yet.'});
+    else calls.slice(0,4).forEach(function(x){u.push({call:true,label:'The call on '+v137D(x.start)+': '+(x.title||'untitled')+(x.text===''?' (its transcript could not be read)':' (transcript)')});});
+  }
+  if(s!=='research'&&set.emails)v138MailItems(g).forEach(function(x){u.push(x);});
+  if(set.crm)u.push(g.crm?{label:'The CRM record: '+v137CrmLine(g.crm)}:{off:true,label:'No HubSpot contact with this lead’s email.'});
+  if(set.questions){const dt=v132InUse('discovery_template');if(dt)u.push({doc:true,label:'Your discovery call questions: '+dt.file_name});}
+  u.push({label:T.alwaysRun||T.always});
+  return '<div class="v132-uses v137-reads"><div class="t">Reads</div>'+u.map(v138U).join('')+'</div>';
+};
+
+/* ---------- Write the client proposal reads what the Proposal stage reads ---------- */
+/* its setup on Templates: the call transcripts and the emails (and the CRM record when it is on), sent as the meetings'
+   notes, as the board's run sends them; the consultation guide is listed with the documents */
+v132Uses=function(X,g){
+  const as=e1StageState(X.lead,X.D.outs,E1_STAGES[2]),rs=e1StageState(X.lead,X.D.outs,E1_STAGES[0]),cs=e1StageState(X.lead,X.D.outs,E1_STAGES[1]);
+  const u=[],tp=v132InUse('proposal_template'),dt=v132InUse('discovery_template'),pa=v132InUse('past_assessment');
+  if(tp){const n=(tp.sections||[]).length,br=((tp.brand||{}).found||[]).length;
+    u.push({doc:true,label:'Proposal template: '+tp.file_name+(n||br?' ('+[n?n+' sections':'',br?'your branding':''].filter(Boolean).join(', ')+')':'')});}
+  else u.push({off:true,label:'No proposal template yet, so a standard layout. Add one in Templates.'});
+  if(dt)u.push({doc:true,label:'Discovery call questions: '+dt.file_name});
+  if(pa)u.push({doc:true,label:'Past assessment: '+pa.file_name});
+  const set=(g&&g.set)||v137Setup('proposal'),calls=(g&&g.calls)||[];
+  if(set.calls){
+    if(g&&g.ftErr&&!calls.length)u.push({off:true,label:'Call transcripts: Fathom could not be read ('+g.ftErr+').'});
+    else if(!calls.length)u.push({off:true,label:'No recorded call with this lead, so the documents on file.'});
+    else calls.slice(0,4).forEach(function(x){u.push(x.text===''?{off:true,label:'The call on '+v137D(x.start)+': '+(x.title||'untitled')+' (its transcript could not be read)'}:
+      {call:true,label:'The call on '+v137D(x.start)+': '+(x.title||'untitled')+' (transcript)'});});
+  }
+  if(set.emails)v138MailItems(g||{}).forEach(function(x){u.push(x);});
+  if(set.crm)u.push(g&&g.crm?{label:'The CRM record: '+v137CrmLine(g.crm)}:{off:true,label:'No HubSpot contact with this lead’s email.'});
+  if(as.done)u.push({label:'The assessment'+(as.out&&as.out.created_at?' of '+v132Day(as.out.created_at):'')});
+  if(cs.done)u.push({label:'The consultation guide'});
+  if(rs.done)u.push({label:'The prospect brief'});
+  return u;
+};
+/* "Using 3 past documents, 2 call transcripts and 3 emails", then each one */
+v132UsesHtml=function(u){
+  u=u||[];
+  const nd=u.filter(function(x){return x.doc&&!x.off;}).length,nc=u.filter(function(x){return x.call&&!x.off;}).length;
+  const nm=u.reduce(function(n,x){return n+(x.mail&&!x.off?(x.more||1):0);},0);
+  const parts=[nd?nd+' past document'+(nd===1?'':'s'):'',nc?(nc===1?'the call transcript':nc+' call transcripts'):'',nm?(nm===1?'an email':nm+' emails'):''].filter(Boolean);
+  const sum=parts.length?'Using '+(parts.length>1?parts.slice(0,-1).join(', ')+' and '+parts[parts.length-1]:parts[0]):'Built from';
+  return '<div class="v132-uses"><div class="t">'+esc(sum)+'</div>'+u.map(v138U).join('')+'</div>';
+};
+v132Ask=async function(email){
+  const X=v132LeadOf(email);if(!X)return;
+  const l=X.lead,name=l.prospect_name||email;
+  await v132Load();
+  let g=null;try{g=await v137Gather(l,'proposal',false);}catch(e){g=null;}
+  const uses=v132Uses(X,g);
+  V132.ask={email:l.email,g:g,uses:uses};
+  nwModal('v132M','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · '+esc(name)+'</div><h2>Write the client proposal for '+esc(name)+'?</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v132-m">'+v132UsesHtml(uses)+
+      '<p>It writes the proposal the client receives, in your template\'s sections and branding. It takes a few minutes and shows on this page when it is ready. Nothing goes to the client: you review it first.</p>'+
+      '<p class="v132-msg" id="v132Msg" role="status" aria-live="polite"></p>'+
+      '<div class="nw-m-foot"><span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button>'+
+        '<button type="button" class="nw-btn nw-btn-primary" id="v132Go" onclick="v132Go()">'+nwIc('check',15)+'Write it</button></div>'+
+    '</div>');
+};
+v132Go=async function(){
+  const a=V132.ask;if(!a)return;
+  const btn=document.getElementById('v132Go'),msg=document.getElementById('v132Msg');
+  const say=function(t,err){if(msg){msg.textContent=t;msg.classList.toggle('err',!!err);}};
+  if(btn)btn.disabled=true;say('Reading the call transcripts and emails…');
+  const X=v132LeadOf(a.email);let g=a.g,uses=a.uses.slice();
+  if(X){try{g=await v137Gather(X.lead,'proposal',true);uses=v132Uses(X,g);}catch(e){}}
+  /* the meetings' notes, with no single call's title: the transcripts, the emails, the CRM record when the stage reads it */
+  const note=g?v137Note(g,''):'';
+  const call=note?{id:'',title:'',date:'',transcript:note.slice(0,60000)}:null;
+  say('Starting…');
+  try{
+    const j=await apXTimed(apX(V132_HOOK,{leadEmail:a.email,call:call},'Catalyst · Client Proposal'),30000);
+    if(!j||j.ok===false)throw new Error((j&&j.message)||'n8n did not start it.');
+  }catch(e){if(btn)btn.disabled=false;say('Could not start it: '+((e&&e.message)||e),true);return;}
+  V132.run[a.email]={t0:new Date(Date.now()-5000).toISOString(),uses:uses};V132.ask=null;nwModalClose();
+  nwToast('Writing the client proposal. It shows here when it is ready.');
+  if(!document.querySelector('.v132-pc[data-email="'+CSS.escape(a.email)+'"]'))await v132Lead();
+  v132Repaint(a.email);v132Poll(a.email);
+};
+
+/* ---------- charts and visuals, drawn from a document's own numbers ---------- */
+function v138Key(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
+function v138N(v){return typeof v==='number'?v:(typeof v==='string'&&v.trim()!==''?Number(v):NaN);}
+/* the charts a document carries, checked again: a timeline or bars, two to twelve items, numbers that make sense */
+function v138Vis(list){
+  return (Array.isArray(list)?list:[]).filter(function(v){return v&&(v.type==='timeline'||v.type==='bars')&&Array.isArray(v.items);}).slice(0,2).map(function(v){
+    const items=v.items.slice(0,12).map(function(x){
+      const label=String((x&&x.label)||'').replace(/\s+/g,' ').trim().slice(0,60);
+      return v.type==='timeline'?{label:label,start:v138N(x&&x.start),end:v138N(x&&x.end)}:{label:label,value:v138N(x&&x.value)};
+    }).filter(function(x){return x.label&&(v.type==='timeline'?isFinite(x.start)&&isFinite(x.end)&&x.start>=0&&x.end>=x.start&&x.end<=520:isFinite(x.value)&&x.value>=0&&x.value<1e12);});
+    return {type:v.type,title:String(v.title||'').replace(/\s+/g,' ').trim().slice(0,120),after:String(v.after||''),unit:String(v.unit||'').replace(/\s+/g,' ').trim().slice(0,20),items:items};
+  }).filter(function(v){return v.items.length>=2;});
+}
+/* a chart as one line of text, as the client proposal workflow writes it in the markdown */
+function v138ChartText(v){
+  return 'Chart: '+(v.title||'Chart')+'. '+v.items.map(function(x){return v.type==='timeline'?x.label+' ('+(v.unit?v.unit+'s ':'')+x.start+(x.end!==x.start?' to '+x.end:'')+')':
+    x.label+': '+x.value+(v.unit?' '+v.unit:'');}).join('; ')+'.';
+}
+/* a brand color for the marks only when it stands out on white (3:1), else the dashboard's navy */
+function v138Ink(h,dflt){
+  const x=v132Hex(h);if(!x)return dflt;
+  const c=[1,3,5].map(function(i){const v=parseInt(x.slice(i,i+2),16)/255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});
+  const L=0.2126*c[0]+0.7152*c[1]+0.0722*c[2];
+  return 1.05/(L+0.05)>=3?x:dflt;
+}
+function v138R(n){return Math.round(n*10)/10;}
+function v138Tw(s,px){return String(s).length*px*0.56;}
+function v138Fmt(n){return (Math.round(n*100)/100).toLocaleString('en-US');}
+function v138Plural(u){u=String(u||'').trim();return !u?'':/s$/i.test(u)?u:u+'s';}
+function v138Range(v,x){
+  const u=v.unit,one=x.end===x.start;
+  return (u?v136Cap(one?u:v138Plural(u))+' ':'')+v138Fmt(x.start)+(one?'':' to '+v138Fmt(x.end));
+}
+/* a bar grows from the baseline: square there, its data end rounded */
+function v138Bar(x,y,w,h,r,fill,title){
+  if(!(w>0))return '';
+  r=Math.min(r,w,h/2);
+  const X=v138R(x),Y=v138R(y),R=v138R(x+w),B=v138R(y+h);
+  return '<path class="mk" fill="'+fill+'" d="M'+X+','+Y+'H'+v138R(x+w-r)+'Q'+R+','+Y+' '+R+','+v138R(y+r)+'V'+v138R(y+h-r)+'Q'+R+','+B+' '+v138R(x+w-r)+','+B+'H'+X+'Z"><title>'+esc(title)+'</title></path>';
+}
+function v138Chart(v,col,ink){
+  const W=600,mut=V138_MUT,grid='#EAECF0',base='#C9CED6',n=v.items.length;
+  let s='',H=0,thead='',rows='';
+  if(v.type==='timeline'){
+    const lo=Math.min.apply(null,v.items.map(function(x){return x.start;})),hi=Math.max.apply(null,v.items.map(function(x){return x.end;}));
+    /* whole weeks (or months): item "1 to 2" covers the first two cells; anything starting at 0 is read as points */
+    const cells=lo>=1&&v.items.every(function(x){return x.start===Math.round(x.start)&&x.end===Math.round(x.end);});
+    const a=cells?lo-1:lo,b=cells?hi:Math.max(hi,lo+1),span=Math.max(1,b-a);
+    const L=6,R=W-6,sx=function(t){return L+(R-L)*(t-a)/span;};
+    const RH=44,TOP=4,step=span<=14?1:span<=28?2:span<=56?4:Math.ceil(span/12);
+    for(let t=a;t<=b+1e-9;t+=step)s+='<line x1="'+v138R(sx(t))+'" y1="'+TOP+'" x2="'+v138R(sx(t))+'" y2="'+(TOP+n*RH)+'" stroke="'+grid+'" stroke-width="1"/>';
+    v.items.forEach(function(x,i){
+      const y0=TOP+i*RH,x0=sx(cells?x.start-1:x.start),x1=Math.max(sx(x.end),x0+4),rg=v138Range(v,x);
+      const est=v138Tw(x.label+' · '+rg,12.5);
+      let tx=x0,an='start';
+      if(tx+est>W){if(x1-est>=0){tx=x1;an='end';}else{tx=0;an='start';}}
+      s+='<text x="'+v138R(tx)+'" y="'+(y0+15)+'" text-anchor="'+an+'" font-size="12.5"><tspan fill="'+ink+'" font-weight="600">'+esc(x.label)+'</tspan><tspan fill="'+mut+'"> · '+esc(rg)+'</tspan></text>';
+      s+='<rect class="mk" x="'+v138R(x0)+'" y="'+(y0+22)+'" width="'+v138R(x1-x0)+'" height="14" rx="4" fill="'+col+'"><title>'+esc(x.label+': '+rg)+'</title></rect>';
+      rows+='<tr><th scope="row">'+esc(x.label)+'</th><td>'+esc(rg)+'</td></tr>';
+    });
+    const ay=TOP+n*RH+16;let first=true;
+    for(let t=(cells?a+1:a);t<=b+1e-9;t+=step){
+      const xx=cells?sx(t-0.5):sx(t);
+      s+='<text x="'+v138R(xx)+'" y="'+ay+'" text-anchor="middle" font-size="11.5" fill="'+mut+'">'+esc((first&&v.unit?v136Cap(v.unit)+' ':'')+v138Fmt(t))+'</text>';
+      first=false;
+    }
+    H=ay+6;
+    thead='<tr><th scope="col">'+esc(v.unit?'Phase':'Item')+'</th><th scope="col">'+esc(v.unit?v136Cap(v138Plural(v.unit)):'When')+'</th></tr>';
+  }else{
+    const unit=v.unit,fmt=function(x){return v138Fmt(x.value)+(unit?' '+unit:'');};
+    /* the labels' column fits the longest label, up to two fifths of the width; a longer label takes two lines */
+    const fit=Math.min(Math.max.apply(null,v.items.map(function(x){return v138Tw(x.label,13);}))+14,W*0.4);
+    const room=Math.floor((fit-14)/(13*0.56));
+    const lines=v.items.map(function(x){
+      if(x.label.length<=room)return [x.label];
+      let cut=x.label.lastIndexOf(' ',Math.min(room,Math.ceil(x.label.length/2)+6));
+      if(cut<=0)cut=room;
+      const one=x.label.slice(0,cut).trim(),two=x.label.slice(cut).trim();
+      return [one.length>room?one.slice(0,room-1)+'…':one,two.length>room?two.slice(0,room-1)+'…':two];
+    });
+    const RH=lines.some(function(l){return l.length>1;})?40:30,TOP=2;
+    const vw=Math.max.apply(null,v.items.map(function(x){return v138Tw(fmt(x),12.5);}))+10;
+    const x0=fit,max=Math.max.apply(null,v.items.map(function(x){return x.value;}))||1,len=Math.max(40,W-vw-x0);
+    v.items.forEach(function(x,i){
+      const y0=TOP+i*RH,cy=y0+RH/2,w=len*x.value/max;
+      const ls=lines[i],cut=ls.join(' ')!==x.label;
+      s+='<text x="'+v138R(x0-10)+'" y="'+v138R(ls.length>1?cy-3:cy+4.5)+'" text-anchor="end" font-size="13" fill="'+ink+'">'+
+        ls.map(function(t,k){return '<tspan x="'+v138R(x0-10)+'"'+(k?' dy="15"':'')+'>'+esc(t)+'</tspan>';}).join('')+(cut?'<title>'+esc(x.label)+'</title>':'')+'</text>';
+      s+=v138Bar(x0,cy-9,w,18,4,col,x.label+': '+fmt(x));
+      s+='<text x="'+v138R(x0+w+6)+'" y="'+v138R(cy+4.5)+'" font-size="12.5" fill="'+ink+'">'+esc(fmt(x))+'</text>';
+      rows+='<tr><th scope="row">'+esc(x.label)+'</th><td>'+esc(fmt(x))+'</td></tr>';
+    });
+    s='<line x1="'+v138R(x0)+'" y1="'+TOP+'" x2="'+v138R(x0)+'" y2="'+(TOP+n*RH)+'" stroke="'+base+'" stroke-width="1"/>'+s;
+    H=TOP+n*RH+4;
+    thead='<tr><th scope="col">Item</th><th scope="col">'+esc(unit?v136Cap(unit):'Value')+'</th></tr>';
+  }
+  return '<figure class="v138-fig" data-v138="'+v.type+'">'+(v.title?'<figcaption>'+esc(v.title)+'</figcaption>':'')+
+    '<svg viewBox="0 0 '+W+' '+v138R(H)+'" width="'+W+'" height="'+v138R(H)+'" aria-hidden="true" focusable="false">'+s+'</svg>'+
+    '<div class="v138-tbl"><table>'+(v.title?'<caption>'+esc(v.title)+'</caption>':'')+'<thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div></figure>';
+}
+/* the client proposal: each chart under the section it names (the last one when no section has that title) */
+(function(){
+  const _d=v132DocHtml;
+  v132DocHtml=function(o){
+    const h=_d.apply(this,arguments),d=apJson(o&&o.data),vis=v138Vis(d&&d.doc&&d.doc.visuals);
+    if(!vis.length)return h;
+    const doc=v132DocOf(o),c=(v132BrandOf(o).colors)||{},col=v138Ink(c.primary,V138_INK),ink=v138Ink(c.text,V138_TXT);
+    const t=document.createElement('template');t.innerHTML=h;
+    const secs=[...t.content.querySelectorAll('.v132-sec')];if(!secs.length)return h;
+    vis.forEach(function(v){
+      const i=(doc.sections||[]).findIndex(function(s){return v138Key(s.title)===v138Key(v.after);});
+      const sec=secs.find(function(x){return +x.dataset.i===i;})||secs[secs.length-1];
+      const box=document.createElement('div');box.innerHTML=v138Chart(v,col,ink);sec.appendChild(box.firstChild);
+    });
+    return t.innerHTML;
+  };
+})();
+/* the meeting prep documents (onboarding plan, client review brief): each chart at the end of the section it names */
+(function(){
+  const _p=v136PrepHtml;
+  v136PrepHtml=function(lead,st,d){
+    const h=_p.apply(this,arguments),out=d&&d.out,vis=v138Vis(apJson(out&&out.data).visuals);
+    if(!vis.length||h.indexOf('v136-prep')<0)return h;
+    const t=document.createElement('template');t.innerHTML=h;
+    const brief=t.content.querySelector('.v136-prep .brief');if(!brief)return h;
+    const hs=[...brief.querySelectorAll('h2')];
+    vis.forEach(function(v){
+      const box=document.createElement('div');box.innerHTML=v138Chart(v,V138_INK,V138_TXT);const fig=box.firstChild;
+      const at=hs.find(function(x){return v138Key(x.textContent)===v138Key(v.after);});
+      if(!at){brief.appendChild(fig);return;}
+      let nx=at.nextElementSibling;while(nx&&nx.tagName!=='H2')nx=nx.nextElementSibling;
+      if(nx)brief.insertBefore(fig,nx);else brief.appendChild(fig);
+    });
+    return t.innerHTML;
+  };
+})();
+
+/* AI settings: what the Catalyst agents read and draw now */
+(function(){
+  const i=AP_WHERE.findIndex(function(r){return /^Catalyst agents/.test(r[0]);});
+  if(i>=0)AP_WHERE[i][1]='Rules, on every run. Each meeting stage also follows its template from Templates and reads what its setup there says: the call transcripts, the emails in HubSpot, the CRM record, your discovery call questions. The proposal, onboarding and client review prep draw charts from the documents’ own numbers when their setup says so';
+  const j=AP_WHERE.findIndex(function(r){return r[0]==='Client proposal';});
+  if(j>=0)AP_WHERE[j][1]='Rules, your past documents from Templates, what the Proposal stage reads (the call transcripts and emails, and the CRM record when it is on), the lead\'s documents with the consultation guide, and charts when the stage draws them';
 })();
 </script>
 <script>
