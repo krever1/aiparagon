@@ -3219,6 +3219,109 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
 .ov-ed-note{flex-basis:100%;margin-top:-6px}
 .ov-done[hidden],.ov-blank[hidden],#ovDoneWhoF[hidden]{display:none!important}
 @media(max-width:600px){.ov-what-os{grid-template-columns:1fr}}
+/* ══ v12.42: phones and tablets ══
+   What the Nov 5 mobile QA pass found (tests/portal-mobile.test.js). Every rule here applies below 1280 px,
+   or only changes a box whose content did not fit, so a desktop screen that fitted before looks the same.
+   Tap targets on a phone are at least 32 x 32 px. */
+/* a toolbar beside a section title wraps under it instead of running out of its card and widening the page
+   (the Fire drill and Water temperature logs, a client's Care tab, Categories / Write note) */
+@media (min-width:901px){
+  .sec-head{flex-wrap:wrap}
+  .sec-head .head-act{flex:0 1 auto;flex-wrap:wrap;justify-content:flex-end;max-width:100%;min-width:0}
+}
+/* the setup screen's workspace preview: a long team name is cut short, it never widens the screen */
+@media (min-width:601px){ #onbRoot .pv{grid-template-columns:172px minmax(0,1fr)} }
+#onbRoot .pv-hello{min-width:0}
+@media (max-width:1000px){ #onbRoot .onb-pv-hint{display:none} }   /* the preview is below the questions, or hidden */
+/* the week view's titles: one line each, cut short with an ellipsis, in a narrow week */
+.cx-wt{font-style:normal}
+@media (min-width:901px) and (max-width:1279px){
+  .cx-wev{grid-template-columns:minmax(0,1fr)}
+  .cx-wt,.cx-wev span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+/* Create new template on a phone held sideways: its toolbars scroll away with the form instead of filling the window */
+@media (max-height:500px) and (max-width:1100px){ .tpe-top,.tpe-dock{position:static} }
+/* edit mode: the last "Add a section" tile scrolls clear of the floating Reset and Done buttons */
+@media (min-width:901px) and (max-width:1279px){ body:has(#layFab2) #view{padding-bottom:150px} }
+@media (max-width:1279px){
+  /* a staff page's header line runs on as one line of text, never as two columns side by side */
+  .page-h .sub[style*="display:flex;align-items:center;gap:6px"]{display:block!important}
+  .page-h .sub[style*="display:flex;align-items:center;gap:6px"]>span{vertical-align:middle;margin:0 4px 2px 0}
+  /* labels that broke one word per line */
+  .sprog-row .sp-l b{white-space:nowrap}
+  .tb .spill{white-space:nowrap}
+  .team-i .ti b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat-log .msg{overflow-wrap:anywhere}
+  .app.on>.sidebar .nav-item{white-space:nowrap}
+  .tb td .btn.sm{white-space:nowrap}
+  /* an open binder's "Forms that file here": each form one rounded box with its words wrapping inside it */
+  .pill[onclick^="event.stopPropagation();tplOpenDoc"]{display:inline-block;max-width:100%;white-space:normal;text-align:left;border-radius:12px;line-height:1.35;padding-top:6px;padding-bottom:6px;min-height:32px}
+  .btn[onclick="event.stopPropagation();go('forms')"]{flex:none;white-space:nowrap}
+  /* placeholders and pick lists that do not fit end in an ellipsis */
+  input,select{text-overflow:ellipsis}
+}
+@media (max-width:900px){
+  /* the Customize layout button never sits on Ask Spectrum */
+  body:has(#askPanel.on) #layFab,body:has(#askPanel.on) #layFab2{visibility:hidden}
+  /* page header actions keep their whole label: one too wide for half a row takes a row of its own */
+  .page-acts .btn,.page-hd .right .btn,.hero-acts .btn,.page-h .right .btn{flex:1 1 auto}
+  .tpl-head-acts{flex:1 1 auto}
+  /* tick boxes and round choices keep their size (the rule for inputs with an inline width stretched them) */
+  .md-b input[type=checkbox][style*="width"],.md-b input[type=radio][style*="width"],.dr-b input[type=checkbox][style*="width"],
+  .card input[type=checkbox][style*="width"]{width:16px!important;max-width:16px!important;min-width:16px!important;flex:none}
+  /* a client's week strip: the arrows and the date button on one row, the seven days on the next */
+  .cal-strip{flex-wrap:wrap}
+  .cal-strip>.cal-nav:first-child{order:-3}
+  .cal-strip>.cal-jump{order:-2;flex:1 1 0;width:auto;min-width:0}
+  .cal-strip>.cal-days+.cal-nav{order:-1}
+  .cal-strip>.cal-days{flex:1 1 100%;gap:4px}
+  .cal-nav{width:40px}
+  /* a window's header and footer stay put and only its body scrolls, so the last field is never under Save */
+  .modal:not(.ov-modal){display:flex;flex-direction:column}
+  .modal:not(.ov-modal)>.md-h,.modal:not(.ov-modal)>.md-f{flex:none}
+  .modal:not(.ov-modal)>.md-b{flex:1 1 auto;min-height:0;max-height:none}
+  /* two-column tables read at the width of their card (mobileTables marks them); names wrap inside list cards */
+  table.tb.tb-narrow{min-width:0}
+  table.tb.tb-narrow td{white-space:normal}
+  table.tb.tb-narrow td:first-child{min-width:0;overflow-wrap:anywhere}
+  table.tb.tb-narrow .pill{white-space:nowrap}
+  .mcards .tb-name{white-space:normal;min-width:0}
+  .mcards .tb-name>div,.mcard .mc-main{min-width:0;overflow-wrap:anywhere}
+  /* a log or inspection's lines: the question gets a row of its own */
+  #formFull div:has(>input.inp[placeholder^="Question "]){flex-wrap:wrap}
+  #formFull input.inp[placeholder^="Question "]{flex:1 1 100%!important}
+  /* a binder's name and its count: the count drops under the name rather than beside it in a column */
+  .binder-head{flex-wrap:wrap}
+  /* short labels stay on one line */
+  .seg>button,.cal-pop-h .mo-btn,.cx-add-b{white-space:nowrap}
+  .modal.tpe-wide .md-f .btn:not(.navy){flex:1 1 auto}
+  /* tap targets of at least 32 x 32 px */
+  .x,.ask-h .xw,.sig-x,.gear.sm{min-width:36px;min-height:36px}
+  .topbar .search input{min-height:36px}
+  .btn.sm{min-width:32px;flex-shrink:0}
+  .cb{min-width:32px!important;min-height:32px!important}
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select{min-height:32px}
+  .cx-open,.cx-ty,.cx-lg,.cx-pp,.cal-chip,.fb-k,.tc-skip,.crumb button,#askSug button,span.spill[onclick],.fmt-btn,.fmt-clear{min-height:32px}
+  #mdBody .tpe-rows button,#mdBody .tpe-rows .tpe-link,#mdBody .tpe-rowbar button{min-height:32px}
+  .cx-open,.tc-skip,.tpe-link,.tpe-signhere,span.tiny[onclick],.rn.rn-live,span.inline-ed{display:inline-flex;align-items:center;min-height:32px}
+  .cx-ti,.ct[onclick],.ct.inline-ed{min-height:32px}
+  .fmt-btn{min-width:32px}
+  .fmt-sw{width:32px;height:32px}
+  label:has(>input[type=checkbox]),label:has(>input[type=radio]){min-height:32px}
+  .side-foot a,#login a,#onbRoot a{display:inline-flex;align-items:center;min-height:32px}
+}
+@media (max-width:600px){
+  /* the Profile's header: Settings drops under the name instead of off the edge */
+  #view section.hero[style*="gap:18px"]{flex-wrap:wrap;row-gap:12px}
+  #view section.hero[style*="gap:18px"]>div[style*="flex:1"]{flex:1 1 170px!important;min-width:0}
+  #view section.hero[style*="gap:18px"]>.btn{margin-left:auto}
+}
+@media (max-width:480px){
+  /* a staff page's training rows: Unassign moves under the course instead of off the card */
+  .checkrow:has(>.btn){flex-wrap:wrap;row-gap:6px}
+  .checkrow:has(>.btn)>.ct{flex:1 1 150px;min-width:0}
+  .checkrow:has(>.btn)>.btn{margin-left:auto}
+}
 </style>
 </head>
 <body>
@@ -3302,7 +3405,7 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
       <!-- ─────── STEP: WHO ─────── -->
       <div class="ob-q on" data-q="who">
         <h2 id="whoTitle">What's your role?</h2>
-        <p class="help">Spectrum shows a different workspace depending on your role. This sets what you see when you sign in — watch the panel on the right build as you answer.</p>
+        <p class="help">Spectrum shows a different workspace depending on your role. This sets what you see when you sign in<span class="onb-pv-hint"> — watch the panel on the right build as you answer</span>.</p>
         <div class="opts" data-group="who">
           <button class="opt" data-val="leadership" data-role="director">
             <span class="glyph"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v5.2c0 4.9 3.3 8.3 8 9.8 4.7-1.5 8-4.9 8-9.8V6l-8-3Z"/><path d="m8.8 12 2.2 2.2 4.2-4.4"/></svg></span>
@@ -6920,7 +7023,8 @@ function mobileIsPhone(){ try{ return window.matchMedia('(max-width:900px)').mat
 function mobileTables(){
   const root=el('view'); if(!root) return;
   root.querySelectorAll('.mcards').forEach(n=>n.remove());
-  root.querySelectorAll('table.tb').forEach(t=>{ t.style.display=''; });
+  root.querySelectorAll('table.tb').forEach(t=>{ t.style.display='';
+    t.classList.toggle('tb-narrow',Math.max(0,...[...t.rows].map(r=>r.cells.length))<3); });   // v12.42
   if(!mobileIsPhone()) return;
   MTAB=[];
   root.querySelectorAll('table.tb').forEach(t=>{
@@ -19327,8 +19431,8 @@ function saveTaskEdit(id){
 function setStage(id,s){ const t=TASKS.find(x=>x.id===id); t.stage=s;
   if(s==='Done'){ t.doneAt=T; } else { delete t.doneAt; }                 // completion date rides along
   sbPatch('np_demo_tasks',id,{stage:s,done_at:s==='Done'?T:null,updated_at:new Date().toISOString()}); renderNav(); render(); if(el('drawer').classList.contains('on')) openTask(id); toast(`Task moved to ${s.toLowerCase()}.`); }
-function openAssign(preSid){
-  openModal(state.role==='director'?'Assign a task':'Add a task',`   /* v12.42: staff add their own */
+function openAssign(preSid){   // v12.42: staff add their own
+  openModal(state.role==='director'?'Assign a task':'Add a task',`
     <div class="field"><label>Task</label><input class="inp" id="ntTitle" placeholder="What needs doing?"></div>
     <div class="row2">
       ${state.role==='director'?`<div class="field"><label>Assign to</label><select class="inp" id="ntWho" data-list="staff" data-fmt="stname" onchange="fillSelectChange(this)">${visibleStaff().map(s=>`<option value="${s.id}" ${preSid===s.id?'selected':''}>${esc(stName(s))}</option>`).join('')}${addOpt('staff')}</select></div>`
@@ -23961,7 +24065,7 @@ function cxWeek(p,A){
   const cols=Array.from({length:7},(_,i)=>{ const d=iso(addDays(sun,i)), dt=addDays(sun,i), items=cxDayItems(p,d,A);
     return `<div class="cx-wcol${d===T?' is-today':''}${d===cxDay(p)?' is-on':''}">
       <button type="button" class="cx-wh" onclick="cxPick('${p}','${d}')"><span>${CX_DOW[i]}</span><b>${dt.getDate()}</b></button>
-      ${items.map(i=>`<button type="button" class="cx-wev${i.cx?' is-cx':''}" style="border-left-color:${cxKind(i.k).c}" ${i.go?`onclick="${i.go}"`:''}><span>${i.t?hm12(i.t):cxKind(i.k).one}</span>${esc(i.title)}</button>`).join('')||'<span class="cx-wnone">—</span>'}
+      ${items.map(i=>`<button type="button" class="cx-wev${i.cx?' is-cx':''}" style="border-left-color:${cxKind(i.k).c}" title="${esc(i.title)}" ${i.go?`onclick="${i.go}"`:''}><span>${i.t?hm12(i.t):cxKind(i.k).one}</span><i class="cx-wt">${esc(i.title)}</i></button>`).join('')||'<span class="cx-wnone">—</span>'}
     </div>`; }).join('');
   return `<div class="cx-cal">
     <div class="cx-mhead">
