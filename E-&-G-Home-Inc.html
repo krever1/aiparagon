@@ -3322,6 +3322,14 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
   .checkrow:has(>.btn)>.ct{flex:1 1 150px;min-width:0}
   .checkrow:has(>.btn)>.btn{margin-left:auto}
 }
+/* a list row's View details window on a phone: a name and its line under it wrap inside the window
+   (the phone table rule keeps .tb-name on one line, and the window inherited it) */
+.mrow .mv .tb-name{white-space:normal;min-width:0;flex-wrap:wrap;gap:4px 10px}
+.mrow .mv .tb-name>div{min-width:0;overflow-wrap:anywhere}
+/* a name box that resets its own look (New category and the like) ends a long placeholder in an ellipsis too */
+.gp-name{min-width:0}
+.gp-name input{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+@media (max-width:400px){ .gp-name input{font-size:17px} }
 </style>
 </head>
 <body>
@@ -7076,9 +7084,10 @@ function mtabOpen(i){
   const r=MTAB[i]; if(!r) return;
   const title=(r.cells[0]||'').replace(/<[^>]+>/g,' ').trim().slice(0,60)||'Details';
   const body=r.cells.map((c,ci)=>{
-    const label=r.heads[ci]||'';
+    const label=(r.heads[ci]||'').replace(/[↕↑↓▲▼⇅]/g,'').trim();   // v12.42: no sort arrows
     const val=String(c||'').trim();
     if(!val||!val.replace(/<[^>]+>/g,'').trim()&&!/<(img|input|button|svg)/i.test(val)) return '';
+    if(!label&&/^[\s›»>]*$/.test(val.replace(/<[^>]+>/g,''))&&!/<(input|button)/i.test(val)) return '';   // v12.42: the row's › is the Open button
     return `<div class="mrow"><div class="mk">${esc(label||' ')}</div><div class="mv">${val}</div></div>`;
   }).join('');
   const act=r.tr&&r.tr.getAttribute('onclick');

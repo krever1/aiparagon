@@ -182,8 +182,10 @@ function audit(opt) {
         const byNode = new Map(); lines.forEach(({ r: q, t }) => { const a = byNode.get(t) || []; if (!a.some((x) => Math.abs(x - q.top) < 4)) a.push(q.top); byNode.set(t, a); });
         let worst = null;
         byNode.forEach((tops, t) => { const words = t.nodeValue.trim().split(/\s+/).filter((w) => /[A-Za-z0-9]/.test(w)).length; if ((tops.length >= 3 && words <= 5) || (tops.length >= 2 && words >= 2 && words <= tops.length)) if (!worst || tops.length > worst.lines) worst = { lines: tops.length, words, text: t.nodeValue.trim().slice(0, 40) }; });
-        // a title in a block that fills its row (a list item's name) may wrap like any text; a label in a button, tab or pill may not
-        const blockRow = c.display === 'block' && n.parentElement && r.width > n.parentElement.getBoundingClientRect().width * 0.6;
+        // a title in a block that fills its row (a list item's name) may wrap like any text; a label in a button, tab or pill may not,
+        // unless it already takes its whole row of a box at least 200 px wide (a 40-character name in a chip: it cannot get wider)
+        const pw = n.parentElement ? n.parentElement.getBoundingClientRect().width : 0;
+        const blockRow = (c.display === 'block' && r.width > pw * 0.6) || (pw >= 200 && r.width >= pw * 0.9);
         if (worst && !blockRow) out.wrap.push({ qa: tag(n), el: short(n), lines: worst.lines, words: worst.words, run: worst.text, w: Math.round(r.width) });
       }
     }
@@ -422,7 +424,13 @@ const SCREENS = [
   // ---- the forms Add item opens, and the other windows
   ...['appt', 'event', 'meeting', 'shift', 'rem', 'where'].map((k) => ({ id: 'cx:' + k, roles: k === 'shift' ? D : DS, open: ev((k) => { go('calendar'); cxAdd(k, T, 'calendar'); }, k), core: ['appt', 'shift'].includes(k) })),
   { id: 'win:addstaff', roles: D, open: ev(() => { go('team'); openStaffForm(); }), core: true },
-  { id: 'win:assign', roles: DS, open: ev(() => { go('tasks'); openAssign(); }) },
+  { id: 'win:assign', roles: DS, open: ev(() => { go('tasks'); openAssign(); }), core: true },
+  // a list row's View details window (phones only: list rows are cards there) and a name box that resets its own look
+  ...[['clients', DS], ['tasks', D]].map(([v, roles]) => ({ id: 'win:rowdetails:' + v, roles, core: true, open: async (page) => {
+    const has = await page.evaluate((v) => { go(v); const b = document.querySelector('#view .mc-go'); if (b) b.click(); return !!b; }, v);
+    if (!has) return 'skip';
+  } })),
+  { id: 'win:newcategory', roles: D, open: ev(() => { go('directory'); dirCatNew(); }), core: true },
   { id: 'win:task', roles: DS, open: ev(() => { go('tasks'); const t = myTasks().find((x) => x.stage !== 'Done') || myTasks()[0]; openTask(t.id); }), core: true },
   { id: 'win:appt', roles: DSF, open: ev(() => { go('calendar'); const a = APPTS.filter((x) => !x.cancelled && visibleClients().some((c) => c.id === x.cid))[0]; openAppt(a.id); }), core: true },
   { id: 'win:incident', roles: DS, open: ev(() => { go('clients'); openIncidentForm(visibleClients()[0].id); }), core: true },
@@ -445,7 +453,7 @@ const SCREENS = [
   { id: 'win:pagesettings', roles: D, open: ev(() => { go('calendar'); settingsHub('display', 'calendar'); }) },
   { id: 'win:pagesettings:cal', roles: DS, open: ev(() => { go('calendar'); settingsHub('cal', 'calendar'); }) },
   { id: 'win:pagesettings:edit', roles: D, open: ev(() => { go('tasks'); settingsHub('edit', 'tasks'); }) },
-  { id: 'win:notifsettings', roles: D, open: ev(() => notifSettings()) },
+  { id: 'win:notifsettings', roles: D, open: ev(() => notifSettings()), core: true },
   { id: 'win:labels', roles: D, open: ev(() => labelsForm()) },
   { id: 'win:access', roles: D, open: ev(() => { openStaffPage(visibleStaff()[0].id); accessForm(visibleStaff()[0].id); }) },
   { id: 'win:reminder', roles: D, open: ev(() => { openStaffPage(visibleStaff()[0].id); reminderForm(visibleStaff()[0].id); }) },
@@ -564,6 +572,7 @@ async function seedTeam(B, org, stfLoginEmail) {
   const results = [];                                                  // {screen, role, mode, size, r}
   const notes = [];
   const codeText = [];                                                 // screens showing code or broken text
+  const rowLabels = [];                                                // the labels in a list row's View details window
   // text a person should never see: a code comment or a template placeholder that leaked into the page, or a value
   // that was never filled in
   const CODE_TEXT = /\/\*|\*\/|\$\{|\bundefined\b|\[object Object\]|\bNaN\b|\bnull\b/;
@@ -636,6 +645,7 @@ async function seedTeam(B, org, stfLoginEmail) {
       return out.slice(0, 3);
     }, [CODE_TEXT.source, root || null]).catch(() => []);
     if (shown.length) codeText.push(`${mode}/${role}/${sizeName(k)} ${screen}: ${shown.join(' / ')}`);
+    if (/^win:rowdetails/.test(screen)) rowLabels.push(...(await page.evaluate(() => [...document.querySelectorAll('#mdBody .mrow .mk')].map((m) => m.textContent.trim())).catch(() => [])).map((l) => ({ l, at: `${mode}/${role}/${sizeName(k)} ${screen}` })));
     if (REVIEW) await review(page, `${mode}-${role}-${sizeName(k)}-${screen}`, r.root);
     const flagged = [...r.past, ...r.textOver, ...r.covered, ...r.offscreen, ...r.wrap, ...r.textHit, ...r.selectCut, ...r.inputCut, ...r.split, ...r.bigCheck, ...r.clipText, ...r.cardScroll, ...r.sheetOverlap].map((x) => x.qa);
     if (flagged.length && SHOTS) item.shot = await shot(page, `${mode}-${role}-${sizeName(k)}-${screen}`, flagged);
@@ -822,6 +832,8 @@ async function seedTeam(B, org, stfLoginEmail) {
   const scr = new Set(results.map((it) => it.mode + '/' + it.role + '/' + it.screen));
   console.log(`\nChecked ${results.length} screens x widths (${scr.size} screens across roles and modes, widths ${WIDTHS.map(sizeName).join(', ')}).`);
   check('every screen opened (none left out because it could not be opened)', !notes.length, notes.slice(0, 8).join(' | '));
+  const badRow = rowLabels.filter((x) => !x.l || /[↕↑↓▲▼⇅]/.test(x.l));
+  check('a list row\'s View details window names each line without the table\'s sort arrows, and has no line for the row\'s ›', rowLabels.length && !badRow.length, rowLabels.length ? badRow.slice(0, 4).map((x) => `${x.at}: "${x.l}"`).join(' | ') : 'the window was not opened (phone widths only)');
   check('no screen shows code or broken text (a code comment, ${…}, undefined, null, NaN, [object Object])', !codeText.length, codeText.length + ' found: ' + codeText.slice(0, 6).join(' | '));
   console.log('notes:\n  ' + notes.join('\n  '));
   check('no page errors in the whole run', !errors.length, errors.slice(0, 5).join(' | '));
