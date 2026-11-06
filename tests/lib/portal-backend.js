@@ -120,6 +120,25 @@ function makeBackend(opts) {
     },
   };
 
+  // NP_CALL_LOG=<file>: every table call, by the caller's role, one JSON line each (for working out the role rules)
+  const CALL_LOG = process.env.NP_CALL_LOG || '';
+  const OWN_COLS = ['sid', 'staff_id', 'author_email', 'from_email', 'for_staff', 'signer_email', 'email', 'to_kind', 'to_ref', 'thread_id', 'cid', 'id'];
+  const mySidsIn = (u, org) => rows('np_demo_staff').filter((s) => s.org_id === org && String(s.email || '').toLowerCase() === u.email).map((s) => String(s.id))
+    .concat(rows('np_demo_invites').filter((i) => i.org_id === org && i.used_at && i.sid && String(i.email || '').toLowerCase() === u.email).map((i) => String(i.sid)));
+  const ownOf = (u, org, r) => {
+    const sids = mySidsIn(u, org), o = {};
+    OWN_COLS.forEach((c) => { if (r && r[c] != null && r[c] !== '') o[c] = String(r[c]); });
+    o.mine = ['sid', 'staff_id', 'for_staff'].some((c) => o[c] && sids.includes(o[c])) || ['author_email', 'from_email', 'signer_email', 'email'].some((c) => o[c] && o[c].toLowerCase() === u.email);
+    return o;
+  };
+  const callLog = (u, method, t, qs, b, hit) => {
+    if (!CALL_LOG || !u) return;
+    const org = myOrg(u), role = roleIn(u, org);
+    const keys = [].concat(b || []).flatMap((r) => (r && typeof r === 'object' ? Object.keys(r) : [])).filter((k, i, a) => a.indexOf(k) === i).sort();
+    const pk = t === 'np_demo_program' ? [].concat(b || []).map((r) => r && r.key).filter(Boolean) : [];
+    const own = [].concat(hit || b || []).filter((r) => r && typeof r === 'object').slice(0, 6).map((r) => ownOf(u, org, r));
+    require('fs').appendFileSync(CALL_LOG, JSON.stringify({ suite: require('path').basename(process.argv[1] || ''), role, method, t, qs: String(qs || '').replace(/[0-9a-f]{8,}/g, '#').slice(0, 160), keys, pk, own }) + '\n');
+  };
   async function rest({ method, path: p, body, headers }) {
     const u = who(headers);
     let b = {}; try { b = JSON.parse(body || '{}'); } catch (e) {}
@@ -168,6 +187,9 @@ function makeBackend(opts) {
     m = p.match(/^\/rest\/v1\/([a-z_]+)(?:\?(.*))?$/);
     if (!m) return undefined;
     const t = m[1], qs = m[2] || '', fl = parseFilters(qs), mine = myOrgs(u);
+    if (method === 'POST') callLog(u, method, t, qs, b);
+    else if (method === 'PATCH' || method === 'DELETE') callLog(u, method, t, qs, null, rows(t).filter((x) => (x.org_id == null || mine.includes(x.org_id)) && fl.every((f) => test(x, f))));
+    else if (method === 'GET') callLog(u, method, t, qs, null, []);
     if (!u) return method === 'GET' ? json(200, []) : json(401, { code: '42501', message: 'permission denied' });
     const ret = /return=representation/.test((headers && (headers.prefer || headers.Prefer)) || '');
     const upsert = /merge-duplicates/.test((headers && (headers.prefer || headers.Prefer)) || '');
