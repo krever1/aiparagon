@@ -644,13 +644,22 @@ function check(label, ok, detail) {
       const same = card('read_back_number', { phone: '5550101234' }, RB('5 5 5... 0 1 0... 1 2 3 4'));
       const none = card('read_back_number', {}, 'There is no full number to read back yet. Ask for the best number to reach them.');
       const short = card('read_back_number', { phone: '55501012' }, RB('5 5 5... 0 1 0... 1 2') + ' That is only 8 digits, so if they say it is right, ask whether any digits are missing.');
+      // Nov 6: no number said yet: the caller ID question from the tool, or no caller ID, or already on file
+      const cidAsk = card('read_back_number', {}, 'Ask exactly this, then stop and wait: "Is the number you\'re calling from, ending in seven, seven, seven, seven, the best one to reach you?" If they say yes, that is their number: never say it again, say "the number you\'re calling from" instead.');
+      const noCid = card('read_back_number', {}, 'There is no caller ID on this call, so you do not have their number. Ask for the best number to reach them, then call read_back_number with every digit they say.');
+      const madeUp = card('read_back_number', { phone: '2371' }, 'There is no caller ID on this call, so you do not have their number. Ask for the best number to reach them, then call read_back_number with every digit they say.');
+      const onFile = card('read_back_number', {}, 'You already have their number: the one they gave for their file. Do not ask for it again and do not say it; say "the number you gave" instead.');
       const bye = card('end_call', {}, 'Ending the call. Say nothing more: the goodbye is said for you.');
       const oldBye = card('end_call', {}, 'Ending the call. Say nothing more.');
-      return { fixed: text(fixed), fixedCls: cls(fixed), same: text(same), sameCls: cls(same), none: text(none), short: text(short), bye: text(bye), oldBye: text(oldBye) };
+      return { cidAsk: text(cidAsk), cidAskCls: cls(cidAsk), noCid: text(noCid), noCidCls: cls(noCid), madeUp: text(madeUp), madeUpCls: cls(madeUp), onFile: text(onFile), fixed: text(fixed), fixedCls: cls(fixed), same: text(same), sameCls: cls(same), none: text(none), short: text(short), bye: text(bye), oldBye: text(oldBye) };
     });
     check('read-back: a number she heard wrong reads as put right', /Read the number back/.test(b.fixed) && /She heard 44770090012/.test(b.fixed) && /isn't what the caller said, so she read back the caller's own digits: 4 4 7\.\.\. 7 0 0\.\.\. 9 0 0\.\.\. 1 2 3/.test(b.fixed) && /changed/.test(b.fixedCls), b.fixed);
     check('read-back: a number she heard right reads plainly', /She read back the caller's digits: 5 5 5\.\.\. 0 1 0\.\.\. 1 2 3 4/.test(b.same) && !/changed/.test(b.sameCls), b.same);
     check('read-back: no number yet and a short one say so', /no full number to read back yet/.test(b.none) && /That's short, so she checked for missing digits/.test(b.short), b.none + ' | ' + b.short);
+    check('read-back: the caller ID question from the tool', /There's caller ID, so she asked if the number they're calling from, ending in 7 7 7 7, is the best one to reach them/.test(b.cidAsk) && !/changed/.test(b.cidAskCls), b.cidAsk);
+    check('read-back: no caller ID and no number yet', /There's no caller ID and they hadn't said a number yet, so she was told to ask for one/.test(b.noCid) && !/changed/.test(b.noCidCls), b.noCid);
+    check('read-back: digits nobody said are flagged', /She passed 2371, but the caller hadn't said a number and there's no caller ID/.test(b.madeUp) && /changed/.test(b.madeUpCls), b.madeUp);
+    check('read-back: a number already on their file', /She already had their number from their file/.test(b.onFile), b.onFile);
     check('hang-up: the goodbye said for her, and the old wording for older calls', /Hung up/.test(b.bye) && /the goodbye was said and the call ended after it/.test(b.bye) && /hung up a second after her goodbye/.test(b.oldBye), b.bye + ' | ' + b.oldBye);
     await ctx.close();
   }
