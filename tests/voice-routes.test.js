@@ -740,6 +740,37 @@ function check(label, ok, detail) {
     await ctx.close();
   }
 
+  // 23. full width (Nov 6): every page uses the whole width next to the sidebar on a wide screen (the content stopped at
+  //     1180px and left a band of white on the right), with no sideways scroll, and a phone still fits.
+  {
+    const { ctx, page } = await open(BASE + '/voice/overview');
+    const pages = ['overview', 'conversations', 'messages', 'opportunities', 'calendar', 'quality', 'training', 'knowledge', 'library', 'analytics', 'portal', 'tiers', 'settings'];
+    const measure = () => page.evaluate(() => {
+      const s = [...document.querySelectorAll('section.wrap')].find((x) => !x.classList.contains('hidden'));
+      const m = document.querySelector('.main');
+      return { id: s ? s.id : '', wrap: s ? Math.round(s.getBoundingClientRect().width) : 0, main: Math.round(m.getBoundingClientRect().width), sideways: document.documentElement.scrollWidth > innerWidth + 1 };
+    });
+    const wide = [];
+    for (const w of [1920, 2560]) {
+      await page.setViewportSize({ width: w, height: 1000 });
+      for (const pg of pages) {
+        await page.goto(BASE + '/voice/' + pg); await page.waitForTimeout(250);
+        const r = await measure();
+        if (!(r.wrap === r.main && r.wrap >= w - 260) || r.sideways) wide.push(w + ' ' + pg + ' ' + JSON.stringify(r));
+      }
+    }
+    check('full width: every page fills the width beside the sidebar at 1920 and 2560, no sideways scroll', wide.length === 0, wide.slice(0, 3).join(' | '));
+    const phone = [];
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const pg of pages) {
+      await page.goto(BASE + '/voice/' + pg); await page.waitForTimeout(250);
+      const r = await measure();
+      if (r.sideways || r.wrap > 390) phone.push(pg + ' ' + JSON.stringify(r));
+    }
+    check('full width: a phone still fits every page', phone.length === 0, phone.slice(0, 3).join(' | '));
+    await ctx.close();
+  }
+
   // without a baseline any page error fails; with one, only errors the baseline did not have
   const newErrors = pageErrors.patched.filter((e) => !pageErrors.original.some((o) => o.split(' :: ')[1] === e.split(' :: ')[1]));
   check(BASELINE ? 'no new page errors' : 'no page errors', newErrors.length === 0, newErrors.slice(0, 3).join(' | '));
