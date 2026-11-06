@@ -71,7 +71,7 @@ Switching changes what everyone on the team sees. Nothing is deleted either way.
 
 ### Previewing other roles (Switch view)
 
-Account settings > Switch view > Switch view opens "Choose a view" with three cards: Director, Care staff, Family member. Nothing is saved in someone else's name while previewing: anything that would save says "You are previewing..." and stops. Use Switch view again to return.
+Account settings > Switch view > Switch view opens "Choose a view" with three cards: Director, Care staff, Family member. Nothing is saved in someone else's name while previewing: what would be done as that person (adding a task to their list, sending a message, an acknowledgement, training) says "You are previewing..." and stops. Anything else you change while previewing, such as a progress note, is saved under your own name. Use Switch view again to return.
 
 ---
 
@@ -101,11 +101,12 @@ The sidebar's **This week** box shows progress counts on every page but Home. Di
 
 Open tasks in a table: task, assignee (director view), client, category, due date, stage, priority. Done tasks sit in a Completed card (Today, Last week, Last month, All). Directors also get a **By staff member** table; clicking a name shows that person's open tasks.
 
-- Filters: category tabs, a search box, Everyone (director), Any stage (To do, In progress, Overdue, Done), and a sort (Due date, Priority, Assignee, Least progress).
+- Filters: category tabs, a search box, Everyone (director), Any stage (To do: not started yet; In progress; Overdue: open past its due date; Done), and a sort (Due date, Priority, Assignee, Least progress).
 - **Assign task** (director) or **Add task** (staff, always assigned to yourself).
 - The tick box at the start of a row marks a task done.
 - Clicking a task opens it:
-  - **Edit task** (name, due date, priority, category, assignee; Save changes; directors get Delete task)
+  - **Edit task** (name, due date, priority, category, assignee; Save changes; directors get Delete task, which asks first)
+  - A task needs a due date. Once the date has passed it shows as Overdue, on the list, the home page and Needs your attention.
   - **Steps** to add, tick, reorder and edit
   - **Notes**
   - **Sign-off**: "Sign off as <your name>" records name, date and time and marks it done
@@ -176,6 +177,8 @@ Titled with the client's UCI, then home, program and guardian. Standing alerts s
 A document filed to a team binder shows both here and on the Documents page.
 
 **Incidents.** Everything filed for this client. **Report incident** files a new one. The team's Incident protocols are listed below.
+
+The Files tab also has a **Providers & contacts** card: this client's own doctors, dentist, day program and case manager (**＋ Add contact**). It is separate from the Directory tab.
 
 **Directory.** Providers and resources assigned to this client, plus team-wide entries. **Add entry**; click an entry to edit or call.
 
@@ -275,7 +278,7 @@ The two editors:
   - Footer: Fill it in, Assign to staff, Cancel, Print blank, **Save template**
   - The page itself cannot be changed, only the boxes on it
 
-Both have "Keep it in Templates", which picks the section; the note under it says where signed copies go.
+Create new template has "Files to" under its name: the binder its copies file to, which is also the section it is kept in on Templates (or a client's or a staff member's file). Upload a form has "Keep it in Templates", which picks the section; the note under it says where signed copies go.
 
 ### Directory (director)
 
@@ -325,7 +328,7 @@ The AI assistant. Open it with **Ask Spectrum** at the top right (a floating but
 
 ### Your profile and Account settings
 
-Click your name at the bottom of the sidebar for your **profile**: credentials (Add credential), and for staff with a checklist shared with them an **Onboarding** tab ("Onboarding · 2 of 5"), where they tick each step as they do it, About (sign-in email, Team alerts and Team website for directors, role, time zone), Preferences, your signed agreement, and Account settings, "Start over on this dashboard" and Sign out.
+Click your name at the bottom of the sidebar for your **profile**: credentials (Add credential), and for staff with a checklist shared with them an **Onboarding** tab ("Onboarding · 2 of 5"), where they tick each step as they do it, About (sign-in email, Team alerts and Team website for directors, role, time zone), Preferences (date format and time format, 12-hour or 24-hour), your signed agreement, and Account settings, "Start over on this dashboard" and Sign out. Directors also see **Workspace: <team name> ✎ Edit** under their name, which renames the team for everyone.
 
 **Settings** (top of the profile) or **Account settings** opens the Account window:
 
@@ -436,9 +439,9 @@ For each, choose Who and How (In the portal, Email). Staff see their own under S
 
 **21. Add a certification.** Staff > their name > Certifications > Add credential > name and expiry date > Save. Staff can add their own on their profile.
 
-**22. Assign onboarding.** Training & onboarding > Onboarding checklists > open one > Share with a new hire > pick the person > Share checklist. Or Staff > their name > Share onboarding steps > Share with them. New staff get the team's steps automatically. The new hire ticks the steps on their profile's Onboarding tab (or My shift > Your training > Onboarding checklist > Open); you see their progress on their staff page.
+**22. Assign onboarding.** Training & onboarding > Onboarding checklists > open one > Share with a new hire > pick the person > Share checklist. Or Staff > their name > Share onboarding steps > tick the steps > Share with them. Sharing another checklist adds its steps to what the person already has; their ticks stay. New staff get the team's steps automatically. The new hire ticks the steps on their profile's Onboarding tab (or My shift > Your training > Onboarding checklist > Open); you see their progress on their staff page.
 
-**23. Assign a training course.** Training & onboarding > open the course > Assign, or Staff > their name > Assign a course. Remind outstanding nudges anyone not finished.
+**23. Assign a training course.** Training & onboarding > open the course > Assign, or Staff > their name > Assign a course. It shows on their My shift page under Training to finish, and they are told. Remind outstanding nudges anyone not finished.
 
 **24. Get staff to acknowledge a guide.** Training & onboarding > Readiness guides > Add guide > Add guide. Staff click Acknowledge on My shift. Open the guide to see who has, and use Remind pending.
 
@@ -464,7 +467,7 @@ For each, choose Who and How (In the portal, Email). Staff see their own under S
 2. Pick the client (UCI) and Type. The type's protocol steps and who to call appear.
 3. Date, Time, Severity (Minor, Moderate, Serious).
 4. Fill in the type's report form, or "What happened" (facts and times only).
-5. Tick who has been told > File report.
+5. Tick who has been told (saved with the report) > File report.
 
 The written-report clock starts (24 hours unless the protocol says otherwise) and the protocol walkthrough opens. If the type has a report form, the completed form is filed in the Agency binder (SIR tab) and the client's Files.
 
