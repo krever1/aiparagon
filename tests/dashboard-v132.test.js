@@ -264,7 +264,7 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     await lead(page, L1);
     let c = await card(page);
     check('the growth plan tab has the client proposal card', !!c && c.visible && c.title === 'Client proposal' && JSON.stringify(c.btns) === '["Write the client proposal"]', JSON.stringify(c));
-    check('it says what it is written from, and in whose sections and branding', /from the call and the assessment, in the sections and branding of Summit proposal template\.docx\. It is written after the proposal presentation\./.test(c.sub), c.sub);
+    check('it says what it is written from, and in whose sections and branding', /from the meetings and the assessment, in the sections and branding of Summit proposal template\.docx\. It is written after the proposal presentation\./.test(c.sub), c.sub);
     check('it sits under the growth plan\'s own document, which keeps its buttons', await page.evaluate(() => {
       const s = [...document.querySelectorAll('#main section.block')].find((x) => /^\s*5\./.test(x.querySelector('h2').textContent));
       const kids = [...s.children]; const g = s.querySelector('.ap-docc'), p = s.querySelector('.v132-pc');
@@ -279,12 +279,13 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     check('the run says what it uses: 3 past documents and the call transcript', m.t === 'Using 3 past documents and the call transcript', m.t);
     check('each past document by name, then the call, the assessment and the research', JSON.stringify(m.u.map((x) => x[1])) === JSON.stringify([
       'Proposal template: Summit proposal template.docx (7 sections, your branding)', 'Discovery call questions: Summit discovery call questions.docx', 'Past assessment: Summit past assessment.docx',
-      'The call on Oct 22: QA Firm · discovery consultation (transcript)', 'The assessment of Oct 3', 'The prospect brief']), JSON.stringify(m.u));
+      'The call on Oct 22: QA Firm · discovery consultation (transcript)', 'No emails with this lead logged in HubSpot.', 'The assessment of Oct 3', 'The consultation guide', 'The prospect brief']), JSON.stringify(m.u));   /* v138: the Proposal stage's reads */
     await page.click('#v132Go');
     await page.waitForTimeout(1500);
     const hk = sent.filter((s) => /catalyst-proposal$/.test(s.u));
-    check('Write it sends the lead, the call and its transcript, signed in', hk.length === 1 && hk[0].body.leadEmail === L1 && hk[0].body.call && hk[0].body.call.id === CALL.id &&
-      hk[0].body.call.transcript === 'Pat QA: Every pricing call still comes to me.\nQA Tester: How long does a site manager wait?' && hk[0].body.call.date === CALL.start && !!hk[0].body.auth, JSON.stringify(hk.map((x) => x.body)));
+    const dY = new Date(CALL.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    check('Write it sends the lead and what the Proposal stage reads, as the meetings\' notes, signed in', hk.length === 1 && hk[0].body.leadEmail === L1 && hk[0].body.call && hk[0].body.call.id === '' && hk[0].body.call.title === '' &&
+      hk[0].body.call.transcript === 'WHAT WAS SAID IN THE MEETINGS (call transcripts, newest first)\n\nCall on ' + dY + ': ' + CALL.title + '\nPat QA: Every pricing call still comes to me.\nQA Tester: How long does a site manager wait?' && !!hk[0].body.auth, JSON.stringify(hk.map((x) => x.body)));   /* v138 */
     c = await card(page);
     check('the card shows it is being written, with what it uses, and no second Write button', /Writing the client proposal…/.test(c.run) && /Using 3 past documents and the call transcript/.test(c.run) && /Nothing goes to the client: you review it first/.test(c.run) && !c.btns.length, JSON.stringify(c));
     // n8n saves the proposal; the card picks it up and opens it
@@ -320,8 +321,8 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     await b.page.waitForTimeout(1500);
     const hk = b.sent.filter((s) => /catalyst-proposal$/.test(s.u));
     const c = await card(b.page);
-    check('a transcript that cannot be read is not sent, and the run says it works from the documents', hk.length === 1 && hk[0].body.call && hk[0].body.call.transcript === '' &&
-      /The call on Oct 22: its transcript could not be read, so the documents on file\./.test(c.run) && /^Writing the client proposal…\s*Using 3 past documents\n/.test(c.run), JSON.stringify([hk.map((x) => x.body.call), c.run]));
+    check('a transcript that cannot be read is not sent, and the run says it works from the documents', hk.length === 1 && hk[0].body.call === null &&
+      /The call on Oct 22: QA Firm · discovery consultation \(its transcript could not be read\)/.test(c.run) && /^Writing the client proposal…\s*Using 3 past documents\n/.test(c.run), JSON.stringify([hk.map((x) => x.body.call), c.run]));   /* v138 */
     await b.ctx.close();
     const n = await open(1440, makeStore(tables()), '/dashboard/lead-pipeline', { calls: false });
     await lead(n.page, L1);
@@ -449,8 +450,8 @@ function tables(fn) { const t = FX.tables(); if (fn) fn(t); return t; }
     check('Make it a rule scopes it to the Catalyst agents', JSON.stringify(box) === '["engine1"]', JSON.stringify(box));
     const where = await page.$$eval('.ap-ais .ap-where > div', (els) => els.map((el) => [(el.querySelector('b') || {}).textContent || '', (el.querySelector('small') || {}).textContent || '', ((el.querySelector('.d') || {}).className || '').replace(/\bd\b/, '').trim()]));
     const ci = where.findIndex((w) => /^Catalyst agents/.test(w[0]));
-    check('Where these apply: the Catalyst agents also follow your past documents', ci >= 0 && where[ci][1] === 'Rules, on every run. Each meeting stage also follows its template from Templates and reads what its setup there says: the call transcripts, the CRM record, your discovery call questions' && where[ci][2] === 'live', JSON.stringify(where[ci]));   /* v137 */
-    check('and the client proposal has its own line, right after', JSON.stringify(where[ci + 1]) === JSON.stringify(['Client proposal', 'Rules, your past documents from Templates, the call transcript and the lead\'s documents', 'live']), JSON.stringify(where[ci + 1]));
+    check('Where these apply: the Catalyst agents also follow your past documents', ci >= 0 && where[ci][1] === 'Rules, on every run. Each meeting stage also follows its template from Templates and reads what its setup there says: the call transcripts, the emails in HubSpot, the CRM record, your discovery call questions. The proposal, onboarding and client review prep draw charts from the documents’ own numbers when their setup says so' && where[ci][2] === 'live', JSON.stringify(where[ci]));   /* v138 */
+    check('and the client proposal has its own line, right after', JSON.stringify(where[ci + 1]) === JSON.stringify(['Client proposal', 'Rules, your past documents from Templates, what the Proposal stage reads (the call transcripts and emails, and the CRM record when it is on), the lead\'s documents with the consultation guide, and charts when the stage draws them', 'live']), JSON.stringify(where[ci + 1]));
     await ctx.close();
   }
 

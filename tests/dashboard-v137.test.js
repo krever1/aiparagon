@@ -96,7 +96,7 @@ function people(t) {
   }
   const wait = (page, ms) => page.waitForTimeout(ms || 700);
   const txt = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); return e ? e.innerText.replace(/\s+/g, ' ').trim() : ''; }, sel);
-  const runs = (hooks) => hooks.filter((h) => !/fathom-proxy/.test(h.p));
+  const runs = (hooks) => hooks.filter((h) => !/fathom-proxy/.test(h.p) && h.p !== 'catalyst-emails');   /* v138: the emails read is not a run */
   const W = (store, table, method) => store.writes.filter((w) => w.table === table && (!method || w.method === method));
   const today = (page) => page.evaluate(() => [...document.querySelectorAll('.v137-today .v137-in-r')].map((r) => ({ t: r.querySelector('b').textContent, s: r.querySelector('small').textContent, b: r.querySelector('button').textContent })));
   const bell = (page) => page.evaluate(() => NOTIFS.filter((n) => /^v137:/.test(n.key)).map((n) => [n.key, n.t, n.s]));
@@ -147,15 +147,15 @@ function people(t) {
       by('onboarding').tpw === 'A past onboarding plan. Catalyst writes the plan in its sections and tone, never its facts.' && by('review').drop === 'Add a past client review', JSON.stringify(S.map((x) => x.tpw)));
     check('Prospect research reads no meeting: no boxes, its fixed inputs said', by('research').boxes.length === 0 && by('research').always === 'The lead’s details from HubSpot (name, title, company, website), what is public about the firm, and your house rules.', JSON.stringify(by('research')));
     check('the reads: transcripts on everywhere after research, the CRM record on where names belong', JSON.stringify(S.slice(1).map((x) => x.boxes.map((b) => b[0] + ':' + (b[1] ? 1 : 0) + (b[2] ? 'x' : '')))) ===
-      JSON.stringify([['Call transcripts:1', 'CRM record:1'], ['Call transcripts:1', 'CRM record:0', 'Your discovery call questions:0x'], ['Call transcripts:1', 'CRM record:0'],
-        ['Call transcripts:1', 'CRM record:1', 'Your discovery call questions:0x'], ['Call transcripts:1', 'CRM record:1', 'Your discovery call questions:0x']]), JSON.stringify(S.map((x) => x.boxes)));
+      JSON.stringify([['Call transcripts:1', 'Emails:1', 'CRM record:1'], ['Call transcripts:1', 'Emails:1', 'CRM record:0', 'Your discovery call questions:0x'], ['Call transcripts:1', 'Emails:1', 'CRM record:0', 'Charts and visuals:1'],
+        ['Call transcripts:1', 'Emails:1', 'CRM record:1', 'Your discovery call questions:0x', 'Charts and visuals:1'], ['Call transcripts:1', 'Emails:1', 'CRM record:1', 'Your discovery call questions:0x', 'Charts and visuals:1']]), JSON.stringify(S.map((x) => x.boxes)));   /* v138: Emails, and Charts and visuals */
     check('the question script waits for the discovery call questions to be added', by('assessment').boxes[2] && /None added yet: add them under Discovery consultation|None added yet: add them under Discovery call/.test(
       (await page.evaluate(() => document.querySelector('.v137-st[data-s="assessment"] .v137-ck.dis small').textContent))), '');
     check('each stage says what it always reads', by('consultation').always === 'Always: The prospect brief and your house rules.' && by('onboarding').always === 'Always: Every document so far and your house rules.' &&
       /^Always: The assessment report\. The client proposal also reads the prospect brief/.test(by('proposal').always), JSON.stringify(S.map((x) => x.always)));
     check('what each writes, with its real sections', by('research').writes === 'Pre-meeting prospect brief · 11 sections' && by('research').secs[0] === 'Company snapshot' && by('research').secs[10] === 'Sources used' &&
       by('consultation').writes === 'Consultation guide · 11 sections' && by('consultation').secs[4] === 'Theme A: Business context' && by('assessment').writes === 'Assessment report · 9 sections' &&
-      by('proposal').writes === 'Proposal presentation and client proposal · 4 parts' && by('onboarding').secs.join('|') === 'What we agreed|Goals and how we will measure them|The first 30 days|Who does what|What we need from the client|Risks to watch|Questions for the onboarding meeting' &&
+      by('proposal').writes === 'Proposal presentation and client proposal · 4 parts' && by('onboarding').secs.join('|') === 'What we agreed|Goals and how we will measure them|The first 30 days|Who does what|What we need from the client|Risks to watch|Questions for the onboarding meeting|Charts: a timeline of the first weeks' &&   /* v138: the charts line */
       by('review').writes === 'Client review brief · 7 sections', JSON.stringify(S.map((x) => [x.writes, x.secs.length])));
     const sectionsShut = await page.evaluate(() => [...document.querySelectorAll('.v137-wr')].every((d) => !d.open));
     check('the sections are folded until asked for', sectionsShut, '');
@@ -166,7 +166,7 @@ function people(t) {
     await wait(page, 700);
     const v = setup(store) || {};
     check('the meeting type and the read are saved team-wide, with who and when', v.assessment && v.assessment.type === 'discovery' && v.assessment.crm === true && v.assessment.by === ME && !!v.assessment.at && Object.keys(v).length === 1, JSON.stringify(v));
-    check('and the card shows them', JSON.stringify((await stages(page)).find((x) => x.s === 'assessment').boxes.map((b) => b[1])) === '[true,true,false]' &&
+    check('and the card shows them', JSON.stringify((await stages(page)).find((x) => x.s === 'assessment').boxes.map((b) => b[1])) === '[true,true,true,false]' &&   /* v138: Emails among them */
       (await page.$eval('.v137-st[data-s="assessment"] select.v137-type', (e) => e.value)) === 'discovery', '');
     // templates go into their stage's card, as that stage's kind
     await page.setInputFiles('#v137File_consultation', [path.join(FIX, 'Summit discovery call questions.docx')]);
@@ -183,7 +183,7 @@ function people(t) {
     check('each shows in its own card only, in use, with no kind picker', b2('consultation').rows.length === 1 && b2('onboarding').rows.length === 1 && b2('proposal').rows.length === 1 && b2('research').rows.length === 0 &&
       [b2('consultation'), b2('onboarding'), b2('proposal')].every((x) => x.rows[0].inUse && !x.rows[0].picker), JSON.stringify(S2.map((x) => [x.s, x.rows])));
     check('a stage with a template offers a newer one', b2('onboarding').drop === 'Add a newer one' && b2('assessment').drop === 'Add a past assessment', JSON.stringify([b2('onboarding').drop, b2('assessment').drop]));
-    check('the onboarding plan now writes in its template\'s sections', b2('onboarding').writes === 'Onboarding plan · 4 sections, from your template' && b2('onboarding').secs.join('|') === 'Kickoff|First month|Access we need|Owners', JSON.stringify([b2('onboarding').writes, b2('onboarding').secs]));
+    check('the onboarding plan now writes in its template\'s sections', b2('onboarding').writes === 'Onboarding plan · 4 sections, from your template' && b2('onboarding').secs.join('|') === 'Kickoff|First month|Access we need|Owners|Charts: a timeline of the first weeks', JSON.stringify([b2('onboarding').writes, b2('onboarding').secs]));   /* v138 */
     check('the client proposal names the template\'s sections', /^Client proposal, in your template’s sections: Executive summary, /.test(b2('proposal').secs[3] || ''), b2('proposal').secs[3]);
     check('the discovery call questions can now be read by the later stages', JSON.stringify(['assessment', 'onboarding', 'review'].map((k) => b2(k).boxes[2] && b2(k).boxes[2][2])) === '[false,false,false]', JSON.stringify(['assessment', 'onboarding', 'review'].map((k) => b2(k).boxes[2])));
     await page.click('.v137-st[data-s="review"] .v137-ck:has-text("discovery call questions") input');
@@ -198,7 +198,7 @@ function people(t) {
     const b3 = (k) => S3.find((x) => x.s === k) || {};
     check('after a reload the cards keep the setup and the templates', b3('assessment').type === 'discovery' && b3('assessment').boxes[1][1] === true && b3('review').boxes[2][1] === true && b3('onboarding').rows.length === 1, JSON.stringify(S3.map((x) => [x.s, x.type, x.boxes.map((b) => b[1]), x.rows.length])));
     const where = await again.page.evaluate(() => (AP_WHERE.find((r) => /^Catalyst agents/.test(r[0])) || [])[1]);
-    check('AI settings says each stage follows its template and its reads', where === 'Rules, on every run. Each meeting stage also follows its template from Templates and reads what its setup there says: the call transcripts, the CRM record, your discovery call questions', where);
+    check('AI settings says each stage follows its template and its reads', where === 'Rules, on every run. Each meeting stage also follows its template from Templates and reads what its setup there says: the call transcripts, the emails in HubSpot, the CRM record, your discovery call questions. The proposal, onboarding and client review prep draw charts from the documents’ own numbers when their setup says so', where);   /* v138 */
     await again.ctx.close();
   }
 
@@ -302,7 +302,7 @@ function people(t) {
     check('it says where the transcript is filed and what runs', M.indexOf('Its transcript is filed under Prospect research, where Robin Test is now. In Discovery consultation, Catalyst writes the consultation guide from everything so far and this call. Only that runs, and nothing goes to the client.') >= 0, M);
     const R = await reads(page, '#v137M');
     check('and what the stage reads: no template, the call\'s transcript, no HubSpot contact, the brief', JSON.stringify(R) === JSON.stringify(['– No template for this stage yet, so the usual sections. Add one on Templates.',
-      '✓ The call on ' + day(CA.start) + ': Intro call · Testwell (transcript)', '– No HubSpot contact with this lead’s email.', '✓ The prospect brief and your house rules']), JSON.stringify(R));
+      '✓ The call on ' + day(CA.start) + ': Intro call · Testwell (transcript)', '– No emails with this lead logged in HubSpot.', '– No HubSpot contact with this lead’s email.', '✓ The prospect brief and your house rules']), JSON.stringify(R));   /* v138: the emails line */
     check('its buttons: Not about this client, Just file it, Move and run it', JSON.stringify(await foot(page)) === '["Not about this client","Just file it","Move and run it"]', JSON.stringify(await foot(page)));
     await page.fill('#v137Note', 'They want the monthly report automated first.');
     const n0 = hooks.length;
@@ -382,7 +382,7 @@ function people(t) {
     await page.waitForSelector('#v120M .v137-reads .v132-cl', { timeout: 15000 }).catch(() => {});
     const R = await reads(page, '#v120M');
     check('the board\'s question says what the stage reads, the call included', JSON.stringify(R) === JSON.stringify(['– No template for this stage yet, so the usual sections. Add one on Templates.',
-      '✓ The call on ' + day(CA.start) + ': Intro call · Testwell (transcript)', '– No HubSpot contact with this lead’s email.', '✓ The prospect brief and your house rules']), JSON.stringify(R));
+      '✓ The call on ' + day(CA.start) + ': Intro call · Testwell (transcript)', '– No emails with this lead logged in HubSpot.', '– No HubSpot contact with this lead’s email.', '✓ The prospect brief and your house rules']), JSON.stringify(R));   /* v138: the emails line */
     check('and the notes box says the transcripts go with it', (await txt(page, '#v120M label.nw-field small')) === 'Optional: the call transcripts above go with it. Add anything else from the meeting.', await txt(page, '#v120M label.nw-field small'));
     const n0 = hooks.length;
     await page.click('#v120Go');
@@ -411,7 +411,7 @@ function people(t) {
     await page.evaluate((e) => v136Ask(e, 'onboarding', true), L1);
     await wait(page, 1500);
     const R = await reads(page, '#v120M');
-    check('with both off, the question lists neither', JSON.stringify(R) === JSON.stringify(['– No template for this stage yet, so the usual sections. Add one on Templates.', '✓ Every document so far and your house rules']), JSON.stringify(R));
+    check('with both off, the question lists neither (the emails, still on, say there are none)', JSON.stringify(R) === JSON.stringify(['– No template for this stage yet, so the usual sections. Add one on Templates.', '– No emails with this lead logged in HubSpot.', '✓ Every document so far and your house rules']), JSON.stringify(R));   /* v138 */
     await page.fill('#v120Note', 'Start date agreed for January.');
     const n0 = hooks.length;
     await page.click('#v120Go');
