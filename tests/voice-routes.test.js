@@ -771,6 +771,31 @@ function check(label, ok, detail) {
     await ctx.close();
   }
 
+  // 24. the winter storm line (Nov 6): the winter sample call is labelled in the list and on the call, Winter line in the
+  //     top bar starts a browser call to the winter Ava, and demo data saved before picks up the label once.
+  {
+    const { ctx, page } = await open(BASE + '/voice/conversations', { testHook: true });
+    const w = await page.evaluate(() => {
+      const li = [...document.querySelectorAll('[data-conv]')].find((x) => /Katie Morrison/.test(x.textContent));
+      const other = [...document.querySelectorAll('[data-conv]')].find((x) => /Michael Chen/.test(x.textContent));
+      if (li) li.click();
+      const head = document.querySelector('#convDetail .headchips');
+      return { list: li ? li.querySelector('.lmeta:last-child').textContent : '', other: other ? other.textContent : '', chip: head ? !!head.querySelector('.tag.winter') : false,
+        btn: !!document.getElementById('callWinter') && document.getElementById('callWinter').textContent };
+    });
+    check('winter line: the winter sample call says so in the list and on the call, other calls do not', /^Winter line · /.test(w.list) && w.chip && !/Winter line/.test(w.other), JSON.stringify(w));
+    await page.click('#callWinter'); await page.waitForTimeout(400);
+    const d = await page.evaluate(() => ({ open: document.getElementById('callDrawer').dataset.open, as: document.getElementById('callAs').textContent, hidden: document.getElementById('callAs').classList.contains('hidden') }));
+    check('winter line: the top bar button starts a winter line call', d.open === 'true' && !d.hidden && /Calling the winter storm line/.test(d.as), JSON.stringify(d));
+    // demo data saved before the winter line: the label arrives once
+    const old = await page.evaluate(() => { const st = JSON.parse(JSON.stringify(window.__VC_TEST__.state())); delete st.winterLineDemo; st.calls.forEach((c) => { delete c.line; }); return st; });
+    await page.evaluate((v) => localStorage.setItem('paragon-command-center-v2', JSON.stringify(v)), old);
+    await page.reload({ waitUntil: 'load' }); await settle(page);
+    const up = await page.evaluate(() => { const st = window.__VC_TEST__.state(); return { line: (st.calls.find((c) => c.id === 'c7') || {}).line, others: st.calls.filter((c) => c.line === 'winter').length, flag: st.winterLineDemo }; });
+    check('winter line: demo data saved before labels the winter sample call once', up.line === 'winter' && up.others === 1 && up.flag === true, JSON.stringify(up));
+    await ctx.close();
+  }
+
   // without a baseline any page error fails; with one, only errors the baseline did not have
   const newErrors = pageErrors.patched.filter((e) => !pageErrors.original.some((o) => o.split(' :: ')[1] === e.split(' :: ')[1]));
   check(BASELINE ? 'no new page errors' : 'no page errors', newErrors.length === 0, newErrors.slice(0, 3).join(' | '));
