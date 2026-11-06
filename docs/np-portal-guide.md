@@ -37,6 +37,8 @@ Clients are identified by their **UCI**, the 7-digit client ID from the regional
 - Menu: Overview, Appointments, Documents, Messages.
 - Family members do not have their own sign-in in this pilot. The family view is a preview: a director opens it with Switch view, and the demo view has it with sample data. An invite always makes someone a director or staff member.
 
+**Who sees what.** Each team's records are its own: nobody in another team can see or change them, and a new team starts empty. Inside a team the shared work (clients, tasks, calendar, incidents, logs, documents) is everyone's, so what a director adds reaches the staff and what staff add reaches the director (after a reload; messages arrive on their own). Some things are each person's, and the database keeps them that way, not just the screens: a conversation is seen by the people in it (and the directors), a notice by the person or house it is for (and the directors), and certifications, the signed agreement and sign-in records by their owner (and the directors). Only directors add or remove clients, change shifts, invite people or clear the change log.
+
 Outside the menu, everyone has:
 
 - the top bar: search, Help and support, Messages (envelope), Notifications (bell) and Ask Spectrum
