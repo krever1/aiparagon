@@ -155,8 +155,8 @@ function people(t) {
       /^Always: The assessment report\. The client proposal also reads the prospect brief/.test(by('proposal').always), JSON.stringify(S.map((x) => x.always)));
     check('what each writes, with its real sections', by('research').writes === 'Pre-meeting prospect brief · 11 sections' && by('research').secs[0] === 'Company snapshot' && by('research').secs[10] === 'Sources used' &&
       by('consultation').writes === 'Consultation guide · 11 sections' && by('consultation').secs[4] === 'Theme A: Business context' && by('assessment').writes === 'Assessment report · 9 sections' &&
-      by('proposal').writes === 'Proposal presentation and client proposal · 4 parts' && by('onboarding').secs.join('|') === 'What we agreed|Goals and how we will measure them|The first 30 days|Who does what|What we need from the client|Risks to watch|Questions for the onboarding meeting|Charts: a timeline of the first weeks' &&   /* v138: the charts line */
-      by('review').writes === 'Client review brief · 7 sections', JSON.stringify(S.map((x) => [x.writes, x.secs.length])));
+      by('proposal').writes === 'Proposal presentation and client proposal · 4 parts, with charts' && by('onboarding').secs.join('|') === 'What we agreed|Goals and how we will measure them|The first 30 days|Who does what|What we need from the client|Risks to watch|Questions for the onboarding meeting' &&   /* v138: with charts */
+      by('review').writes === 'Client review brief · 7 sections, with charts', JSON.stringify(S.map((x) => [x.writes, x.secs.length])));
     const sectionsShut = await page.evaluate(() => [...document.querySelectorAll('.v137-wr')].every((d) => !d.open));
     check('the sections are folded until asked for', sectionsShut, '');
     // a meeting type and a read change are saved for the team
@@ -183,7 +183,7 @@ function people(t) {
     check('each shows in its own card only, in use, with no kind picker', b2('consultation').rows.length === 1 && b2('onboarding').rows.length === 1 && b2('proposal').rows.length === 1 && b2('research').rows.length === 0 &&
       [b2('consultation'), b2('onboarding'), b2('proposal')].every((x) => x.rows[0].inUse && !x.rows[0].picker), JSON.stringify(S2.map((x) => [x.s, x.rows])));
     check('a stage with a template offers a newer one', b2('onboarding').drop === 'Add a newer one' && b2('assessment').drop === 'Add a past assessment', JSON.stringify([b2('onboarding').drop, b2('assessment').drop]));
-    check('the onboarding plan now writes in its template\'s sections', b2('onboarding').writes === 'Onboarding plan · 4 sections, from your template' && b2('onboarding').secs.join('|') === 'Kickoff|First month|Access we need|Owners|Charts: a timeline of the first weeks', JSON.stringify([b2('onboarding').writes, b2('onboarding').secs]));   /* v138 */
+    check('the onboarding plan now writes in its template\'s sections', b2('onboarding').writes === 'Onboarding plan · 4 sections, from your template, with charts' && b2('onboarding').secs.join('|') === 'Kickoff|First month|Access we need|Owners', JSON.stringify([b2('onboarding').writes, b2('onboarding').secs]));   /* v138: with charts */
     check('the client proposal names the template\'s sections', /^Client proposal, in your template’s sections: Executive summary, /.test(b2('proposal').secs[3] || ''), b2('proposal').secs[3]);
     check('the discovery call questions can now be read by the later stages', JSON.stringify(['assessment', 'onboarding', 'review'].map((k) => b2(k).boxes[2] && b2(k).boxes[2][2])) === '[false,false,false]', JSON.stringify(['assessment', 'onboarding', 'review'].map((k) => b2(k).boxes[2])));
     await page.click('.v137-st[data-s="review"] .v137-ck:has-text("discovery call questions") input');
