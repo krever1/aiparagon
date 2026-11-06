@@ -36,7 +36,10 @@ const NOON = new Date(2026, 9, 22, 10, 0, 0);                         // Thu Oct
   });
   const legend = (page) => page.evaluate(() => Object.fromEntries([...document.querySelectorAll('#view .cx-lg')].map((b) => { const n = b.querySelector('b').textContent;
     return [b.textContent.replace(n, '').replace(/\s+/g, ' ').trim(), { on: b.getAttribute('aria-pressed') === 'true', n }]; })));
-  const openMenu = async (page, sel) => { await page.click(sel || '#view .page-acts .cx-add-b'); await page.waitForTimeout(150);
+  const openMenu = async (page, sel) => { sel = sel || '#view .page-acts .cx-add-b';
+    // v12.43: the calendar chips made the page taller; a scroll during the click (the button off screen) closes the menu
+    await page.evaluate((s) => { const b = document.querySelector(s); if (b) b.scrollIntoView({ block: 'center' }); }, sel); await page.waitForTimeout(120);
+    await page.click(sel); await page.waitForTimeout(150);
     return page.evaluate(() => [...document.querySelectorAll('#cxMenu .cx-mi')].map((b) => ({ k: b.dataset.k, t: b.querySelector('b').textContent, c: getComputedStyle(b.querySelector('i')).backgroundColor }))); };
   const modal = (page) => page.evaluate(() => ({ on: el('modal').classList.contains('on'), title: el('mdTitle').textContent.trim() }));
   const noScroll = (page) => page.evaluate(() => document.scrollingElement.scrollWidth <= innerWidth + 1);

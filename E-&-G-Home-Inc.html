@@ -3330,6 +3330,39 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
 .gp-name{min-width:0}
 .gp-name input{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 @media (max-width:400px){ .gp-name input{font-size:17px} }
+/* ══ v12.43: calendar chips and Google calendars ══ */
+.v1243-cc{display:flex;flex-wrap:wrap;align-items:center;gap:6px 6px}
+.hm-sched .v1243-cc{padding:12px 22px;border-bottom:1px solid #EEF0EB}
+.v1243-cl{font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6B7A74;margin-right:4px}
+.v1243-c{display:inline-flex;align-items:center;gap:7px;min-height:30px;max-width:260px;padding:3px 12px 3px 10px;border:1px solid #DCE1DB;border-radius:999px;background:#FFFFFF;color:#26332D;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;line-height:1.2}
+.v1243-c span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.v1243-c i{width:11px;height:11px;border-radius:50%;border:2px solid;box-sizing:border-box;flex:none}
+.v1243-c.is-off{background:#F5F6F3;color:#8A948F;border-style:dashed}
+.v1243-c.is-off span{text-decoration:line-through;text-decoration-color:#B9C0BB}
+.v1243-c:focus-visible,.v1243-x:focus-visible{outline:2px solid #2A5245;outline-offset:2px}
+.v1243-x{all:unset;display:inline-flex;align-items:center;min-height:30px;padding:0 6px;font-size:12.5px;font-weight:600;color:#2A5245;cursor:pointer;border-radius:6px;white-space:nowrap}
+.v1243-x:hover{text-decoration:underline}
+.v1243-d{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.v1243-gc{margin:4px 0 14px}
+.v1243-gr{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line,#E6E9E4)}
+.v1243-gr>i{width:11px;height:11px;border-radius:50%;flex:none}
+.v1243-gr>div{flex:1;min-width:0}
+.v1243-gr b{display:block;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v1243-gr span{display:block;font-size:12px;color:#6B7A74;overflow-wrap:anywhere}
+.v1243-gr span.bad{color:#9A3B2E}
+.v1243-gc>.btn{margin-top:10px}
+.v1243-pk{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line,#E6E9E4);cursor:pointer}
+.v1243-pk input{width:18px;height:18px;flex:none;margin:0}
+.v1243-pk>i{width:11px;height:11px;border-radius:50%;flex:none}
+.v1243-pk>span{flex:1;min-width:0}
+.v1243-pk b{display:block;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v1243-pk em{display:block;font-style:normal;font-size:12px;color:#6B7A74}
+.v1243-how{margin:2px 0 12px;padding:10px 12px;border-radius:10px;background:#F4F6F2;font-size:12.5px;line-height:1.5;color:#3F4D47}
+.v1243-how ol{margin:4px 0 0;padding-left:18px}
+@media (max-width:700px){
+  .hm-sched .v1243-cc{padding:10px 16px}
+  .v1243-c{max-width:calc(100vw - 80px)}
+}
 </style>
 </head>
 <body>
@@ -3827,6 +3860,12 @@ let SYS_NOTIFS=[];
    Until that server piece is set up, and in the demo view, it works as before: this session only. */
 const GCAL={ token:null, events:[], connected:false, loading:false, email:'', exp:0, kept:false, ready:null, owner:'' };
 const GCAL_SCOPE='https://www.googleapis.com/auth/calendar.events.owned';   // v12.38.3: events on calendars the person owns (the page only uses their primary one); Google's review asked for the narrowest scope
+/* v12.43: a person's other Google calendars. One they own is added by its ID, which GCAL_SCOPE already covers. A picker
+   of every calendar in the account, shared ones too, needs two more permissions (the calendar list, and events on
+   calendars shared with them, read only), so it waits for Google's review: it is off unless GCAL_LIST_LIVE is set
+   (once Google approves) or this device turned it on to record the review video (?gcallist=1; ?gcallist=0 turns it off). */
+const GCAL_LIST_SCOPES=['https://www.googleapis.com/auth/calendar.calendarlist.readonly','https://www.googleapis.com/auth/calendar.events.readonly'];
+const GCAL_LIST_LIVE=false;
 function gcalReady(){ return !!BACKEND.googleClientId; }
 let _gsiLoad=null;
 function gcalLoadSdk(cb,quiet){
@@ -3963,7 +4002,7 @@ function gcalConnect(){
   if(gcalSrvOn()&&GCAL.ready!==false) return gcalConnectKept();
   gcalLoadSdk(()=>{                                                   // this session only: the demo view, or before the server piece is in
     const tc=google.accounts.oauth2.initTokenClient({
-      client_id:BACKEND.googleClientId, scope:GCAL_SCOPE, include_granted_scopes:false,   // v12.38.3: only what is asked for now
+      client_id:BACKEND.googleClientId, scope:gcalScopes(), include_granted_scopes:false,   // v12.38.3: only what is asked for now (v12.43: plus the list, when it is on)
       callback:(resp)=>{
         if(resp.error) return toast('Google sign-in was canceled.');
         GCAL.token=resp.access_token; GCAL.exp=Date.now()+Math.max(60,(+resp.expires_in||3600)-60)*1000;
@@ -3981,7 +4020,7 @@ function gcalConnectKept(){                                           // v12.14:
     let cc;
     try{
       cc=google.accounts.oauth2.initCodeClient({
-        client_id:BACKEND.googleClientId, scope:'openid '+GCAL_SCOPE, ux_mode:'popup',   // openid: tells the server which Google account this is
+        client_id:BACKEND.googleClientId, scope:'openid '+gcalScopes(), ux_mode:'popup',   // openid: tells the server which Google account this is
         include_granted_scopes:false,                                 // v12.38.3: only what is asked for now, not a wider permission granted before
         select_account:true,                                          // always ask which Google account (a shared computer may be signed in to someone else's)
         callback:async(resp)=>{
@@ -4077,6 +4116,9 @@ async function gcalFetch(quiet){
       return gcalMapClient({ id:'g_'+ev.id, gcal:true, title:ev.summary||'(no title)', date:dt, time:tm||'09:00', allday, dur,
         loc:ev.location||'', link:ev.htmlLink||'', cancelled:0, type:'Google', provider:'', flag:'', ride:'', notes:[], files:[] });
     });
+    const more=await gcalFetchMore(tmin,tmax,who);                  // v12.43: the person's other Google calendars
+    if(GCAL.owner!==who){ GCAL.loading=false; render(); return; }
+    GCAL.events=GCAL.events.concat(more);
     const dups=GCAL.events.filter(g=>g.dup).length;
     GCAL.events=GCAL.events.filter(g=>!g.dup);
     const mapped=GCAL.events.filter(g=>g.cid).length;
@@ -7562,7 +7604,7 @@ function settingsHub(tab,page,sub){
       :`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>Not connected. Connect it to see your Google events on the board and send portal appointments to Google.</span></div>
           <button class="btn gold sm" onclick="closeAll();gcalConnect()">${GCAL.loading?'Connecting\u2026':'Connect'}</button></div>`):'';
     body=`<div class="tiny muted" style="margin-bottom:10px">The calendars on the board, and the outside calendars connected to the portal.</div>
-      ${g}
+      ${g}${gcalCalsCard()}
       ${dir?`<div class="set-h">Calendars</div>
       ${calDefsAll().map(c=>gpRow(c.name+(c.private?' \u00b7 private':''),c.color,c.icon,`closeAll();calMetaForm('${c.key}')`)).join('')}`:''}
       ${dir?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px">
@@ -8120,7 +8162,7 @@ const HM_TILE_DEF={director:['tasks','staff','appts','incidents'],staff:['myshif
 const HM_TILE_NAME={tasks:'Open tasks',staff:'Staff on shift now',appts:'Appointments today',incidents:'Open incidents',due:'Tasks due today',
   clients:'Clients',week:'Weekly progress',certs:'Certifications to renew',attention:'Needs your attention',myshift:'Your shift',
   docs:'Shared documents',nextappt:'Next appointment',onshift:'On shift now',messages:'Unread messages'};
-const HM_KIND={appt:['Appointments','#2D5F93','#E6EEF7'],shift:['Shifts','#1F6B52','#E3F0EA'],event:['Meetings and events','#6B4FA0','#EFEAF7'],rem:['Reminders','#9A5B07','#FBEFD9']};
+const HM_KIND={appt:['Appointments','#2D5F93','#E6EEF7'],shift:['Shifts','#1F6B52','#E3F0EA'],event:['Meetings and events','#6B4FA0','#EFEAF7'],rem:['Reminders','#9A5B07','#FBEFD9'],google:['Google Calendar','#1A63C7','#E8F0FE']};   // v12.43: google
 const HM_IC={check:'<rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="m8.5 12 2.5 2.5 4.5-5"></path>',
   users:'<circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"></path>',
   cal:'<rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path>',
@@ -8163,11 +8205,14 @@ const hmIsEvent=a=>/meet|event|outing|huddle|day program|activit|visit|family|co
 /* today, worked out once per draw: what is on, what is next, and the numbers */
 function hmData(){
   const nm=toMin(nowHM()), r=hmRole(), items=[];
-  const apptsToday=visAppts().filter(a=>a.date===T);
+  const apptsToday=visAppts().filter(a=>a.date===T&&calVisible(apptCalKey(a)));   // v12.43: the calendars this person shows
   apptsToday.forEach(a=>{ const ev=hmIsEvent(a), s=a.time?toMin(a.time):-1, c=client(a.cid)||{};
-    items.push({k:ev?'event':'appt',id:a.id,t:a.time||'',s,e:s<0?-1:s+(+a.dur||60),title:a.title||a.type||'Appointment',
+    items.push({k:ev?'event':'appt',id:a.id,cal:apptCalKey(a),t:a.time||'',s,e:s<0?-1:s+(+a.dur||60),title:a.title||a.type||'Appointment',
       meta:[ev?(a.type||'Event'):'Appointment',c.uci?'UCI '+c.uci:'',a.ride&&!/^on site$/i.test(a.ride)?a.ride:(a.loc||'')].filter(Boolean),
       cancelled:!!a.cancelled,go:`openAppt('${a.id}')`}); });
+  gcalShown().filter(g=>g.date===T).forEach(g=>{ const s=g.allday?-1:toMin(g.time);   // v12.43: the person's Google events
+    items.push({k:'google',id:g.id,cal:apptCalKey(g),allday:!!g.allday,t:g.allday?'':(g.time||''),s,e:s<0?-1:s+(+g.dur||30),title:g.title||'(no title)',
+      meta:[g.cid&&client(g.cid)?'UCI '+client(g.cid).uci:'',g.loc||''].filter(Boolean),go:`gcalOpenLink('${gcalSafeId(g.id)}')`}); });
   if(r!=='family'){
     /* shifts are grouped the way a team talks about them: the day, evening and overnight shift */
     const groups={};
@@ -8193,11 +8238,13 @@ function hmData(){
   });
   let next=null;
   if(ni>=0){ const it=items[ni], m=it.s-nm; it.next=true; if(m<=180) it.st='soon'; it.mins=m;
-    const a=APPTS.find(x=>x.id===it.id)||{}; next={a,when:'in '+hmIn(m),today:true}; }
-  else { const a=visAppts().filter(x=>x.date>T&&!x.cancelled).sort((x,y)=>(x.date+(x.time||'')).localeCompare(y.date+(y.time||'')))[0]; if(a) next={a,when:relDay(a.date).toLowerCase()+(a.time?' at '+hm12(a.time):''),today:false}; }
+    const a=APPTS.find(x=>x.id===it.id)||GCAL.events.find(x=>x.id===it.id)||{}; next={a,when:'in '+hmIn(m),today:true}; }
+  else { const a=visAppts().filter(x=>x.date>T&&!x.cancelled&&calVisible(apptCalKey(x))).concat(gcalShown().filter(g=>g.date>T&&!g.allday)).sort((x,y)=>(x.date+(x.time||'')).localeCompare(y.date+(y.time||'')))[0]; if(a) next={a,when:relDay(a.date).toLowerCase()+(a.time?' at '+hm12(a.time):''),today:false}; }
   let change=null;
   visShifts().forEach(s=>{ [s.start,s.end].forEach(t=>{ const m=toMin(t); if(m>nm&&(change==null||m<toMin(change))) change=t; }); });
-  return {items,next,nm,change,apptsToday:apptsToday.filter(a=>!a.cancelled),attn:attentionItems()};
+  const pa=items.find(it=>(it.k==='appt'||it.k==='event')&&!it.cancelled&&it.s>nm);   // v12.43: the appointments tile counts the portal's own
+  const nextAppt=pa?{a:APPTS.find(x=>x.id===pa.id)||{},when:'in '+hmIn(pa.s-nm),today:true}:null;
+  return {items,next,nextAppt,nm,change,apptsToday:apptsToday.filter(a=>!a.cancelled),attn:attentionItems()};
 }
 /* the rows of the weekly progress card: the same ones the sidebar shows */
 function hmWeekRows(){ try{ return weekRows(); }catch(e){ return []; } }
@@ -8207,7 +8254,7 @@ function hmTile(id,d){
     return {lb:HM_TILE_NAME.tasks,ic:'check',vl:open.length,sub:od?od+' overdue':dt?dt+' due today':'None overdue',dot:od||dt?'warn':'',go:"go('tasks')"}; }
   if(id==='staff'){ const n=shiftsNow().length, tot=visShifts().length;
     return {lb:HM_TILE_NAME.staff,ic:'users',vl:n,of:tot?'of '+tot+' today':'',sub:tot?(d.change?'Next change at '+hm12(d.change):'No more changes today'):'No shifts scheduled',go:"go('team')"}; }
-  if(id==='appts'){ const n=d.apptsToday.length, left=d.apptsToday.filter(a=>a.time&&toMin(a.time)>d.nm).length, nx=d.next&&d.next.today?d.next:null;
+  if(id==='appts'){ const n=d.apptsToday.length, left=d.apptsToday.filter(a=>a.time&&toMin(a.time)>d.nm).length, nx=d.nextAppt||null;   // v12.43: never a Google event
     return {lb:HM_TILE_NAME.appts,ic:'cal',tint:'blue',vl:n,of:n&&left!==n?left+' left':'',sub:nx?'Next at '+hm12(nx.a.time)+', '+nx.when:(n?'None left today':'Nothing scheduled'),go:"go('calendar')"}; }
   if(id==='incidents'){ const n=visIncidents().filter(i=>i.status!=='Closed').length;
     return {lb:HM_TILE_NAME.incidents,ic:'alert',tint:'red',vl:n,sub:n?'Follow-up required':'None open',tone:n?'bad':'',go:'openIncidentsList()'}; }
@@ -8253,7 +8300,7 @@ function hmPill(it){
   if(it.st==='cancel') return `<span class="hm-pill">Canceled</span>`;
   return `<span class="hm-pill">Scheduled</span>`;
 }
-function hmItemIc(it){ return it.k==='appt'?'cal':it.k==='shift'?'clock':it.k==='rem'?'bell':(/family|visit/i.test(it.meta[0]||'')?'heart':/outing|communit|day program/i.test(it.meta[0]+it.title)?'pin':'users'); }
+function hmItemIc(it){ return it.k==='appt'||it.k==='google'?'cal':it.k==='shift'?'clock':it.k==='rem'?'bell':(/family|visit/i.test(it.meta[0]||'')?'heart':/outing|communit|day program/i.test(it.meta[0]+it.title)?'pin':'users'); }
 function hmSchedHead(title,sub){
   return `<div class="hm-sh"><div><h2>${title}</h2><span>${sub}</span></div>
     <a href="#" class="hm-link" onclick="event.preventDefault();go('calendar')">Open calendar${hmI('chev',16)}</a></div>`;
@@ -8264,17 +8311,17 @@ function hmEmptyDay(){
   return `<div class="hm-empty"><span class="hm-empty-ic">${hmI('cal',20)}</span><div><b>Your schedule is open.</b><span>No appointments or shifts scheduled for today.</span></div></div>${add}`;
 }
 function hmSchedList(d){
-  const kinds=['appt','shift','event','rem'].filter(k=>d.items.some(x=>x.k===k));
+  const kinds=['appt','shift','event','google','rem'].filter(k=>d.items.some(x=>x.k===k));
   const f=kinds.includes(HM.filter)?HM.filter:'all';
   const list=d.items.filter(x=>f==='all'||x.k===f);
   let nowAt=list.findIndex(x=>x.k==='rem'||x.s>d.nm); if(nowAt<0) nowAt=list.length;   // the Now line sits between what has started and what has not
   const showNow=list.some(x=>x.k!=='rem'&&x.s>=0);
   const row=it=>`<li class="hm-row ${it.next?'next':''} ${it.st==='done'?'past':''}" onclick="${it.go}" role="button" tabindex="0" onkeydown="if(event.key==='Enter')this.click()">
-      <span class="hm-time">${it.t?hm12(it.t):it.late?'Last night':it.k==='rem'?'Today':''}</span>
+      <span class="hm-time">${it.allday?'All day':it.t?hm12(it.t):it.late?'Last night':it.k==='rem'?'Today':''}</span>
       <span class="hm-kic" style="background:${HM_KIND[it.k][2]};color:${HM_KIND[it.k][1]}">${hmI(hmItemIc(it),18)}</span>
-      <span class="hm-what"><b>${esc(it.title)}</b><span>${it.meta.map(esc).join(' · ')}</span></span>${hmPill(it)}</li>`;
+      <span class="hm-what"><b>${esc(it.title)}</b><span>${hmCalTag(it)}${it.meta.map(esc).join(' · ')}</span></span>${hmPill(it)}</li>`;
   const nowRow=`<li class="hm-now" aria-label="Now, ${hm12(nowHM())}"><span>Now ${hm12(nowHM())}</span><i></i></li>`;
-  return `<section class="hm-card hm-sched" data-hm="schedule" data-sched="list">${hmSchedHead('Today’s schedule','Appointments, shifts, meetings and reminders')}
+  return `<section class="hm-card hm-sched" data-hm="schedule" data-sched="list">${hmSchedHead('Today’s schedule','Appointments, shifts, meetings and reminders')}${calChipRow('hm')}
     ${kinds.length?`<div class="hm-chips">${[['all','All',d.items.length]].concat(kinds.map(k=>[k,HM_KIND[k][0],d.items.filter(x=>x.k===k).length])).map(([k,l,n])=>
       `<button type="button" class="hm-chip ${f===k?'on':''}" aria-pressed="${f===k}" onclick="HM.filter='${k}';render()">${k==='all'?'':`<i style="background:${HM_KIND[k][1]}"></i>`}${l} · ${n}</button>`).join('')}</div>`:''}
     ${list.length?`<ol class="hm-list">${list.map((it,i)=>(showNow&&i===nowAt?nowRow:'')+row(it)).join('')}${showNow&&nowAt===list.length?nowRow:''}</ol>`:hmEmptyDay()}
@@ -8287,7 +8334,7 @@ function hmSchedGlance(d){
   const timed=d.items.filter(x=>x.k!=='rem'&&x.s>=0);
   const first=timed.length?Math.min(7,Math.floor(Math.min(...timed.map(x=>x.s))/60)):7, a0=first*60, a1=24*60, span=a1-a0;
   const pct=m=>Math.max(0,Math.min(100,(m-a0)/span*100));
-  const lanes=['appt','shift','event','rem'];
+  const lanes=['appt','shift','event'].concat(d.items.some(x=>x.k==='google')?['google']:[],['rem']);   // v12.43: a Google lane when there is something in it
   const hours=[]; for(let h=first;h<24;h+=2) hours.push(h);
   const label=h=>(h%12||12)+' '+(h<12?'AM':'PM');
   let rems=d.items.filter(x=>x.k==='rem');
@@ -8295,7 +8342,7 @@ function hmSchedGlance(d){
   const lane=k=>{
     const its=(k==='rem'?rems:d.items.filter(x=>x.k===k)).map(it=>{
       const x0=it.k==='rem'?(it.t?pct(toMin(it.t)):0):pct(it.s), x1=it.k==='rem'?x0:pct(Math.min(it.e,a1));
-      const txt=(it.k!=='shift'&&it.t?hm12(it.t).replace(/ (AM|PM)/,'')+' ':'')+it.title+(it.k==='shift'?' · '+(it.meta[1]||'')+(it.st==='on'?' · On now':''):'');
+      const txt=(it.allday?'All day · ':'')+(it.k!=='shift'&&it.t?hm12(it.t).replace(/ (AM|PM)/,'')+' ':'')+it.title+(it.k==='shift'?' · '+(it.meta[1]||'')+(it.st==='on'?' · On now':''):'');
       const est=(txt.length*6.6+(it.st==='done'||it.k==='rem'?44:26))/HM_TL_MINPX*100;   // the label's width, as a share of the narrowest timeline
       const w=Math.max(x1-x0,0), ext=Math.max(w,est), right=x0+ext>100;
       return {it,x0,w,ext,txt,right,a:right?100-ext:x0,b:right?100:x0+ext};
@@ -8315,7 +8362,7 @@ function hmSchedGlance(d){
   return `<section class="hm-card hm-sched" data-hm="schedule" data-sched="timeline">
     <div class="hm-sh"><div><h2>Today at a glance</h2><span>Appointments, shifts, meetings and reminders from ${label(first)} to midnight</span></div>
       <div class="hm-legend">${lanes.map(k=>`<span><i style="background:${HM_KIND[k][1]}"></i>${HM_KIND[k][0]}</span>`).join('')}
-      <a href="#" class="hm-btn line sm" onclick="event.preventDefault();go('calendar')">Open calendar</a></div></div>
+      <a href="#" class="hm-btn line sm" onclick="event.preventDefault();go('calendar')">Open calendar</a></div></div>${calChipRow('hm')}
     ${d.items.length?`<div class="hm-tl-wrap"><div class="hm-tl" style="min-width:${HM_TL_MINPX+170}px">
       <div class="hm-tl-lab"><div class="hm-tl-sp"></div>${lanes.map(k=>`<div class="hm-tl-ln" style="height:${L[k].h}px"><i style="background:${HM_KIND[k][1]}"></i><div><b>${HM_KIND[k][0]}</b><span>${sub(k)}</span></div></div>`).join('')}<div class="hm-tl-sp"></div></div>
       <div class="hm-tl-body"><div class="hm-tl-hours">${hours.map((h,i)=>`<span style="left:${pct(h*60)}%" class="${i?'':'first'}">${label(h)}</span>`).join('')}</div>
@@ -8327,12 +8374,12 @@ function hmSchedGlance(d){
 function hmSchedMonth(d){
   const base=new Date(T+'T12:00:00'); base.setDate(1); base.setMonth(base.getMonth()+HM.month);
   const y=base.getFullYear(), m=base.getMonth(), first=new Date(y,m,1,12), lead=(first.getDay()+6)%7, days=new Date(y,m+1,0).getDate();
-  const ap=visAppts().filter(a=>!a.cancelled&&a.date&&a.date.slice(0,7)===iso(first).slice(0,7));
+  const ap=hmShownAppts().filter(a=>!a.cancelled&&a.date&&a.date.slice(0,7)===iso(first).slice(0,7));   // v12.43: the calendars shown, Google too
   const cells=[]; for(let i=0;i<lead;i++) cells.push(null); for(let dd=1;dd<=days;dd++) cells.push(iso(new Date(y,m,dd,12)));
   const sel=HM.day&&HM.day.slice(0,7)===iso(first).slice(0,7)?HM.day:(HM.month===0?T:null);
-  const dayItems=dd=>dd===T?d.items:visAppts().filter(a=>a.date===dd&&!a.cancelled).sort((a,b)=>(a.time||'').localeCompare(b.time||'')).map(a=>({k:hmIsEvent(a)?'event':'appt',t:a.time||'',title:a.title||a.type,meta:[a.type||'Appointment',(client(a.cid)||{}).uci?'UCI '+client(a.cid).uci:''].filter(Boolean),go:`openAppt('${a.id}')`,st:'sched'}));
+  const dayItems=dd=>dd===T?d.items:hmShownAppts().filter(a=>a.date===dd&&!a.cancelled).sort((a,b)=>(a.allday?'':(a.time||'')).localeCompare(b.allday?'':(b.time||''))).map(a=>({k:a.gcal?'google':hmIsEvent(a)?'event':'appt',cal:apptCalKey(a),allday:!!a.allday,t:a.allday?'':(a.time||''),title:a.title||a.type,meta:a.gcal?[(client(a.cid)||{}).uci?'UCI '+client(a.cid).uci:'',a.loc||''].filter(Boolean):[a.type||'Appointment',(client(a.cid)||{}).uci?'UCI '+client(a.cid).uci:''].filter(Boolean),go:a.gcal?`gcalOpenLink('${gcalSafeId(a.id)}')`:`openAppt('${a.id}')`,st:'sched'}));
   const pick=sel?dayItems(sel):[];
-  return `<section class="hm-card hm-sched" data-hm="schedule" data-sched="month">${hmSchedHead('This month','Appointments and events, day by day')}
+  return `<section class="hm-card hm-sched" data-hm="schedule" data-sched="month">${hmSchedHead('This month','Appointments and events, day by day')}${calChipRow('hm')}
     <div class="hm-mon-h"><button type="button" class="hm-ibtn" aria-label="Previous month" onclick="HM.month--;HM.day=null;render()">${hmI('left',18)}</button>
       <b>${first.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</b>
       <button type="button" class="hm-ibtn" aria-label="Next month" onclick="HM.month++;HM.day=null;render()">${hmI('chev',18)}</button>
@@ -8340,10 +8387,10 @@ function hmSchedMonth(d){
     <div class="hm-mon">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(w=>`<span class="hm-mon-w">${w}</span>`).join('')}
       ${cells.map(dd=>{ if(!dd) return '<span></span>'; const n=ap.filter(a=>a.date===dd);
         return `<button type="button" class="hm-day ${dd===T?'today':''} ${dd===sel?'sel':''} ${dd<T?'past':''}" onclick="HM.day='${dd}';render()" aria-label="${fmtLong(dd)}, ${n.length} item${n.length===1?'':'s'}">
-          <span>${+dd.slice(8)}</span><span class="hm-dots">${n.slice(0,3).map(a=>`<i style="background:${HM_KIND[hmIsEvent(a)?'event':'appt'][1]}"></i>`).join('')}${n.length>3?`<em>+${n.length-3}</em>`:''}</span></button>`; }).join('')}</div>
+          <span>${+dd.slice(8)}</span><span class="hm-dots">${n.slice(0,3).map(a=>`<i style="background:${HM_KIND[a.gcal?'google':hmIsEvent(a)?'event':'appt'][1]}"></i>`).join('')}${n.length>3?`<em>+${n.length-3}</em>`:''}</span></button>`; }).join('')}</div>
     ${sel?`<div class="hm-mon-day"><b>${sel===T?'Today':fmtLong(sel)}</b>${pick.length?`<ol class="hm-list">${pick.map(it=>`<li class="hm-row" onclick="${it.go}" role="button" tabindex="0">
-      <span class="hm-time">${it.t?hm12(it.t):''}</span><span class="hm-kic" style="background:${HM_KIND[it.k][2]};color:${HM_KIND[it.k][1]}">${hmI(hmItemIc(it),18)}</span>
-      <span class="hm-what"><b>${esc(it.title)}</b><span>${(it.meta||[]).map(esc).join(' · ')}</span></span></li>`).join('')}</ol>`:'<div class="hm-muted">Nothing scheduled.</div>'}</div>`:''}
+      <span class="hm-time">${it.allday?'All day':it.t?hm12(it.t):''}</span><span class="hm-kic" style="background:${HM_KIND[it.k][2]};color:${HM_KIND[it.k][1]}">${hmI(hmItemIc(it),18)}</span>
+      <span class="hm-what"><b>${esc(it.title)}</b><span>${hmCalTag(it)}${(it.meta||[]).map(esc).join(' · ')}</span></span></li>`).join('')}</ol>`:'<div class="hm-muted">Nothing scheduled.</div>'}</div>`:''}
   </section>`;
 }
 /* ── the sections below ── */
@@ -8392,11 +8439,11 @@ function hmSecWorking(d,bold){
     <a href="#" class="hm-link top" onclick="event.preventDefault();go('team')">View full staffing${hmI('chev',16)}</a></section>`;
 }
 function hmSecComing(){
-  const up=visAppts().filter(a=>a.date>T&&!a.cancelled).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||''))).slice(0,5);
+  const up=hmShownAppts().filter(a=>a.date>T&&!a.cancelled).sort((a,b)=>(a.date+(a.allday?'':(a.time||''))).localeCompare(b.date+(b.allday?'':(b.time||'')))).slice(0,5);   // v12.43
   return `<section class="hm-card hm-coming" data-hm="coming"><div class="hm-ch"><h2>Coming up</h2></div>
-    ${up.length?`<ul class="hm-up">${up.map(a=>{ const k=hmIsEvent(a)?'event':'appt'; return `<li onclick="openAppt('${a.id}')" role="button" tabindex="0">
+    ${up.length?`<ul class="hm-up">${up.map(a=>{ const k=a.gcal?'google':hmIsEvent(a)?'event':'appt'; return `<li onclick="${a.gcal?`gcalOpenLink('${gcalSafeId(a.id)}')`:`openAppt('${a.id}')`}" role="button" tabindex="0">
       <span class="hm-kic" style="background:${HM_KIND[k][2]};color:${HM_KIND[k][1]}">${hmI(k==='event'?'users':'cal',18)}</span>
-      <span class="hm-what"><b>${esc(a.title)}</b><span>${esc((client(a.cid)||{}).uci||'')}${(client(a.cid)||{}).uci?' · ':''}${relDay(a.date)}${a.time?' '+hm12(a.time):''}</span></span>${hmI('chev',16)}</li>`; }).join('')}</ul>`
+      <span class="hm-what"><b>${esc(a.title)}</b><span>${hmCalTag({cal:apptCalKey(a),meta:[1]})}${esc((client(a.cid)||{}).uci||'')}${(client(a.cid)||{}).uci?' · ':''}${relDay(a.date)}${a.allday?' · All day':a.time?' '+hm12(a.time):''}</span></span>${hmI('chev',16)}</li>`; }).join('')}</ul>`
       :`<div class="hm-muted">Nothing coming up.</div>`}</section>`;
 }
 function hmSecMyTasks(){
@@ -8429,10 +8476,10 @@ function hmNextUp(d,bold){
   if(!d.next) return '';
   const a=d.next.a, c=client(a.cid)||{}, end=a.time?hm12(String(Math.floor((toMin(a.time)+(+a.dur||60))/60)%24).padStart(2,'0')+':'+String((toMin(a.time)+(+a.dur||60))%60).padStart(2,'0')):'';
   const lines=[a.time?[hmI('clock',16),hm12(a.time)+(end?' to '+end:'')]:null,c.uci?[hmI('heart',16),'Client UCI '+esc(c.uci)]:null,
-    a.ride&&!/^on site$/i.test(a.ride)?[hmI('person',16),esc(a.ride)]:a.loc?[hmI('pin',16),esc(a.loc)]:null].filter(Boolean);
+    a.ride&&!/^on site$/i.test(a.ride)?[hmI('person',16),esc(a.ride)]:a.loc?[hmI('pin',16),esc(a.loc)]:null,a.gcal?[hmI('cal',16),esc(calDef(apptCalKey(a)).name)]:null].filter(Boolean);
   return `<div class="hm-next ${bold?'bold':''}"><span class="hm-next-k">Next up · ${esc(d.next.when)}</span><b>${esc(a.title||a.type||'Appointment')}</b>
     <div class="hm-next-l">${lines.map(l=>`<span>${l[0]}${l[1]}</span>`).join('')}</div>
-    <a href="#" onclick="event.preventDefault();openAppt('${a.id}')">View details${hmI('chev',16)}</a></div>`;
+    <a href="#" onclick="event.preventDefault();${a.gcal?`gcalOpenLink('${gcalSafeId(a.id)}')`:`openAppt('${a.id}')`}">${a.gcal?'Open in Google Calendar':'View details'}${hmI('chev',16)}</a></div>`;
 }
 function viewHome(){
   const c=hmCfg(), d=hmData(), r=hmRole(), m=ME[state.role]||{name:''}, bold=c.look==='b';
@@ -19074,7 +19121,8 @@ function openGcalEvent(id){
     </div></section>`,
     `<button class="btn ghost" onclick="closeAll()">Close</button>${g.link?`<a class="btn navy" href="${g.link}" target="_blank" rel="noopener" style="text-decoration:none">Open in Google Calendar ↗</a>`:''}`);
 }
-function openAppt(id){ if(String(id).startsWith('g_')){ return openGcalEvent(id); }
+function openAppt(id){ if(String(id).startsWith('gx_')) return gcalOpenLink(gcalSafeId(id));   // v12.43: another Google calendar's event is read only: it opens in Google
+  if(String(id).startsWith('g_')){ return openGcalEvent(id); }
   const a=APPTS.find(x=>x.id===id), c=client(a.cid);
   const canEdit = state.role!=='family';
   openDrawer(`${catGlyph(a.type,16)} ${esc(a.title)}`, `${c?esc(c.uci)+' · ':(a.cid?'':'Whole team · ')}${relDay(a.date)} at ${hm12(a.time)}`, `
@@ -20072,8 +20120,8 @@ function upcomingReminders(){
   APPTS.filter(a=>!a.cancelled&&cl.includes(a.cid)&&calMine(a)).forEach(a=>
     add(new Date(a.date+'T'+a.time+':00'), `${a.title} — ${client(a.cid).init} (${client(a.cid).uci})`,
       `${fmtDate(a.date)} at ${hm12(a.time)}${a.loc?' · '+a.loc:''}${a.flag?' · flag: '+a.flag:''}`, a.id));
-  if(GCAL.connected) GCAL.events.filter(g=>!g.allday).forEach(g=>
-    add(new Date(g.date+'T'+g.time+':00'), g.title, `${fmtDate(g.date)} at ${hm12(g.time)} · Google Calendar`, g.id));
+  if(GCAL.connected) GCAL.events.filter(g=>!g.allday&&calShow(g)).forEach(g=>
+    add(new Date(g.date+'T'+g.time+':00'), g.title, `${fmtDate(g.date)} at ${hm12(g.time)} · ${calDef(apptCalKey(g)).name}`, g.id));
   return out.sort((a,b)=>a.when-b.when);
 }
 function openReminderPrefs(){
@@ -20410,7 +20458,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.42 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.43 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -21825,6 +21873,7 @@ function apptIcon(a){ return catGlyph(a.type,15)||'▤'; }
 let CAL_ACCESS={};                                                   // {calKey:{mode:'all'|'listed', sids:[...]}}
 function calAccessSave(){ sbUpsert('np_demo_program',{key:'calaccess',value:{map:CAL_ACCESS},updated_by:auditActor()}); }
 function canSeeCal(key){
+  if(String(key).indexOf('gcal:')===0) return true;                  // v12.43: a person's own Google calendar
   if((CAL_META[key]||{}).private&&state.role!=='director') return false;   // director keeps a calendar to himself
   if(state.role==='director') return true;
   if(key==='personal') return true;
@@ -21842,13 +21891,13 @@ function calDefsAll(){
     {key:'company', name:((ONB.org&&ONB.org!=='Spectrum')?ONB.org:'Company')+' calendar', color:'#2A5245', icon:'briefcase'},
     {key:'personal', name:(()=>{ const n=(typeof actorName==='function'&&realSession())?String(actorName()||'').split(' ')[0]:''; return n?n+'\u2019s calendar':'My calendar'; })(), color:'#7A5CC6', icon:'id-card'},   // v12.22: a name, not an email
     ...CONTRACTORS.map(ct=>({key:'ct:'+ct.id, name:ct.name, color:ct.color||'#B0602F', icon:'users'})),
-    ...((typeof GCAL!=='undefined'&&GCAL.connected)?[{key:'google', name:'Google Calendar', color:'#1A73E8', icon:'calendar'}]:[])
+    ...gcalCalDefs()                                                   // v12.43: the main Google calendar and the person's others
   ];
   return base.map(c=>Object.assign({},c,{name:meta(c.key).name||c.name, color:meta(c.key).color||c.color,
     icon:meta(c.key).icon||c.icon, private:!!meta(c.key).private}));
 }
 function calDef(k){ return calDefsAll().find(c=>c.key===k)||calDefsAll()[0]; }
-function apptCalKey(a){ return a.gcal?'google':(a.cal||'company'); }
+function apptCalKey(a){ return a.gcal?(a.gkey||'google'):(a.cal||'company'); }   // v12.43: each Google calendar has its own key
 function calMine(a){
   const k=apptCalKey(a);
   if(k==='personal'&&(a.owner||'')!==userKey()) return false;        // your personal calendar is yours alone
@@ -21947,7 +21996,7 @@ function apCalNew(sel){
 }
 function calSelect(id,cur){
   return `<select class="inp" id="${id}" onchange="apCalNew(this)">
-    ${calDefs().filter(c=>c.key!=='google').map(c=>`<option value="${c.key}" ${c.key===(cur||'company')?'selected':''}>${esc(c.name)}</option>`).join('')}
+    ${calDefs().filter(c=>c.key!=='google'&&c.key.indexOf('gcal:')!==0).map(c=>`<option value="${c.key}" ${c.key===(cur||'company')?'selected':''}>${esc(c.name)}</option>`).join('')}
     <option value="__newct__">＋ New contractor calendar…</option>
   </select>`;
 }
@@ -21961,8 +22010,9 @@ function calControls(){
       <div style="display:flex;gap:6px;flex-wrap:wrap">${calDefs().map(c=>`<span class="spill" style="cursor:pointer;${calVisible(c.key)?`background:${c.color}18;color:${c.color}`:'background:var(--surface-2);color:var(--muted)'};gap:7px;padding:5px 11px">
         <span class="sdot" style="background:${calVisible(c.key)?c.color:'var(--muted)'}"></span>
         <span onclick="calToggle('${c.key}');calControls()">${esc(c.name)}${c.private?' 🔒':''}</span>
-        ${state.role==='director'?`<button style="all:unset;cursor:pointer;opacity:.75" title="Rename, recolor or make private" onclick="closeAll();calMetaForm('${c.key}')">✎</button>`:''}
+        ${(state.role==='director'||c.key.indexOf('gcal:')===0)?`<button style="all:unset;cursor:pointer;opacity:.75" title="${c.key.indexOf('gcal:')===0?'Rename or recolor':'Rename, recolor or make private'}" onclick="closeAll();calMetaForm('${c.key}')">✎</button>`:''}
       </span>`).join('')}</div>
+      ${GCAL.connected&&state.role!=='family'?`<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn ghost sm" onclick="closeAll();gcalAddForm()">＋ Google calendar</button></div>`:''}
       ${state.role==='director'?`<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
         <button class="btn ghost sm" onclick="closeAll();calAddForm()">＋ New calendar</button>
         <button class="btn ghost sm" onclick="closeAll();manageContractors()">⚙ Contractors</button>
@@ -22056,6 +22106,7 @@ function calAddGo(){
   closeAll(); render(); toast(n+' added — tick it on to see its appointments.');
 }
 function calMetaForm(key){
+  if(String(key).indexOf('gcal:')===0) return gcalCalEdit(gcalMine().findIndex(x=>gcalKey(x.id)===key));   // v12.43
   const d=calDef(key), m=CAL_META[key]||{};
   glyphPicker({
     heading:'Edit calendar', nameLabel:'Calendar', name:m.name||d.name, placeholder:d.name,
@@ -22086,7 +22137,7 @@ function calAddForm(){
 }
 function calMetaFormLegacy(key){ return calMetaForm(key); }
 function calAccessForm(){
-  const shared=calDefsAll().filter(c=>c.key!=='personal');
+  const shared=calDefsAll().filter(c=>c.key!=='personal'&&c.key!=='google'&&c.key.indexOf('gcal:')!==0);   // v12.43: Google calendars are the person's own
   window._caKeys={};
   shared.forEach(c=>{ window._caKeys[c.key.replace(/[^A-Za-z0-9]/g,'_')]=c.key; });
   const staffList=STAFF.filter(st=>!hid('staff',st.id));
@@ -22450,7 +22501,7 @@ function askContext(lbl){
 
   const upAppts=APPTS.filter(a=>a.date>=T&&clIds.includes(a.cid)&&!a.cancelled&&!hid('appt',a.id)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).slice(0,25)
     .map(a=>`- ${a.date} ${hm12(a.time)} · ${ci(a.cid)} · ${a.title} (${a.type}) · ${a.loc||''}${a.provider?' · '+a.provider:''}${a.flag?' · FLAG: '+askTr(a.flag,60):''}`);
-  if(GCAL.connected) GCAL.events.slice(0,20).forEach(g=>upAppts.push(`- ${g.date} ${g.allday?'all day':hm12(g.time)} · ${g.cid?ci(g.cid)+' · ':''}${askTr(g.title,80)} (Google Calendar)`));
+  if(GCAL.connected) GCAL.events.filter(g=>calShow(g)).slice(0,20).forEach(g=>upAppts.push(`- ${g.date} ${g.allday?'all day':hm12(g.time)} · ${g.cid?ci(g.cid)+' · ':''}${askTr(g.title,80)} (Google Calendar)`));
   sec('Appointments (portal + connected Google Calendar)', upAppts);
 
   if(role!=='family'){
@@ -23896,8 +23947,8 @@ function cxDayItems(p,d,A){
     const k=cxApptKind(a); if(!on(k)) return;
     const c=client(a.cid), cat=a.gcal?null:catOf(a.type);
     out.push({k,t:a.allday?'':(a.time||''),e:(!a.allday&&a.time&&a.dur)?cxAddMin(a.time,a.dur):'',title:a.title||a.type||cxKind(k).one,
-      cat:a.gcal?'Google Calendar':(a.type||''),catC:a.gcal?'#4285F4':((cat&&cat.color)||cxKind(k).c),
-      lines:[c?'Client '+c.uci:(a.gcal?'':'Whole team'),a.provider,a.loc].filter(Boolean),note:a.flag||'',cx:!!a.cancelled,
+      cat:a.gcal?calDef(apptCalKey(a)).name:(a.type||''),catC:a.gcal?calDef(apptCalKey(a)).color:((cat&&cat.color)||cxKind(k).c),   // v12.43: which Google calendar
+      lines:[c?'Client '+c.uci:((a.gcal||apptCalKey(a)==='personal')?'':'Whole team'),(!a.gcal&&apptCalKey(a)!=='company')?calDef(apptCalKey(a)).name:'',a.provider,a.loc].filter(Boolean),   // v12.43: one on a person's own calendar isn't the whole team'snote:a.flag||'',cx:!!a.cancelled,
       ride:k==='appt'&&!fam&&!a.ride&&!a.cancelled&&!a.gcal,
       go:a.gcal?(a.link?`window.open('${esc(a.link)}','_blank')`:''):`openAppt('${a.id}')`});
   });
@@ -24164,7 +24215,7 @@ function cxPage(p){
   </div>`;
   const body=v==='list'?cxList(p,A):`<div class="cx-wrap${v==='week'?' is-week':''}">${v==='week'?cxWeek(p,A):cxGrid(p,A)}${cxPane(p,A)}</div>`;
   return head+`<section class="card cx-card" data-cx="${p}">
-    <div class="cx-top">${cxLegend(p,cxCounts(p,A))}${tools}</div>
+    <div class="cx-top">${p==='calendar'?calChipRow('cx'):''}${cxLegend(p,cxCounts(p,A))}${tools}</div>
     <div class="cx-body">${body}</div>
   </section>`;
 }
@@ -24173,6 +24224,192 @@ function cxSearch(){                                                  // redraw 
   clearTimeout(_cxSearchT);
   _cxSearchT=setTimeout(()=>{ const a=document.activeElement, keep=a&&a.classList&&a.classList.contains('cx-q'), pos=keep?a.selectionStart:0;
     render(); if(keep){ const b=document.querySelector('#view .cx-q'); if(b){ b.focus(); try{ b.setSelectionRange(pos,pos); }catch(e){} } } },220);
+}
+
+/* ══ v12.43: CALENDARS ══
+   Calendar chips on the Calendar page and over the home page schedule: each calendar the person can see, Google ones
+   included, hidden or shown with a click (per person, USER_SET.calsOff). The home page follows the same choices and
+   shows the person's Google events. More Google calendars: one the person owns is added by its ID (the permission the
+   portal already has covers it), or, once Google approves the list permissions, picked from a list (gcalListOn). They
+   are kept per person (USER_SET.gcals: id, name, colour), read live like the main one, and open in Google; nothing is
+   written to them. */
+const GCAL_COLORS=['#0B8043','#8E24AA','#D81B60','#F4511E','#039BE5','#3F51B5','#33B679','#A0522D','#E4A11B','#616161'];
+const GCAL_ID_RX=/^[A-Za-z0-9._%+\-@#]{3,254}$/;                      // what Google calendar IDs are made of (emails, ...@group.calendar.google.com)
+const GCAL_MORE={};                                                  // calendar ID -> '' when it read, else why not (denied, gone, offline)
+function gcalListOn(){
+  if(GCAL_LIST_LIVE) return true;
+  try{
+    const q=new URLSearchParams(location.search).get('gcallist');
+    if(q==='1') localStorage.setItem('np_gcal_list','1'); else if(q==='0') localStorage.removeItem('np_gcal_list');
+    return localStorage.getItem('np_gcal_list')==='1';
+  }catch(e){ return false; }
+}
+function gcalScopes(){ return [GCAL_SCOPE].concat(gcalListOn()?GCAL_LIST_SCOPES:[]).join(' '); }
+const gcalKey=id=>'gcal:'+id;
+const gcalSafeId=id=>String(id||'').replace(/[^A-Za-z0-9_\-]/g,'');
+const gcalHex=c=>/^#[0-9a-f]{6}$/i.test(String(c||''))?c:'';
+function gcalMine(){ return ((((USER_SET[userKey()]||{}).gcals)||[])).filter(x=>x&&GCAL_ID_RX.test(String(x.id||''))); }
+function gcalMineSave(list){ userSetSave({gcals:list.map(x=>({id:x.id,name:String(x.name||'').slice(0,80),color:gcalHex(x.color)||GCAL_COLORS[0]}))}); }
+function gcalCalDefs(){
+  if(typeof GCAL==='undefined'||!GCAL.connected) return [];
+  return [{key:'google', name:'Google Calendar', color:'#1A73E8', icon:'calendar'}]
+    .concat(gcalMine().map(x=>({key:gcalKey(x.id), name:x.name||'Google calendar', color:gcalHex(x.color)||GCAL_COLORS[0], icon:'calendar'})));
+}
+function gcalShown(){ return (typeof GCAL!=='undefined'&&GCAL.connected)?GCAL.events.filter(g=>calShow(g)):[]; }
+function hmShownAppts(){ return visAppts().filter(a=>calVisible(apptCalKey(a))).concat(gcalShown()); }
+function gcalOpenLink(id){
+  const g=GCAL.events.find(x=>gcalSafeId(x.id)===id);
+  if(g&&/^https:\/\//.test(g.link||'')) window.open(g.link,'_blank','noopener'); else toast('That event has no link to Google Calendar.');
+}
+function gcalHash(s){ let h=5381; for(const ch of String(s)) h=((h<<5)+h+ch.charCodeAt(0))>>>0; return h.toString(36); }
+function gcalEvOf(ev,calId){                                          // a Google event from another calendar, as the page keeps it
+  const pad=n=>String(n).padStart(2,'0'), start=ev.start||{}, allday=!start.dateTime;
+  let dt, tm;
+  if(allday){ dt=start.date; tm=''; }
+  else{ const sd=zOf(new Date(start.dateTime)); dt=sd.getFullYear()+'-'+pad(sd.getMonth()+1)+'-'+pad(sd.getDate()); tm=pad(sd.getHours())+':'+pad(sd.getMinutes()); }
+  let dur=30;
+  if(!allday&&ev.end&&ev.end.dateTime) dur=Math.max(15,Math.round((new Date(ev.end.dateTime)-new Date(start.dateTime))/60000));
+  return gcalMapClient({ id:'gx_'+gcalHash(calId)+'_'+gcalSafeId(ev.id), gcal:true, gkey:gcalKey(calId), title:ev.summary||'(no title)', date:dt, time:tm||'09:00', allday, dur,
+    loc:ev.location||'', link:ev.htmlLink||'', cancelled:0, type:'Google', provider:'', flag:'', ride:'', notes:[], files:[] });
+}
+async function gcalFetchMore(tmin,tmax,who){
+  const list=gcalMine(); if(!list.length) return [];
+  const out=[];
+  await Promise.all(list.map(async x=>{
+    const url='https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(x.id)+'/events?singleEvents=true&orderBy=startTime'
+      +'&timeMin='+encodeURIComponent(tmin.toISOString())+'&timeMax='+encodeURIComponent(tmax.toISOString())+'&maxResults=250';
+    let r=null;
+    try{ r=await gcalApi(url,null,false); }catch(e){ r=null; }
+    if(!r||r===GCAL_NO||!r.ok){ GCAL_MORE[x.id]=r&&r.status===404?'gone':r&&r.status===403?'denied':'offline'; return; }
+    const d=await r.json().catch(()=>({}));
+    GCAL_MORE[x.id]='';
+    (d.items||[]).filter(ev=>ev&&ev.status!=='cancelled'&&ev.start).forEach(ev=>out.push(gcalEvOf(ev,x.id)));
+  }));
+  return GCAL.owner===who?out:[];
+}
+/* the chips: each calendar the person can see; hidden ones stay listed, struck through */
+function calChipRow(where){
+  const defs=calDefs(); if(!defs.length) return '';
+  if(where==='hm'&&defs.length<2) return '';
+  const fam=state.role==='family', dir=state.role==='director', off=defs.filter(c=>!calVisible(c.key)).length;
+  return `<div class="v1243-cc" role="group" aria-label="Calendars to show">${where==='cx'?'<span class="v1243-cl">Calendars</span>':''}
+    ${defs.map(c=>{ const on=calVisible(c.key), col=gcalHex(c.color)||'#6B7A74';
+      return `<button type="button" class="v1243-c${on?'':' is-off'}" aria-pressed="${on}" title="${on?'Hide':'Show'} ${esc(c.name)}" data-cal="${esc(c.key)}" onclick="calToggle(this.dataset.cal)"><i style="border-color:${col};background:${on?col:'transparent'}"></i><span>${esc(c.name)}</span></button>`; }).join('')}
+    ${off?`<button type="button" class="v1243-x" onclick="calAll()">Show all</button>`:''}
+    ${!fam&&GCAL.connected?`<button type="button" class="v1243-x" onclick="gcalAddForm()">＋ Google calendar</button>`:''}
+    ${dir&&where==='cx'?`<button type="button" class="v1243-x" onclick="calAddForm()">＋ Calendar</button>`:''}
+  </div>`;
+}
+/* on the home page: a dot and the calendar's name, for anything not on the team's own calendar */
+function hmCalTag(it){
+  if(!it||!it.cal||it.cal==='company') return '';
+  const c=calDef(it.cal); if(!c||c.key!==it.cal) return '';
+  return `<i class="v1243-d" style="background:${gcalHex(c.color)||'#6B7A74'}"></i>${esc(c.name)}${(it.meta||[]).length?' · ':''}`;
+}
+/* the settings window: the person's Google calendars */
+function gcalCalsCard(){
+  if(typeof GCAL==='undefined'||!GCAL.connected||state.role==='family') return '';
+  const list=gcalMine();
+  const why=x=>GCAL_MORE[x.id]==='denied'?'Can’t be read with this Google account. Only calendars you own can be added.':GCAL_MORE[x.id]==='gone'?'Google no longer has this calendar.':'';
+  return `<div class="v1243-gc" data-gcals><div class="set-h">Your Google calendars</div>
+    <div class="v1243-gr"><i style="background:#1A73E8"></i><div><b>Google Calendar</b><span>Your main calendar${GCAL.email?' · '+esc(GCAL.email):''}. Portal appointments you send to Google go here.</span></div></div>
+    ${list.map((x,i)=>`<div class="v1243-gr"><i style="background:${gcalHex(x.color)||GCAL_COLORS[0]}"></i><div><b>${esc(x.name||'Google calendar')}</b>${why(x)?`<span class="bad">${why(x)}</span>`:'<span>Shows next to the portal’s calendars, only to you</span>'}</div>
+      <button class="btn ghost sm" onclick="closeAll();gcalCalEdit(${i})" title="Rename or recolor" aria-label="Rename or recolor ${esc(x.name||'this calendar')}">✎</button>
+      <button class="btn ghost sm" onclick="gcalCalDel(${i})" title="Remove from the portal" aria-label="Remove ${esc(x.name||'this calendar')} from the portal">✕</button></div>`).join('')}
+    <button class="btn ghost sm" onclick="closeAll();gcalAddForm()">＋ Add another Google calendar</button></div>`;
+}
+function gcalAddForm(){
+  if(!GCAL.connected) return toast('Connect Google Calendar first.');
+  if(gcalListOn()) return gcalPicker();
+  gcalIdForm();
+}
+function gcalIdForm(note){
+  openModal('Add a Google calendar',`
+    <div class="tiny muted" style="margin-bottom:10px">Show another of your Google calendars here, next to the portal’s. Its events show on the Calendar page and your home page, only to you, and open in Google.</div>
+    <div class="field"><label for="gcId">Calendar ID</label><input class="inp" id="gcId" placeholder="e.g. abc123@group.calendar.google.com" autocomplete="off" autocapitalize="off" spellcheck="false"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();gcalIdAdd();}"></div>
+    <div class="v1243-how"><b>Where to find it</b><ol><li>Open Google Calendar and go to Settings (the gear).</li><li>Under Settings for my calendars, click the calendar.</li><li>Scroll to Integrate calendar and copy the Calendar ID.</li></ol></div>
+    <div class="tiny muted">The portal can read calendars you own. One someone else shared with you can’t be added this way.</div>
+    <div id="gcIdMsg" class="tiny" role="alert" style="color:#9A3B2E;margin-top:8px;min-height:1em">${note?esc(note):''}</div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" id="gcIdGo" onclick="gcalIdAdd()">Add calendar</button>`);
+  setTimeout(()=>{ const i=el('gcId'); if(i) i.focus(); },60);
+}
+function gcalIdOf(s){                                                  // the ID itself, or from an embed link or the iCal address
+  s=String(s||'').trim();
+  let m=s.match(/[?&]src=([^&#\s]+)/); if(m) s=m[1];
+  m=s.match(/\/calendar\/ical\/([^/\s]+)\//); if(m) s=m[1];
+  try{ s=decodeURIComponent(s); }catch(e){}
+  return s.trim();
+}
+async function gcalIdAdd(){
+  const msg=t=>{ const m=el('gcIdMsg'); if(m) m.textContent=t; };
+  const id=gcalIdOf((el('gcId')||{}).value);
+  if(!id) return msg('Paste the calendar’s ID first.');
+  if(!GCAL_ID_RX.test(id)) return msg('That doesn’t look like a calendar ID. It has no spaces and often ends in @group.calendar.google.com.');
+  if(id==='primary'||(GCAL.email&&id.toLowerCase()===String(GCAL.email).toLowerCase())) return msg('That’s your main Google calendar. It already shows.');
+  if(gcalMine().some(x=>x.id===id)) return msg('That calendar is already added.');
+  const b=el('gcIdGo'); if(b){ b.disabled=true; b.textContent='Checking…'; }
+  let r=null;
+  try{ r=await gcalApi('https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(id)+'/events?maxResults=1&fields=summary',null,true); }catch(e){ r=null; }
+  if(b){ b.disabled=false; b.textContent='Add calendar'; }
+  if(!r||r===GCAL_NO) return msg('Google Calendar couldn’t be reached. Try again in a moment.');
+  if(r.status===404) return msg('Google has no calendar with that ID. Check it and try again.');
+  if(r.status===403) return msg('That calendar isn’t yours, so the portal can’t read it. Only calendars you own can be added.');
+  if(r.status===401) return msg('Your Google connection needs renewing. Reconnect Google Calendar, then try again.');
+  if(!r.ok) return msg('Google didn’t accept that calendar (error '+r.status+').');
+  const d=await r.json().catch(()=>({}));
+  gcalAddCal(id,String(d.summary||'').trim()||'Google calendar');
+}
+function gcalAddCal(id,name,color){
+  const list=gcalMine();
+  if(list.some(x=>x.id===id)) return;
+  list.push({id,name:String(name).slice(0,80),color:gcalHex(color)||GCAL_COLORS[list.length%GCAL_COLORS.length]});
+  gcalMineSave(list);
+  logAudit('Added a Google calendar','Shown to the person who added it only');
+  closeAll(); render(); toast(String(name).slice(0,80)+' added. Its events show on your calendar and home page.');
+  gcalFetch(true);
+}
+function gcalCalEdit(i){
+  const list=gcalMine(), x=list[i]; if(!x) return;
+  glyphPicker({ heading:'Edit Google calendar', nameLabel:'Calendar', name:x.name||'', placeholder:'Google calendar', color:gcalHex(x.color)||GCAL_COLORS[0], icon:'calendar',
+    note:'Only you see this calendar in the portal. A new name or colour here doesn’t change it in Google.',
+    onSave:g=>{ const l=gcalMine(), j=l.findIndex(y=>y.id===x.id); if(j<0) return closeAll();
+      l[j]=Object.assign({},l[j],{name:String(g.name||'').trim()||l[j].name,color:gcalHex(g.color)||l[j].color});
+      gcalMineSave(l); closeAll(); render(); toast('Calendar saved.'); } });
+}
+function gcalCalDel(i){
+  const list=gcalMine(), x=list[i]; if(!x) return;
+  gcalMineSave(list.filter((y,j)=>j!==i));
+  GCAL.events=GCAL.events.filter(g=>g.gkey!==gcalKey(x.id));
+  logAudit('Removed a Google calendar','');
+  if(typeof _setHub!=='undefined'&&_setHub&&el('modal')&&el('modal').classList.contains('on')) settingsHub.apply(null,_setHub);
+  render(); toast((x.name||'That calendar')+' removed from the portal. Nothing changed in Google. Add it again any time.');
+}
+/* the picker, once Google approves the list permissions (or on a device turned on for the review video) */
+async function gcalPicker(){
+  let r=null;
+  try{ r=await gcalApi('https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader&maxResults=250&fields=items(id,summary,summaryOverride,backgroundColor,accessRole,primary)',null,true); }catch(e){ r=null; }
+  if(!r||r===GCAL_NO||!r.ok) return gcalIdForm(r&&r.status===403?'To pick from a list, disconnect Google Calendar and connect it again, and allow the portal to see your list of calendars. Or add one by its ID.':'');
+  const d=await r.json().catch(()=>({})), have=new Set(gcalMine().map(x=>x.id));
+  const items=(d.items||[]).filter(c=>c&&!c.primary&&GCAL_ID_RX.test(String(c.id||'')));
+  window._gcPick=items;
+  openModal('Add Google calendars',`
+    <div class="tiny muted" style="margin-bottom:8px">Tick the calendars to show in the portal, next to its own. Their events show only to you, and open in Google.</div>
+    ${items.length?items.map((c,i)=>`<label class="v1243-pk"><input type="checkbox" data-gcp="${i}" ${have.has(c.id)?'checked':''}><i style="background:${gcalHex(c.backgroundColor)||GCAL_COLORS[i%GCAL_COLORS.length]}"></i>
+      <span><b>${esc(c.summaryOverride||c.summary||'Google calendar')}</b><em>${c.accessRole==='owner'?'Yours':'Shared with you'}</em></span></label>`).join('')
+      :'<div class="tiny muted">Your Google account has no other calendars.</div>'}
+    <button type="button" class="btn ghost sm" style="margin-top:10px" onclick="closeAll();gcalIdForm()">Add one by its ID instead</button>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="gcalPickSave()">Save</button>`);
+}
+function gcalPickSave(){
+  const items=window._gcPick||[];
+  const on=new Set([...document.querySelectorAll('#modal [data-gcp]')].filter(x=>x.checked).map(x=>(items[+x.dataset.gcp]||{}).id).filter(Boolean));
+  const keep=gcalMine().filter(x=>on.has(x.id)||!items.some(c=>c.id===x.id));   // ones added by ID that the list doesn't show stay
+  items.forEach((c,i)=>{ if(on.has(c.id)&&!keep.some(x=>x.id===c.id)) keep.push({id:c.id,name:String(c.summaryOverride||c.summary||'Google calendar').slice(0,80),color:gcalHex(c.backgroundColor)||GCAL_COLORS[i%GCAL_COLORS.length]}); });
+  gcalMineSave(keep);
+  logAudit('Changed which Google calendars show','Shown to the person who chose them only');
+  closeAll(); render(); toast('Saved. Your Google calendars are updated.');
+  gcalFetch(true);
 }
 
 captureSamples();   // end of script, every seed declared — still guaranteed before any hydration response lands
