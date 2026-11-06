@@ -67,6 +67,58 @@ function makeBackend(opts) {
   const myOrgs = (u) => (u ? members.filter((m) => m.user_id === u.id).map((m) => m.org_id) : []);
   const myOrg = (u) => { const m = u && members.filter((x) => x.user_id === u.id).sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0]; return m ? m.org_id : null; };
   const roleIn = (u, org) => { const m = u && members.find((x) => x.user_id === u.id && x.org_id === org); return m ? m.role : null; };
+  // the per-role rules (migration np_role_rules, Nov 6), written the way the SQL functions are: restrictive policies on
+  // top of the team rule, so they only narrow it. opts.roleRules === false leaves them out (the database before them).
+  const RULES = opts.roleRules !== false;
+  const isDir = (u, org) => roleIn(u, org) === 'director';
+  const myEmail = (u) => String((u && u.email) || '').toLowerCase();
+  const lc = (v) => String(v == null ? '' : v).toLowerCase();
+  const mySids = (u, org) => rows('np_demo_invites').filter((i) => i.org_id === org && i.used_at && i.sid && lc(i.email) === myEmail(u)).map((i) => String(i.sid))
+    .concat(rows('np_demo_staff').filter((s) => s.org_id === org && myEmail(u) && lc(s.email) === myEmail(u)).map((s) => String(s.id)));
+  const meStaff = (u, org) => { const ids = mySids(u, org); return rows('np_demo_staff').filter((s) => s.org_id === org && ids.includes(String(s.id))); };
+  function threadToMe(u, org, t) {                                   // np_thread_to_me
+    const k0 = lc(t.to_kind || t.role || ''), kind = ['director', 'staff', 'group', 'guardian'].includes(k0) ? k0 : 'staff';
+    const ref = t.to_ref || (k0 === 'group' && / team$/.test(t.who || '') ? String(t.who).replace(/ team$/, '') : '');
+    const me = meStaff(u, org);
+    if (kind === 'staff') return me.some((s) => String(s.id) === String(ref) || (ref === '' && s.name === t.who));
+    if (kind === 'group') return ref === '' || me.some((s) => s.home === ref || s.home === 'All homes');
+    return false;
+  }
+  function threadMine(u, org, id) {                                  // np_thread_mine
+    const t = rows('np_demo_threads').find((x) => x.org_id === org && String(x.id) === String(id));
+    if (!t) return false;
+    if (isDir(u, org)) return true;
+    const em = myEmail(u);
+    if (em && (lc(t.from_email) === em || rows('np_demo_messages').some((m) => m.org_id === org && String(m.thread_id) === String(id) && lc(m.author_email) === em))) return true;
+    return threadToMe(u, org, t);
+  }
+  function notifMine(u, org, f) {                                    // np_notif_mine
+    if (isDir(u, org) || !f) return true;
+    if (f === '@director') return false;
+    return meStaff(u, org).some((s) => String(s.id) === String(f) || (String(f).indexOf('@home:') === 0 && (s.home === String(f).slice(6) || s.home === 'All homes')));
+  }
+  // can user u do op (select, insert, update, delete) on row r of table t, by the role rules
+  function can(u, t, op, r) {
+    if (!RULES) return true;
+    const org = r.org_id, dir = isDir(u, org), em = myEmail(u), ownSid = () => mySids(u, org).includes(String(r.sid));
+    switch (t) {
+      case 'np_demo_threads': return op === 'delete' ? dir || (!!em && lc(r.from_email) === em) : op === 'insert' ? true : threadMine(u, org, r.id);
+      case 'np_demo_messages':
+        if (op === 'select') return threadMine(u, org, r.thread_id);
+        if (op === 'insert') return dir || (!!em && lc(r.author_email) === em && threadMine(u, org, r.thread_id));
+        if (op === 'update') return dir || (!!em && lc(r.author_email) === em);
+        return dir || (!!em && (lc(r.author_email) === em || rows('np_demo_threads').some((x) => x.org_id === org && String(x.id) === String(r.thread_id) && lc(x.from_email) === em)));
+      case 'np_demo_notifications': return op === 'select' ? notifMine(u, org, r.for_staff) : op === 'insert' ? true : dir;
+      case 'np_demo_audit_log': return op === 'update' ? false : op === 'delete' ? dir : true;
+      case 'np_demo_credentials': return dir || ownSid();
+      case 'np_demo_agreements': return op === 'select' ? dir || (!!em && lc(r.signer_email) === em) : op === 'insert' ? true : dir;
+      case 'np_demo_accounts': return op === 'delete' ? dir : op === 'insert' ? true : dir || (!!em && lc(r.email) === em);
+      case 'np_demo_ask_log': return op === 'insert' ? true : dir;
+      case 'np_demo_clients': return op === 'insert' || op === 'delete' ? dir : true;
+      case 'np_demo_shifts': return op === 'select' ? true : dir;
+      default: return true;
+    }
+  }
   const orgHasRecords = (org) => Object.keys(T).some((t) => !/^np_demo_(program|accounts|audit_log|doc_activity|invites|notifications|ask_log|agreements)$/.test(t) && rows(t).some((r) => r.org_id === org));
 
   // a made-up login made outside the page (a test's starting point), with a team of its own unless it joins one
@@ -217,7 +269,10 @@ function makeBackend(opts) {
       });
       return json(201, []);
     }
-    const vis = (r) => r.org_id == null || mine.includes(r.org_id);
+    const vis = (r) => r.org_id == null || (mine.includes(r.org_id) && can(u, t, 'select', r));
+    const refusedLog = (op, n) => { if (!n) return; log.push({ t, op: 'refused', what: op, n, by: u.email });
+      if (CALL_LOG) require('fs').appendFileSync(CALL_LOG, JSON.stringify({ suite: require('path').basename(process.argv[1] || ''), refused: op, t, n, role: roleIn(u, myOrg(u)), qs: String(qs).slice(0, 120) }) + '\n'); };
+    const denied = () => { refusedLog('insert/upsert', 1); return json(403, { code: '42501', message: 'new row violates row-level security policy for table "' + t + '"' }); };
     if (method === 'GET') {
       let r = rows(t).filter((x) => vis(x) && fl.every((f) => test(x, f)));
       const ord = new URLSearchParams(qs).get('order');
@@ -236,6 +291,7 @@ function makeBackend(opts) {
         if (r.id == null) r.id = n++;
         if (!r.created_at) r.created_at = now();
         const i = upsert ? rows(t).findIndex((x) => String(x.id) === String(r.id) && x.org_id === r.org_id) : -1;
+        if (i >= 0 ? !(vis(rows(t)[i]) && can(u, t, 'update', rows(t)[i])) : !can(u, t, 'insert', r)) return denied();   // the role rules
         if (i >= 0) rows(t)[i] = Object.assign({}, rows(t)[i], r); else rows(t).push(r);
         log.push({ t, op: upsert ? 'upsert' : 'insert', row: r, by: u.email });
         made.push(r);
@@ -243,7 +299,8 @@ function makeBackend(opts) {
       return json(201, ret ? made : []);
     }
     if (method === 'PATCH') {
-      const hit = rows(t).filter((x) => vis(x) && fl.every((f) => test(x, f)));
+      const hit = rows(t).filter((x) => vis(x) && can(u, t, 'update', x) && fl.every((f) => test(x, f)));
+      refusedLog('update', rows(t).filter((x) => vis(x) && !can(u, t, 'update', x) && fl.every((f) => test(x, f))).length);
       if (t === 'np_demo_staff' && hit.some((x) => roleIn(u, x.org_id) !== 'director') && ['name', 'init', 'role', 'home', 'trainings', 'hrs', 'hired', 'email'].some((k) => k in b)) return json(400, { code: '42501', message: 'only a director can change a staff record' });
       hit.forEach((x) => Object.assign(x, b));
       log.push({ t, op: 'patch', q: qs, set: b, n: hit.length, by: u.email });
@@ -251,7 +308,8 @@ function makeBackend(opts) {
     }
     if (method === 'DELETE') {
       const before = rows(t).length;
-      T[t] = rows(t).filter((x) => !(vis(x) && fl.every((f) => test(x, f))));
+      refusedLog('delete', rows(t).filter((x) => vis(x) && !can(u, t, 'delete', x) && fl.every((f) => test(x, f))).length);
+      T[t] = rows(t).filter((x) => !(vis(x) && can(u, t, 'delete', x) && fl.every((f) => test(x, f))));
       log.push({ t, op: 'delete', q: qs, n: before - T[t].length, by: u.email });
       return json(200, []);
     }
