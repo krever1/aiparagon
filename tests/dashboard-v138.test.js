@@ -137,7 +137,7 @@ function markedJs() {
   const card = (page, k) => page.evaluate((s) => { const c = document.querySelector('.v137-st[data-s="' + s + '"]'); return c ? {
     boxes: [...c.querySelectorAll('.v137-ck')].map((b) => [b.querySelector('b').textContent, b.querySelector('input').checked]),
     secs: [...c.querySelectorAll('.v137-wr ol li')].map((l) => l.textContent), writes: c.querySelector('.v137-wr summary').innerText.replace(/\s+/g, ' ').trim(),
-    always: (c.querySelector('.v137-always') || {}).textContent || '', chartsLine: (c.querySelector('.v137-wr .v138-wch') || {}).textContent || '', chartsIn: !!c.querySelector('.v137-wr + .v138-ch, .v137-f .v138-ch') } : null; }, k);
+    always: (c.querySelector('.v137-always') || {}).textContent || '', chartsIn: !!c.querySelector('.v137-wr + .v138-ch, .v137-f .v138-ch') } : null; }, k);
 
   // 1. Templates: Emails among the reads, Charts and visuals among the writes, the card that no longer stretches
   {
@@ -156,11 +156,10 @@ function markedJs() {
     const ch = await page.evaluate(() => [...document.querySelectorAll('.v138-ch small')].map((s) => s.textContent));
     check('each says what its charts show, drawn only from the documents', JSON.stringify(ch) === JSON.stringify(['A timeline of the engagement, and bars where the documents give numbers, drawn only from the numbers and dates in the documents',
       'A timeline of the first weeks, drawn only from the numbers and dates in the documents', 'The results against the goals, as bars, drawn only from the numbers and dates in the documents']), JSON.stringify(ch));
-    check('the Writes lists name the charts on a line of their own, under the parts, which keep their count', S.proposal.chartsLine === 'Charts: a timeline of the engagement, and bars where the documents give numbers.' &&
-      S.onboarding.chartsLine === 'Charts: a timeline of the first weeks.' && S.review.chartsLine === 'Charts: the results against the goals, as bars.' &&
-      ['proposal', 'onboarding', 'review'].every((k) => !S[k].secs.some((x) => /^Charts/.test(x))) && S.proposal.secs.length === 4 && S.onboarding.secs.length === 7 &&
-      S.proposal.writes === 'Proposal presentation and client proposal · 4 parts, with charts' && S.onboarding.writes === 'Onboarding plan · 7 sections, with charts' &&
-      S.assessment.writes === 'Assessment report · 9 sections' && !S.assessment.chartsLine, JSON.stringify([S.proposal.secs, S.proposal.writes, S.onboarding.writes, S.proposal.chartsLine]));
+    check('the Writes summary says the stage draws charts, and its parts keep their count (the box under it says which charts)', S.proposal.writes === 'Proposal presentation and client proposal · 4 parts, with charts' &&
+      S.onboarding.writes === 'Onboarding plan · 7 sections, with charts' && S.review.writes === 'Client review brief · 7 sections, with charts' && S.assessment.writes === 'Assessment report · 9 sections' &&
+      ['proposal', 'onboarding', 'review'].every((k) => !S[k].secs.some((x) => /^Charts/.test(x))) && S.proposal.secs.length === 4 && S.onboarding.secs.length === 7 && S.review.secs.length === 7,
+      JSON.stringify([S.proposal.writes, S.onboarding.writes, S.review.writes, S.proposal.secs.length]));
     const lay = await page.evaluate(() => { const c = document.querySelector('.v137-st[data-s="proposal"]'), d = c.querySelector('.v137-wr').getBoundingClientRect(), b = c.querySelector('.v138-ch').getBoundingClientRect();
       return { dx: Math.round(b.left - d.left), w: Math.round(b.width), below: b.top >= d.bottom - 1 }; });
     check('the charts box sits under the Writes list, as wide as it', lay.dx === 0 && lay.w > 250 && lay.below, JSON.stringify(lay));
@@ -182,7 +181,7 @@ function markedJs() {
     check('the choices are saved team-wide, with who and when', v.assessment && v.assessment.emails === false && v.onboarding && v.onboarding.charts === false && v.onboarding.by === ME, JSON.stringify(v));
     const a2 = await card(page, 'assessment'), o2 = await card(page, 'onboarding');
     check('and the cards show them: emails off, charts off and gone from the Writes list', a2.boxes.find((b) => b[0] === 'Emails')[1] === false && o2.boxes.find((b) => b[0] === 'Charts and visuals')[1] === false &&
-      !o2.chartsLine && o2.writes === 'Onboarding plan · 7 sections', JSON.stringify([a2.boxes, o2.boxes, o2.writes, o2.chartsLine]));
+      o2.writes === 'Onboarding plan · 7 sections' && !o2.secs.some((x) => /^Charts/.test(x)), JSON.stringify([a2.boxes, o2.boxes, o2.writes]));
     await ctx.close();
   }
 
