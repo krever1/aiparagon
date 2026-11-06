@@ -5441,7 +5441,18 @@ function stepCard(c, s, n, steps, canEdit) {
     const m = /"([\d. ]+?)\. Is that right\?"/.exec(res);
     const told = m ? m[1].replace(/\D/g, "") : "";
     const heard = String(a.phone || "").replace(/\D/g, "");
-    if (!m) {
+    // Nov 6: with no number said yet, the tool gives the caller ID question, or says there's no caller ID, so she never
+    // fills in caller ID digits herself (on calls with no caller ID she had asked about made-up ones).
+    const cid = /^Ask exactly this[^"]*"Is the number you're calling from, ending in ([a-z, ]+), the best one/.exec(res);
+    const WORD_D = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 };
+    if (cid) {
+      body += '<div class="sm">There\'s caller ID, so she asked if the number they\'re calling from, ending in ' + esc(cid[1].split(/,\s*/).map(function (w) { return WORD_D[w] != null ? WORD_D[w] : w; }).join(" ")) + ", is the best one to reach them.</div>";
+    } else if (/^There is no caller ID on this call/.test(res)) {
+      if (heard) cls = " changed";
+      body += '<div class="sm">' + (heard ? "She passed " + esc(heard) + ", but the caller hadn't said a number and there's no caller ID, so she was told to ask for one." : "There's no caller ID and they hadn't said a number yet, so she was told to ask for one.") + "</div>";
+    } else if (/^You already have their number/.test(res)) {
+      body += '<div class="sm">She already had their number from their file, so she was told not to ask again.</div>';
+    } else if (!m) {
       cls = " changed";
       body += '<div class="sm">' + (/no full number to read back/.test(res) ? "There was no full number to read back yet, so she was told to ask for it." : esc(res.slice(0, 160))) + "</div>";
     } else {
