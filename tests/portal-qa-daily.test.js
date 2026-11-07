@@ -401,7 +401,7 @@ function faithful(B, extra) {
     await until(() => B.rows('np_demo_shifts').some((s) => s.end_time === '22:00'));
     check('calendar: clicking Tom on the day plan opens Edit shift, and the change replaces the shift (one row)', shf === 'Edit shift' && B.rows('np_demo_shifts').filter((s) => s.staff_id === sid).length === 1 && B.rows('np_demo_shifts')[0].end_time === '22:00', JSON.stringify(B.rows('np_demo_shifts').map((s) => [s.start_time, s.end_time])));
     await reload(sp); await go(sp, 'home');
-    check('home (staff): My shift shows Tom on shift today at Oak House', /Oak House/.test(await view(sp)) && await sp.evaluate(() => shiftsNow().some((x) => x.sid === meSid())));
+    check('home (staff): My shift shows Tom on shift today at Oak House', /Oak House/.test(await view(sp)) && await sp.evaluate(() => shiftsNow().some((x) => x.sid === meSid()) || nowHM() >= '22:00'));   // the shift was just set to end at 22:00, so after that it is over (this failed every night from 22:00 to midnight)
     // Google Calendar: connect, show, save, follow, refresh, disconnect
     G.events.push({ id: 'ext1', status: 'confirmed', summary: 'Haircut', start: { dateTime: today + 'T11:00:00Z' }, end: { dateTime: today + 'T11:30:00Z' }, htmlLink: 'https://calendar.google.com/x' });
     await go(page, 'calendar');
