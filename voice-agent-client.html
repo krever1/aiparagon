@@ -51,7 +51,7 @@ a{color:var(--blue)}
 .pill{border:1px solid var(--blue-line);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}
 .pill.live{color:var(--good);border-color:#bfe3d4;background:#f0faf6;font-weight:600}
 
-.wrap{padding:26px 28px;max-width:1180px}
+.wrap{padding:26px 28px}
 .eyebrow{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);font-weight:700;margin:0 0 6px}
 h1{font-size:26px;color:var(--navy);margin:0 0 6px}
 .sub{color:var(--muted);margin:0 0 20px}
@@ -96,6 +96,7 @@ td .t2{display:block;color:var(--muted);font-size:13px;margin-top:2px}
 .tag.badt{color:var(--bad);border-color:#eec4bd;background:#fdf1ef}
 .tag.neut{color:var(--muted);border-color:var(--blue-line);background:var(--page)}
 .tag.info{color:var(--blue);border-color:#b9d9f0;background:var(--blue-soft)}
+.tag.winter{color:#1f5f8b;border-color:#bcdcef;background:#eef7fd}
 
 .funnel{display:grid;grid-template-columns:repeat(4,1fr);gap:0;align-items:center}
 .fstep{text-align:center;padding:8px}
@@ -611,6 +612,7 @@ button.tn.tnlink:hover,button.tn.tnlink:focus-visible{border-color:var(--blue);c
       <span class="pill" id="clock">—</span>
       <button class="btn sm bell" id="bellBtn" aria-label="Notifications" title="Notifications">🔔<span class="dotn hidden" id="bellCount">0</span></button>
       <button class="btn sm primary" id="callAgent">Call Ava</button>
+      <button class="btn sm" id="callWinter" title="Call the winter storm line from the browser: Ava with the winter greeting, the snow and ice answers first">Winter line</button>
       <button class="btn sm" id="authBtn">Sign in</button>
       <button class="btn sm" id="resetAll">Reset demo</button>
     </div>
@@ -1485,7 +1487,7 @@ function seed() {
   const dw = (iso) => dayDiff(iso) === 1 ? "tomorrow" : DAY_NAMES[zparts(new Date(iso)).wd];
   const brianLine = "I can do " + dw(brianAppt) + " at eight in the morning, or " + dw(brianAppt) + " at one. Which works better?";
   return {
-    v: 2, seededAt: Date.now(), schedulerAt: Date.now(), callbackDemo: true, pinecrestDemo: true,
+    v: 2, seededAt: Date.now(), schedulerAt: Date.now(), callbackDemo: true, pinecrestDemo: true, winterLineDemo: true,
     settings: {
       assistant: "Ava, Pinecrest Roofing's virtual assistant",
       coverage: "24/7 with human escalation",
@@ -1547,7 +1549,7 @@ function seed() {
       { id: "cust-greg", name: "Greg Holt", phone: "+1 770 555 0133", email: "greg.holt@gmail.com", address: "41 Mill Creek Rd, Dallas, GA", preferred: "email", stage: "Lost", owner: "jason", value: 12000, source: "Inbound call", service: "Roof replacement", lossReason: "Went with another roofer", createdAt: minsAgo(12 * 1440), notes: [], history: [{ at: minsAgo(4 * 1440), text: "Marked lost: went with another roofer" }] }
     ],
     calls: [
-      { id: "c7", customerId: "cust-katie", customer: "Katie Morrison", phone: "+1 530 555 0187", intent: "Ice dam leak after heavy snow", outcome: "Escalated", state: "urgent", time: fmtWhen(tKatie), receivedAt: tKatie, duration: "2m 36s",
+      { id: "c7", customerId: "cust-katie", line: "winter", customer: "Katie Morrison", phone: "+1 530 555 0187", intent: "Ice dam leak after heavy snow", outcome: "Escalated", state: "urgent", time: fmtWhen(tKatie), receivedAt: tKatie, duration: "2m 36s",
         recording: "call-0143.wav", address: "10247 Snowpeak Lane, Truckee, CA", ended: "assistant-ended-call-after-message-spoken",
         summary: "About two feet of snow, then water through the living room ceiling around the light, with the drywall bulging next to it. Ava gave the safety steps first, flagged it urgent, confirmed the caller ID number and offered no times. Icicles over the front door and a gutter pulling away. Asked whether we can clear the snow off the roof today.",
         reason: { category: "safety_escalation", text: "Water was coming through the ceiling by a light under heavy snow, with the ceiling bulging, so Ava gave the safety steps and handed straight to a person instead of booking.", next: "Maria to call back now: leak check and what we can do about the snow." },
@@ -1901,6 +1903,12 @@ function backfill(st) {
   // Nov 5: the business is Pinecrest Roofing, the agent is Ava, and a winter emergency call joins the demo. Saved demo data
   // picks this up once: the day's calls and the rest come from the seed, the names change everywhere else, and the
   // knowledge gets the snow and ice answers. An answer or topic someone has edited keeps their wording.
+  // The winter storm line (Nov 6): the winter sample call is a winter line call. Once, for demo data saved before.
+  if (!st.winterLineDemo) {
+    const k7 = (st.calls || []).find((c) => c.id === "c7");
+    if (k7) k7.line = "winter";
+    st.winterLineDemo = true;
+  }
   if (!st.pinecrestDemo) {
     DAILY_KEYS.forEach((k) => { st[k] = d[k]; });
     st.seededAt = d.seededAt;
@@ -2134,6 +2142,9 @@ function agendaRow(a) {
 }
 function apptPlace(a) { const cu = custForAppt(a); return (cu && cu.address) || a.address || "Address on the call"; }
 
+// Calls on the winter storm line (Nov 6): the winter Ava, made by Vapi Voice Test from the live agent.
+const WINTER_ASSISTANT_ID = "8aa7e253-b10a-45fd-b373-59f5c8ccf674";
+function lineTag(c) { return c && c.line === "winter" ? '<span class="tag winter" title="A call on the winter storm line">Winter line</span>' : ""; }
 function outcomeTag(c) {
   const map = { booked: "ok", urgent: "badt", needs: "warnt" };
   return '<span class="tag ' + (map[c.state] || "neut") + '">' + esc(c.outcome) + "</span>";
@@ -2190,7 +2201,7 @@ function renderConversations() {
       : c.state !== "booked" && c.reason && c.reason.category && c.reason.category !== "booked" ? '<span class="lmeta" style="color:' + (c.state === "urgent" ? "var(--bad)" : "var(--warn)") + '">' + esc(REASONS[c.reason.category] || "") + "</span>" : "";
     return head + '<div class="li" data-conv="' + esc(c.id) + '" aria-selected="' + (c.id === convSel) + '">' +
       '<div class="lirow"><b>' + (!isReviewed(c) ? '<i class="udot" title="Not reviewed yet"></i>' : "") + esc(c.customer) + "</b>" + outcomeTag(c) + "</div>" +
-      "<span>" + esc(c.intent) + "</span>" + extra + "<span class=\"lmeta\">" + esc(callTime(c)) + " · " + esc(c.duration) + (isReviewed(c) ? " · ✓ Reviewed" : "") + "</span></div>";
+      "<span>" + esc(c.intent) + "</span>" + extra + "<span class=\"lmeta\">" + (c.line === "winter" ? "Winter line · " : "") + esc(callTime(c)) + " · " + esc(c.duration) + (isReviewed(c) ? " · ✓ Reviewed" : "") + "</span></div>";
   }).join("") : '<div class="empty">' + (convQuery || convReason ? "No calls match." : S.calls.length ? "Nothing in this filter." : LIVE.on ? "No calls yet. Use Call Ava at the top to place one." : "No conversations.") + "</div>";
 
   const c = S.calls.find((x) => x.id === convSel);
@@ -2202,7 +2213,7 @@ function renderConversations() {
   const cu = customerForCall(c);
   $("convDetail").innerHTML =
     '<div class="head" style="margin-bottom:10px;align-items:flex-start"><div><h2><button class="linkbtn" style="font-size:16px" data-client="' + esc(cu ? cu.id : "call:" + c.id) + '" title="Everything about this customer">' + esc(c.customer) + "</button></h2>" +
-    '<p class="sub" style="margin:4px 0 0">' + esc(c.address) + "</p></div><div class=\"headchips\">" + outcomeTag(c) + bookedChip(c) + "</div></div>" +
+    '<p class="sub" style="margin:4px 0 0">' + esc(c.address) + "</p></div><div class=\"headchips\">" + lineTag(c) + outcomeTag(c) + bookedChip(c) + "</div></div>" +
     '<div class="row" style="margin-bottom:16px">' +
       '<button class="btn sm' + (reviewed ? "" : " primary") + '" data-reviewcall="' + esc(c.id) + '">' + (reviewed ? "✓ Reviewed · undo" : "Mark reviewed") + "</button>" +
       (tel ? '<a class="btn sm" href="tel:' + esc(tel) + '" style="text-decoration:none">Call back</a>' : "") +
@@ -5662,19 +5673,20 @@ const PLAIN_CALL = { caller_history: "none", caller_known: "no", caller_id_last4
 // What a browser call starts with: a test callback's own overrides or the plain call's, plus the team's background sound
 // (Vapi plays none on browser calls unless told).
 function startOverrides(call) {
-  const base = call && call.as ? call.as.overrides : { variableValues: Object.assign({}, PLAIN_CALL) };
+  const base = call && call.as ? call.as.overrides : { variableValues: Object.assign({}, PLAIN_CALL, call && call.winter ? { line: "winter" } : {}) };
   return Object.assign({}, base, { backgroundSound: soundFor(soundKey(S)) });
 }
 async function startCall(opts) {
-  opts = opts && opts.as ? opts : {};
+  opts = opts && (opts.as || opts.winter) ? opts : {};
   const key = (S.settings.vapiPublicKey || "").trim();
-  const asst = (S.settings.vapiAssistantId || "").trim();
+  const asst = opts.winter ? WINTER_ASSISTANT_ID : (S.settings.vapiAssistantId || "").trim();
   if (!key || !asst) { go("settings"); return; }
   if (call && call.active) { $("callDrawer").dataset.open = "true"; return; }
 
-  call = { active: true, startedAt: null, lines: [], partial: {}, tools: [], id: null, timer: null, muted: false, as: opts.as || null };
+  call = { active: true, startedAt: null, lines: [], partial: {}, tools: [], id: null, timer: null, muted: false, as: opts.as || null, winter: !!opts.winter };
   $("callAs").textContent = !call.as ? "" : call.as.hasName ? "Calling as " + call.as.name + ", a returning caller. She has their file and should ask if it's them." : "Calling as a returning caller with no name on file. She has their file and should ask who's calling.";
-  $("callAs").classList.toggle("hidden", !call.as);
+  if (call.winter) $("callAs").textContent = "Calling the winter storm line: Ava with the winter greeting, the snow and ice answers first.";
+  $("callAs").classList.toggle("hidden", !call.as && !call.winter);
   $("callErr").textContent = "";
   $("callMute").textContent = "Mute";
   $("callEnd").textContent = "End call";
@@ -5683,7 +5695,7 @@ async function startCall(opts) {
   $("callTimer").textContent = "0:00";
   setCallStatus("Loading");
   $("callDrawer").dataset.open = "true";
-  $("callAgent").disabled = true;
+  $("callAgent").disabled = true; $("callWinter").disabled = true;
   renderCallLog();
 
   let Vapi;
@@ -5765,7 +5777,7 @@ function finishCall(failed) {
   call.active = false;
   clearInterval(call.timer);
   $("callLevel").style.width = "0";
-  $("callAgent").disabled = false;
+  $("callAgent").disabled = false; $("callWinter").disabled = false;
   setCallStatus(failed ? "Not connected" : "Call ended");
   $("callEnd").textContent = "Close";
   ["assistant", "user"].forEach((r) => { if (call.partial[r]) { call.lines.push({ role: r, text: call.partial[r] }); call.partial[r] = ""; } });
@@ -5895,6 +5907,7 @@ function checkPendingCall() {
 }
 $("callOpen").addEventListener("click", () => openCall($("callOpen").dataset.id));
 $("callAgent").addEventListener("click", () => startCall());
+$("callWinter").addEventListener("click", () => startCall({ winter: true }));
 $("callEnd").addEventListener("click", () => {
   if (call && call.active && vapi) { try { vapi.stop(); } catch (e) {} setTimeout(() => finishCall(false), 1500); }
   else $("callDrawer").dataset.open = "false";
@@ -6063,7 +6076,7 @@ function buildLive(raw) {
       unanswered: c.unanswered_questions || [],
       kbMisses: ev.filter((e) => e.tool === "lookup_knowledge" && !e.kb_entry_id && e.args && e.args.question).map((e) => String(e.args.question)),
       sentiment: c.sentiment, urgency: c.urgency, slot: c.appointment_slot, cost: c.cost,
-      success: c.success_evaluation, ended: c.ended_reason,
+      success: c.success_evaluation, ended: c.ended_reason, line: c.assistant_id === WINTER_ASSISTANT_ID ? "winter" : "",
       reviewStatus: c.review_status, structured: st,
       mission: m, approvals: m ? (approvalsByMission[m.id] || {}) : {}
     };
