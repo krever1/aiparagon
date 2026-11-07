@@ -89,8 +89,9 @@ A greeting with the date and time, a one-line summary ("N items need your attent
 - An **Ask Spectrum** chip under the summary asks a ready question, such as "Summarize today for me" or "What do I need to do this shift?".
 - Sections: Needs your attention, This week's progress, Who's working, Coming up, Ask Spectrum. Staff also have Your tasks and Your training. Family have Needs your attention, Coming up and Ask Spectrum.
 - Today's schedule is a List (with a Now line), a Timeline (one line each for appointments, shifts, meetings and events, reminders, and Google Calendar when there is something on it) or a Month.
-- Over the schedule, **calendar chips**: one per calendar the person can see (the team's Company calendar, their own calendar, and once Google is connected "Google Calendar" and any other Google calendars they added). Click a chip to hide or show that calendar; a hidden one stays listed, struck through, with **Show all**. The choice is per person and is the same on the Calendar page. **＋ Google calendar** (when Google is connected) adds another of their Google calendars.
-- The schedule, Next up, Coming up and the Month follow those choices, and show the person's Google events (only to them), each marked with its calendar. A Google event opens in Google Calendar. The "Appointments today" tile counts portal appointments only.
+- Over the schedule, once Google is connected, a **View** bar: **All**, **Portal** (the team's calendars only) and one button per Google account the person connected (named by its address, or the name they gave it; with one account it just says **Google**). One click switches what the home page and the Calendar page show. The choice is per person.
+- Under it, **calendar chips**: one per calendar the person can see in that view (the team's Company calendar, their own calendar, and their Google calendars). Click a chip to hide or show that calendar; a hidden one stays listed, struck through, with **Show all**. In **All** with two or more Google accounts the chips are grouped (Portal, then each account, whose own calendar reads "Main calendar"), and clicking a group's name hides or shows all of its calendars at once. The choices are per person and the same on the Calendar page. **＋ Google calendar** (when Google is connected) adds another of their Google calendars.
+- The schedule, Next up, Coming up, the Month and the tiles follow the view and the chips, and show the person's Google events (only to them), each marked with its calendar. A Google event opens in Google Calendar (one on the main Google account's calendar can also be edited from the Calendar page). The "Appointments today" tile counts portal appointments only. Reminders and Ask Spectrum follow the chips, never the view, so switching the view never hides a reminder.
 
 Staff also see:
 
@@ -123,10 +124,11 @@ Open tasks in a table: task, assignee (director view), client, category, due dat
 One shared calendar for appointments, events and outings, meetings, shifts, reminders and tasks, and where clients were.
 
 - Views (kept per person): **Calendar** (the month, with the picked day's plan beside it), **Week**, and **List** (Upcoming, This week, This month, Past, All).
-- **Calendars**: a row of chips, one per calendar the person can see (Company calendar, their own, the director's extra calendars such as a day program or a van, and their Google calendars). Click one to hide or show it; the choice is per person and holds on Home too. Directors also get **＋ Calendar**; anyone with Google connected gets **＋ Google calendar**.
+- **View** (once Google is connected): **All**, **Portal**, or one Google account, the same bar and choice as on Home.
+- **Calendars**: a row of chips, one per calendar the person can see in that view (Company calendar, their own, the director's extra calendars such as a day program or a van, and their Google calendars), grouped by Google account in All when there are two or more (click a group's name to hide or show all of it). Click one to hide or show it; the choice is per person and holds on Home too. Directors also get **＋ Calendar**; anyone with Google connected gets **＋ Google calendar**, and **＋ Google account** to connect another Google account.
 - **The legend** counts each kind (Appointments, Events, Meetings, Shifts, Reminders, Accountability, Google Calendar) and turns it on or off for this page, per person. Accountability starts off here.
 - Tools: "Search the calendar…" and appointment-type chips that filter to one type. Directors also get **Category** and **Edit categories**.
-- **Connect Google Calendar**. Once connected: "Refresh Google" and "Google ✓ · Disconnect". After a page load it may show "Checking Google Calendar…" for a few seconds.
+- **Connect Google Calendar**. Once connected: "Refresh Google" and "Google ✓ · Disconnect" (with two or more Google accounts, "Google ✓ · 2 accounts", which opens them in the settings). After a page load it may show "Checking Google Calendar…" for a few seconds.
 - The gear: calendar settings (see Page settings).
 - **Add item** opens a menu:
   - **Appointment**: a client's visit
@@ -358,7 +360,7 @@ The gear opens a window titled **Settings** with up to three tabs. Staff reach i
 
 - **Editing tool** (director): **Edit this page** (rename titles, drag sections, hide sections, add your own notes, table or quick links; the layout is yours and follows your login), **Rename menus and binders**, and on Tasks, **Task colors**.
 - **Display settings** (director): **Houses** (Add house), **Appointment types** (New type), **Attention icons**, and on Calendar and Home, **Calendar colors and text**.
-- **Calendar integrations**: Google Calendar (Connect, Refresh, Disconnect) and, once connected, Your Google calendars (the main one, the others you added with ✎ and ✕, and Add another Google calendar); for directors the team's calendars with New calendar, Contractors and Access ("Who sees each calendar"); Calendars and filters.
+- **Calendar integrations**: Google Calendar (Connect, Refresh, Disconnect) and, once connected, Your Google calendars (the main one, the others you added with ✎ and ✕, Add another Google calendar and Connect another Google account). With two or more Google accounts it is **Your Google accounts**: each account with its calendars under it, **Main** on the one portal appointments go to, **Use for appointments** on the others, ✎ (a name and colour only you see) and **Disconnect** (that account only); for directors the team's calendars with New calendar, Contractors and Access ("Who sees each calendar"); Calendars and filters.
 
 Edit mode shows a gold **Done editing** button. On Tasks, Safety log, Accountability, Training & onboarding, Documents, Templates and the staff page, a **Customize layout** button at the bottom corner also turns it on (staff see it on their pages too). On those pages and on Clients, the client page and Staff, the Edit, ✎ and ✕ buttons stay hidden until edit mode is on.
 
@@ -530,7 +532,15 @@ Use the blank form, not a filled-in copy. "Find boxes" looks again later.
 
 **49a. Show another of your Google calendars.** With Google connected: Calendar (or Home) > **＋ Google calendar**, or the gear > Calendar integrations > Your Google calendars > **＋ Add another Google calendar**. Paste the calendar's ID: in Google Calendar, Settings > under "Settings for my calendars" click the calendar > Integrate calendar > Calendar ID (an embed link works too) > **Add calendar**. It gets its own chip and colour, and its events show on the Calendar page and Home, only to you. Only calendars you own can be added this way; one someone shared with you says "That calendar isn't yours". Rename, recolour (✎) or remove (✕) it under Your Google calendars; removing it changes nothing in Google. Portal appointments are still sent to your main Google calendar only.
 
-**49b. Hide a calendar.** Click its chip on the Calendar page or over Home's schedule. Click again, or **Show all**, to bring it back.
+**49b. Hide a calendar.** Click its chip on the Calendar page or over Home's schedule. Click again, or **Show all**, to bring it back. To hide all of one Google account's calendars at once, click the account's name in front of its chips (in the All view).
+
+**49c. Connect another Google account (a work and a personal one, say).** With Google connected: Calendar > **＋ Google account**, or the gear > Calendar integrations > **＋ Connect another Google account** > pick the other Google account in Google's window > allow. Its calendar shows next to the first one's, only to you, and both stay connected until disconnected. Up to 5 accounts. To disconnect just one: the gear > Calendar integrations > Your Google accounts > **Disconnect** on that account.
+
+**49d. Switch views.** Over Home's schedule or on the Calendar page: **View** > **All**, **Portal** (only the team's calendars), or one Google account (only its calendars). The choice stays until changed, on both pages.
+
+**49e. Choose which Google account gets portal appointments.** The gear > Calendar integrations > Your Google accounts > **Use for appointments** on that account. Appointments sent to Google from then on go there (the account marked **Main**), and its events can be edited from the portal. Appointments sent before stay in the account they went to, and changes to them still reach it.
+
+**49f. Name a Google account.** The gear > Calendar integrations > Your Google accounts > ✎ > a name (such as Work) and a colour > Save. Only you see it, on the View bar, the chips and the tag on its events. Nothing changes in Google.
 
 **50. Export a client's whole record.** The client > Export record > "Save as PDF" in the print window.
 
@@ -551,7 +561,7 @@ When "Also send to Google Calendar" is ticked, Google gets:
 
 If the person's Google Calendar is connected, the event goes straight onto their own Google Calendar, and rescheduling or cancelling follows it. If not, Google Calendar opens in a new tab, filled in, and they save it with one click.
 
-With Google connected, the person's Google events (their main calendar and any other Google calendars they added) show on the portal calendar and their home page, to them only. A Google event whose title names a client is shown with initials. The portal reads those calendars; it never writes to the extra ones. It asks Google only for permission over events on calendars the person owns. A list of all their Google calendars, shared ones included, is built but switched off until Google approves two more permissions (see CLAUDE.md, section 2).
+With Google connected, the person's Google events (the main calendar of each Google account they connected, and any other Google calendars they added) show on the portal calendar and their home page, to them only. A calendar added by its ID is read with the account that owns it. A Google event whose title names a client is shown with initials. The portal reads those calendars; it never writes to the extra ones. It asks Google only for permission over events on calendars the person owns. A list of all their Google calendars, shared ones included, is built but switched off until Google approves two more permissions (see CLAUDE.md, section 2).
 
 ### Ask Spectrum
 

@@ -3333,7 +3333,7 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
 /* ══ v12.43: calendar chips and Google calendars ══ */
 .v1243-cc{display:flex;flex-wrap:wrap;align-items:center;gap:6px 6px}
 .hm-sched .v1243-cc{padding:12px 22px;border-bottom:1px solid #EEF0EB}
-.v1243-cl{font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6B7A74;margin-right:4px}
+.v1243-cl,.v1244-vl{font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6B7A74;margin-right:4px}
 .v1243-c{display:inline-flex;align-items:center;gap:7px;min-height:30px;max-width:260px;padding:3px 12px 3px 10px;border:1px solid #DCE1DB;border-radius:999px;background:#FFFFFF;color:#26332D;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;line-height:1.2}
 .v1243-c span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .v1243-c i{width:11px;height:11px;border-radius:50%;border:2px solid;box-sizing:border-box;flex:none}
@@ -3362,6 +3362,25 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
 @media (max-width:700px){
   .hm-sched .v1243-cc{padding:10px 16px}
   .v1243-c{max-width:calc(100vw - 80px)}
+}
+/* ══ v12.44: views and Google accounts ══ */
+.v1244-vb{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:8px}
+.hm-sched .v1244-vb{padding:12px 22px 0;margin-bottom:0}
+.v1244-v{display:inline-flex;align-items:center;min-height:30px;max-width:220px;padding:3px 12px;border:1px solid #DCE1DB;border-radius:8px;background:#FFFFFF;color:#26332D;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v1244-v.on{background:#2A5245;border-color:#2A5245;color:#FFFFFF}
+.v1244-v:focus-visible,.v1244-g:focus-visible{outline:2px solid #2A5245;outline-offset:2px}
+.v1244-gp{display:flex;flex-wrap:wrap;align-items:center;gap:6px;flex-basis:100%;min-width:0}   /* a group per line */
+.v1244-g{all:unset;display:inline-flex;align-items:center;min-height:30px;max-width:200px;min-width:64px;padding:0 4px;font-size:11.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:#4D5D56;cursor:pointer;border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v1244-g.is-off{color:#9AA39E;text-decoration:line-through}
+.v1244-g:hover{color:#2A5245}
+.v1244-sub{padding-left:22px}
+.v1244-main{font-style:normal;font-size:11px;font-weight:700;color:#2A5245;background:#E4EEE9;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:1px}
+.v1243-gr em.bad{font-style:normal;color:#9A3B2E}
+.v1244-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.v1244-pkh{margin:12px 0 2px;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6B7A74}
+@media (max-width:700px){
+  .hm-sched .v1244-vb{padding:10px 16px 0}
+  .v1244-v{max-width:calc(100vw - 110px)}
 }
 </style>
 </head>
@@ -3858,7 +3877,8 @@ let SYS_NOTIFS=[];
    long-lived token, encrypted, and hands this page a fresh hour-long one whenever it needs it.
    Calendar events are still never stored: they are read live from Google.
    Until that server piece is set up, and in the demo view, it works as before: this session only. */
-const GCAL={ token:null, events:[], connected:false, loading:false, email:'', exp:0, kept:false, ready:null, owner:'' };
+const GCAL={ token:null, events:[], connected:false, loading:false, email:'', exp:0, kept:false, ready:null, owner:'',
+  accts:[], multi:false, max:1, main:'' };   // v12.44: every Google account kept for this login ({id,email,token,exp}); token/exp/email are the main one's (where portal appointments go)
 const GCAL_SCOPE='https://www.googleapis.com/auth/calendar.events.owned';   // v12.38.3: events on calendars the person owns (the page only uses their primary one); Google's review asked for the narrowest scope
 /* v12.43: a person's other Google calendars. One they own is added by its ID, which GCAL_SCOPE already covers. A picker
    of every calendar in the account, shared ones too, needs two more permissions (the calendar list, and events on
@@ -3903,26 +3923,32 @@ function gcalBackoff(){                                               // Google 
   _gcalFails++; _gcalNext=Date.now()+Math.min(600000,30000*Math.pow(2,_gcalFails-1));
   if(Date.now()-_gcalWarned>600000){ _gcalWarned=Date.now(); toast('Google Calendar isn’t answering right now. Your connection is kept and it will try again.'); }
 }
-function gcalClear(){ GCAL.token=null; GCAL.connected=false; GCAL.kept=false; GCAL.events=[]; GCAL.email=''; GCAL.exp=0; GCAL.owner=''; _gcalFails=0; _gcalNext=0; }
+function gcalClear(){ GCAL.token=null; GCAL.connected=false; GCAL.kept=false; GCAL.events=[]; GCAL.email=''; GCAL.exp=0; GCAL.owner=''; _gcalFails=0; _gcalNext=0;
+  GCAL.accts=[]; GCAL.multi=false; GCAL.max=1; GCAL.main=''; }
 function gcalApply(d){                                                // an hour-long token from the server
-  GCAL.token=d.access_token; GCAL.exp=Date.now()+Math.max(60,(+d.expires_in||3600)-300)*1000;   // renewed five minutes early
-  if(d.email) GCAL.email=d.email;
+  gcalSrvInfo(d);                                                     // v12.44: how many accounts the server keeps, and which
+  if(d.access_token) gcalAcctTok(d.account||'',d.email||'',d.access_token,d.expires_in);   // renewed five minutes early
+  gcalUseMain();
   GCAL.connected=true; GCAL.kept=true; GCAL.ready=true; GCAL.owner=gcalWho();
   _gcalFails=0; _gcalNext=0; _gcalRestoreTry=0;
   gcalAutoRefresh();
 }
-let _gcalRenew=null;
-function gcalRenew(){                                                 // one renewal at a time, however many calls need it
-  if(_gcalRenew) return _gcalRenew;
-  _gcalRenew=(async()=>{
+const _gcalRenew={};
+function gcalRenew(id){                                               // one renewal per Google account at a time, however many calls need it
+  if(id===undefined||id===null) id=GCAL.main;                         // v12.44: the main account unless told
+  const k=id||'_';
+  if(_gcalRenew[k]) return _gcalRenew[k];
+  return (_gcalRenew[k]=(async()=>{
     const me=gcalWho();
     if(!me||me!==GCAL.owner){ gcalClear(); render(); return false; }
-    const d=await gcalSrv('token');
+    const d=await gcalSrv('token',id?{account:id}:{});
     if(gcalWho()!==me||GCAL.owner!==me){                              // signed out or switched account meanwhile: nothing of theirs stays
       if(GCAL.owner&&GCAL.owner!==gcalWho()){ gcalClear(); render(); }
       return false; }
     if(!GCAL.kept) return false;                                      // disconnected meanwhile
     if(d.access_token){ gcalApply(d); return true; }
+    if(d.status===200&&d.gone&&d.connected!==false){                 // v12.44: this account went (another device, or Google ended it); the others stay
+      gcalAcctGone(id,d.reason==='expired'); return false; }
     if(d.status===200&&d.connected===false){                         // disconnected on another device, or Google ended it
       const was=GCAL.connected; gcalClear(); render();
       if(d.reason==='expired') toast('Your Google Calendar connection ended (Google expired or revoked it). Connect it again from the calendar.');
@@ -3935,26 +3961,28 @@ function gcalRenew(){                                                 // one ren
       return false;
     }
     gcalBackoff(); return false;                                      // a hiccup: stay connected and try again later
-  })().finally(()=>{ _gcalRenew=null; });
-  return _gcalRenew;
+  })().finally(()=>{ delete _gcalRenew[k]; }));
 }
 const GCAL_NO={ok:false,status:401,skipped:true,json:async()=>({}),text:async()=>''};   // the call never went to Google
 /* every call to Google goes through here: a fresh token first, and at most one renewal per call.
    manual: something the person clicked, which never waits out the backoff */
-async function gcalApi(url,opts,manual){
+async function gcalApi(url,opts,manual,acct){                         // v12.44: acct, one of the person's Google accounts (the main one if left out)
   opts=opts||{};
   if(GCAL.owner!==gcalWho()){ gcalClear(); render(); return GCAL_NO; }   // never another account's calendar
+  const id=(acct===undefined||acct===null)?GCAL.main:acct;
+  if(GCAL.accts.length&&!gcalAcct(id)) return GCAL_NO;               // an account no longer connected
+  const cur=()=>{ const A=gcalAcct(id); return A?{t:A.token,x:A.exp}:{t:GCAL.token,x:GCAL.exp}; };
   let fresh=false;
-  if(GCAL.kept&&(!GCAL.token||Date.now()>GCAL.exp)){
+  if(GCAL.kept&&(!cur().t||Date.now()>cur().x)){
     if(!manual&&Date.now()<_gcalNext) return GCAL_NO;                // backing off after a failure
-    if(!(await gcalRenew())) return GCAL_NO;
+    if(!(await gcalRenew(id))) return GCAL_NO;
     fresh=true;
   }
-  const tok=GCAL.token, who=GCAL.owner;
+  const tok=cur().t, who=GCAL.owner;
   if(!tok||who!==gcalWho()) return GCAL_NO;
   const go=t=>fetch(url,Object.assign({},opts,{headers:Object.assign({},opts.headers||{},{Authorization:'Bearer '+t})}));
   let r=await go(tok);
-  if(r.status===401&&GCAL.kept&&!fresh&&(manual||Date.now()>=_gcalNext)&&await gcalRenew()&&GCAL.owner===who&&who===gcalWho()) r=await go(GCAL.token);
+  if(r.status===401&&GCAL.kept&&!fresh&&(manual||Date.now()>=_gcalNext)&&await gcalRenew(id)&&GCAL.owner===who&&who===gcalWho()) r=await go(cur().t);
   return r;
 }
 let _gcalRestoredFor='',_gcalRestoreTry=0,_gcalRestoreT=null;
@@ -3980,26 +4008,29 @@ async function gcalRestore1(){                                        // signed 
   if(GCAL.connected||_gcalRestoredFor===me) return;
   _gcalRestoredFor=me; clearTimeout(_gcalRestoreT);
   gcalLoadSdk(()=>{},true);                                           // so Connect opens Google's window straight away
-  const d=await gcalSrv('token');
+  const d=await gcalSrv('token',{all:true});                          // v12.44: every Google account kept for this login
   gcalAsked(me);                                                      // v12.40: answered, so Connect can show again where it should
   if(gcalWho()!==me||GCAL.connected) return;                          // signed out meanwhile, or connected by hand
   if(gcalNotSetUp(d)){ GCAL.ready=false; render(); return; }          // the server piece is not set up yet
   if(d.status===401||d.status===403){ render(); return; }             // signed out, or not part of an agency: nothing to retry
   if(d.status===200) GCAL.ready=true;
-  if(d.access_token){ gcalApply(d); render(); gcalFetch(true); return; }
+  if(d.access_token){ gcalApply(d); render(); gcalFetch(true);
+    if(d.expired>0) toast('Google ended the connection to one of your Google accounts. Connect it again from the calendar.');
+    return; }
   if(d.status===200&&d.connected===false){
     if(d.reason==='expired') toast('Your Google Calendar connection ended (Google expired or revoked it). Connect it again from the calendar.');
     render(); return; }
   if(d.connected===true){                                             // on file, Google just did not answer: keep it and retry quietly
     GCAL.ready=true; GCAL.kept=true; GCAL.connected=true; GCAL.email=d.email||''; GCAL.owner=me;
+    gcalSrvInfo(d); gcalUseMain();
     gcalBackoff(); gcalAutoRefresh(); render(); return; }
   render();                                                           // v12.40: Connect stays offered while it tries again
   _gcalRestoredFor=''; _gcalRestoreTry++;                             // a passing problem (offline, server busy): ask again a little later
   if(_gcalRestoreTry<=4) _gcalRestoreT=setTimeout(gcalRestore,Math.min(600000,30000*Math.pow(2,_gcalRestoreTry-1)));
 }
-function gcalConnect(){
+function gcalConnect(add){                                             // v12.44: add, another Google account next to the ones connected
   if(!gcalReady()||GCAL.loading) return;
-  if(gcalSrvOn()&&GCAL.ready!==false) return gcalConnectKept();
+  if(gcalSrvOn()&&GCAL.ready!==false) return gcalConnectKept(!!add);
   gcalLoadSdk(()=>{                                                   // this session only: the demo view, or before the server piece is in
     const tc=google.accounts.oauth2.initTokenClient({
       client_id:BACKEND.googleClientId, scope:gcalScopes(), include_granted_scopes:false,   // v12.38.3: only what is asked for now (v12.43: plus the list, when it is on)
@@ -4015,7 +4046,7 @@ function gcalConnect(){
     tc.requestAccessToken();
   });
 }
-function gcalConnectKept(){                                           // v12.14: Google hands over a one-time code; the server keeps the connection
+function gcalConnectKept(add){                                        // v12.14: Google hands over a one-time code; the server keeps the connection
   gcalLoadSdk(()=>{
     let cc;
     try{
@@ -4027,15 +4058,21 @@ function gcalConnectKept(){                                           // v12.14:
           if(!resp||resp.error||!resp.code) return toast('Google sign-in was canceled.');
           const me=gcalWho();
           GCAL.loading=true; render();
-          const d=await gcalSrv('connect',{code:resp.code,origin:location.origin});
+          const had=GCAL.connected&&GCAL.kept?GCAL.accts.map(a=>a.id):[];
+          const d=await gcalSrv('connect',{code:resp.code,origin:location.origin,add:true});   // v12.44: never drops the person's other Google accounts
           GCAL.loading=false;
           if(gcalWho()!==me){ render(); return; }
           if(d.access_token){
             gcalApply(d); render();
-            logAudit('Connected Google Calendar','Stays connected until disconnected — events are never stored');
-            toast('Google Calendar connected'+(d.email?' ('+d.email+')':'')+'. It stays connected until you disconnect it.');
+            const again=had.includes(d.account||''), more=had.length>0&&!again;
+            logAudit(more?'Connected another Google account':'Connected Google Calendar','Stays connected until disconnected — events are never stored');
+            toast(again&&add?'That Google account'+(d.email?' ('+d.email+')':'')+' is already connected.'
+              :more?'Google account'+(d.email?' '+d.email:'')+' added. Its calendar shows next to the others, and it stays connected until you disconnect it.'
+              :'Google Calendar connected'+(d.email?' ('+d.email+')':'')+'. It stays connected until you disconnect it.');
+            gcalHubAgain();
             gcalFetch(true); return;
           }
+          gcalSrvInfo(d,true);                                         // a refusal: what the server can do, never a new list
           if(gcalNotSetUp(d)){ GCAL.ready=false; render(); return toast('Staying connected needs a server update that isn’t in yet. Click Connect Google Calendar again to connect for this session.'); }
           render(); toast(d.error||'Google Calendar could not be connected. Try again in a moment.');
         },
@@ -4045,7 +4082,8 @@ function gcalConnectKept(){                                           // v12.14:
     cc.requestCode();
   });
 }
-async function gcalDisconnect(){
+async function gcalDisconnect(id){
+  if(id!==undefined&&GCAL.kept&&GCAL.accts.length>1) return gcalDisconnectOne(id);   // v12.44: one of several Google accounts
   if(GCAL.kept){                                                      // v12.14: on every device; only a confirmed answer counts
     const d=await gcalSrv('disconnect');
     if(!(d.status===200&&d.connected===false)) return toast(d.error||'Could not disconnect right now. Check your connection and try again.');
@@ -4081,29 +4119,9 @@ async function gcalFetch(quiet){
         : 'Google Calendar error: '+msg);
     }
     const pad=n=>String(n).padStart(2,'0');
-    /* v7.0: Google → portal reconcile. Edits and deletions made in Google Calendar
-       flow back onto the portal appointment that created the event (matched by gid). */
-    let moved=0,cxd=0;
-    (d.items||[]).forEach(ev=>{
-      const a=APPTS.find(x=>x.gid===ev.id); if(!a) return;
-      if(ev.status==='cancelled'){
-        if(!a.cancelled){ a.cancelled=1; a.cxBy='Google Calendar'; sbPatch('np_demo_appointments',a.id,{cancelled:1,cx_by:'Google Calendar'}); logAudit('Appointment canceled in Google Calendar',`${client(a.cid).uci} · ${a.title}`); cxd++; }
-        return;
-      }
-      if(a.cancelled){ a.cancelled=0; a.cxBy=''; sbPatch('np_demo_appointments',a.id,{cancelled:0,cx_by:''}); }
-      const st=ev.start||{}; if(!st.dateTime) return;              // portal appts are timed
-      const sd=zOf(new Date(st.dateTime));
-      const nd=sd.getFullYear()+'-'+pad(sd.getMonth()+1)+'-'+pad(sd.getDate());
-      const nt=pad(sd.getHours())+':'+pad(sd.getMinutes());
-      let ndur=a.dur; if(ev.end&&ev.end.dateTime) ndur=Math.max(15,Math.round((new Date(ev.end.dateTime)-new Date(st.dateTime))/60000));   // v12.19: from the real start, not the zone-shifted one
-      if(nd!==a.date||nt!==a.time||ndur!==a.dur){
-        a.date=nd; a.time=nt; a.dur=ndur;
-        sbPatch('np_demo_appointments',a.id,{appt_date:nd,appt_time:nt,dur:ndur});
-        logAudit('Appointment moved in Google Calendar',`${(client(a.cid)||{}).uci||'Team'} · ${a.title} → ${nd} ${nt}`);
-        moved++;
-      }
-    });
-    if(moved||cxd) toast(`Synced from Google Calendar: ${moved?moved+' moved':''}${moved&&cxd?', ':''}${cxd?cxd+' canceled':''}.`);
+    const rec={moved:0,cxd:0};
+    gcalReconcile(d.items||[],rec);
+    const mk=GCAL.main?gcalAcctKey(GCAL.main):undefined, mainId=GCAL.main;   // v12.44: which account these came from
     GCAL.events=(d.items||[]).filter(ev=>ev.status!=='cancelled').map(ev=>{
       const start=ev.start||{}, allday=!start.dateTime;
       let dt, tm;
@@ -4113,11 +4131,13 @@ async function gcalFetch(quiet){
             tm=pad(sd.getHours())+':'+pad(sd.getMinutes()); }
       let dur=30;
       if(!allday && ev.end && ev.end.dateTime) dur=Math.max(15,Math.round((new Date(ev.end.dateTime)-new Date(start.dateTime))/60000));
-      return gcalMapClient({ id:'g_'+ev.id, gcal:true, title:ev.summary||'(no title)', date:dt, time:tm||'09:00', allday, dur,
+      return gcalMapClient({ id:'g_'+ev.id, gcal:true, gkey:mk, acct:mainId, geid:ev.id, title:ev.summary||'(no title)', date:dt, time:tm||'09:00', allday, dur,
         loc:ev.location||'', link:ev.htmlLink||'', cancelled:0, type:'Google', provider:'', flag:'', ride:'', notes:[], files:[] });
     });
-    const more=await gcalFetchMore(tmin,tmax,who);                  // v12.43: the person's other Google calendars
+    const more=await gcalFetchMore(tmin,tmax,who,rec);              // v12.43: the person's other Google calendars (v12.44: and other accounts)
     if(GCAL.owner!==who){ GCAL.loading=false; render(); return; }
+    const moved=rec.moved, cxd=rec.cxd;
+    if(moved||cxd) toast(`Synced from Google Calendar: ${moved?moved+' moved':''}${moved&&cxd?', ':''}${cxd?cxd+' canceled':''}.`);
     GCAL.events=GCAL.events.concat(more);
     const dups=GCAL.events.filter(g=>g.dup).length;
     GCAL.events=GCAL.events.filter(g=>!g.dup);
@@ -4130,6 +4150,31 @@ async function gcalFetch(quiet){
       : 'Google Calendar connected — no events found in the next 45 days.');
   }catch(e){ console.warn('[np-demo] gcal fetch failed',e); toast('Could not load Google Calendar events.'); }
   GCAL.loading=false; render();
+}
+/* v7.0: Google → portal reconcile. Edits and deletions made in Google Calendar flow back onto the portal appointment
+   that created the event (matched by gid). v12.44: run on each of the person's Google accounts' main calendars, since a
+   copy stays in the account it was sent to when they change where portal appointments go. */
+function gcalReconcile(items,rec){
+    const pad=n=>String(n).padStart(2,'0');
+    (items||[]).forEach(ev=>{
+      const a=APPTS.find(x=>x.gid===ev.id); if(!a) return;
+      if(ev.status==='cancelled'){
+        if(!a.cancelled){ a.cancelled=1; a.cxBy='Google Calendar'; sbPatch('np_demo_appointments',a.id,{cancelled:1,cx_by:'Google Calendar'}); logAudit('Appointment canceled in Google Calendar',`${(client(a.cid)||{}).uci||'Team'} · ${a.title}`); rec.cxd++; }
+        return;
+      }
+      if(a.cancelled){ a.cancelled=0; a.cxBy=''; sbPatch('np_demo_appointments',a.id,{cancelled:0,cx_by:''}); }
+      const st=ev.start||{}; if(!st.dateTime) return;              // portal appts are timed
+      const sd=zOf(new Date(st.dateTime));
+      const nd=sd.getFullYear()+'-'+pad(sd.getMonth()+1)+'-'+pad(sd.getDate());
+      const nt=pad(sd.getHours())+':'+pad(sd.getMinutes());
+      let ndur=a.dur; if(ev.end&&ev.end.dateTime) ndur=Math.max(15,Math.round((new Date(ev.end.dateTime)-new Date(st.dateTime))/60000));   // v12.19: from the real start, not the zone-shifted one
+      if(nd!==a.date||nt!==a.time||ndur!==a.dur){
+        a.date=nd; a.time=nt; a.dur=ndur;
+        sbPatch('np_demo_appointments',a.id,{appt_date:nd,appt_time:nt,dur:ndur});
+        logAudit('Appointment moved in Google Calendar',`${(client(a.cid)||{}).uci||'Team'} · ${a.title} → ${nd} ${nt}`);
+        rec.moved++;
+      }
+    });
 }
 /* v12.33: what an event on Google says: the appointment, with no client's name, initials or UCI (the portal knows
    its own events by their Google id, kept on the appointment) */
@@ -4180,10 +4225,10 @@ async function gcalUpdate(a){
   const pad=n=>String(n).padStart(2,'0');
   const endIso=end.getFullYear()+'-'+pad(end.getMonth()+1)+'-'+pad(end.getDate())+'T'+pad(end.getHours())+':'+pad(end.getMinutes())+':00';
   try{
-    const r=await gcalApi('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+encodeURIComponent(a.gid),{
+    const r=await gcalOnAny('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+encodeURIComponent(a.gid),{
       method:'PATCH', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ summary:gcalTitle(a), location:extScrub(a.loc), description:GCAL_NOTE,
-        start:{dateTime:startIso,timeZone:tz}, end:{dateTime:endIso,timeZone:tz} })},true);
+        start:{dateTime:startIso,timeZone:tz}, end:{dateTime:endIso,timeZone:tz} })});
     if(!r.ok){ console.warn('[np-demo] gcal update failed',r.status); return false; }
     const g=GCAL.events.find(x=>x.id==='g_'+a.gid);
     if(g){ g.date=a.date; g.time=a.time; g.dur=a.dur||30; g.loc=a.loc||''; }
@@ -4193,12 +4238,19 @@ async function gcalUpdate(a){
 async function gcalDelete(a){
   if((!GCAL.token&&!GCAL.kept)||!a.gid) return false;
   try{
-    const r=await gcalApi('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+encodeURIComponent(a.gid),{
-      method:'DELETE'},true);
+    const r=await gcalOnAny('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+encodeURIComponent(a.gid),{
+      method:'DELETE'});
     if(!r.ok&&r.status!==410&&r.status!==404){ console.warn('[np-demo] gcal delete failed',r.status); return false; }
-    GCAL.events=GCAL.events.filter(x=>x.id!=='g_'+a.gid);
+    GCAL.events=GCAL.events.filter(x=>x.id!=='g_'+a.gid&&x.geid!==a.gid);
     return true;
   }catch(e){ console.warn('[np-demo] gcal delete failed',e); return false; }
+}
+/* v12.44: a portal appointment's Google copy is in the account it was sent to, which may no longer be the main one */
+async function gcalOnAny(url,opts){
+  const ids=[GCAL.main].concat(GCAL.accts.map(x=>x.id).filter(x=>x!==GCAL.main));
+  let r=GCAL_NO;
+  for(const id of ids){ r=await gcalApi(url,opts,true,id); if(r.status!==404&&r.status!==410) return r; }
+  return r;
 }
 /* v5.7: keep the Google lane fresh without making the user reconnect */
 let _gcalTimer=null;
@@ -4219,7 +4271,7 @@ function gcalMapClient(ev){
   const escRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   /* v12.33: one the portal put there is known by its Google id, or (opened from the portal without a connection) by
      its title, day and time, since its title no longer names the client */
-  const own=APPTS.find(a=>!a.cancelled&&(a.gid?'g_'+a.gid===ev.id:(a.date===ev.date&&a.time===ev.time&&gcalTitle(a)===ev.title)));
+  const own=APPTS.find(a=>!a.cancelled&&(a.gid?('g_'+a.gid===ev.id||(ev.geid&&a.gid===ev.geid)):(a.date===ev.date&&a.time===ev.time&&gcalTitle(a)===ev.title)));   // v12.44: in any of the person's accounts
   if(own){ ev.cid=own.cid; ev.dup=true; return ev; }
   let mapped=null;
   CLIENTS.forEach(c=>{
@@ -7596,9 +7648,11 @@ function settingsHub(tab,page,sub){
       ${(page==='calendar'||page==='home')&&dir?`<div style="margin-top:14px">${setRow('palette','Calendar colors and text','What decides an appointment\u2019s color, how soft the bars look, light or dark labels','calLookForm()')}</div>`:''}`;
   } else {
     const g=gcalReady()?(GCAL.connected
-      ?`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>${GCAL.kept?('Connected'+(GCAL.email?' as '+esc(GCAL.email):'')+' \u00b7 stays connected until you disconnect'):'Connected for this session'}</span></div>
+      ?(GCAL.accts.length>1?`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>Connected \u00b7 ${GCAL.accts.length} Google accounts \u00b7 each stays connected until you disconnect it</span></div>
+          <button class="btn ghost sm" onclick="gcalFetch();toast('Pulling the latest events from Google\u2026')">\u27f3 Refresh</button></div>`   /* v12.44: each account below */
+      :`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>${GCAL.kept?('Connected'+(GCAL.email?' as '+esc(GCAL.email):'')+' \u00b7 stays connected until you disconnect'):'Connected for this session'}</span></div>
           <button class="btn ghost sm" onclick="gcalFetch();toast('Pulling the latest events from Google\u2026')">\u27f3 Refresh</button>
-          <button class="btn ghost sm" onclick="closeAll();gcalDisconnect()">Disconnect</button></div>`
+          <button class="btn ghost sm" onclick="closeAll();gcalDisconnect()">Disconnect</button></div>`)
       :gcalChecking()?`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>Checking for a connection you made earlier\u2026</span></div>
           <button class="btn ghost sm" disabled>Checking\u2026</button></div>`   // v12.40
       :`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>Not connected. Connect it to see your Google events on the board and send portal appointments to Google.</span></div>
@@ -8205,7 +8259,7 @@ const hmIsEvent=a=>/meet|event|outing|huddle|day program|activit|visit|family|co
 /* today, worked out once per draw: what is on, what is next, and the numbers */
 function hmData(){
   const nm=toMin(nowHM()), r=hmRole(), items=[];
-  const apptsToday=visAppts().filter(a=>a.date===T&&calVisible(apptCalKey(a)));   // v12.43: the calendars this person shows
+  const apptsToday=visAppts().filter(a=>a.date===T&&calInView(apptCalKey(a)));   // v12.43: the calendars this person shows (v12.44: in the view picked)
   apptsToday.forEach(a=>{ const ev=hmIsEvent(a), s=a.time?toMin(a.time):-1, c=client(a.cid)||{};
     items.push({k:ev?'event':'appt',id:a.id,cal:apptCalKey(a),t:a.time||'',s,e:s<0?-1:s+(+a.dur||60),title:a.title||a.type||'Appointment',
       meta:[ev?(a.type||'Event'):'Appointment',c.uci?'UCI '+c.uci:'',a.ride&&!/^on site$/i.test(a.ride)?a.ride:(a.loc||'')].filter(Boolean),
@@ -8239,7 +8293,7 @@ function hmData(){
   let next=null;
   if(ni>=0){ const it=items[ni], m=it.s-nm; it.next=true; if(m<=180) it.st='soon'; it.mins=m;
     const a=APPTS.find(x=>x.id===it.id)||GCAL.events.find(x=>x.id===it.id)||{}; next={a,when:'in '+hmIn(m),today:true}; }
-  else { const a=visAppts().filter(x=>x.date>T&&!x.cancelled&&calVisible(apptCalKey(x))).concat(gcalShown().filter(g=>g.date>T&&!g.allday)).sort((x,y)=>(x.date+(x.time||'')).localeCompare(y.date+(y.time||'')))[0]; if(a) next={a,when:relDay(a.date).toLowerCase()+(a.time?' at '+hm12(a.time):''),today:false}; }
+  else { const a=visAppts().filter(x=>x.date>T&&!x.cancelled&&calInView(apptCalKey(x))).concat(gcalShown().filter(g=>g.date>T&&!g.allday)).sort((x,y)=>(x.date+(x.time||'')).localeCompare(y.date+(y.time||'')))[0]; if(a) next={a,when:relDay(a.date).toLowerCase()+(a.time?' at '+hm12(a.time):''),today:false}; }
   let change=null;
   visShifts().forEach(s=>{ [s.start,s.end].forEach(t=>{ const m=toMin(t); if(m>nm&&(change==null||m<toMin(change))) change=t; }); });
   const pa=items.find(it=>(it.k==='appt'||it.k==='event')&&!it.cancelled&&it.s>nm);   // v12.43: the appointments tile counts the portal's own
@@ -19246,7 +19300,7 @@ function openApptForm(cid,presetDate,presetTime){
     <label class="checkrow" style="border-color:var(--line);cursor:pointer" onclick="var c=el('apGcal');c.checked=!c.checked">
       <input type="checkbox" id="apGcal" checked style="width:16px;height:16px" onclick="event.stopPropagation()">
       <div class="ct"><b>Also send to Google Calendar</b><div class="tiny muted">${GCAL.connected
-        ?'Added to your connected Google Calendar with its title, time and place. Client names, initials and UCIs are left out and stay in the portal.'
+        ?'Added to your connected Google Calendar'+(GCAL.accts.length>1&&GCAL.email?' ('+esc(GCAL.email)+')':'')+' with its title, time and place. Client names, initials and UCIs are left out and stay in the portal.'
         :'Opens Google Calendar prefilled, one click to save. It gets the title, time and place. Client names, initials and UCIs are left out and stay in the portal.'}</div></div></label>`,   // v12.38.4: what really goes to Google since v12.33
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveAppt()">Save appointment</button>`);
 }
@@ -20458,7 +20512,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.43 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.44 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -21873,7 +21927,7 @@ function apptIcon(a){ return catGlyph(a.type,15)||'▤'; }
 let CAL_ACCESS={};                                                   // {calKey:{mode:'all'|'listed', sids:[...]}}
 function calAccessSave(){ sbUpsert('np_demo_program',{key:'calaccess',value:{map:CAL_ACCESS},updated_by:auditActor()}); }
 function canSeeCal(key){
-  if(String(key).indexOf('gcal:')===0) return true;                  // v12.43: a person's own Google calendar
+  if(String(key).indexOf('gcal:')===0||String(key).indexOf('gacct:')===0) return true;   // v12.43: a person's own Google calendar (v12.44: or another account's)
   if((CAL_META[key]||{}).private&&state.role!=='director') return false;   // director keeps a calendar to himself
   if(state.role==='director') return true;
   if(key==='personal') return true;
@@ -22010,7 +22064,7 @@ function calControls(){
       <div style="display:flex;gap:6px;flex-wrap:wrap">${calDefs().map(c=>`<span class="spill" style="cursor:pointer;${calVisible(c.key)?`background:${c.color}18;color:${c.color}`:'background:var(--surface-2);color:var(--muted)'};gap:7px;padding:5px 11px">
         <span class="sdot" style="background:${calVisible(c.key)?c.color:'var(--muted)'}"></span>
         <span onclick="calToggle('${c.key}');calControls()">${esc(c.name)}${c.private?' 🔒':''}</span>
-        ${(state.role==='director'||c.key.indexOf('gcal:')===0)?`<button style="all:unset;cursor:pointer;opacity:.75" title="${c.key.indexOf('gcal:')===0?'Rename or recolor':'Rename, recolor or make private'}" onclick="closeAll();calMetaForm('${c.key}')">✎</button>`:''}
+        ${(state.role==='director'||c.key.indexOf('gcal:')===0||c.key.indexOf('gacct:')===0)?`<button style="all:unset;cursor:pointer;opacity:.75" title="${(c.key.indexOf('gcal:')===0||c.key.indexOf('gacct:')===0)?'Rename or recolor':'Rename, recolor or make private'}" onclick="closeAll();calMetaForm('${c.key}')">✎</button>`:''}
       </span>`).join('')}</div>
       ${GCAL.connected&&state.role!=='family'?`<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn ghost sm" onclick="closeAll();gcalAddForm()">＋ Google calendar</button></div>`:''}
       ${state.role==='director'?`<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
@@ -22107,6 +22161,7 @@ function calAddGo(){
 }
 function calMetaForm(key){
   if(String(key).indexOf('gcal:')===0) return gcalCalEdit(gcalMine().findIndex(x=>gcalKey(x.id)===key));   // v12.43
+  if(String(key).indexOf('gacct:')===0) return gacctEdit(String(key).slice(6));   // v12.44
   const d=calDef(key), m=CAL_META[key]||{};
   glyphPicker({
     heading:'Edit calendar', nameLabel:'Calendar', name:m.name||d.name, placeholder:d.name,
@@ -23931,11 +23986,12 @@ function cxApptKind(a){
    plus whole-team events and meetings for everyone but families */
 function cxAppts(p){
   const fam=state.role==='family', cl=visibleClients().map(c=>c.id);
-  let list=APPTS.filter(a=>!hid('appt',a.id)&&(!state.hideSample||!isSampleAppt(a))&&calShow(a)&&(a.cid?cl.includes(a.cid):!fam));
+  const show=p==='calendar'?calShowV:calShow;                           // v12.44: the Calendar page follows the view picked
+  let list=APPTS.filter(a=>!hid('appt',a.id)&&(!state.hideSample||!isSampleAppt(a))&&show(a)&&(a.cid?cl.includes(a.cid):!fam));
   if(p==='calendar'){
     if(state.calFilter.type) list=list.filter(a=>a.type===state.calFilter.type);
     if(state.calFilter.client) list=list.filter(a=>a.cid===state.calFilter.client);
-    if(GCAL.connected&&!state.calFilter.type&&!state.calFilter.client) list=list.concat(GCAL.events.filter(g=>calShow(g)));
+    if(GCAL.connected&&!state.calFilter.type&&!state.calFilter.client) list=list.concat(GCAL.events.filter(g=>calShowV(g)));
   }
   return list;
 }
@@ -24187,7 +24243,8 @@ function cxPage(p){
     <div class="page-acts">
       ${gcalReady()?(GCAL.connected
         ?`<button class="btn ghost sm" onclick="gcalFetch()" title="Pull the latest events from Google">${GCAL.loading?'Refreshing…':'⟳ Refresh Google'}</button>
-           <button class="btn ghost sm" onclick="gcalDisconnect()" title="${GCAL.kept?esc('Connected'+(GCAL.email?' as '+GCAL.email:'')+' · stays connected until you disconnect'):'Connected for this session only'}">Google ✓ · Disconnect</button>`
+           ${GCAL.accts.length>1?`<button class="btn ghost sm" onclick="settingsHub('cal','calendar')" title="Your Google accounts: where portal appointments go, names, colours, disconnect">Google ✓ · ${GCAL.accts.length} accounts</button>`   /* v12.44 */
+           :`<button class="btn ghost sm" onclick="gcalDisconnect()" title="${GCAL.kept?esc('Connected'+(GCAL.email?' as '+GCAL.email:'')+' · stays connected until you disconnect'):'Connected for this session only'}">Google ✓ · Disconnect</button>`}`
         :gcalChecking()?`<button class="btn ghost sm" disabled title="Looking for a Google Calendar connection you made earlier">Checking Google Calendar…</button>`   /* v12.40 */
         :`<button class="btn gold sm" onclick="gcalConnect()">${GCAL.loading?'Connecting…':'Connect Google Calendar'}</button>`):''}
       ${seg}
@@ -24249,54 +24306,86 @@ const gcalKey=id=>'gcal:'+id;
 const gcalSafeId=id=>String(id||'').replace(/[^A-Za-z0-9_\-]/g,'');
 const gcalHex=c=>/^#[0-9a-f]{6}$/i.test(String(c||''))?c:'';
 function gcalMine(){ return ((((USER_SET[userKey()]||{}).gcals)||[])).filter(x=>x&&GCAL_ID_RX.test(String(x.id||''))); }
-function gcalMineSave(list){ userSetSave({gcals:list.map(x=>({id:x.id,name:String(x.name||'').slice(0,80),color:gcalHex(x.color)||GCAL_COLORS[0]}))}); }
+function gcalMineSave(list){ userSetSave({gcals:list.map(x=>Object.assign({id:x.id,name:String(x.name||'').slice(0,80),color:gcalHex(x.color)||GCAL_COLORS[0]},GCAL_AID_RX.test(String(x.acct||''))?{acct:x.acct}:{}))}); }
+/* v12.44: a calendar added by ID belongs to the account that owns it (one added before v12.44 has none: the main one's) */
+function gcalOwnerOf(x){ return (x&&x.acct)||GCAL.main; }
 function gcalCalDefs(){
   if(typeof GCAL==='undefined'||!GCAL.connected) return [];
-  return [{key:'google', name:'Google Calendar', color:'#1A73E8', icon:'calendar'}]
-    .concat(gcalMine().map(x=>({key:gcalKey(x.id), name:x.name||'Google calendar', color:gcalHex(x.color)||GCAL_COLORS[0], icon:'calendar'})));
+  const L=gcalAcctList(), many=L.length>1, list=gcalMine();
+  return [].concat(...L.map((A,i)=>[{key:gcalAcctKey(A.id), name:many?gacctName(A):(gacctMeta(A.id).name||'Google Calendar'), color:gacctColor(A,i), icon:'calendar', acct:A.id, gmain:1}]
+    .concat(list.filter(x=>gcalOwnerOf(x)===A.id).map(x=>({key:gcalKey(x.id), name:x.name||'Google calendar', color:gcalHex(x.color)||GCAL_COLORS[0], icon:'calendar', acct:A.id})))));
 }
-function gcalShown(){ return (typeof GCAL!=='undefined'&&GCAL.connected)?GCAL.events.filter(g=>calShow(g)):[]; }
-function hmShownAppts(){ return visAppts().filter(a=>calVisible(apptCalKey(a))).concat(gcalShown()); }
+function gcalShown(){ return (typeof GCAL!=='undefined'&&GCAL.connected)?GCAL.events.filter(g=>calShowV(g)):[]; }
+function hmShownAppts(){ return visAppts().filter(a=>calInView(apptCalKey(a))).concat(gcalShown()); }
 function gcalOpenLink(id){
   const g=GCAL.events.find(x=>gcalSafeId(x.id)===id);
   if(g&&/^https:\/\//.test(g.link||'')) window.open(g.link,'_blank','noopener'); else toast('That event has no link to Google Calendar.');
 }
 function gcalHash(s){ let h=5381; for(const ch of String(s)) h=((h<<5)+h+ch.charCodeAt(0))>>>0; return h.toString(36); }
-function gcalEvOf(ev,calId){                                          // a Google event from another calendar, as the page keeps it
+function gcalEvOf(ev,calId,key,acct){                                // a Google event from another calendar, as the page keeps it (v12.44: key and account)
   const pad=n=>String(n).padStart(2,'0'), start=ev.start||{}, allday=!start.dateTime;
   let dt, tm;
   if(allday){ dt=start.date; tm=''; }
   else{ const sd=zOf(new Date(start.dateTime)); dt=sd.getFullYear()+'-'+pad(sd.getMonth()+1)+'-'+pad(sd.getDate()); tm=pad(sd.getHours())+':'+pad(sd.getMinutes()); }
   let dur=30;
   if(!allday&&ev.end&&ev.end.dateTime) dur=Math.max(15,Math.round((new Date(ev.end.dateTime)-new Date(start.dateTime))/60000));
-  return gcalMapClient({ id:'gx_'+gcalHash(calId)+'_'+gcalSafeId(ev.id), gcal:true, gkey:gcalKey(calId), title:ev.summary||'(no title)', date:dt, time:tm||'09:00', allday, dur,
+  return gcalMapClient({ id:'gx_'+gcalHash(calId)+'_'+gcalSafeId(ev.id), gcal:true, gkey:key||gcalKey(calId), acct:acct===undefined?GCAL.main:acct, geid:ev.id, title:ev.summary||'(no title)', date:dt, time:tm||'09:00', allday, dur,
     loc:ev.location||'', link:ev.htmlLink||'', cancelled:0, type:'Google', provider:'', flag:'', ride:'', notes:[], files:[] });
 }
-async function gcalFetchMore(tmin,tmax,who){
-  const list=gcalMine(); if(!list.length) return [];
-  const out=[];
-  await Promise.all(list.map(async x=>{
-    const url='https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(x.id)+'/events?singleEvents=true&orderBy=startTime'
-      +'&timeMin='+encodeURIComponent(tmin.toISOString())+'&timeMax='+encodeURIComponent(tmax.toISOString())+'&maxResults=250';
+async function gcalFetchMore(tmin,tmax,who,rec){
+  const out=[], range='&timeMin='+encodeURIComponent(tmin.toISOString())+'&timeMax='+encodeURIComponent(tmax.toISOString());
+  rec=rec||{moved:0,cxd:0};
+  /* v12.44: the person's other Google accounts: each one's main calendar, read with its own connection */
+  await Promise.all(GCAL.accts.filter(A=>A.id&&A.id!==GCAL.main).map(async A=>{
+    const url='https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime'+range+'&maxResults=250&showDeleted=true';
     let r=null;
-    try{ r=await gcalApi(url,null,false); }catch(e){ r=null; }
+    try{ r=await gcalApi(url,null,false,A.id); }catch(e){ r=null; }
+    if(!r||r===GCAL_NO||!r.ok){ A.err=r&&r.status===403?'denied':'offline'; return; }
+    A.err='';
+    const d=await r.json().catch(()=>({}));
+    gcalReconcile(d.items||[],rec);                                  // a portal appointment sent there before it stopped being the main one
+    (d.items||[]).filter(ev=>ev&&ev.status!=='cancelled'&&ev.start).forEach(ev=>out.push(gcalEvOf(ev,'acct:'+A.id,gcalAcctKey(A.id),A.id)));
+  }));
+  /* calendars added by ID, each read with the account that owns it */
+  const list=gcalMine(); let adopt=false;
+  await Promise.all(list.map(async x=>{
+    if(x.acct&&GCAL.accts.length&&!gcalAcct(x.acct)){ GCAL_MORE[x.id]='noacct'; return; }   // its account is no longer connected
+    const url='https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(x.id)+'/events?singleEvents=true&orderBy=startTime'+range+'&maxResults=250';
+    let acct=gcalOwnerOf(x), r=null;
+    try{ r=await gcalApi(url,null,false,acct); }catch(e){ r=null; }
+    if(r&&r.status===403&&!x.acct&&GCAL.accts.length>1){              // added before v12.44: maybe it is another account's
+      for(const A of GCAL.accts.filter(A=>A.id!==acct)){
+        let r2=null; try{ r2=await gcalApi(url,null,false,A.id); }catch(e){ r2=null; }
+        if(r2&&r2.ok){ r=r2; acct=A.id; x.acct=A.id; adopt=true; break; } }
+    }
     if(!r||r===GCAL_NO||!r.ok){ GCAL_MORE[x.id]=r&&r.status===404?'gone':r&&r.status===403?'denied':'offline'; return; }
     const d=await r.json().catch(()=>({}));
     GCAL_MORE[x.id]='';
-    (d.items||[]).filter(ev=>ev&&ev.status!=='cancelled'&&ev.start).forEach(ev=>out.push(gcalEvOf(ev,x.id)));
+    (d.items||[]).filter(ev=>ev&&ev.status!=='cancelled'&&ev.start).forEach(ev=>out.push(gcalEvOf(ev,x.id,gcalKey(x.id),acct)));
   }));
+  if(adopt&&GCAL.owner===who) gcalMineSave(list);
   return GCAL.owner===who?out:[];
 }
-/* the chips: each calendar the person can see; hidden ones stay listed, struck through */
+/* the chips: each calendar the person can see; hidden ones stay listed, struck through. v12.44: only the calendars of the
+   view picked (All, Portal, or one Google account), and in All, grouped by account, each group shown or hidden at once */
 function calChipRow(where){
-  const defs=calDefs(); if(!defs.length) return '';
-  if(where==='hm'&&defs.length<2) return '';
+  const all=calDefs(); if(!all.length) return '';
+  if(where==='hm'&&all.length<2) return '';
+  const defs=all.filter(c=>calViewHas(c.key));
   const fam=state.role==='family', dir=state.role==='director', off=defs.filter(c=>!calVisible(c.key)).length;
-  return `<div class="v1243-cc" role="group" aria-label="Calendars to show">${where==='cx'?'<span class="v1243-cl">Calendars</span>':''}
-    ${defs.map(c=>{ const on=calVisible(c.key), col=gcalHex(c.color)||'#6B7A74';
-      return `<button type="button" class="v1243-c${on?'':' is-off'}" aria-pressed="${on}" title="${on?'Hide':'Show'} ${esc(c.name)}" data-cal="${esc(c.key)}" onclick="calToggle(this.dataset.cal)"><i style="border-color:${col};background:${on?col:'transparent'}"></i><span>${esc(c.name)}</span></button>`; }).join('')}
+  const L=gcalAcctList(), grouped=calViewOf()==='all'&&L.length>1;
+  const chip=c=>{ const on=calVisible(c.key), col=gcalHex(c.color)||'#6B7A74', nm=grouped&&c.gmain?'Main calendar':c.name;   // in a group, the account's own is its main calendar
+    return `<button type="button" class="v1243-c${on?'':' is-off'}" aria-pressed="${on}" title="${on?'Hide':'Show'} ${esc(c.name)}${nm!==c.name?' (main calendar)':''}" data-cal="${esc(c.key)}" onclick="calToggle(this.dataset.cal)"><i style="border-color:${col};background:${on?col:'transparent'}"></i><span>${esc(nm)}</span></button>`; };
+  const grp=(g,label,cs)=>{ if(!cs.length) return ''; const anyOn=cs.some(c=>calVisible(c.key));
+    return `<span class="v1244-gp"><button type="button" class="v1244-g${anyOn?'':' is-off'}" data-grp="${esc(g)}" aria-pressed="${anyOn}" title="${anyOn?'Hide':'Show'} every calendar in ${esc(label)}" aria-label="${anyOn?'Hide':'Show'} every calendar in ${esc(label)}" onclick="calGroupToggle(this.dataset.grp)">${esc(label)}</button>${cs.map(chip).join('')}</span>`; };
+  const body=grouped
+    ? grp('portal','Portal',defs.filter(c=>!calIsGoogle(c.key)))+L.map(A=>grp('g:'+A.id,gacctName(A),defs.filter(c=>c.acct===A.id))).join('')
+    : defs.map(chip).join('');
+  return `${calViewBar(where)}<div class="v1243-cc" role="group" aria-label="Calendars to show">${where==='cx'?'<span class="v1243-cl">Calendars</span>':''}
+    ${body}
     ${off?`<button type="button" class="v1243-x" onclick="calAll()">Show all</button>`:''}
     ${!fam&&GCAL.connected?`<button type="button" class="v1243-x" onclick="gcalAddForm()">＋ Google calendar</button>`:''}
+    ${!fam&&where==='cx'&&gcalCanAdd()?`<button type="button" class="v1243-x" onclick="gcalConnect(true)">＋ Google account</button>`:''}
     ${dir&&where==='cx'?`<button type="button" class="v1243-x" onclick="calAddForm()">＋ Calendar</button>`:''}
   </div>`;
 }
@@ -24309,14 +24398,28 @@ function hmCalTag(it){
 /* the settings window: the person's Google calendars */
 function gcalCalsCard(){
   if(typeof GCAL==='undefined'||!GCAL.connected||state.role==='family') return '';
-  const list=gcalMine();
-  const why=x=>GCAL_MORE[x.id]==='denied'?'Can’t be read with this Google account. Only calendars you own can be added.':GCAL_MORE[x.id]==='gone'?'Google no longer has this calendar.':'';
-  return `<div class="v1243-gc" data-gcals><div class="set-h">Your Google calendars</div>
-    <div class="v1243-gr"><i style="background:#1A73E8"></i><div><b>Google Calendar</b><span>Your main calendar${GCAL.email?' · '+esc(GCAL.email):''}. Portal appointments you send to Google go here.</span></div></div>
-    ${list.map((x,i)=>`<div class="v1243-gr"><i style="background:${gcalHex(x.color)||GCAL_COLORS[0]}"></i><div><b>${esc(x.name||'Google calendar')}</b>${why(x)?`<span class="bad">${why(x)}</span>`:'<span>Shows next to the portal’s calendars, only to you</span>'}</div>
+  const list=gcalMine(), L=gcalAcctList(), many=L.length>1;
+  const why=x=>GCAL_MORE[x.id]==='denied'?'Can’t be read with this Google account. Only calendars you own can be added.':GCAL_MORE[x.id]==='gone'?'Google no longer has this calendar.'
+    :GCAL_MORE[x.id]==='noacct'?'Its Google account isn’t connected. Connect it again to see this calendar, or remove it.':'';
+  const calRow=x=>{ const i=list.indexOf(x);
+    return `<div class="v1243-gr${many?' v1244-sub':''}"><i style="background:${gcalHex(x.color)||GCAL_COLORS[0]}"></i><div><b>${esc(x.name||'Google calendar')}</b>${why(x)?`<span class="bad">${why(x)}</span>`:'<span>Shows next to the portal’s calendars, only to you</span>'}</div>
       <button class="btn ghost sm" onclick="closeAll();gcalCalEdit(${i})" title="Rename or recolor" aria-label="Rename or recolor ${esc(x.name||'this calendar')}">✎</button>
-      <button class="btn ghost sm" onclick="gcalCalDel(${i})" title="Remove from the portal" aria-label="Remove ${esc(x.name||'this calendar')} from the portal">✕</button></div>`).join('')}
-    <button class="btn ghost sm" onclick="closeAll();gcalAddForm()">＋ Add another Google calendar</button></div>`;
+      <button class="btn ghost sm" onclick="gcalCalDel(${i})" title="Remove from the portal" aria-label="Remove ${esc(x.name||'this calendar')} from the portal">✕</button></div>`; };
+  const acctRow=(A,k)=>{
+    const main=A.id===GCAL.main, nm=many?gacctName(A):(gacctMeta(A.id).name||'Google Calendar');
+    const sub=many?`${A.email&&A.email!==nm?esc(A.email)+' · ':''}${main?'Portal appointments you send to Google go here.':'Its main calendar shows here, only to you.'}${A.err==='denied'?' <em class="bad">Google isn’t letting the portal read it. Disconnect it and connect it again.</em>':''}`
+      :`Your main calendar${GCAL.email?' · '+esc(GCAL.email):''}. Portal appointments you send to Google go here.`;
+    return `<div class="v1243-gr" data-acct="${esc(A.id)}"><i style="background:${gacctColor(A,k)}"></i><div><b>${esc(nm)}${many&&main?' <em class="v1244-main">Main</em>':''}</b><span>${sub}</span></div>
+      ${many&&!main?`<button class="btn ghost sm" onclick="gcalSetMain(this.closest('[data-acct]').dataset.acct)" title="Send portal appointments to this account">Use for appointments</button>`:''}
+      ${A.id?`<button class="btn ghost sm" onclick="closeAll();gacctEdit(this.closest('[data-acct]').dataset.acct)" title="Rename or recolor" aria-label="Rename or recolor ${esc(nm)}">✎</button>`:''}
+      ${many?`<button class="btn ghost sm" onclick="gcalDisconnect(this.closest('[data-acct]').dataset.acct)" aria-label="Disconnect ${esc(nm)}">Disconnect</button>`:''}</div>
+      ${list.filter(x=>gcalOwnerOf(x)===A.id).map(calRow).join('')}`; };
+  const orphans=list.filter(x=>x.acct&&GCAL.accts.length&&!gcalAcct(x.acct));
+  return `<div class="v1243-gc" data-gcals><div class="set-h">${many?'Your Google accounts':'Your Google calendars'}</div>
+    ${L.map(acctRow).join('')}
+    ${orphans.map(calRow).join('')}
+    <div class="v1244-acts"><button class="btn ghost sm" onclick="closeAll();gcalAddForm()">＋ Add another Google calendar</button>
+    ${gcalCanAdd()?`<button class="btn ghost sm" onclick="closeAll();gcalConnect(true)">＋ Connect another Google account</button>`:''}</div></div>`;
 }
 function gcalAddForm(){
   if(!GCAL.connected) return toast('Connect Google Calendar first.');
@@ -24346,27 +24449,40 @@ async function gcalIdAdd(){
   const id=gcalIdOf((el('gcId')||{}).value);
   if(!id) return msg('Paste the calendar’s ID first.');
   if(!GCAL_ID_RX.test(id)) return msg('That doesn’t look like a calendar ID. It has no spaces and often ends in @group.calendar.google.com.');
-  if(id==='primary'||(GCAL.email&&id.toLowerCase()===String(GCAL.email).toLowerCase())) return msg('That’s your main Google calendar. It already shows.');
+  const L=gcalAcctList(), many=L.length>1;
+  const isMainOf=L.find(A=>A.email&&id.toLowerCase()===String(A.email).toLowerCase());
+  if(id==='primary'||(!many&&GCAL.email&&id.toLowerCase()===String(GCAL.email).toLowerCase())) return msg('That’s your main Google calendar. It already shows.');
+  if(many&&isMainOf) return msg('That’s the main calendar of '+gacctName(isMainOf)+'. It already shows.');   // v12.44
   if(gcalMine().some(x=>x.id===id)) return msg('That calendar is already added.');
   const b=el('gcIdGo'); if(b){ b.disabled=true; b.textContent='Checking…'; }
-  let r=null;
-  try{ r=await gcalApi('https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(id)+'/events?maxResults=1&fields=summary',null,true); }catch(e){ r=null; }
+  /* v12.44: tried with each connected account, the main one first: the one that owns it can read it */
+  const order=many?[L.find(A=>A.id===GCAL.main)||L[0]].concat(L.filter(A=>A.id!==GCAL.main)):[null];
+  let r=null, found=null, seen=[];
+  for(const A of order){
+    let q=null;
+    try{ q=await gcalApi('https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(id)+'/events?maxResults=1&fields=summary',null,true,A?A.id:undefined); }catch(e){ q=null; }
+    seen.push(q); r=q;
+    if(q&&q!==GCAL_NO&&q.ok){ found=A; break; }
+  }
   if(b){ b.disabled=false; b.textContent='Add calendar'; }
+  if(!found&&many) r=seen.find(q=>q&&q!==GCAL_NO&&q.status===403)||seen.find(q=>q&&q!==GCAL_NO&&q.status===401)||seen.find(q=>q&&q!==GCAL_NO)||r;
   if(!r||r===GCAL_NO) return msg('Google Calendar couldn’t be reached. Try again in a moment.');
   if(r.status===404) return msg('Google has no calendar with that ID. Check it and try again.');
-  if(r.status===403) return msg('That calendar isn’t yours, so the portal can’t read it. Only calendars you own can be added.');
+  if(r.status===403) return msg(many?'None of your connected Google accounts owns that calendar, so the portal can’t read it. Only calendars you own can be added.'
+    :'That calendar isn’t yours, so the portal can’t read it. Only calendars you own can be added.');
   if(r.status===401) return msg('Your Google connection needs renewing. Reconnect Google Calendar, then try again.');
   if(!r.ok) return msg('Google didn’t accept that calendar (error '+r.status+').');
   const d=await r.json().catch(()=>({}));
-  gcalAddCal(id,String(d.summary||'').trim()||'Google calendar');
+  gcalAddCal(id,String(d.summary||'').trim()||'Google calendar',null,found?found.id:'');
 }
-function gcalAddCal(id,name,color){
+function gcalAddCal(id,name,color,acct){
   const list=gcalMine();
   if(list.some(x=>x.id===id)) return;
-  list.push({id,name:String(name).slice(0,80),color:gcalHex(color)||GCAL_COLORS[list.length%GCAL_COLORS.length]});
+  const A=acct?gcalAcct(acct):null, many=gcalAcctList().length>1;
+  list.push(Object.assign({id,name:String(name).slice(0,80),color:gcalHex(color)||GCAL_COLORS[list.length%GCAL_COLORS.length]},acct?{acct}:{}));
   gcalMineSave(list);
   logAudit('Added a Google calendar','Shown to the person who added it only');
-  closeAll(); render(); toast(String(name).slice(0,80)+' added. Its events show on your calendar and home page.');
+  closeAll(); render(); toast(String(name).slice(0,80)+' added'+(many&&A?' from '+gacctName(A):'')+'. Its events show on your calendar and home page.');
   gcalFetch(true);
 }
 function gcalCalEdit(i){
@@ -24387,15 +24503,24 @@ function gcalCalDel(i){
 }
 /* the picker, once Google approves the list permissions (or on a device turned on for the review video) */
 async function gcalPicker(){
-  let r=null;
-  try{ r=await gcalApi('https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader&maxResults=250&fields=items(id,summary,summaryOverride,backgroundColor,accessRole,primary)',null,true); }catch(e){ r=null; }
-  if(!r||r===GCAL_NO||!r.ok) return gcalIdForm(r&&r.status===403?'To pick from a list, disconnect Google Calendar and connect it again, and allow the portal to see your list of calendars. Or add one by its ID.':'');
-  const d=await r.json().catch(()=>({})), have=new Set(gcalMine().map(x=>x.id));
-  const items=(d.items||[]).filter(c=>c&&!c.primary&&GCAL_ID_RX.test(String(c.id||'')));
+  const L=gcalAcctList(), many=L.length>1, mains=new Set(L.map(A=>String(A.email||'').toLowerCase()).filter(Boolean));
+  let items=[], first=null;
+  for(const A of (many?L:[null])){                                   // v12.44: each connected account's list
+    let r=null;
+    try{ r=await gcalApi('https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader&maxResults=250&fields=items(id,summary,summaryOverride,backgroundColor,accessRole,primary)',null,true,A?A.id:undefined); }catch(e){ r=null; }
+    if(!first) first=r;
+    if(!r||r===GCAL_NO||!r.ok) continue;
+    const d=await r.json().catch(()=>({}));
+    (d.items||[]).filter(c=>c&&!c.primary&&GCAL_ID_RX.test(String(c.id||''))&&!mains.has(String(c.id).toLowerCase())&&!items.some(x=>x.id===c.id))
+      .forEach(c=>items.push(Object.assign({},c,{acct:A?A.id:''})));
+  }
+  if(!items.length&&(!first||first===GCAL_NO||!first.ok)) return gcalIdForm(first&&first.status===403?'To pick from a list, disconnect Google Calendar and connect it again, and allow the portal to see your list of calendars. Or add one by its ID.':'');
+  const have=new Set(gcalMine().map(x=>x.id));
   window._gcPick=items;
+  const head=(c,i)=>many&&(i===0||items[i-1].acct!==c.acct)?`<div class="v1244-pkh">${esc(gacctName(gcalAcct(c.acct)||{email:''}))}</div>`:'';
   openModal('Add Google calendars',`
     <div class="tiny muted" style="margin-bottom:8px">Tick the calendars to show in the portal, next to its own. Their events show only to you, and open in Google.</div>
-    ${items.length?items.map((c,i)=>`<label class="v1243-pk"><input type="checkbox" data-gcp="${i}" ${have.has(c.id)?'checked':''}><i style="background:${gcalHex(c.backgroundColor)||GCAL_COLORS[i%GCAL_COLORS.length]}"></i>
+    ${items.length?items.map((c,i)=>`${head(c,i)}<label class="v1243-pk"><input type="checkbox" data-gcp="${i}" ${have.has(c.id)?'checked':''}><i style="background:${gcalHex(c.backgroundColor)||GCAL_COLORS[i%GCAL_COLORS.length]}"></i>
       <span><b>${esc(c.summaryOverride||c.summary||'Google calendar')}</b><em>${c.accessRole==='owner'?'Yours':'Shared with you'}</em></span></label>`).join('')
       :'<div class="tiny muted">Your Google account has no other calendars.</div>'}
     <button type="button" class="btn ghost sm" style="margin-top:10px" onclick="closeAll();gcalIdForm()">Add one by its ID instead</button>`,
@@ -24405,11 +24530,126 @@ function gcalPickSave(){
   const items=window._gcPick||[];
   const on=new Set([...document.querySelectorAll('#modal [data-gcp]')].filter(x=>x.checked).map(x=>(items[+x.dataset.gcp]||{}).id).filter(Boolean));
   const keep=gcalMine().filter(x=>on.has(x.id)||!items.some(c=>c.id===x.id));   // ones added by ID that the list doesn't show stay
-  items.forEach((c,i)=>{ if(on.has(c.id)&&!keep.some(x=>x.id===c.id)) keep.push({id:c.id,name:String(c.summaryOverride||c.summary||'Google calendar').slice(0,80),color:gcalHex(c.backgroundColor)||GCAL_COLORS[i%GCAL_COLORS.length]}); });
+  items.forEach((c,i)=>{ if(on.has(c.id)&&!keep.some(x=>x.id===c.id)) keep.push(Object.assign({id:c.id,name:String(c.summaryOverride||c.summary||'Google calendar').slice(0,80),color:gcalHex(c.backgroundColor)||GCAL_COLORS[i%GCAL_COLORS.length]},c.acct?{acct:c.acct}:{})); });
   gcalMineSave(keep);
   logAudit('Changed which Google calendars show','Shown to the person who chose them only');
   closeAll(); render(); toast('Saved. Your Google calendars are updated.');
   gcalFetch(true);
+}
+
+/* ══ v12.44: SEVERAL GOOGLE ACCOUNTS AND VIEWS ══
+   A person can connect more than one Google account (a work and a personal one, say): np-gcal keeps each one, and the
+   page holds an hour-long token for each (GCAL.accts). One is the main account: portal appointments sent to Google go
+   to it, and its events can be edited from the portal (USER_SET.gcalMain, else the first one connected). The others'
+   events are read only and open in Google. Each account's main calendar has its own key (gacct:<id>; plain 'google'
+   while the server gives no account ids), its calendars added by ID belong to it (x.acct), and the person can name and
+   colour each account (USER_SET.gaccts, never its address: the settings row is the team's). Views: All, Portal (the
+   team's calendars only) or one Google account, picked over the calendar chips on the Calendar page and the home page
+   (USER_SET.calView); within a view the chips hide or show single calendars, and in All each account's group at once.
+   Reminders and Ask Spectrum follow the chips (calShow), never the view, so a reminder isn't lost to a view. */
+var GCAL_AID_RX=/^a[0-9a-f]{0,16}$/;                                   // np-gcal's account ids
+function gcalAcct(id){ return GCAL.accts.find(a=>a.id===id)||null; }
+function gcalAcctKey(id){ return id?'gacct:'+id:'google'; }
+function gcalAcctList(){                                              // the accounts, or the one connection before the server names any
+  if(!GCAL.connected) return [];
+  return GCAL.accts.length?GCAL.accts:[{id:GCAL.main||'',email:GCAL.email||'',token:GCAL.token,exp:GCAL.exp}];
+}
+function gcalSrvInfo(d,noList){
+  if(d&&typeof d.multi==='boolean'){ GCAL.multi=d.multi; GCAL.max=Math.max(1,Math.min(10,+d.max||1)); }
+  if(d&&Array.isArray(d.accounts)&&!noList) gcalAcctMerge(d.accounts);
+}
+function gcalAcctTok(id,email,tok,expires){
+  let A=gcalAcct(id);
+  if(!A){ A={id,email:'',token:null,exp:0}; GCAL.accts.push(A); }
+  if(email) A.email=email;
+  A.token=tok; A.exp=Date.now()+Math.max(60,(+expires||3600)-300)*1000;
+}
+function gcalAcctMerge(list){                                         // the server's list is the truth: accounts gone go, with their events
+  const ok=list.filter(a=>a&&typeof a.id==='string'&&GCAL_AID_RX.test(a.id));
+  const before=GCAL.accts.map(a=>a.id), ids=new Set(ok.map(a=>a.id));
+  GCAL.accts=ok.map(a=>{ const o=gcalAcct(a.id)||{}, n={id:a.id,email:String(a.email||o.email||''),token:o.token||null,exp:o.exp||0,err:o.err||''};
+    if(a.access_token){ n.token=a.access_token; n.exp=Date.now()+Math.max(60,(+a.expires_in||3600)-300)*1000; }
+    return n; });
+  const gone=before.filter(id=>!ids.has(id));
+  if(gone.length) GCAL.events=GCAL.events.filter(g=>!gone.includes(g.acct));
+  const first=GCAL.accts[0], off=((USER_SET[userKey()]||{}).calsOff)||[];
+  if(first&&first.id&&off.includes('google')) userSetSave({calsOff:off.map(k=>k==='google'?gcalAcctKey(first.id):k)});   // a choice made before accounts had ids
+}
+function gcalUseMain(){                                               // the main account's token is the page's own
+  const L=GCAL.accts; if(!L.length) return;
+  const pick=String(((USER_SET[userKey()]||{}).gcalMain)||''), A=L.find(a=>a.id===pick)||L[0];
+  GCAL.main=A.id; GCAL.token=A.token; GCAL.exp=A.exp; if(A.email) GCAL.email=A.email;
+}
+function gcalCanAdd(){ return !!(GCAL.connected&&GCAL.kept&&GCAL.multi&&GCAL.accts.length&&GCAL.accts[0].id&&GCAL.accts.length<GCAL.max&&state.role!=='family'); }
+function gacctMeta(id){ return ((((USER_SET[userKey()]||{}).gaccts)||{})[id])||{}; }
+function gacctName(A){ return (A&&gacctMeta(A.id).name)||(A&&A.email)||'Google account'; }
+const GACCT_COLORS=['#1A73E8','#E37400','#D81B60','#0097A7','#7B1FA2'];   // accounts' own, apart from the colours calendars added by ID get
+function gacctColor(A,i){ const m=gacctMeta(A.id); return gcalHex(m.color)||GACCT_COLORS[Math.max(0,i)%GACCT_COLORS.length]; }
+function gacctEdit(id){
+  const L=gcalAcctList(), i=L.findIndex(a=>a.id===id), A=L[i]; if(!A) return;
+  glyphPicker({ heading:'Edit Google account', nameLabel:'Name in the portal', name:gacctMeta(id).name||(L.length>1?A.email:'Google Calendar')||'', placeholder:A.email||'Google Calendar', color:gacctColor(A,i), icon:'calendar',
+    note:'Only you see this name and colour, on your calendar chips and views. Nothing changes in Google.',
+    onSave:g=>{ const all=Object.assign({},((USER_SET[userKey()]||{}).gaccts)||{}), nm=String(g.name||'').trim().slice(0,60);
+      all[id]={name:nm&&nm!==A.email&&!(L.length<2&&nm==='Google Calendar')?nm:'',color:gcalHex(g.color)||''};   // never the address: the settings row is the team's
+      userSetSave({gaccts:all}); closeAll(); render(); toast('Saved.'); } });
+}
+function gcalHubAgain(){ if(typeof _setHub!=='undefined'&&_setHub&&el('modal')&&el('modal').classList.contains('on')&&el('modal').querySelector('[data-gcals]')) settingsHub.apply(null,_setHub); }
+function gcalSetMain(id){
+  const A=gcalAcct(id); if(!A) return;
+  userSetSave({gcalMain:id}); gcalUseMain();
+  logAudit('Changed where portal appointments go in Google','');
+  gcalHubAgain(); render(); toast('Portal appointments you send to Google now go to '+gacctName(A)+'.');
+  gcalFetch(true);
+}
+function gcalAcctGone(id,expired){                                    // gone on another device, or Google ended it
+  const A=gcalAcct(id); if(!A) return;
+  GCAL.accts=GCAL.accts.filter(a=>a.id!==id); GCAL.events=GCAL.events.filter(g=>g.acct!==id);
+  if(!GCAL.accts.length){ gcalClear(); render(); return; }
+  gcalUseMain(); render();
+  toast(expired?'Google ended the connection to '+gacctName(A)+'. Connect it again from the calendar.':gacctName(A)+' was disconnected.');
+}
+async function gcalDisconnectOne(id){
+  const A=gcalAcct(id); if(!A) return;
+  const d=await gcalSrv('disconnect',{account:id});
+  if(!(d.status===200&&d.ready)) return toast(d.error||'Could not disconnect right now. Check your connection and try again.');
+  const wasMain=id===GCAL.main, nm=gacctName(A);
+  if(Array.isArray(d.accounts)) gcalAcctMerge(d.accounts); else GCAL.accts=GCAL.accts.filter(a=>a.id!==id);
+  GCAL.accts=GCAL.accts.filter(a=>a.id!==id); GCAL.events=GCAL.events.filter(g=>g.acct!==id);
+  if(!GCAL.accts.length){ gcalClear(); logAudit('Disconnected Google Calendar',''); closeAll(); render(); return toast('Google Calendar disconnected on every device.'); }
+  gcalUseMain();
+  logAudit('Disconnected a Google account','');
+  gcalHubAgain(); render();
+  toast(nm+' disconnected on every device.'+(wasMain?' Portal appointments you send to Google now go to '+gacctName(gcalAcct(GCAL.main))+'.':''));
+  gcalFetch(true);
+}
+/* views */
+function calIsGoogle(k){ return k==='google'||String(k).indexOf('gacct:')===0||String(k).indexOf('gcal:')===0; }
+function calViewOf(){
+  const v=String(((USER_SET[userKey()]||{}).calView)||'all');
+  if(v==='portal') return v;
+  if(v.indexOf('g:')===0&&gcalAcctList().some(A=>A.id===v.slice(2))) return v;
+  return 'all';                                                       // an account no longer connected: everything
+}
+function calViewHas(k){
+  const v=calViewOf();
+  if(v==='all') return true;
+  if(v==='portal') return !calIsGoogle(k);
+  const d=gcalCalDefs().find(c=>c.key===k);
+  return !!d&&d.acct===v.slice(2);
+}
+function calInView(k){ return calVisible(k)&&calViewHas(k); }
+function calShowV(a){ return calMine(a)&&calInView(apptCalKey(a)); }
+function calSetView(v){ userSetSave({calView:v}); render(); }
+function calGroupToggle(g){                                           // a group's calendars all at once: any shown hides them all, else shows them all
+  const keys=calDefs().filter(c=>g==='portal'?!calIsGoogle(c.key):c.acct===g.slice(2)).map(c=>c.key);
+  const off=(((USER_SET[userKey()]||{}).calsOff)||[]).slice(), anyOn=keys.some(k=>!off.includes(k));
+  userSetSave({calsOff:anyOn?off.concat(keys.filter(k=>!off.includes(k))):off.filter(k=>!keys.includes(k))}); render();
+}
+function calViewBar(where){
+  if(!GCAL.connected) return '';
+  const L=gcalAcctList(), many=L.length>1, v=calViewOf();
+  const opts=[['all','All'],['portal','Portal']].concat(L.map(A=>['g:'+A.id,many?gacctName(A):'Google']));
+  return `<div class="v1244-vb" role="group" aria-label="View"><span class="v1244-vl">View</span>${opts.map(([k,l])=>`<button type="button" class="v1244-v${v===k?' on':''}" aria-pressed="${v===k}" data-view="${esc(k)}" title="${esc(k==='all'?'Every calendar':k==='portal'?'The portal’s calendars only':'Only '+l)}" onclick="calSetView(this.dataset.view)">${esc(l)}</button>`).join('')}</div>`;
 }
 
 captureSamples();   // end of script, every seed declared — still guaranteed before any hydration response lands
