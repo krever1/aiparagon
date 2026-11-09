@@ -91,6 +91,9 @@ const VAN = 'team-van@group.calendar.google.com', SHARED = 'erica-shared@group.c
   };
   const chips = (page, scope) => page.evaluate((s) => [...document.querySelectorAll(s + ' .v1243-c')].map((b) => ({ n: b.textContent.trim(), on: b.getAttribute('aria-pressed') === 'true' })), scope);
   const chipBtns = (page, scope) => page.evaluate((s) => [...document.querySelectorAll(s + ' .v1243-x')].map((b) => b.textContent.trim()), scope);
+  // v12.45: one ＋ Add calendar button; its menu's items
+  const addMenu = async (page, scope) => { const b = await page.$(scope + ' .v1245-add'); if (!b) return []; await b.click(); await page.waitForTimeout(150);
+    const it = await page.evaluate(() => [...document.querySelectorAll('#cxMenu .cx-mi b')].map((x) => x.textContent.trim())); await page.evaluate(() => cxMenuClose()); return it; };
   const rows = (page) => page.evaluate(() => [...document.querySelectorAll('#view .hm-sched .hm-row')].map((r) => r.innerText.replace(/\s+/g, ' ').trim()));
   const clickChip = async (page, scope, name) => { await page.click(`${scope} .v1243-c:has-text("${name}")`); await page.waitForTimeout(250); };
   const homeCfg = (page, sched) => page.evaluate((v) => { hmOwnSave(Object.assign(hmClean(hmCfg(true)), { sched: v })); render(); }, sched);
@@ -112,7 +115,7 @@ const VAN = 'team-van@group.calendar.google.com', SHARED = 'erica-shared@group.c
   check('home: the kinds above the list count Google Calendar', kinds.includes('Google Calendar · 2'), JSON.stringify(kinds));
   let C = await chips(page, '#view .hm-sched');
   check('home: the calendar chips sit over the schedule: the team’s, the person’s and Google', C.map((c) => c.n).join('|') === 'Company calendar|Dana’s calendar|Google Calendar' && C.every((c) => c.on), JSON.stringify(C));
-  check('home: + Google calendar is offered over the schedule', (await chipBtns(page, '#view .hm-sched')).includes('＋ Google calendar'));
+  check('home: + Add calendar over the schedule offers Add a Google calendar (v12.45)', (await chipBtns(page, '#view .hm-sched')).includes('＋ Add calendar') && (await addMenu(page, '#view .hm-sched')).includes('Add a Google calendar'));
   let nx = await page.evaluate(() => (document.querySelector('#view .hm-next') || {}).innerText || '');
   check('home: Next up is the next thing on the calendars shown (the 10:30 huddle)', /Team huddle/.test(nx), nx);
 
@@ -126,9 +129,11 @@ const VAN = 'team-van@group.calendar.google.com', SHARED = 'erica-shared@group.c
   C = await chips(page, '#view .cx-card');
   let P = await pane(page);
   check('Calendar page: the same choice holds there (Google off, no Google events in the day’s plan)', C.find((c) => c.n === 'Google Calendar').on === false && !P.some((r) => r.k === 'google'), JSON.stringify({ C, P }));
-  check('Calendar page: the chips are labelled Calendars, with + Calendar and + Google calendar for a director',
-    await page.evaluate(() => (document.querySelector('#view .cx-card .v1243-cl') || {}).textContent === 'Calendars') && (await chipBtns(page, '#view .cx-card')).join('|') === 'Show all|＋ Google calendar|＋ Calendar',
-    JSON.stringify(await chipBtns(page, '#view .cx-card')));
+  const dirMenu = await addMenu(page, '#view .cx-card');
+  check('Calendar page: the chips are labelled Calendars, with one + Add calendar: a Google calendar or a portal calendar for a director (v12.45)',
+    await page.evaluate(() => (document.querySelector('#view .cx-card .v1243-cl') || {}).textContent === 'Calendars') && (await chipBtns(page, '#view .cx-card')).join('|') === 'Show all|＋ Add calendar'
+      && dirMenu.join('|') === 'Add a Google calendar|Create a portal calendar',
+    JSON.stringify({ btns: await chipBtns(page, '#view .cx-card'), dirMenu }));
   await clickChip(page, '#view .cx-card', 'Google Calendar');
   P = await pane(page);
   check('Calendar page: an appointment on a person’s own calendar with no client doesn’t say Whole team', P.some((r) => /Supervision with Lee/.test(r.t) && /Dana’s calendar/.test(r.t) && !/Whole team/.test(r.t)) && P.some((r) => /Team huddle/.test(r.t) && /Whole team/.test(r.t)), JSON.stringify(P));
@@ -169,7 +174,8 @@ const VAN = 'team-van@group.calendar.google.com', SHARED = 'erica-shared@group.c
   check('home: Coming up lists the next Google event with its calendar', /Grant deadline/.test(coming) && /Google Calendar/.test(coming), coming);
 
   // ======================= 2. another Google calendar, by its ID =======================
-  await page.click('#view .hm-sched .v1243-x:has-text("Google calendar")'); await page.waitForTimeout(250);
+  await page.click('#view .hm-sched .v1245-add'); await page.waitForTimeout(150);
+  await page.click('#cxMenu .cx-mi:has-text("Add a Google calendar")'); await page.waitForTimeout(250);
   const form = await page.evaluate(() => ({ t: el('mdTitle').textContent, box: !!el('gcId'), how: (document.querySelector('#modal .v1243-how') || {}).innerText || '', focus: document.activeElement && document.activeElement.id }));
   check('+ Google calendar opens Add a Google calendar, with the ID box (focused) and where to find the ID', form.t === 'Add a Google calendar' && form.box && /Integrate calendar/.test(form.how) && form.focus === 'gcId', JSON.stringify(form));
   const tryId = async (v) => { await page.fill('#gcId', v); await page.click('#gcIdGo'); await page.waitForTimeout(300); return page.evaluate(() => el('gcIdMsg').textContent); };
@@ -289,9 +295,9 @@ const VAN = 'team-van@group.calendar.google.com', SHARED = 'erica-shared@group.c
   {
     const { ctx, page } = await demo('staff');
     C = await chips(page, '#view .hm-sched');
-    check('staff: chips for the team’s calendar and their own, and no + Calendar', C.length >= 2 && C[0].n === 'Company calendar' && !(await chipBtns(page, '#view .hm-sched')).includes('＋ Calendar'), JSON.stringify(C));
+    check('staff: chips for the team’s calendar and their own, and no portal calendar to create', C.length >= 2 && C[0].n === 'Company calendar' && !(await addMenu(page, '#view .hm-sched')).includes('Create a portal calendar'), JSON.stringify(C));
     await page.evaluate(() => go('calendar')); await page.waitForTimeout(250);
-    check('staff: on the Calendar page too, without + Calendar', (await chips(page, '#view .cx-card')).length >= 2 && !(await chipBtns(page, '#view .cx-card')).includes('＋ Calendar'));
+    check('staff: on the Calendar page too, with no portal calendar to create', (await chips(page, '#view .cx-card')).length >= 2 && !(await addMenu(page, '#view .cx-card')).includes('Create a portal calendar'));
     await page.evaluate(() => go('home')); await page.waitForTimeout(250);
     const own = C.find((c) => c.n !== 'Company calendar').n;
     await clickChip(page, '#view .hm-sched', 'Company calendar');
