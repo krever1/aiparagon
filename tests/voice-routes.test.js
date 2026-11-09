@@ -796,6 +796,56 @@ function check(label, ok, detail) {
     await ctx.close();
   }
 
+  // 25. type and the conversation list (Nov 9): AI Paragon's font (Instrument Sans, as the dashboard and the builder) and
+  //     every size a step up (the menu, body and table text 15px, no text under 13px on the overview but the odd label);
+  //     on Conversations and Messages the list stays under the top bar, as tall as the window, while a long call scrolls
+  //     (it was a 620px box that ended halfway down while the call went on below it); and no calendar booking is cut off.
+  {
+    const { ctx, page } = await open(BASE + '/voice/overview');
+    const t = await page.evaluate(() => {
+      const fs = (el) => el ? parseFloat(getComputedStyle(el).fontSize) : 0;
+      const nav = [...document.querySelectorAll('.side .nav')].find((n) => n.getBoundingClientRect().height > 0);
+      let small = 0, all = 0;
+      const w = document.createTreeWalker(document.querySelector('#s-overview'), NodeFilter.SHOW_TEXT);
+      let n;
+      while ((n = w.nextNode())) {
+        const txt = n.textContent.trim(); const el = n.parentElement;
+        if (!txt || !el || !el.getBoundingClientRect().height) continue;
+        all += txt.length; if (fs(el) < 13) small += txt.length;
+      }
+      return { font: getComputedStyle(document.body).fontFamily.split(',')[0].replace(/"/g, ''), body: fs(document.body), nav: fs(nav), th: fs(document.querySelector('#s-overview th')), td: fs(document.querySelector('#s-overview td')), h1: fs(document.querySelector('#s-overview h1')), small: Math.round(100 * small / Math.max(1, all)) };
+    });
+    check('type: Instrument Sans, body, menu and table text 15px, headings 13px and up, page title 30px', t.font === 'Instrument Sans' && t.body >= 15 && t.nav >= 15 && t.td >= 15 && t.th >= 13 && t.h1 >= 30, JSON.stringify(t));
+    check('type: under 5% of the overview text is smaller than 13px', t.small < 5, t.small + '%');
+    for (const [sec, list] of [['conversations', '#convList'], ['messages', '#threadList']]) {
+      await page.goto(BASE + '/voice/' + sec, { waitUntil: 'load' }); await page.waitForTimeout(300);
+      const pos = async () => page.evaluate((sel) => { const l = document.querySelector(sel), r = l.getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom), tb: document.querySelector('.topbar').offsetHeight, h: innerHeight, pos: getComputedStyle(l).position, scroll: scrollY }; }, list);
+      const a = await pos();
+      // scrolled as far as the box still fills the window (up to 400px): the whole list shows under the top bar
+      await page.evaluate((sel) => { const box = document.querySelector(sel).closest('.panel').getBoundingClientRect(); window.scrollTo(0, Math.max(0, Math.min(400, Math.floor(box.bottom - innerHeight)))); }, list);
+      await page.waitForTimeout(150);
+      const b = await pos();
+      check('list (' + sec + '): stays under the top bar while the page scrolls, as tall as the window', a.pos === 'sticky' && b.scroll > 0 && b.top >= b.tb - 1 && b.top <= b.tb + 2 && b.bottom <= b.h + 1 && (b.bottom - b.top) >= Math.min(300, b.h - b.tb - 60), JSON.stringify({ a, b }));
+    }
+    // a call long enough to scroll: the list is still on screen at the end of it
+    await page.goto(BASE + '/voice/conversations', { waitUntil: 'load' }); await page.waitForTimeout(300);
+    const end = await page.evaluate(() => { window.scrollTo(0, document.documentElement.scrollHeight); const l = document.getElementById('convList').getBoundingClientRect(); return { scroll: scrollY, top: Math.round(l.top), bottom: Math.round(l.bottom), h: innerHeight }; });
+    check('list (conversations): at the end of a long call the list is beside it, on screen', end.scroll > 300 && end.bottom > 200 && end.bottom <= end.h + 1, JSON.stringify(end));
+    // a phone keeps the list on top of the call, scrolling with the page
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(200);
+    const ph = await page.evaluate(() => ({ pos: getComputedStyle(document.getElementById('convList')).position, sideways: document.documentElement.scrollWidth > innerWidth + 1 }));
+    check('list (phone): stacked above the call, no sideways scroll', ph.pos === 'static' && !ph.sideways, JSON.stringify(ph));
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(BASE + '/voice/calendar', { waitUntil: 'load' }); await page.waitForTimeout(400);
+    const cal = await page.evaluate(() => {
+      const evs = [...document.querySelectorAll('.cal .ev')].filter((e) => e.getBoundingClientRect().height > 0);
+      return { n: evs.length, cut: evs.filter((e) => e.scrollHeight > e.clientHeight + 1).map((e) => e.textContent.trim().slice(0, 40)), short: evs.filter((e) => e.classList.contains('short')).map((e) => e.textContent.trim()) };
+    });
+    check('calendar: no booking is cut off; a short one reads name, then type, on one line', cal.n > 0 && cal.cut.length === 0 && cal.short.every((x) => / · /.test(x) || x.length > 0), JSON.stringify(cal));
+    await ctx.close();
+  }
+
   // without a baseline any page error fails; with one, only errors the baseline did not have
   const newErrors = pageErrors.patched.filter((e) => !pageErrors.original.some((o) => o.split(' :: ')[1] === e.split(' :: ')[1]));
   check(BASELINE ? 'no new page errors' : 'no page errors', newErrors.length === 0, newErrors.slice(0, 3).join(' | '));
