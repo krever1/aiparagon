@@ -3363,6 +3363,27 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
   .hm-sched .v1243-cc{padding:10px 16px}
   .v1243-c{max-width:calc(100vw - 80px)}
 }
+/* ══ v12.45: category icons, calendar chips, the Add appointment window ══ */
+.cx-row{grid-template-columns:76px 22px minmax(0,1fr) auto}
+.cx-ic{position:relative;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--white);box-shadow:0 0 0 2px currentColor inset,0 0 0 3px var(--white);margin-top:1px}
+.cx-ic svg{width:13px;height:13px}
+.cx-catl{font-size:12.5px;font-weight:700;letter-spacing:.01em;line-height:1.3;margin-bottom:3px;overflow-wrap:anywhere}
+.cx-cic{display:inline-flex;align-items:center;flex:none;line-height:1}
+.cx-cic svg{width:12px;height:12px}
+.cx-wic{display:inline-flex;vertical-align:-2px;margin-right:4px}
+.cx-wic svg{width:12px;height:12px}
+.v1243-c{outline:2px solid var(--gold,#B8963E);outline-offset:2px}
+.v1243-c.is-off{outline:none;background:#F1F2EF;color:#9AA39E;border-color:#E2E5E1;border-style:solid}
+.v1243-c.is-off span{text-decoration:none}
+.v1243-c.is-off i{border-color:#B9C0BB!important;background:transparent!important}
+.v1243-c:focus-visible{outline:2px solid #1F6B52;outline-offset:2px}
+.v1243-cc{gap:8px 10px}
+.v1244-g.is-off{text-decoration:none;color:#B3BAB6}
+.cx-menu .cx-mi>span:only-child{padding-left:2px}
+@media (min-width:761px){ .modal.v1245-wide{width:min(920px,calc(100vw - 32px));max-width:none} }
+.v1245-ap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 26px;align-items:start}
+.v1245-col{min-width:0}
+@media (max-width:760px){ .v1245-ap{grid-template-columns:minmax(0,1fr)} }
 /* ══ v12.44: views and Google accounts ══ */
 .cal-jump .cj-s{display:none}                                     /* a client's date button: the short date on a narrow phone ("Saturday, November 7" overflowed at 320px) */
 @media (max-width:420px){.cal-jump .cj-l{display:none}.cal-jump .cj-s{display:inline}}
@@ -6347,7 +6368,7 @@ function openModal(title,body,foot){
     }
     MD_CUR=nav;
   } else if(!wasOpen && !MD_BACKING){ MD_STACK=[]; MD_CUR=null; }
-  el('modal').classList.remove('tpe-wide','ov-modal','hm-cust-md');
+  el('modal').classList.remove('tpe-wide','ov-modal','hm-cust-md','v1245-wide');
   el('mdTitle').innerHTML=(MD_STACK.length?`<button type="button" class="md-back" onclick="mdBack()" title="Back to the previous screen">‹ Back</button>`:'')+title;
   el('mdBody').innerHTML=body; el('mdFoot').innerHTML=foot||'';
   el('mdFoot').style.display=foot?'flex':'none';
@@ -19276,7 +19297,7 @@ function saveApptTime(id){
 function openApptForm(cid,presetDate,presetTime){
   catsAudit();                                                       // the picker is never empty
   window._apPreset={d:presetDate||'',t:presetTime||''};
-  openModal('Add appointment',`
+  openModal('Add appointment',`<div class="v1245-ap"><div class="v1245-col">
     <div class="row2">
       <div class="field"><label>Client</label><select class="inp" id="apClient" data-list="client" data-fmt="ucin" onchange="fillSelectChange(this)">${window._cxKind?'<option value="" selected>No one client (the whole team)</option>':''}${visibleClients().map(c=>`<option value="${c.id}" ${cid===c.id?'selected':''}>${esc(c.uci)} — ${esc(c.name)}</option>`).join('')}${addOpt('client')}</select></div>
       <div class="field"><label>Type</label>
@@ -19287,8 +19308,9 @@ function openApptForm(cid,presetDate,presetTime){
     </div>
     <div class="field"><label>Title</label><input class="inp" id="apTitle" placeholder="Leave blank to keep it anonymous"></div>
     <div class="field"><label>Calendar</label>${calSelect('apCal')}
-      <div class="tiny muted" style="margin-top:4px">Company is shared with everyone. My calendar is yours alone. Contractor calendars track outside providers.</div></div>
+      <div class="tiny muted" style="margin-top:4px">Company is shared with everyone. My calendar is yours alone. Other calendars are the team’s own, like therapy or the van.</div></div>
     ${state.role==='director'?aclField('ap',null):''}
+    </div><div class="v1245-col">
     <div class="row2">
       <div class="field"><label>Date</label><input class="inp" type="date" id="apDate" value="${(window._apPreset&&window._apPreset.d)||T}"></div>
       <div class="field"><label>Time</label><input class="inp" type="time" id="apTime" value="${(window._apPreset&&window._apPreset.t)||'10:00'}"></div>
@@ -19303,8 +19325,10 @@ function openApptForm(cid,presetDate,presetTime){
       <input type="checkbox" id="apGcal" checked style="width:16px;height:16px" onclick="event.stopPropagation()">
       <div class="ct"><b>Also send to Google Calendar</b><div class="tiny muted">${GCAL.connected
         ?'Added to your connected Google Calendar'+(GCAL.accts.length>1&&GCAL.email?' ('+esc(GCAL.email)+')':'')+' with its title, time and place. Client names, initials and UCIs are left out and stay in the portal.'
-        :'Opens Google Calendar prefilled, one click to save. It gets the title, time and place. Client names, initials and UCIs are left out and stay in the portal.'}</div></div></label>`,   // v12.38.4: what really goes to Google since v12.33
+        :'Opens Google Calendar prefilled, one click to save. It gets the title, time and place. Client names, initials and UCIs are left out and stay in the portal.'}</div></div></label>
+    </div></div>`,   // v12.38.4: what really goes to Google since v12.33. v12.45: two columns, so nothing is below the fold
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="saveAppt()">Save appointment</button>`);
+  el('modal').classList.add('v1245-wide');
 }
 function saveAppt(){
   const _team=el('apClient')&&el('apClient').value===''&&!!el('apClient').querySelector('option[value=""]');   // v12.37: an event or meeting for the whole team
@@ -20514,7 +20538,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.44 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.45 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -22040,20 +22064,20 @@ function apRestore(typeName){
 }
 function apCalNew(sel){
   if(sel.value!=='__newct__') return;
-  const n=prompt('Contractor name (e.g. Bright Path Therapy):');
+  const n=prompt('Name of the new calendar (e.g. Therapy, Day program, the van):');   // v12.45
   if(!n||!n.trim()){ sel.value='company'; return; }
   const id='ct'+Date.now();
   const ct={id,name:n.trim(),color:CAL_COLORS[CONTRACTORS.length%CAL_COLORS.length]};
   CONTRACTORS.push(ct); contractorsSave();
-  logAudit('Added contractor calendar',ct.name);
+  logAudit('Added a calendar',ct.name);
   sel.insertAdjacentHTML('afterbegin',`<option value="ct:${id}">${esc(ct.name)}</option>`);
   sel.value='ct:'+id;
-  toast('Contractor calendar created — color-coded on every view.');
+  toast('Calendar created. It has its own colour and chip on every view.');
 }
 function calSelect(id,cur){
   return `<select class="inp" id="${id}" onchange="apCalNew(this)">
-    ${calDefs().filter(c=>c.key!=='google'&&c.key.indexOf('gcal:')!==0).map(c=>`<option value="${c.key}" ${c.key===(cur||'company')?'selected':''}>${esc(c.name)}</option>`).join('')}
-    <option value="__newct__">＋ New contractor calendar…</option>
+    ${calDefs().filter(c=>!calIsGoogle(c.key)).map(c=>`<option value="${c.key}" ${c.key===(cur||'company')?'selected':''}>${esc(c.name)}</option>`).join('')}
+    <option value="__newct__">＋ Create new calendar…</option>
   </select>`;
 }
 function calDot(k,sz){ const c=calDef(k); return `<span title="${esc(c.name)}" style="display:inline-block;width:${sz||9}px;height:${sz||9}px;border-radius:50%;background:${c.color};flex:none"></span>`; }
@@ -22194,7 +22218,7 @@ function calAddForm(){
 }
 function calMetaFormLegacy(key){ return calMetaForm(key); }
 function calAccessForm(){
-  const shared=calDefsAll().filter(c=>c.key!=='personal'&&c.key!=='google'&&c.key.indexOf('gcal:')!==0);   // v12.43: Google calendars are the person's own
+  const shared=calDefsAll().filter(c=>c.key!=='personal'&&!calIsGoogle(c.key));   // v12.43: Google calendars are the person's own (v12.45: every account's)
   window._caKeys={};
   shared.forEach(c=>{ window._caKeys[c.key.replace(/[^A-Za-z0-9]/g,'_')]=c.key; });
   const staffList=STAFF.filter(st=>!hid('staff',st.id));
@@ -24005,6 +24029,7 @@ function cxDayItems(p,d,A){
     const k=cxApptKind(a); if(!on(k)) return;
     const c=client(a.cid), cat=a.gcal?null:catOf(a.type);
     out.push({k,t:a.allday?'':(a.time||''),e:(!a.allday&&a.time&&a.dur)?cxAddMin(a.time,a.dur):'',title:a.title||a.type||cxKind(k).one,
+      ty:a.gcal?'':String(a.type||'').trim(),                         // v12.45: the category, shown by its icon
       cat:a.gcal?calDef(apptCalKey(a)).name:(a.type||''),catC:a.gcal?calDef(apptCalKey(a)).color:((cat&&cat.color)||cxKind(k).c),   // v12.43: which Google calendar; one on a person's own calendar isn't the whole team's
       lines:[c?'Client '+c.uci:((a.gcal||apptCalKey(a)==='personal')?'':'Whole team'),(!a.gcal&&apptCalKey(a)!=='company')?calDef(apptCalKey(a)).name:'',a.provider,a.loc].filter(Boolean),note:a.flag||'',cx:!!a.cancelled,
       ride:k==='appt'&&!fam&&!a.ride&&!a.cancelled&&!a.gcal,
@@ -24096,6 +24121,8 @@ function cxTeamForm(k,d){
 function apTypeVal2(v){ return String(v||'').trim().replace(/^[^\w(]+\s*/,''); }
 
 /* ---- the pieces ---- */
+/* v12.45: a category's icon in its colour (the calendar's month cells, day plan and week), named for screen readers */
+function cxCatIc(t,sz,cls){ const c=catOf(t); return `<span class="${cls}" style="color:${c.color}" role="img" aria-label="${esc(t)}">${catGlyph(t,sz)}</span>`; }
 function cxLegend(p,count){
   const kinds=cxAllowed().map(cxKind);
   return `<div class="cx-leg" role="group" aria-label="Show or hide">${kinds.map(k=>{ const on=cxOn(p,k.k);
@@ -24106,9 +24133,10 @@ function cxRow(it){
   const k=cxKind(it.k), go=it.go||'';
   return `<div class="cx-row${it.cx?' is-cx':''}" data-k="${it.k}">
     <div class="cx-t">${it.t?hm12(it.t):(it.k==='rem'?'Due':'Any time')}${it.e?`<span>to ${hm12(it.e)}</span>`:''}</div>
-    <div class="cx-dot" aria-hidden="true"><i style="background:${k.c}"></i></div>
+    <div class="cx-dot" aria-hidden="true">${it.ty?cxCatIc(it.ty,14,'cx-ic'):`<i style="background:${k.c}"></i>`}</div>
     <div class="cx-b">
-      <div class="cx-tags"><span class="cx-kind" style="color:${k.c};background:${k.c}17">${esc(k.one)}</span>${it.cat&&it.cat!==k.one?`<span class="cx-cat">${esc(it.cat)}</span>`:''}${it.cx?'<span class="cx-cat cx-cxl">Canceled</span>':''}${it.ride?'<span class="cx-cat cx-ride" title="No transport arranged yet">No ride yet</span>':''}</div>
+      ${it.ty?`<div class="cx-catl" style="color:${catOf(it.ty).color}">${esc(it.ty)}</div>`:''}
+      <div class="cx-tags">${it.ty&&it.ty===k.one&&!it.cx&&!it.ride?'':`<span class="cx-kind" style="color:${k.c};background:${k.c}17">${esc(k.one)}</span>`}${!it.ty&&it.cat&&it.cat!==k.one?`<span class="cx-cat">${esc(it.cat)}</span>`:''}${it.cx?'<span class="cx-cat cx-cxl">Canceled</span>':''}${it.ride?'<span class="cx-cat cx-ride" title="No transport arranged yet">No ride yet</span>':''}</div>
       ${go?`<button type="button" class="cx-ti" onclick="${go}">${esc(it.title)}</button>`:`<div class="cx-ti">${esc(it.title)}</div>`}
       ${it.lines.map(l=>`<div class="cx-ln2">${esc(l)}</div>`).join('')}
       ${it.people?`<div class="cx-ppl">${it.people.map(x=>`<${x.go?`button type="button" onclick="${x.go}" title="Change this shift"`:'div'} class="cx-pp"><b>${esc(x.n)}</b><span>${esc([x.h,x.t].filter(Boolean).join(' \u00b7 '))}</span></${x.go?'button':'div'}>`).join('')}</div>`:''}
@@ -24154,7 +24182,7 @@ function cxGrid(p,A){
   const cells=days.map(d=>{
     const items=cxDayItems(p,d,A).filter(i=>!i.cx), dt=new Date(d+'T12:00:00'), out=d.slice(0,7)!==mon;
     const sh=items.filter(i=>i.k==='shift'), rest=items.filter(i=>i.k!=='shift');
-    const lines=rest.slice(0,sh.length?2:3).map(i=>`<span class="cx-cl"><i style="background:${cxKind(i.k).c}"></i>${i.t?`<time>${hm12(i.t).replace(':00','').replace(' ',' ')}</time>`:''}<b>${esc(i.title)}</b></span>`);
+    const lines=rest.slice(0,sh.length?2:3).map(i=>`<span class="cx-cl">${i.ty?cxCatIc(i.ty,12,'cx-cic'):`<i style="background:${cxKind(i.k).c}"></i>`}${i.t?`<time>${hm12(i.t).replace(':00','').replace(' ',' ')}</time>`:''}<b>${esc(i.title)}</b></span>`);
     const nSh=sh.reduce((s,i)=>s+(i.n||1),0);
     if(nSh) lines.push(`<span class="cx-cl"><i style="background:${cxKind('shift').c}"></i><b>${nSh} on shift</b></span>`);
     const more=rest.length-(sh.length?2:3);
@@ -24165,7 +24193,7 @@ function cxGrid(p,A){
       <span class="cx-ch"><span class="cx-dn">${dt.getDate()}</span>${dt.getDate()===1?`<span class="cx-mo">${dt.toLocaleDateString(undefined,{month:'short'})}</span>`:''}
         ${acct&&people?`<span class="cx-cov${nCl&&people>=nCl?' ok':''}" title="${people} of ${nCl} people logged">${people}/${nCl}</span>`:''}</span>
       <span class="cx-cls">${lines.join('')}${more>0?`<span class="cx-more">+${more} more</span>`:''}</span>
-      <span class="cx-dots" aria-hidden="true">${items.slice(0,4).map(i=>`<i style="background:${cxKind(i.k).c}"></i>`).join('')}</span>
+      <span class="cx-dots" aria-hidden="true">${items.slice(0,4).map(i=>`<i style="background:${i.ty?catOf(i.ty).color:cxKind(i.k).c}"></i>`).join('')}</span>
     </button>`;
   });
   return `<div class="cx-cal">
@@ -24183,7 +24211,7 @@ function cxWeek(p,A){
   const cols=Array.from({length:7},(_,i)=>{ const d=iso(addDays(sun,i)), dt=addDays(sun,i), items=cxDayItems(p,d,A);
     return `<div class="cx-wcol${d===T?' is-today':''}${d===cxDay(p)?' is-on':''}">
       <button type="button" class="cx-wh" onclick="cxPick('${p}','${d}')"><span>${CX_DOW[i]}</span><b>${dt.getDate()}</b></button>
-      ${items.map(i=>`<button type="button" class="cx-wev${i.cx?' is-cx':''}" style="border-left-color:${cxKind(i.k).c}" title="${esc(i.title)}" ${i.go?`onclick="${i.go}"`:''}><span>${i.t?hm12(i.t):cxKind(i.k).one}</span><i class="cx-wt">${esc(i.title)}</i></button>`).join('')||'<span class="cx-wnone">—</span>'}
+      ${items.map(i=>`<button type="button" class="cx-wev${i.cx?' is-cx':''}" style="border-left-color:${i.ty?catOf(i.ty).color:cxKind(i.k).c}" title="${esc(i.ty?i.ty+' · '+i.title:i.title)}" ${i.go?`onclick="${i.go}"`:''}><span>${i.ty?cxCatIc(i.ty,12,'cx-wic'):''}${i.t?hm12(i.t):cxKind(i.k).one}</span><i class="cx-wt">${esc(i.title)}</i></button>`).join('')||'<span class="cx-wnone">—</span>'}
     </div>`; }).join('');
   return `<div class="cx-cal">
     <div class="cx-mhead">
@@ -24377,7 +24405,8 @@ function calChipRow(where){
   const fam=state.role==='family', dir=state.role==='director', off=defs.filter(c=>!calVisible(c.key)).length;
   const L=gcalAcctList(), grouped=calViewOf()==='all'&&L.length>1;
   const chip=c=>{ const on=calVisible(c.key), col=gcalHex(c.color)||'#6B7A74', nm=grouped&&c.gmain?'Main calendar':c.name;   // in a group, the account's own is its main calendar
-    return `<button type="button" class="v1243-c${on?'':' is-off'}" aria-pressed="${on}" title="${on?'Hide':'Show'} ${esc(c.name)}${nm!==c.name?' (main calendar)':''}" data-cal="${esc(c.key)}" onclick="calToggle(this.dataset.cal)"><i style="border-color:${col};background:${on?col:'transparent'}"></i><span>${esc(nm)}</span></button>`; };
+    const who=calChipAcct(c);                                          // v12.45: which Google account it is, on hover
+    return `<button type="button" class="v1243-c${on?'':' is-off'}" aria-pressed="${on}" title="${esc(c.name+(who?' · '+who:''))} · ${on?'shown, click to hide':'hidden, click to show'}" data-cal="${esc(c.key)}" onclick="calToggle(this.dataset.cal)"><i style="border-color:${col};background:${on?col:'transparent'}"></i><span>${esc(nm)}</span></button>`; };
   const grp=(g,label,cs)=>{ if(!cs.length) return ''; const anyOn=cs.some(c=>calVisible(c.key));
     return `<span class="v1244-gp"><button type="button" class="v1244-g${anyOn?'':' is-off'}" data-grp="${esc(g)}" aria-pressed="${anyOn}" title="${anyOn?'Hide':'Show'} every calendar in ${esc(label)}" aria-label="${anyOn?'Hide':'Show'} every calendar in ${esc(label)}" onclick="calGroupToggle(this.dataset.grp)">${esc(label)}</button>${cs.map(chip).join('')}</span>`; };
   const body=grouped
@@ -24386,9 +24415,7 @@ function calChipRow(where){
   return `${calViewBar(where)}<div class="v1243-cc" role="group" aria-label="Calendars to show">${where==='cx'?'<span class="v1243-cl">Calendars</span>':''}
     ${body}
     ${off?`<button type="button" class="v1243-x" onclick="calAll()">Show all</button>`:''}
-    ${!fam&&GCAL.connected?`<button type="button" class="v1243-x" onclick="gcalAddForm()">＋ Google calendar</button>`:''}
-    ${!fam&&where==='cx'&&gcalCanAdd()?`<button type="button" class="v1243-x" onclick="gcalConnect(true)">＋ Google account</button>`:''}
-    ${dir&&where==='cx'?`<button type="button" class="v1243-x" onclick="calAddForm()">＋ Calendar</button>`:''}
+    ${calAddOpts(where).length?`<button type="button" class="v1243-x cx-add-b v1245-add" aria-haspopup="menu" aria-expanded="false" onclick="calAddMenu(this,'${where}')">＋ Add calendar</button>`:''}
   </div>`;
 }
 /* on the home page: a dot and the calendar's name, for anything not on the team's own calendar */
@@ -24646,6 +24673,36 @@ function calGroupToggle(g){                                           // a group
   const keys=calDefs().filter(c=>g==='portal'?!calIsGoogle(c.key):c.acct===g.slice(2)).map(c=>c.key);
   const off=(((USER_SET[userKey()]||{}).calsOff)||[]).slice(), anyOn=keys.some(k=>!off.includes(k));
   userSetSave({calsOff:anyOn?off.concat(keys.filter(k=>!off.includes(k))):off.filter(k=>!keys.includes(k))}); render();
+}
+/* v12.45: the Google account a calendar chip belongs to, for its hover text */
+function calChipAcct(c){
+  if(!c||!calIsGoogle(c.key)) return '';
+  const A=c.acct!==undefined?gcalAcctList().find(a=>a.id===c.acct):null, em=(A&&A.email)||(c.acct===GCAL.main?GCAL.email:'')||'';
+  return em?(c.gmain?em:'from '+em):'';
+}
+/* v12.45: one Add calendar button: a Google calendar by its ID, another Google account, or a calendar of the team's own */
+function calAddOpts(where){
+  if(state.role==='family') return [];
+  const o=[];
+  if(gcalReady()&&GCAL.connected) o.push({k:'gcal',t:'Add a Google calendar',s:gcalListOn()?'Pick from your Google calendars':'One you own, by its calendar ID',go:'gcalAddForm()'});
+  if(gcalCanAdd()) o.push({k:'gacct',t:'Link another Google account',s:'Its calendar shows next to the others, only to you',go:'gcalConnect(true)'});
+  if(gcalReady()&&!GCAL.connected&&!gcalChecking()) o.push({k:'gconn',t:'Connect Google Calendar',s:'Your Google events next to the team’s, only to you',go:'gcalConnect()'});
+  if(state.role==='director') o.push({k:'portal',t:'Create a portal calendar',s:'The team’s own, like Therapy, a day program or the van',go:'calAddForm()'});
+  return o;
+}
+function calAddMenu(btn,where){
+  const was=btn.getAttribute('aria-expanded')==='true';
+  cxMenuClose(); if(was) return;
+  const opts=calAddOpts(where); if(!opts.length) return;
+  const m=document.createElement('div'); m.id='cxMenu'; m.className='cx-menu'; m.setAttribute('role','menu'); m.setAttribute('aria-label','Add a calendar');
+  m.innerHTML=`<div class="cx-mh">Add a calendar</div>`+opts.map(x=>`<button type="button" role="menuitem" class="cx-mi" data-k="${x.k}" onclick="cxMenuClose();${x.go}"><span><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span></button>`).join('');
+  document.body.appendChild(m);
+  const r=btn.getBoundingClientRect(), w=m.offsetWidth, h=m.offsetHeight;
+  let left=Math.min(r.left,innerWidth-w-8); left=Math.max(8,left);
+  let top=r.bottom+6; if(top+h>innerHeight-8&&r.top-h-6>8) top=r.top-h-6;
+  m.style.left=left+'px'; m.style.top=Math.max(8,top)+'px';
+  btn.setAttribute('aria-expanded','true');
+  const first=m.querySelector('.cx-mi'); if(first) first.focus({preventScroll:true});
 }
 function calViewBar(where){
   if(!GCAL.connected) return '';

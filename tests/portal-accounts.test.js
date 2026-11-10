@@ -246,7 +246,9 @@ const A3 = { id: 'a3333333333333333', email: 'dana@school.test', tok: 'tokC' };
 
   // ======================= 7. connecting another account =======================
   await page.evaluate(() => go('calendar')); await page.waitForTimeout(250);
-  check('Calendar page: + Google account sits with the chips', (await chipBtns(page, '#view .cx-card')).includes('＋ Google account'), JSON.stringify(await chipBtns(page, '#view .cx-card')));
+  await page.click('#view .cx-card .v1245-add'); await page.waitForTimeout(150);
+  const am = await page.evaluate(() => [...document.querySelectorAll('#cxMenu .cx-mi b')].map((x) => x.textContent.trim())); await page.evaluate(() => cxMenuClose());
+  check('Calendar page: + Add calendar offers Link another Google account (v12.45: one button)', am.includes('Link another Google account') && am.includes('Add a Google calendar'), JSON.stringify(am));
   const hdr = await page.evaluate(() => [...document.querySelectorAll('.page-acts button')].map((b) => b.textContent.trim()).join(' | '));
   check('Calendar page: the header says how many Google accounts (it opens them), not Disconnect', /Google ✓ · 2 accounts/.test(hdr) && !/Google ✓ · Disconnect/.test(hdr), hdr);
   const connect = async (acct) => {
