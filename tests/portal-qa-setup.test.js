@@ -325,14 +325,15 @@ const STOP = +(process.env.QA_STOP || 99);                        // development
     check('gear > Display settings > Houses > Add house opens New house', /New house/.test(await modal(page)), await modal(page));
     await page.fill('#gpName', 'Pine House'); await page.locator('#mdFoot button:has-text("Add house")').click(); await settle(page, 500);
     await page.evaluate(() => closeAll()); await settle(page, 200); await page.locator('#view button.gear').first().click(); await settle(page, 300);
-    await page.locator('#modal .set-tab:has-text("Display settings")').click(); await settle(page, 200);
+    await page.locator('#modal .set-tab:has-text("Calendar integrations")').click(); await settle(page, 200);   // v12.46: types moved to the calendar tab
     await page.locator('#modal .seg button:has-text("Appointment types")').click(); await settle(page, 200);
     await btn(page, '#modal', 'New type').click(); await settle(page, 300);
     await page.fill('#gpName', 'Hydrotherapy'); await page.locator('#mdFoot button:has-text("Create type")').click(); await settle(page, 500);
     // calendars: a new calendar (Calendar integrations)
     await page.evaluate(() => closeAll()); await settle(page, 200); await page.locator('#view button.gear').first().click(); await settle(page, 300);
     await page.locator('#modal .set-tab:has-text("Calendar integrations")').click(); await settle(page, 200);
-    await btn(page, '#modal', 'New calendar').click(); await settle(page, 300);
+    await btn(page, '#modal', 'Add calendar').click(); await settle(page, 200);   // v12.46: one Add calendar button
+    await page.locator('#cxMenu .cx-mi:has-text("Create a portal calendar")').click(); await settle(page, 300);
     await page.fill('#gpName', 'Day program'); await page.locator('#mdFoot button:has-text("Create calendar")').click(); await settle(page, 500);
     // task categories (Lists)
     await settings(page);
