@@ -3363,6 +3363,30 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
   .hm-sched .v1243-cc{padding:10px 16px}
   .v1243-c{max-width:calc(100vw - 80px)}
 }
+/* ══ v12.47: Templates subfolders, the drag handle, layout buttons in the header ══ */
+.v1247-sf{border-top:1px solid var(--line)}
+.v1247-sfh{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:9px;width:100%;padding:11px 18px;font-size:13.5px;color:var(--ink)}
+.v1247-sfh:hover{background:var(--surface-2)}
+.v1247-sfh:focus-visible{outline:2px solid var(--gold,#B8963E);outline-offset:-2px}
+.v1247-car{display:inline-block;width:12px;color:var(--muted);transition:transform .15s}
+.v1247-sf.is-open>.v1247-sfh .v1247-car{transform:rotate(90deg)}
+.v1247-fi{display:inline-flex;color:var(--muted)}
+.v1247-sfh b{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v1247-n{margin-left:auto;font-size:11.5px;color:var(--muted);background:var(--surface-2);border-radius:999px;padding:1px 8px;flex:none}
+.v1247-sfb{padding-left:22px;border-top:1px dashed var(--line)}
+.v1247-empty{padding:10px 18px;font-size:12.5px;color:var(--muted)}
+.v1247-addw{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 18px;border-top:1px solid var(--line)}
+.v1247-b{width:38px;font-size:10px;font-weight:700;letter-spacing:.04em}
+.v1247-form{background:#F6EBD3;color:#7E5F17}.v1247-pdf{background:#F8E4E1;color:#9A3426}.v1247-doc{background:#E2EBF7;color:#2B568F}
+.v1247-img{background:#E1F0E7;color:#2B6E47}.v1247-file{background:var(--surface-2);color:var(--muted)}
+.v1247-h{flex:none;width:16px;text-align:center;color:var(--muted);cursor:grab;font-size:16px;margin-right:-4px}
+[data-trow][draggable="true"]{cursor:grab}
+.v1247-drag{opacity:.45}
+.v1247-over{outline:2px dashed var(--gold,#B8963E);outline-offset:-3px;background:rgba(184,150,62,.07)}
+.v1247-tsub{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%}
+.v1247-tsub select{font:11.5px system-ui,sans-serif;height:24px;border:1px solid var(--line);border-radius:6px;background:#fff;max-width:200px;min-width:0}
+.tpe-dest{flex-wrap:wrap;row-gap:6px}.tpe-dest select{max-width:100%;min-width:0}.v1247-ft{white-space:nowrap}
+@media(max-width:700px){ .v1247-sfh{padding:12px 14px} .v1247-sfb{padding-left:10px} .v1247-addw{padding:10px 14px} }
 /* ══ v12.46: the calendar settings tab ══ */
 .v1246-seg{width:fit-content;max-width:100%}
 .v1246-addw{margin:10px 0 2px}
@@ -7281,7 +7305,7 @@ function rowListsIn(v){
   return out;
 }
 /* v12.22: lists with an order of their own, shared by the agency (binders, templates) */
-function rowOwnOrder(box){ return !!box.querySelector(':scope > [data-binder-row], :scope > .tpl-line, :scope > .tab-row'); }
+function rowOwnOrder(box){ return !!box.querySelector(':scope > [data-binder-row], :scope > .tpl-line, :scope > .tab-row, :scope > [data-trow], :scope > .v1247-sf'); }   // v12.47: Templates rows move between binders and subfolders
 function rowOrderApply(){
   const v=el('view'); if(!v) return;
   const all=rowOrders();
@@ -7626,10 +7650,12 @@ function layReset(){
    mode now — the cog turns on dragging, renaming and the layout handles together. */
 function docEditSync(){ state.docEdit = !!state.layoutEdit && state.role==='director' && (state.view==='forms'||state.view==='templates'); }
 function pageEdit(on){
+  const was=!!state.layoutEdit;
   state.layoutEdit=on===undefined?!state.layoutEdit:!!on;
   docEditSync();
   render();
   if(state.layoutEdit) toast('Editing this page — drag ⠿ to reorder, ✎ renames, ✕ hides, ＋ adds a section. Done when you are happy.');
+  else if(was) toast('Saved to your account — this layout follows your login on every device.');   // v12.47: what the floating Done said
 }
 function editBtn(sz){
   if(state.role!=='director') return '';
@@ -7815,9 +7841,26 @@ function calLookPreview(){
               [clientColor(c&&c.id),'By client']];
   return bits.map(([hex,l])=>`<span class="tl-bar" style="position:static;transform:none;height:28px;${barPaint(hex)}">${esc(l)}</span>`).join('');
 }
+/* v12.47: while a page is being edited, Done editing and Reset layout sit in its header (the floating pair went:
+   staff edit their pages too, so the header gets Done editing for them where a page shows it to directors only) */
+function layHeadBtns(page){
+  const v=el('view'); if(!v) return;
+  v.querySelectorAll('[data-layhd]').forEach(n=>n.remove());
+  if(!state.layoutEdit||!page) return;
+  const hd=v.querySelector('.page-hd,.page-h'); if(!hd) return;
+  let acts=[...hd.children].find(n=>n.classList.contains('page-acts')||n.classList.contains('right'));
+  if(!acts){ acts=document.createElement('div'); acts.className=hd.classList.contains('page-hd')?'page-acts':'right'; acts.setAttribute('data-layhd',''); hd.appendChild(acts); }
+  let done=[...acts.querySelectorAll('button')].find(b=>/Done editing/.test(b.textContent));
+  if(!done){ done=document.createElement('button'); done.type='button'; done.className='btn gold sm'; done.setAttribute('data-layhd',''); done.dataset.keep='1';
+    done.textContent='✓ Done editing'; done.onclick=()=>pageEdit(false); acts.insertBefore(done,acts.firstChild); }
+  const r=document.createElement('button'); r.type='button'; r.className='btn ghost sm'; r.setAttribute('data-layhd',''); r.dataset.keep='1';
+  r.textContent='↺ Reset layout'; r.title='Put this page back the way it came'; r.onclick=()=>layReset(); done.after(r);
+}
 function layoutFab(page){
   let f=el('layFab'), f2=el('layFab2');
   if(!page||!el('app').classList.contains('on')){ if(f) f.remove(); if(f2) f2.remove(); state.layoutEdit=false; return; }
+  layHeadBtns(page);
+  if(state.layoutEdit){ if(f) f.remove(); if(f2) f2.remove(); addSectionTiles(page); return; }   // v12.47: the header has Done editing and Reset layout
   if(!f){ f=document.createElement('button'); f.id='layFab'; document.body.appendChild(f); }
   if(!state.layoutEdit&&(page==='home'||page==='clients'||page==='client'||page==='team')){ if(f) f.remove(); if(f2) f2.remove(); return; }   // these pages use their settings button
   f.className='btn '+(state.layoutEdit?'gold':'ghost')+' sm';
@@ -12692,6 +12735,156 @@ function deleteFiled(folderKey,idx){
   },'Remove');
 }
 
+/* ══ v12.47: Templates in subfolders (each binder's own tabs), Move to and drag, a file-type badge on every row ══
+   A template's place is its own dest and sub (where its signed copies file). A library form (a built-in ACRC
+   form, a PDF the team added, an uploaded fill-in document) keeps its home binder; the team's move is TPL_PLACE. */
+let TPL_PLACE={};                                                     // library form -> {b, sub}, for the team
+function tplPlaceSave(){ sbUpsert('np_demo_program',{key:'tplplace',value:{map:TPL_PLACE},updated_by:auditActor()}); }
+function tplRowKey(fl){ return fl.dbId?'lib:'+fl.dbId:(fl.docId&&!fl.orig&&USER_DOCS[fl.docId])?'doc:'+fl.docId:'libs:'+(fl.orig||fl.n); }
+function tplPlaceOf(fl){ const p=TPL_PLACE[tplRowKey(fl)]; return p&&p.b&&binderKeys().includes(p.b)?{b:p.b,sub:p.sub||''}:{b:fl._home,sub:fl._sub||''}; }
+function tplLibFind(key){ return binderKeys().flatMap(k=>binderBlankFormsRaw(k)).find(fl=>tplRowKey(fl)===key); }
+function tplRowPlace(rk){
+  const i=rk.indexOf(':'), kind=rk.slice(0,i), key=rk.slice(i+1);
+  if(kind==='t'){ const t=tplById(key); if(!t) return {b:'',sub:''}; const nb=normBinder(t.dest||'',t.sub||''); return {b:nb.b,sub:nb.sb||''}; }
+  const fl=tplLibFind(key); return fl?tplPlaceOf(fl):{b:'',sub:''};
+}
+let TPL_SF_OPEN=(()=>{ try{ return new Set(JSON.parse(lsGet('np_tplsf')||'[]')); }catch(e){ return new Set(); } })();   // the subfolders this device has open
+function tplSfKeep(){ try{ lsSet('np_tplsf',JSON.stringify([...TPL_SF_OPEN])); }catch(e){} }
+function tplSfToggle(id){ if(TPL_SF_OPEN.has(id)) TPL_SF_OPEN.delete(id); else TPL_SF_OPEN.add(id); tplSfKeep(); render(); }
+const tplDirEdit=()=>!!state.docEdit&&state.role==='director';
+function tplDragAttr(rk){ return tplDirEdit()?` draggable="true" data-trow="${esc(rk)}"`:''; }
+function tplHandle(){ return tplDirEdit()?'<span class="v1247-h" aria-hidden="true" title="Drag to another binder or subfolder">\u283f</span>':''; }
+function tplTypeBadge(x){                                             // one badge size, a colour per kind of file
+  x=String(x||'FILE').toUpperCase(); if(x==='JPEG') x='JPG';
+  const k=x==='FORM'?'form':x==='PDF'?'pdf':/^(DOCX?|RTF|ODT)$/.test(x)?'doc':/^(JPG|PNG|HEIC|GIF|WEBP)$/.test(x)?'img':'file';
+  const say={form:'A form you fill in on screen',pdf:'A PDF file to open or print',doc:'A Word file to open or print',img:'A picture',file:'A file'}[k];
+  return `<span class="row-ic v1247-b v1247-${k}" title="${say}" aria-label="${say}">${esc(x.slice(0,4))}</span>`;
+}
+function tplFormBadge(){ return tplTypeBadge('FORM'); }
+function tplBadge(t){                                                 // what the template is: a form built here, or the file it was made from
+  if(!ovIs(t)) return tplFormBadge();
+  const x=fileExt(t.overlay.file||'')||(/img|photo|scan/i.test(String(t.overlay.kind||''))?'JPG':'PDF');
+  return tplTypeBadge(x);
+}
+function tplCardRows(bk,list,blanks){
+  return list.map(t=>{ const nb=normBinder(t.dest||'',t.sub||''); return {k:'t:'+t.id, sub:bk?(nb.sb||''):'', html:tplLineHtml(t)}; })
+    .concat(blanks.map(fl=>({k:'l:'+tplRowKey(fl), sub:bk?tplPlaceOf(fl).sub:'', html:libRowHtml(fl,bk)})));
+}
+function tplSubsShown(bk,rows){
+  const named=[...new Set(rows.map(r=>r.sub).filter(Boolean))], tabs=bk?subsOf(bk):[];
+  return tabs.filter(x=>named.includes(x)||tplDirEdit()).concat(named.filter(x=>!tabs.includes(x)));
+}
+function tplCardNote(bk,list,blanks){
+  if(!bk) return 'blank forms and fillable templates';
+  const n=new Set(tplCardRows(bk,list,blanks).map(r=>r.sub).filter(Boolean)).size;
+  return n?n+' subfolder'+(n===1?'':'s'):'blank forms and fillable templates';
+}
+function tplCardBody(bk,list,blanks){
+  const rows=tplCardRows(bk,list,blanks), top=rows.filter(r=>!r.sub), ed=tplDirEdit();
+  const sf=sub=>{ const id=bk+'::'+sub, rs=rows.filter(r=>r.sub===sub), open=TPL_SF_OPEN.has(id);
+    return `<div class="v1247-sf${open?' is-open':''}" data-tsf="${esc(id)}">
+      <button type="button" class="v1247-sfh" aria-expanded="${open}" onclick="tplSfToggle(this.parentNode.dataset.tsf)">
+        <span class="v1247-car" aria-hidden="true">\u25b8</span><span class="v1247-fi" aria-hidden="true">${ico('folder',15)}</span><b>${esc(sub)}</b><span class="v1247-n">${rs.length}</span></button>
+      ${open?`<div class="v1247-sfb">${rs.map(r=>r.html).join('')||`<div class="v1247-empty">Nothing in this subfolder yet.${ed?' Drag a form here.':''}</div>`}</div>`:''}
+    </div>`; };
+  return top.map(r=>r.html).join('')+(bk?tplSubsShown(bk,rows).map(sf).join(''):'')
+    +(bk&&ed?`<div class="v1247-addw"><button type="button" class="btn ghost sm" onclick="tplSfAdd('${bk}')">\uff0b Subfolder</button>
+      <span class="tiny muted">A subfolder is a tab in the ${esc(FOLDER_NAMES[bk]||bk)}: signed copies of the forms in it file there too.</span></div>`:'');
+}
+function tplLineHtml(t){
+        const asg=(TPL_ASSIGN[t.id]||[]), open=state.openTpl===t.id;
+        const lk=Object.keys(PROTOCOLS).filter(pk=>PROTOCOLS[pk]&&PROTOCOLS[pk].tpl===t.id);
+        const dirT=state.role==='director';
+        return `<div class="lrow tpl-line" data-tid="${esc(t.id)}"${tplDragAttr('t:'+t.id)} ${state.docEdit?'':`onclick="${fx(()=>dirT?openTplEditor(t.id):tplOpenDoc(t.id))}"`} title="${dirT?'Open this template':'Fill it in'}">
+          ${tplHandle()}${tplBadge(t)}
+          <span class="row-copy"><strong>${dirT?rnName(t.name,nv=>tplRenameTo(t.id,nv),'tpl:'+t.id):esc(t.name)}</strong>
+            <span>${ovIs(t)?'<span class="ov-tag">Original form</span> ':''}${t.fields.length} ${ovIs(t)?'boxes':'fields'} \u00b7 files to ${esc(FOLDER_NAMES[normBinder(t.dest||'Agency').b]||'Agency binder')}${t.sub?' / '+esc(t.sub):''}${asg.length?` \u00b7 assigned to ${asg.map(id=>(staff(id)||{}).init||'').join(', ')}`:''}${lk.length?` \u00b7 \u26a0 ${lk.map(esc).join(', ')} report form`:''}</span></span>
+          ${rmBtn([{l:'Fill it in',ic:'\u270d',fn:()=>tplOpenDoc(t.id)},
+            dirT&&{l:'Open the template',ic:'\u2197',fn:()=>openTplEditor(t.id)},
+            dirT&&{l:'Rename',ic:'\u270e',fn:()=>rnStartKey('tpl:'+t.id)},
+            dirT&&{l:'Move to\u2026',ic:'\u21c4',fn:()=>tplMoveForm('t',t.id)},
+            dirT&&{l:'Assign to staff',ic:'\u263a',fn:()=>tplAssign(t.id)},
+            {l:'Print blank',ic:'\u2399',fn:()=>{ logAudit('Printed template',t.name); docAct('printed',t.name,'Templates'); printSheet(tplPrintHtml(t.id)); }},
+            dirT&&'-',dirT&&{l:'Delete template',ic:'\u2715',danger:true,fn:()=>delTemplate(t.id)}],'Template actions')}</div>`;
+        }
+function tplSfAdd(bk){
+  const n=prompt('Name the new subfolder in '+(FOLDER_NAMES[bk]||bk)+':');
+  if(!n||!n.trim()) return;
+  const r=tabMake(bk,n.trim()); if(!r) return;
+  TPL_SF_OPEN.add(bk+'::'+r.label); tplSfKeep(); render(); toast(r.msg);
+}
+/* Move to...: the binder and its subfolder (a template's signed copies follow it) */
+function tplMoveForm(kind,key){
+  let name='', cur;
+  if(kind==='t'){ const t=tplById(key); if(!t) return; name=t.name; cur=tplRowPlace('t:'+key); }
+  else { const fl=tplLibFind(key); if(!fl) return; name=fl.n; cur=tplPlaceOf(fl); }
+  const keys=binderKeys(), first=keys.includes(cur.b)?cur.b:keys[0];
+  window._tplMv={kind,key};
+  openModal('Move to\u2026',`
+    <div class="tiny muted" style="margin-bottom:10px"><b>${esc(name)}</b>${kind==='t'?' \u00b7 its signed copies will file where you move it':''}</div>
+    <div class="row2">
+      <div class="field"><label for="fpBinder">Binder</label>
+        <select class="inp" id="fpBinder" data-list="binder" onchange="if(this.value==='__add__')return fillSelectChange(this);fpSubs()">
+          ${keys.map(k=>`<option value="${k}" ${k===first?'selected':''}>${esc(FOLDER_NAMES[k]||k)}</option>`).join('')}
+          <option value="__add__">\uff0b New binder\u2026</option></select></div>
+      <div class="field"><label for="fpSub">Subfolder</label><span id="fpSubWrap">${fpSubSelect(first,cur.sub)}</span></div>
+    </div>`,
+    `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" onclick="tplMoveGo()">Move</button>`);
+}
+function tplMoveGo(){
+  const m=window._tplMv; if(!m) return;
+  const b=el('fpBinder').value, sub=el('fpSub').value;
+  if(b==='__add__'||sub==='__add__') return toast('Finish naming the new binder or subfolder first, or pick one from the list.');
+  closeAll(); tplMoveTo(m.kind+':'+m.key,b,sub);
+}
+function tplMoveTo(rk,b,sub){
+  const i=rk.indexOf(':'), kind=rk.slice(0,i), key=rk.slice(i+1); sub=sub||'';
+  let name='';
+  if(kind==='t'){
+    const t=tplById(key); if(!t) return; const p=tplRowPlace(rk); if(p.b===b&&p.sub===sub) return;
+    t.dest=b; t.sub=sub; name=t.name;
+    sbUpsert('np_demo_templates',{id:t.id,name:t.name,fields:t.fields,dest:t.dest||null,sub:t.sub||null,descr:t.desc||null,updated_at:new Date().toISOString()});
+  } else {
+    if(!binderKeys().includes(b)) return toast('A form from the library stays in one of the binders.');
+    const fl=tplLibFind(key); if(!fl) return; const p=tplPlaceOf(fl); if(p.b===b&&p.sub===sub) return;
+    if(b===fl._home&&sub===(fl._sub||'')) delete TPL_PLACE[key]; else TPL_PLACE[key]={b,sub};
+    tplPlaceSave(); name=fl.n;
+  }
+  if(sub){ TPL_SF_OPEN.add(b+'::'+sub); tplSfKeep(); }                  // open where it went, so it can be seen there
+  const where=(FOLDER_NAMES[b]||b)+(sub?' / '+sub:'');
+  logAudit('Moved template',name+' \u2192 '+where);
+  render(); toast('Moved to '+where+'.');
+}
+/* in edit mode: drag a row onto another row, a subfolder or a binder's heading */
+let TPL_DRAG=null;
+const tplDropAt=n=>n&&n.closest?(n.closest('[data-trow]')||n.closest('[data-tsf]')||n.closest('[data-tbk]')):null;
+document.addEventListener('dragstart',e=>{ const r=e.target.closest&&e.target.closest('[data-trow]'); if(!r||!tplDirEdit()) return;
+  TPL_DRAG=r.getAttribute('data-trow'); r.classList.add('v1247-drag'); try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',TPL_DRAG); }catch(x){} });
+document.addEventListener('dragend',()=>{ TPL_DRAG=null; document.querySelectorAll('.v1247-drag,.v1247-over').forEach(n=>n.classList.remove('v1247-drag','v1247-over')); });
+document.addEventListener('dragover',e=>{ if(!TPL_DRAG) return; const d=tplDropAt(e.target); if(!d) return; e.preventDefault();
+  document.querySelectorAll('.v1247-over').forEach(n=>{ if(n!==d) n.classList.remove('v1247-over'); }); d.classList.add('v1247-over'); });
+document.addEventListener('drop',e=>{
+  if(!TPL_DRAG) return; const d=tplDropAt(e.target); if(!d) return; e.preventDefault();
+  const from=TPL_DRAG; TPL_DRAG=null; document.querySelectorAll('.v1247-drag,.v1247-over').forEach(n=>n.classList.remove('v1247-drag','v1247-over'));
+  let b, sub, onto=null;
+  if(d.dataset.trow){ onto=d.dataset.trow; ({b,sub}=tplRowPlace(onto)); }
+  else if(d.dataset.tsf){ const i=d.dataset.tsf.indexOf('::'); b=d.dataset.tsf.slice(0,i); sub=d.dataset.tsf.slice(i+2); }
+  else { b=d.dataset.tbk; sub=''; }
+  if(!b||onto===from) return;
+  const p=tplRowPlace(from);
+  if(onto&&from.startsWith('t:')&&onto.startsWith('t:')&&p.b===b&&p.sub===sub){   // two templates in one place: reorder, as before
+    const fi=TEMPLATES5.findIndex(t=>'t:'+t.id===from), ti=TEMPLATES5.findIndex(t=>'t:'+t.id===onto); if(fi<0||ti<0) return;
+    TEMPLATES5.splice(ti,0,TEMPLATES5.splice(fi,1)[0]);
+    sbUpsert('np_demo_program',{key:'tplorder',value:{ids:TEMPLATES5.map(t=>t.id)},updated_by:auditActor()});
+    logAudit('Reordered templates',''); render(); return;
+  }
+  tplMoveTo(from,b,sub);
+});
+/* the editors: a subfolder next to the binder */
+function tplSubOpts(b,cur){
+  const subs=binderKeys().includes(b)?subsOf(b):[];
+  return `<option value="">\u2014 none \u2014</option>${subs.map(x=>`<option ${x===cur?'selected':''}>${esc(x)}</option>`).join('')}${cur&&!subs.includes(cur)?`<option selected>${esc(cur)}</option>`:''}`;
+}
 /* ══════════════ v6.6: TEMPLATES SECTION + STAFF FOLDER ══════════════ */
 function viewForms(){
   return `
@@ -12714,28 +12907,14 @@ function viewForms(){
        and because this heading is a binder name the change is shared with the team rather
        than kept to one login. */
     return `<section class="card" ${bk?`data-binder="${bk}"`:''}>
-    <div class="sec-head ${bk==='Agency'?'soft-sage':bk==='Medical'?'soft-blue':bk==='Daily'?'soft-honey':'soft-lilac'}">
+    <div ${bk&&state.docEdit?`data-tbk="${bk}"`:''} class="sec-head ${bk==='Agency'?'soft-sage':bk==='Medical'?'soft-blue':bk==='Daily'?'soft-honey':'soft-lilac'}">
       <h2>${esc(title)}</h2><span class="hd-n ${bk==='Medical'?'blue':bk==='Daily'?'honey':'sage'}">${list.length+blanks.length}</span>
-      <p>${subs.length?esc(subs.join(', ')):'blank forms and fillable templates'}</p>
+      <p>${tplCardNote(bk,list,blanks)}</p>
       ${state.role==='director'&&bk?`<button class="btn ghost sm head-act" onclick="ovUploadStart('${bk}')" title="AI reads the form and puts the fill-in boxes on top">${aiIc(14)} Upload a form</button>`:''}
     </div>
     <div class="card-b flush">
-      ${list.map(t=>{
-        const asg=(TPL_ASSIGN[t.id]||[]), open=state.openTpl===t.id;
-        const lk=Object.keys(PROTOCOLS).filter(pk=>PROTOCOLS[pk]&&PROTOCOLS[pk].tpl===t.id);
-        const dirT=state.role==='director';
-        return `<div class="lrow tpl-line" data-tid="${esc(t.id)}" ${state.docEdit?`draggable="true" data-tpl="${t.id}"`:''} ${state.docEdit?'':`onclick="${fx(()=>dirT?openTplEditor(t.id):tplOpenDoc(t.id))}"`} title="${dirT?'Open this template':'Fill it in'}">
-          <span class="row-ic honey">${state.docEdit?'\u283f':'\u274f'}</span>
-          <span class="row-copy"><strong>${dirT?rnName(t.name,nv=>tplRenameTo(t.id,nv),'tpl:'+t.id):esc(t.name)}</strong>
-            <span>${ovIs(t)?'<span class="ov-tag">Original form</span> ':''}${t.fields.length} ${ovIs(t)?'boxes':'fields'} \u00b7 files to ${esc(FOLDER_NAMES[normBinder(t.dest||'Agency').b]||'Agency binder')}${t.sub?' / '+esc(t.sub):''}${asg.length?` \u00b7 assigned to ${asg.map(id=>(staff(id)||{}).init||'').join(', ')}`:''}${lk.length?` \u00b7 \u26a0 ${lk.map(esc).join(', ')} report form`:''}</span></span>
-          ${rmBtn([{l:'Fill it in',ic:'\u270d',fn:()=>tplOpenDoc(t.id)},
-            dirT&&{l:'Open the template',ic:'\u2197',fn:()=>openTplEditor(t.id)},
-            dirT&&{l:'Rename',ic:'\u270e',fn:()=>rnStartKey('tpl:'+t.id)},
-            dirT&&{l:'Assign to staff',ic:'\u263a',fn:()=>tplAssign(t.id)},
-            {l:'Print blank',ic:'\u2399',fn:()=>{ logAudit('Printed template',t.name); docAct('printed',t.name,'Templates'); printSheet(tplPrintHtml(t.id)); }},
-            dirT&&'-',dirT&&{l:'Delete template',ic:'\u2715',danger:true,fn:()=>delTemplate(t.id)}],'Template actions')}</div>`;
-      }).join('')}
-      ${blanks.map(fl=>libRowHtml(fl,bk)).join('')}
+      ${tplCardBody(bk,list,blanks)}
+
     </div>
   </section>`; }).join('')}
   ${protoCard()}
@@ -14727,15 +14906,17 @@ function binderFiles(key){
   // v9.41: blank fillable forms live on the Templates page now — binders keep completed paperwork
   return { forms:[], resources:[...libs.flatMap(L=>(L.res||[]).map(x=>libRow(x[0],x[1]))), ...ud.res, ...userLibs.flatMap(U=>U.res||[]), ...(stock[key]||[]), ...fromDocs].filter(libVisible(key)) };
 }
-function binderBlankForms(key){
+function binderBlankFormsRaw(key){                                     // v12.47: the forms whose home is this binder, each with its home tab
   const legacyKeys=Object.keys(LEGACY_BINDERS).filter(k=>LEGACY_BINDERS[k].b===key);
-  const libs=[DOC_LIBRARY[key],...legacyKeys.map(k=>DOC_LIBRARY[k])].filter(Boolean);
-  const userLibs=[USER_LIB[key],...legacyKeys.map(k=>USER_LIB[k])].filter(Boolean);
-  const ud=[];
+  const src=[[key,''],...legacyKeys.map(k=>[k,LEGACY_BINDERS[k].sb||''])];
+  const stock=[], ud=[], mine=[];
+  src.forEach(([k,sb])=>{ const L=DOC_LIBRARY[k]; if(L) (L.forms||[]).forEach(x=>stock.push(Object.assign(libRow(x[0],x[1]),{_sub:sb}))); });
   for(const id in USER_DOCS){ const d=USER_DOCS[id]; if(String(id).startsWith('tpl-')) continue;   // v12.38.2: filling in a template is not a second form in Templates
-    if(normBinder(d.key).b===key&&d.sec!=='res') ud.push({n:d.name, docId:id, editable:true, url:d.url||'', desc:'Uploaded · editable in‑app', sub:''}); }
-  return [...libs.flatMap(L=>(L.forms||[]).map(x=>libRow(x[0],x[1]))), ...ud, ...userLibs.flatMap(U=>U.forms||[])].filter(libVisible(key));
+    if(normBinder(d.key).b===key&&d.sec!=='res') ud.push({n:d.name, docId:id, editable:true, url:d.url||'', desc:'Uploaded', sub:'', _sub:normBinder(d.key).sb||''}); }
+  src.forEach(([k,sb])=>{ const U=USER_LIB[k]; if(U) (U.forms||[]).forEach(r=>mine.push(Object.assign({},r,{_sub:sb}))); });
+  return [...stock, ...ud, ...mine].filter(libVisible(key)).map(fl=>Object.assign(fl,{_home:key}));
 }
+function binderBlankForms(key){ return binderKeys().flatMap(k=>binderBlankFormsRaw(k)).filter(fl=>tplPlaceOf(fl).b===key); }   // v12.47
 let COMPLETED={};
 const DOC_LIBRARY={
  Safety:{forms:[
@@ -15191,29 +15372,31 @@ function libRowHtml(fl,key){
     const lk=fl.dbId?'lib:'+fl.dbId:(fl.orig?'libs:'+fl.orig:'');
     const openL=()=>{ if(fl.url) openStored('',fl.url,fl.n); else toast('There is no file attached to '+fl.n+'.'); };   // v12.19: signed link
     const canRn=dirL&&!!lk;
-    return `<div class="lrow" onclick="${fx(openL)}">
-      ${extIc(ico)}
+    return `<div class="lrow"${tplDragAttr('l:'+tplRowKey(fl))} onclick="${fx(openL)}">
+      ${tplHandle()}${tplTypeBadge(ico==='◫'?'FILE':ico)}
       <span class="row-copy"><strong>${canRn?rnName(fl.n,nv=>fl.dbId?libRenameTo(fl.dbId,nv):libRenameStockTo(fl.orig,nv),lk):esc(fl.n)}</strong><span>${esc(fl.sub||'')}</span></span>
       ${dirL?rmBtn([{l:'Open',ic:'\u2197',fn:openL},canRn&&{l:'Rename',ic:'\u270e',fn:()=>rnStartKey(lk)},
-        '-',{l:'Delete',ic:'\u2715',danger:true,fn:()=>libDelete(key,fl)}],'Document actions'):'<span class="go-sq">\u203a</span>'}</div>`;
+        fl._home&&{l:'Move to\u2026',ic:'\u21c4',fn:()=>tplMoveForm('l',tplRowKey(fl))},
+        '-',{l:'Delete',ic:'\u2715',danger:true,fn:()=>libDelete(fl._home||key,fl)}],'Document actions'):'<span class="go-sq">\u203a</span>'}</div>`;
   }
   const sg=DOC_SIGS[fl.n];
   const isUser=!!USER_DOCS[fl.docId];
   const meta=(EXAMPLE_VALUES[fl.docId]&&EXAMPLE_VALUES[fl.docId]._meta)?EXAMPLE_VALUES[fl.docId]._meta:null;
-  const tag=` · <span style="color:#a9822f;font-weight:700">${isUser?'Uploaded · editable in‑app':'Editable in‑app'}</span>`;
+  const tag=isUser&&!fl.desc?' · Uploaded':'';   // v12.47: no "Editable in-app"; the FORM badge says it is filled in on screen
   const edited=meta?` · Edited by ${esc(meta.by)} · ${esc(meta.at)}`:'';
   const signed=sg?` · <span style="color:#2e7d32;font-weight:700">✓ Signed — ${esc(sg.by)} · ${esc(sg.at)}</span>`:'';
   const dirE=state.role==='director';
   const lk=fl.orig?'libs:'+fl.orig:'';
-  return `<div class="lrow" onclick="${fx(()=>sg?printSheet(docFilledHtml(fl.docId)):openDocEditor(fl.docId))}">
-    <span class="row-ic honey">\u274f</span>
+  return `<div class="lrow"${tplDragAttr('l:'+tplRowKey(fl))} onclick="${fx(()=>sg?printSheet(docFilledHtml(fl.docId)):openDocEditor(fl.docId))}">
+    ${tplHandle()}${tplFormBadge()}
     <span class="row-copy"><strong>${dirE&&lk?rnName(fl.n,nv=>libRenameStockTo(fl.orig,nv),lk):esc(fl.n)}</strong><span>${esc(fl.desc||fl.sub||'')}${tag}${edited}${signed}</span></span>
     ${rmBtn([!sg&&{l:'Fill it in',ic:'\u270d',fn:()=>openDocEditor(fl.docId)},
       !sg&&state.role!=='family'&&{l:'Sign',ic:'\u270d',fn:()=>signDoc(key,fl.n)},
       {l:'Print',ic:'\u2399',fn:()=>printSheet(docFilledHtml(fl.docId))},
       fl.url&&{l:'Open the original',ic:'\u2197',fn:()=>openStored('',fl.url,fl.n)},
       dirE&&lk&&{l:'Rename',ic:'\u270e',fn:()=>rnStartKey(lk)},
-      dirE&&'-',dirE&&{l:'Delete',ic:'\u2715',danger:true,fn:()=>libDelete(key,fl)}],'Document actions')}</div>`;
+      dirE&&fl._home&&{l:'Move to\u2026',ic:'\u21c4',fn:()=>tplMoveForm('l',tplRowKey(fl))},
+      dirE&&'-',dirE&&{l:'Delete',ic:'\u2715',danger:true,fn:()=>libDelete(fl._home||key,fl)}],'Document actions')}</div>`;
 }
 function docFieldInput(fd,i,v){
   const val=v==null?(fd.def||''):v;
@@ -16076,7 +16259,7 @@ function libUpload(key,sec){
     <div class="tiny muted" id="libWhere" style="margin:-4px 0 10px"></div>
     <div class="sec-note"><span>🔒</span><div><b>No client data in filenames</b>Use client IDs only (e.g. 4023180) — never names or dates of birth in the file or its title.</div></div>
     <label class="checkrow" id="libEditWrap" style="border-color:var(--line);cursor:pointer">
-      <input type="checkbox" id="libEditable" style="width:16px;height:16px" onchange="el('libEditRow').style.display=this.checked?'block':'none'"><div class="ct"><b>Make this editable in‑app</b><div class="tiny muted">Read the form’s fields so staff can fill it in and sign it here — not just open a static file.</div></div></label>
+      <input type="checkbox" id="libEditable" style="width:16px;height:16px" onchange="el('libEditRow').style.display=this.checked?'block':'none'"><div class="ct"><b>Make it a form to fill in on screen</b><div class="tiny muted">Read the form’s fields so staff can fill it in and sign it here — not just open a static file.</div></div></label>
     <div id="libEditRow" style="display:none" class="tiny muted">Fillable PDF forms are read field-by-field. Scanned or flat PDFs and Word (.doc / .docx) files are read from their labels. Other file types start with a few fields you can adjust. The original file stays attached under “Original”.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" id="libGo" onclick="libSaveUpload()">Upload</button>`);
   libSecShow();
@@ -16659,13 +16842,13 @@ function tpeDraw(){
           oninput="tpeNameSet(this.textContent.trim(),'title')">${esc(t.name||'')}</span></h2>
         <div class="tpe-sub"><span class="tpe-ce" contenteditable="true" spellcheck="false" data-ph="A line under the title"
           oninput="tpeT().subtitle=this.textContent.trim()">${esc(t.subtitle!=null?t.subtitle:'Spectrum Care \u00b7 blank form \u00b7 clients identified by client ID only')}</span></div>
-        <div class="tpe-dest">Files to
-          <select data-list="binder" onchange="if(this.value==='__add__')return fillSelectChange(this);tpeT()['${isDoc?'key':'dest'}']=this.value">
+        <div class="tpe-dest"><span class="v1247-ft">Files to</span>
+          <select data-list="binder" onchange="if(this.value==='__add__')return fillSelectChange(this);tpeT()['${isDoc?'key':'dest'}']=this.value;${isDoc?'':`tpeT().sub='';{const q=el('tpeSub');if(q)q.innerHTML=tplSubOpts(this.value,'');}`}">
             ${binderKeys().map(k=>`<option value="${k}" ${k===destKey?'selected':''}>${esc(FOLDER_NAMES[k]||k)}</option>`).join('')}
             ${isDoc?'':`<option value="__client__" ${destKey==='__client__'?'selected':''}>A client\u2019s file</option>
             <option value="__staff__" ${destKey==='__staff__'?'selected':''}>A staff member\u2019s file</option>`}
             ${addOpt('binder')}
-          </select></div>
+          </select>${isDoc?'':` <span class="v1247-tsub">/ <select id="tpeSub" aria-label="Subfolder" onchange="tpeT().sub=this.value">${tplSubOpts(destKey,t.sub||'')}</select></span>`}</div>
         <div id="tpeBlocks">${t.fields.length?t.fields.map((fd,i)=>tpeSlot(i)+tpeBlock(fd,i,t)+(tpeIsRow(t.fields[i])&&!tpeIsRow(t.fields[i+1])?tpeRowBar(i):'')).join('')+tpeSlot(t.fields.length)
           :tpeSlot(0)+'<div class="empty">Add the first block from the bar at the top.</div>'}</div>
         <div class="tpe-foot"><span class="tpe-ce" contenteditable="true" spellcheck="false" data-ph="A note printed at the bottom of the page (optional)"
@@ -17948,11 +18131,13 @@ function ovDraw(){
           <div class="field" style="flex:1;min-width:200px;margin:0"><label>Template name</label>
             <input class="inp" id="ovTplName" value="${esc(t.name||'')}" placeholder="Name this form" onfocus="ovSnap()" oninput="ovT().name=this.value"></div>
           <div class="field" style="min-width:180px;margin:0"><label>Keep it in Templates</label>
-            <select class="inp" data-list="binder" onchange="if(this.value==='__add__')return fillSelectChange(this);ovSnap();ovT().dest=this.value;ovDestNote(this.value,'ovEdDestSay')">
+            <select class="inp" data-list="binder" onchange="if(this.value==='__add__')return fillSelectChange(this);ovSnap();ovT().dest=this.value;ovT().sub='';{const q=el('ovEdSub');if(q)q.innerHTML=tplSubOpts(this.value,'');}ovDestNote(this.value,'ovEdDestSay')">
               ${binderKeys().map(k=>`<option value="${k}" ${k===(t.dest||'Agency')?'selected':''}>${esc(ovTplSection(k))}</option>`).join('')}
               <option value="__client__" ${t.dest==='__client__'?'selected':''}>Other templates, for a client’s file</option>
               <option value="__staff__" ${t.dest==='__staff__'?'selected':''}>Other templates, for a staff member’s file</option>${addOpt('binder')}</select>
           </div>
+          <div class="field" style="min-width:160px;margin:0"><label for="ovEdSub">Subfolder</label>
+            <select class="inp" id="ovEdSub" onchange="ovSnap();ovT().sub=this.value">${tplSubOpts(t.dest||'Agency',t.sub||'')}</select></div>
           <div class="tiny muted ov-dest-note ov-ed-note" id="ovEdDestSay">${ovDestSays(t.dest||'Agency')}</div>
         </div>
         ${ovPagesHtml(o,pi=>ovLayerEd(t,pi),'ov-edit'+(OV.place?' placing':'')+(OV.preview?' trying':''))}
@@ -20579,7 +20764,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.46 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.47 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -23538,6 +23723,7 @@ async function sbHydrate(){
       if(r.key==='users'&&r.value&&r.value.map){ USERS=r.value.map; }
       if(r.key==='contractors'&&r.value&&Array.isArray(r.value.list)){ CONTRACTORS=r.value.list; }
       if(r.key==='clientcolors'&&r.value&&r.value.map){ CLIENT_COLORS=r.value.map; }   // v12.46
+      if(r.key==='tplplace'&&r.value&&r.value.map){ TPL_PLACE=r.value.map; }   // v12.47
       if(r.key==='calaccess'&&r.value&&r.value.map){ CAL_ACCESS=r.value.map; }
       if(r.key==='homecolors'&&r.value&&r.value.map){ HOME_COLORS=r.value.map; }
       if(r.key==='homeicons'&&r.value&&r.value.map){ HOME_ICONS=r.value.map; }

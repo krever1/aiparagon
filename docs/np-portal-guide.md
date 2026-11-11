@@ -258,19 +258,23 @@ Buttons:
 
 - **New binder**.
 - **Upload document**: File, Title, Binder, Subfolder. The Subfolder choice decides what it becomes:
-  - "Blank forms (the Templates page)": a blank form, optionally "Make this editable in-app"
+  - "Blank forms (the Templates page)": a blank form, optionally "Make it a form to fill in on screen"
   - "Resources & guidelines": a reference document
   - a tab: a filed document
 - **Edit binders**: drag to reorder, rename in place.
 
 ### Templates (director)
 
-The blank forms the team works from, grouped as Agency binder templates, Medical binder templates, Daily Logs binder templates and Other templates. Each row says how many boxes or fields it has, which binder its signed copies file to, who it is assigned to, and whether an incident type uses it.
+The blank forms the team works from, grouped as Agency binder templates, Medical binder templates, Daily Logs binder templates and Other templates. Inside each binder the forms sit in **subfolders**, the binder's own tabs (Medical: Lab Works, Physician Visit, Dental…; Agency: Face Sheet, IPP, SIR…), shown with a ▸ caret and a count: click one to open or close it (it stays open on that device). Forms in no subfolder come first. Each template row says how many boxes or fields it has, which binder and tab its signed copies file to, who it is assigned to, and whether an incident type uses it.
+
+- **The badge** on each row says what it is: **FORM** (a form you fill in on screen), or the file it is: **PDF**, **DOC**, **JPG**/**PNG** (an uploaded form shows the type of the file it was made from). A PDF or Word file from the library only opens or prints; a FORM fills in, signs and prints. (Older builds said "Editable in-app" for the library's fill-in forms; that label is gone.)
 
 - **Create new template**: build a form block by block.
 - **Upload a form**: turn a PDF or a photo of a paper form into a template that keeps the original page. It carries the Ask Spectrum sparkle because the form reader is AI.
 - Click a row to open the template editor.
-- Row ⋯: Fill it in, Open the template, Rename, Assign to staff, Print blank, Delete template.
+- Row ⋯: Fill it in, Open the template, Rename, **Move to…**, Assign to staff, Print blank, Delete template. Library rows: Open (or Fill it in, Sign, Print), Rename, **Move to…**, Delete.
+- **Move to…** (directors): pick the binder and the subfolder. A template's signed copies then file there; a library PDF is listed there. Saved for the team.
+- In edit mode (the gear > Editing tool > Edit this page): drag a row by its ⠿ handle onto a subfolder, onto a binder's heading (outside any subfolder) or onto another form (to its binder and subfolder); two templates in the same subfolder reorder. Every tab shows as a subfolder to drop into, and **＋ Subfolder** adds a tab to that binder (Documents gets it too).
 - **Incident protocols**: one per kind of incident, with first steps, who to call, the hours to report within, and which template is its report form. All protocols, New protocol.
 
 The two editors:
@@ -286,7 +290,7 @@ The two editors:
   - Footer: Fill it in, Assign to staff, Cancel, Print blank, **Save template**
   - The page itself cannot be changed, only the boxes on it
 
-Create new template has "Files to" under its name: the binder its copies file to, which is also the section it is kept in on Templates (or a client's or a staff member's file). Upload a form has "Keep it in Templates", which picks the section; the note under it says where signed copies go.
+Create new template has "Files to" under its name: the binder its copies file to and, next to it, the subfolder (the binder's tab), which is also where it is kept on Templates (or a client's or a staff member's file). Upload a form has "Keep it in Templates" and "Subfolder", which pick the section and the subfolder; the note under them says where signed copies go.
 
 ### Directory (director)
 
@@ -368,7 +372,7 @@ The gear opens a window titled **Settings** with up to three tabs. Staff reach i
   - Staff see only the Calendars part: Google Calendar, their Google calendars and ＋ Add calendar.
 - A window opened from Settings (a calendar's page, Add a Google calendar, a type, a client colour) has **‹ Back** to return to Settings, and saving it goes back to Settings too.
 
-Edit mode shows a gold **Done editing** button. On Tasks, Safety log, Accountability, Training & onboarding, Documents, Templates and the staff page, a **Customize layout** button at the bottom corner also turns it on (staff see it on their pages too). On those pages and on Clients, the client page and Staff, the Edit, ✎ and ✕ buttons stay hidden until edit mode is on.
+Edit mode shows **Done editing** and **Reset layout** at the top of the page, in its header (Reset layout puts the page back the way it came). On Tasks, Safety log, Accountability, Training & onboarding, Documents, Templates and the staff page, a **Customize layout** button at the bottom corner turns it on (staff see it on their pages too); while editing, the bottom corner is empty. On those pages and on Clients, the client page and Staff, the Edit, ✎ and ✕ buttons stay hidden until edit mode is on.
 
 ### Customize your home page
 
