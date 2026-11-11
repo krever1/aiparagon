@@ -68,6 +68,7 @@ const SECRET = [/Maria/, /Gonzalez/, /\bMG\b/, /T\.K\./, /R\.P\./, /(?<!\d)\d{7}
     await goView(p, 'forms');
     const secs = await p.evaluate(() => [...document.querySelectorAll('#view section.card .sec-head h2')].map((h) => h.textContent));
     check('Templates groups the blank forms as Agency, Medical and Daily Logs binder templates and Other templates', ['Agency binder templates', 'Medical binder templates', 'Daily Logs binder templates', 'Other templates'].every((s) => secs.includes(s)), secs.join(' | '));
+    await p.evaluate(() => { if (typeof TPL_SF_OPEN !== 'undefined') { document.querySelectorAll('#view .v1247-sf').forEach((x) => TPL_SF_OPEN.add(x.dataset.tsf)); render(); } });   // v12.47: forms sit in subfolders
     const row = p.locator('#view .tpl-line', { hasText: 'Face sheet' }).first();
     await row.locator('.rm-dot').click(); await p.waitForTimeout(120);
     const items = await p.evaluate(() => [...document.querySelectorAll('#rmPop button')].map((b) => b.innerText.replace(/^\W+/, '').trim()));
