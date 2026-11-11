@@ -3383,7 +3383,9 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
 [data-trow][draggable="true"]{cursor:grab}
 .v1247-drag{opacity:.45}
 .v1247-over{outline:2px dashed var(--gold,#B8963E);outline-offset:-3px;background:rgba(184,150,62,.07)}
-.v1247-tsub select{font:11.5px system-ui,sans-serif;height:24px;border:1px solid var(--line);border-radius:6px;background:#fff;max-width:200px}
+.v1247-tsub{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%}
+.v1247-tsub select{font:11.5px system-ui,sans-serif;height:24px;border:1px solid var(--line);border-radius:6px;background:#fff;max-width:200px;min-width:0}
+.tpe-dest{flex-wrap:wrap;row-gap:6px}.tpe-dest select{max-width:100%;min-width:0}.v1247-ft{white-space:nowrap}
 @media(max-width:700px){ .v1247-sfh{padding:12px 14px} .v1247-sfb{padding-left:10px} .v1247-addw{padding:10px 14px} }
 /* ══ v12.46: the calendar settings tab ══ */
 .v1246-seg{width:fit-content;max-width:100%}
@@ -16257,7 +16259,7 @@ function libUpload(key,sec){
     <div class="tiny muted" id="libWhere" style="margin:-4px 0 10px"></div>
     <div class="sec-note"><span>🔒</span><div><b>No client data in filenames</b>Use client IDs only (e.g. 4023180) — never names or dates of birth in the file or its title.</div></div>
     <label class="checkrow" id="libEditWrap" style="border-color:var(--line);cursor:pointer">
-      <input type="checkbox" id="libEditable" style="width:16px;height:16px" onchange="el('libEditRow').style.display=this.checked?'block':'none'"><div class="ct"><b>Make this editable in‑app</b><div class="tiny muted">Read the form’s fields so staff can fill it in and sign it here — not just open a static file.</div></div></label>
+      <input type="checkbox" id="libEditable" style="width:16px;height:16px" onchange="el('libEditRow').style.display=this.checked?'block':'none'"><div class="ct"><b>Make it a form to fill in on screen</b><div class="tiny muted">Read the form’s fields so staff can fill it in and sign it here — not just open a static file.</div></div></label>
     <div id="libEditRow" style="display:none" class="tiny muted">Fillable PDF forms are read field-by-field. Scanned or flat PDFs and Word (.doc / .docx) files are read from their labels. Other file types start with a few fields you can adjust. The original file stays attached under “Original”.</div>`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn navy" id="libGo" onclick="libSaveUpload()">Upload</button>`);
   libSecShow();
@@ -16840,7 +16842,7 @@ function tpeDraw(){
           oninput="tpeNameSet(this.textContent.trim(),'title')">${esc(t.name||'')}</span></h2>
         <div class="tpe-sub"><span class="tpe-ce" contenteditable="true" spellcheck="false" data-ph="A line under the title"
           oninput="tpeT().subtitle=this.textContent.trim()">${esc(t.subtitle!=null?t.subtitle:'Spectrum Care \u00b7 blank form \u00b7 clients identified by client ID only')}</span></div>
-        <div class="tpe-dest">Files to
+        <div class="tpe-dest"><span class="v1247-ft">Files to</span>
           <select data-list="binder" onchange="if(this.value==='__add__')return fillSelectChange(this);tpeT()['${isDoc?'key':'dest'}']=this.value;${isDoc?'':`tpeT().sub='';{const q=el('tpeSub');if(q)q.innerHTML=tplSubOpts(this.value,'');}`}">
             ${binderKeys().map(k=>`<option value="${k}" ${k===destKey?'selected':''}>${esc(FOLDER_NAMES[k]||k)}</option>`).join('')}
             ${isDoc?'':`<option value="__client__" ${destKey==='__client__'?'selected':''}>A client\u2019s file</option>
