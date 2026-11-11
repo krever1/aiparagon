@@ -3376,6 +3376,15 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
 .v1246-ask{flex:1 1 220px;align-self:center;font-size:13px;color:#8C312B;line-height:1.35}
 .v1246-cf{width:auto;min-width:130px;max-width:200px}
 @media(max-width:700px){ .v1246-ask{flex:1 1 100%;order:-3} .v1246-cf{max-width:100%;flex:1 1 140px} }
+/* a client's week strip up to 1279px: the arrows and the date on one row, the seven days on the next (as under 900px).
+   In one row a long date ("Wednesday, November 11") squeezed the days to 36px at 1024 and their text ran out */
+@media (min-width:901px) and (max-width:1279px){
+  .cal-strip{flex-wrap:wrap}
+  .cal-strip>.cal-nav:first-child{order:-3}
+  .cal-strip>.cal-jump{order:-2;flex:1 1 0;width:auto;min-width:0}
+  .cal-strip>.cal-days+.cal-nav{order:-1}
+  .cal-strip>.cal-days{flex:1 1 100%;gap:6px}
+}
 /* ══ v12.45: category icons, calendar chips, the Add appointment window ══ */
 .cx-row{grid-template-columns:76px 22px minmax(0,1fr) auto}
 .cx-ic{position:relative;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--white);box-shadow:0 0 0 2px currentColor inset,0 0 0 3px var(--white);margin-top:1px}
@@ -7694,7 +7703,7 @@ function settingsHub(tab,page,sub){
         <button class="btn ghost sm" style="margin-top:4px" onclick="closeAll();catForm(null)">\uff0b New type</button>`;
     } else if(cs==='clients'){
       const cl=visibleClients();
-      inner=`<div class="tiny muted" style="margin-bottom:10px">Give each client a color. It shows on the board when appointments are colored by client${CAL_COLOR_BY==='client'?'':` (<button type="button" class="v1246-lnk" onclick="closeAll();calLookForm()">turn that on</button>)`}. Clients show by UCI only.</div>
+      inner=`<div class="tiny muted" style="margin-bottom:10px">Give each client a color. It shows on the board when appointments are colored by client.${CAL_COLOR_BY==='client'?'':` <button type="button" class="v1246-lnk" onclick="closeAll();calLookForm()">Turn that on</button>`} Clients show by UCI only.</div>
         ${cl.map(c=>gpRow(c.uci+(CLIENT_COLORS[c.id]?'':' · automatic color'),clientColor(c.id),'heart',`closeAll();clientColorForm('${c.id}')`)).join('')||'<div class="empty">No clients yet.</div>'}`;
     } else {
       const g=gcalReady()?(GCAL.connected
