@@ -1,6 +1,9 @@
 // Routing tests for voice-agent-client.html (#4 Command Center): /voice/<page> paths (Vercel), #/<page>
 // elsewhere, Back/Forward, deep links, bad input and the old-address forward. Given an earlier copy of
 // the file it also checks every page reads the same as that copy. See tests/README.md.
+// Since Nov 11 the live /voice is the Next.js Command Center (krever1/aiparagon-voice), which vercel.json reaches
+// through a rewrite; this file is kept for reference and as the way back. Section 0 checks vercel.json; the rest
+// serve this file at /voice as vercel.json did before, so pointing the two rewrites back at it still works.
 // Usage: node tests/voice-routes.test.js [baseline.html]
 const http = require('http');
 const fs = require('fs');
@@ -13,12 +16,13 @@ const FILE = 'voice-agent-client.html';
 const KEYS = ['overview', 'conversations', 'messages', 'opportunities', 'appointments', 'quality', 'training', 'knowledge', 'library', 'analytics', 'portal', 'tiers', 'settings'];
 const SLUG = Object.fromEntries(KEYS.map((k) => [k, k === 'appointments' ? 'calendar' : k]));
 
-// Same rewrites as vercel.json, read from the file itself
+// The live /voice: vercel.json sends it to the Next.js app. Locally this file is served there instead, as
+// vercel.json did until the switch-over (Nov 11)
 const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
-const REWRITES = cfg.rewrites.map((r) => ({
-  re: new RegExp('^' + r.source.replace(/\/:path\*$/, '(?:/.*)?').replace(/\//g, '\\/') + '$'),
-  dest: r.destination,
-}));
+const APP = 'https://aiparagon-voice.vercel.app';
+const REWRITES = [
+  { re: /^\/voice(?:\/.*)?$/, dest: '/' + FILE },
+];
 
 // Same redirects as vercel.json (permanent false = 307, true = 308)
 const REDIRECTS = (cfg.redirects || []).map((r) => ({ source: r.source, dest: r.destination, code: r.permanent ? 308 : 307 }));
@@ -85,6 +89,17 @@ function check(label, ok, detail) {
   }
   const shows = (s, key) => s.visible.length === 1 && s.visible[0] === key && s.nav.length === 1 && s.nav[0] === key;
   const settle = (page) => page.waitForTimeout(150);
+
+  // 0. vercel.json: /voice and /voice/* go to the Next.js app (its own redirects are relative, so they stay on this
+  // site), and the old file address still forwards to /voice/overview
+  {
+    const rw = (src) => (cfg.rewrites || []).filter((r) => r.source === src).map((r) => r.destination);
+    check('vercel.json sends /voice to the Next.js app', JSON.stringify(rw('/voice')) === JSON.stringify([APP + '/voice']), JSON.stringify(rw('/voice')));
+    check('vercel.json sends /voice/* to the Next.js app', JSON.stringify(rw('/voice/:path*')) === JSON.stringify([APP + '/voice/:path*']), JSON.stringify(rw('/voice/:path*')));
+    check('vercel.json no longer serves this file at /voice', !(cfg.rewrites || []).some((r) => r.destination === '/' + FILE));
+    const fw = REDIRECTS.filter((r) => r.source === '/' + FILE);
+    check('the old file address still forwards to /voice/overview (307)', fw.length === 1 && fw[0].dest === '/voice/overview' && fw[0].code === 307, JSON.stringify(fw));
+  }
 
   // 1. /voice lands on Overview and settles on /voice/overview
   {
