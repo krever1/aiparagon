@@ -11,10 +11,11 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const LOGO = 'https://www.aiparagonconsulting.com/logo.png';
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
 
-// a local server with the same rewrites and redirects as vercel.json, read from the file itself
-function serve() {
+// a local server with the same rewrites and redirects as vercel.json, read from the file itself; `extra` rewrites
+// ({re, dest}) come first (the voice suite serves the old file at /voice, which vercel.json now sends elsewhere)
+function serve(extra) {
   const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
-  const REWRITES = cfg.rewrites.map((r) => ({
+  const REWRITES = (extra || []).concat(cfg.rewrites).map((r) => r.re ? r : ({
     re: new RegExp('^' + r.source.replace(/\/:path\*$/, '(?:/.*)?').replace(/\//g, '\\/') + '$'),
     dest: r.destination,
   }));
@@ -54,14 +55,14 @@ function ask(BASE, p) {
 }
 
 // One suite: the page at `url` links the logo as its tab and home-screen icon, and nothing else as an icon.
-async function iconSuite({ url, label }) {
+async function iconSuite({ url, label, rewrites }) {
   let pass = 0, fail = 0;
   const failures = [];
   const check = (name, ok, detail) => {
     if (ok) pass++; else { fail++; failures.push(name + (detail ? ' :: ' + detail : '')); }
     console.log((ok ? 'PASS ' : 'FAIL ') + name + (ok || !detail ? '' : '   [' + detail + ']'));
   };
-  const server = serve();
+  const server = serve(rewrites);
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const BASE = 'http://127.0.0.1:' + server.address().port;
   const browser = await chromium.launch();
