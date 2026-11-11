@@ -134,10 +134,13 @@ function check(label, ok, detail) {
       const rule = (cfg.redirects || []).find((x) => x.source === p);
       check(p + ' forwards to the logo (307)', r.status === 307 && r.location === I.LOGO && !!rule && rule.permanent === false, JSON.stringify(r));
     }
-    for (const p of ['/dashboard', '/dashboard/login', '/voice/overview', '/advisory/touchpoint', '/builder', '/go/qa-page']) {
+    for (const p of ['/dashboard', '/dashboard/login', '/advisory/touchpoint', '/builder', '/go/qa-page']) {
       const r = await I.ask(BASE, p);
       check(p + ' still serves its app', r.status === 200, JSON.stringify(r));
     }
+    // /voice is the Next.js app since Nov 11 (krever1/aiparagon-voice), reached through a rewrite
+    const voice = (cfg.rewrites || []).find((x) => x.source === '/voice/:path*');
+    check('/voice/overview still goes to the Command Center', !!voice && voice.destination === 'https://aiparagon-voice.vercel.app/voice/:path*', JSON.stringify(voice));
     const r = await I.ask(BASE, '/new-aiparagon-dashboard.html');
     check('the old file address still forwards to /dashboard', r.status === 307 && r.location === '/dashboard', JSON.stringify(r));
   }
