@@ -325,14 +325,15 @@ const STOP = +(process.env.QA_STOP || 99);                        // development
     check('gear > Display settings > Houses > Add house opens New house', /New house/.test(await modal(page)), await modal(page));
     await page.fill('#gpName', 'Pine House'); await page.locator('#mdFoot button:has-text("Add house")').click(); await settle(page, 500);
     await page.evaluate(() => closeAll()); await settle(page, 200); await page.locator('#view button.gear').first().click(); await settle(page, 300);
-    await page.locator('#modal .set-tab:has-text("Display settings")').click(); await settle(page, 200);
+    await page.locator('#modal .set-tab:has-text("Calendar integrations")').click(); await settle(page, 200);   // v12.46: types moved to the calendar tab
     await page.locator('#modal .seg button:has-text("Appointment types")').click(); await settle(page, 200);
     await btn(page, '#modal', 'New type').click(); await settle(page, 300);
     await page.fill('#gpName', 'Hydrotherapy'); await page.locator('#mdFoot button:has-text("Create type")').click(); await settle(page, 500);
     // calendars: a new calendar (Calendar integrations)
     await page.evaluate(() => closeAll()); await settle(page, 200); await page.locator('#view button.gear').first().click(); await settle(page, 300);
     await page.locator('#modal .set-tab:has-text("Calendar integrations")').click(); await settle(page, 200);
-    await btn(page, '#modal', 'New calendar').click(); await settle(page, 300);
+    await btn(page, '#modal', 'Add calendar').click(); await settle(page, 200);   // v12.46: one Add calendar button
+    await page.locator('#cxMenu .cx-mi:has-text("Create a portal calendar")').click(); await settle(page, 300);
     await page.fill('#gpName', 'Day program'); await page.locator('#mdFoot button:has-text("Create calendar")').click(); await settle(page, 500);
     // task categories (Lists)
     await settings(page);
@@ -637,22 +638,21 @@ const STOP = +(process.env.QA_STOP || 99);                        // development
     await dp.check('#modal input[name=acMode][value=some]'); await dp.locator('#modal .acC').first().uncheck(); await btn(dp, '#modal', 'Save access').click(); await settle(dp, 300);
     check('Client access: "Only these clients" with none ticked is refused', /Pick at least one client/.test((await toastOf(dp)).text));
     await dp.evaluate(() => closeAll());
-    // the team's calendars: one only for listed staff (gear > Calendar integrations > Access)
+    // the team's calendars: one only for listed staff (gear > Calendar integrations > the calendar > Who sees it; v12.46, was Access)
     await go(dp, 'calendar');
     await dp.evaluate(() => closeAll()); await dp.locator('#view button.gear').first().click(); await settle(dp, 300);
     await dp.locator('#modal .set-tab:has-text("Calendar integrations")').click(); await settle(dp, 200);
-    await btn(dp, '#modal', 'Access').click(); await settle(dp, 300);
-    const box = dp.locator('#modal div:has(> div > b:text-is("Day program"))');
-    await box.locator('input[value=listed]').check(); await box.locator('input[type=checkbox]').evaluateAll((xs) => xs.forEach((x) => { x.checked = false; }));
-    await btn(dp, '#modal', 'Save access').click(); await settle(dp, 1200);
+    await dp.locator('#modal .gp-row:has-text("Day program")').first().click(); await settle(dp, 300);
+    await dp.check('#modal input[name="gpWho"][value="listed"]'); await dp.locator('#gpWhoL input[type=checkbox]').evaluateAll((xs) => xs.forEach((x) => { if (x.checked) x.click(); }));
+    await dp.locator('#mdFoot .btn.navy').click(); await settle(dp, 1200);
     await reload(sp);
     const c1 = await sp.evaluate(() => calDefs().map((c) => c.name));
     check('calendar access: a calendar for listed staff only is hidden from staff not on the list (after a reload)', !c1.includes('Day program') && await dp.evaluate(() => calDefs().some((c) => c.name === 'Day program')), c1.join(', '));
     await dp.evaluate(() => closeAll()); await dp.locator('#view button.gear').first().click(); await settle(dp, 300);
     await dp.locator('#modal .set-tab:has-text("Calendar integrations")').click(); await settle(dp, 200);
-    await btn(dp, '#modal', 'Access').click(); await settle(dp, 300);
-    await dp.locator('#modal div:has(> div > b:text-is("Day program")) input[type=checkbox][value="' + sid + '"]').check();
-    await btn(dp, '#modal', 'Save access').click(); await settle(dp, 1200);
+    await dp.locator('#modal .gp-row:has-text("Day program")').first().click(); await settle(dp, 300);
+    await dp.locator('#gpWhoL input[type=checkbox][value="' + sid + '"]').check();
+    await dp.locator('#mdFoot .btn.navy').click(); await settle(dp, 1200);
     await reload(sp);
     check('...and shown once they are ticked', await sp.evaluate(() => calDefs().some((c) => c.name === 'Day program')));
     // Staff display: Initials only, for the whole team

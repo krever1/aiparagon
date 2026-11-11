@@ -205,7 +205,9 @@ const A3 = { id: 'a3333333333333333', email: 'dana@school.test', tok: 'tokC' };
   // ======================= 5. where portal appointments go =======================
   let cd = await card(page);
   check('settings: Your Google accounts lists both, the first marked Main, with where appointments go', /Your Google accounts/.test(cd) && /dana@gmail\.test Main/.test(cd) && /Portal appointments you send to Google go here/.test(cd) && /Work/.test(cd) && /Use for appointments/.test(cd), cd);
-  check('settings: Connect another Google account is offered', /Connect another Google account/.test(cd), cd);
+  const setMenu = await page.evaluate(() => { settingsHub('cal', 'calendar'); const b = el('modal').querySelector('.v1246-add'); if (!b) return [];   // v12.46: one Add calendar button
+    b.click(); const it = [...document.querySelectorAll('#cxMenu .cx-mi b')].map((x) => x.textContent.trim()); cxMenuClose(); return it; });
+  check('settings: the Add calendar button offers Link another Google account', setMenu.includes('Link another Google account'), JSON.stringify(setMenu));
   await page.click('#modal [data-acct="' + A2.id + '"] button:has-text("Use for appointments")'); await page.waitForTimeout(500);
   const m2 = await page.evaluate(() => ({ main: GCAL.main, tok: GCAL.token, email: GCAL.email }));
   check('Use for appointments: the work account becomes the main one (its token is the page’s own), saved', m2.main === A2.id && /^tokB-/.test(m2.tok) && saved('gcalMain') === A2.id, JSON.stringify(m2));

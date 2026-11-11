@@ -3363,6 +3363,28 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
   .hm-sched .v1243-cc{padding:10px 16px}
   .v1243-c{max-width:calc(100vw - 80px)}
 }
+/* ══ v12.46: the calendar settings tab ══ */
+.v1246-seg{width:fit-content;max-width:100%}
+.v1246-addw{margin:10px 0 2px}
+.v1246-lnk{all:unset;cursor:pointer;color:var(--navy-deep,#2A5245);text-decoration:underline;text-underline-offset:2px}
+.v1246-lnk:focus-visible{outline:2px solid var(--gold,#B8963E);outline-offset:2px;border-radius:3px}
+.v1246-who{border:1px solid var(--line);border-radius:12px;padding:10px 12px 12px;margin:12px 0 0;display:grid;gap:6px}
+.v1246-who legend{font-size:12.5px;font-weight:600;padding:0 4px}
+.v1246-who>label{display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer}
+.v1246-who-l{display:flex;flex-wrap:wrap;gap:6px 14px;margin:2px 0 4px 24px}
+.v1246-who-l label{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;cursor:pointer}
+.v1246-ask{flex:1 1 220px;align-self:center;font-size:13px;color:#8C312B;line-height:1.35}
+.v1246-cf{width:auto;min-width:130px;max-width:200px}
+@media(max-width:700px){ .v1246-ask{flex:1 1 100%;order:-3} .v1246-cf{max-width:100%;flex:1 1 140px} }
+/* a client's week strip up to 1279px: the arrows and the date on one row, the seven days on the next (as under 900px).
+   In one row a long date ("Wednesday, November 11") squeezed the days to 36px at 1024 and their text ran out */
+@media (min-width:901px) and (max-width:1279px){
+  .cal-strip{flex-wrap:wrap}
+  .cal-strip>.cal-nav:first-child{order:-3}
+  .cal-strip>.cal-jump{order:-2;flex:1 1 0;width:auto;min-width:0}
+  .cal-strip>.cal-days+.cal-nav{order:-1}
+  .cal-strip>.cal-days{flex:1 1 100%;gap:6px}
+}
 /* ══ v12.45: category icons, calendar chips, the Add appointment window ══ */
 .cx-row{grid-template-columns:76px 22px minmax(0,1fr) auto}
 .cx-ic{position:relative;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--white);box-shadow:0 0 0 2px currentColor inset,0 0 0 3px var(--white);margin-top:1px}
@@ -6261,6 +6283,8 @@ function mdBack(){
   MD_BACKING=true;
   try{ p.fn(); } finally{ MD_BACKING=false; }
 }
+/* v12.46: after a save, a window that was opened from another (Settings) goes back to it instead of closing */
+function mdReturn(){ if(!MD_STACK.length) return false; mdBack(); return true; }
 /* ── v11.0: sign with a mouse or a finger ────────────────────────────────────────────────
    Every place that used to ask you to type your name to sign now offers a pad. The drawing
    is kept as a small image in the same hidden field the typed name used, so nothing that
@@ -7651,44 +7675,57 @@ function settingsHub(tab,page,sub){
       ${page==='tasks'?setRow('palette','Task colors','Due dates, categories, priorities and stages',"manageTasksConfig('due')"):''}
       ${dir?setRow('bookmark','Rename menus and binders','Call things what your team calls them','labelsForm()'):''}`;
   } else if(tab==='display'){
-    const t=['homes','cats','attn'].includes(sub)?sub:'homes';
+    if(sub==='cats') return settingsHub('cal',page,'types');            // v12.46: appointment types live under Calendar integrations
+    const t=['homes','attn'].includes(sub)?sub:'homes';
     const segBtn=(k,l)=>`<button class="${t===k?'active':''}" onclick="settingsHub('display','${page}','${k}')">${l}</button>`;
     let inner='';
     if(t==='homes'){
       inner=`<div class="tiny muted" style="margin-bottom:10px">A house color shows on every shift, on the floor view and beside each person on the home page.</div>
         ${HOMES.map(h=>gpRow(h,homeColor(h),homeIcon(h),`closeAll();homeForm('${esc(h)}')`)).join('')||'<div class="empty">No houses yet.</div>'}
         ${dir?`<button class="btn ghost sm" style="margin-top:4px" onclick="closeAll();homeForm(null)">\uff0b Add house</button>`:''}`;
-    } else if(t==='cats'){
-      inner=`<div class="tiny muted" style="margin-bottom:10px">An appointment type's icon and color follow it everywhere: the calendar, the home page and anything needing attention.</div>
-        ${Object.keys(APPT_CATS).map(k=>gpRow(k,catOf(k).color,catOf(k).icon||catOf(k).emoji,`closeAll();catForm('${esc(k)}')`)).join('')}
-        ${dir?`<button class="btn ghost sm" style="margin-top:4px" onclick="closeAll();catForm(null)">\uff0b New type</button>`:''}`;
     } else {
       inner=`<div class="tiny muted" style="margin-bottom:10px">Icons and colors for the items that need attention on the home page.</div>
         ${ATTN_KINDS.map(([k,ic,l])=>gpRow(l,attnColor(k),attnIconKey(k),`closeAll();attnForm('${k}')`)).join('')}`;
     }
-    body=`<div class="seg" style="margin-bottom:12px">${segBtn('homes','Houses')}${segBtn('cats','Appointment types')}${segBtn('attn','Attention icons')}</div>
+    body=`<div class="seg" style="margin-bottom:12px">${segBtn('homes','Houses')}${segBtn('attn','Attention icons')}</div>
       ${inner}
       ${(page==='calendar'||page==='home')&&dir?`<div style="margin-top:14px">${setRow('palette','Calendar colors and text','What decides an appointment\u2019s color, how soft the bars look, light or dark labels','calLookForm()')}</div>`:''}`;
   } else {
-    const g=gcalReady()?(GCAL.connected
-      ?(GCAL.accts.length>1?`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>Connected \u00b7 ${GCAL.accts.length} Google accounts \u00b7 each stays connected until you disconnect it</span></div>
-          <button class="btn ghost sm" onclick="gcalFetch();toast('Pulling the latest events from Google\u2026')">\u27f3 Refresh</button></div>`   /* v12.44: each account below */
-      :`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>${GCAL.kept?('Connected'+(GCAL.email?' as '+esc(GCAL.email):'')+' \u00b7 stays connected until you disconnect'):'Connected for this session'}</span></div>
-          <button class="btn ghost sm" onclick="gcalFetch();toast('Pulling the latest events from Google\u2026')">\u27f3 Refresh</button>
-          <button class="btn ghost sm" onclick="closeAll();gcalDisconnect()">Disconnect</button></div>`)
-      :gcalChecking()?`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>Checking for a connection you made earlier\u2026</span></div>
-          <button class="btn ghost sm" disabled>Checking\u2026</button></div>`   // v12.40
-      :`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>Not connected. Connect it to see your Google events on the board and send portal appointments to Google.</span></div>
-          <button class="btn gold sm" onclick="closeAll();gcalConnect()">${GCAL.loading?'Connecting\u2026':'Connect'}</button></div>`):'';
-    body=`<div class="tiny muted" style="margin-bottom:10px">The calendars on the board, and the outside calendars connected to the portal.</div>
-      ${g}${gcalCalsCard()}
-      ${dir?`<div class="set-h">Calendars</div>
-      ${calDefsAll().map(c=>gpRow(c.name+(c.private?' \u00b7 private':''),c.color,c.icon,`closeAll();calMetaForm('${c.key}')`)).join('')}`:''}
-      ${dir?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px">
-        <button class="btn ghost sm" onclick="closeAll();calAddForm()">\uff0b New calendar</button>
-        <button class="btn ghost sm" onclick="closeAll();manageContractors()">\u2699 Contractors</button>
-        <button class="btn ghost sm" onclick="closeAll();calAccessForm()">\ud83d\udd12 Access</button></div>`:''}
-      ${setRow('calendar','Calendars and filters','Which calendars show on the board, and what the list is filtered to','closeAll();calControls()')}`;
+    /* v12.46: one page for calendars, with sub-tabs like Display settings: every calendar and one Add calendar
+       button (no Contractors, no separate Access, no Calendars and filters page), the appointment types, the clients */
+    const cs=dir&&['cals','types','clients'].includes(sub)?sub:'cals';
+    _setHub=[tab,page,cs];
+    const segC=(k,l)=>`<button type="button" class="${cs===k?'active':''}" aria-pressed="${cs===k}" onclick="settingsHub('cal','${page}','${k}')">${l}</button>`;
+    let inner='';
+    if(cs==='types'){
+      inner=`<div class="tiny muted" style="margin-bottom:10px">An appointment type's icon and color follow it everywhere: the calendar, the home page and anything needing attention. Click one to rename it, change it or delete it.</div>
+        ${Object.keys(APPT_CATS).map(k=>gpRow(k,catOf(k).color,catOf(k).icon||catOf(k).emoji,`closeAll();catForm('${esc(k)}')`)).join('')}
+        <button class="btn ghost sm" style="margin-top:4px" onclick="closeAll();catForm(null)">\uff0b New type</button>`;
+    } else if(cs==='clients'){
+      const cl=visibleClients();
+      inner=`<div class="tiny muted" style="margin-bottom:10px">Give each client a color. It shows on the board when appointments are colored by client.${CAL_COLOR_BY==='client'?'':` <button type="button" class="v1246-lnk" onclick="closeAll();calLookForm()">Turn that on</button>`} Clients show by UCI only.</div>
+        ${cl.map(c=>gpRow(c.uci+(CLIENT_COLORS[c.id]?'':' · automatic color'),clientColor(c.id),'heart',`closeAll();clientColorForm('${c.id}')`)).join('')||'<div class="empty">No clients yet.</div>'}`;
+    } else {
+      const g=gcalReady()?(GCAL.connected
+        ?(GCAL.accts.length>1?`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>Connected \u00b7 ${GCAL.accts.length} Google accounts \u00b7 each stays connected until you disconnect it</span></div>
+            <button class="btn ghost sm" onclick="gcalFetch();toast('Pulling the latest events from Google\u2026')">\u27f3 Refresh</button></div>`   /* v12.44: each account below */
+        :`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>${GCAL.kept?('Connected'+(GCAL.email?' as '+esc(GCAL.email):'')+' \u00b7 stays connected until you disconnect'):'Connected for this session'}</span></div>
+            <button class="btn ghost sm" onclick="gcalFetch();toast('Pulling the latest events from Google\u2026')">\u27f3 Refresh</button>
+            <button class="btn ghost sm" onclick="closeAll();gcalDisconnect()">Disconnect</button></div>`)
+        :gcalChecking()?`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>Checking for a connection you made earlier\u2026</span></div>
+            <button class="btn ghost sm" disabled>Checking\u2026</button></div>`   // v12.40
+        :`<div class="set-int"><div class="set-int-t"><b>Google Calendar</b><span>Not connected. Connect it to see your Google events on the board and send portal appointments to Google.</span></div>
+            <button class="btn gold sm" onclick="closeAll();gcalConnect()">${GCAL.loading?'Connecting\u2026':'Connect'}</button></div>`):'';
+      const team=calDefsAll().filter(c=>!calIsGoogle(c.key));   // v12.46: Google calendars are listed with their account above, never here
+      const who=c=>{ const a=CAL_ACCESS[c.key]; return c.private?' \u00b7 private':(a&&a.mode==='listed'&&c.key!=='personal'?' \u00b7 listed staff only':''); };
+      inner=`<div class="tiny muted" style="margin-bottom:10px">The calendars on the board, and the outside calendars connected to the portal. Click one to rename it, recolor it${dir?', choose who sees it or delete it':' or remove it'}.</div>
+        ${g}${gcalCalsCard()}
+        ${dir?`<div class="set-h">Portal calendars</div>
+        ${team.map(c=>gpRow(c.name+who(c),c.color,c.icon,`closeAll();calMetaForm('${c.key}')`)).join('')}`:''}
+        ${calAddOpts('set').length?`<div class="v1246-addw"><button type="button" class="btn ghost sm cx-add-b v1246-add" aria-haspopup="menu" aria-expanded="false" onclick="calAddMenu(this,'set')">\uff0b Add calendar</button></div>`:''}`;
+    }
+    body=`${dir?`<div class="seg v1246-seg" role="group" aria-label="Calendar settings" style="margin-bottom:12px">${segC('cals','Calendars')}${segC('types','Appointment types')}${segC('clients','Clients')}</div>`:''}
+      ${inner}`;
   }
   openModal('Settings',`
     <div class="set-tabs" role="tablist">${dir?tabBtn('edit','Editing tool')+tabBtn('display','Display settings'):''}${tabBtn('cal','Calendar integrations')}</div>
@@ -7720,12 +7757,15 @@ function gpDraw(){
       <label class="gp-c gp-any ${PICK_COLORS.map(x=>x.toLowerCase()).includes(String(g.color).toLowerCase())?'':'on'}" style="--c:${g.color}" title="Any color">
         <input type="color" value="${g.color}" oninput="gpSet('color',this.value)"></label>
     </div>
-    <div class="gp-icons" role="radiogroup" aria-label="Icon">
+    ${g.noIcons?'':`<div class="gp-icons" role="radiogroup" aria-label="Icon">
       ${GLYPH_KEYS.map(k=>`<button type="button" class="gp-i ${k===glyphKey(g.icon)?'on':''}" title="${k}" aria-label="${k}" onclick="gpSet('icon','${k}')">${ico(k,19)}</button>`).join('')}
-    </div>
+    </div>`}
     ${g.extra?`<div style="margin-top:12px">${g.extra(g)}</div>`:''}
     ${g.note?`<div class="tiny muted" style="margin-top:12px">${g.note}</div>`:''}`,
-    `${g.onDelete?`<button class="btn ghost" onclick="window._gp.onDelete(window._gp)">Remove</button>`:''}
+    g.delSure?`<span class="v1246-ask" role="alert">${esc(g.delAsk)}</span>
+     <button class="btn ghost" onclick="window._gp.delSure=false;gpDraw()">Keep it</button>
+     <button class="btn danger" onclick="window._gp.onDelete(window._gp)">${esc(g.delLabel||'Remove')}</button>`   /* v12.46: a delete that asks first */
+    :`${g.onDelete?`<button class="btn ${g.delAsk?'danger':'ghost'}" onclick="${g.delAsk?"const n=el('gpName');if(n)window._gp.name=n.value;window._gp.delSure=true;gpDraw()":'window._gp.onDelete(window._gp)'}">${esc(g.delLabel||'Remove')}</button>`:''}
      <button class="btn ghost" onclick="closeAll()">Cancel</button>
      <button class="btn navy" onclick="gpSave()">${esc(g.saveLabel||'Save')}</button>`);
 }
@@ -7754,7 +7794,7 @@ function calLookForm(){
     ${opt('type','Appointment type','Dental, medical, day program and so on')}
     ${opt('client','Client','Each person keeps their own color across the board')}
     ${opt('house','House','Maple, Cedar, Birch — matches the shift colors')}
-    ${opt('calendar','Calendar','Company, personal or a contractor calendar')}
+    ${opt('calendar','Calendar','The team\u2019s, your own or one the team made')}
     <div class="tiny muted" style="margin:14px 0 6px">How soft the bars look</div>
     <input type="range" min="0" max="80" value="${CAL_SOFT}" style="width:100%"
       oninput="CAL_SOFT=+this.value;el('clkPrev').innerHTML=calLookPreview()">
@@ -7904,7 +7944,8 @@ window.addEventListener('resize',()=>tlGeomFix());
 setTimeout(()=>['settingsHub','calControls','labelsForm',
   'calLookForm','dirIconForm','dirCatForm','safetySettings','noteCatsForm','manageTasksConfig','protoHub','protoForm',
   'catForm','homeForm','glyphPicker','staffColorForm','notifSettings','homeColorForm','calMetaForm','attnForm',
-  'setTempLimit','orgSettings','accountSettings','calAddForm'].forEach(mdWrap),0);
+  'setTempLimit','orgSettings','accountSettings','calAddForm',
+  'gcalAddForm','gcalIdForm','gcalPicker','calAccessForm','clientColorForm','catPick'].forEach(mdWrap),0);   // v12.46: Back on these too
 function tlFit(D){                                                   // widen the day so nothing lands on the edge
   let lo=0, hi=1440;                                                 // the whole day — drag a shift anywhere in it
   const push=(a,b)=>{ if(isFinite(a)&&a<lo) lo=Math.floor(a/60)*60; if(isFinite(b)&&b>hi) hi=Math.ceil(b/60)*60; };
@@ -20538,7 +20579,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.45 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.46 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -21935,7 +21976,7 @@ function barPaint(hex,soft){
 /* Appointments can be coloured by the person they belong to. The colour is stable per
    client, so the same person keeps the same bar every day. */
 let CLIENT_COLORS={};
-function clientColorsSave(){ sbUpsert('np_demo_program',{key:'clientcolors',value:{map:CLIENT_COLORS},updated_by:auditActor()}); }
+function clientColorsSave(){ sbUpsert('np_demo_program',{key:'clientcolors',value:{map:noSeedKeys(CLIENT_COLORS,'client')},updated_by:auditActor()}); }   // v12.46: noSeedKeys
 const CLIENT_PALETTE=['#3E7BC4','#D97B29','#3E8E5A','#8A62C9','#B08A2E','#C05050','#2E7FA8','#A05C7B','#5A8F3C','#7A4FB5'];
 function clientColor(cid){
   if(!cid) return '#6B7A74';
@@ -22083,7 +22124,8 @@ function calSelect(id,cur){
 function calDot(k,sz){ const c=calDef(k); return `<span title="${esc(c.name)}" style="display:inline-block;width:${sz||9}px;height:${sz||9}px;border-radius:50%;background:${c.color};flex:none"></span>`; }
 const CAL_ICONS=['🏢','👤','🤝','🗓','🚐','🏥','🎓','🏠','⭐','🔧','🎯','🧩'];
 const CAL_PALETTE=['#426B5C','#5E7F9D','#B9785D','#826FA0','#9B7936','#A85D59','#2F584A'];
-function calControls(){
+function calControls(){ return settingsHub('cal',null,'cals'); }   // v12.46: its calendars, types and filter moved
+function calControlsLegacy(){
   openModal('Calendars and filters',`
     <div class="tiny muted" style="margin-bottom:10px">Which calendars show, what each looks like, and what the list is filtered to.</div>
     <div class="field"><label>Calendars</label>
@@ -22113,6 +22155,7 @@ function calControls(){
 }
 function displaySettings(tab){                                       // v12.19: the settings window, on the right tab
   if(tab==='cals') return settingsHub('cal');
+  if(tab==='cats') return settingsHub('cal',null,'types');            // v12.46
   return settingsHub('display',null,tab||'homes');
 }
 let ATTN_ICONS={};
@@ -22189,18 +22232,62 @@ function calMetaForm(key){
   if(String(key).indexOf('gcal:')===0) return gcalCalEdit(gcalMine().findIndex(x=>gcalKey(x.id)===key));   // v12.43
   if(String(key).indexOf('gacct:')===0) return gacctEdit(String(key).slice(6));   // v12.44
   const d=calDef(key), m=CAL_META[key]||{};
+  const dir=state.role==='director', made=key.indexOf('ct:')===0, share=dir&&key!=='personal';   // v12.46
+  const acc=CAL_ACCESS[key]||{}, n=made?APPTS.filter(a=>a.cal===key&&!hid('appt',a.id)).length:0;
   glyphPicker({
     heading:'Edit calendar', nameLabel:'Calendar', name:m.name||d.name, placeholder:d.name,
     color:d.color, icon:glyphKey(d.icon)||'calendar', priv:!!m.private,
+    acc:{mode:acc.mode==='listed'?'listed':'all', sids:(acc.sids||[]).slice()},
     extra:key!=='personal'?(g=>`<label class="checkrow" style="cursor:pointer;margin:0"><input type="checkbox" ${g.priv?'checked':''}
-      onchange="window._gp.priv=this.checked" style="margin-right:8px"> Private \u2014 only I can see this calendar and its appointments</label>`):null,
+      onchange="window._gp.priv=this.checked" style="margin-right:8px"> Private \u2014 only I can see this calendar and its appointments</label>
+      ${share?calWhoHtml(g):''}`):null,
     note:'The name, color and icon show on every calendar view and on the home page. Colors never change what syncs to Google.',
+    delLabel:'Delete calendar',
+    delAsk:`Delete ${m.name||d.name}? ${n?`Its ${n} appointment${n===1?'':'s'} move${n===1?'s':''} to the ${calDef('company').name}.`:'Nothing is on it.'} This can\u2019t be undone.`,
+    onDelete:made&&dir?(()=>calDelete(key)):null,
     onSave:g=>{
       CAL_META[key]={name:g.name||undefined,color:g.color,icon:g.icon,private:key!=='personal'&&!!g.priv};
       if(key.indexOf('ct:')===0){ const ct=CONTRACTORS.find(x=>'ct:'+x.id===key); if(ct){ ct.name=g.name||ct.name; ct.color=g.color; contractorsSave(); } }
+      if(share){ const was=JSON.stringify(CAL_ACCESS[key]||{mode:'all',sids:[]}), now={mode:g.acc.mode, sids:g.acc.mode==='listed'?g.acc.sids.slice():[]};
+        if(JSON.stringify(now)!==was){ CAL_ACCESS[key]=now; calAccessSave(); logAudit('Updated calendar access',g.name||d.name); } }
       calMetaSave(); logAudit('Edited a calendar',g.name||d.name);
-      closeAll(); render(); toast('Calendar saved.');
+      closeAll(); render(); mdReturn(); toast('Calendar saved.');
     }
+  });
+}
+/* v12.46: who sees a calendar, on its own page (it was a separate Access window) */
+function calWhoHtml(g){
+  const staffList=STAFF.filter(st=>!hid('staff',st.id)), a=g.acc||{mode:'all',sids:[]};
+  return `<fieldset class="v1246-who"><legend>Who sees it</legend>
+    <label><input type="radio" name="gpWho" value="all" ${a.mode!=='listed'?'checked':''} onchange="window._gp.acc.mode='all';calWhoPaint()"> Everyone on the team</label>
+    <label><input type="radio" name="gpWho" value="listed" ${a.mode==='listed'?'checked':''} onchange="window._gp.acc.mode='listed';calWhoPaint()"> Only these staff</label>
+    <div class="v1246-who-l" id="gpWhoL" ${a.mode==='listed'?'':'hidden'}>${staffList.map(st=>`<label><input type="checkbox" value="${esc(st.id)}" ${(a.sids||[]).includes(st.id)?'checked':''}
+      onchange="const s=window._gp.acc.sids,i=s.indexOf(this.value);if(this.checked&&i<0)s.push(this.value);if(!this.checked&&i>-1)s.splice(i,1)"> ${esc(st.name||st.id)}</label>`).join('')||'<span class="muted">No staff yet.</span>'}</div>
+    <div class="tiny muted">Directors always see every calendar. Only these staff hides the calendar and its appointments from everyone else, the family view too.</div></fieldset>`;
+}
+function calWhoPaint(){ const l=el('gpWhoL'); if(l) l.hidden=!(window._gp&&window._gp.acc&&window._gp.acc.mode==='listed'); }
+/* v12.46: delete a calendar the team made; what was on it goes to the team calendar */
+function calDelete(key){
+  const id=String(key).slice(3), ct=CONTRACTORS.find(x=>x.id===id); if(!ct) return;
+  const name=(CAL_META[key]||{}).name||ct.name; let moved=0;
+  APPTS.forEach(a=>{ if(a.cal===key){ a.cal='company'; moved++; sbPatch('np_demo_appointments',a.id,{cal:'company'}); } });
+  CONTRACTORS=CONTRACTORS.filter(x=>x.id!==id); contractorsSave();
+  if(CAL_META[key]){ delete CAL_META[key]; calMetaSave(); }
+  if(CAL_ACCESS[key]){ delete CAL_ACCESS[key]; calAccessSave(); }
+  logAudit('Deleted a calendar',name);
+  closeAll(); render(); mdReturn();
+  toast(name+' deleted.'+(moved?' Its appointments are on the '+calDef('company').name+' now.':''));
+}
+/* v12.46: a client's colour on the board, by UCI */
+function clientColorForm(cid){
+  const c=client(cid); if(!c) return;
+  glyphPicker({
+    heading:'Client color', nameLabel:'Client (UCI)', name:c.uci, nameEditable:false, noIcons:true,
+    color:clientColor(cid), icon:'heart',
+    note:'Shows on the board when appointments are colored by client, and beside this client on the directory and accountability.',
+    delLabel:'Use the automatic color',
+    onDelete:CLIENT_COLORS[cid]?(()=>{ delete CLIENT_COLORS[cid]; clientColorsSave(); logAudit('Reset a client color',''); closeAll(); render(); mdReturn(); toast('Back to the automatic color.'); }):null,
+    onSave:g=>{ CLIENT_COLORS[cid]=g.color; clientColorsSave(); logAudit('Set a client color',''); closeAll(); render(); mdReturn(); toast('Client color saved.'); }
   });
 }
 function calAddForm(){
@@ -22212,7 +22299,7 @@ function calAddForm(){
       const id='c'+Date.now().toString(36);
       CONTRACTORS.push({id,name:g.name,color:g.color}); contractorsSave();
       CAL_META['ct:'+id]={name:g.name,color:g.color,icon:g.icon}; calMetaSave();
-      logAudit('Added a calendar',g.name); closeAll(); render(); toast('Calendar added.');
+      logAudit('Added a calendar',g.name); closeAll(); render(); mdReturn(); toast('Calendar added.');
     }
   });
 }
@@ -22242,7 +22329,8 @@ function calAccessApply(){
   calAccessSave(); logAudit('Updated calendar access','');
   closeAll(); render(); toast('Calendar access saved.');
 }
-function manageContractors(){
+function manageContractors(){ return settingsHub('cal',null,'cals'); }   // v12.46: a calendar is edited or deleted from its own page
+function manageContractorsLegacy(){
   listManage('Contractor calendars',
     ()=>CONTRACTORS.map(c=>c.name),
     (o,n)=>{ const c=CONTRACTORS.find(x=>x.name===o); if(c){ c.name=n; contractorsSave(); logAudit('Renamed contractor calendar',o+' → '+n); render(); } },
@@ -22327,7 +22415,7 @@ function catSavePicked(old,g){
   const returning=!!window._apReturn;
   closeAll();
   if(returning&&apRestore(n)) return;
-  render(); toast(old?'Type saved.':'Type created.');
+  render(); if(!returning) mdReturn(); toast(old?'Type saved.':'Type created.');
 }
 function catFormLegacy(name){
   const isNew=name==null; const c=isNew?{color:'#3E7BC4',emoji:'📌'}:catOf(name);
@@ -22354,7 +22442,7 @@ function catSaveForm(name){
 }
 function catDel(name){
   delete APPT_CATS[name]; catSave(); logAudit('Removed appointment category',name);
-  closeAll(); render(); toast('Category removed.');
+  closeAll(); render(); mdReturn(); toast('Category removed.');
 }
 /* pilot agreement — every director and staff user signs individually; family is exempt */
 let PILOT_SIGNED={};
@@ -23449,6 +23537,7 @@ async function sbHydrate(){
       if(r.key==='increports'&&r.value&&r.value.map){ INC_REPORT=r.value.map; }
       if(r.key==='users'&&r.value&&r.value.map){ USERS=r.value.map; }
       if(r.key==='contractors'&&r.value&&Array.isArray(r.value.list)){ CONTRACTORS=r.value.list; }
+      if(r.key==='clientcolors'&&r.value&&r.value.map){ CLIENT_COLORS=r.value.map; }   // v12.46
       if(r.key==='calaccess'&&r.value&&r.value.map){ CAL_ACCESS=r.value.map; }
       if(r.key==='homecolors'&&r.value&&r.value.map){ HOME_COLORS=r.value.map; }
       if(r.key==='homeicons'&&r.value&&r.value.map){ HOME_ICONS=r.value.map; }
@@ -24089,7 +24178,7 @@ document.addEventListener('keydown',e=>{
     const items=[...m.querySelectorAll('.cx-mi')], i=items.indexOf(document.activeElement);
     const n=items[(i+(e.key==='ArrowDown'?1:-1)+items.length)%items.length]; if(n) n.focus(); e.preventDefault();
   }
-});
+},true);   // v12.46: before the window's own Esc, so a menu inside Settings closes alone
 window.addEventListener('resize',()=>cxMenuClose());
 document.addEventListener('scroll',()=>cxMenuClose(),true);
 function cxAdd(k,d,p){
@@ -24296,6 +24385,8 @@ function cxPage(p){
   const tools=`<div class="cx-tools">
     <input class="inp cx-q" placeholder="${p==='acct'?'Search places, people, notes…':'Search the calendar…'}" aria-label="Search" value="${esc((p==='acct'?state.acctQ:state.calQ)||'')}"
       oninput="${p==='acct'?'state.acctQ':'state.calQ'}=this.value;cxSearch()">
+    ${p==='calendar'&&state.role!=='family'&&visibleClients().length?`<select class="inp v1246-cf" data-nofill="1" aria-label="Show one client" onchange="state.calFilter.client=this.value;render()">
+      <option value="">All clients</option>${visibleClients().map(c=>`<option value="${esc(c.id)}" ${state.calFilter.client===c.id?'selected':''}>${esc(c.uci)}</option>`).join('')}</select>`:''}
     ${p==='calendar'&&types.length?`<div class="cx-types">${types.map(t=>`<button type="button" class="cx-ty${state.calFilter.type===t?' is-on':''}" onclick="state.calFilter.type=(state.calFilter.type===this.dataset.t?'':this.dataset.t);render()" data-t="${esc(t)}" title="${state.calFilter.type===t?'Show every type':'Show only '+esc(t)}">${catChip(t)}</button>`).join('')}
       ${state.calFilter.type?`<button type="button" class="btn ghost sm" onclick="state.calFilter.type='';render()">Show all</button>`:''}
       ${state.role==='director'?`<button type="button" class="btn ghost sm" onclick="catForm(null)">＋ Category</button><button type="button" class="btn ghost sm" onclick="catPick()">✎ Edit categories</button>`:''}</div>`:''}
@@ -24446,9 +24537,7 @@ function gcalCalsCard(){
   const orphans=list.filter(x=>x.acct&&GCAL.accts.length&&!gcalAcct(x.acct));
   return `<div class="v1243-gc" data-gcals><div class="set-h">${many?'Your Google accounts':'Your Google calendars'}</div>
     ${L.map(acctRow).join('')}
-    ${orphans.map(calRow).join('')}
-    <div class="v1244-acts"><button class="btn ghost sm" onclick="closeAll();gcalAddForm()">＋ Add another Google calendar</button>
-    ${gcalCanAdd()?`<button class="btn ghost sm" onclick="closeAll();gcalConnect(true)">＋ Connect another Google account</button>`:''}</div></div>`;
+    ${orphans.map(calRow).join('')}</div>`;   /* v12.46: added through the one Add calendar button */
 }
 function gcalAddForm(){
   if(!GCAL.connected) return toast('Connect Google Calendar first.');
@@ -24511,7 +24600,7 @@ function gcalAddCal(id,name,color,acct){
   list.push(Object.assign({id,name:String(name).slice(0,80),color:gcalHex(color)||GCAL_COLORS[list.length%GCAL_COLORS.length]},acct?{acct}:{}));
   gcalMineSave(list);
   logAudit('Added a Google calendar','Shown to the person who added it only');
-  closeAll(); render(); toast(String(name).slice(0,80)+' added'+(many&&A?' from '+gacctName(A):'')+'. Its events show on your calendar and home page.');
+  closeAll(); render(); mdReturn(); toast(String(name).slice(0,80)+' added'+(many&&A?' from '+gacctName(A):'')+'. Its events show on your calendar and home page.');
   gcalFetch(true);
 }
 function gcalCalEdit(i){

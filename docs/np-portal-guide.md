@@ -127,7 +127,7 @@ One shared calendar for appointments, events and outings, meetings, shifts, remi
 - **View** (once Google is connected): **All**, **Portal**, or one Google account, the same bar and choice as on Home.
 - **Calendars**: a row of chips, one per calendar the person can see in that view (Company calendar, their own, the director's extra calendars such as a day program or a van, and their Google calendars), grouped by Google account in All when there are two or more (click a group's name to hide or show all of it). Click one to hide or show it; the choice is per person and holds on Home too. A shown calendar has a ring around it, a hidden one is greyed out, and hovering a Google calendar names its Google account. **＋ Add calendar** opens one menu: **Add a Google calendar** (one you own, by its ID), **Link another Google account**, **Connect Google Calendar** (when it isn't), and for directors **Create a portal calendar** (the team's own, like Therapy or the van).
 - **The legend** counts each kind (Appointments, Events, Meetings, Shifts, Reminders, Accountability, Google Calendar) and turns it on or off for this page, per person. Accountability starts off here.
-- Tools: "Search the calendar…" and appointment-type chips that filter to one type (the one picked has a ring). Directors also get **Category** and **Edit categories**.
+- Tools: "Search the calendar…", **All clients** (pick one client's UCI to see only that client's appointments; not for families) and appointment-type chips that filter to one type (the one picked has a ring). Directors also get **Category** and **Edit categories**.
 - **Category icons**: each appointment, event and meeting shows its category's icon (Dental's tooth, Day program's leaf, or the icon a new category was given) in the month's days and the week, and in the day's plan the icon and the category's name come first, with Appointment (or Event, Meeting) under them, then the title. Google events keep their dot.
 - **Connect Google Calendar**. Once connected: "Refresh Google" and "Google ✓ · Disconnect" (with two or more Google accounts, "Google ✓ · 2 accounts", which opens them in the settings). After a page load it may show "Checking Google Calendar…" for a few seconds.
 - The gear: calendar settings (see Page settings).
@@ -360,8 +360,13 @@ Click your name at the bottom of the sidebar for your **profile**: credentials (
 The gear opens a window titled **Settings** with up to three tabs. Staff reach it only from Calendar, and only see Calendar integrations.
 
 - **Editing tool** (director): **Edit this page** (rename titles, drag sections, hide sections, add your own notes, table or quick links; the layout is yours and follows your login), **Rename menus and binders**, and on Tasks, **Task colors**.
-- **Display settings** (director): **Houses** (Add house), **Appointment types** (New type), **Attention icons**, and on Calendar and Home, **Calendar colors and text**.
-- **Calendar integrations**: Google Calendar (Connect, Refresh, Disconnect) and, once connected, Your Google calendars (the main one, the others you added with ✎ and ✕, Add another Google calendar and Connect another Google account). With two or more Google accounts it is **Your Google accounts**: each account with its calendars under it, **Main** on the one portal appointments go to, **Use for appointments** on the others, ✎ (a name and colour only you see) and **Disconnect** (that account only); for directors the team's calendars with New calendar, Contractors and Access ("Who sees each calendar"); Calendars and filters.
+- **Display settings** (director): **Houses** (Add house), **Attention icons**, and on Calendar and Home, **Calendar colors and text**.
+- **Calendar integrations**: for directors, three sub-tabs:
+  - **Calendars**: Google Calendar (Connect, Refresh, Disconnect) and, once connected, Your Google calendars (the main one, and the others you added with ✎ and ✕). With two or more Google accounts it is **Your Google accounts**: each account with its calendars under it, **Main** on the one portal appointments go to, **Use for appointments** on the others, ✎ (a name and colour only you see) and **Disconnect** (that account only). Then **Portal calendars** (directors): the team's calendar, your own and the ones the team made. Click one to open its page: name, colour, icon, Private, **Who sees it** (Everyone on the team, or Only these staff), and **Delete calendar** on the ones the team made. Under it all, one **＋ Add calendar** button: Add a Google calendar, Link another Google account (Connect Google Calendar when nothing is connected), Create a portal calendar (directors).
+  - **Appointment types** (director): each type's icon and colour; click one to change or remove it, **New type** to add one.
+  - **Clients** (director): each client by UCI with its colour; click one to pick a colour (or **Use the automatic color**). The colour shows on the board when appointments are colored by client (Display settings > Calendar colors and text).
+  - Staff see only the Calendars part: Google Calendar, their Google calendars and ＋ Add calendar.
+- A window opened from Settings (a calendar's page, Add a Google calendar, a type, a client colour) has **‹ Back** to return to Settings, and saving it goes back to Settings too.
 
 Edit mode shows a gold **Done editing** button. On Tasks, Safety log, Accountability, Training & onboarding, Documents, Templates and the staff page, a **Customize layout** button at the bottom corner also turns it on (staff see it on their pages too). On those pages and on Clients, the client page and Staff, the Edit, ✎ and ✕ buttons stay hidden until edit mode is on.
 
@@ -425,7 +430,7 @@ The gear on Home opens it.
 
 For each, choose Who and How (In the portal, Email). Staff see their own under Settings > Notifications > What reaches me. SIR deadline alerts and the overdue digest go to the Team alerts email: your name (profile) > About > Team alerts > Add or edit.
 
-**12. Add a house or an appointment type.** Any page's gear > Display settings > Houses > Add house, or Appointment types > New type. The + next to Type in the appointment form also adds a type.
+**12. Add a house or an appointment type.** Any page's gear > Display settings > Houses > Add house. For a type: the gear > Calendar integrations > Appointment types > New type. The + next to Type in the appointment form also adds a type.
 
 ### People
 
@@ -531,11 +536,11 @@ Use the blank form, not a filled-in copy. "Find boxes" looks again later.
 
 **49. Connect Google Calendar.** Calendar > Connect Google Calendar (or the gear > Calendar integrations > Connect) > pick the Google account > allow. It stays connected until Disconnect. Each person connects their own account.
 
-**49a. Show another of your Google calendars.** With Google connected: Calendar (or Home) > **＋ Add calendar** > **Add a Google calendar**, or the gear > Calendar integrations > Your Google calendars > **＋ Add another Google calendar**. Paste the calendar's ID: in Google Calendar, Settings > under "Settings for my calendars" click the calendar > Integrate calendar > Calendar ID (an embed link works too) > **Add calendar**. It gets its own chip and colour, and its events show on the Calendar page and Home, only to you. Only calendars you own can be added this way; one someone shared with you says "That calendar isn't yours". Rename, recolour (✎) or remove (✕) it under Your Google calendars; removing it changes nothing in Google. Portal appointments are still sent to your main Google calendar only.
+**49a. Show another of your Google calendars.** With Google connected: Calendar (or Home) > **＋ Add calendar** > **Add a Google calendar**, or the gear > Calendar integrations > **＋ Add calendar** > **Add a Google calendar**. Paste the calendar's ID: in Google Calendar, Settings > under "Settings for my calendars" click the calendar > Integrate calendar > Calendar ID (an embed link works too) > **Add calendar**. It gets its own chip and colour, and its events show on the Calendar page and Home, only to you. Only calendars you own can be added this way; one someone shared with you says "That calendar isn't yours". Rename, recolour (✎) or remove (✕) it under Your Google calendars; removing it changes nothing in Google. Portal appointments are still sent to your main Google calendar only.
 
 **49b. Hide a calendar.** Click its chip on the Calendar page or over Home's schedule. Click again, or **Show all**, to bring it back. To hide all of one Google account's calendars at once, click the account's name in front of its chips (in the All view).
 
-**49c. Connect another Google account (a work and a personal one, say).** With Google connected: Calendar > **＋ Add calendar** > **Link another Google account**, or the gear > Calendar integrations > **＋ Connect another Google account** > pick the other Google account in Google's window > allow. Its calendar shows next to the first one's, only to you, and both stay connected until disconnected. Up to 5 accounts. To disconnect just one: the gear > Calendar integrations > Your Google accounts > **Disconnect** on that account.
+**49c. Connect another Google account (a work and a personal one, say).** With Google connected: Calendar > **＋ Add calendar** > **Link another Google account**, or the gear > Calendar integrations > **＋ Add calendar** > **Link another Google account** > pick the other Google account in Google's window > allow. Its calendar shows next to the first one's, only to you, and both stay connected until disconnected. Up to 5 accounts. To disconnect just one: the gear > Calendar integrations > Your Google accounts > **Disconnect** on that account.
 
 **49d. Switch views.** Over Home's schedule or on the Calendar page: **View** > **All**, **Portal** (only the team's calendars), or one Google account (only its calendars). The choice stays until changed, on both pages.
 
@@ -543,7 +548,13 @@ Use the blank form, not a filled-in copy. "Find boxes" looks again later.
 
 **49f. Name a Google account.** The gear > Calendar integrations > Your Google accounts > ✎ > a name (such as Work) and a colour > Save. Only you see it, on the View bar, the chips and the tag on its events. Nothing changes in Google.
 
-**49g. Make a calendar of the team's own (directors).** Calendar > **＋ Add calendar** > **Create a portal calendar** > a name (such as Therapy), a colour and an icon > Create calendar. Or, while adding an appointment, pick **＋ Create new calendar** at the bottom of its Calendar list and type the name.
+**49g. Make a calendar of the team's own (directors).** Calendar > **＋ Add calendar** > **Create a portal calendar** (or the gear > Calendar integrations > **＋ Add calendar** > **Create a portal calendar**) > a name (such as Therapy), a colour and an icon > Create calendar. Or, while adding an appointment, pick **＋ Create new calendar** at the bottom of its Calendar list and type the name.
+
+**49h. Rename, recolour or delete a calendar, or choose who sees it (directors).** The gear > Calendar integrations > Calendars > Portal calendars > click the calendar. Change the name, colour or icon, tick **Private** (only you see it), or under **Who sees it** pick **Only these staff** and tick them (directors always see every calendar) > Save. **Delete calendar** (only on calendars the team made) asks first; its appointments move to the team's calendar. The team's calendar and your own can't be deleted. There is no separate Contractors list any more.
+
+**49i. Give a client a colour (directors).** The gear > Calendar integrations > **Clients** > click the client's UCI > a colour > Save. It shows when the board is coloured by client (the gear > Display settings > Calendar colors and text > Client). **Use the automatic color** undoes it.
+
+**49j. See one client's appointments.** Calendar > **All clients** (next to the search box) > the client's UCI. Pick All clients again to see everyone's.
 
 **50. Export a client's whole record.** The client > Export record > "Save as PDF" in the print window.
 
