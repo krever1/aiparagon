@@ -3363,6 +3363,27 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
   .hm-sched .v1243-cc{padding:10px 16px}
   .v1243-c{max-width:calc(100vw - 80px)}
 }
+/* ══ v12.48: log buttons the team names, client logs ══ */
+.v1248-eb{display:inline-flex;align-items:center;gap:5px;cursor:text;outline:1.5px dashed var(--gold,#B8963E);outline-offset:2px}
+.v1248-eb:focus-within{outline-style:solid}
+.v1248-bt{outline:none;min-width:3ch;white-space:nowrap;cursor:text}
+.v1248-pen{font-size:11px;opacity:.75}
+.v1248-tw{overflow-x:auto}
+.v1248-tw table.tb{min-width:100%}
+.v1248-tw table.tb th{white-space:normal;padding:10px 12px;vertical-align:bottom}
+.v1248-tw table.tb td{white-space:nowrap;padding:10px 12px;vertical-align:top}
+.v1248-tw table.tb td:last-child{white-space:normal;min-width:120px}
+@media (min-width:761px){ .modal.v1248-wide{width:min(760px,calc(100vw - 32px));max-width:none} }
+.v1248-row{cursor:pointer}
+.v1248-new{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:16px;padding:12px 14px;border:1px dashed var(--line);border-radius:12px}
+.v1248-gone{display:flex;flex-wrap:wrap;align-items:center;gap:6px;flex-basis:100%}
+.v1248-fr{display:grid;grid-template-columns:minmax(0,1.5fr) 150px minmax(0,1fr) auto;gap:8px;align-items:center;margin-bottom:8px}
+.v1248-fb{display:inline-flex;gap:4px}
+.v1248-fb .btn{padding-left:9px;padding-right:9px}
+.v1248-who{display:flex;flex-wrap:wrap;gap:6px 14px;margin:4px 0 0 26px}
+.v1248-who label{display:inline-flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}
+.v1248-num{display:flex;align-items:center;gap:8px}
+@media(max-width:700px){ .v1248-fr{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .v1248-fr>input:first-child{grid-column:1/-1} .v1248-fx{display:none} .v1248-fb{grid-column:1/-1;justify-content:flex-end} .v1248-who{margin-left:0} }
 /* ══ v12.47: Templates subfolders, the drag handle, layout buttons in the header ══ */
 .v1247-sf{border-top:1px solid var(--line)}
 .v1247-sfh{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:9px;width:100%;padding:11px 18px;font-size:13.5px;color:var(--ink)}
@@ -6417,7 +6438,7 @@ function openModal(title,body,foot){
     }
     MD_CUR=nav;
   } else if(!wasOpen && !MD_BACKING){ MD_STACK=[]; MD_CUR=null; }
-  el('modal').classList.remove('tpe-wide','ov-modal','hm-cust-md','v1245-wide');
+  el('modal').classList.remove('tpe-wide','ov-modal','hm-cust-md','v1245-wide','v1248-wide');
   el('mdTitle').innerHTML=(MD_STACK.length?`<button type="button" class="md-back" onclick="mdBack()" title="Back to the previous screen">‹ Back</button>`:'')+title;
   el('mdBody').innerHTML=body; el('mdFoot').innerHTML=foot||'';
   el('mdFoot').style.display=foot?'flex':'none';
@@ -7516,6 +7537,7 @@ function layoutChrome(page,cols,cards,cfg){
             was a second way to do the same thing. */''}
       <button onclick="layHide('${lid}')">${hid2?'👁 Show':'Hide'}</button>
       ${isCs?`<button onclick="csEdit('${page}','${lid.slice(3)}')">✎ Edit</button>`:''}
+      ${lid.indexOf('clog-')===0&&state.role==='director'?`<button onclick="clogForm('${lid.slice(5)}')">✎ Edit log</button>`:''}
       <button title="${isCs?'Delete this section':'Remove this section from the page'}" onclick="laySectionDel('${page}','${lid}',${isCs})">✕</button>`;
     sec.prepend(bar);
     const t=bar.querySelector('.lay-t');
@@ -7898,11 +7920,13 @@ function csAddMenu(page,col){
     ${[['notes','✎ Notes','A free-text card for anything you want in front of you'],
        ['table','▦ Custom table','Your own columns and rows — a phone tree, a roles table, whatever fits'],
        ['links','⇗ Quick links','Buttons to portal pages or outside sites'],
+       ...(page==='client-care'&&state.role==='director'?[['clog','▤ Client log','A form staff fill in for each client, with its own button and table. Shared with the whole team']]:[]),
        ...(page==='templates'&&state.role==='director'?[['binder','🗀 Binder','A new binder with its own table of documents, shared with the whole team']]:[])].map(([k,t,d])=>`
     <button class="checkrow" style="width:100%;cursor:pointer;text-align:left;border-color:var(--line)" onclick="csCreate('${page}','${k}')"><div class="cb">＋</div><div class="ct"><b>${t}</b><div class="tiny muted">${d}</div></div></button>`).join('')}`,
     `<button class="btn ghost" onclick="closeAll()">Cancel</button>`);
 }
 function csCreate(page,type){
+  if(type==='clog'){ closeAll(); return clogForm(); }                // v12.48
   if(type==='binder'){ closeAll(); window._nbSec=true; return binderForm(); }
   const id='c'+Date.now();
   const base={notes:{text:''},table:{cols:['Name','Details'],rows:[]},links:{items:[]}}[type]||{};
@@ -9111,7 +9135,7 @@ function careMonth(c){
   for(let i=0;i<lead;i++) cells.push('<span></span>');
   for(let d=1;d<=days;d++){
     const ds=iso(new Date(y,m,d,12));
-    const n=vitalsFor(c.id,ds).length+adlsFor(c.id,ds).length;
+    const n=vitalsFor(c.id,ds).length+adlsFor(c.id,ds).length+clogFor(c).reduce((s,x)=>s+clogsFor(c.id,ds,x.id).length,0);   // v12.48
     cells.push(`<button class="${ds===T?'is-today':''} ${ds===anchor?'is-on':''}"
       title="${fmtLong(ds)}${n?` · ${n} entr${n===1?'y':'ies'}`:''}"
       onclick="state.careDay='${ds}';render()">${d}${n?'<i></i>':''}</button>`);
@@ -9153,25 +9177,26 @@ function clientCare(c){
       <section class="card">
         <div class="sec-head soft-blue"><h2>Vital signs</h2><span class="hd-n blue">${vs.length}</span>
           <p>${all?'Every reading on file':fmtLong(d)}</p>
-          ${canEdit?`<div class="right head-act"><button class="btn navy sm" onclick="vitalForm('${c.id}')">＋ Record vitals</button></div>`:''}</div>
+          ${canEdit?`<div class="right head-act">${logBtn('care:vitals','Record vitals',`vitalForm('${c.id}')`,'btn navy sm','＋')}</div>`:''}</div>
         <div class="card-b flush">${vs.map(vRow).join('')
           ||`<div class="empty"><b>Nothing recorded${all?'':' on this day'}</b>Readings taken at home or at an appointment go here.</div>`}</div>
       </section>
       <section class="card" style="margin-top:14px">
         <div class="sec-head"><h2>Activities of daily living</h2><span class="hd-n">${ad.length}</span>
           <p>${all?'Every log on file':fmtLong(d)} · meals, fluids, personal care, mobility</p>
-          ${canEdit?`<div class="right head-act"><button class="btn navy sm" onclick="adlForm('${c.id}')">＋ Log an activity</button></div>`:''}</div>
+          ${canEdit?`<div class="right head-act">${logBtn('care:adl','Log an activity',`adlForm('${c.id}')`,'btn navy sm','＋')}</div>`:''}</div>
         <div class="card-b flush">${ad.map(aRow).join('')
           ||`<div class="empty"><b>Nothing logged${all?'':' on this day'}</b>Meals, fluids, bathing, toileting and mobility are recorded here.</div>`}</div>
       </section>
+      ${clogCards(c,d,all,canEdit)}
     </div>
     <div>${careMonth(c)}</div>
-  </div>`;
+  </div>${clogNewTile(c)}`;
 }
 
 function vitalForm(cid,i){
   const v=(i==null)?{date:careDay(),time:nowHM(),context:''}:VITALS[i];
-  openModal(i==null?'Record vital signs':'Edit vital signs',`
+  openModal(i==null?(BTN_LABELS['care:vitals']?esc(btnText('care:vitals')):'Record vital signs'):'Edit vital signs',`
     <div class="row2">
       <div class="field"><label>Date</label><input class="inp" type="date" id="vtD" value="${v.date||careDay()}"></div>
       <div class="field"><label>Time</label><input class="inp" type="time" id="vtT" value="${v.time||nowHM()}"></div>
@@ -9226,7 +9251,7 @@ function vitalDel(i){
 }
 function adlForm(cid,i){
   const a=(i==null)?{date:careDay(),time:nowHM(),kind:'Meal',assist:''}:ADLS[i];
-  openModal(i==null?'Log an activity':'Edit the log',`
+  openModal(i==null?esc(btnText('care:adl')):'Edit the log',`
     <div class="row2">
       <div class="field"><label>Date</label><input class="inp" type="date" id="adD" value="${a.date||careDay()}"></div>
       <div class="field"><label>Time</label><input class="inp" type="time" id="adT" value="${a.time||nowHM()}"></div>
@@ -10142,6 +10167,7 @@ function digestDataHere(){
   const done=new Set();
   try{ ADLS.forEach(a=>{ if(a.date===T) done.add(a.cid); }); }catch(e){}
   try{ VITALS.forEach(v=>{ if(v.date===T) done.add(v.cid); }); }catch(e){}
+  try{ CLOGS.forEach(x=>{ if(x.date===T) done.add(x.cid); }); }catch(e){}   // v12.48
   try{ LOGS.forEach(l=>{ if(l.date===T) done.add(l.cid); }); }catch(e){}
   noteDays.forEach(([c,d])=>{ if(d===T) done.add(c); });
   const dl=visibleClients().filter(c=>!done.has(c.id)).length;
@@ -11970,6 +11996,7 @@ function delClient(cid){
     for(let j=INCIDENTS.length-1;j>=0;j--) if(INCIDENTS[j].cid===cid) INCIDENTS.splice(j,1);
     for(let j=MEDS.length-1;j>=0;j--) if(MEDS[j].cid===cid) MEDS.splice(j,1);
     for(let j=LOGS.length-1;j>=0;j--) if(!MEDS.some(m=>m.id===LOGS[j].mid)) LOGS.splice(j,1);
+    CLOGS=CLOGS.filter(e=>e.cid!==cid);                            // v12.48
     [VITALS,ADLS,WHEREABOUTS].forEach(a=>{ for(let j=a.length-1;j>=0;j--) if(a[j].cid===cid) a.splice(j,1); });
     vitalsIndex(); adlsIndex(); acctIndex();       // rows open by their position, so the positions are renumbered
     try{ let ch=false;                             // completed forms filed to their file: that copy goes, binder copies stay
@@ -11982,7 +12009,7 @@ function delClient(cid){
     (async()=>{                                    // v12.15: everything filed under the client goes first, then the client
       const q='cid=eq.'+encodeURIComponent(cid);   // (the database refuses to delete a client who still has appointments or checklist ticks)
       await Promise.all(['np_demo_appointments','np_demo_client_notes','np_demo_checklist_logs','np_demo_meds','np_demo_med_logs',
-        'np_demo_incidents','np_demo_documents','np_demo_vitals','np_demo_adls','np_demo_whereabouts'].map(t=>sbDel(t,q)));
+        'np_demo_incidents','np_demo_documents','np_demo_vitals','np_demo_adls','np_demo_whereabouts','np_demo_client_logs'].map(t=>sbDel(t,q)));
       await sbDel('np_demo_clients','id=eq.'+encodeURIComponent(cid));
     })();
     delMark('client',cid);
@@ -12735,6 +12762,240 @@ function deleteFiled(folderKey,idx){
     render(); toast('Removed.');
   },'Remove');
 }
+
+/* ══ v12.48: log buttons the team names, and client logs the team builds ══
+   A log button's words (Record vitals, Log an activity, Log a drill, Add reading, a form's Start or Run button,
+   a client log's button) are the team's: a director types over them in edit mode, or sets them in the log's own
+   setup. Only the words change; a ＋ in front stays. BTN_LABELS holds the changed ones (np_demo_program 'btnlabels').
+   A client log is the team's own form on every client's Care tab (or the clients it names), kept by day like vital
+   signs: its name, the fields an entry records and the clients it is for are CLOG_DEFS (np_demo_program
+   'clientlogs'); each entry is a row of np_demo_client_logs (CLOGS). Removing a log archives it: its entries stay,
+   and Restore at the bottom of the Care tab brings it back. Nothing on the page is redrawn while a button's words
+   are typed or when the typing ends, so a click that ends it (Done editing) is never lost. */
+let BTN_LABELS={};
+const BTN_STD={'care:vitals':'Record vitals','care:adl':'Log an activity','safety:drills':'Log a drill','safety:temps':'Add reading'};
+function btnLabelsSave(){ sbUpsert('np_demo_program',{key:'btnlabels',value:{map:BTN_LABELS},updated_by:auditActor()}); }
+function btnText(key,def){ const v=String(BTN_LABELS[key]||'').trim(); return v||def||BTN_STD[key]||''; }
+function btnClean(v){ return String(v||'').replace(/\s+/g,' ').trim().replace(/^[+＋]\s*/,'').trim().slice(0,40); }
+function btnLabelPut(key,v,def){                                      // set or clear one button's words; true when they changed
+  const nv=btnClean(v), cur=String(BTN_LABELS[key]||'');
+  const keep=nv&&nv!==(def||BTN_STD[key]||'')?nv:'';
+  if(keep===cur) return false;
+  if(keep) BTN_LABELS[key]=keep; else delete BTN_LABELS[key];
+  btnLabelsSave(); return true;
+}
+const btnRenamable=()=>!!state.layoutEdit&&state.role==='director';
+function logBtn(key,def,js,cls,pre){
+  const t=btnText(key,def);
+  if(!btnRenamable()) return `<button class="${cls}" data-bkey="${esc(key)}" onclick="${js}">${pre?pre+' ':''}${esc(t)}</button>`;
+  return `<span class="${cls} v1248-eb" onclick="event.stopPropagation()" title="Type to rename this button for the whole team">${pre?`<span class="v1248-pre" aria-hidden="true">${pre}</span>`:''}<span class="v1248-bt" role="textbox" aria-label="Button text" contenteditable="true" spellcheck="false" data-bkey="${esc(key)}" data-bdef="${esc(def||BTN_STD[key]||'')}">${esc(t)}</span><span class="v1248-pen" aria-hidden="true">✎</span></span>`;
+}
+const isBtnEd=t=>!!(t&&t.classList&&t.classList.contains('v1248-bt'));
+document.addEventListener('focusin',e=>{ if(isBtnEd(e.target)) e.target.dataset.was=e.target.textContent; });
+document.addEventListener('keydown',e=>{ const t=e.target; if(!isBtnEd(t)) return;
+  if(e.key==='Enter'){ e.preventDefault(); t.blur(); }
+  else if(e.key==='Escape'){ e.preventDefault(); e.stopImmediatePropagation(); t.textContent=t.dataset.was||''; t.blur(); } },true);
+document.addEventListener('paste',e=>{ const t=e.target&&e.target.closest?e.target.closest('.v1248-bt'):null; if(!t) return; e.preventDefault();
+  const x=String(((e.clipboardData||window.clipboardData||{getData:()=>''}).getData('text'))||'').replace(/\s+/g,' ');
+  try{ document.execCommand('insertText',false,x); }catch(err){ t.textContent+=x; } },true);
+document.addEventListener('focusout',e=>{ if(isBtnEd(e.target)) btnRenameDone(e.target); });
+function btnRenameDone(t){
+  const key=t.dataset.bkey, def=t.dataset.bdef||'';
+  const before=btnText(key,def);
+  const changed=btnLabelPut(key,t.textContent,def);
+  const now=btnText(key,def);
+  document.querySelectorAll('.v1248-bt').forEach(x=>{ if(x.dataset.bkey===key){ const d=x.dataset.bdef||''; const w=btnText(key,d); if(x.textContent!==w) x.textContent=w; } });
+  if(!changed) return;
+  logAudit('Renamed a button',before+' → '+now);
+  toast(BTN_LABELS[key]?`Renamed for the whole team: “${now}”.`:`Back to the standard words: “${now}”.`);
+}
+
+let CLOG_DEFS=[], CLOGS=[];
+const CLOG_TYPES=[['text','Short answer'],['long','Paragraph'],['number','Number'],['choice','Pick one'],['yesno','Yes or no'],['time','Time']];
+function clogDefsSave(){ sbUpsert('np_demo_program',{key:'clientlogs',value:{list:CLOG_DEFS},updated_by:auditActor()}); }
+const clogDef=id=>CLOG_DEFS.find(d=>d.id===id);
+function clogFor(c){ return CLOG_DEFS.filter(d=>!d.archived&&(!(d.cids||[]).length||(d.cids||[]).includes(c.id))); }
+const clogsFor=(cid,day,lid)=>CLOGS.filter(e=>e.cid===cid&&(!day||e.date===day)&&e.log===lid)
+  .sort((a,b)=>String(b.date+' '+b.time).localeCompare(String(a.date+' '+a.time)));
+function clogVal(f,v){ if(v==null||v==='') return ''; if(f.type==='time') return hm12(String(v)); if(f.type==='number') return String(v)+(f.unit?' '+f.unit:''); return String(v); }
+function clogRow(r){ return {id:r.id,log_id:r.log,cid:r.cid,entry_date:r.date,entry_time:r.time||null,vals:r.vals||{},notes:r.notes||'',
+  recorded_by:r.by||'',edited_by:r.editedBy||null,updated_at:new Date().toISOString()}; }
+function clogFromRow(r){ return {id:String(r.id),log:r.log_id,cid:r.cid,date:String(r.entry_date||'').slice(0,10),time:r.entry_time||'',
+  vals:(r.vals&&typeof r.vals==='object'&&!Array.isArray(r.vals))?r.vals:{},notes:r.notes||'',by:r.recorded_by||'',editedBy:r.edited_by||''}; }
+async function clogRead(){
+  if(!sbOn()) return;
+  try{ const r=await fetch(`${BACKEND.url}/rest/v1/np_demo_client_logs?${orgScope('select=*&order=entry_date.desc&limit=3000')}`,{headers:sbH()});
+    if(!r.ok) return;                                                 // no table yet: the logs read as empty, quietly
+    const j=await r.json(); if(Array.isArray(j)) CLOGS=j.map(clogFromRow);
+  }catch(e){}
+}
+function clogCards(c,day,all,canEdit){
+  return clogFor(c).map(def=>{
+    const rows=clogsFor(c.id,all?null:day,def.id), fs=def.fields||[], bt=btnText('clog:'+def.id,'Add an entry');
+    const head=`<tr>${all?'<th>Date</th>':''}<th>Time</th>${fs.map(f=>`<th>${esc(f.label)}</th>`).join('')}<th>By</th><th>Notes</th></tr>`;
+    const body=rows.map(e=>`<tr${canEdit?` class="v1248-row" onclick="clogEntryForm('${def.id}','${c.id}','${esc(e.id)}')"`:''}>${all?`<td>${fmtDate(e.date)}</td>`:''}<td>${hm12(e.time||'')}</td>${fs.map(f=>`<td>${esc(clogVal(f,(e.vals||{})[f.id]))}</td>`).join('')}<td>${esc(e.by||'')}</td><td>${esc(e.notes||'')}</td></tr>`).join('');
+    return `<section class="card v1248-log" data-lid="clog-${def.id}" style="margin-top:14px">
+        <div class="sec-head soft-lilac"><h2>${esc(def.name)}</h2><span class="hd-n">${rows.length}</span>
+          <p>${all?'Every entry on file':fmtLong(day)}</p>
+          ${canEdit?`<div class="right head-act">${logBtn('clog:'+def.id,'Add an entry',`clogEntryForm('${def.id}','${c.id}')`,'btn navy sm','＋')}</div>`:''}</div>
+        <div class="card-b flush">${rows.length?`<div class="v1248-tw"><table class="tb"><thead>${head}</thead><tbody>${body}</tbody></table></div>`
+          :`<div class="empty"><b>Nothing logged${all?'':' on this day'}</b>${canEdit?`Use ＋ ${esc(bt)} to add the first entry.`:'Entries the team records show here.'}</div>`}</div>
+      </section>`; }).join('');
+}
+function clogNewTile(c){
+  if(state.role!=='director') return '';
+  const gone=CLOG_DEFS.filter(d=>d.archived);
+  return `<div class="v1248-new"><button class="btn ghost sm" onclick="clogForm()">＋ New client log</button>
+    <span class="tiny muted">A form your team fills in for each client, with its own button and table, like vital signs.</span>
+    ${gone.length?`<div class="v1248-gone"><span class="tiny muted">Removed logs:</span>${gone.map(d=>`<button class="btn ghost sm" onclick="clogRestore('${d.id}')">↺ Restore ${esc(d.name)}</button>`).join('')}</div>`:''}</div>`;
+}
+function clogSheet(cid,tb){
+  const c=client(cid); if(!c) return '';
+  return CLOG_DEFS.filter(d=>(!d.archived&&clogFor(c).includes(d))||CLOGS.some(e=>e.cid===cid&&e.log===d.id)).map(d=>{
+    const fs=d.fields||[];
+    return `<h3>${esc(d.name)}</h3>${tb(['Date','Time',...fs.map(f=>esc(f.label)),'By','Notes'],
+      clogsFor(cid,null,d.id).map(e=>[fmtDate(e.date),hm12(e.time||''),...fs.map(f=>clogVal(f,(e.vals||{})[f.id])),e.by,e.notes||'']))}`; }).join('');
+}
+/* the log's setup: directors */
+let CLOG_FN=0;
+function clogFid(){ return 'f'+Date.now().toString(36)+(CLOG_FN++); }
+function clogForm(id){
+  if(state.role!=='director') return toast('Only a director can set up a client log.');
+  const d=id?clogDef(id):null; if(id&&!d) return;
+  window._clDraft=d?JSON.parse(JSON.stringify(d)):{id:'',name:'',fields:[{id:clogFid(),label:'',type:'text'}],cids:[]};
+  window._clDraft._btn=d?(BTN_LABELS['clog:'+d.id]||''):'';
+  clogFormDraw();
+}
+function clogFormDraw(){
+  const D=window._clDraft, cl=visibleClients(), some=(D.cids||[]).length>0;
+  openModal(D.id?'Edit client log':'New client log',`
+    <div class="tiny muted" style="margin-bottom:10px">Staff fill it in on each client’s Care tab, kept by day like vital signs. Every entry also keeps the date, the time, who recorded it and notes.</div>
+    <div class="row2">
+      <div class="field"><label for="clName">Log name</label><input class="inp" id="clName" maxlength="60" value="${esc(D.name||'')}" placeholder="e.g. Sleep log" oninput="window._clDraft.name=this.value"></div>
+      <div class="field"><label for="clBtn">Button text</label><input class="inp" id="clBtn" maxlength="40" value="${esc(D._btn||'')}" placeholder="Add an entry" oninput="window._clDraft._btn=this.value">
+        <div class="tiny muted">The words on the button that opens the form, after a ＋.</div></div>
+    </div>
+    <div class="field"><label>What each entry records</label><div id="clFields">${clogFieldRows()}</div>
+      <button class="btn ghost sm" style="margin-top:8px" onclick="clogFieldAdd()">＋ Add a field</button></div>
+    <div class="field"><label>Which clients</label>
+      <label class="checkrow" style="cursor:pointer"><input type="radio" name="clWho" value="all" ${some?'':'checked'} onchange="clogWho()"> <span>Every client</span></label>
+      <label class="checkrow" style="cursor:pointer"><input type="radio" name="clWho" value="some" ${some?'checked':''} onchange="clogWho()"> <span>Only these clients</span></label>
+      <div id="clWhoL" class="v1248-who" ${some?'':'hidden'}>${cl.map(c=>`<label><input type="checkbox" value="${esc(c.id)}" ${(D.cids||[]).includes(c.id)?'checked':''}> ${esc(c.uci)}</label>`).join('')||'<span class="tiny muted">No clients yet.</span>'}</div></div>`,
+    `${D.id?`<button class="btn ghost" onclick="clogArchive('${D.id}')">Remove log</button>`:''}
+     <button class="btn ghost" onclick="closeAll()">Cancel</button>
+     <button class="btn navy" onclick="clogFormSave()">${D.id?'Save changes':'Create log'}</button>`);
+  el('modal').classList.add('v1248-wide');
+}
+function clogFieldRows(){
+  const fs=window._clDraft.fields;
+  return fs.map((f,i)=>`<div class="v1248-fr">
+      <input class="inp" aria-label="Field ${i+1} name" maxlength="60" value="${esc(f.label||'')}" placeholder="${i===0?'e.g. Hours slept':'Field name'}" oninput="window._clDraft.fields[${i}].label=this.value">
+      <select class="inp" aria-label="Field ${i+1} answer type" data-nofill="1" onchange="clogFieldType(${i},this.value)">${CLOG_TYPES.map(([k,l])=>`<option value="${k}" ${f.type===k?'selected':''}>${l}</option>`).join('')}</select>
+      ${f.type==='choice'?`<input class="inp" aria-label="Field ${i+1} choices" value="${esc((f.opts||[]).join(', '))}" placeholder="Choices, with commas" oninput="window._clDraft.fields[${i}].opts=this.value.split(',').map(x=>x.trim()).filter(Boolean)">`
+        :f.type==='number'?`<input class="inp" aria-label="Field ${i+1} unit" maxlength="20" value="${esc(f.unit||'')}" placeholder="Unit, e.g. hours" oninput="window._clDraft.fields[${i}].unit=this.value.trim()">`:'<span class="v1248-fx"></span>'}
+      <span class="v1248-fb"><button class="btn ghost sm" type="button" title="Move up" aria-label="Move field ${i+1} up" ${i===0?'disabled':''} onclick="clogFieldMove(${i},-1)">↑</button><button class="btn ghost sm" type="button" title="Move down" aria-label="Move field ${i+1} down" ${i===fs.length-1?'disabled':''} onclick="clogFieldMove(${i},1)">↓</button><button class="btn ghost sm" type="button" title="Remove this field" aria-label="Remove field ${i+1}" ${fs.length<2?'disabled':''} onclick="clogFieldDel(${i})">✕</button></span>
+    </div>`).join('');
+}
+function clogFieldsPaint(){ const b=el('clFields'); if(b) b.innerHTML=clogFieldRows(); }
+function clogFieldAdd(){ window._clDraft.fields.push({id:clogFid(),label:'',type:'text'}); clogFieldsPaint();
+  const r=el('clFields')&&el('clFields').lastElementChild; if(r) r.querySelector('input').focus(); }
+function clogFieldType(i,t){ const f=window._clDraft.fields[i]; if(!f) return; f.type=t; if(t!=='choice') delete f.opts; if(t!=='number') delete f.unit; clogFieldsPaint(); }
+function clogFieldMove(i,dir){ const a=window._clDraft.fields, j=i+dir; if(j<0||j>=a.length) return; [a[i],a[j]]=[a[j],a[i]]; clogFieldsPaint(); }
+function clogFieldDel(i){ const a=window._clDraft.fields; if(a.length<2) return; a.splice(i,1); clogFieldsPaint(); }
+function clogWho(){ const some=(document.querySelector('input[name="clWho"]:checked')||{}).value==='some'; const l=el('clWhoL'); if(l) l.hidden=!some; }
+function clogFormSave(){
+  const D=window._clDraft, name=String(D.name||'').replace(/\s+/g,' ').trim().slice(0,60);
+  if(!name) return toast('Name the log.');
+  const fields=(D.fields||[]).map(f=>Object.assign({},f,{label:String(f.label||'').replace(/\s+/g,' ').trim().slice(0,60)})).filter(f=>f.label);
+  if(!fields.length) return toast('Add at least one field, with a name.');
+  const bad=fields.find(f=>f.type==='choice'&&(f.opts||[]).length<2);
+  if(bad) return toast(`Give “${bad.label}” at least two choices, with commas between them.`);
+  const some=(document.querySelector('input[name="clWho"]:checked')||{}).value==='some';
+  const cids=some?[...document.querySelectorAll('#clWhoL input:checked')].map(x=>x.value):[];
+  if(some&&!cids.length) return toast('Tick at least one client, or choose Every client.');
+  const ex=D.id?clogDef(D.id):null;
+  const rec={id:ex?ex.id:'cl'+Date.now().toString(36), name, cids, by:ex?ex.by:actorName(), at:ex?ex.at:T, archived:false,
+    fields:fields.map(f=>{ const o={id:f.id||clogFid(), label:f.label, type:CLOG_TYPES.some(([k])=>k===f.type)?f.type:'text'};
+      if(o.type==='choice') o.opts=(f.opts||[]).map(x=>String(x).slice(0,60)).slice(0,30);
+      if(o.type==='number'&&f.unit) o.unit=String(f.unit).slice(0,20);
+      return o; })};
+  if(ex) Object.assign(ex,rec); else CLOG_DEFS.push(rec);
+  clogDefsSave();
+  btnLabelPut('clog:'+rec.id,D._btn||'','Add an entry');
+  logAudit(ex?'Edited a client log':'Created a client log',name);
+  closeAll(); render();
+  toast(ex?'Saved.':`“${name}” is on the Care tab of ${some?'the clients you chose':'every client'}.`);
+}
+function clogArchive(id){
+  const d=clogDef(id); if(!d) return;
+  const n=CLOGS.filter(e=>e.log===id).length;
+  askDelete(`Remove “${esc(d.name)}”?`,`It comes off every client’s Care tab. ${n?`Its ${n} entr${n===1?'y stays':'ies stay'} on file. `:''}Restore at the bottom of any Care tab brings it back.`,()=>{
+    d.archived=true; clogDefsSave(); logAudit('Removed a client log',d.name);
+    closeAll(); render(); toast('Removed. Restore it from the bottom of any Care tab.');
+  },'Remove log');
+}
+function clogRestore(id){ const d=clogDef(id); if(!d) return; d.archived=false; clogDefsSave(); logAudit('Restored a client log',d.name); render(); toast(`“${d.name}” is back.`); }
+/* an entry: anyone but a family member */
+function clogEntryForm(lid,cid,eid){
+  const def=clogDef(lid); if(!def||state.role==='family') return;
+  const e=eid?CLOGS.find(x=>x.id===eid):null; if(eid&&!e) return;
+  const v=e?Object.assign({},e.vals||{}):{};
+  const inp=f=>{ const id='ce_'+f.id, val=v[f.id]==null?'':String(v[f.id]);
+    if(f.type==='long') return `<textarea class="inp" id="${id}" rows="3">${esc(val)}</textarea>`;
+    if(f.type==='number') return `<div class="v1248-num"><input class="inp" id="${id}" type="number" step="any" inputmode="decimal" value="${esc(val)}">${f.unit?`<span class="tiny muted">${esc(f.unit)}</span>`:''}</div>`;
+    if(f.type==='time') return `<input class="inp" id="${id}" type="time" value="${esc(val)}">`;
+    if(f.type==='choice'||f.type==='yesno'){ const o=f.type==='yesno'?['Yes','No']:(f.opts||[]);
+      return `<select class="inp" id="${id}" data-nofill="1"><option value="">Not recorded</option>${o.map(x=>`<option ${x===val?'selected':''}>${esc(x)}</option>`).join('')}${val&&!o.includes(val)?`<option selected>${esc(val)}</option>`:''}</select>`; }
+    return `<input class="inp" id="${id}" maxlength="300" value="${esc(val)}">`; };
+  openModal(esc(def.name),`
+    <div class="row2">
+      <div class="field"><label for="ceD">Date</label><input class="inp" type="date" id="ceD" value="${e?e.date:careDay()}"></div>
+      <div class="field"><label for="ceT">Time</label><input class="inp" type="time" id="ceT" value="${e?(e.time||''):nowHM()}"></div>
+    </div>
+    ${(def.fields||[]).map(f=>`<div class="field"><label for="ce_${f.id}">${esc(f.label)}</label>${inp(f)}</div>`).join('')}
+    <div class="field"><label for="ceN">Notes</label><input class="inp" id="ceN" maxlength="1000" value="${esc(e?e.notes||'':'')}" placeholder="Anything the next person should know"></div>`,
+    `${e?`<button class="btn ghost" onclick="clogEntryDel('${esc(e.id)}')">✕ Delete</button>`:''}
+     <button class="btn ghost" onclick="closeAll()">Cancel</button>
+     <button class="btn navy" onclick="clogEntrySave('${lid}','${cid}',${e?`'${esc(e.id)}'`:'null'})">${e?'Save changes':'Save entry'}</button>`);
+}
+function clogEntrySave(lid,cid,eid){
+  const def=clogDef(lid); if(!def) return;
+  const vals={};
+  (def.fields||[]).forEach(f=>{ const n=el('ce_'+f.id); const x=n?String(n.value||'').trim():''; if(x) vals[f.id]=x.slice(0,f.type==='long'?2000:300); });
+  const notes=String((el('ceN')||{}).value||'').trim().slice(0,1000);
+  if(!Object.keys(vals).length&&!notes) return toast('Fill in at least one field.');
+  const date=(el('ceD')||{}).value||careDay(), time=(el('ceT')||{}).value||'';
+  const ex=eid?CLOGS.find(x=>x.id===eid):null;
+  const rec=ex||{id:'ce'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),log:lid,cid,by:meInit()};
+  Object.assign(rec,{date,time,vals,notes});
+  if(ex) rec.editedBy=meInit(); else CLOGS.push(rec);
+  sbUpsert('np_demo_client_logs',clogRow(rec));
+  logAudit(ex?'Edited a client log entry':'Logged a client log entry',`${(client(cid)||{}).uci||''} · ${def.name} · ${fmtDate(date)}`);
+  state.careDay=date; closeAll(); render(); toast(ex?'Saved.':'Logged.');
+}
+function clogEntryDel(eid){
+  const e=CLOGS.find(x=>x.id===eid); if(!e) return;
+  askDelete('Delete this entry?','It comes off the care record for that day.',()=>{
+    CLOGS=CLOGS.filter(x=>x.id!==eid);
+    sbDel('np_demo_client_logs','id=eq.'+encodeURIComponent(eid));
+    logAudit('Deleted a client log entry',`${(clogDef(e.log)||{}).name||''} · ${fmtDate(e.date)}`);
+    closeAll(); render(); toast('Entry deleted.');
+  },'Delete entry');
+}
+/* the bar over a client log in edit mode: its title is the log's name, for the whole team (a director) */
+const layTitleSet0=layTitleSet;
+layTitleSet=function(lid,v){
+  if(String(lid).indexOf('clog-')===0&&state.role==='director'){
+    const d=clogDef(String(lid).slice(5));
+    if(d){ const nv=String(v||'').replace(/\s+/g,' ').trim().slice(0,60);
+      if(nv&&nv!==d.name){ const was=d.name; d.name=nv; clogDefsSave(); logAudit('Renamed a client log',was+' → '+nv); toast('Renamed for the whole team.'); }
+      const nm=d.name;
+      document.querySelectorAll('#view .lay-t').forEach(t=>{ if(t.dataset.lid===lid&&t.textContent!==nm) t.textContent=nm; });
+      document.querySelectorAll('#view section[data-lid]').forEach(s=>{ if(s.dataset.lid===lid){ const h=s.querySelector('h2'); if(h) h.textContent=nm; } });
+      return; }
+  }
+  return layTitleSet0.apply(this,arguments);
+};
 
 /* ══ v12.47: Templates in subfolders (each binder's own tabs), Move to and drag, a file-type badge on every row ══
    A template's place is its own dest and sub (where its signed copies file). A library form (a built-in ACRC
@@ -14061,7 +14322,10 @@ function safetySettings(){
 }
 function newLogType(){
   openModal('New log',`
-    <div class="field"><label>What is this log called?</label><input class="inp" id="nlName" placeholder="e.g. Vehicle checks"></div>
+    <div class="row2">
+      <div class="field"><label for="nlName">What is this log called?</label><input class="inp" id="nlName" placeholder="e.g. Vehicle checks"></div>
+      <div class="field"><label for="nlBtn">Button text</label><input class="inp" id="nlBtn" maxlength="40" placeholder="Run now"></div>
+    </div>
     <div class="field"><label>What should it record? <span class="tiny muted">one per line</span></label>
       <textarea class="inp" id="nlQs" rows="5" placeholder="Tires checked&#10;Fuel level&#10;Mileage"></textarea></div>
     <div class="row2">
@@ -14083,6 +14347,7 @@ function newLogSave(){
     perWeek:Math.max(0,parseInt(el('nlWk').value||'0',10)||0), obs:!!el('nlObs').checked,
     questions:qs.map((l,i)=>({id:'q'+i,label:l,type:(el('nlScale')&&el('nlScale').value)||'yn',req:false}))};
   INSP_TEMPLATES.push(t); unhide('insp',String(t.id));
+  btnLabelPut('insp:'+t.id,(el('nlBtn')||{}).value||'','');           // v12.48
   sbUpsert('np_demo_inspections',{id:t.id,kind:'template',template_id:t.id,title:t.name,folder:t.folder,
     questions:t.questions,per_week:t.perWeek,has_obs:t.obs,created_by:actorName()});
   logAudit('Created log',name);
@@ -14119,7 +14384,7 @@ function inspToBinder(id){
 }
 function openInspTemplateForm(tid){
   const t=tid?inspTpl(tid):{id:'insp-'+Date.now(),name:'',folder:'Safety',desc:'',questions:[{id:'q1',label:'',type:'cnc'}]};
-  window._inspDraft=JSON.parse(JSON.stringify(t)); window._inspEditing=!!tid;
+  window._inspDraft=JSON.parse(JSON.stringify(t)); window._inspEditing=!!tid; window._inspBtn=null;   // v12.48
   drawInspTemplateForm();
 }
 function drawInspTemplateForm(){
@@ -14142,6 +14407,8 @@ function drawInspTemplateForm(){
         <div class="field"><label>Times per week (0 = not a weekly log)</label><input class="inp" type="number" min="0" max="99" id="itPerWeek" value="${d.perWeek||0}" oninput="window._inspDraft.perWeek=Math.max(0,parseInt(this.value||'0',10)||0)"></div>
         <div class="field"><label>General observation</label><label class="checkrow" style="cursor:pointer;margin-top:4px"><input type="checkbox" ${d.obs?'checked':''} onchange="window._inspDraft.obs=this.checked"> <span>Add an open observation box at the end</span></label></div>
       </div>
+      <div class="field"><label for="itBtn">Button text</label><input class="inp" id="itBtn" maxlength="40" value="${esc(window._inspBtn!=null?window._inspBtn:(BTN_LABELS['insp:'+d.id]||''))}" placeholder="${(d.perWeek||0)>0?'Run now':'Start inspection'}" oninput="window._inspBtn=this.value">
+        <div class="tiny muted">The words on the button that starts it on the Safety log. Leave it blank for the standard words.</div></div>
       <div class="field"><label>Lines <span class="tiny muted">— add them one at a time; each line picks its own type</span></label><div id="itQs">${inspQRows()}</div>
         <button class="btn ghost sm" style="margin-top:8px" onclick="inspQAdd()">＋ Add line</button></div>
       <div class="tiny muted" style="margin-bottom:14px">Each line can be reordered, removed, or set as required (✱). The number box is how many times a week that line must be recorded — anything above zero shows in This week's progress. Free-text, number and time lines are recorded, not scored. Set times-per-week to turn this form into a weekly log with its own tracker on the Safety page and sidebar.</div>
@@ -14205,6 +14472,7 @@ function saveInspTemplate(){
   const ex=inspTpl(d.id);
   if(ex){ Object.assign(ex,d); } else INSP_TEMPLATES.push(d);
   sbUpsert('np_demo_inspections',{id:d.id, kind:'template', template_id:d.id, title:d.name, folder:d.folder, questions:d.questions, per_week:d.perWeek||0, has_obs:!!d.obs, created_by:actorName()});
+  if(window._inspBtn!=null){ btnLabelPut('insp:'+d.id,window._inspBtn,''); window._inspBtn=null; }   // v12.48
   logAudit(window._inspEditing?'Edited inspection template':'Created inspection template',d.name);
   const ff=el('formFull'); if(ff) ff.remove();
   closeAll(); render(); toast('Inspection template saved.');
@@ -14365,7 +14633,7 @@ function viewSafety(){
         <span class="row-copy"><strong>${esc(t.name)}</strong><span>${esc(t.desc||'')} · ${t.questions.length} lines · files to ${esc(FOLDER_NAMES[normBinder(t.folder).b]||t.folder)}</span></span>
         <span class="go-sq">${op?'▾':'›'}</span></div>
         ${op?`<div style="background:var(--surface-2);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;gap:7px;flex-wrap:wrap" onclick="event.stopPropagation()">
-          <button class="btn navy sm" onclick="startInspection('${t.id}')">Start inspection</button>
+          ${logBtn('insp:'+t.id,'Start inspection',`startInspection('${t.id}')`,'btn navy sm','')}
           <button class="btn ghost sm" onclick="startInspection('${t.id}',1)">Preview</button>
           ${state.role==='director'?`<button class="btn gold sm" onclick="openInspTemplateForm('${t.id}')">✎ Edit lines</button>
           <button class="btn ghost sm" onclick="inspTemplateRemove('${t.id}')">✕ Remove</button>`:''}</div>`:''}`;}).join('')}
@@ -14393,7 +14661,7 @@ function viewSafety(){
     <section class="card">
       <div class="sec-head soft-sage" style="cursor:pointer" onclick="logOpen('drills')"><h2>Fire drill log</h2>
         <span class="hd-n sage">${FIREDRILLS.filter(d=>!hid('drill',drillKey(d))).length}</span><p>click to open the full log</p>
-        <div class="head-act" style="display:flex;gap:6px"><button class="btn navy sm" onclick="event.stopPropagation();openDrillForm()">＋ Log a drill</button></div></div>
+        <div class="head-act" style="display:flex;gap:6px">${logBtn('safety:drills','Log a drill','event.stopPropagation();openDrillForm()','btn navy sm','＋')}</div></div>
       <div class="card-b flush">
         ${FIREDRILLS.every(d=>dParse(d.date).getMonth()!==TODAY.getMonth()||dParse(d.date).getFullYear()!==TODAY.getFullYear())?`<div class="sec-note" style="background:var(--bad-soft);border-color:#F0CBC7;color:#8C312B;margin:12px 14px"><span>⚠</span><div><b>No drill logged this month</b>A monthly drill is required per home.</div></div>`:''}
         <table class="tb"><thead><tr><th>Date</th><th>Home</th><th>Shift</th><th>Evacuation</th><th>By</th><th></th></tr></thead>
@@ -14410,7 +14678,7 @@ function viewSafety(){
           return `<div class="docrow"><div class="di">▣</div>
             <div class="dt"><b>${esc(t.name)}</b><span>${runs.length} of ${t.perWeek} this week${runs.length?` · last by ${esc(runs[0].by)}`:''}</span></div>
             <span class="pill ${runs.length>=t.perWeek?'ok':'warn'}">${runs.length} / ${t.perWeek}</span>
-            <button class="btn ghost sm" onclick="startInspection('${t.id}')">Run now</button>
+            ${logBtn('insp:'+t.id,'Run now',`startInspection('${t.id}')`,'btn ghost sm','')}
             ${runs.length?`<button class="btn ghost sm" onclick="openInspCompleted('${esc(runs[0].id)}')">Last report</button>`:''}
           </div>`;}).join('')}
       </div></section>`:''})()}
@@ -14418,7 +14686,7 @@ function viewSafety(){
     <section class="card">
       <div class="sec-head soft-blue" style="cursor:pointer" onclick="logOpen('temps')"><h2>Water temperature log</h2>
         <span class="hd-n blue">${WATERTEMP.filter(w=>!hid('temp',tempKey(w))).length}</span><p>click to open the full log</p>
-        <div class="head-act" style="display:flex;gap:6px"><button class="btn navy sm" onclick="event.stopPropagation();openTempForm()">＋ Add reading</button></div></div>
+        <div class="head-act" style="display:flex;gap:6px">${logBtn('safety:temps','Add reading','event.stopPropagation();openTempForm()','btn navy sm','＋')}</div></div>
       <div class="card-b flush">
         <table class="tb"><thead><tr><th>Date</th><th>Home</th><th>Temp</th><th>By</th><th></th></tr></thead>
         <tbody>${WATERTEMP.map((w,i)=>({w,i})).filter(x=>!hid('temp',tempKey(x.w))&&(state.safeRange==='hist'?x.w.date>=iso(addDays(TODAY,-90)):inWeek(x.w.date))).slice(0,30).map(({w,i})=>`<tr><td>${relDay(w.date)}</td><td>${esc(w.home)}</td><td><b>${w.temp}°F</b></td><td>${w.by}</td>
@@ -14555,6 +14823,7 @@ function clientRecordSheet(cid){
     <h3>Incidents</h3>${tb(['Date','Type','Severity','Status','Summary'],INCIDENTS.filter(i=>i.cid===cid).map(i=>[fmtDate(i.date),i.type,i.sev,i.status,i.summary]))}
     <h3>Vital signs</h3>${tb(['Date','Time','Readings','By'],VITALS.filter(v=>v.cid===cid).map(v=>[fmtDate(v.date),hm12(v.time||''),VITAL_FIELDS.filter(([k])=>v[k]).map(([k,l])=>l+' '+v[k]).join(' \u00b7 '),v.by]))}
     <h3>Daily living</h3>${tb(['Date','Time','What','Support','Amount','By'],ADLS.filter(a=>a.cid===cid).map(a=>[fmtDate(a.date),hm12(a.time||''),a.kind+(a.detail?' \u2014 '+a.detail:''),a.assist,a.amount,a.by]))}
+    ${clogSheet(cid,tb)}
     <h3>Weekly checklist</h3>${tb(['Item','Done','By','When'],(WEEKLY[cid]||[]).map(w=>[w.t,w.d?'\u2713':'',w.by||'',w.at||'']))}
     <div class="siglines"><div class="sig">Reviewed by / date</div></div>`;
 }
@@ -16563,7 +16832,7 @@ function resetWorkspace(mode){
     const real=realSession();
     const tables=['np_demo_tasks','np_demo_incidents','np_demo_documents','np_demo_credentials','np_demo_appointments',
       'np_demo_templates','np_demo_client_notes','np_demo_notifications','np_demo_messages','np_demo_threads',
-      'np_demo_checklist_logs','np_demo_meds','np_demo_med_logs','np_demo_vitals','np_demo_adls','np_demo_whereabouts','np_demo_signed_logs',
+      'np_demo_checklist_logs','np_demo_meds','np_demo_med_logs','np_demo_vitals','np_demo_adls','np_demo_whereabouts','np_demo_client_logs','np_demo_signed_logs',
       'np_demo_shifts','np_demo_clients','np_demo_staff','np_demo_audit_log','np_demo_doc_activity',
       'np_demo_fire_drills','np_demo_water_temps','np_demo_inspections','np_demo_library',
       'np_demo_doc_signatures','np_demo_example_docs','np_demo_ask_log'].concat(real?[]:['np_demo_agreements']);
@@ -20765,7 +21034,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.47.1 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.48 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -23624,6 +23893,7 @@ async function sbHydrate(){
     start:r.start_time||'',end:r.end_time||'',place:r.place||'',with:r.with_whom||'',
     purpose:r.purpose||'',notes:r.notes||'',by:r.recorded_by||''}));
   vitalsIndex(); adlsIndex(); acctIndex();
+  await clogRead();                                                   // v12.48: the team's client log entries
   dbClients.forEach(r=>{
     const ex=CLIENTS.find(c=>c.id===r.id);
     const rec={id:r.id,uci:r.uci,name:r.name||('Client '+(r.init||'')),init:r.init||'',home:r.home||'',age:r.age,since:r.since||'',guardian:r.guardian||'None on file',tag:r.tag||'',dx:r.dx||'',alerts:Array.isArray(r.alerts)?r.alerts:[],support:r.support||'',goals:Array.isArray(r.goals)?r.goals:[]};
@@ -23725,6 +23995,8 @@ async function sbHydrate(){
       if(r.key==='contractors'&&r.value&&Array.isArray(r.value.list)){ CONTRACTORS=r.value.list; }
       if(r.key==='clientcolors'&&r.value&&r.value.map){ CLIENT_COLORS=r.value.map; }   // v12.46
       if(r.key==='tplplace'&&r.value&&r.value.map){ TPL_PLACE=r.value.map; }   // v12.47
+      if(r.key==='btnlabels'&&r.value&&r.value.map){ BTN_LABELS=r.value.map; }   // v12.48
+      if(r.key==='clientlogs'&&r.value&&Array.isArray(r.value.list)){ CLOG_DEFS=r.value.list; }   // v12.48
       if(r.key==='calaccess'&&r.value&&r.value.map){ CAL_ACCESS=r.value.map; }
       if(r.key==='homecolors'&&r.value&&r.value.map){ HOME_COLORS=r.value.map; }
       if(r.key==='homeicons'&&r.value&&r.value.map){ HOME_ICONS=r.value.map; }
