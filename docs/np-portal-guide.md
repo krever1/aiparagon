@@ -173,6 +173,8 @@ Titled with the client's UCI, then home, program and guardian. Standing alerts s
 
 **Care.** The daily record, one day at a time. Pick a day on the small calendar (dots mark days with entries), or "Show the full history". **Record vitals** (blood pressure, heart rate, temperature, respiration, oxygen, weight, glucose, pain) and **Log an activity** (meals, fluids, bathing, toileting, dressing, mobility, sleep, activity, with the level of support). Click an entry to edit or delete it.
 
+Under them are the team's own **client logs** (a sleep log, a seizure log, anything the team tracks): each has its own button (＋ and the words the director chose, ＋ Add an entry by default) that opens its form, and a table of that day's entries (Time, each field, By, Notes; Date too with the full history). Staff and directors fill them in; click a row to edit or delete it. A log can be for every client or only some. Directors get **＋ New client log** at the bottom of the Care tab (and **Restore** for logs they removed). The button words on Record vitals, Log an activity and each client log are the team's: a director changes them in edit mode (see Page settings).
+
 **Appointments.** This client's appointments with a week strip, All, Upcoming, Past week, Past month, a search box and **Add appointment**. Click one to see it beside the list.
 
 **Files.** The client's own binders (Agency, Medical, Daily Logs and any the team added). Binders hold tabs; tabs hold documents.
@@ -229,6 +231,8 @@ Logs filled in regularly. The **This week / History (3 months)** switch sets the
 - **Fire drill log**: **Log a drill** (home, shift, time started, evacuation time, all residents accounted for, issues). A warning shows when no drill was logged this month.
 - **Water temperature log**: **Add reading** (kitchen sink, bathrooms, refrigerator, freezer, time checked). Readings over the limit show in red; the limit is 120°F at fixtures unless the director changes it.
 - **Weekly logs**: the team's own logs that have a weekly target, with Run now.
+
+The words on Log a drill, Add reading, Start inspection and Run now are the team's: a director types over them in edit mode, or sets **Button text** when building the log (New log or inspection, or the gear > Create a log).
 
 Clicking a log's heading opens every entry, to tick and **Print**, **Print for wet signatures**, **Comment** or **Edit**. Directors also get File week to binder, File to binder, Edit limit, the log's gear (change its lines) and delete.
 
@@ -363,7 +367,7 @@ Click your name at the bottom of the sidebar for your **profile**: credentials (
 
 The gear opens a window titled **Settings** with up to three tabs. Staff reach it only from Calendar, and only see Calendar integrations.
 
-- **Editing tool** (director): **Edit this page** (rename titles, drag sections, hide sections, add your own notes, table or quick links; the layout is yours and follows your login), **Rename menus and binders**, and on Tasks, **Task colors**.
+- **Editing tool** (director): **Edit this page** (rename titles, drag sections, hide sections, add your own notes, table or quick links; the layout is yours and follows your login), **Rename menus and binders**, and on Tasks, **Task colors**. In edit mode a director can also type over the words of a log button (Record vitals, Log an activity, a client log's button, Log a drill, Add reading, Start inspection, Run now): they have a dashed outline and a ✎; Enter or clicking away keeps the new words, Esc undoes, an empty box puts the standard words back. The ＋ stays. Everyone on the team sees the new words. On a client's Care tab, Add a section also offers a **Client log** (directors), shared with the whole team.
 - **Display settings** (director): **Houses** (Add house), **Attention icons**, and on Calendar and Home, **Calendar colors and text**.
 - **Calendar integrations**: for directors, three sub-tabs:
   - **Calendars**: Google Calendar (Connect, Refresh, Disconnect) and, once connected, Your Google calendars (the main one, and the others you added with ✎ and ✕). With two or more Google accounts it is **Your Google accounts**: each account with its calendars under it, **Main** on the one portal appointments go to, **Use for appointments** on the others, ✎ (a name and colour only you see) and **Disconnect** (that account only). Then **Portal calendars** (directors): the team's calendar, your own and the ones the team made. Click one to open its page: name, colour, icon, Private, **Who sees it** (Everyone on the team, or Only these staff), and **Delete calendar** on the ones the team made. Under it all, one **＋ Add calendar** button: Add a Google calendar, Link another Google account (Connect Google Calendar when nothing is connected), Create a portal calendar (directors).
@@ -474,7 +478,13 @@ For each, choose Who and How (In the portal, Email). Staff see their own under S
 
 **29. Log where a client was.** Accountability > Add item > Where someone was (or "Log where someone was" on a day) > Person, Date, From, To, Where, Who they were with, Why, Notes > Log it.
 
-**30. Record vitals or a daily-living log.** The client > Care > pick the day > Record vitals (save with Record) or Log an activity (save with Log it).
+**30. Record vitals or a daily-living log.** The client > Care > pick the day > Record vitals (save with Record) or Log an activity (save with Log it). The buttons may carry the team's own words.
+
+**30a. Set up a client log (director).** Any client > Care > ＋ New client log (or edit mode > Add a section > Client log) > Log name, Button text (blank: Add an entry), the fields each entry records (a name and an answer type each: Short answer, Paragraph, Number with an optional unit, Pick one with choices separated by commas, Yes or no, Time; ＋ Add a field, ↑ ↓ to reorder, ✕ to remove) and Which clients (Every client, or Only these clients by UCI) > Create log. Every entry also keeps the date, time, who recorded it and notes. To change it later: edit mode > ✎ Edit log on its bar (renaming the bar's title renames the log for the team). Remove log takes it off every Care tab and keeps its entries; Restore at the bottom of the Care tab brings it back.
+
+**30b. Fill in a client log.** The client > Care > pick the day > the log's button > fill in what applies > Save entry. Click a row to change it (Save changes) or delete it.
+
+**30c. Change a log button's words (director).** Turn on edit mode on the client's Care tab or the Safety log > click the button's words > type > Enter. Empty the box to get the standard words back.
 
 **31. Write a progress note.** The client > Overview > Progress notes > Write note > note and category > Save note. For a goal: IPP goals & notes > Open goal & notes > Progress note > Save changes.
 
@@ -494,7 +504,7 @@ The written-report clock starts (24 hours unless the protocol says otherwise) an
 
 **35. Log a fire drill or water temperatures.** Safety log > Fire drill log > Log a drill, or Water temperature log > Add reading > fill in each line > Complete & file to logs. It files to the Daily Logs binder and the log updates.
 
-**36. Run an inspection.** Safety log > Digital inspections > the inspection > Start inspection > answer each line > Complete & file to logs.
+**36. Run an inspection.** Safety log > Digital inspections > the inspection > Start inspection (or the team's words for it) > answer each line > Complete & file to logs.
 
 **37. Upload a signed paper log.** Safety log > Signed paper logs > Upload signed log. To get paper first: open the log > Print for wet signatures.
 
@@ -627,7 +637,6 @@ Printouts and PDFs are made by the browser on the person's computer. The SIR has
 - **File limits.** 25 MB per file. Only the first 20 pages of a PDF are kept.
 - **No family sign-ins.** The family view is a preview only.
 - **Live updates.** Only messages arrive on their own. Other changes by teammates show after a reload.
-- **Tabs for new templates.** A template made with Create new template or Upload a form has no tab picker, so its signed copies land in the binder with no tab. Built-in templates file under a tab.
 - **No incident types at the start.** A new team has none. The first report needs "＋ Create new…" under Type, or a protocol added first under Templates > Incident protocols.
 - **Official form layouts.** The real regional center template layouts are not loaded yet.
 - **No medication tracking.** Medication records were removed; the MAR is only a printable blank form.
