@@ -15,6 +15,10 @@
 html.ap-logo-ok .nw-mark,html.ap-logo-ok #view-login .brand-g{background:url(https://www.aiparagonconsulting.com/logo.png) center/contain no-repeat;color:transparent;font-size:0;box-shadow:none}
 </style>
 <script>
+/* v140: a password reset link that lands here goes on to the new dashboard's Set a new password page, tokens and all */
+(function(){try{var h=location.hash;if(/(^#|&)type=recovery(&|$)/.test(h)&&/(^#|&)access_token=/.test(h))location.replace('https://aiparagon-dashboard.vercel.app/auth/reset'+h);}catch(e){}})();
+</script>
+<script>
 /* v121: with a saved session the sign-in screen stays hidden until the session check settles, so it never flashes before the dashboard */
 (function(){try{var s=JSON.parse(localStorage.getItem('ap.session.v1')||'null');if(s&&s.refresh_token){var d=document.documentElement;d.classList.add('ap-resume');setTimeout(function(){d.classList.remove('ap-resume');},20000);}}catch(e){}})();
 </script>
@@ -19604,6 +19608,8 @@ function apFsCmd(cmd){const b=document.getElementById('fsBody');if(!b)return;b.f
 const AP_AUTH=AP_SB_URL+'/auth/v1';
 const AP_SESS_LS='ap.session.v1';
 const AP_DOMAIN='@aiparagonconsulting.com';
+/* v140: the reset email's link opens the new dashboard's Set a new password page, which sets it for both apps (this page has none) */
+const AP_RESET_URL='https://aiparagon-dashboard.vercel.app/auth/reset';
 let AP_USER=null, AP_MODE='in';
 
 function apSess(){try{return JSON.parse(localStorage.getItem(AP_SESS_LS)||'null');}catch(e){return null;}}
@@ -19712,7 +19718,7 @@ async function apAuthReset(){
   const email=(document.getElementById('apEmail').value||'').trim().toLowerCase();
   if(!email){apAuthMsg('Enter your email first, then press this again.');return;}
   apAuthMsg('');
-  try{await apAuthFetch('/recover',{email:email});
+  try{await apAuthFetch('/recover?redirect_to='+encodeURIComponent(AP_RESET_URL),{email:email});   /* v140 */
     apAuthOk('If that address has an account, a reset link is on its way.');}
   catch(e){apAuthOk('If that address has an account, a reset link is on its way.');}
 }
