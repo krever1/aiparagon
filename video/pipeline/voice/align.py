@@ -1,0 +1,35 @@
+import numpy as np, wave, re, sys
+T=['Pipeline runs two tracks: thought leadership posts that build your authority, and ads that book calls.','Every week they read LinkedIn and the Meta Ad Library, keep the posts people engage with, and rank the ads competitors keep paying to run.','The thought leadership brief shows what is landing in your market, and turns it into posts in your voice.','On the ad side, hooks, calls to action and offers go into one table, and each point in the brief links to the ads that match it.','From there it drafts the ads in your voice, previewed as they will run.','Nothing goes live until you approve it.','Send people to your calendar, a webinar, a download or a newsletter.','Every ad is tracked. Spend, sign-ups, booked calls. Then it tells you what to make next.','It works from your own brand voice, templates and knowledge base.','And it learns. Tell it what should change on a post, and the next drafts avoid it.','Built around the systems you already use. Book a twenty-minute strategy session.']
+def syl(s):
+    return sum(max(1,len(re.findall(r'[aeiouy]+',w))) for w in re.findall(r"[a-z\-]+",s.lower().replace('-',' ')))
+def env(f):
+    w=wave.open(f+'.wav'); a=np.frombuffer(w.readframes(w.getnframes()),np.int16).astype(np.float32)/32768
+    hop=480; n=len(a)//hop; r=np.sqrt((a[:n*hop].reshape(n,hop)**2).mean(1)); db=20*np.log10(r+1e-9)
+    return db, np.percentile(db,95)
+def gaps(db,th,minlen=0.15):
+    q=db<th; n=len(q); out=[]; i=0
+    while i<n:
+        if q[i]:
+            j=i
+            while j<n and q[j]: j+=1
+            if (j-i)*0.01>=minlen and i>0 and j<n: out.append((i*.01,j*.01))
+            i=j
+        else: i+=1
+    return out
+f=sys.argv[1]; db,pk=env(f); G=gaps(db,pk-30)
+voiced=np.where(db>=pk-30)[0]; s0,s1=voiced[0]*.01,voiced[-1]*.01
+S=[syl(t) for t in T]; tot=sum(S)
+# speech time excluding gaps
+gt=sum(b-a for a,b in G); sp=(s1-s0)-gt
+print(f,'speech',round(s0,2),round(s1,2),'syl/s',round(tot/sp,2))
+# expected boundary in speech-time, map to real time, snap to nearest gap
+def real(st):
+    t=s0; acc=0
+    for a,b in G:
+        if acc+(a-t)>=st: return t+(st-acc)
+        acc+=a-t; t=b
+    return t+(st-acc)
+cum=np.cumsum(S)[:-1]/tot*sp
+for k,c in enumerate(cum,1):
+    e=real(c); best=min(G,key=lambda g:abs((g[0]+g[1])/2-e)-0.6*(g[1]-g[0]))
+    print(' line',k,'ends ~%.2f'%e,' snap gap %.2f-%.2f (%.2f)'%(best[0],best[1],best[1]-best[0]))

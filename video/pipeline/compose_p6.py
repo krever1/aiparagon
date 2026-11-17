@@ -22,7 +22,7 @@ SILENT = 'silent' in sys.argv[1:]
 OW, OH, FPS = (960, 540, 24) if PREVIEW else (1920, 1080, 24)
 FULL = (0.0, 0.0, float(W))
 CX0, CX1 = 104.0, W - 28.0
-NAME = 'pipeline-demo-v6' + ('-preview' if PREVIEW else '')
+NAME = 'pipeline-demo-v6.1' + ('-preview' if PREVIEW else '')
 
 TAKES = [  # file, text
     ('n01_a', 'Pipeline runs two tracks: thought leadership posts that build your authority, and ads that book calls.'),
@@ -111,17 +111,17 @@ def base_img(ev, t):
 
 # ---------- the timeline ----------
 P = Plan()
-WAV = os.path.join(HERE, 'voice', 'wav'); os.makedirs(WAV, exist_ok=True)
+WAV = os.path.join(HERE, 'voice', os.environ.get('WAVS', 'wav-one')); os.makedirs(WAV, exist_ok=True)   # wav-one: one continuous take, cut by voice/cut_one.py
 L = {}
 for n, (f, _) in enumerate(TAKES, 1):
     w = os.path.join(WAV, '%02d.wav' % n)
     if not os.path.exists(w):
         subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', os.path.join(DL, f + '.mp3'), '-ar', '48000', '-ac', '1', w], check=True)
     L[n] = tlen(w)
-GAP = {2: 0.7, 3: 1.0, 4: 1.5, 5: 0.9, 6: 0.6, 7: 1.45, 8: 0.55, 9: 1.2, 10: 0.85, 11: 1.0}
+GAP = {2: 0.7, 3: 1.0, 4: 1.8, 5: 0.9, 6: 0.6, 7: 1.45, 8: 0.55, 9: 1.2, 10: 0.85, 11: 1.0}
 T = {1: 0.5}
 for n in range(2, 12): T[n] = T[n - 1] + L[n - 1] + GAP[n]
-END = 70.0
+END = 71.5
 HOLD = END - (T[11] + L[11])
 assert 1.0 <= HOLD <= 2.5, ('end card hold out of range', HOLD)
 
