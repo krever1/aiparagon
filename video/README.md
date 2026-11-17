@@ -32,5 +32,15 @@ Playwright comes from the session (`require('playwright')`).
 ## Narration
 Higgsfield `generate_audio`, model `text2speech_v2` with `variant: elevenlabs`, the preset voice "Emily", and a prompt
 that starts `[ warm confident product demo narrator, neutral American accent, clear friendly tone, steady unhurried pace,
-starts speaking immediately]`. Each line is its own generation, so takes from different days differ in pace and
-level: make all the lines of one video in the same batch.
+short pause between paragraphs, starts speaking immediately]`, then the whole script with a blank line between lines.
+
+Make the narration as ONE take of the whole script, not one generation per line: separate generations differ in pace,
+pitch and level, and it shows (v6 was made per line; v6.1 is one take). Then:
+```
+cd video/pipeline/voice
+ffmpeg -i one/take1.mp3 -ar 48000 -ac 1 one/take1.wav
+python align.py one/take1                 # each line's estimated end, snapped to the nearest pause
+python cut_one.py one/take1.wav wav-one   # cuts at the pauses in B, shortens pauses over 0.8 s, levels each line
+```
+Check the pauses `align.py` picks against the script and copy them into `B` in `cut_one.py`. The composer reads
+`voice/wav-one` (`WAVS=` picks another folder). `voice/dl/` keeps v6's per-line takes.
