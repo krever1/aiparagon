@@ -327,7 +327,7 @@ The portal talks to Supabase directly for all data, logins and files, scoped per
 | n8n | Everything outbound: notifications, email, calendar sync, reminders, digests, escalations, support routing and the Ask chatbot. Credentials: "Supabase account", "Gmail account", "Google Calendar account". |
 | Gmail (via n8n) | Sends invites, notifications, digests and SIR escalations to the workspace's registered address. |
 | Google Calendar | Per-person connection through `np-gcal`; the page reads events live. The older n8n two-way sync (portal → Google adds ACL-listed staff as attendees; Google → portal every 10 min, portal-created events only, matched by gcal_id) was pinned to the removed E and G org; Google → portal is off since Oct 27, see Where it stands. |
-| Slack (via n8n) | Support inbox → Slack, built but not active (needs Gmail + Slack creds). np-bot answers the team's questions about the portal in Slack (its own Slack app; see n8n workflows). |
+| Slack (via n8n) | Support inbox → Slack: each email to support@ goes to #support-requests and gets an acknowledgement reply (see n8n workflows). np-bot answers the team's questions about the portal in Slack (its own Slack app; see n8n workflows). |
 | AI model (Ask workflow) | Ask Spectrum chatbot (Claude via n8n); answers carry [open:] / [go:] tokens that link to docs and pages. |
 | Not wired yet | SMS provider (Twilio or similar), DocuSign (skipped for now). |
 
@@ -369,7 +369,7 @@ Erica's onboarding design system: paper background, deep green, Inter Tight + IB
 | Overdue digest | FWaKiWkb3Jkz9OR7 | Daily 7:00. Counts only: no titles, names or client IDs (Oct 20). |
 | SIR escalation | XcAqh4VJi18eRiDm | Every 2h. How many and how soon only: no client, home or type (Oct 20). |
 | Cert-expiry draft | t4DRMNJ6116IuuyN | Off. |
-| Support inbox → Slack | kGikS8h5rGt8G10c | Off. |
+| Support inbox → Slack | kGikS8h5rGt8G10c | Gmail trigger on support@, every minute. Posts each email's sender, subject and body (only the new part of a reply, up to 2,500 characters) to #support-requests, and replies once to each new conversation from a person (not to replies in a thread, no-reply senders, bounces, auto-replies, mailing lists or Promotions, Social and Forums mail), sender name AI Paragon Support. Live since Nov 4; body and acknowledgement since Nov 13, its wording Nov 17. The acknowledgement step must use the same Gmail login as the trigger, or it can't find the email (a 404, Nov 13). What senders write lands in Slack, so keep the channel to the team. |
 | Slack · np-bot (care portal Q&A) | ia7tzLx1tmIz5XoQ | @np-bot mentions in Slack (Slack Trigger, app_mention; the credential's signing secret checks each request came from Slack). Reads this file's portal section and `docs/np-portal-guide.md` from GitHub main on every question, plus the thread, asks Claude (Opus 5.5, the documents cached, refusal fallbacks on) and replies in the thread. Reads no database and no client data. Published Nov 4. |
 
 ## Beta bar (Kser's words)
