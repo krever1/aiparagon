@@ -44,3 +44,17 @@ python cut_one.py one/take1.wav wav-one   # cuts at the pauses in B, shortens pa
 ```
 Check the pauses `align.py` picks against the script and copy them into `B` in `cut_one.py`. The composer reads
 `voice/wav-one` (`WAVS=` picks another folder). `voice/dl/` keeps v6's per-line takes.
+
+## Pipeline v7 (Nov 18)
+The two jobs named up front (title card), the Intel Tracker and both briefs, then a section card and the form for each
+job (Content Transformation's kinds and categories; Marketing Generation's campaign types), slower, about 86 s.
+```
+cd video/pipeline
+node record-p7.cjs                 # rec-p7/ (LOOK=1 for a quick 1x pass into look/)
+node cards.cjs                     # cards/: the title and section card layers
+node endcard.cjs 7.2 24 endcard
+ffmpeg -i voice/v7/t2.mp3 -ac 1 -ar 24000 voice/v7/t2.wav
+python voice/v7/align7.py voice/v7/t2   # (run from voice/v7) where each line ends, snapped to pauses
+python voice/v7/cut7.py voice/v7/t2.wav wav-v7
+../venv/bin/python compose_p7.py   # ../out/pipeline-demo-v7.mp4 (+ .srt)
+```
