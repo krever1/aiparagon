@@ -55,6 +55,6 @@ node cards.cjs                     # cards/: the title and section card layers
 node endcard.cjs 7.2 24 endcard
 ffmpeg -i voice/v7/t2.mp3 -ac 1 -ar 24000 voice/v7/t2.wav
 python voice/v7/align7.py voice/v7/t2   # (run from voice/v7) where each line ends, snapped to pauses
-python voice/v7/cut7.py voice/v7/t2.wav wav-v7
+python voice/v7/cut7.py voice/v7/t2.wav wav-v71 0.25   # v7.1: pauses inside lines down to 0.25 s (80 s)
 ../venv/bin/python compose_p7.py   # ../out/pipeline-demo-v7.mp4 (+ .srt)
 ```

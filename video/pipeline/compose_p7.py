@@ -23,7 +23,7 @@ SILENT = 'silent' in sys.argv[1:]
 OW, OH, FPS = (960, 540, 24) if PREVIEW else (1920, 1080, 24)
 FULL = (0.0, 0.0, float(W))
 CX0, CX1 = 104.0, W - 28.0
-NAME = 'pipeline-demo-v7' + ('-preview' if PREVIEW else '')
+NAME = 'pipeline-demo-v7.1' + ('-preview' if PREVIEW else '')
 
 TAKES = [  # one take (voice/v7/t2.wav), cut into these lines
     'This is Pipeline. It does two jobs: organic content that builds your authority, and ads that book calls.',
@@ -113,95 +113,100 @@ def base_img(ev, t):
 
 # ---------- the timeline ----------
 P = Plan()
-WAV = os.path.join(HERE, os.environ.get('WAVS', 'wav-v7'))
+WAV = os.path.join(HERE, os.environ.get('WAVS', 'wav-v71'))
+# where the cutter took time out of each line (voice/v7/cut7.py, pauses down to 0.25 s): R(n, x) is the time x of
+# the untrimmed line n on the trimmed one, so the cursor still lands on its word
+RMAP = {int(k): v for k, v in json.load(open(os.path.join(WAV, 'map.json'))).items()} if os.path.exists(os.path.join(WAV, 'map.json')) else {}
+def R(n, x):
+    return x - sum(min(l, max(0.0, x - p)) for p, l in RMAP.get(n, []))
 L = {n: tlen(os.path.join(WAV, '%02d.wav' % n)) for n in range(1, 11)}
-GAP = {2: 0.8, 3: 0.6, 4: 1.9, 5: 0.6, 6: 1.9, 7: 0.9, 8: 1.5, 9: 0.7, 10: 1.1}
+GAP = {2: 0.6, 3: 0.5, 4: 1.6, 5: 0.5, 6: 1.6, 7: 0.75, 8: 1.25, 9: 0.55, 10: 0.65}
 T = {1: 0.5}
 for n in range(2, 11): T[n] = T[n - 1] + L[n - 1] + GAP[n]
-END = T[10] + L[10] + 1.6
+END = T[10] + L[10] + 1.4
 TITLE = lambda: fit(CX0, 52, 700, 200)                     # a page's own title, held
 seqm = lambda k: tuple(M['seqs'][k]['mouse'])
 
 # 1 "This is Pipeline. It does two jobs: organic content that builds your authority, and ads that book calls."
 t = T[1]
 P.show('ov', 0, 0)
-P.card(0.0, T[2] - 0.25, [('intro_a', 0.0), ('intro_b', t + 2.95), ('intro_c', t + 5.0)], fin=0.0, fout=0.35)
-P.move(seqm('ov_scroll'), t + 5.4, 0.6)
-e = P.seq('ov_scroll', t + 5.5); P.show('ov2', e, 0)
+P.card(0.0, T[2] - 0.25, [('intro_a', 0.0), ('intro_b', t + R(1, 2.95)), ('intro_c', t + R(1, 5.0))], fin=0.0, fout=0.35)
+P.move(seqm('ov_scroll'), t + R(1, 5.4), 0.6)
+e = P.seq('ov_scroll', t + R(1, 5.5)); P.show('ov2', e, 0)
 fb = box('ov2_flow'); P.cam(fit(fb[0] - 8, fb[1] - 34, fb[0] + fb[2] + 8, fb[1] + fb[3] - 120), e + 0.1, e + 0.2)
 
 # 2 "Both start here. The Intel Tracker reads LinkedIn and the Meta Ad Library every week."
 t = T[2]
-P.hover('ov2_intel', t + 0.55, 0.55)                       # "Both start here"
-P.click(t + 1.25); P.cam(FULL, t + 1.2, t + 1.3); P.show('intel', t + 1.31, 0.14)
-P.cam(TITLE(), t + 1.4, t + 1.85)                           # Intel Tracker, held
-P.cap('Intel Tracker · reads the market every week', t + 1.6, t + 5.9)
+P.hover('ov2_intel', t + R(2, 0.55), 0.55)                       # "Both start here"
+P.click(t + R(2, 1.25)); P.cam(FULL, t + R(2, 1.2), t + R(2, 1.3)); P.show('intel', t + R(2, 1.31), 0.14)
+P.cam(TITLE(), t + R(2, 1.4), t + R(2, 1.85))                           # Intel Tracker, held
+P.cap('Intel Tracker · reads the market every week', t + R(2, 1.6), t + R(2, 5.9))
 rb = box('intel_reads')
-P.cam(fit(CX0, 60, 900, rb[1] + 70), t + 2.95, t + 3.5)
-P.hover('intel_reads', t + 3.6, 0.5)
-P.hover('intel_week', t + 4.9, 0.45)
+P.cam(fit(CX0, 60, 900, rb[1] + 70), t + R(2, 2.95), t + R(2, 3.5))
+P.hover('intel_reads', t + R(2, 3.6), 0.5)
+P.hover('intel_week', t + R(2, 4.9), 0.45)
 
 # 3 "It writes two briefs: an organic brief for thought leadership, and an ads brief from what competitors keep ..."
 t = T[3]
 P.cam(FULL, t - 0.5, t - 0.15)
-P.move('nav_briefs', t - 0.1, 0.55); P.click(t - 0.04); P.show('br_org', t + 0.02)
-P.move(seqm('br_org_down'), t + 0.55, 0.45)
-e = P.seq('br_org_down', t + 0.6); P.show('br_org2', e, 0)
+P.move('nav_briefs', t - 0.1, 0.55); P.click(t - 0.04); P.show('br_org', t + R(3, 0.02))
+P.move(seqm('br_org_down'), t + R(3, 0.55), 0.45)
+e = P.seq('br_org_down', t + R(3, 0.6)); P.show('br_org2', e, 0)
 P.cam(fit(CX0, 60, CX1, 630), e, e + 0.5)                   # Organic brief · 26 Oct and its five things
-P.cap('Organic brief · for thought leadership', t + 1.6, t + 4.2)
-P.hover('br_org_c1', t + 2.7, 0.5)
-P.cam(FULL, t + 3.6, t + 3.95)
-P.move(seqm('br_org_up'), t + 3.75, 0.45)
-e = P.seq('br_org_up', t + 3.8); P.show('br_org3', e, 0)
+P.cap('Organic brief · for thought leadership', t + R(3, 1.6), t + R(3, 4.2))
+P.hover('br_org_c1', t + R(3, 2.7), 0.5)
+P.cam(FULL, t + R(3, 3.6), t + R(3, 3.95))
+P.move(seqm('br_org_up'), t + R(3, 3.75), 0.45)
+e = P.seq('br_org_up', t + R(3, 3.8)); P.show('br_org3', e, 0)
 P.move('br_tab_ads', e + 0.4, 0.33); P.click(e + 0.45); P.show('br_ads', e + 0.51)
 P.move(seqm('br_ads_down'), e + 0.72, 0.2)
 e = P.seq('br_ads_down', e + 0.74); P.show('br_ads2', e, 0)
 P.cam(fit(CX0, 60, 900, 430), e, e + 0.5)                   # Ads brief · 26 Oct and its three things
-P.cap('Ads brief · from what competitors pay to run', t + 4.6, T[4] - 1.45)
-P.hover('br_ads_c1', t + 6.2, 0.5)
-P.hover('br_ads_c2', t + 7.2, 0.5)
+P.cap('Ads brief · from what competitors pay to run', t + R(3, 4.6), T[4] - 1.45)
+P.hover('br_ads_c1', t + R(3, 6.2), 0.5)
+P.hover('br_ads_c2', t + R(3, 7.2), 0.5)
 
 # 4 "Organic content. Pick what to make: LinkedIn posts, newsletters, emails, reports, white papers, articles, decks ..."
 t = T[4]
-P.card(t - 1.35, t + 1.3, [('sec_org', t - 1.35)])
+P.card(t - 1.35, t + R(4, 1.3), [('sec_org', t - 1.35)])
 P.cam(FULL, t - 1.0, t - 0.98)
 P.move('nav_ct', t - 0.9, 0.3); P.click(t - 0.86); P.show('ct_o', t - 0.8, 0)
 P.cam(TITLE(), t - 0.7, t - 0.68)                           # Content Transformation, held as the card lifts
-P.cap('Organic content · Content Transformation', t + 1.5, T[6] - 1.45)
-P.cam(fit(CX0, 285, 730, 675), t + 2.1, t + 2.6)            # What are you making?
+P.cap('Organic content · Content Transformation', t + R(4, 1.5), T[6] - 1.45)
+P.cam(fit(CX0, 285, 730, 675), t + R(4, 2.1), t + R(4, 2.6))            # What are you making?
 for k, w in (('li', 2.85), ('news', 3.85), ('email', 4.8), ('report', 5.8), ('wp', 6.75), ('article', 7.65)):
-    P.hover('ct_t_' + k, t + w, 0.42)
-P.cam(fit(CX0, 40, CX1, 660), t + 8.05, t + 8.55)
-P.move(seqm('ct_o_down'), t + 8.15, 0.3)
-e = P.seq('ct_o_down', t + 8.2); P.show('ct_o2', e, 0)
-P.hover('ct_t_deck', t + 9.3, 0.4)
-P.hover('ct_t_video', t + 10.0, 0.4)
-cb = box('ct_cats'); P.cam(fit(cb[0] - 15, cb[1] - 130, cb[0] + cb[2] + 15, cb[1] + cb[3] + 30), t + 10.5, t + 11.0)
-P.hover('ct_cat', t + 11.15, 0.45)                          # the categories, held in the gap
+    P.hover('ct_t_' + k, t + R(4, w), 0.42)
+P.cam(fit(CX0, 40, CX1, 660), t + R(4, 8.05), t + R(4, 8.55))
+P.move(seqm('ct_o_down'), t + R(4, 8.15), 0.3)
+e = P.seq('ct_o_down', t + R(4, 8.2)); P.show('ct_o2', e, 0)
+P.hover('ct_t_deck', t + R(4, 9.3), 0.4)
+P.hover('ct_t_video', t + R(4, 10.0), 0.4)
+cb = box('ct_cats'); P.cam(fit(cb[0] - 15, cb[1] - 130, cb[0] + cb[2] + 15, cb[1] + cb[3] + 30), t + R(4, 10.5), t + R(4, 11.0))
+P.hover('ct_cat', t + R(4, 11.15), 0.45)                          # the categories, held in the gap
 
 # 5 "It writes them from the organic brief and your own material, in your voice."
 t = T[5]
-P.cam(FULL, t + 0.35, t + 0.75)
-P.move(seqm('ct_o_up'), t + 0.55, 0.4)
-e = P.seq('ct_o_up', t + 0.6); P.show('ct_o3', e, 0)
+P.cam(FULL, t + R(5, 0.35), t + R(5, 0.75))
+P.move(seqm('ct_o_up'), t + R(5, 0.55), 0.4)
+e = P.seq('ct_o_up', t + R(5, 0.6)); P.show('ct_o3', e, 0)
 P.hover('ct_tab_drafts', e + 0.35, 0.4); P.click(e + 0.42); P.show('ct_drafts', e + 0.48, 0.12)
 P.cam(fit(CX0, 270, 770, 675), e + 0.7, e + 1.2)            # the draft, written from the brief
 P.hover('ct_draft_title', e + 1.35, 0.45)
 
 # 6 "Ads. Pick a campaign: book a call, a low-ticket offer, a webinar, a download, a newsletter sign-up or a landing page."
 t = T[6]
-P.card(t - 1.35, t + 0.65, [('sec_ads', t - 1.35)])
+P.card(t - 1.35, t + R(6, 0.65), [('sec_ads', t - 1.35)])
 P.cam(FULL, t - 1.0, t - 0.98)
 P.move('nav_mg', t - 0.9, 0.3); P.click(t - 0.86); P.show('mg_a', t - 0.8, 0)
 P.cam(TITLE(), t - 0.7, t - 0.68)                           # Marketing Generation, held as the card lifts
-P.cap('Ads · Marketing Generation', t + 0.9, T[8] - 0.6)
-P.cam(fit(CX0, 285, 730, 675), t + 1.3, t + 1.7)
-P.hover('mg_t_ad', t + 1.75, 0.4)                           # "Pick a campaign"
-P.move(seqm('mg_a_down'), t + 2.15, 0.35)
-e = P.seq('mg_a_down', t + 2.2); P.show('mg_a2', e, 0)
-mb = box('mg_chips'); P.cam(fit(mb[0] - 15, mb[1] - 140, mb[0] + mb[2] + 15, mb[1] + mb[3] + 40), t + 2.45, t + 2.9)
-for k, w in (('call', 3.05), ('low', 4.45), ('web', 5.95), ('dl', 7.25), ('news', 8.65), ('lp', 10.05)):
-    P.hover('mg_c_' + k, t + w, 0.45)
+P.cap('Ads · Marketing Generation', t + R(6, 0.9), T[8] - 0.6)
+P.cam(fit(CX0, 285, 730, 675), t + R(6, 1.3), t + R(6, 1.7))
+P.hover('mg_t_ad', t + R(6, 1.75), 0.4)                           # "Pick a campaign"
+P.move(seqm('mg_a_down'), t + R(6, 2.15), 0.35)
+e = P.seq('mg_a_down', t + R(6, 2.2)); P.show('mg_a2', e, 0)
+mb = box('mg_chips'); P.cam(fit(mb[0] - 15, mb[1] - 140, mb[0] + mb[2] + 15, mb[1] + mb[3] + 40), t + R(6, 2.45), t + R(6, 2.9))
+for k, w in (('call', 3.5), ('low', 4.5), ('web', 5.95), ('dl', 7.25), ('news', 8.65), ('lp', 10.05)):
+    P.hover('mg_c_' + k, t + R(6, w), 0.45)
 
 # 7 "It drafts the ads from the ads brief, previewed as they will run. Nothing goes live until you approve it."
 t = T[7]
@@ -209,33 +214,33 @@ P.cam(FULL, t - 0.8, t - 0.45)
 P.move(seqm('mg_a_up'), t - 0.75, 0.4)
 e = P.seq('mg_a_up', t - 0.7); P.show('mg_a3', e, 0)
 P.move('mg_tab_camps', e + 0.33, 0.3); P.click(e + 0.38); P.show('mg_camps', e + 0.44)
-P.hover('mg_card', t + 0.55, 0.42); P.click(t + 0.62); P.show('camp', t + 0.68, 0.14)
-P.move(seqm('camp_down'), t + 1.05, 0.35)
-e = P.seq('camp_down', t + 1.1); P.show('camp_ads', e, 0)
-P.hover('camp_a', t + 2.7, 0.5)                             # "previewed as they will run"
-P.click(t + 3.95); P.show('ed', t + 4.01, 0.22)
-ab = box('ed_approve'); P.cam(fit(W / 2 - 280, 150, W / 2 + 280, ab[1] + ab[3] + 70, 1.6), t + 4.1, t + 4.6)
-P.hover('ed_approve', t + 5.7, 0.5); P.click(t + 5.77); P.show('ed_approved', t + 5.83, 0.08)
-P.cam(FULL, t + 6.6, t + 6.95)
-P.hover('ed_exit', t + 7.05, 0.45); P.click(t + 7.11); P.show('camp_after', t + 7.17, 0.16)
-cb = box('camp_count'); P.cam(fit(cb[0] - 40, cb[1] - 110, cb[0] + 560, cb[1] + 90), t + 7.2, t + 7.6)
-P.move((cb[0] + cb[2] * 0.6, cb[1] + cb[3] + 12), t + 7.65, 0.4)
+P.hover('mg_card', t + R(7, 0.55), 0.42); P.click(t + R(7, 0.62)); P.show('camp', t + R(7, 0.68), 0.14)
+P.move(seqm('camp_down'), t + R(7, 1.05), 0.35)
+e = P.seq('camp_down', t + R(7, 1.1)); P.show('camp_ads', e, 0)
+P.hover('camp_a', t + R(7, 2.7), 0.5)                             # "previewed as they will run"
+P.click(t + R(7, 3.95)); P.show('ed', t + R(7, 4.01), 0.22)
+ab = box('ed_approve'); P.cam(fit(W / 2 - 280, 150, W / 2 + 280, ab[1] + ab[3] + 70, 1.6), t + R(7, 4.1), t + R(7, 4.6))
+P.hover('ed_approve', t + R(7, 5.7), 0.5); P.click(t + R(7, 5.77)); P.show('ed_approved', t + R(7, 5.83), 0.08)
+P.cam(FULL, t + R(7, 6.6), t + R(7, 6.95))
+P.hover('ed_exit', t + R(7, 7.05), 0.45); P.click(t + R(7, 7.11)); P.show('camp_after', t + R(7, 7.17), 0.16)
+cb = box('camp_count'); P.cam(fit(cb[0] - 40, cb[1] - 110, cb[0] + 560, cb[1] + 90), t + R(7, 7.2), t + R(7, 7.6))
+P.move((cb[0] + cb[2] * 0.6, cb[1] + cb[3] + 12), t + R(7, 7.45), 0.3)
 
 # 8 "Every ad is tracked. Spend, sign-ups, booked calls. Then it tells you what to make next."
 t = T[8]
 P.cam(FULL, t - 0.5, t - 0.12)
-P.move('nav_at', t - 0.1, 0.5); P.click(t - 0.04); P.show('at_read', t + 0.02)
-P.cam(TITLE(), t + 0.05, t + 0.4)                           # Ad Testing, held
-P.cap('Ad Testing · every ad tracked', t + 0.3, t + 5.2)
-P.cam(FULL, t + 1.0, t + 1.3)
-P.move('at_tab_board', t + 1.3, 0.42); P.click(t + 1.35); P.show('at_board', t + 1.41)
-P.move(seqm('at_down'), t + 1.62, 0.2)
-e = P.seq('at_down', t + 1.65); P.show('at_board2', e, 0)
+P.move('nav_at', t - 0.1, 0.5); P.click(t - 0.04); P.show('at_read', t + R(8, 0.02))
+P.cam(TITLE(), t + R(8, 0.05), t + R(8, 0.4))                           # Ad Testing, held
+P.cap('Ad Testing · every ad tracked', t + R(8, 0.3), t + R(8, 5.2))
+P.cam(FULL, t + R(8, 1.0), t + R(8, 1.3))
+P.move('at_tab_board', t + R(8, 1.3), 0.42); P.click(t + R(8, 1.35)); P.show('at_board', t + R(8, 1.41))
+P.move(seqm('at_down'), t + R(8, 1.62), 0.2)
+e = P.seq('at_down', t + R(8, 1.65)); P.show('at_board2', e, 0)
 P.cam(fit(CX0, 420, 900, 675), e + 0.05, e + 0.6)
-P.hover('at_booked', t + 3.0, 0.55)
-P.cam(FULL, t + 4.0, t + 4.35)
-P.move(seqm('at_up'), t + 4.05, 0.3)
-e = P.seq('at_up', t + 4.1); P.show('at_board3', e, 0)
+P.hover('at_booked', t + R(8, 3.0), 0.55)
+P.cam(FULL, t + R(8, 4.0), t + R(8, 4.35))
+P.move(seqm('at_up'), t + R(8, 4.05), 0.3)
+e = P.seq('at_up', t + R(8, 4.1)); P.show('at_board3', e, 0)
 P.move('at_tab_read', e + 0.45, 0.42); P.click(e + 0.5); P.show('at_read2', e + 0.56)
 P.cam(fit(CX0, 340, CX1, 620), e + 0.62, e + 1.15)
 P.move((300, 640), e + 1.6, 0.5)                            # toward Make next
@@ -244,22 +249,22 @@ P.move((300, 640), e + 1.6, 0.5)                            # toward Make next
 t = T[9]
 P.cam(FULL, t - 0.75, t - 0.5)
 P.move('nav_atlas', t - 0.5, 0.45); P.click(t - 0.45); P.show('atlas_open', t - 0.39, 0.12)
-P.move('nav_profile', t - 0.08, 0.3); P.click(t - 0.03); P.show('profile', t + 0.03, 0.14)
-P.cam(fit(CX0, 240, 860, 480, 1.5), t + 0.15, t + 0.6)
-P.hover('profile_voice', t + 0.85, 0.45)
-P.cam(FULL, t + 1.25, t + 1.55)
-P.move('nav_settings', t + 1.6, 0.45); P.click(t + 1.65); P.show('settings_open', t + 1.71, 0.1)
-P.move('nav_ais', t + 1.98, 0.3); P.click(t + 2.03); P.show('ais', t + 2.09, 0.14)
-P.cam(fit(CX0, 30, CX1, 320), t + 2.15, t + 2.6)
-P.hover('ais_tpl', t + 2.65, 0.4)
-P.hover('ais_kb', t + 3.15, 0.38)
-P.cam(FULL, t + 3.5, t + 3.8)
-P.move('nav_pipe', t + 3.75, 0.45); P.click(t + 3.8); P.show('pipe_open', t + 3.86, 0.1)
-P.move('nav_ct2', t + 4.08, 0.25); P.click(t + 4.12); P.show('ct2', t + 4.18, 0.12)
-P.hover('ct_tab_drafts2', t + 4.42, 0.25); P.click(t + 4.47); P.show('ct_drafts2', t + 4.53, 0.12)
-P.move(seqm('ct_dn'), t + 4.6, 0.05)
-e = P.seq('ct_dn', t + 4.62); P.show('ct_drafts3', e, 0)
-P.cap('What should change? · the next drafts avoid it', t + 5.0, T[10] - 0.3)
+P.move('nav_profile', t - 0.08, 0.3); P.click(t - 0.03); P.show('profile', t + R(9, 0.03), 0.14)
+P.cam(fit(CX0, 240, 860, 480, 1.5), t + R(9, 0.15), t + R(9, 0.6))
+P.hover('profile_voice', t + R(9, 0.85), 0.45)
+P.cam(FULL, t + R(9, 1.25), t + R(9, 1.55))
+P.move('nav_settings', t + R(9, 1.6), 0.45); P.click(t + R(9, 1.65)); P.show('settings_open', t + R(9, 1.71), 0.1)
+P.move('nav_ais', t + R(9, 1.98), 0.3); P.click(t + R(9, 2.03)); P.show('ais', t + R(9, 2.09), 0.14)
+P.cam(fit(CX0, 30, CX1, 320), t + R(9, 2.15), t + R(9, 2.6))
+P.hover('ais_tpl', t + R(9, 2.65), 0.4)
+P.hover('ais_kb', t + R(9, 3.15), 0.38)
+P.cam(FULL, t + R(9, 3.4), t + R(9, 3.7))
+P.move('nav_pipe', t + R(9, 3.6), 0.4); P.click(t + R(9, 3.65)); P.show('pipe_open', t + R(9, 3.71), 0.1)
+P.move('nav_ct2', t + 3.92, 0.25); P.click(t + 3.96); P.show('ct2', t + 4.02, 0.12)   # set by hand: the trimmed pause is here
+P.hover('ct_tab_drafts2', t + 4.22, 0.25); P.click(t + 4.27); P.show('ct_drafts2', t + 4.33, 0.12)
+P.move(seqm('ct_dn'), t + 4.39, 0.05)
+e = P.seq('ct_dn', t + 4.4); P.show('ct_drafts3', e, 0)
+P.cap('What should change? · the next drafts avoid it', t + R(9, 5.0), T[10] - 0.3)
 P.hover('ct_ask', e + 0.28, 0.25); P.click(e + 0.33); P.show('ct_dlg', e + 0.39, 0.12)
 db = box('ct_dlg_box'); P.cam(fit(db[0] - 10, db[1] - 8, db[0] + db[2] + 10, db[1] + db[3] + 8), e + 0.4, e + 0.75)
 P.hover('ct_why_long', e + 0.85, 0.25); P.click(e + 0.9); P.show('ct_why_long_on', e + 0.96, 0.08)
