@@ -216,17 +216,9 @@ const J = (v) => (typeof v === 'string' ? JSON.parse(v) : v);
     await page.click('.v111-ins-foot button:has-text("Write it from")'); await wait(page, 1500);
     const r = store.db.content_requests[0];
     check('with no material yet, the picks become the idea it is written from', r && r.start_mode === 'idea' && r.content_type === 'event' && /from what the market briefs found/.test(r.thesis) && r.setup.insights.length === 1, r && JSON.stringify({ m: r.start_mode, t: r.content_type }));
-    await page.click('#nwCtForm .nw-tile[data-k="adcopy"]'); await wait(page, 900);
-    check('a paid ad has the ad types as categories', (await ev(page, () => [...document.querySelectorAll('#v111Cats_ct .v111-cat')].map((b) => b.dataset.c).join()) ) === 'ad_image,ad_text,ad_carousel,ad_video');
-    await page.click('#v111Cats_ct .v111-cat[data-c="ad_carousel"]'); await wait(page, 300);
-    check('a carousel offers the carousel ads the Ad Strategist read first', /Stop losing referrals/.test(await ev(page, () => document.querySelector('#v111InsB_ct .v111-in-t').textContent)));
-    await page.click('#nwCtForm .nw-src-seg [data-s="paste"]'); await wait(page, 150);
-    await page.fill('#cfText', 'Synthetic source text for a test. '.repeat(20)); await ev(page, () => nwCtSync());
-    const cid = await ev(page, () => document.querySelector('#v111InsB_ct .v111-in').dataset.id);
-    await page.click('#v111InsB_ct .v111-in[data-id="' + cid + '"] button:has-text("Use")'); await wait(page, 120);
-    await page.click('.v111-ins-foot button:has-text("Write it from")'); await wait(page, 1500);
-    const r2 = store.db.content_requests[1];
-    check('a carousel ad is written to the carousel shape, with the picks in its rules', r2 && r2.format === 'ad' && r2.content_type === 'ad_carousel' && r2.template.name === 'Carousel ad' && /^Build it on these findings the team picked/.test(r2.template.rules), r2 && JSON.stringify({ f: r2.format, t: r2.template && r2.template.name }));
+    // v142: Paid ad left Content Transformation (ads are made on Marketing Generation); the carousel and ad type picks
+    // that lived on its tile are checked on Marketing Generation's ad campaign in the suites that cover it
+    check('Content Transformation offers no Paid ad (v142)', (await page.locator('#nwCtForm .nw-tile[data-k="adcopy"]').count()) === 0);
     await ctx.close();
   }
 
