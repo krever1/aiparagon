@@ -58,3 +58,18 @@ python voice/v7/align7.py voice/v7/t2   # (run from voice/v7) where each line en
 python voice/v7/cut7.py voice/v7/t2.wav wav-v71 0.25   # v7.1: pauses inside lines down to 0.25 s (80 s)
 ../venv/bin/python compose_p7.py   # ../out/pipeline-demo-v7.mp4 (+ .srt)
 ```
+
+## Pipeline v8 (Nov 19)
+Erica's second round: "two intelligent lead generation systems", 213 sample posts in the Intel Tracker scrolling past
+(zoomed out), both briefs read at full width, a page label on every shot, a calmer camera, Paid ad off the organic
+choices, and organic content's two starts. About 98 s. Lives in video/pipeline8 (needs video/pipeline's endcard.cjs).
+```
+cd video/pipeline8
+node record-p8.cjs                       # rec-p8/ (LOOK=1 for a quick 1x pass)
+node cards.cjs                           # cards/
+node ../pipeline/endcard.cjs 7.2 24 endcard
+ffmpeg -i voice/t1.mp3 -ac 1 -ar 24000 voice/t1.wav
+(cd voice && python cut8.py t1.wav ../wav-v8 0.3)
+ffmpeg -i wav-v8/03.wav -t 4.21 wav-v8/03a.wav && ffmpeg -ss 4.21 -i wav-v8/03.wav wav-v8/03b.wav   # line 3 split for the briefs
+../venv/bin/python compose_p8.py         # ../out/pipeline-demo-v8.mp4 (+ .srt)
+```
