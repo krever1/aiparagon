@@ -118,7 +118,8 @@ P = Plan()
 WAV = os.path.join(HERE, os.environ.get('WAVS', 'wav-v8'))
 L = {k: tlen(os.path.join(WAV, f + '.wav')) for k, f, _ in SEGS}
 KEYS = [k for k, _, _ in SEGS]
-GAP = {'2': 0.6, '3a': 0.9, '3b': 4.0, '4': 4.32, '5': 0.8, '6': 1.6, '7': 0.9, '8': 1.2, '9': 0.8, '10': 0.9}
+GAP = {'2': 2.4,   # the opening card holds both columns about 3 s
+        '3a': 0.9, '3b': 4.0, '4': 4.32, '5': 0.8, '6': 1.6, '7': 0.9, '8': 1.2, '9': 0.8, '10': 0.9}
 T = {'1': 0.5}
 for a, b in zip(KEYS, KEYS[1:]): T[b] = T[a] + L[a] + GAP[b]
 END = T['10'] + L['10'] + 1.3
