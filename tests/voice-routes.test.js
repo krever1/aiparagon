@@ -358,7 +358,7 @@ function check(label, ok, detail) {
         match: step('MATCH. This is their customer file, matched by the number and their name. Name on file: Kaye Moreno. [file 5550101234]'),
         check: step('CHECK. Ask them to spell their first name, letter by letter, then call find_caller again with the same number and name, and the letters in spelling. Do not suggest a spelling.', { name: 'Kate Moreno', phone: '5550101234' }),
         last: step('CHECK. Ask for their last name, then call find_caller again with the same number and their full name.', { name: 'Kaye', phone: '5550101234' }),
-        nomatch: step('NO MATCH. Treat them as a new caller and take their details as usual.', { name: 'Brian Arrington', phone: '5550101234' }),
+        nomatch: step('NO MATCH. Treat them as a new caller and take their details as usual.', { name: 'Brian Caldwell', phone: '5550101234' }),
         nofile: step('NO FILE. Nothing is on file under that number, so this is a new caller.'),
         full: step('CHECK. Ask for their first and last name, then call find_caller again with the same number and the name. Do not suggest a name.', { phone: '5550101234' }),
         partial: step('That number is not complete. Ask for the whole number with the area code, read it back, then call find_caller again.', { name: 'Kaye', phone: '010-1234' }),
@@ -702,7 +702,7 @@ function check(label, ok, detail) {
     check('winter: the steps name the winter answers, and the call ended after the goodbye said for her', /icicles-gutters/.test(w.t) && /snow-ice-service/.test(w.t) && /the goodbye was said and the call ended after it/.test(w.t) && /Ava ended the call/.test(w.t), w.t.slice(-600));
     check('winter: snow and ice questions go to the new answers, and the old ones keep theirs', w.kb.ice === 'ice-dam-leak' && w.kb.dam === 'ice-dam-leak' && w.kb.load === 'snow-load' && w.kb.icicle === 'icicles-gutters' && w.kb.service === 'snow-ice-service' && w.kb.gutter === 'icicles-gutters' && w.kb.ceiling === 'safety-sagging' && w.kb.person === 'ai-disclosure' && w.kb.panel === 'safety-electrical' && w.kb.today === 'snow-ice-service' && w.kb.when === 'how-soon', JSON.stringify(w.kb));
     check('winter: every step matches what today\'s knowledge would pick', !/With today's knowledge she'd use/.test(w.t), (w.t.match(/With today's knowledge[^.]*\./) || [''])[0]);
-    // Every page: Ava by name, never "the agent", "Agent training" or Arrington Roofing (the customer Brian Arrington stays).
+    // Every page: Ava by name, never "the agent", "Agent training" or Arrington Roofing (the sample customer is Brian Caldwell since Nov 19).
     const bad = [];
     for (const pg of ['overview', 'conversations', 'messages', 'opportunities', 'calendar', 'quality', 'training', 'knowledge', 'library', 'analytics', 'portal', 'tiers', 'settings']) {
       await page.goto(BASE + '/voice/' + pg, { waitUntil: 'load' }); await settle(page);
@@ -741,7 +741,7 @@ function check(label, ok, detail) {
         const kb = st.training.kb, f = (id) => kb.find((e) => e.id === id), col = (id) => st.collections.find((c) => c.id === id);
         const flat = JSON.stringify(st);
         return { c7: st.calls.some((c) => c.id === 'c7'), assistant: st.settings.assistant, emails: st.team.map((t) => t.email), arrington: (flat.match(/Arrington Roofing|arringtonroofing/g) || []).length,
-          brian: /Brian Arrington/.test(flat), winter: ['snow-load', 'snow-on-roof', 'ice-dam-leak', 'icicles-gutters', 'snow-ice-service'].map((id) => kb.filter((e) => e.id === id).length).join(),
+          brian: /Brian Caldwell/.test(flat) && !/Brian Arrington|brian\.arrington/.test(flat), winter: ['snow-load', 'snow-on-roof', 'ice-dam-leak', 'icicles-gutters', 'snow-ice-service'].map((id) => kb.filter((e) => e.id === id).length).join(),
           ids: kb.length === new Set(kb.map((e) => e.id)).size, ai: f('ai-disclosure').answer, sag: f('safety-sagging').pattern, todo: f('what-to-do-now').answer, access: f('roof-access').answer,
           company: col('company').guideline, handoff: col('handoff').guideline, snow: col('health-safety').escalate_when.filter((x) => /Snow or ice/.test(x)).length, flag: st.pinecrestDemo };
       });
