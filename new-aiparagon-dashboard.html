@@ -44411,7 +44411,7 @@ const NW_CK={
   email:{t:'Email',s:'Follow-up or nurture',ic:'mail',gets:['1 email with one call to action','3 subject lines'],btn:'Generate email',noun:'email'},
   adcopy:{t:'Paid ad',s:'Ad copy from your material',ic:'megaphone',gets:['1 ad body','3 hooks to test','A call to action and a headline'],btn:'Generate ad copy',noun:'ad'}
 };
-const NW_CT_KINDS=['thought_leadership','newsletter','email','adcopy'];
+const NW_CT_KINDS=['thought_leadership','newsletter','email']; /* v142: Paid ad left Content Transformation; ads are made on Marketing Generation (NW_CK.adcopy stays, to name older ad drafts) */
 const NW_CT_SRC=[['upload','Upload','upload','A file: an article, a transcript or a chapter, or a video or audio file'],['paste','Paste','copy','Paste the text, or read it from a link'],
   ['fathom','Fathom call','msg','A recorded call: its transcript becomes your material'],['idea','New idea','bulb','Start from a point you want to make, with no material yet']];
 const NW_CT_TABS=[['new','New draft','plus'],['drafts','Drafts','list'],['ideas','Ideas','bulb']];
@@ -44503,7 +44503,7 @@ function nwSelFill(id,html){const s=v97$(id);if(!s||s===document.activeElement)r
 /* ===================================================================
    Content Transformation
    =================================================================== */
-function nwCtKind(){const f=apCfState();return f.format==='ad'?'adcopy':NW_CT_KINDS.indexOf(f.format)>=0?f.format:'thought_leadership';}
+function nwCtKind(){const f=apCfState();if(f.format==='ad')f.format='thought_leadership'; /* v142: a form saved on Paid ad opens on LinkedIn post */return NW_CT_KINDS.indexOf(f.format)>=0?f.format:'thought_leadership';}
 function nwCtTab(){
   let t=(RD.aptab&&RD.aptab.create)||'new';
   t=({library:'ideas',requests:'drafts',voice:'new',how:'new'})[t]||t;
@@ -44942,7 +44942,8 @@ function nwCtApply(o){
   o=o||{};
   if(!v97$('nwCtForm')){window.__nwCtPre=Object.assign(window.__nwCtPre||{},o);RD.aptab.create='new';apGo('e3create');return;}
   nwCtGoTab('new');
-  if(o.kind)nwCtKindGo(o.kind==='ad'?'adcopy':o.kind);
+  if(o.kind==='ad'||o.kind==='adcopy'){nwMgGo({kind:'ad'});return;} /* v142: ads are made on Marketing Generation */
+  if(o.kind)nwCtKindGo(o.kind);
   if(o.src)nwCtSrcGo(o.src);
   const set=function(id,v){const e=v97$(id);if(e&&v!=null)e.value=v;};
   if(o.thesis!=null)set('cfThesis',o.thesis);
@@ -45038,7 +45039,8 @@ NW_PAGES['e3.create']=function(m,again){
   const _f=apCfFmt;
   apCfFmt=function(k){
     if(!v97$('nwCtForm'))return _f.apply(this,arguments);
-    nwCtKindGo(k==='ad'?'adcopy':NW_CT_KINDS.indexOf(k)>=0?k:'thought_leadership');
+    if(k==='ad'||k==='adcopy'){nwMgGo({kind:'ad'});return;} /* v142: an ad template opens Marketing Generation's Ad campaign */
+    nwCtKindGo(NW_CT_KINDS.indexOf(k)>=0?k:'thought_leadership');
   };
   const _fl=apCfFile;
   apCfFile=async function(){const r=await _fl.apply(this,arguments);try{if(v97$('nwCtForm')){if(nwCtSrc()==='idea')nwCtSrcGo('upload');nwCtSync();}}catch(e){}return r;};
@@ -48323,7 +48325,7 @@ const V113_CT_NEW=[
   ['clips','Short clips','Cut from a long video','repeat',['A plan for each clip: where to cut, the hook and the caption','3 opening lines'],'Generate clip plan','clip plan','video'],
   ['other','Something else','One-pager, case study, page','plus',['1 draft in the shape you describe','3 title options'],'Generate draft','draft','other']
 ];
-const V113_CT_GROUPS=[['Posts and emails',['thought_leadership','newsletter','email','adcopy']],['Long reads',['report','white_paper','news_article','how_to']],
+const V113_CT_GROUPS=[['Posts and emails',['thought_leadership','newsletter','email']],['Long reads',['report','white_paper','news_article','how_to']],
   ['Events and decks',['event_kit','deck','webinar_deck']],['Video',['video','clips']],['Something else',['other']]];
 /* the shape each new format is written to; card formats start every card on its own line */
 const V113_CT_TPL={
