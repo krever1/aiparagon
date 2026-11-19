@@ -128,9 +128,10 @@ BR = 1.2                                                   # the briefs scroll a
 # 1 "This is Pipeline. Two intelligent lead generation systems: organic content ..., and ads that book calls."
 t = T['1']
 P.show('ov', 0, 0)
-P.card(0.0, T['2'] - 0.25, [('intro_a', 0.0), ('intro_b', t + 5.2), ('intro_c', t + 7.98)], fin=0.0, fout=0.35)
-P.move(seqm('ov_scroll'), t + 8.0, 0.6)
-e = P.seq('ov_scroll', t + 8.1); P.show('ov2', e, 0)
+# line 1 starts on "This is Pipeline" (the take's first 3.4 s, the voice reading its style notes aloud, are cut off)
+P.card(0.0, T['2'] - 0.25, [('intro_a', 0.0), ('intro_b', t + 4.6), ('intro_c', t + 6.1)], fin=0.0, fout=0.35)
+P.move(seqm('ov_scroll'), t + 4.9, 0.6)
+e = P.seq('ov_scroll', t + 5.0); P.show('ov2', e, 0)
 fb = box('ov2_flow'); P.cam(fit(fb[0] - 8, fb[1] - 34, fb[0] + fb[2] + 8, fb[1] + fb[3] - 120), e + 0.1, e + 0.2)
 P.lab(T['2'] - 0.3, 'Both systems', 'Pipeline · Overview')
 

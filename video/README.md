@@ -70,6 +70,9 @@ node cards.cjs                           # cards/
 node ../pipeline/endcard.cjs 7.2 24 endcard
 ffmpeg -i voice/t1.mp3 -ac 1 -ar 24000 voice/t1.wav
 (cd voice && python cut8.py t1.wav ../wav-v8 0.3)
+cp wav-v8/01.wav wav-v8/01-with-tag.wav && ffmpeg -ss 3.40 -i wav-v8/01-with-tag.wav -af afade=t=in:d=0.02 wav-v8/01.wav   # the take's first 3.4 s are the voice reading its style notes aloud
 ffmpeg -i wav-v8/03.wav -t 4.21 wav-v8/03a.wav && ffmpeg -ss 4.21 -i wav-v8/03.wav wav-v8/03b.wav   # line 3 split for the briefs
 ../venv/bin/python compose_p8.py         # ../out/pipeline-demo-v8.mp4 (+ .srt)
 ```
+
+The voice can read the bracketed style notes at the top of the prompt aloud (all three v8 takes did, about 3 s). Check where the first line really starts (shot by matching it against an earlier take of the same words) before cutting.
