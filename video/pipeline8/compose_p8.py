@@ -118,7 +118,7 @@ P = Plan()
 WAV = os.path.join(HERE, os.environ.get('WAVS', 'wav-v8'))
 L = {k: tlen(os.path.join(WAV, f + '.wav')) for k, f, _ in SEGS}
 KEYS = [k for k, _, _ in SEGS]
-GAP = {'2': 2.4,   # the opening card holds both columns about 3 s
+GAP = {'2': 1.0,   # a short breath after line 1; the cards stay up into "Both start here"
         '3a': 0.9, '3b': 4.0, '4': 4.32, '5': 0.8, '6': 1.6, '7': 0.9, '8': 1.2, '9': 0.8, '10': 0.9}
 T = {'1': 0.5}
 for a, b in zip(KEYS, KEYS[1:]): T[b] = T[a] + L[a] + GAP[b]
@@ -130,7 +130,7 @@ BR = 1.2                                                   # the briefs scroll a
 t = T['1']
 P.show('ov', 0, 0)
 # line 1 starts on "This is Pipeline" (the take's first 3.4 s, the voice reading its style notes aloud, are cut off)
-P.card(0.0, T['2'] - 0.25, [('intro_a', 0.0), ('intro_b', t + 4.6), ('intro_c', t + 6.1)], fin=0.0, fout=0.35)
+P.card(0.0, T['2'] + 0.9, [('intro_a', 0.0), ('intro_b', t + 4.5), ('intro_c', t + 5.9)], fin=0.0, fout=0.35)  # Ads on "and ads"
 P.move(seqm('ov_scroll'), t + 4.9, 0.6)
 e = P.seq('ov_scroll', t + 5.0); P.show('ov2', e, 0)
 fb = box('ov2_flow'); P.cam(fit(fb[0] - 8, fb[1] - 34, fb[0] + fb[2] + 8, fb[1] + fb[3] - 120), e + 0.1, e + 0.2)
@@ -138,7 +138,7 @@ P.lab(T['2'] - 0.3, 'Both systems', 'Pipeline · Overview')
 
 # 2 "Both start here. Every week the Intel Tracker reads the posts and ads in your market, on LinkedIn and the Meta ..."
 t = T['2']
-P.hover('ov2_intel', t + 0.75, 0.55)                        # "Both start here"
+P.hover('ov2_intel', t + 1.1, 0.3)                          # "Both start here" (the cards fade out first)
 P.click(t + 1.45); P.cam(FULL, t + 1.42, t + 1.5); P.show('intel', t + 1.5, 0.14)
 P.lab(t + 1.5, 'Both systems', 'Intel Tracker')
 P.hover('intel_reads', t + 3.2, 0.5)                        # "reads"
