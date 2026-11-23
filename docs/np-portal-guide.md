@@ -338,6 +338,7 @@ A panel with Upcoming appointments (with a Reminders link), System notifications
 The AI assistant. Open it with **Ask Spectrum** at the top right (a floating button on a phone or tablet).
 
 - Type a question and press Enter, or tap a suggested question. A microphone button appears on browsers that support speech.
+- **Talk** (the sound-wave button next to it) starts a conversation out loud: ask, and Ask Spectrum answers in a voice, back and forth, until you press **End** (or say goodbye). The bar at the top says whether it is listening or speaking, has **Mute** and **End**, and says who is who: out loud, clients are "Client 1", "Client 2" and houses "Home A", "Home B", so ask by number, not by name. What is said shows in the chat with the real UCIs and is kept in Past chats. It only reads: it never adds or changes anything. Closing Ask Spectrum ends it. If the microphone is blocked, it says how to allow it.
 - **New chat** starts over. **Past chats** lists your earlier chats (yours only).
 - Every page has an Ask Spectrum chip under its title with a ready question; on a client's page it asks for that client's last week.
 - It answers only from records the person is allowed to see.
@@ -546,7 +547,7 @@ Use the blank form, not a filled-in copy. "Find boxes" looks again later.
 
 **47. Message someone.** Top bar envelope > New message > To, Subject, Message > Send message. Or click their name under Team. Refer to clients by UCI only.
 
-**48. Ask Ask Spectrum something.** Top bar Ask Spectrum > type > Enter. Or click the chip under any page title.
+**48. Ask Ask Spectrum something.** Top bar Ask Spectrum > type > Enter. Or click the chip under any page title. To talk instead: Talk (the sound-wave button) > allow the microphone > ask out loud; End to finish. Say clients by number ("Client 2"), as the bar lists them.
 
 **49. Connect Google Calendar.** Calendar > Connect Google Calendar (or the gear > Calendar integrations > Connect) > pick the Google account > allow. It stays connected until Disconnect. Each person connects their own account.
 
@@ -601,6 +602,8 @@ With each question the page sends the question, a snapshot of the records the pe
 - UCIs, names, initials, emails and phone numbers are swapped out
 
 The answer comes back with the portal's own names put back. What does go out is the content of records without identifiers: appointments, notes, form answers, dates. Whether that needs more limits is an open decision (CLAUDE.md, Compliance rules). If the AI service cannot be reached, Ask Spectrum gives a simpler answer worked out on the page.
+
+Talking (v12.49) goes through Vapi, the voice service AI Paragon's phone agents use, straight from the browser: the same labelled snapshot (no UCIs, names, initials or house names) goes to Vapi when the conversation starts, Vapi's speech service hears what the person says, and an AI model (OpenAI's GPT-4.1, through Vapi) answers out loud with the labels. Nothing is recorded and nothing is sent to AI Paragon's servers. What the person says is heard as they say it, before the portal can swap anything out, which is why the bar asks for numbers, not names.
 
 ### Emails
 

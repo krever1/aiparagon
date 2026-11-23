@@ -3363,6 +3363,28 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
   .hm-sched .v1243-cc{padding:10px 16px}
   .v1243-c{max-width:calc(100vw - 80px)}
 }
+/* ══ v12.49: Talk with Ask Spectrum ══ */
+.ask-in .v1249-talk{background:var(--gold-soft,#F4ECD8);color:var(--navy);border:1px solid var(--gold,#B8963E)}
+.ask-in .v1249-talk:hover{background:var(--gold,#B8963E);color:#fff}
+.ask-in .v1249-talk.is-on{background:#B3261E;border-color:#B3261E;color:#fff}
+.v1249-bar{display:grid;gap:7px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--gold-soft,#F4ECD8)}
+.v1249-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.v1249-dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
+.v1249-bar[data-phase="live"] .v1249-dot,.v1249-bar[data-phase="speaking"] .v1249-dot{background:#2F8F6B}
+.v1249-bar[data-phase="speaking"] .v1249-dot{box-shadow:0 0 0 4px rgba(47,143,107,.2)}
+.v1249-st{font-weight:700;font-size:13px;color:var(--ink)}
+.v1249-tm{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.v1249-acts{margin-left:auto;display:flex;gap:6px}
+.v1249-acts .btn{height:30px;padding:0 11px;font-size:12px}
+.v1249-lvl{height:4px;border-radius:4px;background:var(--line);overflow:hidden}
+.v1249-lvl i{display:block;height:100%;width:0;background:#2F8F6B;transition:width .12s}
+.v1249-who{font-size:12px;color:var(--ink);line-height:1.45;max-height:4.4em;overflow:auto}
+.v1249-note{font-size:11.5px;color:var(--muted);line-height:1.4}
+.v1249-err{font-size:12.5px;color:#B3261E;font-weight:600}
+.msg.v1249-v{position:relative}
+.msg.v1249-v .v1249-part{opacity:.6}
+.msg.v1249-v::after{content:'voice';display:block;font-size:10px;letter-spacing:.05em;text-transform:uppercase;opacity:.55;margin-top:3px}
+@media(max-width:520px){ .v1249-acts{margin-left:0;width:100%} .v1249-acts .btn{flex:1;height:36px} }
 /* ══ v12.48: log buttons the team names, client logs ══ */
 .v1248-eb{display:inline-flex;align-items:center;gap:5px;cursor:text;outline:1.5px dashed var(--gold,#B8963E);outline-offset:2px}
 .v1248-eb:focus-within{outline-style:solid}
@@ -3880,11 +3902,13 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
       <button class="x" onclick="toggleAsk()" title="Close" aria-label="Close the assistant">✕</button>
     </div>
   </div>
+  <div class="v1249-bar" id="askVoice" hidden></div>
   <div class="ask-log" id="askLog"></div>
   <div class="ask-sug" id="askSug"></div>
   <div class="ask-in">
     <input id="askInput" placeholder="Ask about a client, policy or shift…" onkeydown="if(event.key==='Enter')askSend()">
     <button id="askMic" onclick="askMic()" title="Speak your question" aria-label="Speak your question" style="display:none">🎤</button>
+    <button id="askTalk" class="v1249-talk" onclick="voiceToggle()" title="Talk with Ask Spectrum out loud" aria-label="Talk with Ask Spectrum out loud" aria-pressed="false" style="display:none"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg></button>
     <button onclick="askSend()" aria-label="Send" title="Send">↑</button>
   </div>
 </div>
@@ -6868,6 +6892,7 @@ function idleReset(){
 function setIdle(v){ IDLE_MIN=+v||0; lsSet('np_idle_min',String(IDLE_MIN)); userSetSave({idle:IDLE_MIN}); idleReset(); toast(IDLE_MIN?('Auto sign-out after '+IDLE_MIN+' minutes idle — just for your account.'):'Auto sign-out is off for your account.'); }
 ['click','keydown','mousemove','scroll','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{ if(AUTH.signedIn) idleReset(); },{passive:true}));
 async function signOut(){
+  if(window.voiceStop) voiceStop();                                   // v12.49: a voice conversation ends with the sign-out
   /* v12.13: a change saved a moment ago finishes saving while this person is still signed in */
   if(Object.keys(_mergeQ).length){ try{ await progFlush(3000); }catch(e){} }
   /* v12.11: end the session on the server as well, and reload afterwards so nothing the
@@ -12762,6 +12787,157 @@ function deleteFiled(folderKey,idx){
     render(); toast('Removed.');
   },'Remove');
 }
+
+/* ══ v12.49: Talk with Ask Spectrum ══
+   A voice conversation with Ask Spectrum, through Vapi (the voice service the Pinecrest agent uses). The page starts a
+   web call with an assistant it describes itself (VOICE_ASSIST: Vapi's own Clara voice, Deepgram, gpt-4.1), using
+   Vapi's public key only. The assistant is told the same snapshot Ask reads, with Ask's labels (askOut: Client 1,
+   Client 2, Home A; never a UCI, a name, initials, an email or a phone), so what is said out loud uses the labels,
+   and the screen puts the portal's own names back (askIn). The bar says who is who, so people can ask about
+   "Client 2". Nothing is recorded (artifactPlan), no report goes to any server (serverMessages empty), and the
+   conversation is kept in Ask's own history like a typed one. What a person says is heard by Vapi and its speech
+   service as it is said, so the bar asks people to use the numbers, not names. It only reads: it never changes
+   anything in the portal. */
+const VOICE_SDK='https://cdn.jsdelivr.net/npm/@vapi-ai/web@3.1.0/+esm';
+const VOICE_KEY=()=>String((window.NP_CONFIG&&window.NP_CONFIG.vapi)||'45350115-e7ae-4c66-8fb0-9a789ddacab7').trim();
+const VOICE={vapi:null,loading:null,on:false,phase:'',muted:false,err:'',started:0,timer:null,turn:null,lastQ:'',who:[]};
+function voiceAvail(){ return !!VOICE_KEY()&&!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia); }
+function voiceBtnInit(){ const b=el('askTalk'); if(b) b.style.display=voiceAvail()?'':'none'; }
+function voiceLoad(){
+  if(VOICE.loading) return VOICE.loading;
+  VOICE.loading=import(VOICE_SDK).then(m=>{
+    const V=m.default&&m.default.default?m.default.default:(m.default||m.Vapi);
+    if(typeof V!=='function') throw new Error('nosdk');
+    return V;
+  });
+  VOICE.loading.catch(()=>{ VOICE.loading=null; });
+  return VOICE.loading;
+}
+function voicePrompt(){
+  const role=state.role, who=(ME[role]&&ME[role].label)||role;
+  let snap=askOut(askContext(true));
+  if(snap.length>60000) snap=snap.slice(0,60000)+'\n[snapshot cut short]';
+  return ['You are Ask Spectrum, the voice assistant in a care team\'s portal, Spectrum Care Advisory OS. You are talking out loud with a person on the team ('+who+').',
+    'HOW TO SPEAK: Short answers, one to three sentences, in plain words. No lists, headings, markdown, symbols or links. Never say anything in square brackets, such as [open:...] or [go:...]. Say times like 2:30 PM and dates like Thursday, November 27. Ask one question at a time.',
+    'NAMES: Clients are called Client 1, Client 2 and so on, and homes Home A, Home B. Use exactly those names. Never guess, ask for or say a real name or ID. If the person says a real name, say you know clients by their number on the screen, like Client 2, and ask which one they mean.',
+    'WHAT YOU KNOW: Only the portal snapshot below, taken when this conversation started. If something is not in it, say you don\'t see it in the portal. Never make up appointments, readings, tasks, people or dates.',
+    'WHAT YOU CAN DO: You can only read and answer. If they ask you to add, change, book, assign, log or send something, say you can\'t do that by voice yet and name the page where they can do it.',
+    'SAFETY: Don\'t give medical advice beyond what the records say. If someone may be in danger, tell them to follow their emergency steps and call 911.',
+    'ENDING: When they say they are done, thank them and say goodbye.',
+    '','PORTAL SNAPSHOT:',snap].join('\n');
+}
+function voiceWho(){                                                 // who is who, for the bar: labels the snapshot just gave out
+  const out=[];
+  visibleClients().forEach(c=>{ const n=ASK_LBL[c.id]; if(n) out.push({k:'Client '+n,v:c.uci||c.init||'',n}); });
+  out.sort((a,b)=>a.n-b.n);
+  const hs=Object.keys(ASK_HOME).sort((a,b)=>ASK_HOME[a]-ASK_HOME[b]).map(h=>({k:askHomeLabel(h),v:h}));
+  return out.concat(hs);
+}
+function voiceAssist(){
+  return {name:'Ask Spectrum voice',
+    firstMessage:'Hi, it\'s Ask Spectrum. What would you like to know?',
+    model:{provider:'openai',model:'gpt-4.1',temperature:0.3,messages:[{role:'system',content:voicePrompt()}]},
+    voice:{provider:'vapi',voiceId:'Clara',version:'2'},
+    transcriber:{provider:'deepgram',model:'nova-3',language:'en'},
+    backgroundSound:'off',silenceTimeoutSeconds:45,maxDurationSeconds:900,
+    artifactPlan:{recordingEnabled:false},
+    serverMessages:[],
+    endCallPhrases:['goodbye','bye for now'],
+    metadata:{app:'spectrum-voice',role:state.role}};
+}
+function voiceErrWords(e){
+  let raw=''; try{ raw=typeof e==='string'?e:JSON.stringify(e); }catch(x){ raw=String(e); }
+  raw+=' '+String((e&&(e.message||e.errorMsg))||'');
+  if(/notallowed|permission|denied|microphone|getusermedia|not-allowed/i.test(raw)) return 'The microphone is blocked. Allow it for this site (the icon in the address bar), then press Talk again.';
+  if(/notfound|no.*(device|input)|requested device not found/i.test(raw)) return 'No microphone was found on this device.';
+  if(/nosdk|failed to fetch|import|load/i.test(raw)) return 'The voice service could not be reached. Check the connection and try again.';
+  return 'The voice conversation could not start. Try again in a moment.';
+}
+function voiceBar(){
+  const b=el('askVoice'); if(!b) return;
+  const t=el('askTalk');
+  if(t){ t.classList.toggle('is-on',VOICE.on); t.setAttribute('aria-pressed',VOICE.on?'true':'false'); t.title=VOICE.on?'End the voice conversation':'Talk with Ask Spectrum out loud'; }
+  if(!VOICE.on&&!VOICE.err){ b.hidden=true; b.innerHTML=''; return; }
+  b.hidden=false;
+  if(!VOICE.on){ b.dataset.phase='off'; b.innerHTML=`<div class="v1249-err" role="alert">${esc(VOICE.err)}</div>`; return; }
+  const ph=VOICE.phase, word=ph==='connecting'?'Connecting…':ph==='speaking'?'Ask Spectrum is speaking':VOICE.muted?'Muted':'Listening';
+  b.dataset.phase=ph;
+  const who=VOICE.who.length?`<div class="v1249-who"><b>Out loud:</b> ${VOICE.who.slice(0,10).map(w=>`${esc(w.k)} is ${esc(w.v)}`).join(' · ')}${VOICE.who.length>10?` · and ${VOICE.who.length-10} more`:''}</div>`:'';
+  b.innerHTML=`<div class="v1249-top"><span class="v1249-dot" aria-hidden="true"></span><span class="v1249-st" aria-live="polite">${word}</span><span class="v1249-tm" id="askVoiceTm"></span>
+      <span class="v1249-acts"><button class="btn ghost sm" type="button" onclick="voiceMute()" ${ph==='connecting'?'disabled':''}>${VOICE.muted?'Unmute':'Mute'}</button><button class="btn navy sm" type="button" onclick="voiceStop()">End</button></span></div>
+    <div class="v1249-lvl" aria-hidden="true"><i id="askVoiceLvl"></i></div>${who}
+    <div class="v1249-note">Ask by number, not by name. Your voice goes to our voice service to be heard; nothing is recorded, and it changes nothing in the portal.</div>`;
+  voiceTick();
+}
+function voiceTick(){ const s=el('askVoiceTm'); if(!s||!VOICE.started) return; const n=Math.max(0,Math.round((Date.now()-VOICE.started)/1000)); s.textContent=Math.floor(n/60)+':'+String(n%60).padStart(2,'0'); }
+function voiceTurnEnd(){                                              // a finished turn goes in Ask's history like a typed one
+  const t=VOICE.turn; VOICE.turn=null; if(!t) return;
+  const txt=String(t.text||'').replace(/\s+/g,' ').trim();
+  if(t.el){ if(txt) t.el.textContent=t.role==='assistant'?askIn(txt):askIn(txt); else t.el.remove(); }
+  if(!txt) return;
+  if(t.role==='user'){ askRecord('me',askIn(txt)); VOICE.lastQ=askIn(txt); }
+  else { const a=askIn(txt); askRecord('bot',a); if(VOICE.lastQ){ ASK_HIST.push({q:VOICE.lastQ,a:askTr(a,400)}); if(ASK_HIST.length>10) ASK_HIST.shift(); VOICE.lastQ=''; } }
+}
+function voiceLine(role,text,final){
+  const log=el('askLog'); if(!log) return;
+  if(VOICE.turn&&VOICE.turn.role!==role) voiceTurnEnd();
+  if(!VOICE.turn){
+    const d=document.createElement('div'); d.className='msg v1249-v '+(role==='assistant'?'bot':'me');
+    log.appendChild(d); VOICE.turn={role,text:'',el:d};
+  }
+  const t=VOICE.turn;
+  if(final){ t.text=(t.text+' '+text).replace(/\s+/g,' ').trim(); t.el.textContent=askIn(t.text); }
+  else { t.el.textContent=askIn(t.text?t.text+' ':''); const p=document.createElement('span'); p.className='v1249-part'; p.textContent=askIn(text); t.el.appendChild(p); }
+  log.scrollTop=log.scrollHeight;
+}
+function voiceEnded(){
+  if(!VOICE.on&&!VOICE.turn) return;
+  voiceTurnEnd();
+  VOICE.on=false; VOICE.phase=''; VOICE.muted=false; VOICE.started=0;
+  clearInterval(VOICE.timer); VOICE.timer=null;
+  voiceBar();
+}
+function voiceHook(v){
+  v.on('call-start',()=>{ VOICE.phase='live'; VOICE.started=Date.now(); clearInterval(VOICE.timer); VOICE.timer=setInterval(voiceTick,1000); voiceBar(); });
+  v.on('speech-start',()=>{ if(!VOICE.on) return; VOICE.phase='speaking'; voiceBar(); });
+  v.on('speech-end',()=>{ if(!VOICE.on) return; VOICE.phase='live'; voiceBar(); });
+  v.on('volume-level',x=>{ const i=el('askVoiceLvl'); if(i) i.style.width=Math.min(100,Math.round((+x||0)*100))+'%'; });
+  v.on('message',m=>{
+    if(!VOICE.on||!m) return;
+    if(m.type==='transcript'&&m.transcript) voiceLine(m.role==='assistant'?'assistant':'user',String(m.transcript),m.transcriptType==='final');
+  });
+  v.on('call-end',()=>voiceEnded());
+  v.on('error',e=>{
+    let raw=''; try{ raw=JSON.stringify(e); }catch(x){ raw=String(e); }
+    if(/ejected|meeting has ended|meeting ended/i.test(raw)){ voiceEnded(); return; }   // the room closing is a normal end
+    VOICE.err=voiceErrWords(e); voiceEnded();
+  });
+}
+async function voiceStart(){
+  if(VOICE.on) return;
+  if(!voiceAvail()){ toast('Talking out loud is not available in this browser.'); return; }
+  VOICE.err=''; VOICE.on=true; VOICE.phase='connecting'; VOICE.muted=false; VOICE.turn=null; VOICE.lastQ='';
+  { const sg=el('askSug'); if(sg) sg.innerHTML=''; }                // the suggestions make room for the conversation
+  const assist=voiceAssist();                                        // builds the snapshot first, so the labels exist
+  VOICE.who=voiceWho();
+  voiceBar();
+  let V;
+  try{ V=await voiceLoad(); }catch(e){ VOICE.err=voiceErrWords('nosdk'); voiceEnded(); return; }
+  if(!VOICE.on) return;                                              // ended while loading
+  try{
+    if(!VOICE.vapi){ VOICE.vapi=new V(VOICE_KEY()); voiceHook(VOICE.vapi); }
+    await VOICE.vapi.start(assist);
+  }catch(e){ VOICE.err=voiceErrWords(e); voiceEnded(); }
+}
+function voiceStop(){
+  if(!VOICE.on) return;
+  try{ if(VOICE.vapi) VOICE.vapi.stop(); }catch(e){}
+  voiceEnded();
+}
+function voiceToggle(){ if(VOICE.on) voiceStop(); else voiceStart(); }
+function voiceMute(){ if(!VOICE.on||!VOICE.vapi) return; VOICE.muted=!VOICE.muted; try{ VOICE.vapi.setMuted(VOICE.muted); }catch(e){} voiceBar(); }
+window.voiceStop=voiceStop;
+setTimeout(voiceBtnInit,0);
 
 /* ══ v12.48: log buttons the team names, and client logs the team builds ══
    A log button's words (Record vitals, Log an activity, Log a drill, Add reading, a form's Start or Run button,
@@ -21034,7 +21210,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.48 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.49 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────
@@ -23273,7 +23449,8 @@ function askMic(){
   r.start();
 }
 function askMicInit(){ const b=el('askMic'); if(b&&(window.SpeechRecognition||window.webkitSpeechRecognition)) b.style.display=''; }
-function toggleAsk(){ askMicInit(); const p=el('askPanel'); p.classList.toggle('on'); el('askFab').style.display=p.classList.contains('on')?'none':'flex'; if(p.classList.contains('on')) el('askInput').focus(); }
+function toggleAsk(){ askMicInit(); const p=el('askPanel'); p.classList.toggle('on'); if(!p.classList.contains('on')&&window.voiceStop) voiceStop();   // v12.49
+  el('askFab').style.display=p.classList.contains('on')?'none':'flex'; if(p.classList.contains('on')) el('askInput').focus(); }
 const AI_SECTIONS={home:'Ask Spectrum can summarize today for you',
   clients:'Ask about a client, their notes or appointments',
   tasks:'Ask what is overdue or who is behind',
