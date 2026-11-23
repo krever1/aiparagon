@@ -338,7 +338,7 @@ A panel with Upcoming appointments (with a Reminders link), System notifications
 The AI assistant. Open it with **Ask Spectrum** at the top right (a floating button on a phone or tablet).
 
 - Type a question and press Enter, or tap a suggested question. A microphone button appears on browsers that support speech.
-- **Talk** (the sound-wave button next to it) starts a conversation out loud: ask, and Ask Spectrum answers in a voice, back and forth, until you press **End** (or say goodbye). The bar at the top says whether it is listening or speaking, has **Mute** and **End**, and says who is who: out loud, clients are "Client 1", "Client 2" and houses "Home A", "Home B", so ask by number, not by name. What is said shows in the chat with the real UCIs and is kept in Past chats. It only reads: it never adds or changes anything. Closing Ask Spectrum ends it. If the microphone is blocked, it says how to allow it.
+- **Talk** (the sound-wave button next to it) starts a conversation out loud: ask, and Ask Spectrum answers in a voice, back and forth, until you press **End** (or say goodbye). The bar at the top says whether it is listening or speaking, has **Mute** and **End**, and says who is who: out loud, clients are "Client 1", "Client 2" and houses "Home A", "Home B", so ask by number, not by name. What is said shows in the chat with the real UCIs and is kept in Past chats. It only reads: it never adds or changes anything. Closing Ask Spectrum ends it. If the microphone is blocked, it says how to allow it. If the browser keeps sound off (some phones and Safari), the bar says "Sound is off in this browser" with **Tap to hear Ask Spectrum**: tap it and the answer plays.
 - **New chat** starts over. **Past chats** lists your earlier chats (yours only).
 - Every page has an Ask Spectrum chip under its title with a ready question; on a client's page it asks for that client's last week.
 - It answers only from records the person is allowed to see.
@@ -547,7 +547,7 @@ Use the blank form, not a filled-in copy. "Find boxes" looks again later.
 
 **47. Message someone.** Top bar envelope > New message > To, Subject, Message > Send message. Or click their name under Team. Refer to clients by UCI only.
 
-**48. Ask Ask Spectrum something.** Top bar Ask Spectrum > type > Enter. Or click the chip under any page title. To talk instead: Talk (the sound-wave button) > allow the microphone > ask out loud; End to finish. Say clients by number ("Client 2"), as the bar lists them.
+**48. Ask Ask Spectrum something.** Top bar Ask Spectrum > type > Enter. Or click the chip under any page title. To talk instead: Talk (the sound-wave button) > allow the microphone > ask out loud; End to finish (if the bar shows Tap to hear Ask Spectrum, tap it to turn the sound on). Say clients by number ("Client 2"), as the bar lists them.
 
 **49. Connect Google Calendar.** Calendar > Connect Google Calendar (or the gear > Calendar integrations > Connect) > pick the Google account > allow. It stays connected until Disconnect. Each person connects their own account.
 

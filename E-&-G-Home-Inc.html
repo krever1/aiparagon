@@ -3383,6 +3383,7 @@ button.cx-ti:focus-visible{outline:2px solid #1F6B52;outline-offset:2px;border-r
 .v1249-err{font-size:12.5px;color:#B3261E;font-weight:600}
 .msg.v1249-v{position:relative}
 .msg.v1249-v .v1249-part{opacity:.6}
+.v1250-tap{display:block;width:100%;margin:8px 0 2px;min-height:40px;font-weight:600}
 .msg.v1249-v::after{content:'voice';display:block;font-size:10px;letter-spacing:.05em;text-transform:uppercase;opacity:.55;margin-top:3px}
 @media(max-width:520px){ .v1249-acts{margin-left:0;width:100%} .v1249-acts .btn{flex:1;height:36px} }
 /* ══ v12.48: log buttons the team names, client logs ══ */
@@ -12802,6 +12803,35 @@ const VOICE_SDK='https://cdn.jsdelivr.net/npm/@vapi-ai/web@3.1.0/+esm';
 const VOICE_KEY=()=>String((window.NP_CONFIG&&window.NP_CONFIG.vapi)||'45350115-e7ae-4c66-8fb0-9a789ddacab7').trim();
 const VOICE={vapi:null,loading:null,on:false,phase:'',muted:false,err:'',started:0,timer:null,turn:null,lastQ:'',who:[]};
 function voiceAvail(){ return !!VOICE_KEY()&&!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia); }
+/* v12.50: Ask Spectrum's voice is heard on every browser. Vapi starts talking only once the page has started playing its
+   audio, and the SDK starts that playback seconds after the Talk tap, once the call is up. Safari and iPhones refuse
+   sound started that late, so the SDK gave up quietly and the call stayed silent: no greeting, and Vapi hung up for want
+   of the caller's audio. Now the Talk tap itself unlocks a player of our own (a moment of silence played inside the
+   tap); if the SDK's playback is refused, Ask Spectrum's audio goes to that player and Vapi is told it can speak; and
+   if the browser refuses that too, the bar offers "Tap to hear Ask Spectrum", which plays it from a tap. */
+const VOICE_SILENT='data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==';
+function voiceOut(){ let a=el('askVoiceOut'); if(!a){ a=document.createElement('audio'); a.id='askVoiceOut'; a.setAttribute('playsinline',''); a.autoplay=true; document.body.appendChild(a); } return a; }
+function voiceUnlock(){                                              // inside the Talk tap: the player may make sound from now on
+  const a=voiceOut(); a.muted=false;
+  try{ if(!a.srcObject){ a.src=VOICE_SILENT; } const p=a.play(); if(p&&p.catch) p.catch(()=>{}); }catch(e){}
+}
+function voiceDaily(){ try{ return (VOICE.vapi&&VOICE.vapi.getDailyCallObject&&VOICE.vapi.getDailyCallObject())||null; }catch(e){ return null; } }
+function voiceSpeakerTrack(){
+  const d=voiceDaily(); if(!d) return null;
+  try{ const p=Object.values(d.participants()||{}).find(x=>x&&!x.local&&x.user_name==='Vapi Speaker');
+    const t=p&&p.tracks&&p.tracks.audio; return (t&&(t.persistentTrack||t.track))||null; }catch(e){ return null; }
+}
+function voiceRescue(){                                              // the SDK could not start Ask Spectrum's audio: play it ourselves
+  if(!VOICE.on||VOICE.heard) return false;
+  const tr=voiceSpeakerTrack(); if(!tr) return false;
+  const a=voiceOut(); a.removeAttribute('src'); a.srcObject=new MediaStream([tr]); a.muted=false; VOICE.ours=true;
+  const ok=()=>{ if(!VOICE.on) return; VOICE.heard=true; VOICE.needTap=false;
+    try{ const d=voiceDaily(); if(d) d.sendAppMessage('playable'); }catch(e){}                 // what the SDK says once it plays: Vapi may speak now
+    voiceBar(); };
+  const no=()=>{ if(!VOICE.on||VOICE.heard) return; VOICE.needTap=true; voiceBar(); };
+  try{ Promise.resolve(a.play()).then(ok,no); }catch(e){ no(); }
+  return true;
+}
 function voiceBtnInit(){ const b=el('askTalk'); if(b) b.style.display=voiceAvail()?'':'none'; }
 function voiceLoad(){
   if(VOICE.loading) return VOICE.loading;
@@ -12860,12 +12890,13 @@ function voiceBar(){
   if(!VOICE.on&&!VOICE.err){ b.hidden=true; b.innerHTML=''; return; }
   b.hidden=false;
   if(!VOICE.on){ b.dataset.phase='off'; b.innerHTML=`<div class="v1249-err" role="alert">${esc(VOICE.err)}</div>`; return; }
-  const ph=VOICE.phase, word=ph==='connecting'?'Connecting…':ph==='speaking'?'Ask Spectrum is speaking':VOICE.muted?'Muted':'Listening';
+  const ph=VOICE.phase, word=VOICE.needTap?'Sound is off in this browser':ph==='connecting'?'Connecting…':ph==='speaking'?'Ask Spectrum is speaking':VOICE.muted?'Muted':'Listening';
+  const tap=VOICE.needTap?`<button class="btn navy v1250-tap" type="button" onclick="voiceRescue()">▶ Tap to hear Ask Spectrum</button>`:'';   // v12.50
   b.dataset.phase=ph;
   const who=VOICE.who.length?`<div class="v1249-who"><b>Out loud:</b> ${VOICE.who.slice(0,10).map(w=>`${esc(w.k)} is ${esc(w.v)}`).join(' · ')}${VOICE.who.length>10?` · and ${VOICE.who.length-10} more`:''}</div>`:'';
   b.innerHTML=`<div class="v1249-top"><span class="v1249-dot" aria-hidden="true"></span><span class="v1249-st" aria-live="polite">${word}</span><span class="v1249-tm" id="askVoiceTm"></span>
       <span class="v1249-acts"><button class="btn ghost sm" type="button" onclick="voiceMute()" ${ph==='connecting'?'disabled':''}>${VOICE.muted?'Unmute':'Mute'}</button><button class="btn navy sm" type="button" onclick="voiceStop()">End</button></span></div>
-    <div class="v1249-lvl" aria-hidden="true"><i id="askVoiceLvl"></i></div>${who}
+    ${tap}<div class="v1249-lvl" aria-hidden="true"><i id="askVoiceLvl"></i></div>${who}
     <div class="v1249-note">Ask by number, not by name. Your voice goes to our voice service to be heard; nothing is recorded, and it changes nothing in the portal.</div>`;
   voiceTick();
 }
@@ -12894,11 +12925,16 @@ function voiceEnded(){
   if(!VOICE.on&&!VOICE.turn) return;
   voiceTurnEnd();
   VOICE.on=false; VOICE.phase=''; VOICE.muted=false; VOICE.started=0;
-  clearInterval(VOICE.timer); VOICE.timer=null;
+  clearInterval(VOICE.timer); VOICE.timer=null; clearTimeout(VOICE.watch); VOICE.watch=null;
+  VOICE.heard=false; VOICE.needTap=false; VOICE.ours=false;
+  { const a=el('askVoiceOut'); if(a){ try{ a.pause(); }catch(e){} a.srcObject=null; a.removeAttribute('src'); } }   // v12.50
   voiceBar();
 }
 function voiceHook(v){
-  v.on('call-start',()=>{ VOICE.phase='live'; VOICE.started=Date.now(); clearInterval(VOICE.timer); VOICE.timer=setInterval(voiceTick,1000); voiceBar(); });
+  v.on('call-start',()=>{ VOICE.phase='live'; VOICE.started=Date.now(); clearInterval(VOICE.timer); VOICE.timer=setInterval(voiceTick,1000); voiceBar();
+    clearTimeout(VOICE.watch); VOICE.watch=setTimeout(()=>{ if(VOICE.on&&!VOICE.heard) voiceRescue(); },8000); });   // v12.50: nothing playing after 8 s: play it ourselves
+  v.on('audio',p=>{ VOICE.heard=true; VOICE.needTap=false;           // v12.50: the SDK's own player started; ours steps aside
+    if(VOICE.ours){ const a=el('askVoiceOut'); if(a){ try{ a.pause(); }catch(e){} a.srcObject=null; } VOICE.ours=false; } voiceBar(); });
   v.on('speech-start',()=>{ if(!VOICE.on) return; VOICE.phase='speaking'; voiceBar(); });
   v.on('speech-end',()=>{ if(!VOICE.on) return; VOICE.phase='live'; voiceBar(); });
   v.on('volume-level',x=>{ const i=el('askVoiceLvl'); if(i) i.style.width=Math.min(100,Math.round((+x||0)*100))+'%'; });
@@ -12910,13 +12946,15 @@ function voiceHook(v){
   v.on('error',e=>{
     let raw=''; try{ raw=JSON.stringify(e); }catch(x){ raw=String(e); }
     if(/ejected|meeting has ended|meeting ended/i.test(raw)){ voiceEnded(); return; }   // the room closing is a normal end
-    VOICE.err=voiceErrWords(e); voiceEnded();
+    if(/audio-start-failed/.test(raw)){ if(!voiceRescue()){ VOICE.needTap=true; voiceBar(); } return; }   // v12.50: the browser refused the sound, not the microphone
+    VOICE.err=voiceErrWords(e); try{ if(VOICE.vapi) VOICE.vapi.stop(); }catch(x){} voiceEnded();   // v12.50: the call ends at Vapi too, not left hanging
   });
 }
 async function voiceStart(){
   if(VOICE.on) return;
   if(!voiceAvail()){ toast('Talking out loud is not available in this browser.'); return; }
   VOICE.err=''; VOICE.on=true; VOICE.phase='connecting'; VOICE.muted=false; VOICE.turn=null; VOICE.lastQ='';
+  VOICE.heard=false; VOICE.needTap=false; VOICE.ours=false; voiceUnlock();   // v12.50: still inside the tap
   { const sg=el('askSug'); if(sg) sg.innerHTML=''; }                // the suggestions make room for the conversation
   const assist=voiceAssist();                                        // builds the snapshot first, so the labels exist
   VOICE.who=voiceWho();
@@ -21210,7 +21248,7 @@ function saveTplAssign(tid){
    The director sets their own email + password — either on the welcome screen or later
    from Account settings. Real Supabase Auth when the project is configured;
    a clearly-labelled local credential otherwise so the pilot still works. */
-const APP_VERSION='v12.49 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
+const APP_VERSION='v12.50 beta';                                     // v12.22: the one build label, on the sign-in screen and in the sidebar
 try{ const vs=document.getElementById('verStamp'); if(vs) vs.textContent=APP_VERSION; }catch(e){}
 let AUTH={ email:'', session:null, mode:'none' };   // mode: supabase | local | none
 /* ── v9.28: per-user layer ─────────────────────────────────────────────

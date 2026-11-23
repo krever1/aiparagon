@@ -30,6 +30,17 @@ export default class Vapi {
   stop(){ window.__vapi.stopped++; setTimeout(() => this.emit('call-end'), 10); }
   setMuted(m){ window.__vapi.muted = m; }
   isMuted(){ return !!window.__vapi.muted; }
+  // v12.50: the call's room, with Ask Spectrum's audio track, and the messages sent into it
+  getDailyCallObject(){
+    if (!window.__room) {
+      let track = null;
+      try { const c = new AudioContext(); const o = c.createOscillator(); const d = c.createMediaStreamDestination(); o.connect(d); o.start(); track = d.stream.getAudioTracks()[0]; } catch (e) {}
+      window.__room = { sent: [], track };
+    }
+    const r = window.__room;
+    return { participants: () => ({ local: { local: true, user_name: '' }, spk: { local: false, user_name: 'Vapi Speaker', tracks: { audio: { state: 'playable', persistentTrack: r.track } } } }),
+      sendAppMessage: (m) => { r.sent.push(m); } };
+  }
 }`;
 
 (async () => {
@@ -44,6 +55,11 @@ export default class Vapi {
       if (opts.noSdk) return r.abort();
       return r.fulfill({ status: 200, contentType: 'application/javascript', headers: { 'access-control-allow-origin': '*' }, body: FAKE });
     });
+    // v12.50: every play() is noted, and a test can make the browser refuse sound (as Safari does once the tap is past)
+    await page.addInitScript(() => { const p0 = HTMLMediaElement.prototype.play; window.__plays = [];
+      HTMLMediaElement.prototype.play = function () { window.__plays.push({ id: this.id, src: String(this.getAttribute('src') || '').slice(0, 22), stream: !!this.srcObject });
+        if (window.__refuse) return Promise.reject(Object.assign(new Error('play() failed because the user did not interact with the document first.'), { name: 'NotAllowedError' }));
+        try { return p0.apply(this, arguments).catch(() => {}); } catch (e) { return Promise.resolve(); } }; });
     if (opts.noMic) await page.addInitScript(() => { try { Object.defineProperty(navigator, 'mediaDevices', { value: undefined, configurable: true }); } catch (e) {} });
     return { ctx, page };
   }
@@ -212,6 +228,59 @@ export default class Vapi {
     const shown = await n.page.evaluate(() => getComputedStyle(el('askTalk')).display !== 'none');
     check('a browser with no microphone access shows no Talk button', !shown);
     await n.ctx.close();
+  }
+
+  // ======================= 6. a browser that refuses sound started after the tap (v12.50) =======================
+  {
+    const { ctx, page } = await demo('director');
+    await openAsk(page);
+    await page.click('#askTalk');
+    await page.waitForFunction(() => window.__vapi && window.__vapi.starts.length === 1); await page.waitForTimeout(100);
+    let pl = await page.evaluate(() => window.__plays.filter((x) => x.id === 'askVoiceOut'));
+    check('the Talk tap itself plays a moment of silence on Ask Spectrum\'s player, so the browser lets it make sound', pl.length >= 1 && pl[0].src.startsWith('data:audio/wav'), JSON.stringify(pl));
+    // the SDK's own player is refused (Safari, an iPhone): the call goes on, and Ask Spectrum's audio plays on ours
+    await emit(page, 'error', { type: 'audio-start-failed', error: { name: 'NotAllowedError', message: 'play() failed because the user did not interact with the document first.' } });
+    await page.waitForTimeout(150);
+    let st = await page.evaluate(() => { const a = el('askVoiceOut'); return { stream: !!(a.srcObject && a.srcObject.getAudioTracks()[0] === window.__room.track), sent: window.__room.sent.slice(), stopped: window.__vapi.stopped }; });
+    let b = await bar(page);
+    check('a refused SDK player does not end the call or blame the microphone', b.on && !/microphone|could not/i.test(b.text) && st.stopped === 0, JSON.stringify(b));
+    check('...Ask Spectrum\'s audio plays on the player the tap unlocked, and Vapi is told it can speak', st.stream && st.sent.includes('playable'), JSON.stringify(st));
+    check('...with no extra button when it plays', !/Tap to hear/.test(b.text), b.text);
+    await emit(page, 'audio', {}); await page.waitForTimeout(80);
+    check('if the SDK\'s own player starts after all, ours lets go (no doubled voice)', await page.evaluate(() => !el('askVoiceOut').srcObject));
+    await page.click('#askVoice button:has-text("End")'); await page.waitForTimeout(80);
+    check('End lets go of the player', await page.evaluate(() => { const a = el('askVoiceOut'); return !a.srcObject && !a.getAttribute('src'); }));
+
+    // the browser refuses our player too: the bar offers a tap, which plays it
+    await page.evaluate(() => { window.__room = null; });
+    await page.click('#askTalk'); await page.waitForTimeout(150);
+    await page.evaluate(() => { window.__refuse = true; });
+    await emit(page, 'error', { type: 'audio-start-failed', error: { name: 'NotAllowedError' } });
+    await page.waitForTimeout(150);
+    b = await bar(page);
+    check('sound refused everywhere: the bar says so and offers "Tap to hear Ask Spectrum"', b.on && /Sound is off/.test(b.text) && /Tap to hear Ask Spectrum/.test(b.text) && !(await page.evaluate(() => window.__room.sent.includes('playable'))), b.text);
+    await page.evaluate(() => { window.__refuse = false; });
+    await page.click('#askVoice button:has-text("Tap to hear")'); await page.waitForTimeout(150);
+    b = await bar(page);
+    check('...the tap plays it, tells Vapi, and the button goes', /Listening/.test(b.text) && !/Tap to hear/.test(b.text) && (await page.evaluate(() => window.__room.sent.includes('playable') && !!el('askVoiceOut').srcObject)), b.text);
+    await page.click('#askVoice button:has-text("End")'); await page.waitForTimeout(80);
+
+    // the SDK says nothing at all: after 8 seconds with no sound, the page plays it itself
+    await page.evaluate(() => { window.__room = null; });
+    await page.click('#askTalk'); await page.waitForTimeout(150);
+    check('...nothing taken over before the SDK has had its chance', await page.evaluate(() => !el('askVoiceOut').srcObject));
+    await page.waitForTimeout(8300);
+    check('no sound 8 seconds into the call: the page plays Ask Spectrum\'s audio itself', await page.evaluate(() => !!el('askVoiceOut').srcObject && window.__room.sent.includes('playable')));
+    await page.click('#askVoice button:has-text("End")'); await page.waitForTimeout(80);
+
+    // any other error ends the call at Vapi too, not only on the page
+    await page.click('#askTalk'); await page.waitForTimeout(150);
+    const before = await page.evaluate(() => window.__vapi.stopped);
+    await emit(page, 'error', { type: 'start-method-error', error: { message: 'Something broke' } });
+    await page.waitForTimeout(100);
+    b = await bar(page);
+    check('another error ends the call at Vapi as well and says so', !b.on && /could not start/.test(b.text) && (await page.evaluate(() => window.__vapi.stopped)) === before + 1, JSON.stringify(b));
+    await ctx.close();
   }
 
   check('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
