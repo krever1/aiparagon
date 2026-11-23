@@ -84,6 +84,7 @@ export default class Vapi {
     await openAsk(page);
     const btn = await page.evaluate(() => { const b = el('askTalk'); const r = b.getBoundingClientRect(); return { shown: getComputedStyle(b).display !== 'none' && r.width > 0, label: b.getAttribute('aria-label') }; });
     check('Ask Spectrum has a Talk button', btn.shown && /Talk with Ask Spectrum/.test(btn.label), JSON.stringify(btn));
+    check('(v12.51) no dictation mic button next to it, Talk is the one voice button', await page.evaluate(() => !document.querySelector('#askPanel #askMic') && !/🎤/.test(el('askPanel').innerHTML)));
     check('...and nothing loads the voice service until it is pressed', sdkHits.length === 0, sdkHits.join(','));
     await page.click('#askTalk');
     await page.waitForFunction(() => window.__vapi && window.__vapi.starts.length === 1, null, { timeout: 5000 });
