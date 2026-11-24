@@ -1,5 +1,5 @@
 // Care portal v12.48 (Erica's note of Nov 11: the log buttons' words, "Record vitals" and "Log an activity", can't be
-// changed; Kser's picks: client logs the team builds too, and the words are the team's). Log buttons: in edit mode a
+// changed; Kaeser's picks: client logs the team builds too, and the words are the team's). Log buttons: in edit mode a
 // director types over the words of Record vitals, Log an activity, Log a drill, Add reading and a form's Start or Run
 // button, and the Safety log's builders take Button text; everyone on the team sees the new words, a ＋ stays in
 // front, and an empty box or the standard words put the standard ones back. Client logs: a director sets one up (its

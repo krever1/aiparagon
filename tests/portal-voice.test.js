@@ -1,4 +1,4 @@
-// Care portal v12.49 (Erica's note from the VAI conference: talk to the dashboard and have it answer out loud; Kser's
+// Care portal v12.49 (Erica's note from the VAI conference: talk to the dashboard and have it answer out loud; Kaeser's
 // picks: Vapi, client labels only, the care portal first). Talk in the Ask Spectrum panel starts a Vapi web call with
 // an assistant the page describes itself: the snapshot Ask reads, with Ask's labels (Client 1, Home A), never a UCI,
 // a name, initials, an email or a phone; nothing recorded and no report sent to any server. The bar says who is who,

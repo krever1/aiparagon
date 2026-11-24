@@ -1,4 +1,4 @@
-// Care portal v12.47 (Erica's note of Nov 11 on the Templates page, with Kser's picks: subfolders are the
+// Care portal v12.47 (Erica's note of Nov 11 on the Templates page, with Kaeser's picks: subfolders are the
 // binder's tabs; the layout buttons move to the header on every page). Templates: each binder's forms in
 // collapsible subfolders (its tabs), a file-type badge on every row (FORM, PDF, DOC, JPG...) and no "Editable
 // in-app"; Move to... on every row (a template's signed copies follow it, a library PDF is listed where it is
