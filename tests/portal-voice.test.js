@@ -24,7 +24,7 @@ export default class Vapi {
   async start(a, o){
     window.__vapi.starts.push(JSON.parse(JSON.stringify(a)));
     if (window.__vapiFail) { const f = window.__vapiFail; window.__vapiFail = null; throw f; }
-    setTimeout(() => this.emit('call-start'), 20);
+    setTimeout(() => { this.emit('call-start'); if (window.__scene) window.__scene.go(this); }, 20);   // v12.52: a scene plays with the call
     return { id: 'call-test' };
   }
   stop(){ window.__vapi.stopped++; setTimeout(() => this.emit('call-end'), 10); }
@@ -33,8 +33,8 @@ export default class Vapi {
   // v12.50: the call's room, with Ask Spectrum's audio track, and the messages sent into it
   getDailyCallObject(){
     if (!window.__room) {
-      let track = null;
-      try { const c = new AudioContext(); const o = c.createOscillator(); const d = c.createMediaStreamDestination(); o.connect(d); o.start(); track = d.stream.getAudioTracks()[0]; } catch (e) {}
+      let track = window.__scene ? window.__scene.track : null;
+      if (!track) try { const c = new AudioContext(); const o = c.createOscillator(); const d = c.createMediaStreamDestination(); o.connect(d); o.start(); track = d.stream.getAudioTracks()[0]; } catch (e) {}
       window.__room = { sent: [], track };
     }
     const r = window.__room;
@@ -49,7 +49,7 @@ export default class Vapi {
   const sdkHits = [];
   async function open(opts) {
     opts = opts || {};
-    const { ctx, page } = await H.newPage(env, { viewport: opts.viewport || { width: 1440, height: 900 }, bucket: errors, session: opts.session });
+    const { ctx, page } = await H.newPage(env, { viewport: opts.viewport || { width: 1440, height: 900 }, bucket: errors, session: opts.session, relay: opts.relay });
     await ctx.route('https://cdn.jsdelivr.net/npm/@vapi-ai/web@*/**', (r) => {
       sdkHits.push(r.request().url());
       if (opts.noSdk) return r.abort();
@@ -282,6 +282,164 @@ export default class Vapi {
     b = await bar(page);
     check('another error ends the call at Vapi as well and says so', !b.on && /could not start/.test(b.text) && (await page.evaluate(() => window.__vapi.stopped)) === before + 1, JSON.stringify(b));
     await ctx.close();
+  }
+
+  // ======================= 7. the voice check (v12.52) =======================
+  // A made-up voice (pitched buzz through moving formants, the engine's own test signal: no recording of anyone) plays
+  // through the call's audio track, with the messages Vapi's SDK sends a page (voice-input pieces, speech-update, her
+  // transcript) in step with it. The page takes her track, checks it once the conversation ends, and sends an alert with
+  // only the kinds of fault and when they came, through the relay, when it finds a fault.
+  {
+    const SR = 16000;
+    const rng = (seed) => { let s = seed >>> 0 || 1; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; };
+    const resonator = (fc, bw) => { const r = Math.exp(-Math.PI * bw / SR), th = 2 * Math.PI * fc / SR, a1 = -2 * r * Math.cos(th), a2 = r * r, g = 1 - r; let y1 = 0, y2 = 0; return (x) => { const y = g * x - a1 * y1 - a2 * y2; y2 = y1; y1 = y; return y; }; };
+    const VOWELS = [[700, 1220, 2600], [530, 1840, 2480], [300, 2200, 2950], [570, 840, 2410], [440, 1020, 2240], [640, 1190, 2390], [400, 1900, 2550], [350, 870, 2250]];
+    const voice = (words, seed) => {
+      const r = rng(seed), out = []; let phase = 0, t = 0; const push = (v) => { out.push(v); t += 1 / SR; };
+      for (let w = 0; w < words; w++) {
+        if (r() < 0.6) { const n = Math.round(SR * (0.03 + 0.03 * r())); for (let i = 0; i < n; i++) push((r() * 2 - 1) * 0.02); }
+        const a = VOWELS[Math.floor(r() * VOWELS.length)], b = VOWELS[Math.floor(r() * VOWELS.length)];
+        const len = Math.round(SR * (0.14 + 0.1 * r())), glide = 0.85 + 0.3 * r();
+        let F = [resonator(a[0], 90), resonator(a[1], 110), resonator(a[2], 160)];
+        for (let i = 0; i < len; i++) {
+          const p = i / len;
+          if (i % 80 === 0) { const fc = [0, 1, 2].map((k) => a[k] + (b[k] - a[k]) * p); F = [resonator(fc[0], 90), resonator(fc[1], 110), resonator(fc[2], 160)]; }
+          phase += 205 * (glide + (1 - glide) * p) * (1 + 0.03 * Math.sin(2 * Math.PI * 5 * t)) / SR;
+          const pulse = phase >= 1 ? (phase -= 1, 1) : 0, src = pulse - 0.02, env = Math.min(1, p * 8) * Math.min(1, (1 - p) * 6);
+          push(0.35 * env * (F[0](src) + F[1](src) * 0.6 + F[2](src) * 0.3));
+        }
+        for (let i = 0; i < Math.round(SR * (0.06 + 0.04 * r())); i++) push(0);
+      }
+      let pk = 0; for (const v of out) pk = Math.max(pk, Math.abs(v));
+      return Float32Array.from(out, (v) => v * 0.3 / (pk || 1));
+    };
+    // turns of speech with quiet between them: the track, and the messages a page gets for it (times in ms from the start)
+    const FIRST = "Hi, it's Ask Spectrum. What would you like to know?";
+    const scene = (howl) => {
+      const turns = [FIRST, 'Client 2 has three appointments this week, the first one on Tuesday morning at ten.', 'Is there anything else you would like to know about this week?'];
+      const parts = [], ev = []; let pos = 0;
+      turns.forEach((text, i) => {
+        const gap = i ? 1.6 : 0.5; parts.push(new Float32Array(Math.round(gap * SR))); pos += gap;
+        const v = voice(text.split(/\s+/).length, 300 + i), start = pos, dur = v.length / SR; parts.push(v); pos += dur;
+        const ms = (x) => Math.round(x * 1000);
+        if (i) {
+          ev.push({ at: ms(start - 1.4), m: { type: 'speech-update', status: 'started', role: 'user' } }, { at: ms(start - 0.9), m: { type: 'speech-update', status: 'stopped', role: 'user' } },
+            { at: ms(start - 0.85), m: { type: 'transcript', role: 'user', transcriptType: 'final', transcript: 'anything for morgan vale this week' } });
+          text.split(/(?=\s)/).forEach((piece, k) => ev.push({ at: ms(start - 0.3) + k, m: { type: 'voice-input', input: piece, turn: i } }));
+        }
+        ev.push({ at: ms(start), m: { type: 'speech-update', status: 'started', role: 'assistant', turn: i } });
+        ev.push({ at: ms(start + dur), m: { type: 'speech-update', status: 'stopped', role: 'assistant', turn: i } });
+        ev.push({ at: ms(start + dur + 0.35), m: { type: 'transcript', role: 'assistant', transcriptType: 'final', transcript: text } });
+        // the fault: a steady 350 Hz howl over a second of her words, from 0.8 s into turn 1
+        if (i === 1 && howl) parts[parts.length - 1] = Float32Array.from(v, (x, k) => (k >= 0.8 * SR && k < 1.8 * SR) ? 0.25 * Math.sin(2 * Math.PI * 350 * (k / SR)) : x);
+      });
+      parts.push(new Float32Array(SR)); pos += 1;
+      const n = parts.reduce((s2, p2) => s2 + p2.length, 0), x = new Float32Array(n); let o = 0; parts.forEach((p2) => { x.set(p2, o); o += p2.length; });
+      const fl = rng(7919); for (let i = 0; i < n; i++) if (x[i] === 0) x[i] = 1.8e-4 * (fl() * 2 - 1);   // a real line is never perfectly silent
+      return { b64: Buffer.from(x.buffer).toString('base64'), ev, ms: Math.round(pos * 1000) };
+    };
+    const play = (page, sc) => page.evaluate(([b64, ev]) => {
+      const bin = atob(b64), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      const x = new Float32Array(u8.buffer), c = new AudioContext(), dest = c.createMediaStreamDestination();
+      window.__room = null;
+      window.__scene = { track: dest.stream.getAudioTracks()[0], go(inst) {
+        c.resume().then(() => { const b = c.createBuffer(1, x.length, 16000); b.copyToChannel(x, 0); const s = c.createBufferSource(); s.buffer = b; s.connect(dest); s.start(); });
+        ev.forEach((e) => setTimeout(() => inst.emit('message', e.m), e.at));
+      } };
+    }, [sc.b64, sc.ev]);
+    const vgLine = (page) => page.evaluate(() => { const d = [...document.querySelectorAll('#askLog .v1252-vg')].pop(); return d ? d.textContent : ''; });
+    const dir = 'dana@deltadayprogram.test';
+    const S = { email: dir, password: 'qa-pass-1234', role: 'director',
+      program: [{ key: 'users', value: { map: { [dir]: { name: 'Dana Lee', role: 'director', title: 'Executive Director' } } } },
+        { key: 'org', value: { name: 'Delta Day Program' } },
+        { key: 'pilot', value: { signatures: { ['u:' + dir]: { by: 'Dana Lee', at: 'Oct 1, 2026', role: 'Director' } } } }] };
+    const relayed = [];
+    const { ctx, page } = await open({ session: S, relay: (b) => { relayed.push(b); return { status: 200, body: { ok: true } }; } });
+    await page.goto(env.BASE + '/portal.html?voicecheck=1', { waitUntil: 'load' });
+    await page.waitForFunction(() => !document.documentElement.classList.contains('np-boot'), null, { timeout: 15000 });
+    await page.fill('#liEmail', S.email); await page.fill('#liPw', S.password); await page.click('#liGo');
+    await page.waitForFunction(() => typeof realSession === 'function' && realSession() && el('app').classList.contains('on'), null, { timeout: 20000 });
+    await page.waitForTimeout(800);
+    await page.evaluate(() => { CLIENTS.push({ id: 'qa-v2', uci: '4023998', name: 'Morgan Vale', init: 'M.V.', home: 'Cedar House' }); closeAll(); });
+    check('the Voice Guard copy loads in its own script block, and the page can build the engine from it', await page.evaluate(() => typeof vgEngine === 'function' && typeof vgEngine().check === 'function' && /^function vgEngine\(\)/.test(vgEngine.toString())));
+    await openAsk(page);
+
+    // a clean conversation: nothing is sent, and the switch shows the result
+    const clean = scene(false);
+    await play(page, clean);
+    await page.click('#askTalk'); await page.waitForFunction(() => window.__vapi && window.__vapi.starts.length >= 1);
+    await page.waitForTimeout(clean.ms + 300);
+    const took = await page.evaluate(() => ({ on: VG.on, n: VG.n, sr: VG.sr, ev: VG.ev.length, kinds: [...new Set(VG.ev.map((e) => e.m.type))].sort().join(','), user: VG.ev.some((e) => e.m.type === 'transcript' && e.m.role !== 'assistant') }));
+    check('during the call the page takes her track and the messages the check reads', took.on && took.n > took.sr * 5 && took.ev >= 10 && took.kinds === 'speech-update,transcript,voice-input' && !took.user, JSON.stringify(took));
+    check('...and sends nothing while the call is on', relayed.length === 0, JSON.stringify(relayed));
+    await page.click('#askVoice button:has-text("End")');
+    await page.waitForFunction(() => document.querySelector('#askLog .v1252-vg'), null, { timeout: 20000 });
+    let line = await vgLine(page);
+    check('a clean conversation: no alert goes anywhere', relayed.length === 0, JSON.stringify(relayed));
+    check('...the test switch shows it was checked, with nothing wrong', /^Voice check: nothing wrong/.test(line) && /\d+ s of her voice checked/.test(line) && !/AI Paragon told/.test(line), line);
+    check('...and everything taken was dropped (the track let go, the audio context closed)', await page.evaluate(() => !VG.on && !VG.ac && !VG.ds && VG.ev.length === 0 && VG.n === 0));
+
+    // a howl over her words: one alert, kinds and times only
+    const bad = scene(true);
+    await play(page, bad);
+    await page.click('#askTalk'); await page.waitForFunction(() => window.__vapi && window.__vapi.starts.length >= 2);
+    await page.waitForTimeout(bad.ms + 300);
+    check('...still nothing sent before the conversation ends', relayed.length === 0);
+    await page.click('#askVoice button:has-text("End")');
+    await page.waitForFunction((n) => document.querySelectorAll('#askLog .v1252-vg').length > n, 1, { timeout: 20000 });
+    await page.waitForTimeout(300);
+    line = await vgLine(page);
+    const vc = relayed.filter((b) => b.action === 'voicecheck');
+    const pay = vc.length ? JSON.stringify(vc[0].payload) : '';
+    check('a howl over her words: one alert goes through the relay, as voicecheck', vc.length === 1 && relayed.length === 1, JSON.stringify(relayed));
+    check('...naming the kind of fault and when it came, nothing else', /^\{"issues":\[(\{"kind":"[a-z]+","at":[0-9.]+\},?)+\]\}$/.test(pay) && /"kind":"(stuck|tone)"/.test(pay), pay);
+    const at = vc.length ? vc[0].payload.issues.map((i) => i.at) : [];
+    const turn1 = clean.ev.find((e) => e.m.type === 'speech-update' && e.m.role === 'assistant' && e.m.turn === 1).at / 1000;
+    check('...at the right moment of the call', at.some((a) => a >= turn1 && a <= turn1 + 3.5), JSON.stringify(at) + ' turn 1 at ' + turn1);
+    check('...with no client, words or names in it', !/4023998|Morgan|Vale|Cedar|Client|appointment|Tuesday/i.test(pay), pay);
+    check('...and the switch says AI Paragon was told', /fault/.test(line) && /AI Paragon told/.test(line), line);
+    await ctx.close();
+
+    // the demo view checks too, but sends nothing
+    const d = await demo('director');
+    const sent = [];
+    d.page.on('request', (r) => { if (/np-relay/.test(r.url()) && r.method() === 'POST') sent.push(r.url()); });
+    await d.page.evaluate(() => { try { localStorage.setItem('np_vgshow', '1'); } catch (e) {} });
+    await openAsk(d.page);
+    await play(d.page, bad);
+    await d.page.click('#askTalk'); await d.page.waitForFunction(() => window.__vapi && window.__vapi.starts.length >= 1);
+    await d.page.waitForTimeout(bad.ms + 300);
+    await d.page.click('#askVoice button:has-text("End")');
+    await d.page.waitForFunction(() => document.querySelector('#askLog .v1252-vg'), null, { timeout: 20000 });
+    line = await vgLine(d.page);
+    check('the demo view: the fault is found but nothing is sent', sent.length === 0 && /fault/.test(line) && /not sent from the demo view/.test(line), line + ' | ' + sent.join(' '));
+    await d.ctx.close();
+
+    // turned off in the page's settings: no audio context, no check, Talk as before
+    const o = await demo('director');
+    await o.page.evaluate(() => { window.NP_CONFIG = Object.assign({}, window.NP_CONFIG || {}, { voiceCheck: false }); try { localStorage.setItem('np_vgshow', '1'); } catch (e) {} });
+    await openAsk(o.page);
+    await o.page.click('#askTalk'); await o.page.waitForFunction(() => window.__vapi && window.__vapi.starts.length >= 1); await o.page.waitForTimeout(300);
+    const offState = await o.page.evaluate(() => ({ on: VG.on, ac: !!VG.ac }));
+    await o.page.click('#askVoice button:has-text("End")'); await o.page.waitForTimeout(400);
+    check('NP_CONFIG.voiceCheck false: nothing is taken or checked, and Talk works as before', !offState.on && !offState.ac && !(await vgLine(o.page)), JSON.stringify(offState));
+    await o.ctx.close();
+
+    // an iPhone: off unless the test switch is on (an audio context there shares the call's audio session)
+    for (const sw of [false, true]) {
+      const ip = await open();
+      await ip.page.addInitScript(() => { Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1' }); });
+      await ip.page.goto(env.BASE + '/portal.html?demo=1' + (sw ? '&voicecheck=1' : ''), { waitUntil: 'load' });
+      await ip.page.waitForFunction(() => typeof state !== 'undefined' && el('app').classList.contains('on'), null, { timeout: 15000 });
+      await ip.page.evaluate(() => signIn('director')); await ip.page.waitForTimeout(300);
+      await openAsk(ip.page);
+      await ip.page.click('#askTalk'); await ip.page.waitForFunction(() => window.__vapi && window.__vapi.starts.length >= 1); await ip.page.waitForTimeout(300);
+      const st = await ip.page.evaluate(() => ({ ios: VG_IOS, on: VG.on, ac: !!VG.ac }));
+      await ip.page.click('#askVoice button:has-text("End")'); await ip.page.waitForTimeout(200);
+      if (!sw) check('an iPhone: the check stays off, so Talk sounds exactly as before', st.ios && !st.on && !st.ac, JSON.stringify(st));
+      else check('...and runs there only with the test switch, to try it on a real one', st.ios && st.on && st.ac, JSON.stringify(st));
+      await ip.ctx.close();
+    }
   }
 
   check('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
