@@ -29,7 +29,7 @@ SILENT = 'silent' in sys.argv[1:]
 OW, OH, FPS = (960, 540, 24) if PREVIEW else (1920, 1080, 24)
 FULL = (0.0, 0.0, float(W))
 CX0, CX1 = 104.0, W - 28.0
-NAME = 'pipeline-demo-v10' + ('-preview' if PREVIEW else '')
+NAME = 'pipeline-demo-v10.1' + ('-preview' if PREVIEW else '')
 
 SEGS = [  # narration segments in order: key, file in wav-v8, text (line 3 is split at its pause for the briefs)
     ('1', '01', 'This is Pipeline. Two intelligent lead generation systems: organic content that builds your authority, and ads that book calls.'),
@@ -144,15 +144,12 @@ P.show('ov', 0, 0)
 # Erica's graphic: the title, then Organic content, the pipeline, then Marketing campaigns on "and ads"
 G = [('g_bg', 0.0), ('g_title', 0.0), ('g_foot', 0.0), ('g_org', t + 4.4), ('g_pipe', t + 5.2), ('g_mkt', t + 5.9)]
 P.card(0.0, T['2'] + 1.5, G, fin=0.0, fout=0.35)
-P.move(seqm('ov_scroll'), t + 4.9, 0.6)
-e = P.seq('ov_scroll', t + 5.0); P.show('ov2', e, 0)
-P.lab(T['2'] - 0.3, 'Both systems', 'Pipeline · Overview')
+# v10.1: the graphic fades straight onto the Intel Tracker (the Overview and its label only flashed by for half a second)
 
 # 2 "Both start here. Every week the Intel Tracker reads the posts and ads in your market, on LinkedIn and the Meta ..."
 t = T['2']
-P.hover('ov2_intel', t + 1.5, 0.3)                          # "Both start here", then the cards fade out
-P.click(t + 1.85); P.show('intel', t + 1.9, 0.14)
-P.lab(t + 1.9, 'Both systems', 'Intel Tracker')
+P.show('intel', t + 0.9, 0)                                 # under the graphic, which fades out from t + 1.15
+P.lab(t + 1.3, 'Both systems', 'Intel Tracker')
 P.hover('intel_reads', t + 3.2, 0.5)                        # "reads"
 P.move('intel_list', t + 4.6, 0.5); P.click(t + 4.66); P.show('intel_still', t + 4.72, 0.3)
 P.move((W - 60, H - 40), t + 5.6, 0.5)                      # the cursor steps aside; the counts light up instead
