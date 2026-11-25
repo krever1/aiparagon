@@ -57757,6 +57757,223 @@ function v148Print(){
   try{V148.printer(w);}catch(e){}
 }
 /*@@v148end*/
+</script>
+<style id="v149css">
+/* v149: Client 360 on a lead's page */
+.v149-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:6px}
+@media(max-width:1180px){.v149-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.v149-grid{grid-template-columns:minmax(0,1fr)}}
+.v149-card{border:1px solid var(--rd-line-soft,#EEF0F3);border-radius:14px;background:#fff;padding:14px 16px 16px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.v149-stand{grid-column:span 2}
+.v149-act{grid-column:1/-1}
+@media(max-width:1180px){.v149-stand{grid-column:1/-1}}
+.v149-ch{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.v149-ch h3{margin:0;font-size:14.5px;font-weight:700;color:#1D2433}
+.v149-n{min-width:22px;height:22px;border-radius:11px;background:#B4472D;color:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
+.v149-link{border:0;background:none;color:#2B4C9B;font-size:13px;cursor:pointer;padding:2px 0;white-space:nowrap}
+.v149-link:hover{text-decoration:underline}
+.v149-big{margin:2px 0 0;font-size:20px;font-weight:700;color:#1D2433;line-height:1.25;overflow-wrap:anywhere}
+.v149-big.sm{font-size:16px}
+.v149-sub{margin:0;font-size:13px;color:#5B6475;overflow-wrap:anywhere}
+.v149-none{margin:0;font-size:13.5px;color:#5B6475;display:flex;gap:6px;align-items:center}
+.v149-err{margin:0;font-size:13px;color:#B4472D}
+.v149-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:4px}
+.v149-track{list-style:none;margin:0;padding:0;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px}
+.v149-track li{display:flex;flex-direction:column;gap:5px;min-width:0}
+.v149-track li span{height:6px;border-radius:3px;background:#E6E9EF}
+.v149-track li.done span{background:var(--c);opacity:.55}
+.v149-track li.on span{background:var(--c)}
+.v149-track li b{font-size:11.5px;font-weight:600;color:#7A8394;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v149-track li.on b{color:#1D2433}
+@media(max-width:720px){.v149-track li b{display:none}.v149-track li.on b{display:block;overflow:visible}}
+.v149-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.v149-list li{display:flex;gap:10px;align-items:flex-start;min-width:0}
+.v149-list li>svg{flex:none;margin-top:2px;color:#4F5B70}
+.v149-list .t{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.v149-list .t b{font-size:13.5px;color:#1D2433;overflow-wrap:anywhere}
+.v149-list .t small{font-size:12.5px;color:#5B6475;overflow-wrap:anywhere}
+.v149-list .nw-btn{flex:none}
+.v149-sum{margin:0 0 0 18px;padding:0;font-size:13.5px;display:grid;gap:3px}
+.v149-dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;margin:0;font-size:13.5px}
+.v149-dl dt{color:#7A8394}
+.v149-dl dd{margin:0;color:#1D2433;overflow-wrap:anywhere}
+.v149-files{font-size:12.5px;color:#7A8394}
+.v149-tl{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.v149-tl li{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;align-items:start;font-size:13.5px}
+.v149-tl li svg{margin-top:2px;color:#7A8394}
+.v149-tl li span{overflow-wrap:anywhere}
+.v149-tl time{font-size:12px;color:#7A8394;white-space:nowrap}
+</style>
+<script id="v149js">
+/* ===================================================================
+   v149: Client 360. A lead's page opens on its whole picture: where the
+   client stands and the next step, what is waiting on the team (a stage
+   document to review, a recap to check, open tasks from its calls, open
+   comments), its latest meeting, its deliverables, its contact record
+   and what happened lately. It reads what the dashboard already keeps:
+   e1_leads and agent_outputs, Fathom calls and call_outputs, lead_files,
+   lp_signups, dashboard_comments, agent_feedback and hubspot_contacts.
+   =================================================================== */
+const V149={data:{},busy:{},fresh:{}};
+(function(){const _o=openE1Lead;openE1Lead=function(email){V149.fresh[email]=true;return _o.apply(this,arguments);};})();
+(function(){
+  if(typeof apDemo!=='function')return;
+  const _d=apDemo;
+  apDemo=function(o){
+    try{
+      if(o&&typeof o.page==='string'&&o.page.indexOf('e1lead:')===0&&Array.isArray(o.tabs)&&!o.tabs.some(function(t){return t.key==='c360';})){
+        const email=o.page.slice(7);
+        /* opening a lead (not a redraw of its page) starts on Client 360; a link to a document's tab switches after */
+        if(V149.fresh[email]){delete V149.fresh[email];RD.aptab[o.page]='c360';}
+        o.tabs.unshift({key:'c360',label:'Client 360',render:function(h){v149Render(h,email);},onShow:function(){const t=(window.__apDemo&&window.__apDemo.tabs||[]).find(function(x){return x.key==='c360';});if(t&&t._host&&t._done&&V149.data[email]&&Date.now()-V149.data[email].at>60e3)v149Render(t._host,email);}});
+      }
+    }catch(e){console.warn('v149 tab',e);}
+    return _d.apply(this,arguments);
+  };
+})();
+function v149In(list){return 'in.('+list.map(function(e){return '"'+encodeURIComponent(String(e).replace(/"/g,''))+'"';}).join(',')+')';}
+/* everything about one client, read in parallel; a read that fails is said in its own card */
+async function v149Load(email){
+  const l=v137LeadByEmail(email),em=v136Emails(l).filter(Boolean).map(v137Low).filter(function(e){return e!=='contact@deltaadvisory.com';});
+  const errs={};
+  const safe=function(k,p){return p.then(function(r){return Array.isArray(r)?r:[];},function(e){errs[k]=(e&&e.message)||String(e);return [];});};
+  const [outs,files,signs,fb]=await Promise.all([
+    safe('docs',apSb('agent_outputs?select=id,run_id,agent,title,created_at,content_md,data&run_id='+v149In(em)+'&order=created_at.desc&limit=200')),
+    safe('files',apSb('lead_files?select=id,lead_email,file_name,category,created_at,uploaded_by&lead_email='+v149In(em)+'&order=created_at.desc&limit=50')),
+    safe('signups',apSb('lp_signups?select=id,slug,email,created_at&email='+v149In(em)+'&order=created_at.desc&limit=20')),
+    safe('feedback',v125Load(true).then(function(x){return x||[];})),
+    v136LoadNames().catch(function(){}),v137Contacts().catch(function(){})
+  ]);
+  const cmts=[];
+  for(const e of em){try{(await apSb('dashboard_comments?select=id,target_key,author,body,created_at,resolved&target_key=like.'+encodeURIComponent('e1:'+e+':*')+'&order=created_at.desc&limit=40')||[]).forEach(function(c){cmts.push(c);});}catch(x){errs.comments=(x&&x.message)||String(x);}}
+  let calls=[],ftErr='';
+  try{await v137CallsLoad();calls=v137CallsOf(l).filter(function(x){return x.stage!=='none';});}catch(e){ftErr=(e&&e.message)||String(e);}
+  let co=[];
+  if(calls.length){try{co=(await apSb('call_outputs?select=id,call_id,summary,tasks,status,created_at&call_id='+v149In(calls.map(function(x){return x.id;}))+'&order=created_at.desc&limit=60'))||[];}catch(e){errs.calls=(e&&e.message)||String(e);}}
+  const d={at:Date.now(),l:l,em:em,outs:outs,files:files,signs:signs,fb:fb,cmts:cmts,calls:calls,co:co,ftErr:ftErr,errs:errs};
+  V149.data[email]=d;
+  return d;
+}
+async function v149Render(h,email){
+  if(V149.busy[email])return;V149.busy[email]=true;
+  if(!V149.data[email])h.innerHTML='<section class="block v149"><h2>Client 360</h2><div class="empty" style="padding:22px" role="status">Reading everything about this client…</div></section>';
+  let d;
+  try{d=await v149Load(email);}catch(e){V149.busy[email]=false;h.innerHTML='<section class="block v149"><h2>Client 360</h2><div class="empty" style="padding:22px">'+esc('Could not read this client: '+((e&&e.message)||e))+'</div></section>';return;}
+  V149.busy[email]=false;
+  if(!h.isConnected)return;
+  h.innerHTML=v149Html(email,d);
+}
+function v149Repaint(email){
+  const t=(window.__apDemo&&window.__apDemo.tabs||[]).find(function(x){return x.key==='c360';});
+  if(t&&t._host){V149.data[email]=null;v149Render(t._host,email);}
+}
+function v149Day(v){return v?v137D(v):'';}
+function v149Ago(v){const t=Date.parse(v);if(!t)return '';const m=Math.round((Date.now()-t)/60000);if(m<60)return m<=1?'just now':m+' min ago';const hr=Math.round(m/60);if(hr<24)return hr+' h ago';const dd=Math.round(hr/24);return dd===1?'yesterday':dd<14?dd+' days ago':v137D(v);}
+/* what is waiting on the team for this client */
+function v149Waiting(email,d){
+  const l=d.l,out=[],cur=v136StageOf(l),st=v136St(cur);
+  if(st){const dc=v136Doc(l,st),run=v120RunState(l);
+    if(run)out.push({ic:'clock',t:v136Cap(run.st.doc)+' is being written',s:'Catalyst is on it. It shows on its tab when it is done.'});
+    else if(dc&&dc.out&&!v143Reviewed(l,st,dc.at))out.push({ic:'checkCircle',t:'Review the '+st.doc.toLowerCase(),s:'Written '+v149Day(dc.out.created_at)+' for the '+st.name.toLowerCase()+' meeting.',go:'v136Open('+nwJs(email)+','+nwJs(st.key)+')',btn:'Review'});
+    else if(!dc&&st.agent)out.push({ic:'sparkle',t:v136Cap(st.doc)+' not written yet',s:'The client is in '+st.name+'.',go:'v136Ask('+nwJs(email)+','+nwJs(st.key)+',false)',btn:v136Btn(st)});}
+  d.outs.filter(function(o){return o.agent==='deliverable'&&apJson(o.data).status!=='ready';}).forEach(function(o){
+    const n=v148Todo(o.content_md);
+    out.push({ic:'file',t:'Check the meeting recap'+(n?' ('+nwPlural(n,'thing')+' to confirm)':''),s:(o.title||V148_DOC)+' · '+v149Day(o.created_at)+'. A draft, not sent.',go:'v148Open('+nwJs(String(o.id))+')',btn:'Open'});
+  });
+  const tasks=[];d.co.forEach(function(c){(Array.isArray(c.tasks)?c.tasks:apJson(c.tasks)&&Array.isArray(apJson(c.tasks))?apJson(c.tasks):[]).forEach(function(t){if(t&&!t.done&&!t.deleted&&t.text)tasks.push({t:t,c:c});});});
+  if(tasks.length){
+    const call=d.calls.find(function(x){return x.id===String(tasks[0].c.call_id);});
+    out.push({ic:'check',t:nwPlural(tasks.length,'open task')+' from calls with this client',s:tasks.slice(0,3).map(function(x){return x.t.text+(x.t.owner?' ('+x.t.owner+')':'');}).join(' · '),go:'apCxOpenCall('+nwJs(String(tasks[0].c.call_id))+')',btn:call?'Open the call':'Open on Calls'});
+  }
+  const open=d.cmts.filter(function(c){return c.resolved!==true;});
+  if(open.length)out.push({ic:'msg',t:nwPlural(open.length,'open comment')+' on its documents',s:'“'+v148Clip(open[0].body,90)+'” · '+String(open[0].author||'').split('@')[0],go:'v149Comment('+nwJs(email)+','+nwJs(open[0].target_key)+')',btn:'Open'});
+  return out;
+}
+function v149Comment(email,key){
+  const ag=String(key||'').split(':').slice(2).join(':');
+  const st=v136Stages().find(function(s){return s.agent===ag;});
+  if(st)v136Open(email,st.key);else apTab('s0');
+}
+function v149Next(l){
+  const S=v136Stages(),i=S.findIndex(function(s){return s.key===v136StageOf(l);});
+  return i>=0&&i<S.length-1?S[i+1]:null;
+}
+function v149Activity(d){
+  const ev=[],L={lead_research:'Prospect brief',interview_script:'Consultation guide',anonymizer:'Assessment report',discovery_call:'Follow-up guide',growth_plan:'Proposal presentation',client_proposal:'Client proposal',meeting_prep:'Meeting prep',deliverable:'Meeting recap'};
+  d.outs.forEach(function(o){const dd=apJson(o.data);
+    ev.push({at:o.created_at,ic:'file',t:(o.agent==='meeting_prep'?(dd.doc_name||'Meeting prep'):L[o.agent]||o.title||'A document')+' written'});});
+  d.calls.forEach(function(x){ev.push({at:x.start,ic:'msg',t:'Call: '+(x.title||'A call')+(apFtMins(x.c)?' · '+apFtMins(x.c)+' min':'')});});
+  d.files.forEach(function(f){ev.push({at:f.created_at,ic:'upload',t:'File added: '+f.file_name});});
+  d.signs.forEach(function(s){ev.push({at:s.created_at,ic:'rocket',t:'Signed up'+(s.slug?' on /go/'+s.slug:'')});});
+  const keys=d.em;d.fb.forEach(function(f){const id=String(f.target_id||'').toLowerCase();if(!keys.some(function(e){return id.indexOf(e+':')===0;}))return;
+    ev.push({at:f.created_at,ic:f.action==='reviewed'?'checkCircle':'pen',t:(f.action==='reviewed'?'Reviewed':f.action==='changes'?'Changes asked':f.action==='reopened'?'Reopened':v136Cap(f.action))+': '+(L[id.split(':')[1]]||'a document')+(f.author?' · '+String(f.author).split('@')[0]:'')});});
+  d.cmts.forEach(function(c){ev.push({at:c.created_at,ic:'msg',t:'Comment from '+String(c.author||'').split('@')[0]+': “'+v148Clip(c.body,70)+'”'});});
+  if(d.l.created_at)ev.push({at:d.l.created_at,ic:'users',t:'Added to the Lead pipeline'+(d.l.lead_source?' · '+d.l.lead_source:'')});
+  const out=[];
+  ev.filter(function(e){return Date.parse(e.at);}).sort(function(a,b){return Date.parse(b.at)-Date.parse(a.at);}).forEach(function(e){
+    /* the same thing on the same day is one line, with how many times */
+    const p=out[out.length-1];
+    if(p&&p.t===e.t&&String(p.at).slice(0,10)===String(e.at).slice(0,10)){p.n=(p.n||1)+1;return;}
+    out.push(e);
+  });
+  out.forEach(function(e){if(e.n)e.t+=' · '+e.n+' times';});
+  return out;
+}
+function v149Html(email,d){
+  const l=d.l,name=l.prospect_name||email,cur=v136StageOf(l),st=v136St(cur),S=v136Stages(),i=S.findIndex(function(s){return s.key===cur;});
+  const dc=st?v136Doc(l,st):null,run=v120RunState(l),nx=v149Next(l),c=v137Contact(l);
+  const card=function(cls,title,body,extra){return '<div class="v149-card '+cls+'"><div class="v149-ch"><h3>'+esc(title)+'</h3>'+(extra||'')+'</div>'+body+'</div>';};
+  const errLine=function(k){return d.errs[k]?'<p class="v149-err">'+esc('Could not read: '+d.errs[k])+'</p>':'';};
+  /* where things stand */
+  const track='<ol class="v149-track" aria-label="Stages">'+S.map(function(s,j){
+    const has=!!v136Doc(l,s);return '<li class="'+(j<i?'done':j===i?'on':'')+'" style="--c:'+esc(s.c||'#4F7DC0')+'" title="'+esc(s.name+(has?' · '+s.doc+' written':''))+'"><span></span><b>'+esc(s.name)+'</b></li>';}).join('')+'</ol>';
+  const stand=card('v149-stand','Where things stand',
+    track+'<p class="v149-big">'+esc(st?'In '+st.name:'Not on the board yet')+'</p>'+
+    '<p class="v149-sub">'+esc(run?v136Cap(run.st.doc)+' is being written.':st?(dc?v136Cap(st.doc)+' ready'+(dc.out?' since '+v149Day(dc.out.created_at):''):v136Cap(st.doc)+' not written yet'):'')+'</p>'+
+    '<div class="v149-acts">'+
+      (st&&!run&&!dc&&st.agent?'<button type="button" class="nw-btn nw-btn-primary nw-btn-sm" onclick="v136Ask('+esc(nwJs(email))+','+esc(nwJs(st.key))+',false)">'+esc(v136Btn(st))+'</button>':'')+
+      (st&&dc?'<button type="button" class="nw-btn nw-btn-sm" onclick="v136Open('+esc(nwJs(email))+','+esc(nwJs(st.key))+')">'+esc('Open the '+st.doc.toLowerCase())+'</button>':'')+
+      (nx&&!run?'<button type="button" class="nw-btn nw-btn-ghost nw-btn-sm" onclick="v136Ask('+esc(nwJs(email))+','+esc(nwJs(nx.key))+',true)">'+esc('Move to '+nx.name)+'</button>':'')+
+    '</div>');
+  /* waiting */
+  const W=v149Waiting(email,d);
+  const wait=card('v149-wait','Waiting on you',W.length?'<ul class="v149-list">'+W.map(function(w){
+    return '<li>'+nwIc(w.ic,17)+'<span class="t"><b>'+esc(w.t)+'</b><small>'+esc(w.s)+'</small></span>'+(w.go?'<button type="button" class="nw-btn nw-btn-sm" onclick="'+esc(w.go)+'">'+esc(w.btn)+'</button>':'')+'</li>';}).join('')+'</ul>':
+    '<p class="v149-none">'+nwIc('checkCircle',16)+'Nothing waiting on you for '+esc(name)+'.</p>',W.length?'<span class="v149-n">'+W.length+'</span>':'');
+  /* latest meeting */
+  const lm=d.calls[0],lo=lm?d.co.find(function(x){return String(x.call_id)===lm.id;}):null,sum=lo?(Array.isArray(lo.summary)?lo.summary:apJson(lo.summary)&&Array.isArray(apJson(lo.summary))?apJson(lo.summary):[]):[];
+  const meet=card('v149-meet','Latest meeting',lm?
+    '<p class="v149-big sm">'+esc(lm.title||'A call')+'</p><p class="v149-sub">'+esc([v149Day(lm.start),apFtMins(lm.c)?apFtMins(lm.c)+' min':'',lm.stage&&v136St(lm.stage)?'filed under '+v136St(lm.stage).name:'not filed yet'].filter(Boolean).join(' · '))+'</p>'+
+    (sum.length?'<ul class="v149-sum">'+sum.slice(0,4).map(function(s){return '<li>'+esc(typeof s==='string'?s:(s&&(s.text||s.point))||'')+'</li>';}).join('')+'</ul>':'<p class="v149-none">No post-call summary yet.</p>')+
+    '<div class="v149-acts"><button type="button" class="nw-btn nw-btn-primary nw-btn-sm" onclick="v148Make({src:\'lead\',lead:'+esc(nwJs(l.email))+',call:'+esc(nwJs(lm.id))+'})">'+nwIc('sparkle',15)+'Make a recap</button>'+
+      '<button type="button" class="nw-btn nw-btn-ghost nw-btn-sm" onclick="apCxOpenCall('+esc(nwJs(lm.id))+')">Open on Calls</button></div>':
+    (d.ftErr?'<p class="v149-err">'+esc('Could not read the calls from Fathom: '+d.ftErr)+'</p>':'<p class="v149-none">No recorded calls with '+esc(name)+' yet.</p>')+
+    '<div class="v149-acts"><button type="button" class="nw-btn nw-btn-sm" onclick="v148Make({src:\'lead\',lead:'+esc(nwJs(l.email))+',call:\'none\'})">'+nwIc('sparkle',15)+'Make a recap from notes</button></div>',
+    d.calls.length>1?'<button type="button" class="v149-link" onclick="apTab(\'v137calls\')">'+esc('All '+d.calls.length+' calls')+'</button>':'');
+  /* deliverables */
+  const dl=[];
+  d.outs.filter(function(o){return o.agent==='deliverable';}).forEach(function(o){dl.push({t:o.title||V148_DOC,s:(apJson(o.data).status==='ready'?'Ready for the client':'Draft')+' · '+v149Day(o.created_at),go:'v148Open('+nwJs(String(o.id))+')'});});
+  const cp=d.outs.find(function(o){return o.agent==='client_proposal';});
+  if(cp)dl.push({t:'Client proposal',s:'Written '+v149Day(cp.created_at),go:'v132OpenLead('+nwJs(l.email)+')'});
+  const docs=S.filter(function(s){return !!v136Doc(l,s);}).length;
+  const deliv=card('v149-deliv','Deliverables',(dl.length?'<ul class="v149-list sm">'+dl.slice(0,5).map(function(x){return '<li>'+nwIc('file',16)+'<span class="t"><b>'+esc(x.t)+'</b><small>'+esc(x.s)+'</small></span><button type="button" class="nw-btn nw-btn-ghost nw-btn-sm" onclick="'+esc(x.go)+'">Open</button></li>';}).join('')+'</ul>':'<p class="v149-none">Nothing made for this client yet.</p>')+
+    '<p class="v149-sub">'+esc(nwPlural(docs,'meeting document')+' written across the stages.')+'</p>'+errLine('docs'),
+    '<button type="button" class="v149-link" onclick="v148Make({src:\'lead\',lead:'+esc(nwJs(l.email))+'})">Make a deliverable</button>');
+  /* contact */
+  const rows=[['Name',name],['Title',l.prospect_title||(c&&c.job_title)],['Company',l.company_name||(c&&c.company)],['Email',l.email],['Phone',c&&c.phone],['Website',c&&c.website],
+    ['Lifecycle',c&&c.lifecycle_stage],['Lead status',c&&c.lead_status],['Lead source',l.lead_source],['Fit',l.fit_rating]].filter(function(r){return r[1];});
+  const contact=card('v149-ct','Contact',
+    '<dl class="v149-dl">'+rows.map(function(r){return '<dt>'+esc(r[0])+'</dt><dd>'+esc(String(r[1]))+'</dd>';}).join('')+'</dl>'+
+    '<p class="v149-sub">'+esc(c?'From HubSpot, synced every 6 hours.':'Not in HubSpot contacts yet.')+'</p>',
+    '<span class="v149-files">'+esc(nwPlural(d.files.length,'file'))+'</span>');
+  /* activity */
+  const A=v149Activity(d);
+  const act=card('v149-act','Recent activity',A.length?'<ul class="v149-tl">'+A.slice(0,12).map(function(e){return '<li>'+nwIc(e.ic,15)+'<span>'+esc(e.t)+'</span><time datetime="'+esc(e.at)+'">'+esc(v149Ago(e.at))+'</time></li>';}).join('')+'</ul>'+(A.length>12?'<p class="v149-sub">'+esc((A.length-12)+' earlier')+'</p>':''):'<p class="v149-none">Nothing yet.</p>',
+    '<button type="button" class="v149-link" onclick="v149Repaint('+esc(nwJs(email))+')">Refresh</button>');
+  return '<section class="block v149"><h2>Client 360 <span class="count">'+esc(name+(l.company_name?' · '+l.company_name:''))+'</span></h2>'+
+    '<div class="v149-grid">'+stand+wait+meet+deliv+contact+act+'</div></section>';
+}
+/*@@v149end*/
 
 </script>
 <script>
