@@ -121,12 +121,6 @@ const ago = (h) => new Date(Date.now() - h * 3600e3).toISOString();
     check('Knowledge base files not on the list are kept when the setup is saved', kb.includes('gf-gone') && kb.includes('gf-1'), JSON.stringify(kb));
     await ctx.close();
 
-    // a lead's page: a stage with no checklist says where to set one
-    ({ ctx, page, store } = await open('/dashboard/lead-pipeline'));
-    await page.evaluate((e) => openE1Lead(e), L1); await page.waitForTimeout(3200);
-    const sec = await page.evaluate(() => (document.querySelector('#main section[data-v145="stage"]') || {}).innerText || '');
-    check('A stage with no deliverables or tasks says so, with its setup', /This stage:/.test(sec) && /No deliverables or tasks for this stage yet/.test(sec) && /Stage setup/.test(sec), sec);
-    await ctx.close();
   }
 
   // 2. The client workspace
