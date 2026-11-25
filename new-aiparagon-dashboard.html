@@ -39840,6 +39840,8 @@ function v104ReadSync(force){
     if(g.disclosure)add('disc',['Include this disclosure exactly as written: '+g.disclosure.replace(/\s+/g,' ').trim()]);
     /* v127, moved in v128: what the team said when a survey, landing or booking page was turned down, after the guardrails so it never pushes them out */
     if(typeof v127FaLine==='function'&&(V127.fa||[]).length)add('pages',[v127FaLine(2,90),v127FaLine(1,60)]);
+    /* v150: the house rules for Everything and the Pipeline agents, then what was said about funnels sent back, also after the guardrails */
+    if(typeof v150RulesAlts==='function'){const ra=v150RulesAlts();if(ra.length)add('rules',ra);const fa=v150FuAlts();if(fa.length)add('funnels',fa);}
     const dp=v104SetupPersona();
     if(dp)add('persona',['Write for '+v104PersonaLine(dp)+'.'+(dp.pain?' Their pain: '+v104Tidy(dp.pain)+'.':''),'Write for '+dp.name+'.']);
     const pf=v104SetupProof();
@@ -57974,6 +57976,172 @@ function v149Html(email,d){
     '<div class="v149-grid">'+stand+wait+meet+deliv+contact+act+'</div></section>';
 }
 /*@@v149end*/
+</script>
+<style id="v150css">
+/* v150: campaigns learn */
+.v150-rules,.v150-fu{display:block}
+</style>
+<script id="v150js">
+/* ===================================================================
+   v150: campaigns learn. The audit of Oct 27 found that the Funnel
+   Builder's Send back stored no reason and that neither campaign
+   workflow (the Funnel Builder, the Low-Ticket Agent) read the house
+   rules. Now Send back asks why (saved in agent_feedback, funnel_builder,
+   funnel_package, rejected, with the reason), and the campaign's setup
+   line (the request both workflows already read) carries what was said
+   about funnels sent back and the house rules for Everything or the
+   Pipeline agents, after the guardrails, so it never pushes them out.
+   =================================================================== */
+const V150={fu:null,fuT:0,fuP:null,rules:null,rulesT:0,rulesP:null,why:null};
+const V150_WHY=[['voice','Off-voice'],['salesy','Too salesy'],['offer','Wrong offer'],['audience','Wrong audience'],['hook','Weak hook'],['long','Too long'],['proof','Needs real proof'],['steps','Wrong steps']];
+/* what the team said when funnels were sent back: the newest decision on each package, the last 120 days */
+function v150FuLoad(force){
+  if(V150.fu&&!force&&Date.now()-V150.fuT<60000)return Promise.resolve(V150.fu);
+  if(V150.fuP)return V150.fuP;
+  V150.fuP=apSb('agent_feedback?select=target_id,action,feedback,created_at&target_type=eq.funnel_package&order=created_at.desc&limit=100')
+    .catch(function(){return [];})
+    .then(function(r){
+      const seen={},out=[];
+      (r||[]).forEach(function(x){
+        if(!x||(x.action!=='approved'&&x.action!=='rejected')||seen[x.target_id])return;
+        seen[x.target_id]=1;
+        const t=String(x.feedback||'').replace(/\s+/g,' ').trim();
+        if(x.action==='rejected'&&t&&!(typeof v127Stock==='function'&&v127Stock(t))&&!/^Approved by putting/i.test(t)&&Date.now()-Date.parse(x.created_at||0)<120*864e5)out.push(t);
+      });
+      V150.fu=out;V150.fuT=Date.now();V150.fuP=null;return out;
+    });
+  return V150.fuP;
+}
+/* the house rules a campaign follows: active, for Everything or the Pipeline agents */
+function v150RulesLoad(force){
+  if(V150.rules&&!force&&Date.now()-V150.rulesT<60000)return Promise.resolve(V150.rules);
+  if(V150.rulesP)return V150.rulesP;
+  V150.rulesP=apSb('ai_rules?select=rule,applies_to,active,source,updated_at&active=eq.true&order=updated_at.desc&limit=200')
+    .catch(function(){return [];})
+    .then(function(r){
+      V150.rules=(r||[]).filter(function(x){
+        const a=Array.isArray(x.applies_to)?x.applies_to:apJson(x.applies_to)&&Array.isArray(apJson(x.applies_to))?apJson(x.applies_to):[];
+        return x.active!==false&&String(x.rule||'').trim()&&(!a.length||a.indexOf('all')>=0||a.indexOf('engine3')>=0);
+      }).map(function(x){return String(x.rule).replace(/\s+/g,' ').trim();});
+      V150.rulesT=Date.now();V150.rulesP=null;return V150.rules;
+    });
+  return V150.rulesP;
+}
+function v150Clip(t,n){t=String(t||'');return t.length>n?t.slice(0,n-1).replace(/\s+\S*$/,'')+'…':t;}
+/* the setup line's parts: the first wording that fits wins */
+function v150RulesAlts(){
+  const R=V150.rules||[];if(!R.length)return [];
+  const line=function(n,c){return 'House rules: '+R.slice(0,n).map(function(t){return v150Clip(t,c).replace(/[.;]+$/,'');}).join('; ')+'.';};
+  /* every rule first, so a shorter wording always means some were left out */
+  return [line(R.length,200),line(8,140),line(4,110),line(2,90),line(1,70)];
+}
+function v150FuAlts(){
+  const F=V150.fu||[];if(!F.length)return [];
+  const line=function(n,c){return 'Earlier funnels were sent back. What the team said: '+F.slice(0,n).map(function(t){return '“'+v150Clip(t,c)+'”';}).join(' ')+'. Do not repeat these.';};
+  return [line(3,110),line(2,80),line(1,60)];
+}
+/* both load with the denials the campaign already reads */
+(function(){
+  const _rl=v103RejLoad;
+  v103RejLoad=function(force){
+    return Promise.all([_rl.apply(this,arguments),v150FuLoad(force).catch(function(){return [];}),v150RulesLoad(force).catch(function(){return [];})]).then(function(r){return r[0];});
+  };
+})();
+
+/* ---------- Send back asks why ---------- */
+function v150Why(f){
+  return new Promise(function(res){
+    nwModal('v150M','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">'+esc((NW_MG_PK[f.funnel_type]||['Funnel'])[0]+' · '+v113FunName(f))+'</div><h2>Why send this campaign back?</h2></div>'+
+        '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+      '<div class="nw-m-body v127-m">'+
+        '<p class="v127-lbl" id="v150Lbl">What was off?</p>'+
+        '<div class="v103-why" role="group" aria-labelledby="v150Lbl">'+V150_WHY.map(function(w){return '<button type="button" data-w="'+w[0]+'" aria-pressed="false" onclick="v103Why(this)">'+esc(w[1])+'</button>';}).join('')+'</div>'+
+        '<label class="nw-field"><span class="nw-lbl">Anything to add?<small>Optional.</small></span>'+
+          '<textarea class="nw-input nw-textarea" id="v150Ta" rows="3" maxlength="400" placeholder="e.g. Lead with the cost of month-end reporting, not AI"></textarea></label>'+
+        '<p class="v103-dh">The next campaigns read it (the Funnel Builder and the book a call and low-ticket ones), and it shows on AI settings, where it can become a rule. Leave it empty to send it back without one.</p>'+
+        '<div class="nw-m-foot"><span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button>'+
+          '<button type="button" class="nw-btn nw-btn-primary" id="v150Go" onclick="v150WhyGo()">Send back</button></div>'+
+      '</div>');
+    V150.why=res;
+    setTimeout(function(){const b=document.querySelector('#v150M .v103-why button');if(b)try{b.focus({preventScroll:true});}catch(e){}},0);
+  });
+}
+function v150WhyText(picked,note){
+  const w=picked.map(function(k){const x=V150_WHY.find(function(y){return y[0]===k;});return x?x[1].toLowerCase():'';}).filter(Boolean);
+  const n=String(note||'').replace(/\s+/g,' ').trim().slice(0,400);
+  if(!w.length&&!n)return '';
+  return 'Funnel: '+(w.length?w.join(', ')+'.':'')+(n?(w.length?' ':'')+n.replace(/([^.!?])$/,'$1.'):'');
+}
+function v150WhyGo(){
+  const m=document.getElementById('v150M'),f=V150.why;if(!m||!f)return;
+  const picked=[...m.querySelectorAll('.v103-why button[aria-pressed="true"]')].map(function(b){return b.dataset.w;});
+  const t=v150WhyText(picked,(document.getElementById('v150Ta')||{}).value);
+  V150.why=null;nwModalClose();f({why:t});
+}
+(function(){
+  /* closed any other way (Cancel, the X, Esc, a click outside): the campaign stays as it was */
+  const _c=nwModalClose;
+  nwModalClose=function(){const f=V150.why;V150.why=null;const r=_c.apply(this,arguments);if(f)f(null);return r;};
+})();
+/* Esc on a question opened over a side panel closes the question only (it closed both) */
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Escape'||!document.querySelector('.nw-modal')||!document.querySelector('.nw-drawer'))return;
+  e.stopImmediatePropagation();e.preventDefault();nwModalClose();
+},true);
+v113FunDecide=async function(id,act){
+  const f=(V113.fun.rows||[]).find(function(x){return String(x.id)===String(id);});
+  let why='';
+  if(act==='draft'&&f){const a=await v150Why(f);if(!a)return;why=a.why;}
+  try{
+    await apPatch('funnel_packages','id=eq.'+encodeURIComponent(id),{status:act,updated_at:new Date().toISOString()});
+    try{await apPost('agent_feedback',Object.assign({agent:'funnel_builder',target_type:'funnel_package',target_id:String(id),action:act==='draft'?'rejected':act,author:typeof whoAmI==='function'?whoAmI():apCfMe()},why?{feedback:why}:{}));}catch(e){}
+    if(f)f.status=act;
+    if(act==='draft'&&why){V150.fu=[why].concat((V150.fu||[]).filter(function(t){return t!==why;}));V150.fuT=Date.now();}
+    nwDrawerClose();v113FunPaint();
+    if(typeof nwToast==='function')nwToast(act==='approved'?'Approved':why?'Sent back. The next campaigns read why.':'Sent back');
+  }catch(e){if(typeof nwToast==='function')nwToast('Could not save that: '+(e.message||e));}
+};
+
+/* ---------- the side pane says what the campaign follows ---------- */
+(function(){
+  const _s=nwMgSide;
+  nwMgSide=function(){
+    const r=_s.apply(this,arguments);
+    try{v150Side();}catch(e){}
+    return r;
+  };
+})();
+function v150Side(){
+  const b=v97$('nwMgSideB');if(!b||typeof nwMgKind!=='function'||nwMgKind()!=='ad')return;
+  if(!V150.rules&&!V150.rulesP)v150RulesLoad().then(function(x){if(x&&x.length&&v97$('nwMgSideB'))nwMgSide();}).catch(function(){});
+  if(!V150.fu&&!V150.fuP)v150FuLoad().then(function(x){if(x&&x.length&&v97$('nwMgSideB'))nwMgSide();}).catch(function(){});
+  if(!((V150.rules||[]).length||(V150.fu||[]).length)||!(typeof nwMgSel==='function'&&nwMgSel(true)))return;
+  const S=v103SetupBuild(v103Used(V103.ctx0?V103.ctx0():''));
+  const li=[...b.querySelectorAll('.nw-uses > li')].find(function(x){const t=x.querySelector('b');return t&&t.textContent.trim()==='Your request';});
+  const d=li&&li.querySelector(':scope > div');if(!d)return;
+  if(S.has.rules&&!d.querySelector('.v150-rules'))d.insertAdjacentHTML('beforeend','<small class="nw-avoid v150-rules" title="Active rules for Everything or the Pipeline agents, on AI settings">Follows your house rules'+(S.has.rules===true?'':', shortened to fit')+'</small>');
+  if(S.has.funnels&&!d.querySelector('.v150-fu'))d.insertAdjacentHTML('beforeend','<small class="nw-avoid v150-fu" title="From the reasons given when funnels were sent back">Avoids what was said about funnels sent back</small>');
+}
+
+/* ---------- AI settings: where the rules apply now ---------- */
+(function(){
+  const set=function(re,txt){const i=AP_WHERE.findIndex(function(r){return re.test(r[0]);});if(i>=0){AP_WHERE[i][1]=txt;AP_WHERE[i][2]='live';}};
+  set(/^Book a call and low-ticket/,'Rules for Everything and the Pipeline agents, the company profile, and the reasons ads, pages and funnels were turned down, in each request’s setup line');
+  set(/^Funnel builder/,'Rules for Everything and the Pipeline agents, the company profile, and the reasons ads, pages and funnels were turned down, in each request’s funnel note');
+  /* Make it a rule on a funnel's reason scopes it to the Pipeline agents */
+  if(typeof apRuleFromFb==='function'){
+    const _f=apRuleFromFb;
+    apRuleFromFb=function(btn){
+      const r=_f.apply(this,arguments);
+      if(btn&&/^(funnel_builder|low_ticket_content)$/.test(btn.dataset.a||'')){
+        AP_RED.scopes=['engine3'];
+        document.querySelectorAll('.ap-rule-opts input').forEach(function(i){i.checked=i.value==='engine3';});
+      }
+      return r;
+    };
+  }
+})();
+/*@@v150end*/
 
 </script>
 <script>

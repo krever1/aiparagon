@@ -233,7 +233,8 @@ const RESULTS = [
     await page.click('#v113FunD .v113-card:first-child button:has-text("Make the image")'); await wait(page, 900);
     const img = store.writes.filter((w) => w.method === 'PATCH' && w.table === 'funnel_packages').pop();
     check('Make the image asks the image workflow and saves the picture on that ad', img && /creatives\/funnel-funnel_2026-10-14_qa-a\.png/.test(img.body.ad_variations.variants[0].image_url) && hooks.some((h) => /regen-ad-image/.test(h.u) && h.b.notes === 'A calm desk, one laptop'), img && JSON.stringify(img.body).slice(0, 160));
-    await page.click('#v113FunD .nw-d-foot button:has-text("Send back")'); await wait(page, 600);
+    await page.click('#v113FunD .nw-d-foot button:has-text("Send back")'); await wait(page, 400);
+    if (await page.$('#v150M')) { await page.click('#v150Go'); await wait(page, 600); }   // v150: Send back asks why first; sent with no reason here
     const sb = store.writes.filter((w) => w.method === 'PATCH' && w.table === 'funnel_packages').pop(), fbk = store.db.agent_feedback.pop();
     check('Send back puts it back to draft, a status the table takes, and records why', sb.body.status === 'draft' && fbk && fbk.action === 'rejected' && fbk.agent === 'funnel_builder', JSON.stringify(sb.body));
     // a funnel is named by the builder's title first; a failed Funnel Builder run stops the wait and says why
