@@ -732,9 +732,10 @@ The older "Voice Agent Demo" and "Voice Agent Realtime Session" workflows are in
   - The endpoint: `/voice/api/llm` in the Command Center app (krever1/aiparagon-voice#29; its CLAUDE.md has the details). It is a Vapi custom LLM that sends each turn on to OpenAI with only the chat completion fields and streams the answer back as it comes. It answers only the test copy, allows only Ava's models, caps reply length, and stops OpenAI when the caller cuts in. Each request gets one log line of timings, never words. A probe mode answers "Okay." itself, to time the hop alone.
   - The test copy: Pinecrest Test: Clara v2 + guard, made by Voice Test (its row).
   - Measured with the voice lab (real Vapi calls, Ava's live prompt without tools, made-up caller lines) from Vapi's own log, which times every model request ("LLM first token received", `latency`):
-    - The hop costs 76 ms median on a warm function (51 to 222 ms, 18 requests), 157 to 176 ms on a freshly deployed one, and 366 ms on its very first request.
+    - The hop costs 77 ms median on a warm function (51 to 286 ms, 30 requests, about 100 ms on average).
     - With a one-line prompt it is 51 ms median, so Ava's 29 KB prompt adds about 25 ms of transfer.
-    - Vercel's edge to the code is usually 26 to 37 ms, sometimes 127 to 155 ms; those spikes are the slow turns.
+    - Vercel's edge to the code is usually 26 to 39 ms, and about 3 turns in 10 take 127 to 155 ms; those are the slow turns.
+    - A cold instance adds 0.2 to 0.7 s to its turn, and Vercel starts new ones on its own, not only after a quiet spell: 3 of the last 33 requests (the endpoint's log line says `cold` and `t_edge`). An always-on host next to Vapi would have none.
     - On the plain route Vapi sent Ava's turns to OpenAI's API (607 ms median to the first token, steady) or its own Azure OpenAI deployment (569 ms median, up to 1.19 s), by call. The endpoint calls OpenAI's API, so a guard turn should be about the hop slower than a plain one.
   - Waiting on Kaeser: `OPENAI_API_KEY` on the aiparagon-voice Vercel project (production), then the guard-vs-plain comparison on the same lines. Until it is set, the guard copy can't answer (the endpoint answers 503), so don't call it yet. The probe works without it.
 
