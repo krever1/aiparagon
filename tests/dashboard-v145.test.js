@@ -254,6 +254,59 @@ const ago = (h) => new Date(Date.now() - h * 3600e3).toISOString();
     await ctx.close();
   }
 
+  // 3. The Intel Tracker's replies: why a post, who each account is, whether it gets replies, LinkedIn connections
+  if (want('replies')) {
+    const D1 = '00000000-0000-4000-8000-00000000d001', D2 = '00000000-0000-4000-8000-00000000d002', NW = '00000000-0000-4000-8000-0000000000e1';
+    let { ctx, page, store } = await open('/dashboard/approvals', { more: (t) => {
+      const d = t.engagement_drafts.find((r) => r.id === D1); d.why = { found: 'followed', account: 'Northwind Advisory', relation: 'connection', value: 'high', engagement: 410, top: true };
+      t.competitors.find((c) => c.id === NW).relation = 'connection';
+    } });
+    await page.evaluate((id) => nwReplyOpen(id), D1); await page.waitForTimeout(1200);
+    const w1 = await page.evaluate(() => (document.querySelector('#nwReplyM .v145-why') || {}).innerText || '');
+    check('The reply window says why: an account you follow, a connection, its value and engagement', /Why this post/.test(w1) && /From an account you follow, one of your LinkedIn connections/.test(w1) && /Rated high value/.test(w1) && /410 reactions/.test(w1), w1);
+    check('…and how replies are picked', /10 most engaged or rated high value/.test(w1));
+    await page.evaluate(() => nwModalClose());
+    await page.evaluate((id) => nwReplyOpen(id), D2); await page.waitForTimeout(1200);
+    const w2 = await page.evaluate(() => (document.querySelector('#nwReplyM .v145-why') || {}).innerText || '');
+    check('A reply drafted before this round is explained from its post', /Why this post/.test(w2) && /Found by a|From an account/.test(w2) && !/Reading/.test(w2), w2);
+    await ctx.close();
+    // Following: who each account is, and replies on or off
+    ({ ctx, page, store } = await open('/dashboard/intel-tracker'));
+    await page.evaluate(() => apTab('follow')); await page.waitForTimeout(1800);
+    const row = page.locator('.v96-fol-c li', { hasText: 'Northwind Advisory' }).first();
+    check('Each account on Following says who they are and whether replies are drafted', await row.locator('.v145-folc select').count() === 1 && await row.locator('.v145-rep input').isChecked());
+    await row.locator('.v145-folc select').selectOption('prospect'); await page.waitForTimeout(700);
+    await row.locator('.v145-rep input').uncheck(); await page.waitForTimeout(900);
+    const nw = store.db.competitors.find((c) => c.id === NW);
+    check('Saved for the team: a prospect, no replies', nw.relation === 'prospect' && nw.draft_replies === false, JSON.stringify({ r: nw.relation, d: nw.draft_replies }));
+    // Import LinkedIn connections
+    const imp = page.locator('.v145-imp');
+    check('People has Import LinkedIn connections', await imp.count() === 1);
+    await imp.click(); await page.waitForTimeout(400);
+    await page.setInputFiles('#v145IFile', { name: 'bad.csv', mimeType: 'text/csv', buffer: Buffer.from('Name,Company\nA,B\n') }); await page.waitForTimeout(400);
+    check('A file that is not LinkedIn\'s connections export is turned away with why', /not LinkedIn.s Connections.csv/.test(await page.textContent('#v145IMsg')));
+    const csv = 'Notes:\n"When exporting your connection data, you may notice that some of the email addresses are missing."\n\nFirst Name,Last Name,URL,Email Address,Company,Position,Connected On\n' +
+      'Ava,Lindqvist,https://www.linkedin.com/in/ava-lindqvist-qa,,"Lindqvist & Co, LLC",Founder,01 Nov 2026\nBen,Okoro,https://www.linkedin.com/in/ben-okoro-qa,,Okoro Wealth,CEO,02 Nov 2026\n' +
+      'Northwind,Advisory,https://www.linkedin.com/in/northwind-qa,,Northwind,Team,03 Nov 2026\nNo,Link,,,X,Y,04 Nov 2026\n';
+    await page.setInputFiles('#v145IFile', { name: 'Connections.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) }); await page.waitForTimeout(800);
+    const li = await page.$$eval('#v145IList .v145-irow', (r) => r.map((x) => x.innerText.replace(/\s+/g, ' ')));
+    check('Its connections are listed (quoted commas read right, no-link rows left out), one followed already marked', li.length === 3 && li.some((x) => /Lindqvist & Co, LLC/.test(x)) && li.some((x) => /Northwind Advisory.*followed already/.test(x)), JSON.stringify(li));
+    await page.fill('#v145IList input[type=search]', 'okoro'); await page.waitForTimeout(300);
+    check('Search narrows them', await page.locator('#v145IList .v145-irow').count() === 1);
+    await page.fill('#v145IList input[type=search]', ''); await page.waitForTimeout(300);
+    await page.locator('#v145IList .v145-irow', { hasText: 'Ava Lindqvist' }).locator('label').first().locator('input').check();
+    await page.locator('#v145IList .v145-irow', { hasText: 'Ben Okoro' }).locator('label').first().locator('input').check();
+    await page.locator('#v145IList .v145-irow', { hasText: 'Ben Okoro' }).locator('.v145-rep input').uncheck();
+    check('The button counts the picks', /Follow 2 people/.test(await page.textContent('#v145IGo')));
+    await page.click('#v145IGo'); await page.waitForTimeout(1500);
+    const ava = store.db.competitors.find((c) => c.name === 'Ava Lindqvist'), ben = store.db.competitors.find((c) => c.name === 'Ben Okoro');
+    check('Saved as people followed for posts, connections, from LinkedIn, replies as picked', ava && ben && ava.handle_linkedin === 'https://www.linkedin.com/in/ava-lindqvist-qa' && ava.follow_for === 'posts' && ava.follow_kind === 'person' && ava.relation === 'connection' && ava.source === 'linkedin_import' && ava.draft_replies === true && ben.draft_replies === false && /Founder at Lindqvist/.test(ava.notes || ''), JSON.stringify([ava, ben]));
+    check('They show under People', /Ava Lindqvist/.test(await page.textContent('.v96-fol')));
+    await page.setViewportSize({ width: 390, height: 820 }); await page.waitForTimeout(400);
+    check('Following on a phone: no sideways scroll', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    await ctx.close();
+  }
+
   check('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
   await browser.close();
   server.close();

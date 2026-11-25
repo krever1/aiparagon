@@ -56192,6 +56192,17 @@ async function v144NtMark(id,db,n){
 .v145-wempty{padding:14px 4px}
 .v145-wkind{display:flex;gap:16px;margin:0 0 12px;font-size:14px}
 .v145-ck1{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:4px 0 8px}
+.v145-why{background:var(--panel-2,#f6f5f1);border-radius:10px;padding:10px 12px;margin:10px 0;font-size:13px}
+.v145-why b{display:block;margin-bottom:4px}.v145-why ul{margin:0 0 6px;padding-left:18px}.v145-why small{display:block;font-size:12px}
+.v145-folc{display:flex;gap:10px;align-items:center;flex-wrap:wrap;width:100%;margin-top:4px;font-size:12.5px}
+.v145-folc select{font:inherit;font-size:12.5px;padding:3px 6px;border:1px solid var(--line,#e5e7eb);border-radius:7px;max-width:100%}
+.v145-rep{display:inline-flex;gap:5px;align-items:center;font-size:12.5px;white-space:nowrap}
+.v145-ibar{display:flex;gap:10px;align-items:center;margin:8px 0}.v145-ibar input{flex:1;min-width:0}
+.v145-ilist{max-height:340px;overflow:auto;border:1px solid var(--line,#e5e7eb);border-radius:10px}
+.v145-irow{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:7px 10px;border-bottom:1px solid var(--line,#e5e7eb);font-size:13px}
+.v145-irow>label:first-child{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;min-width:0}
+.v145-irow small{color:var(--muted,#6b7280);font-size:12px}.v145-irow.is-had{opacity:.55}
+@media(max-width:640px){.v145-irow{flex-wrap:wrap}}
 .v145-rd{font-size:12.5px;color:var(--muted,#6b7280);margin-top:6px}
 @media(max-width:860px){.v145-wsb{grid-template-columns:minmax(0,1fr)}.v145-wsn{border-right:0;border-bottom:1px solid var(--line,#e5e7eb);flex-direction:row;flex-wrap:wrap}.v145-wsn .v145-wf{width:auto}.v145-wfh{width:100%}.v145-wr{flex-wrap:wrap}.v145-wm{flex-basis:calc(100% - 50px)}}
 </style>
@@ -56949,6 +56960,153 @@ async function v145WsSources(l){
   };
 })();
 function v145WsOpenCall(id){apGo('calls');setTimeout(function(){try{v144CalOpen(id);}catch(e){}},900);}
+
+/* ---------- Part 3: the Intel Tracker's replies ----------
+   Why a post got a reply (the reply window says how it was found, whose it is, its value and engagement, and that
+   replies go to the run's most-engaged and high-value posts); who each followed account is to us and whether its
+   posts get replies (competitors.relation, competitors.draft_replies; the Intel Tracker reads both, and its prompt
+   now writes as the firm in the company profile, to a competitor, a connection or a prospect as each is); and Import
+   LinkedIn connections, from the Connections.csv LinkedIn lets anyone download, so the team picks whose posts to read. */
+const V145_REL=[['competitor','Competitor'],['connection','LinkedIn connection'],['prospect','Prospect'],['client','Client'],['partner','Partner'],['peer','Someone we follow']];
+const V145_REL_WORD={competitor:'a competitor',connection:'one of your LinkedIn connections',prospect:'a prospect',client:'a client',partner:'a partner',peer:'someone you follow'};
+(function(){
+  const _o=nwReplyOpen;
+  nwReplyOpen=function(id){
+    _o.apply(this,arguments);
+    const d=nwFindReply(id),M=document.getElementById('nwReplyM');if(!d||!M)return;
+    const box=document.createElement('div');box.className='v145-why';box.setAttribute('role','status');box.innerHTML='<b>Why this post</b><span class="nw-muted">Reading…</span>';
+    const link=M.querySelector('.nw-m-body > a.nw-link');if(link)link.after(box);else{const b=M.querySelector('.nw-m-body');if(b)b.prepend(box);}
+    v145Why(d).then(function(h){box.innerHTML=h;}).catch(function(){box.innerHTML='<b>Why this post</b><span class="nw-muted">Could not read how it was picked.</span>';});
+  };
+})();
+async function v145Why(d){
+  let dr={},it={},acc=null;
+  try{dr=((await apSb('engagement_drafts?select=why,intel_item_id,source_url,competitor_name&id=eq.'+encodeURIComponent(d.id)))||[])[0]||{};}catch(e){}
+  const w=asObj(dr.why);
+  try{
+    const q=dr.intel_item_id?'id=eq.'+encodeURIComponent(dr.intel_item_id):(dr.source_url||d.source_url)?'url=eq.'+encodeURIComponent(dr.source_url||d.source_url):'';
+    if(q)it=((await apSb('intel_items?select=competitor_id,source,ad_context_value,engagement_total,score,score_why,run_date,headline&'+q+'&order=created_at.desc&limit=1'))||[])[0]||{};
+  }catch(e){}
+  try{if(it.competitor_id)acc=((await apSb('competitors?select=name,relation,draft_replies&id=eq.'+encodeURIComponent(it.competitor_id)))||[])[0]||null;}catch(e){}
+  const followed=w.found?w.found==='followed':!!it.competitor_id;
+  const rel=w.relation||(acc?(acc.relation||'competitor'):'');
+  const src=String(w.found&&w.found!=='followed'?w.found:it.source||'');
+  const how=followed?'From an account you follow'+(rel?', '+(V145_REL_WORD[rel]||rel):''):(/linkedin/i.test(src)?'Found by a LinkedIn search for your topics':/web|tavily/i.test(src)?'Found by a web search for your topics':'Found by a search for your topics');
+  const val=w.value||it.ad_context_value||'',eng=w.engagement!=null?w.engagement:it.engagement_total;
+  const lines=[how];
+  if(val)lines.push('Rated '+val+' value'+(val==='high'?': high-value posts always get a reply':''));
+  if(eng!=null)lines.push(Number(eng).toLocaleString()+' reactions, comments and shares'+(w.top||(!w.found&&val!=='high')?', among the run’s most engaged':''));
+  if(it.score_why)lines.push(String(it.score_why).slice(0,200));
+  return '<b>Why this post</b><ul>'+lines.map(function(l){return '<li>'+esc(l)+'</li>';}).join('')+'</ul>'+
+    '<small class="nw-muted">The Intel Tracker drafts a reply when it rates a post worth answering and the post is among the run’s 10 most engaged or rated high value.'+(followed&&acc?' Replies to '+esc(acc.name||'this account')+' can be turned off on Intel Tracker › Following.':'')+'</small>';
+}
+
+/* Following: who each account is to us, and whether its posts get replies */
+(function(){
+  const _r=v96FolRow;
+  v96FolRow=function(c,off){
+    const h=_r.apply(this,arguments);if(off||!c||!c.id)return h;
+    const ctl='<div class="v145-folc"><label><span class="nw-sr">Who '+esc(c.name||'they are')+' is</span><select data-nofill="1" aria-label="Who '+esc(c.name||'they are')+' is to you" onchange="v145FolSet(\''+esc(c.id)+'\',{relation:this.value})">'+
+      V145_REL.map(function(r){return '<option value="'+r[0]+'"'+((c.relation||'competitor')===r[0]?' selected':'')+'>'+r[1]+'</option>';}).join('')+'</select></label>'+
+      '<label class="v145-rep"><input type="checkbox"'+(c.draft_replies===false?'':' checked')+' onchange="v145FolSet(\''+esc(c.id)+'\',{draft_replies:this.checked})"> Draft replies</label></div>';
+    return h.replace(/<\/li>\s*$/,ctl+'</li>');
+  };
+})();
+async function v145FolSet(id,patch){
+  const c=(V96F.rows||[]).find(function(x){return String(x.id)===String(id);});
+  try{await apPatch('competitors','id=eq.'+encodeURIComponent(id),Object.assign({},patch,{updated_at:new Date().toISOString()}));if(c)Object.assign(c,patch);
+    nwToast('draft_replies' in patch?(patch.draft_replies?'Replies on for '+(c&&c.name||'them')+'.':'No more replies drafted to '+(c&&c.name||'them')+'.'):'Saved.');}
+  catch(e){nwToast('Could not save: '+(e.message||e));}
+}
+(function(){
+  const _f=v96FollowLoad;
+  v96FollowLoad=async function(force){
+    const r=await _f.apply(this,arguments);
+    try{const ids=(V96F.rows||[]).map(function(c){return c.id;});
+      if(ids.length&&(V96F.rows||[]).some(function(c){return !('draft_replies' in c);})){
+        const ex=(await apSb('competitors?select=id,relation,draft_replies&limit=500'))||[],by={};ex.forEach(function(x){by[x.id]=x;});
+        V96F.rows.forEach(function(c){const x=by[c.id];if(x){c.relation=x.relation;c.draft_replies=x.draft_replies;}});
+      }}catch(e){}
+    return r;
+  };
+  const _v=v96FollowRender;
+  v96FollowRender=async function(h){
+    const r=await _v.apply(this,arguments);
+    try{
+      const hd=h&&h.querySelector('.v96-fol-c .hd');
+      if(hd&&!hd.querySelector('.v145-imp')){const b=document.createElement('button');b.type='button';b.className='rd-btn sm v145-imp';b.textContent='Import LinkedIn connections';b.onclick=v145ImpOpen;hd.appendChild(b);}
+    }catch(e){}
+    return r;
+  };
+})();
+/* LinkedIn's Connections.csv: a few lines of notes, then First Name, Last Name, URL, Email Address, Company, Position, Connected On */
+function v145Csv(text){
+  const rows=[];let row=[],cur='',q=false;
+  for(let i=0;i<text.length;i++){const ch=text[i];
+    if(q){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=ch;}
+    else if(ch==='"')q=true;else if(ch===','){row.push(cur);cur='';}else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cur);rows.push(row);row=[];cur='';}else cur+=ch;}
+  if(cur||row.length){row.push(cur);rows.push(row);}
+  return rows;
+}
+function v145Conns(text){
+  const rows=v145Csv(String(text||'').replace(/^﻿/,''));
+  const hi=rows.findIndex(function(r){const l=r.map(function(x){return x.trim().toLowerCase();});return l.indexOf('first name')>=0&&l.indexOf('url')>=0;});
+  if(hi<0)return null;
+  const H=rows[hi].map(function(x){return x.trim().toLowerCase();}),ix=function(n){return H.indexOf(n);};
+  return rows.slice(hi+1).map(function(r){
+    const g=function(n){const i=ix(n);return i>=0?String(r[i]||'').trim():'';};
+    const name=(g('first name')+' '+g('last name')).replace(/\s+/g,' ').trim(),url=g('url');
+    return {name:name,url:/^https:\/\/(www\.)?linkedin\.com\/in\//i.test(url)?url.replace(/\/+$/,''):'',company:g('company'),position:g('position'),on:g('connected on')};
+  }).filter(function(c){return c.name&&c.url;});
+}
+V145.imp={list:[],q:''};
+function v145ImpOpen(){
+  V145.imp={list:[],q:''};
+  nwModal('v145I','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Intel Tracker · Following</div><h2>Import LinkedIn connections</h2></div><button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v145-m"><ol class="v143-steps">'+
+      '<li><span class="k">1</span><div><b>Download your connections from LinkedIn</b><small>LinkedIn › Settings › Data privacy › Get a copy of your data › Connections. LinkedIn emails a link, usually within minutes.</small></div></li>'+
+      '<li><span class="k">2</span><div><b>Drop the Connections.csv here</b><small>It is read in this browser. Only the people you pick are saved.</small></div></li>'+
+      '<li><span class="k">3</span><div><b>Pick whose posts to read, and whose get replies</b><small>Each person is one more account a run reads, about 12 seconds each, so a few dozen is fine; hundreds make every run long.</small></div></li></ol>'+
+    '<label class="v145-f"><span>Connections.csv</span><input type="file" id="v145IFile" accept=".csv,text/csv" onchange="v145ImpRead(this)"></label>'+
+    '<div id="v145IList"></div><p class="v120-msg" id="v145IMsg" role="status" aria-live="polite"></p>'+
+    '<div class="nw-m-foot"><span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button><button type="button" class="nw-btn nw-btn-primary" id="v145IGo" onclick="v145ImpGo(this)" disabled>Follow the people picked</button></div></div>',true);
+}
+async function v145ImpRead(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  if(f.size>8*1024*1024)return v145Say('v145IMsg','That file is too big for a connections list.',true);
+  const L=v145Conns(await f.text());
+  if(!L)return v145Say('v145IMsg','That is not LinkedIn’s Connections.csv: it has no First Name and URL columns.',true);
+  if(!L.length)return v145Say('v145IMsg','No connections with a LinkedIn link in that file.',true);
+  await v96FollowLoad(true);
+  const have={};(V96F.rows||[]).forEach(function(c){if(c.handle_linkedin)have[String(c.handle_linkedin).toLowerCase().replace(/\/+$/,'')]=1;have['n:'+String(c.name||'').toLowerCase()]=1;});
+  V145.imp.list=L.map(function(c,i){return Object.assign(c,{i:i,had:!!(have[c.url.toLowerCase()]||have['n:'+c.name.toLowerCase()]),pick:false,rep:true});});
+  v145Say('v145IMsg',nwPlural(L.length,'connection')+' read.'+(L.some(function(c){return c.had;})?' Those you follow already are marked.':''));
+  v145ImpPaint();
+}
+function v145ImpPaint(){
+  const box=document.getElementById('v145IList');if(!box)return;
+  const q=V145.imp.q.trim().toLowerCase(),L=V145.imp.list.filter(function(c){return !q||(c.name+' '+c.company+' '+c.position).toLowerCase().indexOf(q)>=0;});
+  const n=V145.imp.list.filter(function(c){return c.pick;}).length;
+  box.innerHTML='<div class="v145-ibar"><input type="search" class="nw-input" placeholder="Search name, company or title" aria-label="Search connections" value="'+esc(V145.imp.q)+'" oninput="V145.imp.q=this.value;v145ImpPaint();var i=document.querySelector(\'#v145IList input[type=search]\');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length);}"><b>'+n+' picked</b></div>'+
+    '<div class="v145-ilist">'+L.slice(0,300).map(function(c){
+      return '<div class="v145-irow'+(c.had?' is-had':'')+'"><label><input type="checkbox"'+(c.pick?' checked':'')+(c.had?' disabled':'')+' onchange="v145ImpPick('+c.i+',this.checked)"> <b>'+esc(c.name)+'</b><small>'+esc([c.position,c.company].filter(Boolean).join(' · '))+(c.had?' · followed already':'')+'</small></label>'+
+        (c.had?'':'<label class="v145-rep"><input type="checkbox"'+(c.rep?' checked':'')+' onchange="v145ImpRep('+c.i+',this.checked)"> Draft replies</label>')+'</div>';}).join('')+
+    (L.length>300?'<p class="nw-muted nw-small">Showing 300 of '+L.length+'. Search to find others.</p>':'')+'</div>';
+  const go=document.getElementById('v145IGo');if(go){go.disabled=!n;go.textContent=n?'Follow '+n+(n===1?' person':' people'):'Follow the people picked';}
+}
+function v145ImpPick(i,on){const c=V145.imp.list[i];if(c){c.pick=!!on;}const n=V145.imp.list.filter(function(c){return c.pick;}).length;
+  if(n>50){c.pick=false;v145Say('v145IMsg','Keep it to 50 at a time: each one adds about 12 seconds to every run.',true);}v145ImpPaint();}
+function v145ImpRep(i,on){const c=V145.imp.list[i];if(c)c.rep=!!on;}
+async function v145ImpGo(btn){
+  const P=V145.imp.list.filter(function(c){return c.pick&&!c.had;});if(!P.length)return;
+  btn.disabled=true;v145Say('v145IMsg','Saving…');
+  const by=apCfMe(),rows=P.map(function(c){return {name:c.name.slice(0,120),handle_linkedin:c.url,follow_kind:'person',follow_for:'posts',status:'approved',source:'linkedin_import',added_by:by,
+    relation:'connection',draft_replies:!!c.rep,notes:[c.position,c.company].filter(Boolean).join(' at ').slice(0,300)||null};});
+  try{await apSb('competitors',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(rows)});}
+  catch(e){btn.disabled=false;return v145Say('v145IMsg','Could not save: '+(e.message||e),true);}
+  nwModalClose();nwToast('Following '+nwPlural(P.length,'connection')+'. The next run reads their posts.');
+  const h=document.querySelector('.v96-fol')&&document.querySelector('.v96-fol').parentNode;if(h)v96FollowRender(h);
+}
 /*@@v145end*/
 </script>
 <script>
