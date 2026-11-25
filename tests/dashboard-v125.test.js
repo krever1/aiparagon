@@ -40,6 +40,9 @@ const REASON = 'Ask about their compliance review date before any pricing questi
     await page.evaluate((e) => openE1Lead(e), email);
     await page.waitForFunction(() => document.querySelectorAll('#main section.block').length >= 5, null, { timeout: 15000 });
     await page.waitForTimeout(1200);
+    // v149: a lead's page opens on Client 360; these checks are about the documents, so go to the newest one's tab, as the page used to
+    await page.evaluate(() => { const t = [...document.querySelectorAll('#apChrome .rd-tab')].map((b) => b.dataset.tab).filter((k) => /^s\d$/.test(k)); const d = t.filter((k) => { const n = document.querySelector('#main [data-tp="' + k + '"] .ap-docc'); return !!n; }); apTab(d.length ? d[d.length - 1] : 's0'); });
+    await page.waitForTimeout(300);
   }
   // each document card: its step number, whether it has the button, and its count line
   const cards = (page) => page.$$eval('#main section.block', (secs) => secs.map((s) => {
