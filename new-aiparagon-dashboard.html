@@ -58142,6 +58142,200 @@ function v150Side(){
   }
 })();
 /*@@v150end*/
+</script>
+<style id="v151css">
+/* v151: the client workspace sends to Asana and Notion */
+.v151-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 4px;padding:10px 12px;border-radius:10px;background:var(--nw-sunk,#f5f3ee);font:500 13.5px/1.3 var(--nw-body,inherit)}
+.v151-bar b{font-weight:600}
+.v151-ck{display:flex;align-items:center;padding:0 4px 0 0;flex:none}
+.v151-ck input{width:18px;height:18px;margin:0;cursor:pointer}
+.v151-sent{display:inline-flex;align-items:center;font-size:12px;padding:1px 7px;border-radius:999px;background:#E8EEFB;color:#2B4C9B;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+#v151AsM .v143-as-row .v151-nm{min-width:0;font:inherit;padding:6px 8px;border:1px solid var(--rd-line,#E3E6EB);border-radius:8px}
+.v151-nt-note{margin-top:8px}
+</style>
+<script id="v151js">
+/* ===================================================================
+   v151: the client workspace sends files, transcripts and calls to Asana
+   or Notion (Erica's notes of Nov 25: uploads "linked to Asana or
+   Notion"). Select in the workspace's header picks items; the bar under it
+   sends them, as Tasks does (v143 Asana: the browser's token, or the team
+   proxy; v144 Notion: Dashboard · Notion Proxy, a databases shared with the
+   n8n connection). Each item becomes a task or an entry named for it and
+   the client, its description carrying the folder, the description and the
+   link (the file, the Google Doc, the recording). What went where is kept
+   on the item (catalyst_ws items[key].asana / .notion) and shows on its row.
+   =================================================================== */
+const V151={pick:false,sel:{}};
+function v151Client(){const l=(V145.ws.data||{}).lead||{};return l.company_name||l.prospect_name||l.email||'the client';}
+function v151All(){return v145WsItems().concat(v145WsCalls());}
+function v151Picked(){const S=V151.sel;return v151All().filter(function(i,n,a){return S[i.key]&&a.findIndex(function(x){return x.key===i.key;})===n;});}
+/* a link that opens the item: the file, the Google Doc, the recording */
+function v151Link(i){
+  if(i.kind==='call'&&i.id){const c=typeof apFtCall==='function'?apFtCall(i.id):null;return c&&typeof apFtLink==='function'?apFtLink(c):'';}
+  const f=(i.fm||[]).find(function(x){return x.u&&/^https?:\/\//i.test(x.u);});return f?f.u:'';
+}
+function v151Kind(i){return i.kind==='call'?'Call':i.kind==='transcript'?'Transcript':i.kind==='upload'?'File':'Document';}
+function v151Notes(i){
+  const c=v151Client(),fold=v145WsFolderName(i.folder),link=v151Link(i);
+  return [v151Kind(i)+' from '+c+'’s workspace'+(fold?' · '+fold:'')+(i.at?' · '+v145WsDay(i.at):''),
+    i.desc?'About it: '+i.desc:(i.sum?'Summary: '+i.sum:''),link?'Open it: '+link:''].filter(Boolean).join('\n');
+}
+function v151Title(i){const s=String(i.name||'').trim()+' · '+v151Client();return s.length>300?s.slice(0,299)+'…':s;}
+/* the header gets Select; the rows get a box while picking; the bar sends what is picked */
+(function(){
+  const _h=v145WsHtml;
+  v145WsHtml=function(){
+    let h=_h.apply(this,arguments);
+    const tg='<button type="button" class="nw-btn nw-btn-ghost nw-btn-sm v151-tg" aria-pressed="'+V151.pick+'" onclick="v151Toggle()">'+(V151.pick?'Done':'Select')+'</button>';
+    h=h.replace('<span class="nw-grow"></span>','<span class="nw-grow"></span>'+tg);
+    if(!V151.pick)return h;
+    const n=v151Picked().length;
+    const bar='<div class="v151-bar" role="group" aria-label="Send what is picked"><b>'+esc(n?nwPlural(n,'item')+' picked':'Pick items to send')+'</b>'+
+      '<button type="button" class="nw-btn nw-btn-ghost nw-btn-sm" onclick="v151Mark(true)">All shown</button><button type="button" class="nw-btn nw-btn-ghost nw-btn-sm" onclick="v151Mark(false)">None</button><span class="nw-grow"></span>'+
+      '<button type="button" class="nw-btn nw-btn-sm" onclick="v151Asana()"'+(n?'':' disabled')+'>Send to Asana</button>'+
+      '<button type="button" class="nw-btn nw-btn-sm" onclick="v151Notion()"'+(n?'':' disabled')+'>Send to Notion</button></div>';
+    return h.replace('<div class="v145-wsb">',bar+'<div class="v145-wsb">');
+  };
+  const _p=v145WsPaint;
+  v145WsPaint=function(){
+    const r=_p.apply(this,arguments);
+    try{v151Rows();}catch(e){}
+    return r;
+  };
+})();
+function v151Rows(){
+  const box=document.querySelector('#main .v145-ws');if(!box)return;
+  const meta=v145WsMine().items,all=v151All();
+  box.querySelectorAll('.v145-wr[data-k]').forEach(function(r){
+    const k=r.dataset.k,m=meta[k]||{},i=all.find(function(x){return x.key===k;})||{name:k};
+    const sub=r.querySelector('.v145-wsub');
+    if(sub&&!sub.querySelector('.v151-sent')){
+      if(m.asana&&m.asana.at)sub.insertAdjacentHTML('beforeend','<span class="v151-sent" title="'+esc('Sent to Asana on '+v145WsDay(m.asana.at))+'">In Asana · '+esc(m.asana.project_name||'')+'</span>');
+      if(m.notion&&m.notion.at)sub.insertAdjacentHTML('beforeend','<span class="v151-sent" title="'+esc('Sent to Notion on '+v145WsDay(m.notion.at))+'">In Notion · '+esc(m.notion.name||'')+'</span>');
+    }
+    if(V151.pick&&!r.querySelector('.v151-ck'))r.insertAdjacentHTML('afterbegin','<label class="v151-ck"><input type="checkbox" '+(V151.sel[k]?'checked':'')+' aria-label="'+esc('Pick '+i.name)+'" onchange="v151Sel('+esc(JSON.stringify(k))+',this.checked)"></label>');
+  });
+}
+function v151Toggle(){V151.pick=!V151.pick;if(!V151.pick)V151.sel={};v145WsPaint();}
+function v151Sel(k,on){if(on)V151.sel[k]=true;else delete V151.sel[k];v145WsPaint();}
+function v151Mark(on){
+  const W=V145.ws,shown=v145WsShown(W.view==='calls'?v145WsCalls():v145WsItems());
+  if(on)shown.forEach(function(i){V151.sel[i.key]=true;});else V151.sel={};
+  v145WsPaint();
+}
+async function v151Put(keys,field,rec){
+  try{await v145WsPut(function(m){keys.forEach(function(k){const x={};x[field]=rec;m.items[k]=Object.assign({},m.items[k]||{},x);});});}catch(e){console.warn('v151 mark',e&&e.message);}
+}
+
+/* ---------- Send to Asana ---------- */
+async function v151Asana(){
+  const items=v151Picked();if(!items.length)return;
+  apModal('v151AsM','<h3 class="ap-m89h">Send to Asana</h3><div id="v151AsB"><div class="loading">Loading your Asana projects…</div></div>',720);
+  let j;
+  try{j=await apXTimed(apAs('projects'),20000);if(j.ok===false){const e=new Error(j.message);e.code=j.code;throw e;}}
+  catch(e){const b=document.getElementById('v151AsB');if(b){b.innerHTML=apAsanaOffHtml(e)+'<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'v151AsM\')">Close</button></div>';v143AsInline(function(){v151Asana();});}return;}
+  const b=document.getElementById('v151AsB');if(!b)return;
+  const ps=apCxArr(j.projects);
+  if(!ps.length&&j.via!=='token'&&!aRead('pat')){b.innerHTML=apAsanaOffHtml({code:'off'})+'<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'v151AsM\')">Close</button></div>';v143AsInline(function(){v151Asana();});return;}
+  if(!ps.length){b.innerHTML='<p class="help">No projects in '+esc((j.workspace||{}).name||'your Asana workspace')+' yet. Make one in Asana, then try again.</p>';return;}
+  const users=j.via==='token'?await v143AsUsers():[],last=apCxLs('asana_project');
+  b.innerHTML='<p class="help">Each picked item becomes an Asana task in the project you pick, with its link in the description.</p>'+
+    '<div class="v143-as-top"><label class="f"><span>Project</span><select data-nofill="1" id="v151AsP">'+ps.map(function(p){return '<option value="'+esc(p.gid)+'"'+(p.gid===last?' selected':'')+'>'+esc(p.name)+'</option>';}).join('')+'</select></label>'+
+    '<label class="f"><span>Assignee <small>(optional)</small></span><select data-nofill="1" id="v151AsU"'+(users.length?'':' disabled')+'><option value="">Unassigned</option>'+users.map(function(u){return '<option value="'+esc(u.gid)+'"'+(u.gid===apCxLs('asana_user')?' selected':'')+'>'+esc(u.name)+'</option>';}).join('')+'</select></label></div>'+
+    '<div class="v143-as-list">'+items.map(function(i){
+      return '<div class="v143-as-row" data-k="'+esc(i.key)+'"><input type="checkbox" checked aria-label="'+esc('Send '+i.name)+'"><input class="v151-nm" type="text" maxlength="300" aria-label="'+esc('Task name for '+i.name)+'" value="'+esc(v151Title(i))+'">'+
+        '<input type="date" aria-label="'+esc('Due date for '+i.name)+'">'+
+        '<textarea aria-label="'+esc('Description for '+i.name)+'">'+esc(v151Notes(i))+'</textarea></div>';}).join('')+'</div>'+
+    '<div class="ap-cf-err" id="v151AsErr"></div>'+
+    '<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'v151AsM\')">Cancel</button><button class="rd-btn pri" id="v151AsGo" onclick="v151AsanaSend(this)">Send to Asana</button></div>';
+}
+async function v151AsanaSend(btn){
+  const sel=document.getElementById('v151AsP'),us=document.getElementById('v151AsU'),err=document.getElementById('v151AsErr');err.classList.remove('on');
+  const rows=[].slice.call(document.querySelectorAll('#v151AsM .v143-as-row')).filter(function(r){return r.querySelector('input[type=checkbox]').checked;});
+  const tasks=rows.map(function(r){return {key:r.dataset.k,text:r.querySelector('.v151-nm').value.trim(),due:r.querySelector('input[type=date]').value||'',notes:r.querySelector('textarea').value.trim()};}).filter(function(t){return t.text;});
+  if(!tasks.length){err.textContent='Tick at least one item, with a name.';err.classList.add('on');return;}
+  const assignee=us&&!us.disabled?us.value:'';
+  btn.disabled=true;btn.textContent='Sending…';
+  try{
+    let j;
+    if(aRead('pat')){
+      const made=[];let failed=0;
+      for(const t of tasks){
+        try{const r=await asana('/tasks?opt_fields=name,permalink_url','POST',Object.assign({name:t.text,notes:t.notes,projects:[sel.value]},t.due?{due_on:t.due}:{},assignee?{assignee:assignee}:{}));made.push({key:t.key,gid:r.gid,name:r.name||t.text,url:r.permalink_url||''});}
+        catch(e){if(e.auth)throw Object.assign(new Error('Asana didn’t accept the saved token.'),{code:'not_connected'});failed++;}
+      }
+      if(typeof aClearCache==='function')aClearCache();
+      j=made.length?{ok:true,created:made,failed:failed}:{ok:false,message:'Asana did not take them.'};
+    }else{
+      j=await apAs('create',{project:sel.value,tasks:tasks.map(function(t){return {id:t.key,text:t.text,due:t.due,notes:t.notes};})});
+      if(j.ok)j.created=apCxArr(j.created).map(function(c,n){return Object.assign({key:(tasks[n]||{}).key},c);});
+    }
+    if(!j.ok){const e=new Error(j.message||'Asana did not take them.');e.code=j.code;throw e;}
+    apCxLs('asana_project',sel.value);if(assignee)apCxLs('asana_user',assignee);
+    const made=apCxArr(j.created),pn=sel.options[sel.selectedIndex].text,at=new Date().toISOString();
+    await v151Put(made.map(function(c){return c.key;}).filter(Boolean),'asana',{at:at,by:apCfMe(),project:sel.value,project_name:pn,url:'https://app.asana.com/0/'+sel.value+'/list'});
+    apModalClose('v151AsM');V151.sel={};V151.pick=false;v145WsPaint();
+    nwToast(nwPlural(made.length,'item')+' sent to '+pn+(j.failed?'. '+j.failed+' did not go through.':'.'));
+  }catch(e){
+    if(e.code==='off'||e.code==='not_connected'){err.innerHTML=apAsanaOffHtml(e);v143AsInline(function(){v151Asana();});}
+    else err.textContent=e.message;
+    err.classList.add('on');btn.disabled=false;btn.textContent='Send to Asana';
+  }
+}
+
+/* ---------- Send to Notion ---------- */
+async function v151Notion(){
+  const items=v151Picked();if(!items.length)return;
+  apModal('v151NtM','<h3 class="ap-m89h">Send to Notion</h3><div id="v151NtB"><div class="loading">Reading your Notion databases…</div></div>',700);
+  let dbs;
+  try{await v144NtLoad();dbs=(await apNt('databases')).filter(function(d){return d.object==='database'||!d.object;});V144.nt.dbs=dbs;}
+  catch(e){const b=document.getElementById('v151NtB');if(b)b.innerHTML='<p class="help">'+esc(/switched off|404/i.test(e.message||'')?'The Notion connection is switched off in n8n.':'Notion could not be read: '+(e.message||'no answer')+'.')+'</p><div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'v151NtM\')">Close</button></div>';return;}
+  const b=document.getElementById('v151NtB');if(!b)return;
+  if(!dbs.length){b.innerHTML='<p class="help">Notion shares no databases with the dashboard yet.</p>'+v144NtShareHelp()+
+    '<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'v151NtM\')">Close</button><button class="rd-btn pri" onclick="v151Notion()">Check again</button></div>';return;}
+  const sorted=dbs.slice().sort(function(a,c){return apNtTitle(a).localeCompare(apNtTitle(c));});
+  const def=sorted.some(function(d){return d.id===V144.nt.pick;})?V144.nt.pick:(sorted.find(function(d){return /task/i.test(apNtTitle(d));})||{}).id||'';
+  b.innerHTML='<p class="help">Each picked item becomes an entry in the database you pick, named for it and '+esc(v151Client())+'.</p>'+
+    '<label class="f"><span>Database</span><select data-nofill="1" id="v151NtDb">'+(def?'':'<option value="">Pick a database…</option>')+
+      sorted.map(function(d){return '<option value="'+esc(d.id)+'"'+(d.id===def?' selected':'')+'>'+esc(apNtTitle(d))+'</option>';}).join('')+'</select></label>'+
+    '<details class="v144-nt-miss"><summary>Database not in the list?</summary>'+v144NtShareHelp()+'</details>'+
+    '<div class="v143-as-list">'+items.map(function(i){
+      return '<label class="v144-nt-row" data-k="'+esc(i.key)+'"><input type="checkbox" checked><span>'+esc(v151Title(i))+' <small>· '+esc(v151Kind(i))+'</small></span></label>';}).join('')+'</div>'+
+    '<label class="v144-nt-row v144-nt-fu"><input type="checkbox" id="v151NtFu"><span>Add a follow-up entry: “Follow-up: '+esc(v151Client())+'”</span></label>'+
+    '<p class="help v151-nt-note">Notion gets the names only, as Tasks sends them. The links stay on the dashboard.</p>'+
+    '<div class="ap-cf-err" id="v151NtErr"></div>'+
+    '<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'v151NtM\')">Cancel</button><button class="rd-btn pri" id="v151NtGo" onclick="v151NotionSend(this)">Send to Notion</button></div>';
+}
+async function v151NotionSend(btn){
+  const err=document.getElementById('v151NtErr'),db=(document.getElementById('v151NtDb')||{}).value||'';err.classList.remove('on');
+  const say=function(m){err.textContent=m;err.classList.add('on');};
+  if(!db)return say('Pick a database first.');
+  const all=v151All();
+  const rows=[].slice.call(document.querySelectorAll('#v151NtM .v144-nt-row[data-k]')).filter(function(r){return r.querySelector('input').checked;});
+  const picked=rows.map(function(r){return all.find(function(i){return i.key===r.dataset.k;});}).filter(Boolean);
+  const fu=!!(document.getElementById('v151NtFu')||{}).checked;
+  if(!picked.length&&!fu)return say('Tick at least one item, or the follow-up.');
+  const list=picked.map(function(i){return {key:i.key,title:v151Title(i)};});
+  if(fu)list.push({key:'',title:'Follow-up: '+v151Client()});
+  const name=apNtTitle((V144.nt.dbs||[]).find(function(d){return d.id===db;})||{object:'database'});
+  btn.disabled=true;const done=[];
+  for(const t of list){
+    btn.textContent='Sending '+(done.length+1)+' of '+list.length+'…';
+    try{const r=await apNt('add',{id:db,title:t.title});if(!r.length)throw new Error('Notion did not add it.');done.push(t);}
+    catch(e){
+      btn.disabled=false;btn.textContent='Send the rest';
+      await v151Put(done.map(function(x){return x.key;}).filter(Boolean),'notion',{at:new Date().toISOString(),by:apCfMe(),db:db,name:name});
+      rows.forEach(function(r){if(done.some(function(x){return x.key===r.dataset.k;}))r.querySelector('input').checked=false;});
+      if(done.some(function(x){return !x.key;})){const f=document.getElementById('v151NtFu');if(f)f.checked=false;}
+      return say((done.length?done.length+' sent, then ':'')+'Notion stopped: '+(e.message||'no answer')+(done.length?' Send the rest picks up from there.':''));
+    }
+  }
+  await v151Put(done.map(function(x){return x.key;}).filter(Boolean),'notion',{at:new Date().toISOString(),by:apCfMe(),db:db,name:name});
+  try{await v96Set('notion_tasks_db',{id:db,name:name,by:apCfMe(),at:new Date().toISOString()});V144.nt.pick=db;}catch(e){}
+  apModalClose('v151NtM');V151.sel={};V151.pick=false;v145WsPaint();
+  nwToast(nwPlural(done.length,'entry','entries')+' sent to Notion · '+name);
+}
+/*@@v151end*/
 
 </script>
 <script>
