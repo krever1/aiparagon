@@ -56230,7 +56230,7 @@ function v145Base(k){return V145_BASE.find(function(s){return s.key===k;})||null
 function v145Types(all){
   const M=V145.mt||{},items=M.items||{},names=V136.names||{};
   const base=V145_BASE.map(function(s){const o=items[s.key]||{},tpl=(typeof V137_TPL!=='undefined'&&V137_TPL[s.key])||{};
-    return {key:s.key,custom:false,name:v145Txt(o.name,60)||v145Txt((names[s.key]||{}).name,60)||s.name,doc:s.doc,desc:v145Txt(o.desc)||s.role,
+    return {key:s.key,custom:false,name:v145Txt((names[s.key]||{}).name,60)||s.name,doc:s.doc   /* v146: its stage's name, always */,desc:v145Txt(o.desc)||s.role,
       sections:tpl.secs||[],kb:v145Txt(o.kb,4000),kbFiles:Array.isArray(o.kbFiles)?o.kbFiles.slice(0,6):[],hidden:!!o.hidden,agent:s.agent};});
   const own=(M.order||Object.keys(items)).filter(function(k){return /^mt-/.test(k)&&items[k]&&!items[k].deleted;}).map(function(k){const o=items[k];
     return {key:k,custom:true,name:v145Txt(o.name,60)||'Meeting',doc:v145Txt(o.doc,60)||'Meeting prep',desc:v145Txt(o.desc),
@@ -56239,7 +56239,7 @@ function v145Types(all){
 }
 function v145Type(k){return v145Types(true).find(function(t){return t.key===k;})||null;}
 function v145StageRecs(withRemoved){
-  const C=V145.cs||{},items=C.items||{},removed=C.removed||[],names=V136.names||{};
+  const C=V145.cs||{},items=C.items||{},removed=(C.removed||[]).filter(function(k){return k!=='research';}),names=V136.names||{};   /* v146: the first stage is always kept */
   const known=V145_BASE.map(function(s){return s.key;}).concat(Object.keys(items).filter(function(k){return /^cs-/.test(k)&&items[k]&&!items[k].deleted;}));
   let order=(Array.isArray(C.order)?C.order:[]).filter(function(k){return known.indexOf(k)>=0;});
   known.forEach(function(k){if(order.indexOf(k)<0)order.push(k);});
@@ -56339,6 +56339,7 @@ function v120BoardHtml(){
 function v145StagesEdit(){
   v136LoadNames(true).then(function(){
     const R=v145StageRecs(true),T=v145Types(false).filter(function(t){return t.custom;});
+    V145.sEdit=R.filter(function(r){return !r.removed;}).map(function(r){return r.key+'='+r.name;}).join('|');   /* v146: what the dialog opened with */
     const row=function(r){
       return '<div class="v145-sr'+(r.removed?' is-off':'')+'" data-k="'+esc(r.key)+'"><i style="background:'+r.c+'"></i>'+
         '<input class="nw-input" aria-label="'+esc('Stage name: '+r.name)+'" value="'+esc(r.name)+'" maxlength="60"'+(r.removed?' disabled':'')+'>'+
@@ -56346,7 +56347,8 @@ function v145StagesEdit(){
         (r.removed?'<button type="button" class="nw-btn nw-btn-ghost nw-btn-sm" onclick="v145StageBack(\''+esc(r.key)+'\')">Bring back</button>'
           :'<button type="button" class="nw-icon-btn" aria-label="'+esc('Move '+r.name+' up')+'" onclick="v145StageMove(this,-1)">↑</button>'+
            '<button type="button" class="nw-icon-btn" aria-label="'+esc('Move '+r.name+' down')+'" onclick="v145StageMove(this,1)">↓</button>'+
-           '<button type="button" class="nw-icon-btn v145-del" aria-label="'+esc('Delete '+r.name)+'" onclick="v145StageDelAsk(\''+esc(r.key)+'\')">✕</button>')+'</div>';};
+           (r.key==='research'?'<span class="v146-keep" title="New leads start here, so it stays. Rename it if you like.">Always kept</span>'   /* v146 */
+             :'<button type="button" class="nw-icon-btn v145-del" aria-label="'+esc('Delete '+r.name)+'" onclick="v145StageDelAsk(\''+esc(r.key)+'\')">✕</button>'))+'</div>';};
     nwModal('v145S','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · Lead pipeline</div><h2>Client stages</h2></div>'+
         '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
       '<div class="nw-m-body v145-m"><p class="nw-muted nw-small">The board’s columns, for the whole team, in this order. Click a stage’s name on the board to set up what it needs and what it runs.</p>'+
@@ -56399,7 +56401,8 @@ async function v145StagesSave(){
 }
 /* a stage with leads in it asks where they go first */
 function v145StageDelAsk(k){
-  const r=v145Rec(k);if(!r)return;
+  const r=v145Rec(k);if(!r||k==='research')return;
+  if(v146StagesDirty())return v145Say('v145Msg','Save your changes first, then delete a stage.',true);   /* v146: or the dialog's edits are lost */
   const leads=(v120Rows()||[]).filter(function(l){return v136StageOf(l)===k;}),others=v145StageRecs(false).filter(function(x){return x.key!==k;});
   if(!others.length)return v145Say('v145Msg','Keep at least one stage.',true);
   nwModal('v145D','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · Client stages</div><h2>'+esc('Delete '+r.name+'?')+'</h2></div>'+
@@ -56427,7 +56430,12 @@ async function v145StageDel(k){
   nwToast('Stage deleted.');v145Repaint();setTimeout(v145StagesEdit,300);
 }
 async function v145StageBack(k){
-  try{await v145Put('catalyst_client_stages',function(cur){cur.removed=(cur.removed||[]).filter(function(x){return x!==k;});cur.order=(cur.order||[]).filter(function(x){return x!==k;}).concat([k]);return cur;});}
+  if(v146StagesDirty())return v145Say('v145Msg','Save your changes first, then bring a stage back.',true);   /* v146 */
+  try{await v145Put('catalyst_client_stages',function(cur){cur.removed=(cur.removed||[]).filter(function(x){return x!==k;});
+    /* v146: back in its usual place, before the next built-in stage that is still there */
+    const o=(cur.order&&cur.order.length?cur.order:v145StageRecs(false).map(function(r){return r.key;})).filter(function(x){return x!==k;});
+    const bi=V145_BASE.findIndex(function(s){return s.key===k;}),nx=V145_BASE.slice(bi+1).map(function(s){return s.key;}).find(function(x){return o.indexOf(x)>=0;});
+    if(nx)o.splice(o.indexOf(nx),0,k);else o.push(k);cur.order=o;return cur;});}
   catch(e){return v145Say('v145Msg','Could not bring it back: '+(e.message||e),true);}
   v145Repaint();setTimeout(v145StagesEdit,300);
 }
@@ -56545,8 +56553,10 @@ async function v145TypeSave(k){
   const custom=!k||/^mt-/.test(k);
   if(custom&&!doc)return v145Say('v145TMsg','Say what it writes, e.g. '+name+' brief.',true);
   if(v145Types(true).some(function(t){return t.key!==k&&t.name.toLowerCase()===name.toLowerCase();}))return v145Say('v145TMsg','There is already a meeting type called '+name+'.',true);
+  if(!custom&&v145StageRecs(true).some(function(r){return r.key!==k&&r.name.toLowerCase()===name.toLowerCase();}))return v145Say('v145TMsg','There is already a client stage called '+name+'. Renaming this meeting renames its stage too.',true);   /* v146 */
   const key=k||v145Id('mt'),by=apCfMe(),at=new Date().toISOString();
-  const rec={name:name,desc:v('v145TDesc'),kb:v('v145TKb',4000),kbFiles:[...document.querySelectorAll('#v145T .v145-kbf input:checked')].map(function(x){return x.value;}).slice(0,6),by:by,at:at};
+  const shown=[...document.querySelectorAll('#v145T .v145-kbf input')].map(function(x){return x.value;}),was=k?((v145Type(k)||{}).kbFiles||[]).map(String):[];   /* v146: files not on the list stay */
+  const rec={name:name,desc:v('v145TDesc'),kb:v('v145TKb',4000),kbFiles:was.filter(function(x){return shown.indexOf(x)<0;}).concat([...document.querySelectorAll('#v145T .v145-kbf input:checked')].map(function(x){return x.value;})).slice(0,6),by:by,at:at};
   if(custom){rec.doc=doc;rec.sections=v145Lines(v('v145TSecs',3000));}
   const btn=document.getElementById('v145TGo');btn.disabled=true;v145Say('v145TMsg','Saving…');
   try{
@@ -56722,9 +56732,9 @@ function v145WsItems(){
   (D.files||[]).forEach(function(f){
     const k='f:'+f.id,m=meta[k]||{},tr=f.category==='transcript';
     list.push({key:k,kind:tr?'transcript':'upload',id:f.id,path:f.file_path||'',name:m.name||f.file_name,fm:[{l:tr?'Transcript':v145Ext(f.file_name),u:f.file_url}],
-      folder:m.folder!=null?m.folder:(v145StageOfAgent(f.stage)||''),at:f.created_at||'',by:f.uploaded_by||'',desc:m.desc!=null?m.desc:(f.note||''),star:!!m.star,source:m.source!==false,indexed:!!f.indexed_at,hs:f.source==='hubspot'||/^hubspot\//.test(f.file_path||'')});
+      folder:m.folder!=null?m.folder:(v145StageOfAgent(f.stage)||''),at:f.created_at||'',by:f.uploaded_by||'',desc:m.desc!=null?m.desc:(f.note||''),star:!!m.star,source:m.source===true||(m.source!==false&&tr),   /* v146: as the runs read it */indexed:!!f.indexed_at,hs:f.source==='hubspot'||/^hubspot\//.test(f.file_path||'')});
   });
-  return list;
+  return v146Folded(list);   /* v146 */
 }
 function v145WsCalls(){
   const D=V145.ws.data||{},lead=D.lead||{},meta=v145WsMine().items;let calls=[];
@@ -56732,10 +56742,13 @@ function v145WsCalls(){
   const out=calls.map(function(x){const k='c:'+x.id,m=meta[k]||{},c=x.c||{};
     const g=(typeof apCmGuests==='function'?apCmGuests(c):[]).map(function(p){return p.name||p.email;}).slice(0,3).join(' + ');
     const sum=(apCo(x.id)||{}).summary;
-    return {key:k,id:x.id,kind:'call',name:apCm(x.id)&&apCm(x.id).title||x.title||'Call',at:x.start,mins:typeof apFtMins==='function'?apFtMins(c):0,who:g,src:'Fathom',
-      sum:Array.isArray(sum)?sum[0]:(sum||''),folder:x.stage&&x.stage!=='none'&&v136Key(x.stage)?x.stage:(m.folder||''),star:!!m.star,filed:!!x.stage};});
+    const filed=x.stage&&x.stage!=='none'&&v136Key(x.stage)?x.stage:'';
+    return {key:k,id:x.id,kind:'call',name:m.name||apCm(x.id)&&apCm(x.id).title||x.title||'Call',at:x.start,mins:typeof apFtMins==='function'?apFtMins(c):0,who:g,src:'Fathom',
+      sum:Array.isArray(sum)?sum[0]:(sum||''),desc:m.desc||'',star:!!m.star,filed:!!x.stage,
+      /* v146: a workspace move counts while the call is still filed where it was then; filed elsewhere since, the filing wins */
+      folder:m.folder!=null&&(m.stage||'')===(x.stage||'')?m.folder:(filed||m.folder||'')};});
   v145WsItems().filter(function(i){return i.kind==='transcript';}).forEach(function(i){out.push(Object.assign({},i,{src:'Uploaded'}));});
-  return out.sort(function(a,b){return String(b.at).localeCompare(String(a.at));});
+  return v146Folded(out).sort(function(a,b){return String(b.at).localeCompare(String(a.at));});
 }
 function v145WsShown(list){
   const W=V145.ws,q=W.q.trim().toLowerCase();
@@ -56809,7 +56822,8 @@ async function v145WsMove(key,folder){
   const c=/^c:/.test(key)?v145WsCalls().find(function(i){return i.key===key;}):null;
   try{
     if(c&&c.id&&v136Key(folder)){await v137File(c.id,v145WsEmail(),folder);}
-    await v145WsPut(function(m){m.items[key]=Object.assign({},m.items[key]||{},{folder:folder});});
+    const was=c?((apCm(c.id)||{}).lead_stage||''):null;   /* v146: where the call is filed now */
+    await v145WsPut(function(m){m.items[key]=Object.assign({},m.items[key]||{},{folder:folder},was!=null?{stage:was}:{});});
     nwToast(folder?'Moved to '+v145WsFolderName(folder)+'.':'Moved to To organize.');
   }catch(e){nwToast('Could not move it: '+(e.message||e));}
   v145WsPaint();
@@ -56849,7 +56863,8 @@ async function v145WsEditGo(key){
   const c=/^c:/.test(key)?v145WsCalls().find(function(i){return i.key===key;}):null;
   try{
     if(c&&c.id&&v136Key(f))await v137File(c.id,v145WsEmail(),f);
-    await v145WsPut(function(m){m.items[key]=Object.assign({},m.items[key]||{},{name:n,folder:f,desc:d},s?{source:!!s.checked}:{});});
+    const was=c?((apCm(c.id)||{}).lead_stage||''):null;   /* v146 */
+    await v145WsPut(function(m){m.items[key]=Object.assign({},m.items[key]||{},{name:n,folder:f,desc:d},s?{source:!!s.checked}:{},was!=null?{stage:was}:{});});
   }catch(e){return v145Say('v145WEMsg','Could not save: '+(e.message||e),true);}
   nwModalClose();v145WsPaint();nwToast('Saved.');
 }
@@ -56857,9 +56872,17 @@ async function v145WsDel(key){
   const i=v145WsItems().find(function(x){return x.key===key;});if(!i||!i.id)return;
   if(!window.confirm('Delete '+i.name+'? The file is removed for the whole team.'))return;
   nwModalClose();
-  const btn=document.createElement('button');
+  /* v146: the file first; its workspace entry goes only once the file is gone */
+  try{
+    const res=await fetch(SUPABASE_URL+'/rest/v1/lead_files?id=eq.'+encodeURIComponent(i.id),{method:'DELETE',headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+SUPABASE_ANON_KEY,Prefer:'return=representation'}});
+    if(!res.ok)throw new Error('Supabase turned the delete away ('+res.status+').');
+    const gone=await res.json().catch(function(){return null;});
+    if(Array.isArray(gone)&&!gone.length)throw new Error('Supabase kept the file (no delete rule for this account).');
+  }catch(e){return nwToast('Could not delete '+i.name+': '+(e.message||e));}
+  if(i.path)fetch(SUPABASE_URL+'/storage/v1/object/lead-files/'+i.path,{method:'DELETE',headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+SUPABASE_ANON_KEY}}).catch(function(){});
   try{await v145WsPut(function(m){delete m.items[key];});}catch(e){}
-  await e1DeleteFile(i.id,i.path,btn);
+  try{Object.keys(cache).forEach(function(k){if(k.indexOf('lead_files')===0)delete cache[k];});}catch(e){}
+  nwToast(i.name+' deleted.');renderE1Lead();
 }
 /* Upload file: a file, or a transcript pasted in; a name, a folder, a description, and whether runs read it */
 function v145WsUpload(){
@@ -56891,7 +56914,7 @@ async function v145WsUploadGo(btn){
   if(!name)return say('Give it a name.',true);
   if(file&&file.size>25*1024*1024)return say('Keep uploads under 25 MB.',true);
   if(text)file=new Blob([pasted],{type:'text/plain'});
-  const email=v145WsEmail(),fname=text?(name.replace(/[^\w.\- ]+/g,'').trim()||'transcript')+'.txt':file.name;
+  const email=String(((V145.ws.data||{}).lead||{}).email||v145WsEmail()),fname=text?   /* v146: the lead's email as it is stored */(name.replace(/[^\w.\- ]+/g,'').trim()||'transcript')+'.txt':file.name;
   const path=email+'/'+Date.now()+'-'+fname.replace(/[^\w.\-]+/g,'_');
   btn.disabled=true;say('Uploading…');
   try{
@@ -56930,7 +56953,7 @@ async function v145WsUploadGo(btn){
 })();
 /* what a stage run reads: the workspace's sources, after the CRM record and the emails */
 async function v145WsSources(l){
-  const em=v136Emails(l).map(function(e){return String(e||'').toLowerCase();}).filter(Boolean);if(!em.length)return [];
+  const em=[];v136Emails(l).forEach(function(e){e=String(e||'').trim();[e,e.toLowerCase()].forEach(function(x){if(x&&em.indexOf(x)<0)em.push(x);});});if(!em.length)return [];   /* v146: as stored and lowercase */
   let rows=[];try{rows=(await apSb('lead_files?select=id,file_name,file_text,category,created_at,lead_email&lead_email=in.('+em.map(function(e){return '"'+e+'"';}).join(',')+')&file_text=not.is.null&order=created_at.desc&limit=40'))||[];}catch(e){return [];}
   let meta={};try{meta=((await v145WsLoad(true))||{})[String(l.email||'').toLowerCase()]||{};}catch(e){}
   const items=meta.items||{};
@@ -56988,14 +57011,15 @@ async function v145Why(d){
     if(q)it=((await apSb('intel_items?select=competitor_id,source,ad_context_value,engagement_total,score,score_why,run_date,headline&'+q+'&order=created_at.desc&limit=1'))||[])[0]||{};
   }catch(e){}
   try{if(it.competitor_id)acc=((await apSb('competitors?select=name,relation,draft_replies&id=eq.'+encodeURIComponent(it.competitor_id)))||[])[0]||null;}catch(e){}
-  const followed=w.found?w.found==='followed':!!it.competitor_id;
+  try{if(!acc&&!w.found&&dr.competitor_name)acc=((await apSb('competitors?select=name,relation,draft_replies&name=eq.'+encodeURIComponent(dr.competitor_name)+'&limit=1'))||[])[0]||null;}catch(e){}   /* v146 */
+  const followed=w.found?w.found==='followed':!!(it.competitor_id||acc);
   const rel=w.relation||(acc?(acc.relation||'competitor'):'');
   const src=String(w.found&&w.found!=='followed'?w.found:it.source||'');
   const how=followed?'From an account you follow'+(rel?', '+(V145_REL_WORD[rel]||rel):''):(/linkedin/i.test(src)?'Found by a LinkedIn search for your topics':/web|tavily/i.test(src)?'Found by a web search for your topics':'Found by a search for your topics');
   const val=w.value||it.ad_context_value||'',eng=w.engagement!=null?w.engagement:it.engagement_total;
   const lines=[how];
   if(val)lines.push('Rated '+val+' value'+(val==='high'?': high-value posts always get a reply':''));
-  if(eng!=null)lines.push(Number(eng).toLocaleString()+' reactions, comments and shares'+(w.top||(!w.found&&val!=='high')?', among the run’s most engaged':''));
+  if(eng!=null)lines.push(Number(eng).toLocaleString()+' reactions, comments and shares'+(w.top?', among the run’s most engaged':''));   /* v146: only when the run said so */
   if(it.score_why)lines.push(String(it.score_why).slice(0,200));
   return '<b>Why this post</b><ul>'+lines.map(function(l){return '<li>'+esc(l)+'</li>';}).join('')+'</ul>'+
     '<small class="nw-muted">The Intel Tracker drafts a reply when it rates a post worth answering and the post is among the run’s 10 most engaged or rated high value.'+(followed&&acc?' Replies to '+esc(acc.name||'this account')+' can be turned off on Intel Tracker › Following.':'')+'</small>';
@@ -57056,8 +57080,8 @@ function v145Conns(text){
   return rows.slice(hi+1).map(function(r){
     const g=function(n){const i=ix(n);return i>=0?String(r[i]||'').trim():'';};
     const name=(g('first name')+' '+g('last name')).replace(/\s+/g,' ').trim(),url=g('url');
-    return {name:name,url:/^https:\/\/(www\.)?linkedin\.com\/in\//i.test(url)?url.replace(/\/+$/,''):'',company:g('company'),position:g('position'),on:g('connected on')};
-  }).filter(function(c){return c.name&&c.url;});
+    return {name:name,url:v146Li(url),company:g('company'),position:g('position'),on:g('connected on')};   /* v146: any shape of the link */
+  }).filter(function(c,i,a){return c.name&&c.url&&a.findIndex(function(x){return x.url.toLowerCase()===c.url.toLowerCase();})===i;});
 }
 V145.imp={list:[],q:''};
 function v145ImpOpen(){
@@ -57078,7 +57102,7 @@ async function v145ImpRead(inp){
   if(!L)return v145Say('v145IMsg','That is not LinkedIn’s Connections.csv: it has no First Name and URL columns.',true);
   if(!L.length)return v145Say('v145IMsg','No connections with a LinkedIn link in that file.',true);
   await v96FollowLoad(true);
-  const have={};(V96F.rows||[]).forEach(function(c){if(c.handle_linkedin)have[String(c.handle_linkedin).toLowerCase().replace(/\/+$/,'')]=1;have['n:'+String(c.name||'').toLowerCase()]=1;});
+  const have={};(V96F.rows||[]).forEach(function(c){if(c.handle_linkedin)have[(v146Li(c.handle_linkedin)||String(c.handle_linkedin).replace(/\/+$/,'')).toLowerCase()]=1;have['n:'+String(c.name||'').toLowerCase()]=1;});   /* v146 */
   V145.imp.list=L.map(function(c,i){return Object.assign(c,{i:i,had:!!(have[c.url.toLowerCase()]||have['n:'+c.name.toLowerCase()]),pick:false,rep:true});});
   v145Say('v145IMsg',nwPlural(L.length,'connection')+' read.'+(L.some(function(c){return c.had;})?' Those you follow already are marked.':''));
   v145ImpPaint();
@@ -57108,6 +57132,39 @@ async function v145ImpGo(btn){
   const h=document.querySelector('.v96-fol')&&document.querySelector('.v96-fol').parentNode;if(h)v96FollowRender(h);
 }
 /*@@v145end*/
+</script>
+<style id="v146css">
+/* v146: QA fixes after v145. A long name wraps inside its window instead of widening it; the first stage's note */
+.nw-modal[id^="v145"]{grid-template-columns:minmax(0,1fr)}
+.nw-modal[id^="v145"] h2,.v145-wm b,.v145-stg p{overflow-wrap:anywhere}
+.nw-modal[id^="v145"] .nw-input,.nw-modal[id^="v145"] select{min-width:0;max-width:100%}
+.v146-keep{font-size:12px;color:var(--muted,#6b7280);white-space:nowrap;padding:0 6px}
+</style>
+<script id="v146js">
+/* v146: QA fixes after v145 */
+/* a LinkedIn profile link in any shape (http, a country subdomain, no www, a trailing slash or query) as one address */
+function v146Li(u){
+  const m=String(u||'').trim().match(/^(?:https?:\/\/)?(?:[a-z]{2,3}\.)?(?:www\.)?linkedin\.com\/in\/([^\/?#\s]+)/i);
+  return m?'https://www.linkedin.com/in/'+m[1]:'';
+}
+/* an item whose folder is gone (a stage removed, a folder deleted) is To organize */
+function v146Folded(list){
+  let ids={};try{v145WsFolders().forEach(function(f){ids[f.id]=1;});}catch(e){return list;}
+  list.forEach(function(i){if(i.folder&&!ids[i.folder])i.folder='';});
+  return list;
+}
+/* the Edit stages dialog has changes not saved yet */
+function v146StagesDirty(){
+  const rows=[...document.querySelectorAll('#v145Sl .v145-sr')];if(!rows.length)return false;
+  if(rows.some(function(r){return r.classList.contains('is-new');}))return true;
+  return rows.map(function(r){return r.dataset.k+'='+v145Name(r.querySelector('input').value);}).join('|')!==(V145.sEdit||'');
+}
+/* a lead whose stage is not on the board (a stage removed or deleted) sits in the first stage */
+(function(){
+  const _s=v136StageOf;
+  v136StageOf=function(l){const k=_s.apply(this,arguments);return V136_STAGES.some(function(s){return s.key===k;})?k:((V136_STAGES[0]||{}).key||'research');};
+})();
+/*@@v146end*/
 </script>
 <script>
 /* ===================================================================

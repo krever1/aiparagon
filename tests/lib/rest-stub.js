@@ -84,6 +84,8 @@ function makeStore(tables) {
       return { status: 200, body: rows };
     }
     if (method === 'DELETE') {
+      // a locked table keeps its rows, as Supabase does when no delete rule lets the caller remove them
+      if (db.__lock && db.__lock[q.table]) { writes.push({ method, table: q.table, filters: q.filters, refused: true }); return { status: 200, body: [] }; }
       const rows = select(Object.assign({}, q, { order: null, limit: null }));
       db[q.table] = (db[q.table] || []).filter((r) => !rows.includes(r));
       writes.push({ method, table: q.table, filters: q.filters, n: rows.length });
