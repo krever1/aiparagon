@@ -64,7 +64,7 @@ function check(label, ok, detail) {
       ['Rules, on every scheduled and custom run', 'live'], ['Rules, sent with each question', 'live'],
       ['Rules, on every run. Each meeting stage also follows its template from Templates and reads what its setup there says: the call transcripts, the emails in HubSpot, the CRM record, your discovery call questions. The proposal, onboarding and client review prep draw charts from the documents’ own numbers when their setup says so', 'live'],   /* v138 */
       ['Rules, your past documents from Templates, what the Proposal stage reads (the call transcripts and emails, and the CRM record when it is on), the lead\'s documents with the consultation guide, and charts when the stage draws them', 'live'],   /* v138 */
-      ['Not the rules yet. They follow the company profile and the reasons ads and pages were denied', 'no'], ['Not the rules yet. It follows the company profile and the reasons ads and pages were denied', 'no'], ['Not yet', 'no']]), JSON.stringify(r.map((x) => [x.says, x.dot])));
+      ['Rules for Everything and the Pipeline agents, the company profile, and the reasons ads, pages and funnels were turned down, in each request’s setup line', 'live'], ['Rules for Everything and the Pipeline agents, the company profile, and the reasons ads, pages and funnels were turned down, in each request’s funnel note', 'live'], ['Not yet', 'no']]), JSON.stringify(r.map((x) => [x.says, x.dot])));
     if (width === 390) check('the card fits a phone', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), String(await page.evaluate(() => document.documentElement.scrollWidth)));
     await ctx.close();
   }
