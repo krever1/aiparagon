@@ -57166,6 +57166,192 @@ function v146StagesDirty(){
 })();
 /*@@v146end*/
 </script>
+<style id="v147css">
+/* v147: Marketing Generation's Start from: your own content */
+.v147 .nw-seg{margin-top:4px}
+.v147-box:not([hidden]){display:grid;gap:4px;margin-top:10px}
+.v147-box .nw-field{margin:0}
+.v147-ck{display:flex;flex-wrap:wrap;gap:6px 18px}
+.v147-ck label{display:inline-flex;align-items:center;gap:6px;font-size:14px}
+.v147-posts{border:0;padding:0;margin:0;min-width:0}
+.v147-note{margin:2px 0 0}
+</style>
+<script id="v147js">
+/* v147: Marketing Generation's own-content path (Engine 3, User 2): a campaign built from the team's own published
+   content and the organic brief, with no ads brief, and a set of posts from the same content, in one Generate.
+   The campaign goes to the Low-Ticket Agent or the Funnel Builder as before, with own_content and organic_brief in
+   place of the ads brief (their prompts read them in place of it); each post is a content request to Content from
+   Source, which also reads the organic brief. */
+const V147={on:false,src:'',title:'',type:'article',text:'',take:'',posts:{thought_leadership:true,newsletter:false,email:false},lib:null,libErr:'',loading:null,sending:null,last:null};
+const V147_POSTS=[['thought_leadership','LinkedIn post'],['newsletter','Newsletter'],['email','Email']];
+const V147_SENT='own_content';   /* stands in for the ads brief while the campaign request is built; never sent */
+/* what the team has already given the engine: library pieces and earlier material, newest first, once by title */
+async function v147LibLoad(force){
+  if(V147.lib&&!force)return V147.lib;
+  if(V147.loading)return V147.loading;
+  V147.loading=(async function(){
+    const out=[],seen={};let err='';
+    try{(await apSb('content_pieces?select=id,title,format,body,archived,created_at&order=created_at.desc&limit=80')||[]).forEach(function(p){
+      const t=String(p.body||'').trim();if(p.archived===true||t.length<200)return;const k=String(p.title||'').trim().toLowerCase();if(k&&seen[k])return;if(k)seen[k]=1;
+      out.push({key:'p:'+p.id,title:p.title||'Untitled piece',type:'other',text:t,take:'',at:p.created_at,from:'Library'});});}catch(e){err='the library';}
+    try{(await apSb('content_requests?select=id,title,source_type,source_text,takeaway,created_at&start_mode=eq.source&order=created_at.desc&limit=60')||[]).forEach(function(r){
+      const t=String(r.source_text||'').trim();if(r.source_type==='brief'||t.length<200)return;const k=String(r.title||'').trim().toLowerCase();if(k&&seen[k])return;if(k)seen[k]=1;
+      out.push({key:'r:'+r.id,title:r.title||'Untitled',type:r.source_type||'article',text:t,take:r.takeaway||'',at:r.created_at,from:AP_CF_SRC[r.source_type]||'Content'});});}catch(e){err=err?err+' and earlier material':'earlier material';}
+    V147.lib=out;V147.libErr=err;V147.loading=null;return out;
+  })();
+  return V147.loading;
+}
+function v147Item(){return V147.src&&V147.src!=='paste'?(V147.lib||[]).find(function(x){return x.key===V147.src;})||null:null;}
+/* the material the run sends: a picked piece, or what was pasted */
+function v147Material(){
+  if(V147.src==='paste'){
+    const t=String(V147.text||'').trim();
+    if(t.length<300)return {ok:false,msg:'Paste your content first: a few paragraphs at least.'};
+    return {ok:true,title:v97Clip(String(V147.title||'').trim()||t.split(/[.\n]/)[0],120),type:V147.type||'article',text:t,take:String(V147.take||'').trim()};
+  }
+  const it=v147Item();
+  if(!it)return {ok:false,msg:'Pick the content to start from, or paste it.'};
+  return {ok:true,title:it.title,type:it.type,text:it.text,take:String(V147.take||'').trim()||it.take||''};
+}
+/* the organic brief's five things (approved first, else the newest), for what buyers care about now */
+function v147Organic(){
+  try{
+    const C=nwCF()||{intel:[]},ib=v97Pick(C.intel).use;if(!ib)return null;
+    const S=e9SnapItems('org',ib.run_id,e9OrgFallback(ib.content_md)).items;
+    const items=S.map(function(x){return e9Clean(x.text)+(x.why?' ('+e9Clean(x.why)+')':'');}).filter(Boolean).slice(0,8);
+    return items.length?{day:String(ib.created_at||'').slice(0,10),run:ib.run_id,items:items}:null;
+  }catch(e){return null;}
+}
+function v147PostKinds(){return V147_POSTS.filter(function(p){return V147.posts[p[0]];});}
+function v147Html(){
+  const on=V147.on,L=V147.lib||[];
+  const opts='<option value="">'+(V147.lib?(L.length?'Pick your content…':'Nothing on file yet: paste it'):'Reading what you have…')+'</option>'+
+    L.map(function(x){return '<option value="'+esc(x.key)+'"'+(x.key===V147.src?' selected':'')+'>'+esc(v97Clip(x.title,70)+' · '+x.from)+'</option>';}).join('')+
+    '<option value="paste"'+(V147.src==='paste'?' selected':'')+'>Paste it here</option>';
+  const org=v147Organic();
+  return '<div class="nw-field nw-ad-only v147" id="v147W"><span class="nw-lbl">Start from</span>'+
+    '<div class="nw-seg" role="radiogroup" aria-label="Start from">'+
+      '<button type="button" role="radio" aria-checked="'+!on+'" onclick="v147On(false)">The market briefs</button>'+
+      '<button type="button" role="radio" aria-checked="'+on+'" onclick="v147On(true)">Your own content</button></div>'+
+    '<div class="v147-box" id="v147Box"'+(on?'':' hidden')+'>'+
+      '<label class="nw-field"><span class="nw-lbl">Your content</span><select class="nw-input" id="v147Src" data-nofill="1" onchange="v147Set(\'src\',this.value)">'+opts+'</select></label>'+
+      (V147.libErr?'<p class="nw-faint nw-small" role="status">Could not read '+esc(V147.libErr)+'. You can still paste it.</p>':'')+
+      '<div id="v147Paste"'+(V147.src==='paste'?'':' hidden')+'><div class="nw-grid2">'+
+        '<label class="nw-field"><span class="nw-lbl">Title</span><input class="nw-input" id="v147Title" maxlength="120" value="'+esc(V147.title)+'" placeholder="What it is called" oninput="V147.title=this.value"></label>'+
+        '<label class="nw-field"><span class="nw-lbl">What it is</span><select class="nw-input" id="v147Type" data-nofill="1" onchange="V147.type=this.value">'+Object.keys(AP_CF_SRC).map(function(k){return '<option value="'+k+'"'+(k===V147.type?' selected':'')+'>'+esc(AP_CF_SRC[k])+'</option>';}).join('')+'</select></label></div>'+
+        '<label class="nw-field"><span class="nw-lbl">The content</span><textarea class="nw-input" id="v147Text" rows="6" placeholder="Paste the article, transcript or post you published" oninput="V147.text=this.value;v147Side()">'+esc(V147.text)+'</textarea></label></div>'+
+      '<label class="nw-field"><span class="nw-lbl">The point you want to make<small>optional</small></span><input class="nw-input" id="v147Take" maxlength="300" value="'+esc(V147.take)+'" placeholder="One line: what readers should take away" oninput="V147.take=this.value"></label>'+
+      '<fieldset class="nw-field v147-posts"><legend class="nw-lbl">Also write from it</legend><div class="v147-ck">'+V147_POSTS.map(function(p){
+        return '<label><input type="checkbox" value="'+p[0]+'"'+(V147.posts[p[0]]?' checked':'')+' onchange="V147.posts[this.value]=this.checked;v147Side()"> '+esc(p[1])+'</label>';}).join('')+'</div></fieldset>'+
+      '<p class="nw-faint nw-small v147-note">No ads brief needed: the campaign is built from your content'+(org?', with the organic brief of '+esc(e9Day(org.day))+' for what buyers care about now':'. There is no organic brief yet, so it reads your content alone')+'.</p>'+
+    '</div></div>';
+}
+function v147Paint(){
+  const w=v97$('v147W');if(!w)return;
+  const a=document.activeElement,id=a&&a.id,pos=a&&typeof a.selectionStart==='number'?a.selectionStart:null;
+  w.outerHTML=v147Html();
+  if(id&&/^v147/.test(id)){const e=v97$(id);if(e){e.focus();try{if(pos!=null)e.setSelectionRange(pos,pos);}catch(x){}}}
+  v147Sync();
+}
+function v147On(on){V147.on=!!on;if(on&&!V147.lib)v147LibLoad().then(v147Paint).catch(function(){});v147Paint();try{nwMgSync();}catch(e){}}
+function v147Set(k,v){V147[k]=v;v147Paint();try{nwMgSide();}catch(e){}}
+/* the ads brief picker steps aside while the campaign starts from your content */
+function v147Sync(){
+  const ad=nwMgKind()==='ad',w=v97$('nwMgBriefAdW');
+  if(w&&ad&&V147.on)w.hidden=true;   /* back on the market briefs, nwMgSync shows it again */
+  const box=v97$('v147Box');if(box)box.hidden=!V147.on;
+}
+function v147Side(){try{nwMgSide();}catch(e){}}
+(function(){
+  const _f=nwMgFormHtml;
+  nwMgFormHtml=function(){
+    const h=_f.apply(this,arguments),a='<label class="nw-field" id="nwMgBriefAdW"';
+    if(V147.on&&!V147.lib)v147LibLoad().then(v147Paint).catch(function(){});
+    return h.indexOf(a)>=0?h.replace(a,v147Html()+a):h;
+  };
+  const _sy=nwMgSync;
+  nwMgSync=function(){const r=_sy.apply(this,arguments);try{v147Sync();}catch(e){}return r;};
+  /* the side: what it starts from, the posts it also writes, and Generate without an ads brief */
+  const _sd=nwMgSide;
+  nwMgSide=function(){
+    const r=_sd.apply(this,arguments);
+    try{
+      if(!(V147.on&&nwMgKind()==='ad'))return r;
+      const b=v97$('nwMgSideB');if(!b)return r;
+      const m=v147Material(),org=v147Organic(),P=v147PostKinds();
+      const first=b.querySelector('.nw-uses > li');
+      const row=nwUse(m.ok,m.ok?'Your content':'Your content: not picked yet',m.ok?'“'+nwClip(m.title,60)+'”':m.msg)+nwUse(!!org,org?'Organic brief':'No organic brief yet',org?'of '+e9Day(org.day)+', for what buyers care about now':'It reads your content alone')+
+        (P.length?nwUse(true,'Also writes',P.map(function(p){return p[1];}).join(', ')+' from the same content'):'');
+      if(first){first.insertAdjacentHTML('beforebegin',row);first.remove();}
+      b.querySelectorAll('.nw-uses > li span').forEach(function(s){if(/the brief decides the angle/.test(s.textContent))s.textContent=s.textContent.replace('the brief decides the angle','your content decides the angle');});
+      const go=v97$('v97MgGoBtn'),run1=typeof v97LtRunning==='function'&&v97LtRunning(),busy=!!V110M.busy||!!(typeof V103!=='undefined'&&V103.starting);
+      if(go&&!run1&&!busy)go.disabled=!m.ok;
+      const hint=go&&go.nextElementSibling&&go.nextElementSibling.matches('p.nw-center')?go.nextElementSibling:null;
+      if(hint&&!run1&&!busy)hint.textContent=m.ok?'About five minutes. The campaign lands in Campaigns'+(P.length?', the posts in Content Transformation’s Drafts,':'')+' and waits in Approvals.':m.msg;
+    }catch(e){console.warn('v147 side',e);}
+    return r;
+  };
+  /* Generate: the campaign from your content, then the posts */
+  const _go=v97MgStartAds;
+  v97MgStartAds=async function(){
+    if(!(V147.on&&nwMgKind()==='ad'))return _go.apply(this,arguments);
+    const m=v147Material(),err=v97$('v97MgErr');
+    if(!m.ok){if(err){err.textContent=m.msg;err.classList.add('on');}return;}
+    const sel=v97$('v97MgBrief');let added=null,was=sel?sel.value:'';
+    if(sel){added=document.createElement('option');added.value=V147_SENT;added.textContent='Your own content';sel.appendChild(added);sel.value=V147_SENT;}
+    V147.sending={m:m,org:v147Organic(),ok:false};
+    try{return await _go.apply(this,arguments);}
+    finally{
+      if(added)added.remove();if(sel)sel.value=was;
+      const S=V147.sending,er=v97$('v97MgErr');V147.sending=null;
+      /* the campaign started: its request went through and the form says nothing went wrong */
+      if(S&&S.ok&&!(er&&er.classList.contains('on')&&er.textContent.trim()))v147Posts(S.m,S.org).catch(function(e){console.warn('v147 posts',e);});
+    }
+  };
+  /* the campaign request: your content and the organic brief in place of the ads brief */
+  const _fetch=window.fetch;
+  window.fetch=function(url,o){
+    let mine=false;
+    try{
+      const u=String(url),S=V147.sending;
+      if(S&&o&&typeof o.body==='string'&&typeof AP_HOOKS!=='undefined'&&(u===String(AP_HOOKS.lt_run)||(typeof V113_HOOK!=='undefined'&&u===String(V113_HOOK.funnel)))){
+        const b=JSON.parse(o.body);
+        b.source_brief_run=null;
+        b.own_content={title:S.m.title,type:S.m.type,takeaway:S.m.take||'',text:S.m.text.slice(0,16000)};
+        if(S.org)b.organic_brief={day:S.org.day,items:S.org.items};
+        o=Object.assign({},o,{body:JSON.stringify(b)});mine=true;
+      }
+    }catch(e){console.warn('v147 campaign',e);}
+    const p=_fetch.call(this,url,o);
+    if(!mine)return p;
+    return p.then(function(res){if(res&&res.ok&&V147.sending)V147.sending.ok=true;return res;});
+  };
+})();
+/* the posts: one content request each, from the same content, as Content Transformation makes them */
+async function v147Posts(m,org){
+  const P=v147PostKinds();if(!P.length)return;
+  await new Promise(function(r){setTimeout(r,400);});
+  const made=[];
+  for(const p of P){
+    const row={requested_by:apCfMe(),start_mode:'source',format:p[0],content_type:p[0],status:'queued',source_type:AP_CF_SRC[m.type]?m.type:'other',title:m.title,source_text:m.text,takeaway:m.take||null,
+      setup:{from:'marketing_generation',own_campaign:true,organic_run:org?org.run:null}};
+    try{const r=await apPost('content_requests',row);const rec=r&&r[0];if(rec){made.push(p[1]);try{await fetch(AP_HOOKS.content_run,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request_id:rec.id,requested_by:apCfMe()})});}catch(e){}}}
+    catch(e){console.warn('v147 post',p[0],e);}
+  }
+  V147.last={at:Date.now(),posts:made,title:m.title};
+  if(made.length)toast(made.join(', ')+' started from “'+v97Clip(m.title,50)+'”. '+(made.length===1?'It lands':'They land')+' in Content Transformation’s Drafts in about a minute.');
+  else toast('The campaign started, but the posts could not be saved. Make them on Content Transformation.',false);
+  try{if(typeof apCfLoad==='function')apCfLoad(true);}catch(e){}
+}
+/* the running banner and the request log name your content, not the stand-in */
+(function(){
+  const _s=apLtSet;
+  apLtSet=function(v){if(v&&v.brief===V147_SENT)v=Object.assign({},v,{brief:'your own content'+(V147.sending?' (“'+v97Clip(V147.sending.m.title,50)+'”)':'')});return _s.call(this,v);};
+  if(typeof v97ReqLogAdd==='function'){const _l=v97ReqLogAdd;v97ReqLogAdd=function(o){if(o&&o.brief===V147_SENT)o=Object.assign({},o,{brief:null,own_content:V147.sending?V147.sending.m.title:'own content'});return _l.apply(this,arguments.length>1?[o].concat([].slice.call(arguments,1)):[o]);};}
+})();
+/*@@v147end*/
+
+</script>
 <script>
 /* ===================================================================
    PAGE ADDRESSES
