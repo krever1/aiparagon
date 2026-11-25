@@ -31766,7 +31766,10 @@ function v96Rank(it,rows,org,hsUrls){
   return rows.map(function(r){
     const toks=new Set(v96Toks(r.text));let s=0;q.forEach(function(w){if(toks.has(w))s+=1;});s=Math.min(s,6);
     if(org){
-      if(nums.length&&r.eng!=null&&nums.indexOf(Number(r.eng))>=0)s+=6;
+      const numHit=nums.length&&r.eng!=null&&nums.indexOf(Number(r.eng))>=0;
+      /* v143: a post counts only when it shares 2+ words with the point or its engagement is quoted there; the tag and value bonuses alone let unrelated posts in */
+      if(s<2&&!numHit)return {r:r,s:0};
+      if(numHit)s+=6;
       if(tag&&r.themes.some(function(x){x=String(x).toLowerCase().replace(/[-_]/g,' ').trim();return x.length>2&&(x.indexOf(tag)>=0||tag.indexOf(x)>=0);}))s+=2;
       if(r.value==='low')s-=3;else if(r.value==='high')s+=1;
     }else{
@@ -42355,7 +42358,8 @@ async function nwApprove(keys){
   await nwAfter(keys);
   if(done.length){
     const cm=done.every(function(k){return k.indexOf('cmt:')===0;});
-    nwToast(cm?(done.length===1?'Comment resolved':done.length+' comments resolved'):(done.length===1?'Approved':'Approved '+done.length),function(){nwUndo(done);});
+    const rv=done.every(function(k){return /^lead:[^:]+:/.test(k);}); /* v143: a lead's document marked reviewed */
+    nwToast(cm?(done.length===1?'Comment resolved':done.length+' comments resolved'):rv?(done.length===1?'Marked reviewed':done.length+' marked reviewed'):(done.length===1?'Approved':'Approved '+done.length),function(){nwUndo(done);});
   }
 }
 async function nwUndo(keys){
@@ -51621,7 +51625,7 @@ async function v125Load(force){
 /* the reasons given on one document of a lead (a merged lead counts every address it has) */
 function v125For(lead,agent){
   const keys=(lead.emails||[lead.email]).map(function(e){return v125Key(e,agent);});
-  return (V125.fb||[]).filter(function(f){return keys.indexOf(String(f.target_id||'').toLowerCase())>=0;});
+  return (V125.fb||[]).filter(function(f){return keys.indexOf(String(f.target_id||'').toLowerCase())>=0&&(!f.action||f.action==='changes');}); /* v143: a "reviewed" mark is not an ask */
 }
 function v125Btns(){
   if(typeof state==='undefined'||state.view!=='e1lead')return;
@@ -54705,6 +54709,444 @@ function v138Chart(v,col,ink){
   const j=AP_WHERE.findIndex(function(r){return r[0]==='Client proposal';});
   if(j>=0)AP_WHERE[j][1]='Rules, your past documents from Templates, what the Proposal stage reads (the call transcripts and emails, and the CRM record when it is on), the lead\'s documents with the consultation guide, and charts when the stage draws them';
 })();
+</script>
+<style id="v143css">
+/* v143: Back in the top bar */
+.nw-back{display:none;align-items:center;gap:6px;flex:none;margin-right:12px;padding:5px 11px 5px 8px;border:1px solid var(--nw-line,#e3e1da);border-radius:9px;background:var(--nw-panel,#fff);font:600 13px/1.2 var(--nw-body);color:var(--nw-ink-2);cursor:pointer}
+.nw-back.on{display:inline-flex}
+.nw-back:hover{border-color:var(--nw-accent,#b38b2e);color:var(--nw-ink)}
+.nw-back:focus-visible{outline:2px solid var(--nw-accent,#b38b2e);outline-offset:2px}
+@media (max-width:640px){.nw-back span{display:none}.nw-back{padding:5px 8px;margin-right:8px}}
+/* v143: Tasks */
+.ap-tk-call .v143-fold{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin:0 4px 0 -4px;border:0;border-radius:7px;background:none;color:var(--nw-ink-3,#6b6f7a);cursor:pointer;vertical-align:middle;flex:none}
+.ap-tk-call .v143-fold:hover{background:var(--nw-sunk,#f1efe9);color:var(--nw-ink,#1b2333)}
+.ap-tk-call .v143-fold svg{transition:transform .15s}
+.ap-tk-call.v143-shut .v143-fold svg{transform:rotate(-90deg)}
+.ap-tk-call.v143-shut .ap-cx-tasks,.ap-tk-call.v143-shut .v143-pickbar{display:none}
+.ap-tk-call .ap-cx-ch h4{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.ap-cx-tasks li{position:relative}
+.ap-cx-tasks li .v143-del{position:absolute;right:0;top:8px;width:28px;height:28px;border:0;border-radius:7px;background:none;color:var(--nw-ink-3,#6b6f7a);font-size:18px;line-height:1;cursor:pointer;opacity:0;transition:opacity .12s}
+.ap-cx-tasks li:hover .v143-del,.ap-cx-tasks li .v143-del:focus-visible{opacity:1}
+.ap-cx-tasks li .v143-del:hover{background:#fbeae7;color:#a33a2b}
+@media (hover:none){.ap-cx-tasks li .v143-del{opacity:.7}}
+.ap-tk-call.v143-picking .ap-cx-tasks li{padding-left:34px}
+.ap-tk-call .v143-pk{position:absolute;left:4px;top:11px;width:18px;height:18px;accent-color:var(--nw-accent,#b38b2e);display:none}
+.ap-tk-call.v143-picking .v143-pk{display:block}
+.v143-pickbar{display:none;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 2px;padding:10px 12px;border-radius:10px;background:var(--nw-sunk,#f5f3ee);font:500 13.5px/1.3 var(--nw-body)}
+.ap-tk-call.v143-picking .v143-pickbar{display:flex}
+.v143-pickbar b{margin-right:auto}
+.v143-as-row{display:grid;grid-template-columns:22px minmax(0,1fr) 150px;gap:8px 10px;align-items:start;padding:10px 0;border-top:1px solid var(--nw-line,#e8e5dd)}
+.v143-as-row input[type=checkbox]{margin-top:3px}
+.v143-as-row .n{font:600 14px/1.35 var(--nw-body);color:var(--nw-ink,#1b2333)}
+.v143-as-row textarea{grid-column:2/4;min-height:52px;font:400 13px/1.4 var(--nw-body);padding:7px 9px;border:1px solid var(--nw-line,#ddd9cf);border-radius:8px;resize:vertical}
+.v143-as-row input[type=date]{font:400 13px var(--nw-body);padding:5px 7px;border:1px solid var(--nw-line,#ddd9cf);border-radius:8px;width:100%;box-sizing:border-box}
+.v143-as-top{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:8px 0 4px}
+@media (max-width:640px){.v143-as-top{grid-template-columns:minmax(0,1fr)}.v143-as-row{grid-template-columns:22px minmax(0,1fr)}.v143-as-row input[type=date]{grid-column:2}}
+.v143-steps{list-style:none;margin:10px 0 14px;padding:0;display:grid;gap:12px}
+.v143-steps li{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;align-items:start}
+.v143-steps .k{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:#1f2740;color:#d8b45a;font:700 15px var(--nw-body)}
+.v143-steps b{display:block;font:600 14.5px/1.3 var(--nw-body);color:var(--nw-ink,#1b2333)}
+.v143-steps small{display:block;margin-top:3px;font:400 13px/1.45 var(--nw-body);color:var(--nw-ink-3,#6b6f7a)}
+.v143-tok{display:flex;gap:8px;flex-wrap:wrap}
+.v143-tok input{flex:1 1 220px;min-width:0;font:400 14px var(--nw-body);padding:9px 11px;border:1px solid var(--nw-line,#ddd9cf);border-radius:9px}
+.v143-err{display:none;margin-top:8px;color:#a33a2b;font:500 13px/1.4 var(--nw-body)}
+.v143-err.on{display:block}
+</style>
+<script id="v143js">
+/* ===================================================================
+   v143 (Nov 25): Back in the top bar; Tasks (fold a call, remove a task, pick tasks, Send to Asana through the
+   Asana connection made on Tasks, Connect Asana instead of an error); Approvals' leads say what is ready for review;
+   Run on every report of a lead's page.
+   =================================================================== */
+/* ---------- Back: the places this tab visited, a lead's own page included ---------- */
+const V143B={stack:[],busy:false,t:null,key:'ap.back.v1'};
+try{const s=JSON.parse(sessionStorage.getItem(V143B.key)||'[]');if(Array.isArray(s))V143B.stack=s.slice(-30);}catch(e){}
+function v143Place(){
+  let v='home';try{v=apCurrentView();}catch(e){}
+  let lead=null;
+  try{if(typeof state!=='undefined'&&state.engine==='e1'&&state.view==='e1lead'&&state.e1Lead)lead=String(state.e1Lead);}catch(e){}
+  return {v:v,lead:lead};
+}
+function v143Same(a,b){return !!(a&&b&&a.v===b.v&&(a.lead||null)===(b.lead||null));}
+function v143PlaceName(p){
+  if(p.lead){const h=[].slice.call(document.querySelectorAll('h1')).find(function(x){return x.offsetParent;});const n=h?h.innerText.trim():'';return n||'the lead';}
+  const t=String(document.title||'').split(' · ')[0].trim();
+  return t&&!/^AI Paragon/.test(t)?t:'the last page';
+}
+function v143BackSave(){try{sessionStorage.setItem(V143B.key,JSON.stringify(V143B.stack.slice(-30)));}catch(e){}}
+function v143BackPaint(){
+  const c=document.getElementById('nwCrumb');if(!c)return;
+  let b=document.getElementById('nwBack');
+  if(!b){
+    b=document.createElement('button');b.type='button';b.id='nwBack';b.className='nw-back';
+    b.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg><span>Back</span>';
+    b.addEventListener('click',v143Back);
+    c.parentNode.insertBefore(b,c);
+  }
+  const prev=V143B.stack.length>1?V143B.stack[V143B.stack.length-2]:null;
+  b.classList.toggle('on',!!prev);
+  const label=prev?'Back to '+(prev.name||'the last page'):'Back';
+  b.title=label;b.setAttribute('aria-label',label);
+}
+function v143Record(){
+  const p=v143Place();
+  const top=V143B.stack[V143B.stack.length-1];
+  if(v143Same(p,top)){top.name=v143PlaceName(p);}
+  else{p.name=v143PlaceName(p);V143B.stack.push(p);if(V143B.stack.length>30)V143B.stack.shift();}
+  v143BackSave();v143BackPaint();
+}
+/* one action can change the page more than once (Open lead goes through the pipeline first): record where it settles */
+function v143Soon(){clearTimeout(V143B.t);V143B.t=setTimeout(function(){if(!V143B.busy)v143Record();},450);}
+function v143Back(){
+  if(V143B.stack.length<2)return;
+  V143B.stack.pop();
+  const to=V143B.stack[V143B.stack.length-1];
+  V143B.busy=true;
+  try{
+    document.querySelectorAll('.scrim.open').forEach(function(el){if(el.id)try{closeModal(el.id);}catch(e){}});
+    if(to.lead){apGo('e1pipeline');openE1Lead(to.lead);}
+    else apGo(to.v);
+  }catch(e){}
+  setTimeout(function(){V143B.busy=false;v143BackSave();v143BackPaint();},500);
+}
+(function(){
+  const _s=apNavSync;
+  apNavSync=function(){const r=_s.apply(this,arguments);if(!V143B.busy)v143Soon();else v143BackPaint();return r;};
+  const _o=apSignOut;
+  apSignOut=function(){V143B.stack=[];v143BackSave();const b=document.getElementById('nwBack');if(b)b.classList.remove('on');return _o.apply(this,arguments);};
+})();
+
+/* ---------- Tasks: fold a call, remove a task (Undo), pick tasks to send ---------- */
+const V143T={shut:{},pick:{},sel:{}};
+try{V143T.shut=JSON.parse(localStorage.getItem('ap.tk.shut')||'{}')||{};}catch(e){}
+const V143_CHEV='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+function v143TidOf(li){const i=li.querySelector('input[type=checkbox]:not(.v143-pk)');const m=i&&/apCxTask\('([^']*)','([^']*)'/.exec(i.getAttribute('onchange')||'');return m?m[2]:'';}
+function v143TkDecorate(){
+  document.querySelectorAll('#apTk .ap-tk-call').forEach(function(card){
+    const id=card.dataset.id;if(!id||card.dataset.v143)return;card.dataset.v143='1';
+    const h=card.querySelector('.ap-cx-ch h4'),shut=!!V143T.shut[id];
+    if(h){const b=document.createElement('button');b.type='button';b.className='v143-fold';b.innerHTML=V143_CHEV;
+      b.setAttribute('aria-expanded',String(!shut));b.setAttribute('aria-label',(shut?'Show':'Hide')+' this call’s tasks');
+      b.onclick=function(){v143TkFold(id,card,b);};h.insertBefore(b,h.firstChild);}
+    card.classList.toggle('v143-shut',shut);
+    const acts=card.querySelector('.ap-cx-ch');
+    if(acts){const s=document.createElement('button');s.type='button';s.className='rd-btn sm v143-selbtn';s.textContent='Select';s.onclick=function(){v143TkPicking(id,card);};
+      const as=[].slice.call(acts.querySelectorAll('button')).find(function(x){return /Send to Asana/.test(x.textContent);});
+      acts.insertBefore(s,as||null);}
+    card.querySelectorAll('.ap-cx-tasks li').forEach(function(li){
+      const tid=v143TidOf(li);if(!tid)return;li.dataset.tid=tid;
+      const t=(li.querySelector('span')||{}).textContent||'this task';
+      const pk=document.createElement('input');pk.type='checkbox';pk.className='v143-pk';pk.setAttribute('aria-label','Pick “'+t+'”');
+      pk.checked=!!(V143T.sel[id]&&V143T.sel[id][tid]);pk.onchange=function(){(V143T.sel[id]=V143T.sel[id]||{})[tid]=pk.checked;v143TkBar(id,card);};
+      li.insertBefore(pk,li.firstChild);
+      const del=document.createElement('button');del.type='button';del.className='v143-del';del.innerHTML='×';del.title='Remove this task';del.setAttribute('aria-label','Remove “'+t+'”');
+      del.onclick=function(){v143TkDel(id,tid);};li.appendChild(del);
+    });
+    const ul=card.querySelector('.ap-cx-tasks');
+    if(ul){const bar=document.createElement('div');bar.className='v143-pickbar';
+      bar.innerHTML='<b></b><button type="button" class="rd-btn sm" data-a="all">All</button><button type="button" class="rd-btn sm" data-a="none">None</button><button type="button" class="rd-btn sm pri" data-a="asana">Send to Asana</button><button type="button" class="rd-btn sm" data-a="done">Done</button>';
+      bar.onclick=function(e){const a=e.target&&e.target.dataset&&e.target.dataset.a;if(!a)return;
+        if(a==='all'||a==='none'){card.querySelectorAll('.v143-pk').forEach(function(x){x.checked=a==='all';const t=x.closest('li').dataset.tid;(V143T.sel[id]=V143T.sel[id]||{})[t]=x.checked;});v143TkBar(id,card);}
+        if(a==='asana')apCxAsana(id,v143Picked(id));
+        if(a==='done'){V143T.pick[id]=false;card.classList.remove('v143-picking');}};
+      ul.insertAdjacentElement('afterend',bar);}
+    if(V143T.pick[id]){card.classList.add('v143-picking');v143TkBar(id,card);}
+  });
+}
+function v143Picked(id){const s=V143T.sel[id]||{};return Object.keys(s).filter(function(k){return s[k];});}
+function v143TkBar(id,card){const b=card.querySelector('.v143-pickbar b');if(b){const n=v143Picked(id).length;b.textContent=n?n+' picked':'Pick the tasks to send';}}
+function v143TkFold(id,card,btn){
+  const shut=!card.classList.contains('v143-shut');card.classList.toggle('v143-shut',shut);
+  btn.setAttribute('aria-expanded',String(!shut));btn.setAttribute('aria-label',(shut?'Show':'Hide')+' this call’s tasks');
+  if(shut)V143T.shut[id]=1;else delete V143T.shut[id];
+  try{localStorage.setItem('ap.tk.shut',JSON.stringify(V143T.shut));}catch(e){}
+}
+function v143TkPicking(id,card){
+  const on=!card.classList.contains('v143-picking');V143T.pick[id]=on;card.classList.toggle('v143-picking',on);
+  if(on&&card.classList.contains('v143-shut')){const b=card.querySelector('.v143-fold');if(b)v143TkFold(id,card,b);}
+  v143TkBar(id,card);
+}
+/* a removed task leaves the call's list for the whole team; Undo puts it back where it was */
+async function v143TkDel(id,tid){
+  const o=apCo(id);if(!o)return;
+  const prev=apCxArr(o.tasks),at=prev.findIndex(function(t){return t.id===tid;});if(at<0)return;
+  const gone=prev[at],tasks=prev.filter(function(t){return t.id!==tid;});
+  o.tasks=tasks;if(V143T.sel[id])delete V143T.sel[id][tid];
+  apTkPaint();
+  try{await apPatch('call_outputs','id=eq.'+encodeURIComponent(o.id),{tasks:tasks,updated_at:new Date().toISOString()});}
+  catch(e){o.tasks=prev;apTkPaint();toast('Could not remove that task: '+e.message,false);return;}
+  nwToast('Task removed: '+String(gone.text||'').slice(0,60),async function(){
+    const now=apCxArr(o.tasks).slice();if(now.some(function(t){return t.id===tid;}))return;
+    now.splice(Math.min(at,now.length),0,gone);o.tasks=now;apTkPaint();
+    try{await apPatch('call_outputs','id=eq.'+encodeURIComponent(o.id),{tasks:now,updated_at:new Date().toISOString()});}
+    catch(e){toast('Could not put it back: '+e.message,false);}
+  });
+}
+(function(){
+  const _p=apTkPaint;
+  apTkPaint=function(){const r=_p.apply(this,arguments);try{v143TkDecorate();}catch(e){console.warn('v143 tasks',e.message);}return r;};
+})();
+
+/* ---------- Asana: connect in three steps, wherever it is needed ---------- */
+function v143AsSteps(idp){
+  return '<ol class="v143-steps">'+
+    '<li><span class="k">1</span><div><b>Create a personal access token</b><small>Open <a href="https://app.asana.com/0/my-apps" target="_blank" rel="noopener">app.asana.com/0/my-apps</a> → “Personal access tokens” → “Create new token”. Name it “AI Paragon Dashboard” and copy it.</small></div></li>'+
+    '<li><span class="k">2</span><div><b>Paste the token below</b><small>It is saved in this browser only, and is what the dashboard uses to reach your Asana.</small></div></li>'+
+    '<li><span class="k">3</span><div><b>Connect</b><small>The dashboard checks the token with Asana, then carries on with what you were doing.</small></div></li></ol>'+
+    '<div class="v143-tok"><input type="password" id="'+idp+'Tok" autocomplete="off" placeholder="Paste your Asana token (starts with 1/ or 2/)…" aria-label="Asana personal access token">'+
+    '<button type="button" class="rd-btn pri" id="'+idp+'Go">Connect</button></div><div class="v143-err" id="'+idp+'Err"></div>';
+}
+function v143AsWire(idp,next){
+  const go=document.getElementById(idp+'Go'),inp=document.getElementById(idp+'Tok'),err=document.getElementById(idp+'Err');if(!go||!inp)return;
+  const run=async function(){
+    const tok=inp.value.trim();err.classList.remove('on');
+    if(!/^\d\/[\w:/-]{10,}$/.test(tok)&&!/^[\w:/-]{20,}$/.test(tok)){err.textContent='That does not look like an Asana token. Copy it again from app.asana.com/0/my-apps.';err.classList.add('on');return;}
+    go.disabled=true;go.textContent='Checking…';
+    const old=aRead('pat');aStore('pat',tok);if(typeof aClearCache==='function')aClearCache();
+    try{
+      const me=await asana('/users/me?opt_fields=name,email,workspaces.name',undefined,undefined,false);
+      const ws=me.workspaces||[];if(!aRead('ws')&&ws[0])aStore('ws',ws[0].gid);
+      toast('Asana connected as '+(me.name||me.email||'you')+'.');
+      next(me);
+    }catch(e){
+      aStore('pat',old);
+      err.textContent=e.auth?'Asana didn’t accept that token. Copy it again from app.asana.com/0/my-apps.':'Couldn’t reach Asana: '+(e.message||e);err.classList.add('on');
+      go.disabled=false;go.textContent='Connect';
+    }
+  };
+  go.onclick=run;inp.onkeydown=function(e){if(e.key==='Enter')run();};
+  setTimeout(function(){try{inp.focus();}catch(e){}},60);
+}
+/* the pop-up on its own: Integrations, or anything that needs Asana before it is connected */
+function v143AsConnect(next){
+  apModal('v143AsC','<h3 class="ap-m89h">Connect Asana in 3 steps</h3><p class="help">Send post-call tasks to Asana and browse your projects from the dashboard.</p>'+v143AsSteps('v143c'),620);
+  v143AsWire('v143c',function(me){apModalClose('v143AsC');if(typeof next==='function')next(me);});
+}
+/* inside another window (Send to Asana, Browse projects): the same steps instead of an error */
+apAsanaOffHtml=function(e){
+  const hasTok=typeof aRead==='function'&&!!aRead('pat'),off=!hasTok||(e&&(e.code==='off'||e.code==='not_connected'));
+  if(hasTok&&!off)return '<div class="ap-cx-off"><b>Asana did not answer</b><p>'+esc(e&&e.message||'Try again in a minute.')+'</p></div>';
+  return '<div class="v143-inl">'+(hasTok?'<p class="help">Asana didn’t accept the saved token. Connect again:</p>':'<p class="help">Connect Asana once to send tasks there.</p>')+v143AsSteps('v143i')+'</div>';
+};
+function v143AsInline(after){setTimeout(function(){v143AsWire('v143i',function(){after();});},0);}
+/* the people a task can be given to, in the token's workspace */
+async function v143AsUsers(){
+  if(!aRead('pat'))return [];
+  try{const ws=aRead('ws')||((await asana('/workspaces?limit=100'))[0]||{}).gid;if(!ws)return [];
+    const u=await asana('/users?workspace='+ws+'&opt_fields=name,email&limit=100');return (u||[]).map(function(x){return {gid:x.gid,name:x.name||x.email||'Someone'};});}
+  catch(e){return [];}
+}
+/* Send to Asana: the project, who it is for, and each task's due date and description */
+apCxAsana=async function(id,only){
+  id=String(id);const o=apCo(id);if(!o)return;
+  const tasks=apCxArr(o.tasks),pick=Array.isArray(only)&&only.length?only:null;
+  apModal('apCxAsM','<h3 class="ap-m89h">Send tasks to Asana</h3><div id="cxAsBody"><div class="loading">Loading your Asana projects…</div></div>',700);
+  let j;
+  try{j=await apXTimed(apAs('projects'),20000);if(j.ok===false){const e=new Error(j.message);e.code=j.code;throw e;}}
+  catch(e){const b=document.getElementById('cxAsBody');if(b){b.innerHTML=apAsanaOffHtml(e)+'<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'apCxAsM\')">Close</button></div>';v143AsInline(function(){apCxAsana(id,only);});}return;}
+  const last=apCxLs('asana_project'),ps=apCxArr(j.projects),b=document.getElementById('cxAsBody');if(!b)return;
+  if(!ps.length&&j.via!=='token'&&!aRead('pat')){b.innerHTML=apAsanaOffHtml({code:'off'})+'<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'apCxAsM\')">Close</button></div>';v143AsInline(function(){apCxAsana(id,only);});return;}
+  if(!ps.length){b.innerHTML='<p class="help">No projects in '+esc((j.workspace||{}).name||'your Asana workspace')+' yet. Make one in Asana, then try again.</p>';return;}
+  const users=j.via==='token'?await v143AsUsers():[];
+  const c=apFtCall(id)||{title:o.call_title||'the call',start:o.call_start},link=apFtLink(c);
+  const noteOf=function(t){return ['From the call “'+(c.title||'the call')+'”'+(c.start?' on '+apCxDay(c.start):''),t.owner?'Owner: '+t.owner:'',t.why?'Why: '+t.why:'',link?'Recording: '+link:''].filter(Boolean).join('\n');};
+  b.innerHTML='<p class="help">Each ticked task becomes an Asana task in the project you pick.</p>'+
+    '<div class="v143-as-top"><label class="f"><span>Project</span><select data-nofill="1" id="cxAsP">'+ps.map(function(p){return '<option value="'+esc(p.gid)+'"'+(p.gid===last?' selected':'')+'>'+esc(p.name)+'</option>';}).join('')+'</select></label>'+
+    '<label class="f"><span>Assignee <small>(optional)</small></span><select data-nofill="1" id="cxAsU"'+(users.length?'':' disabled')+'><option value="">Unassigned</option>'+users.map(function(u){return '<option value="'+esc(u.gid)+'"'+(u.gid===apCxLs('asana_user')?' selected':'')+'>'+esc(u.name)+'</option>';}).join('')+'</select></label></div>'+
+    (users.length?'':'<p class="help">'+(j.via==='token'?'No people found in this Asana workspace.':'An assignee can be picked once Asana is connected in this browser.')+'</p>')+
+    '<div class="v143-as-list">'+tasks.map(function(t){const on=pick?pick.indexOf(t.id)>=0:!t.done;
+      return '<div class="v143-as-row" data-t="'+esc(t.id)+'"><input type="checkbox" aria-label="Send “'+esc(t.text)+'”" '+(on?'checked':'')+'><span class="n">'+esc(t.text)+'</span>'+
+        '<input type="date" aria-label="Due date for “'+esc(t.text)+'”" value="'+esc(/^\d{4}-\d{2}-\d{2}$/.test(String(t.due||''))?t.due:'')+'">'+
+        '<textarea aria-label="Description for “'+esc(t.text)+'”">'+esc(noteOf(t))+'</textarea></div>';}).join('')+'</div>'+
+    '<div class="ap-cf-err" id="cxAsErr"></div>'+
+    '<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'apCxAsM\')">Cancel</button><button class="rd-btn pri" onclick="apCxAsanaSend(\''+esc(id)+'\',this)">Send to Asana</button></div>';
+};
+apCxAsanaSend=async function(id,btn){
+  const o=apCo(id);if(!o)return;
+  const sel=document.getElementById('cxAsP'),us=document.getElementById('cxAsU'),err=document.getElementById('cxAsErr');err.classList.remove('on');
+  const rows=[].slice.call(document.querySelectorAll('#apCxAsM .v143-as-row')).filter(function(r){return r.querySelector('input[type=checkbox]').checked;});
+  if(!rows.length){err.textContent='Tick at least one task.';err.classList.add('on');return;}
+  const byId={};apCxArr(o.tasks).forEach(function(t){byId[t.id]=t;});
+  const tasks=rows.map(function(r){const t=byId[r.dataset.t]||{};return {id:r.dataset.t,text:t.text||'',due:r.querySelector('input[type=date]').value||'',notes:r.querySelector('textarea').value.trim()};}).filter(function(t){return t.text;});
+  const assignee=us&&!us.disabled?us.value:'';
+  btn.disabled=true;btn.textContent='Sending…';
+  try{
+    let j;
+    if(aRead('pat')){
+      const made=[];let failed=0;
+      for(const t of tasks){
+        try{const r=await asana('/tasks?opt_fields=name,permalink_url','POST',Object.assign({name:t.text,notes:t.notes,projects:[sel.value]},t.due?{due_on:t.due}:{},assignee?{assignee:assignee}:{}));made.push({gid:r.gid,name:r.name||t.text,url:r.permalink_url||''});}
+        catch(e){if(e.auth)throw Object.assign(new Error('Asana didn’t accept the saved token.'),{code:'not_connected'});failed++;}
+      }
+      if(typeof aClearCache==='function')aClearCache();
+      j=made.length?{ok:true,created:made,failed:failed}:{ok:false,message:'Asana did not take the tasks.'};
+    }else j=await apAs('create',{project:sel.value,tasks:tasks});
+    if(!j.ok){const e=new Error(j.message||'Asana did not take them.');e.code=j.code;throw e;}
+    apCxLs('asana_project',sel.value);if(assignee)apCxLs('asana_user',assignee);
+    const made=apCxArr(j.created),pn=sel.options[sel.selectedIndex].text;
+    const as={at:new Date().toISOString(),project:sel.value,project_name:pn,url:'https://app.asana.com/0/'+sel.value+'/list',tasks:made};
+    o.asana=as;apPatch('call_outputs','id=eq.'+encodeURIComponent(o.id),{asana:as,updated_at:as.at}).catch(function(){});
+    V143T.pick[id]=false;V143T.sel[id]={};
+    apModalClose('apCxAsM');apCxRepaint(id);
+    toast(made.length+' task'+(made.length===1?'':'s')+' sent to '+pn+(j.failed?'. '+j.failed+' did not go through.':'.'));
+  }catch(e){
+    if(e.code==='off'||e.code==='not_connected'){err.innerHTML=apAsanaOffHtml(e);v143AsInline(function(){apCxAsana(id,tasks.map(function(t){return t.id;}));});}
+    else err.textContent=e.message;
+    err.classList.add('on');btn.disabled=false;btn.textContent='Send to Asana';
+  }
+};
+/* Browse projects: the steps instead of an error too */
+(function(){
+  const _m=apAsanaModal;
+  apAsanaModal=async function(){
+    const r=await _m.apply(this,arguments);
+    if(document.querySelector('#asBody .v143-inl'))v143AsInline(function(){apAsanaModal();});
+    return r;
+  };
+})();
+/* Integrations: Connect Asana opens the steps; a browser connection can be disconnected there */
+(function(){
+  const _ri=apRenderIntegrations;
+  apRenderIntegrations=async function(){
+    const r=await _ri.apply(this,arguments);
+    try{
+      const c=document.querySelector('.ap-int-card[data-k="asana"]');if(!c)return r;
+      const a=c.querySelector('.acts'),st=c.querySelector('.st'),ok=st&&!/Not connected/i.test(st.textContent)&&!!aRead('pat');
+      if(a&&(!st||/Not connected/i.test(st.textContent))){
+        a.innerHTML='<button class="rd-btn sm pri" onclick="v143AsConnect(function(){apRenderIntegrations();})">Connect Asana</button>';
+        const m=c.querySelector('.meta');if(m)m.textContent='Connect with a personal access token from Asana in 3 steps. It is saved in this browser.';
+      }else if(a&&ok&&!a.querySelector('.v143-dis')){
+        a.insertAdjacentHTML('beforeend','<button class="rd-btn sm v143-dis" onclick="v143AsDisconnect()">Disconnect</button>');
+      }
+    }catch(e){console.warn('v143 asana card',e.message);}
+    return r;
+  };
+})();
+/* ---------- Approvals: a lead's stage document waiting for a read ---------- */
+/* A lead whose stage document is written shows "Ready for review: <document>" (Review opens it on the lead's page,
+   Mark reviewed saves it for the team: agent_feedback e1_document, action reviewed, "Reviewed in Approvals", which
+   AI settings leaves out of From your feedback). A lead with no document for its stage yet keeps "Next: <document>". */
+const V143L={at:0,busy:false};
+function v143LdKey(l,st){return String(l.email||'').toLowerCase()+':'+st.agent+(st.agent==='meeting_prep'?':'+st.key:'');}
+function v143Reviewed(l,st,at){
+  const keys=v136Emails(l).map(function(e){return String(e||'').toLowerCase()+':'+st.agent+(st.agent==='meeting_prep'?':'+st.key:'');});
+  let last=null;(V125.fb||[]).forEach(function(f){
+    if(keys.indexOf(String(f.target_id||'').toLowerCase())<0||(f.action!=='reviewed'&&f.action!=='reopened'))return;
+    const t=Date.parse(f.created_at)||0;if(!last||t>last.t)last={t:t,a:f.action};
+  });
+  return !!(last&&last.a==='reviewed'&&last.t>=at);
+}
+function v143LdItems(){
+  const D=window._e1;if(!D||!D.leads)return null;
+  const out=[];
+  D.leads.forEach(function(l){
+    if(!l||!l.email||/deltaadvisory\.com$/i.test(l.email))return;
+    if(/weak|disqualif/i.test(String(l.fit_rating||'')))return;
+    if(v120RunState(l))return;
+    const k=v136StageOf(l),st=v136St(k);if(!st)return;
+    const d=v136Doc(l,st),who=(l.prospect_name||l.email)+(l.company_name?' · '+l.company_name:'');
+    const open='v136Open('+nwJs(l.email)+','+nwJs(st.key)+')';
+    if(d&&d.out){
+      if(v143Reviewed(l,st,d.at))return;
+      out.push({key:'lead:'+l.email+':'+st.key,kind:'lead',icon:'users',title:who,text:'Ready for review: '+st.doc,
+        tags:[['Ready for review','good'],[st.name]],approve:true,approveLabel:'Mark reviewed',review:open,reviewLabel:'Review',when:d.out.created_at||l.updated_at});
+    }else if(!d){
+      out.push({key:'lead:'+l.email,kind:'lead',icon:'users',title:who,text:'Next: '+st.doc,tags:[['Lead'],[st.name]],review:open,reviewLabel:'Open lead',when:l.updated_at});
+    }
+  });
+  return out;
+}
+async function v143LdLoad(){
+  if(V143L.busy||Date.now()-V143L.at<60e3)return;
+  V143L.busy=true;
+  try{await Promise.all([v120Reload().catch(function(){}),v125Load(true).catch(function(){}),v136LoadNames().catch(function(){})]);}
+  finally{V143L.busy=false;V143L.at=Date.now();}
+  try{if(document.querySelector('#main.nw-page'))nwRepaint();else nwNavPaint();}catch(e){}
+}
+(function(){
+  const _a=nwApprovalAll;
+  nwApprovalAll=function(){
+    const all=_a.apply(this,arguments);
+    if(Date.now()-V143L.at>300e3)v143LdLoad();   /* the leads and their documents, read again every 5 minutes */
+    const mine=v143LdItems();if(!mine)return all;
+    const skip=nwLS('ap.nw.skip',{});mine.forEach(function(x){x.skipped=!!skip[x.key];});
+    const at=all.findIndex(function(x){return x.kind==='lead';});
+    const rest=all.filter(function(x){return x.kind!=='lead';});
+    const i=at<0?rest.findIndex(function(x){return x.kind==='comment';}):at;
+    rest.splice(i<0?rest.length:i,0,...mine);
+    return rest;
+  };
+  const _one=nwApproveOne;
+  nwApproveOne=async function(k){
+    const p=String(k).split(':');
+    if(p[0]==='lead'&&p[2]){
+      const l=v120Lead(p[1]),st=v136St(p[2]);if(!l||!st)return false;
+      const row={agent:st.agent,target_type:V125_TT,target_id:v143LdKey(l,st),action:'reviewed',feedback:'Reviewed in Approvals',author:apCfMe()};
+      await apPost('agent_feedback',row);
+      (V125.fb=V125.fb||[]).unshift(Object.assign({created_at:new Date().toISOString()},row));
+      return true;
+    }
+    return _one.apply(this,arguments);
+  };
+  const _u=nwUndo;
+  nwUndo=async function(keys){
+    const mine=(keys||[]).filter(function(k){const p=String(k).split(':');return p[0]==='lead'&&p[2];});
+    for(const k of mine){
+      const p=String(k).split(':'),l=v120Lead(p[1]),st=v136St(p[2]);if(!l||!st)continue;
+      const row={agent:st.agent,target_type:V125_TT,target_id:v143LdKey(l,st),action:'reopened',feedback:'Undone in Approvals',author:apCfMe()};
+      try{await apPost('agent_feedback',row);(V125.fb=V125.fb||[]).unshift(Object.assign({created_at:new Date().toISOString()},row));}catch(e){toast('Could not undo that: '+(e.message||e),false);}
+    }
+    const rest=(keys||[]).filter(function(k){return mine.indexOf(k)<0;});
+    if(rest.length)return _u.call(this,rest);
+    try{if(document.querySelector('#main.nw-page'))nwRepaint();else nwNavPaint();}catch(e){}
+    nwToast('Undone. '+(mine.length===1?'It is':'They are')+' waiting again.');
+  };
+})();
+/* ---------- a lead's page: Run (or Run again) on every report ---------- */
+/* Each report tab (prospect brief, consultation guide, assessment, proposal, onboarding plan, client review brief) runs
+   that report only, through the board's question without a move (v136Ask): the lead stays in its stage. The follow-up
+   guide has no stage and nothing on the dashboard runs it, so it gets no button. */
+function v143RunBtns(){
+  if(typeof state==='undefined'||state.view!=='e1lead')return;
+  const main=document.getElementById('main');if(!main)return;
+  const X=apE1Lead();if(!X||!X.lead)return;
+  const l=(typeof v120Lead==='function'&&v120Lead(X.lead.email))||X.lead,run=v120RunState(l);
+  const secs=[...main.querySelectorAll(':scope > section.block')];
+  V136_STAGES.forEach(function(s0){
+    const st=v136St(s0.key)||s0;let sec=null;
+    if(st.agent==='meeting_prep')sec=secs.find(function(x){return x.dataset.v136===st.key;});
+    else{const i=E1_STAGES.findIndex(function(e){return e.agent===st.agent;});
+      sec=secs.find(function(x){const h=x.querySelector(':scope > h2');return h&&new RegExp('^\\s*'+(i+1)+'\\.').test(h.textContent);});}
+    if(!sec)return;
+    sec.querySelectorAll('.v143-run,.v143-none').forEach(function(e){e.remove();});
+    if(run&&run.s===st.key){if(st.agent!=='meeting_prep'){const w=document.createElement('div');w.className='empty v143-none';w.setAttribute('role','status');w.textContent='Catalyst is writing '+st.what+'. It shows here when it is done.';const h=sec.querySelector(':scope > h2');if(h)h.after(w);}return;}
+    const d=v136Doc(l,st),card=sec.querySelector('.ap-docc');
+    const b=document.createElement('button');b.type='button';b.className='rd-btn sm v143-run';
+    b.textContent=d?'Run again':v136Btn(st);
+    b.title=d?'Write a new version of the '+st.doc.toLowerCase()+'. The lead stays in its stage, and the earlier version stays in Files.':'Write the '+st.doc.toLowerCase()+' now. The lead stays in its stage.';
+    b.onclick=function(){v136Ask(l.email,st.key,false);};
+    if(card){let line=card.querySelector('.statline');
+      if(!line){line=document.createElement('div');line.className='statline';line.style.marginTop='4px';card.appendChild(line);}
+      line.appendChild(b);return;}
+    if(sec.querySelector('.v136-none button'))return;   /* the prep tabs' own Run */
+    const w=document.createElement('div');w.className='empty v143-none';
+    w.appendChild(document.createTextNode('Not written yet. '));w.appendChild(b);
+    const h=sec.querySelector(':scope > h2');if(h)h.after(w);else sec.prepend(w);
+  });
+}
+(function(){
+  const _r=renderE1Lead;
+  renderE1Lead=function(){
+    const r=_r.apply(this,arguments);
+    Promise.resolve(r).then(function(){return v125Load();}).then(function(){try{v143RunBtns();}catch(e){console.warn('v143 run',e&&e.message);}});
+    return r;
+  };
+})();
+function v143AsDisconnect(){
+  if(!confirm('Disconnect Asana in this browser? Tasks already sent stay in Asana.'))return;
+  ['pat','ws','project','filter'].forEach(function(k){aStore(k,'');});if(typeof aClearCache==='function')aClearCache();
+  toast('Asana disconnected in this browser.');apRenderIntegrations();
+}
 </script>
 <script>
 /* ===================================================================
