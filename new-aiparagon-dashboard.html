@@ -50722,7 +50722,8 @@ function v120Poll(){
   apDemo=function(o){
     try{
       if(o&&o.page==='e1pipeline'&&Array.isArray(o.tabs)&&!o.tabs.some(function(t){return t.key==='board';})){
-        o.tabs.unshift({key:'board',label:'Board',render:v120Host,onShow:function(){v120HideList();v120Paint();}});
+        o.tabs.unshift({key:'board',label:'Client Stages',   /* v145: was Board */
+        render:v120Host,onShow:function(){v120HideList();v120Paint();}});
         if(o.purpose)o.purpose=Object.assign({},o.purpose,{bold:'One card per prospect',small:'Open a card for every document it has. The other tabs list the same leads.'});
         if(!RD.v120b){RD.v120b=1;RD.aptab.e1pipeline='board';}
       }
@@ -53558,7 +53559,7 @@ function v136LeadDemo(o){
   const cur=v136StageOf(lead),cst=v136St(cur),cd=v136Doc(lead,cur);
   const files=[...main.querySelectorAll(':scope > section.block')].find(function(x){const h=x.querySelector(':scope > h2');return h&&/^Files/.test(h.textContent.trim());});
   main.querySelectorAll(':scope > section[data-v136]').forEach(function(x){x.remove();});
-  ['onboarding','review'].forEach(function(k){
+  V136_STAGES.filter(function(s){return s.agent==='meeting_prep';}).map(function(s){return s.key;}).forEach(function(k){   /* v145: every stage Meeting Prep writes */
     const st=v136St(k),d=v136Doc(lead,st);if(!d&&cur!==k)return;
     const sec=document.createElement('section');sec.className='block';sec.dataset.v136=k;sec.innerHTML=v136PrepHtml(lead,st,d);
     if(files)files.before(sec);else main.appendChild(sec);
@@ -56113,6 +56114,508 @@ async function v144NtMark(id,db,n){
   catch(e){console.warn('v144 notion mark',e.message);}
 }
 /*@@v144end*/
+</script>
+<style id="v145css">
+/* v145: Meeting Types and Client Stages, the client workspace, the Intel Tracker's replies */
+.v145-colb{all:unset;cursor:pointer;font:inherit;border-radius:6px;padding:1px 3px;margin:-1px -3px}
+.v145-colb:hover{text-decoration:underline;text-underline-offset:3px}
+.v145-colb:focus-visible{outline:2px solid var(--ap-accent,#1d4ed8);outline-offset:2px}
+.v145-m .v145-f{display:flex;flex-direction:column;gap:4px;margin:0 0 12px;border:0;padding:0;min-width:0}
+.v145-m .v145-f>span,.v145-m .v145-f>legend{font-weight:600;font-size:13px}
+.v145-m .v145-f small{color:var(--muted,#6b7280);font-size:12px}
+.v145-m textarea.nw-input{min-height:64px;resize:vertical}
+.v145-fix{margin:2px 0 0;padding:6px 10px;background:var(--panel-2,#f6f5f1);border-radius:8px;font-size:13px}
+.v145-ck{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px}
+.v145-ck label{display:flex;gap:6px;align-items:center}
+.v145-kbf{max-height:150px;overflow:auto}
+.v145-sr{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line,#e5e7eb)}
+.v145-sr>i{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+.v145-sr .nw-input{flex:1 1 160px;min-width:0}
+.v145-sr.is-off{opacity:.6}
+.v145-sk{font-size:12px;color:var(--muted,#6b7280);flex:0 1 180px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v145-gone{margin:10px 0;font-size:13px}.v145-gone summary{cursor:pointer}
+.v145-del{color:#b42318}
+.v145-mt{text-align:left;cursor:pointer;font:inherit;color:inherit}
+.v145-mt.is-off{opacity:.6}
+.v145-new{text-align:left;cursor:pointer;font:inherit;color:inherit;border-style:dashed !important;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.v145-new b{display:flex;align-items:center;gap:6px}
+.v145-ask{background:var(--panel-2,#f6f5f1);border-radius:10px;padding:8px 12px;margin:0 0 12px;font-size:13px}
+.v145-ask p{margin:4px 0}
+.v145-stg p{margin:6px 0}
+.v145-h{font-size:13px;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted,#6b7280)}
+.v145-cl{list-style:none;margin:0;padding:0}.v145-cl li{padding:3px 0}.v145-cl label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+@media(max-width:640px){.v145-sr{flex-wrap:wrap}.v145-sk{flex-basis:100%}}
+</style>
+<script id="v145js">
+/* ===================================================================
+   v145 (Nov 25, Erica's notes of Nov 24, release 3 of 3)
+   Part 1: Meeting Types and Client Stages. The six meeting stages were one fixed list. Now the board's columns are
+   the team's Client Stages (add, rename, reorder, delete; each with a setup: what it is, what it needs, what to do
+   before and after, its deliverables and workflow tasks, and the meeting types in it), and the documents are Meeting
+   Types (the six built in, plus the team's own, each with what it writes, its sections, what it reads and knowledge
+   base context). A stage the team adds runs one of the team's own meeting types through Catalyst · Meeting Prep;
+   the six built-in stages keep their own agents. Kept for the team in ai_settings catalyst_meeting_types and
+   catalyst_client_stages; built-in names stay in catalyst_stages, which the Next.js dashboard reads too.
+   =================================================================== */
+const V145_BASE=V136_STAGES.map(function(s){return Object.assign({},s);});
+const V145={mt:{},cs:{},at:0,ticks:{},kb:null};
+const V145_COLORS=['#3F7F9F','#B5654A','#5E8C3A','#9A5BA8','#C29A2E','#4A6FA5','#7A6E5D','#C0567A'];
+function v145Id(p){return p+'-'+Math.random().toString(36).slice(2,8);}
+function v145Txt(v,n){return String(v==null?'':v).replace(/\r\n?/g,'\n').trim().slice(0,n||600);}
+function v145Name(v){return String(v==null?'':v).replace(/\s+/g,' ').trim().slice(0,60);}
+function v145Lines(t,n){return String(t||'').split('\n').map(function(x){return x.replace(/^\s*(?:[-•*]|\d+[.)])\s*/,'').trim();}).filter(Boolean).slice(0,n||14).map(function(x){return x.slice(0,140);});}
+function v145Base(k){return V145_BASE.find(function(s){return s.key===k;})||null;}
+
+/* ---------- the two lists, merged with the team's changes ---------- */
+function v145Types(all){
+  const M=V145.mt||{},items=M.items||{},names=V136.names||{};
+  const base=V145_BASE.map(function(s){const o=items[s.key]||{},tpl=(typeof V137_TPL!=='undefined'&&V137_TPL[s.key])||{};
+    return {key:s.key,custom:false,name:v145Txt(o.name,60)||v145Txt((names[s.key]||{}).name,60)||s.name,doc:s.doc,desc:v145Txt(o.desc)||s.role,
+      sections:tpl.secs||[],kb:v145Txt(o.kb,4000),kbFiles:Array.isArray(o.kbFiles)?o.kbFiles.slice(0,6):[],hidden:!!o.hidden,agent:s.agent};});
+  const own=(M.order||Object.keys(items)).filter(function(k){return /^mt-/.test(k)&&items[k]&&!items[k].deleted;}).map(function(k){const o=items[k];
+    return {key:k,custom:true,name:v145Txt(o.name,60)||'Meeting',doc:v145Txt(o.doc,60)||'Meeting prep',desc:v145Txt(o.desc),
+      sections:Array.isArray(o.sections)?o.sections.slice(0,14):[],kb:v145Txt(o.kb,4000),kbFiles:Array.isArray(o.kbFiles)?o.kbFiles.slice(0,6):[],hidden:false,agent:'meeting_prep'};});
+  return base.concat(own).filter(function(t){return all||!t.hidden;});
+}
+function v145Type(k){return v145Types(true).find(function(t){return t.key===k;})||null;}
+function v145StageRecs(withRemoved){
+  const C=V145.cs||{},items=C.items||{},removed=C.removed||[],names=V136.names||{};
+  const known=V145_BASE.map(function(s){return s.key;}).concat(Object.keys(items).filter(function(k){return /^cs-/.test(k)&&items[k]&&!items[k].deleted;}));
+  let order=(Array.isArray(C.order)?C.order:[]).filter(function(k){return known.indexOf(k)>=0;});
+  known.forEach(function(k){if(order.indexOf(k)<0)order.push(k);});
+  return order.filter(function(k){return withRemoved||removed.indexOf(k)<0;}).map(function(k,i){
+    const o=items[k]||{},b=v145Base(k);
+    return {key:k,custom:!b,removed:removed.indexOf(k)>=0,
+      name:(b?v145Txt((names[k]||{}).name,60):v145Txt(o.name,60))||(b?b.name:'Stage'),c:o.c||(b?b.c:V145_COLORS[i%V145_COLORS.length]),
+      desc:v145Txt(o.desc)||(b?b.role:''),type:b?k:(typeof o.type==='string'?o.type:''),also:Array.isArray(o.also)?o.also.slice(0,8):[],
+      inputs:v145Txt(o.inputs),before:v145Txt(o.before),after:v145Txt(o.after),template:v145Txt(o.template,2000),
+      deliverables:Array.isArray(o.deliverables)?o.deliverables.slice(0,14):[],tasks:Array.isArray(o.tasks)?o.tasks.slice(0,14):[]};
+  });
+}
+function v145Rec(k){return v145StageRecs(true).find(function(s){return s.key===k;})||null;}
+/* the board's column list (V136_STAGES) follows the team's stages: a stage the team added runs its meeting type
+   through Meeting Prep, or nothing when it has none */
+function v145Apply(){
+  const S=v145StageRecs(false).map(function(r){
+    const b=v145Base(r.key);
+    if(b)return Object.assign({},b,{c:r.c,desc:r.desc,custom:false,mt:r.key});
+    const t=r.type?v145Type(r.type):null;
+    if(!t)return {key:r.key,short:r.name,name:r.name,doc:'',what:'',agent:'',c:r.c,from:'',role:r.desc||'A stage of your own.',custom:true,mt:'',norun:true};
+    return {key:r.key,short:t.doc,name:r.name,doc:t.doc,what:'the '+t.doc.charAt(0).toLowerCase()+t.doc.slice(1),agent:'meeting_prep',c:r.c,
+      from:'every document so far and what was said in the meetings',role:r.desc||t.desc||'Prepares the '+r.name+' meeting.',custom:true,mt:t.key};
+  });
+  if(!S.length)return;
+  V136_STAGES.length=0;S.forEach(function(s){V136_STAGES.push(s);});
+  /* the stages and meeting types of the team's own get what V137_TPL gives the built-in six (what they read by default) */
+  try{
+    v145Types(true).filter(function(t){return t.custom;}).forEach(function(t){
+      V137_TPL[t.key]={kind:'',tpl:'',how:'',type:'',calls:true,crm:true,questions:null,custom:true,
+        always:'Every document so far, your house rules'+(t.kb||t.kbFiles.length?' and its knowledge base context':''),writes:t.doc,secs:t.sections.length?t.sections:['Purpose of the meeting','What we know so far','What changed since the last meeting','Questions to ask','What to decide']};});
+    S.filter(function(s){return s.custom;}).forEach(function(s){V137_TPL[s.key]=Object.assign({},V137_TPL[s.mt]||{kind:'',calls:false,crm:true,questions:null,always:'',writes:'',secs:[]},{custom:true});});
+  }catch(e){}
+  try{
+    for(let i=AP_E1_TABS.length-1;i>=0;i--)if(/^st_/.test(AP_E1_TABS[i][0]))AP_E1_TABS.splice(i,1);
+    v136Stages().forEach(function(s){AP_E1_TABS.push(['st_'+s.key,s.name,'st:'+s.key]);AP_E1_HEAD['st_'+s.key]=[s.name,s.doc?'In '+s.name.toLowerCase()+', prep: '+s.doc.toLowerCase():'In '+s.name.toLowerCase()];});
+  }catch(e){}
+}
+async function v145Load(force){
+  if(!force&&V145.at&&Date.now()-V145.at<60e3)return;
+  try{
+    const r=await apSb('ai_settings?select=key,value&key=in.(catalyst_meeting_types,catalyst_client_stages,catalyst_stage_ticks)');
+    const by={};(r||[]).forEach(function(x){by[x.key]=v96Json(x.value,{})||{};});
+    V145.mt=by.catalyst_meeting_types||{};V145.cs=by.catalyst_client_stages||{};V145.ticks=by.catalyst_stage_ticks||{};
+  }catch(e){}
+  V145.at=Date.now();v145Apply();
+}
+(function(){
+  const _n=v136LoadNames;
+  v136LoadNames=async function(force){const r=await _n.apply(this,arguments);try{await v145Load(force);}catch(e){}return r;};
+})();
+async function v145Put(key,fn){
+  const out=await v104SetPatch(key,function(cur){const n=fn(JSON.parse(JSON.stringify(cur||{})));return n;});
+  return out;
+}
+function v145Repaint(){
+  V145.at=0;
+  v136LoadNames(true).then(function(){
+    try{v120Paint();}catch(e){}try{paintE1Rows();}catch(e){}try{if(typeof v136Refresh==='function')v136Refresh();}catch(e){}
+    try{if(document.querySelector('#main .v145-mt')&&typeof apGo==='function')apGo(apCurrentView());else if(typeof nwRepaint==='function')nwRepaint();}catch(e){}
+  }).catch(function(){});
+}
+
+/* ---------- the board: Client Stages, a column's setup on its heading ---------- */
+function v120BoardHtml(){
+  const rows=v120Rows(),S=v136Stages(),by={};
+  S.forEach(function(s){by[s.key]=[];});
+  rows.forEach(function(l){(by[v136StageOf(l)]||by[S[0].key]).push(l);});
+  return '<div class="v120-kan">'+S.map(function(s){
+    const L=by[s.key],k=esc(nwJs(s.key));
+    return '<section class="v120-col" data-s="'+s.key+'" aria-label="'+esc(s.name+', '+nwPlural(L.length,'lead'))+'" ondragover="v136Over(event,'+k+')" ondragleave="v120Leave(event)" ondrop="v136Drop(event,'+k+')">'+
+      '<div class="v120-col-h"><i style="background:'+s.c+'"></i><button type="button" class="v145-colb" onclick="v145StageOpen('+k+')" title="'+esc('Set up '+s.name)+'" aria-label="'+esc('Set up the '+s.name+' stage')+'">'+esc(s.name)+'</button><span class="c">'+L.length+'</span></div>'+
+      '<div class="v120-cards">'+(L.length?L.map(function(l){return v136CardHtml(l,s);}).join(''):'<div class="v120-empty">No leads here</div>')+'</div></section>';
+  }).join('')+'</div>';
+}
+(function(){
+  const _c=v136CardHtml;
+  v136CardHtml=function(l,s){
+    let h=_c.apply(this,arguments);
+    if(s&&s.norun)h=h.replace(/<button type="button" class="rd-btn sm v120-next"[\s\S]*?<\/button>/,'');
+    return h;
+  };
+  const _h=v120Host;
+  v120Host=function(h){
+    _h.apply(this,arguments);
+    const b=h.querySelector('.v136-rn');if(b){b.innerHTML=nwIc('pen',14)+'Edit stages';b.setAttribute('onclick','v145StagesEdit()');}
+    const p=h.querySelector('.v120-help');if(p)p.textContent='Move a lead to the stage it is in. Catalyst writes that stage’s prep, and asks before it runs anything. Click a stage’s name to set it up.';
+  };
+  const _d=apDemo;
+  apDemo=function(o){
+    if(o&&Array.isArray(o.tabs))o.tabs.forEach(function(t){if(t.key==='board'&&t.label==='Board')t.label='Client Stages';});
+    return _d.apply(this,arguments);
+  };
+})();
+
+/* the stages: add, rename, reorder, delete (a stage's leads move first) */
+function v145StagesEdit(){
+  v136LoadNames(true).then(function(){
+    const R=v145StageRecs(true),T=v145Types(false).filter(function(t){return t.custom;});
+    const row=function(r){
+      return '<div class="v145-sr'+(r.removed?' is-off':'')+'" data-k="'+esc(r.key)+'"><i style="background:'+r.c+'"></i>'+
+        '<input class="nw-input" aria-label="'+esc('Stage name: '+r.name)+'" value="'+esc(r.name)+'" maxlength="60"'+(r.removed?' disabled':'')+'>'+
+        '<span class="v145-sk">'+esc(r.custom?(r.type?'Runs '+((v145Type(r.type)||{}).doc||'its meeting type'):'Runs nothing yet'):'Built in · '+v145Base(r.key).doc)+'</span>'+
+        (r.removed?'<button type="button" class="nw-btn nw-btn-ghost nw-btn-sm" onclick="v145StageBack(\''+esc(r.key)+'\')">Bring back</button>'
+          :'<button type="button" class="nw-icon-btn" aria-label="'+esc('Move '+r.name+' up')+'" onclick="v145StageMove(this,-1)">↑</button>'+
+           '<button type="button" class="nw-icon-btn" aria-label="'+esc('Move '+r.name+' down')+'" onclick="v145StageMove(this,1)">↓</button>'+
+           '<button type="button" class="nw-icon-btn v145-del" aria-label="'+esc('Delete '+r.name)+'" onclick="v145StageDelAsk(\''+esc(r.key)+'\')">✕</button>')+'</div>';};
+    nwModal('v145S','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · Lead pipeline</div><h2>Client stages</h2></div>'+
+        '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+      '<div class="nw-m-body v145-m"><p class="nw-muted nw-small">The board’s columns, for the whole team, in this order. Click a stage’s name on the board to set up what it needs and what it runs.</p>'+
+        '<div id="v145Sl">'+R.filter(function(r){return !r.removed;}).map(row).join('')+'</div>'+
+        (R.some(function(r){return r.removed;})?'<details class="v145-gone"><summary>Removed stages</summary>'+R.filter(function(r){return r.removed;}).map(row).join('')+'</details>':'')+
+        '<div class="v144-add"><input class="nw-input" id="v145NewS" maxlength="60" placeholder="New stage, e.g. Strategy session" aria-label="New stage name" onkeydown="if(event.key===\'Enter\')v145StageAdd()">'+
+          '<select class="nw-input" id="v145NewT" data-nofill="1" aria-label="Meeting type it runs"><option value="">Runs nothing yet</option>'+T.map(function(t){return '<option value="'+esc(t.key)+'">Runs '+esc(t.doc)+'</option>';}).join('')+'</select>'+
+          '<button type="button" class="nw-btn nw-btn-ghost" onclick="v145StageAdd()">'+nwIc('plus',15)+'Add stage</button></div>'+
+        '<p class="v120-msg" id="v145Msg" role="status" aria-live="polite"></p>'+
+        '<div class="nw-m-foot"><button type="button" class="nw-btn nw-btn-ghost" onclick="v145Usual()">Use the usual names</button><span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button>'+
+          '<button type="button" class="nw-btn nw-btn-primary" id="v145Go" onclick="v145StagesSave()">'+nwIc('check',15)+'Save changes</button></div></div>');
+  });
+}
+function v145Usual(){document.querySelectorAll('#v145Sl .v145-sr').forEach(function(r){const b=v145Base(r.dataset.k);if(b)r.querySelector('input').value=b.name;});}
+function v145Say(id,t,err){const m=document.getElementById(id);if(m){m.textContent=t;m.classList.toggle('err',!!err);}}
+function v145StageMove(btn,d){const r=btn.closest('.v145-sr'),p=r.parentNode;if(d<0&&r.previousElementSibling)p.insertBefore(r,r.previousElementSibling);else if(d>0&&r.nextElementSibling)p.insertBefore(r.nextElementSibling,r);btn.focus();}
+function v145StageAdd(){
+  const i=document.getElementById('v145NewS'),t=document.getElementById('v145NewT'),n=v145Txt(i.value,60);
+  if(!n)return v145Say('v145Msg','Give the stage a name first.',true);
+  const taken=[...document.querySelectorAll('#v145S .v145-sr input')].some(function(x){return x.value.trim().toLowerCase()===n.toLowerCase();});
+  if(taken)return v145Say('v145Msg','There is already a stage called '+n+'.',true);
+  const k=v145Id('cs'),d=document.createElement('div');
+  d.className='v145-sr is-new';d.dataset.k=k;d.dataset.type=t.value;
+  d.innerHTML='<i style="background:'+V145_COLORS[document.querySelectorAll('#v145Sl .v145-sr').length%V145_COLORS.length]+'"></i><input class="nw-input" value="'+esc(n)+'" maxlength="60" aria-label="Stage name">'+
+    '<span class="v145-sk">New · '+esc(t.value?'runs '+((v145Type(t.value)||{}).doc||''):'runs nothing yet')+'</span>'+
+    '<button type="button" class="nw-icon-btn" aria-label="Move up" onclick="v145StageMove(this,-1)">↑</button><button type="button" class="nw-icon-btn" aria-label="Move down" onclick="v145StageMove(this,1)">↓</button>'+
+    '<button type="button" class="nw-icon-btn v145-del" aria-label="Remove" onclick="this.closest(\'.v145-sr\').remove()">✕</button>';
+  document.getElementById('v145Sl').appendChild(d);i.value='';v145Say('v145Msg','Added. Save changes to keep it.');
+}
+async function v145StagesSave(){
+  const rows=[...document.querySelectorAll('#v145Sl .v145-sr')];
+  if(!rows.length)return v145Say('v145Msg','Keep at least one stage.',true);
+  const names=rows.map(function(r){return v145Name(r.querySelector('input').value);});
+  if(names.some(function(n){return !n;}))return v145Say('v145Msg','Every stage needs a name.',true);
+  const low=names.map(function(n){return n.toLowerCase();});
+  if(low.some(function(n,i){return low.indexOf(n)!==i;}))return v145Say('v145Msg','Two stages have the same name.',true);
+  const btn=document.getElementById('v145Go');btn.disabled=true;v145Say('v145Msg','Saving…');
+  const by=apCfMe(),at=new Date().toISOString(),order=rows.map(function(r){return r.dataset.k;});
+  try{
+    await v145Put('catalyst_client_stages',function(cur){
+      cur.items=cur.items||{};const rem=(cur.removed||[]).filter(function(k){return order.indexOf(k)<0;});
+      rows.forEach(function(r,i){const k=r.dataset.k;
+        if(v145Base(k))return;
+        cur.items[k]=Object.assign({},cur.items[k]||{},{name:names[i],by:by,at:at},r.classList.contains('is-new')?{type:r.dataset.type||'',c:r.querySelector('i').style.background}:{});});
+      return {order:order.concat((cur.order||[]).filter(function(k){return order.indexOf(k)<0;})),items:cur.items,removed:rem,by:by,at:at};
+    });
+    await v145Put('catalyst_stages',function(cur){const x={};rows.forEach(function(r,i){const b=v145Base(r.dataset.k);if(b)x[r.dataset.k]={name:names[i]===b.name?'':names[i],by:by,at:at};});return x;});
+  }catch(e){btn.disabled=false;return v145Say('v145Msg','Could not save: '+(e.message||e),true);}
+  nwModalClose();nwToast('Client stages saved.');v145Repaint();
+}
+/* a stage with leads in it asks where they go first */
+function v145StageDelAsk(k){
+  const r=v145Rec(k);if(!r)return;
+  const leads=(v120Rows()||[]).filter(function(l){return v136StageOf(l)===k;}),others=v145StageRecs(false).filter(function(x){return x.key!==k;});
+  if(!others.length)return v145Say('v145Msg','Keep at least one stage.',true);
+  nwModal('v145D','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · Client stages</div><h2>'+esc('Delete '+r.name+'?')+'</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="v145StagesEdit()" aria-label="Back">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v145-m">'+(leads.length?'<p>'+esc(nwPlural(leads.length,'lead')+' '+(leads.length===1?'is':'are')+' in '+r.name+'. Move '+(leads.length===1?'it':'them')+' to:')+'</p>'+
+        '<select class="nw-input" id="v145To" data-nofill="1" aria-label="Move its leads to">'+others.map(function(x){return '<option value="'+esc(x.key)+'">'+esc(x.name)+'</option>';}).join('')+'</select>'
+      :'<p>No leads are in it.</p>')+
+      (r.custom?'':'<p class="nw-muted nw-small">A built-in stage can be brought back later under Removed stages. Its documents stay on each lead.</p>')+
+      '<p class="v120-msg" id="v145DMsg" role="status"></p>'+
+      '<div class="nw-m-foot"><span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="v145StagesEdit()">Cancel</button>'+
+        '<button type="button" class="nw-btn nw-btn-primary" id="v145DGo" onclick="v145StageDel(\''+esc(k)+'\')">Delete the stage</button></div></div>');
+}
+async function v145StageDel(k){
+  const to=(document.getElementById('v145To')||{}).value||'',btn=document.getElementById('v145DGo');btn.disabled=true;
+  try{
+    const leads=(v120Rows()||[]).filter(function(l){return v136StageOf(l)===k;});
+    for(const l of leads)await v136SetStage(l,to);
+    await apPatch('e1_leads','stage=eq.'+encodeURIComponent(k),{stage:to||null,updated_at:new Date().toISOString()});
+    await v145Put('catalyst_client_stages',function(cur){
+      cur.items=cur.items||{};cur.order=(cur.order||v145StageRecs(true).map(function(r){return r.key;})).filter(function(x){return x!==k;});
+      if(v145Base(k)){cur.removed=(cur.removed||[]).filter(function(x){return x!==k;}).concat([k]);}
+      else cur.items[k]=Object.assign({},cur.items[k]||{},{deleted:true});
+      return cur;});
+  }catch(e){btn.disabled=false;return v145Say('v145DMsg','Could not delete it: '+(e.message||e),true);}
+  nwToast('Stage deleted.');v145Repaint();setTimeout(v145StagesEdit,300);
+}
+async function v145StageBack(k){
+  try{await v145Put('catalyst_client_stages',function(cur){cur.removed=(cur.removed||[]).filter(function(x){return x!==k;});cur.order=(cur.order||[]).filter(function(x){return x!==k;}).concat([k]);return cur;});}
+  catch(e){return v145Say('v145Msg','Could not bring it back: '+(e.message||e),true);}
+  v145Repaint();setTimeout(v145StagesEdit,300);
+}
+
+/* a stage's setup */
+function v145StageOpen(k){
+  v136LoadNames().then(function(){
+    const r=v145Rec(k);if(!r)return;
+    const T=v145Types(false),b=v145Base(k);
+    const tOpts=T.filter(function(t){return t.custom;});
+    const area=function(id,lab,val,ph,help){return '<label class="v145-f"><span>'+esc(lab)+'</span>'+(help?'<small>'+esc(help)+'</small>':'')+'<textarea class="nw-input" id="'+id+'" rows="3" placeholder="'+esc(ph)+'">'+esc(val)+'</textarea></label>';};
+    nwModal('v145P','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · Client stage</div><h2>'+esc(r.name)+'</h2></div>'+
+        '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+      '<div class="nw-m-body v145-m">'+
+        '<label class="v145-f"><span>Name</span><input class="nw-input" id="v145PName" maxlength="60" value="'+esc(r.name)+'"></label>'+
+        area('v145PDesc','Description',r.desc,'What this stage is for, and when a client is in it.')+
+        '<div class="v145-f"><span>Meeting type it runs</span><small>Runs when a lead moves into this stage, after the team says so.</small>'+
+          (b?'<p class="v145-fix">'+esc(b.doc)+' (built in)</p>'
+            :'<select class="nw-input" id="v145PType" data-nofill="1"><option value="">Nothing</option>'+tOpts.map(function(t){return '<option value="'+esc(t.key)+'"'+(t.key===r.type?' selected':'')+'>'+esc(t.doc+' · '+t.name)+'</option>';}).join('')+'</select>'+
+             (tOpts.length?'':'<small>Add a meeting type of your own on the Catalyst Overview, then pick it here.</small>'))+'</div>'+
+        '<fieldset class="v145-f"><legend>Other meeting types in this stage</legend><div class="v145-ck">'+T.filter(function(t){return t.key!==r.type;}).map(function(t){
+          return '<label><input type="checkbox" value="'+esc(t.key)+'"'+(r.also.indexOf(t.key)>=0?' checked':'')+'> '+esc(t.name)+'</label>';}).join('')+'</div></fieldset>'+
+        area('v145PIn','Inputs required',r.inputs,'e.g. Signed proposal, kickoff date, the client’s main contact','Shown when a lead moves in, so the team has them ready.')+
+        area('v145PBefore','Before this stage',r.before,'What to do or run before the meeting')+
+        area('v145PAfter','After this stage',r.after,'Follow-up: what to send, run or decide after it')+
+        (b&&b.agent!=='meeting_prep'?'':area('v145PTpl','Output template',r.template,'One section per line','The sections its prep follows. Leave it empty to use the meeting type’s.'))+
+        area('v145PDel','Deliverables',r.deliverables.join('\n'),'One per line, e.g. Signed SOW','A checklist on each lead in this stage.')+
+        area('v145PTask','Workflow tasks',r.tasks.join('\n'),'One per line, e.g. Send the welcome email','A checklist on each lead in this stage.')+
+        (b?'<p class="nw-muted nw-small">What it reads and its template document are on Atlas › Templates, under this stage.</p>':'')+
+        '<p class="v120-msg" id="v145PMsg" role="status" aria-live="polite"></p>'+
+        '<div class="nw-m-foot"><span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button>'+
+          '<button type="button" class="nw-btn nw-btn-primary" id="v145PGo" onclick="v145StageSave(\''+esc(k)+'\')">'+nwIc('check',15)+'Save</button></div></div>',true);
+  });
+}
+async function v145StageSave(k){
+  const v=function(id,n){return v145Txt((document.getElementById(id)||{}).value,n);};
+  const name=v145Name(v('v145PName',60));if(!name)return v145Say('v145PMsg','Give the stage a name.',true);
+  if(v145StageRecs(true).some(function(r){return r.key!==k&&r.name.toLowerCase()===name.toLowerCase();}))return v145Say('v145PMsg','There is already a stage called '+name+'.',true);
+  const b=v145Base(k),by=apCfMe(),at=new Date().toISOString();
+  const rec={desc:v('v145PDesc'),inputs:v('v145PIn'),before:v('v145PBefore'),after:v('v145PAfter'),template:v('v145PTpl',2000),
+    deliverables:v145Lines(v('v145PDel',2000)),tasks:v145Lines(v('v145PTask',2000)),
+    also:[...document.querySelectorAll('#v145P .v145-ck input:checked')].map(function(x){return x.value;}),by:by,at:at};
+  if(!b){rec.name=name;rec.type=v('v145PType',40);}
+  const btn=document.getElementById('v145PGo');btn.disabled=true;v145Say('v145PMsg','Saving…');
+  try{
+    await v145Put('catalyst_client_stages',function(cur){cur.items=cur.items||{};cur.items[k]=Object.assign({},cur.items[k]||{},rec);return cur;});
+    if(b)await v145Put('catalyst_stages',function(){const x={};x[k]={name:name===b.name?'':name,by:by,at:at};return x;});
+  }catch(e){btn.disabled=false;return v145Say('v145PMsg','Could not save: '+(e.message||e),true);}
+  nwModalClose();nwToast(name+' saved.');v145Repaint();
+}
+
+/* ---------- Meeting Types on the Catalyst Overview ---------- */
+(function(){
+  const _o=v136OverviewDemo;
+  v136OverviewDemo=function(o){
+    _o.apply(this,arguments);
+    const T=v145Types(true),S=v136Stages(),D=window._e1Last?apE1Leads():{leads:[]},cnt={};
+    (D.leads||[]).forEach(function(l){const k=v136StageOf(l);cnt[k]=(cnt[k]||0)+1;});
+    const leadsIn=function(t){const s=S.filter(function(x){return x.mt===t.key;});return s.length?nwPlural(s.reduce(function(a,x){return a+(cnt[x.key]||0);},0),'lead')+' in this stage':'Not run by a client stage yet';};
+    const inStage=function(t){return S.filter(function(s){return s.mt===t.key||(v145Rec(s.key)||{also:[]}).also.indexOf(t.key)>=0;}).map(function(s){return s.name;});};
+    const sec=document.querySelector('#main section[data-tp="agents"]');
+    if(sec){
+      const h=sec.querySelector('h2');if(h)h.textContent='Meeting types, prep for each';
+      const grid=sec.querySelector('.ap-a5s');
+      if(grid){grid.classList.add('v136-six');grid.innerHTML=T.map(function(t,i){
+        const st=inStage(t);
+        return '<button type="button" class="ap-a3 v145-mt'+(t.hidden?' is-off':'')+'" data-mt="'+esc(t.key)+'" onclick="v145TypeOpen(\''+esc(t.key)+'\')" aria-label="'+esc('Set up '+t.name)+'">'+
+          '<div class="hd"><span class="num">'+(i+1)+'</span><span><span class="kind">'+esc(t.name)+(t.custom?' · yours':'')+(t.hidden?' · hidden':'')+'</span><b class="nm">'+esc(t.doc)+'</b></span></div>'+
+          '<p>'+esc(t.desc)+'</p><div class="io"><b>In</b> '+esc(st.length?st.join(', '):'no client stage yet')+'</div>'+
+          '<div class="ft"><span>'+esc(leadsIn(t))+'</span></div></button>';}).join('')+
+        '<button type="button" class="ap-a3 v145-new" onclick="v145TypeOpen(\'\')"><b>'+nwIc('plus',16)+' New meeting type</b><p>A meeting of your own: what it writes, its sections, what it reads.</p></button>';}
+    }
+    if(typeof o.strip==='function'){const _s=o.strip;o.strip=function(){const r=_s.apply(this,arguments)||[];const x=r.find(function(y){return y&&y.l==='Stages';});if(x){x.n=T.filter(function(t){return !t.hidden;}).length;x.l='Meeting types';x.s='a document for each';}return r;};}
+    if(Array.isArray(o.tabs))o.tabs.forEach(function(t){if(t.key==='agents')t.label='Meeting Types';});
+  };
+})();
+async function v145KbList(){
+  if(V145.kb)return V145.kb;
+  try{V145.kb=(await apSb('guide_files?select=id,file_name&in_kb=is.true&order=created_at.desc&limit=60'))||[];}
+  catch(e){try{V145.kb=(await apSb('guide_files?select=id,file_name&order=created_at.desc&limit=60'))||[];}catch(e2){V145.kb=[];}}
+  return V145.kb;
+}
+async function v145TypeOpen(k){
+  await v136LoadNames();
+  const t=k?v145Type(k):{key:'',custom:true,name:'',doc:'',desc:'',sections:[],kb:'',kbFiles:[],hidden:false};if(!t)return;
+  const kb=await v145KbList();try{await v137SetupLoad();}catch(e){}
+  const su=t.key?v137Setup(t.key):{calls:true,crm:true};const so=((V137.setup||{})[t.key])||{};
+  const em=typeof so.emails==='boolean'?so.emails:true;
+  const area=function(id,lab,val,ph,help,dis){return '<label class="v145-f"><span>'+esc(lab)+'</span>'+(help?'<small>'+esc(help)+'</small>':'')+'<textarea class="nw-input" id="'+id+'" rows="3" placeholder="'+esc(ph)+'"'+(dis?' disabled':'')+'>'+esc(val)+'</textarea></label>';};
+  nwModal('v145T','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · Meeting type'+(t.custom?'':' · built in')+'</div><h2>'+esc(t.key?t.name:'New meeting type')+'</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v145-m">'+
+      '<label class="v145-f"><span>Meeting name</span><input class="nw-input" id="v145TName" maxlength="60" value="'+esc(t.name)+'" placeholder="e.g. Strategy session"></label>'+
+      '<label class="v145-f"><span>What it writes</span><input class="nw-input" id="v145TDoc" maxlength="60" value="'+esc(t.doc)+'" placeholder="e.g. Strategy session brief"'+(t.custom?'':' disabled')+'></label>'+
+      area('v145TDesc','Description',t.desc,'What the meeting is for, and what the prep should help the team do.')+
+      (t.custom?area('v145TSecs','Output template',t.sections.join('\n'),'One section per line, e.g. Purpose of the meeting','The sections it writes, in order. Empty: purpose, what we know, what changed, questions, what to decide.')
+        :'<div class="v145-f"><span>Output template</span><small>Its sections, from its template on Atlas › Templates:</small><p class="v145-fix">'+esc(t.sections.join(' · ')||'Its own sections')+'</p></div>')+
+      '<fieldset class="v145-f"><legend>What it reads</legend><div class="v145-ck">'+
+        (t.key==='research'?'<label><input type="checkbox" checked disabled> The CRM record</label>'
+          :'<label><input type="checkbox" id="v145TCalls"'+(su.calls?' checked':'')+'> Call transcripts</label><label><input type="checkbox" id="v145TCrm"'+(su.crm?' checked':'')+'> The CRM record</label><label><input type="checkbox" id="v145TMail"'+(em?' checked':'')+'> Emails in HubSpot</label>')+
+        '<label><input type="checkbox" checked disabled> The lead’s documents so far</label></div></fieldset>'+
+      area('v145TKb','Knowledge base context',t.kb,'What Catalyst should know for this meeting: your approach, offers, rules of thumb','Sent with every run of this meeting type.')+
+      (kb.length?'<fieldset class="v145-f"><legend>Knowledge base files to include</legend><small>Up to 6. Their text goes with the run, shortened if long.</small><div class="v145-ck v145-kbf">'+kb.map(function(f){
+        return '<label><input type="checkbox" value="'+esc(f.id)+'"'+(t.kbFiles.indexOf(String(f.id))>=0?' checked':'')+'> '+esc(f.file_name||'Untitled')+'</label>';}).join('')+'</div></fieldset>':'')+
+      '<p class="v120-msg" id="v145TMsg" role="status" aria-live="polite"></p>'+
+      '<div class="nw-m-foot">'+(t.key?(t.custom?'<button type="button" class="nw-btn nw-btn-ghost v145-del" onclick="v145TypeDel(\''+esc(t.key)+'\')">Delete</button>'
+          :'<button type="button" class="nw-btn nw-btn-ghost" onclick="v145TypeHide(\''+esc(t.key)+'\','+(!t.hidden)+')">'+(t.hidden?'Show it again':'Hide it')+'</button>'):'')+
+        '<span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button>'+
+        '<button type="button" class="nw-btn nw-btn-primary" id="v145TGo" onclick="v145TypeSave(\''+esc(t.key)+'\')">'+nwIc('check',15)+(t.key?'Save':'Add meeting type')+'</button></div></div>',true);
+}
+async function v145TypeSave(k){
+  const v=function(id,n){return v145Txt((document.getElementById(id)||{}).value,n);};
+  const name=v145Name(v('v145TName',60)),doc=v145Name(v('v145TDoc',60));
+  if(!name)return v145Say('v145TMsg','Give the meeting a name.',true);
+  const custom=!k||/^mt-/.test(k);
+  if(custom&&!doc)return v145Say('v145TMsg','Say what it writes, e.g. '+name+' brief.',true);
+  if(v145Types(true).some(function(t){return t.key!==k&&t.name.toLowerCase()===name.toLowerCase();}))return v145Say('v145TMsg','There is already a meeting type called '+name+'.',true);
+  const key=k||v145Id('mt'),by=apCfMe(),at=new Date().toISOString();
+  const rec={name:name,desc:v('v145TDesc'),kb:v('v145TKb',4000),kbFiles:[...document.querySelectorAll('#v145T .v145-kbf input:checked')].map(function(x){return x.value;}).slice(0,6),by:by,at:at};
+  if(custom){rec.doc=doc;rec.sections=v145Lines(v('v145TSecs',3000));}
+  const btn=document.getElementById('v145TGo');btn.disabled=true;v145Say('v145TMsg','Saving…');
+  try{
+    await v145Put('catalyst_meeting_types',function(cur){cur.items=cur.items||{};cur.items[key]=Object.assign({},cur.items[key]||{},rec);
+      if(custom){cur.order=(cur.order||[]).filter(function(x){return x!==key;}).concat([key]);}return cur;});
+    if(key!=='research'&&document.getElementById('v145TCalls'))await v137SetupSave(key,{calls:!!document.getElementById('v145TCalls').checked,crm:!!document.getElementById('v145TCrm').checked,emails:!!document.getElementById('v145TMail').checked});
+    if(!custom){const b=v145Base(key);await v145Put('catalyst_stages',function(){const x={};x[key]={name:name===b.name?'':name,by:by,at:at};return x;});}
+  }catch(e){btn.disabled=false;return v145Say('v145TMsg','Could not save: '+(e.message||e),true);}
+  nwModalClose();nwToast(k?name+' saved.':name+' added. Pick it in a client stage’s setup to run it.');v145Repaint();
+}
+async function v145TypeHide(k,hide){
+  try{await v145Put('catalyst_meeting_types',function(cur){cur.items=cur.items||{};cur.items[k]=Object.assign({},cur.items[k]||{},{hidden:!!hide});return cur;});}
+  catch(e){return v145Say('v145TMsg','Could not save: '+(e.message||e),true);}
+  nwModalClose();nwToast(hide?'Hidden from the list. Its stage still runs it.':'Shown again.');v145Repaint();
+}
+async function v145TypeDel(k){
+  const using=v145StageRecs(true).filter(function(r){return r.type===k;});
+  const ok=window.confirm('Delete this meeting type?'+(using.length?' '+using.map(function(r){return r.name;}).join(', ')+' will run nothing until you pick another.':'')+' Documents it wrote stay on each lead.');
+  if(!ok)return;
+  try{
+    await v145Put('catalyst_meeting_types',function(cur){cur.items=cur.items||{};cur.items[k]=Object.assign({},cur.items[k]||{},{deleted:true});cur.order=(cur.order||[]).filter(function(x){return x!==k;});return cur;});
+    if(using.length)await v145Put('catalyst_client_stages',function(cur){cur.items=cur.items||{};using.forEach(function(r){cur.items[r.key]=Object.assign({},cur.items[r.key]||{},{type:''});});return cur;});
+  }catch(e){return v145Say('v145TMsg','Could not delete it: '+(e.message||e),true);}
+  nwModalClose();nwToast('Meeting type deleted.');v145Repaint();
+}
+
+/* ---------- runs: a stage of the team's own, its meeting type's sections and knowledge base ---------- */
+(function(){
+  const _su=v137Setup;
+  v137Setup=function(k){const st=v136St(k);return _su.call(this,st&&st.custom&&st.mt?st.mt:k);};
+  const _p=v136Plan;
+  v136Plan=function(l,s){const st=v136St(s),p=_p.apply(this,arguments);
+    if(st&&st.custom){p.notes=true;if(!st.mt)p.blocked='This stage runs nothing yet. Pick a meeting type in its setup (click its name on the board).';else if(!v136AnyDoc(l))p.need='documents';}
+    return p;};
+  const _b=v136PrepBody;
+  v136PrepBody=function(l,st){
+    const body=_b.apply(this,arguments),r=v145Rec(st.key),t=st.mt?v145Type(st.mt):null;
+    const secs=r&&r.template?v145Lines(r.template):(t&&t.custom?t.sections:[]);
+    if(secs.length>=2)body.sections=secs;
+    const purpose=[r&&r.desc,t&&t.custom?t.desc:''].filter(Boolean).join(' ');if(purpose)body.purpose=purpose.slice(0,600);
+    return body;
+  };
+  const _st=v137Start;
+  v137Start=async function(l,s,typed,g){
+    const kb=await v145KbText(s).catch(function(){return '';});
+    if(kb)typed=(typed?typed+'\n\n':'')+kb;
+    return _st.call(this,l,s,typed,g);
+  };
+})();
+async function v145KbText(s){
+  const st=v136St(s),t=st&&st.mt?v145Type(st.mt):null;if(!t||(!t.kb&&!t.kbFiles.length))return '';
+  const parts=[];if(t.kb)parts.push(t.kb);
+  if(t.kbFiles.length){
+    try{const rows=await apSb('guide_files?select=id,file_name,file_text&id=in.('+t.kbFiles.map(encodeURIComponent).join(',')+')');let left=6000;
+      (rows||[]).forEach(function(f){if(left<300||!f.file_text)return;const x=String(f.file_text).replace(/\s+\n/g,'\n').slice(0,Math.min(3000,left));parts.push((f.file_name||'A file')+':\n'+x);left-=x.length;});}catch(e){}
+  }
+  return 'KNOWLEDGE BASE CONTEXT FOR '+t.name.toUpperCase()+'\n'+parts.join('\n\n');
+}
+
+(function(){
+  const _r=v137ReadsHtml;
+  v137ReadsHtml=function(s,g){
+    const h=_r.apply(this,arguments),T=V137_TPL[s]||{};
+    return T.custom?h.replace(/No template for this stage yet, so the usual sections\. Add one on Templates\./,'Template: the meeting type’s sections ('+esc((T.secs||[]).length)+')'):h;
+  };
+  const _t=v137StageHtml;
+  v137StageHtml=function(s){return s&&s.custom?'':_t.apply(this,arguments);};
+})();
+/* a stage that runs nothing: moving a lead there is just a move */
+(function(){
+  const _a=v136Ask;
+  v136Ask=async function(email,s,move){
+    await v136LoadNames();
+    const st=v136St(s);
+    if(st&&st.norun){
+      const l=v120Lead(email);if(!l)return;
+      if(!move||v136StageOf(l)===s){nwToast(st.name+' runs nothing yet. Pick a meeting type in its setup.');return;}
+      try{await v136SetStage(l,s);}catch(e){nwToast('Could not move the lead: '+(e.message||e));return;}
+      nwToast('Moved to '+st.name+'.');v120Paint();try{paintE1Rows();}catch(e){}return;
+    }
+    const r=await _a.apply(this,arguments);
+    try{
+      const rec=v145Rec(s),body=document.querySelector('#v120M .v120-m');
+      if(rec&&body&&(rec.inputs||rec.before||rec.deliverables.length||rec.tasks.length)){
+        const d=document.createElement('div');d.className='v145-ask';
+        d.innerHTML=(rec.inputs?'<p><b>Have these ready</b> '+esc(rec.inputs)+'</p>':'')+(rec.before?'<p><b>Before this stage</b> '+esc(rec.before)+'</p>':'')+
+          (rec.deliverables.length?'<p><b>Deliverables</b> '+esc(rec.deliverables.join(' · '))+'</p>':'')+(rec.tasks.length?'<p><b>Workflow tasks</b> '+esc(rec.tasks.join(' · '))+'</p>':'');
+        body.insertBefore(d,body.firstChild);
+      }
+    }catch(e){}
+    return r;
+  };
+})();
+
+/* ---------- a lead's page: this stage's checklist ---------- */
+function v145StageHtml(l){
+  const k=v136StageOf(l),r=v145Rec(k);if(!r)return '';
+  if(!r.deliverables.length&&!r.tasks.length&&!r.inputs&&!r.before&&!r.after)return '';
+  const tk=((V145.ticks||{})[l.email]||{})[k]||{},em=esc(nwJs(l.email)),sk=esc(nwJs(k));
+  const list=function(arr,p,lab){return arr.length?'<h3 class="v145-h">'+lab+'</h3><ul class="v145-cl">'+arr.map(function(x,i){const id=p+':'+i;
+    return '<li><label><input type="checkbox"'+(tk[id]?' checked':'')+' onchange="v145Tick('+em+','+sk+',\''+id+'\',this.checked)"> '+esc(x)+'</label></li>';}).join('')+'</ul>':'';};
+  return '<h2>This stage: '+esc(r.name)+' <button type="button" class="rd-btn sm" onclick="v145StageOpen('+sk+')">Stage setup</button></h2><div class="card v145-stg">'+
+    (r.desc?'<p>'+esc(r.desc)+'</p>':'')+(r.inputs?'<p><b>Inputs required</b> '+esc(r.inputs)+'</p>':'')+
+    (r.before?'<p><b>Before</b> '+esc(r.before)+'</p>':'')+(r.after?'<p><b>After</b> '+esc(r.after)+'</p>':'')+
+    list(r.deliverables,'d','Deliverables')+list(r.tasks,'t','Workflow tasks')+'</div>';
+}
+async function v145Tick(email,k,id,on){
+  (V145.ticks[email]=V145.ticks[email]||{})[k]=Object.assign({},(V145.ticks[email]||{})[k]||{});V145.ticks[email][k][id]=!!on;
+  try{await v145Put('catalyst_stage_ticks',function(cur){const x={};x[email]=Object.assign({},cur[email]||{});x[email][k]=Object.assign({},x[email][k]||{});x[email][k][id]=!!on;return x;});}
+  catch(e){nwToast('Could not save the tick: '+(e.message||e));}
+}
+(function(){
+  const _r=renderE1Lead;
+  renderE1Lead=function(){
+    const r=_r.apply(this,arguments);
+    Promise.resolve(r).then(async function(){
+      await v136LoadNames();
+      const main=document.getElementById('main');if(!main||typeof state==='undefined'||state.view!=='e1lead')return;
+      const X=apE1Lead();if(!X||!X.lead)return;
+      const l=(typeof v120Lead==='function'&&v120Lead(X.lead.email))||X.lead,h=v145StageHtml(l);
+      main.querySelectorAll(':scope > section[data-v145]').forEach(function(x){x.remove();});
+      if(!h)return;
+      const sec=document.createElement('section');sec.className='block';sec.dataset.v145='stage';sec.innerHTML=h;
+      const first=main.querySelector(':scope > section.block');if(first)first.before(sec);else main.appendChild(sec);
+    }).catch(function(){});
+    return r;
+  };
+})();
+/*@@v145end*/
 </script>
 <script>
 /* ===================================================================
