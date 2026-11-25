@@ -47,11 +47,19 @@ const ago = (h) => new Date(Date.now() - h * 3600e3).toISOString();
       return { body: { ok: true, started: true } };
     };
     const { ctx, page } = await H.newPage(browser, BASE, { seed: true, rest: store, hooks: hook, bucket: errors, fixed: false });
+    const storage = [];
+    await ctx.route('**/storage/v1/**', (route) => {
+      const r = route.request();
+      if (r.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
+      storage.push({ method: r.method(), at: r.url().split('/storage/v1/object/')[1] || '', body: r.postData() || '' });
+      return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"Key":"x"}' });
+    });
+    page.on('dialog', (d) => d.accept());
     await page.setViewportSize({ width: o.width || 1440, height: 900 });
     await page.goto(BASE + addr, { waitUntil: 'load' });
     await H.settled(page, 'app');
     await page.waitForTimeout(o.wait || 1800);
-    return { ctx, page, store, hooks };
+    return { ctx, page, store, hooks, storage };
   }
   const setting = (store, k) => (store.db.ai_settings.find((r) => r.key === k) || {}).value;
   const obj = (v) => (typeof v === 'string' ? JSON.parse(v) : v) || {};
@@ -177,6 +185,72 @@ const ago = (h) => new Date(Date.now() - h * 3600e3).toISOString();
     await page.evaluate(() => v145StageOpen('proposal')); await page.waitForTimeout(800);
     const ph = await page.evaluate(() => ({ over: document.documentElement.scrollWidth > innerWidth + 1, w: Math.round(document.getElementById('v145P').getBoundingClientRect().width) }));
     check('A stage\'s setup on a phone: fits, no sideways scroll', !ph.over && ph.w <= 390, JSON.stringify(ph));
+    await ctx.close();
+  }
+
+  // 2. The client workspace on a lead's page
+  if (want('workspace')) {
+    let { ctx, page, store, hooks, storage } = await open('/dashboard/lead-pipeline');
+    await page.evaluate((e) => openE1Lead(e), L1); await page.waitForTimeout(2600);
+    const filesTab = async () => { const t = page.locator('#apChrome .rd-tab', { hasText: /^Files/ }); if (await t.count()) { await t.first().click(); await page.waitForTimeout(300); } };
+    await filesTab();
+    const ws = await page.evaluate(() => {
+      const box = document.querySelector('#main .v145-ws'); if (!box) return null;
+      return { tabs: [...box.querySelectorAll('.v145-wtabs button')].map((b) => b.textContent.trim()), folders: [...box.querySelectorAll('.v145-wsn .v145-wf span')].map((s) => s.childNodes[0].textContent.trim()),
+        cur: (box.querySelector('.v145-wcard.is-cur b') || {}).textContent, rows: [...box.querySelectorAll('.v145-wr')].map((r) => r.querySelector('b').textContent), fmts: [...box.querySelectorAll('.v145-wr')].map((r) => [...r.querySelectorAll('.v145-fmt')].map((x) => x.textContent).join('+')) };
+    });
+    check('A lead\'s Files tab is the workspace: Files and Calls, All content, Starred, To organize and a folder per client stage', ws && /^Files/.test(ws.tabs[0]) && /^Calls/.test(ws.tabs[1]) && ws.folders.slice(0, 3).join() === 'All content,Starred,To organize' && ws.folders.includes('Prospect research') && ws.folders.includes('Client review'), JSON.stringify(ws));
+    check('The stage folder cards mark the lead\'s current stage', ws && ws.cur === 'Proposal', ws && ws.cur);
+    check('Each stage document is one row, its formats together; uploads show with their type', ws && ws.rows.includes('Pre-meeting prospect brief') && ws.rows.includes('QA-Form-ADV.pdf') && ws.fmts.some((f) => /PDF/.test(f)), JSON.stringify(ws && { rows: ws.rows, fmts: ws.fmts }));
+    await page.click('#main .v145-wsn .v145-wf:has-text("Prospect research")'); await page.waitForTimeout(200);
+    const inF = await page.$$eval('#main .v145-wr b', (b) => b.map((x) => x.textContent));
+    check('A folder shows its own: the prospect brief and the upload filed with it', inF.includes('Pre-meeting prospect brief') && inF.includes('QA-Form-ADV.pdf') && !inF.includes('Assessment report'), JSON.stringify(inF));
+    await page.click('#main .v145-wsn .v145-wf:has-text("All content")');
+    await page.fill('#main .v145-wq input', 'ADV'); await page.waitForTimeout(200);
+    check('Search narrows the list', (await page.$$eval('#main .v145-wr b', (b) => b.map((x) => x.textContent))).join() === 'QA-Form-ADV.pdf');
+    await page.fill('#main .v145-wq input', ''); await page.waitForTimeout(150);
+    await page.click('#main .v145-wr:has-text("QA-Form-ADV.pdf") .v145-star'); await page.waitForTimeout(900);
+    const meta = () => obj(setting(store, 'catalyst_ws'))[L1] || {};
+    const fid = '00000000-0000-4000-8000-0000000f1001';
+    check('Star is kept for the team', (meta().items || {})['f:' + fid] && meta().items['f:' + fid].star === true, JSON.stringify(meta()));
+    // a folder of the team's own, then a file moved into it with a description
+    await page.click('#main .v145-wsh button:has-text("New folder")'); await page.waitForTimeout(400);
+    await page.fill('#v145WFName', 'Contracts'); await page.click('#v145WF button:has-text("Add folder")'); await page.waitForTimeout(900);
+    check('New folder is kept for the team and opens', (meta().folders || []).some((f) => f.name === 'Contracts') && await page.locator('#main .v145-wf.on:has-text("Contracts")').count() === 1, JSON.stringify(meta().folders));
+    await page.click('#main .v145-wsn .v145-wf:has-text("All content")');
+    await page.click('#main .v145-wr:has-text("QA-Form-ADV.pdf") button[aria-label^="Edit"]'); await page.waitForTimeout(400);
+    const cf = (meta().folders || []).find((f) => f.name === 'Contracts').id;
+    await page.selectOption('#v145WEFold', cf); await page.fill('#v145WEName', 'Form ADV (2026)'); await page.fill('#v145WEDesc', 'The firm\'s latest filing.');
+    await page.click('#v145WE button:has-text("Save")'); await page.waitForTimeout(900);
+    const it = meta().items['f:' + fid];
+    check('Edit names it, files it and describes it', it.folder === cf && it.name === 'Form ADV (2026)' && /latest filing/.test(it.desc), JSON.stringify(it));
+    check('The row shows the new name and its folder', /Form ADV \(2026\)/.test(await page.textContent('#main .v145-ws')) && await page.locator('#main .v145-wr:has-text("Form ADV (2026)") .v145-fchip:has-text("Contracts")').count() === 1);
+    // a transcript pasted in, as a source
+    await page.click('#main .v145-wsh button:has-text("Upload file")'); await page.waitForTimeout(400);
+    await page.check('#v145WU input[value="text"]');
+    await page.fill('#v145WUName', 'Partner call, Nov 20');
+    await page.click('#v145WUGo'); await page.waitForTimeout(200);
+    check('A transcript needs some text first', /Paste the transcript first/.test(await page.textContent('#v145WUMsg')));
+    await page.fill('#v145WUText', 'Pat: We lose two days a month on reporting. Our main goal is a 90-day pilot with the ops team.');
+    await page.selectOption('#v145WUFold', 'assessment'); await page.fill('#v145WUDesc', 'Notes from the partner call.');
+    await page.click('#v145WUGo'); await page.waitForTimeout(2600);
+    const row = store.db.lead_files.find((r) => /Partner_call/.test(r.file_path || ''));
+    check('Uploaded to the lead\'s files in Storage, and its row saved as a transcript with its text', storage.some((x) => x.method === 'POST' && x.at.indexOf('lead-files/' + L1 + '/') === 0) && row && row.category === 'transcript' && /two days a month/.test(row.file_text || ''), JSON.stringify(row));
+    const tm = row && meta().items['f:' + row.id];
+    check('Kept with its name, folder, description, as a source', tm && tm.name === 'Partner call, Nov 20' && tm.folder === 'assessment' && tm.source === true, JSON.stringify(tm));
+    await filesTab(); await page.click('#main .v145-wtabs button:has-text("Calls")'); await page.waitForTimeout(400);
+    check('It shows under Calls, as uploaded, in its folder', /Partner call, Nov 20/.test(await page.textContent('#main .v145-wl')) && /Uploaded/.test(await page.textContent('#main .v145-wl')));
+    // a stage run reads it
+    await page.evaluate((e) => v136Ask(e, 'assessment', false), L1); await page.waitForTimeout(2200);
+    check('The run question lists it among what the stage reads', /From the client workspace: Partner call, Nov 20/.test(await page.textContent('#v120M')));
+    await page.click('#v120Go'); await page.waitForTimeout(2500);
+    const sent = hooks.filter((h) => /e1-custom-run|catalyst-meeting-prep/.test(h.p)).pop();
+    check('The run sends it in the notes, after what the team typed', sent && /FILES AND TRANSCRIPTS ADDED TO THE CLIENT WORKSPACE/.test(JSON.stringify(sent.b)) && /two days a month/.test(JSON.stringify(sent.b)), sent && JSON.stringify(sent.b).slice(0, 300));
+    // a phone
+    await page.evaluate((e) => openE1Lead(e), L1); await page.waitForTimeout(2200); await filesTab();
+    await page.setViewportSize({ width: 390, height: 820 }); await page.waitForTimeout(400);
+    const ph = await page.evaluate(() => ({ over: document.documentElement.scrollWidth > innerWidth + 1 }));
+    check('The workspace on a phone: no sideways scroll', !ph.over, JSON.stringify(ph));
     await ctx.close();
   }
 

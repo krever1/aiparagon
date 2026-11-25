@@ -16038,7 +16038,7 @@ async function renderE1Lead(){
   let files=[], filesErr=null;
   try{
     const emails = (lead.emails||[lead.email]).map(e=>'"'+e+'"').join(",");
-    files = await sb(`lead_files?select=id,lead_email,file_name,file_url,file_path,stage,source,note,uploaded_by,indexed_at,created_at&lead_email=in.(${emails})&order=created_at.desc&limit=200`);
+    files = await sb(`lead_files?select=id,lead_email,file_name,file_url,file_path,stage,source,note,uploaded_by,indexed_at,created_at,category&lead_email=in.(${emails})&order=created_at.desc&limit=200`);   /* v145: category (transcripts) */
   }catch(e){ filesErr=e; }
   let hs=null, hsErr=null;
   try{
@@ -53953,7 +53953,7 @@ v136Go=async function(run){
     if(a.s!=='research')say('Reading the call transcripts and emails…');
     try{g=await v137Gather(l,a.s,true);}catch(e){g=null;}
     /* v138: the emails count as something to work from */
-    const has=!!note||!!(g&&g.calls.some(function(x){return x.text;}))||!!(g&&(g.emails||[]).length);
+    const has=!!note||!!(g&&g.calls.some(function(x){return x.text;}))||!!(g&&(g.emails||[]).length)||!!(g&&(g.v145||[]).length);   /* v145: workspace sources count too */
     if(p.need&&!has){busy(false);say('Paste the meeting transcript or your notes first. This lead has no '+p.need+' to work from yet, and no recorded call with it.',true);return;}
     say('Starting…');
   }
@@ -56145,6 +56145,55 @@ async function v144NtMark(id,db,n){
 .v145-h{font-size:13px;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted,#6b7280)}
 .v145-cl{list-style:none;margin:0;padding:0}.v145-cl li{padding:3px 0}.v145-cl label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
 @media(max-width:640px){.v145-sr{flex-wrap:wrap}.v145-sk{flex-basis:100%}}
+.v145-ws{padding:0 !important;overflow:hidden}
+.v145-wsh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line,#e5e7eb)}
+.v145-wtabs{display:flex;gap:4px}
+.v145-wtabs button{all:unset;cursor:pointer;padding:6px 12px;border-radius:8px;font-weight:600;font-size:14px;color:var(--muted,#6b7280)}
+.v145-wtabs button.on{background:var(--navy,#1b2540);color:#fff}
+.v145-wtabs button i{font-style:normal;font-size:12px;opacity:.75;margin-left:4px}
+.v145-wtabs button:focus-visible,.v145-wf:focus-visible,.v145-wcard:focus-visible{outline:2px solid var(--ap-accent,#1d4ed8);outline-offset:2px}
+.v145-wsb{display:grid;grid-template-columns:220px minmax(0,1fr)}
+.v145-wsn{border-right:1px solid var(--line,#e5e7eb);padding:12px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.v145-wf{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:7px 10px;border-radius:8px;font-size:14px}
+.v145-wf span{display:flex;flex-direction:column;min-width:0}
+.v145-wf small{font-size:12px;color:var(--muted,#6b7280)}
+.v145-wf i{font-style:normal;font-size:12px;background:var(--panel-2,#f1efe9);border-radius:10px;padding:0 7px}
+.v145-wf.on{background:var(--panel-2,#eef0f5);font-weight:600}
+.v145-wf.is-empty{opacity:.6}
+.v145-wfh{display:flex;align-items:center;justify-content:space-between;margin:12px 4px 2px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#6b7280)}
+.v145-wmain{padding:12px 16px;min-width:0}
+.v145-wtools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.v145-wq{flex:1 1 220px;min-width:0}.v145-wq input{width:100%;box-sizing:border-box;font:inherit;font-size:14px;padding:8px 11px;border:1px solid var(--line,#e5e7eb);border-radius:9px}
+.v145-wtools select{font:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line,#e5e7eb);border-radius:9px;max-width:100%}
+.v145-wsc{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.v145-wcard{all:unset;box-sizing:border-box;cursor:pointer;position:relative;padding:12px;border:1px solid var(--line,#e5e7eb);border-radius:12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.v145-wcard b{font-size:14px}.v145-wcard small{font-size:12px;color:var(--muted,#6b7280)}
+.v145-wcard.is-cur{border-color:#d8b46a;background:#fffaf0}
+.v145-wcard em{font-style:normal;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#a07a2c}
+.v145-h span{font-weight:400;text-transform:none;letter-spacing:0}
+.v145-wl{display:flex;flex-direction:column}
+.v145-wl.is-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.v145-wl.is-grid .v145-wr{border:1px solid var(--line,#e5e7eb);border-radius:12px;flex-wrap:wrap}
+.v145-wr{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line,#e5e7eb);min-width:0}
+.v145-wico,.v145-wdate{flex:0 0 auto;width:36px;height:40px;border-radius:8px;background:var(--panel-2,#f1efe9);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px}
+.v145-wdate small{font-size:9px;text-transform:uppercase}.v145-wdate b{font-size:15px;line-height:1}
+.v145-wm{flex:1 1 auto;min-width:0}
+.v145-wm b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v145-wm p{margin:3px 0 0;font-size:12.5px;color:var(--muted,#6b7280);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v145-wsub{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted,#6b7280);margin-top:2px}
+.v145-fmt{all:unset;cursor:pointer;font-size:11.5px;border:1px solid var(--line,#e5e7eb);border-radius:6px;padding:0 6px;color:var(--ink,#1b2540)}
+.v145-fmt:hover{background:var(--panel-2,#f1efe9)}
+.v145-src{font-size:11px;background:#e8f3ec;color:#256b45;border-radius:6px;padding:0 6px}
+.v145-fchip{flex:0 0 auto;font-size:12px;background:#eef3ea;color:#3b6b2c;border-radius:6px;padding:2px 8px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v145-choose select{font:inherit;font-size:12px;padding:3px 6px;border:1px solid #e2c98a;background:#fff8e6;border-radius:6px;max-width:140px}
+.v145-wd{flex:0 0 auto;font-size:12px;color:var(--muted,#6b7280);min-width:46px;text-align:right}
+.v145-star{color:#b38a2a}
+.v145-wnote{background:#fff8e6;border:1px solid #efdcab;border-radius:10px;padding:8px 12px;font-size:13px;margin-bottom:10px}
+.v145-wempty{padding:14px 4px}
+.v145-wkind{display:flex;gap:16px;margin:0 0 12px;font-size:14px}
+.v145-ck1{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:4px 0 8px}
+.v145-rd{font-size:12.5px;color:var(--muted,#6b7280);margin-top:6px}
+@media(max-width:860px){.v145-wsb{grid-template-columns:minmax(0,1fr)}.v145-wsn{border-right:0;border-bottom:1px solid var(--line,#e5e7eb);flex-direction:row;flex-wrap:wrap}.v145-wsn .v145-wf{width:auto}.v145-wfh{width:100%}.v145-wr{flex-wrap:wrap}.v145-wm{flex-basis:calc(100% - 50px)}}
 </style>
 <script id="v145js">
 /* ===================================================================
@@ -56526,7 +56575,7 @@ async function v145TypeDel(k){
     const body=_b.apply(this,arguments),r=v145Rec(st.key),t=st.mt?v145Type(st.mt):null;
     const secs=r&&r.template?v145Lines(r.template):(t&&t.custom?t.sections:[]);
     if(secs.length>=2)body.sections=secs;
-    const purpose=[r&&r.desc,t&&t.custom?t.desc:''].filter(Boolean).join(' ');if(purpose)body.purpose=purpose.slice(0,600);
+    const purpose=[r&&r.desc,t&&t.custom?t.desc:''].filter(Boolean).map(function(x){return x.replace(/[.\s]+$/,'');}).join('. ');if(purpose)body.purpose=purpose.slice(0,600);
     return body;
   };
   const _st=v137Start;
@@ -56615,6 +56664,291 @@ async function v145Tick(email,k,id,on){
     return r;
   };
 })();
+
+/* ---------- Part 2: the client workspace on a lead's page (Files and Calls) ----------
+   Erica's Client Workspace design: the lead's Files tab is a workspace with Files and Calls side by side, folders on
+   the left (All content, Starred, To organize, then a folder per client stage and the team's own), stage folder
+   cards, search, a type filter, a sort, a list or grid, and Upload file and New folder. An upload (a file, or a
+   transcript pasted in) gets a name, a folder and a description, and is a source: what the lead's stage runs read,
+   after the CRM record and the emails. Kept for the team in ai_settings catalyst_ws ({email: {folders, items}}). */
+V145.ws={view:'files',folder:'all',q:'',type:'',sort:'new',grid:false,data:null,meta:null};
+const V145_WS_KEY='catalyst_ws';
+function v145WsEmail(){return String((V145.ws.data&&V145.ws.data.lead&&V145.ws.data.lead.email)||'').toLowerCase();}
+async function v145WsLoad(force){
+  if(V145.ws.meta&&!force)return V145.ws.meta;
+  try{const r=await apSb('ai_settings?select=value&key=eq.'+V145_WS_KEY);V145.ws.meta=v96Json(((r||[])[0]||{}).value,{})||{};}catch(e){V145.ws.meta=V145.ws.meta||{};}
+  return V145.ws.meta;
+}
+function v145WsMine(){const m=(V145.ws.meta||{})[v145WsEmail()]||{};return {folders:Array.isArray(m.folders)?m.folders:[],items:m.items||{}};}
+async function v145WsPut(fn){
+  const em=v145WsEmail();
+  const out=await v104SetPatch(V145_WS_KEY,function(cur){const x={};const m=JSON.parse(JSON.stringify(cur[em]||{}));m.folders=m.folders||[];m.items=m.items||{};fn(m);x[em]=m;return x;});
+  V145.ws.meta=out;return out;
+}
+function v145WsFolders(){
+  const st=v136Stages().map(function(s){return {id:s.key,name:s.name,stage:true,c:s.c};});
+  return st.concat(v145WsMine().folders.map(function(f){return {id:f.id,name:f.name,stage:false};}));
+}
+function v145WsFolderName(id){const f=v145WsFolders().find(function(x){return x.id===id;});return f?f.name:'';}
+function v145StageOfAgent(a){const s=V136_STAGES.find(function(x){return x.agent===a&&!x.custom;});return s?s.key:'';}
+function v145Ext(n){const m=String(n||'').match(/\.([a-z0-9]{1,5})$/i);return m?m[1].toUpperCase():'FILE';}
+/* everything in the workspace: the stage documents (their PDF and Google Doc as one row), the meeting prep and the uploads */
+function v145WsItems(){
+  const D=V145.ws.data||{},lead=D.lead||{},outs=D.outs||[],meta=v145WsMine().items,list=[];
+  E1_STAGES.forEach(function(s){
+    let st;try{st=e1StageState(lead,outs,s);}catch(e){st=null;}if(!st||!st.done)return;
+    const d=asObj(st.out&&st.out.data),fm=[];
+    if(st.url||d.pdfUrl)fm.push({l:'PDF',u:st.url||d.pdfUrl});
+    if(d.documentId)fm.push({l:'Google Doc',u:'https://docs.google.com/document/d/'+d.documentId+'/edit'});
+    if(d.gammaDocUrl)fm.push({l:'Slide notes',u:d.gammaDocUrl});
+    const k='a:'+s.agent,m=meta[k]||{};
+    list.push({key:k,kind:'doc',name:m.name||s.label,fm:fm,folder:m.folder!=null?m.folder:v145StageOfAgent(s.agent),at:(st.out&&st.out.created_at)||'',by:'AI generated',desc:m.desc||'',star:!!m.star,agent:s.agent});
+  });
+  try{V136_STAGES.filter(function(s){return s.agent==='meeting_prep';}).forEach(function(s){
+    const d=v136Doc(lead,s);if(!d||!d.out)return;const k='p:'+s.key,m=meta[k]||{};
+    list.push({key:k,kind:'doc',name:m.name||s.doc,fm:[{l:'Read',open:"v136Open("+JSON.stringify(lead.email)+","+JSON.stringify(s.key)+")"}],folder:m.folder!=null?m.folder:s.key,at:d.out.created_at||'',by:'AI generated',desc:m.desc||'',star:!!m.star});
+  });}catch(e){}
+  (D.files||[]).forEach(function(f){
+    const k='f:'+f.id,m=meta[k]||{},tr=f.category==='transcript';
+    list.push({key:k,kind:tr?'transcript':'upload',id:f.id,path:f.file_path||'',name:m.name||f.file_name,fm:[{l:tr?'Transcript':v145Ext(f.file_name),u:f.file_url}],
+      folder:m.folder!=null?m.folder:(v145StageOfAgent(f.stage)||''),at:f.created_at||'',by:f.uploaded_by||'',desc:m.desc!=null?m.desc:(f.note||''),star:!!m.star,source:m.source!==false,indexed:!!f.indexed_at,hs:f.source==='hubspot'||/^hubspot\//.test(f.file_path||'')});
+  });
+  return list;
+}
+function v145WsCalls(){
+  const D=V145.ws.data||{},lead=D.lead||{},meta=v145WsMine().items;let calls=[];
+  try{calls=v137CallsOf(lead);}catch(e){calls=[];}
+  const out=calls.map(function(x){const k='c:'+x.id,m=meta[k]||{},c=x.c||{};
+    const g=(typeof apCmGuests==='function'?apCmGuests(c):[]).map(function(p){return p.name||p.email;}).slice(0,3).join(' + ');
+    const sum=(apCo(x.id)||{}).summary;
+    return {key:k,id:x.id,kind:'call',name:apCm(x.id)&&apCm(x.id).title||x.title||'Call',at:x.start,mins:typeof apFtMins==='function'?apFtMins(c):0,who:g,src:'Fathom',
+      sum:Array.isArray(sum)?sum[0]:(sum||''),folder:x.stage&&x.stage!=='none'&&v136Key(x.stage)?x.stage:(m.folder||''),star:!!m.star,filed:!!x.stage};});
+  v145WsItems().filter(function(i){return i.kind==='transcript';}).forEach(function(i){out.push(Object.assign({},i,{src:'Uploaded'}));});
+  return out.sort(function(a,b){return String(b.at).localeCompare(String(a.at));});
+}
+function v145WsShown(list){
+  const W=V145.ws,q=W.q.trim().toLowerCase();
+  let L=list.filter(function(i){
+    if(W.folder==='star'&&!i.star)return false;
+    if(W.folder==='org'&&i.folder)return false;
+    if(W.folder!=='all'&&W.folder!=='star'&&W.folder!=='org'&&i.folder!==W.folder)return false;
+    if(W.type==='pdf'&&!i.fm||W.type==='pdf'&&!i.fm.some(function(f){return f.l==='PDF';}))return false;
+    if(W.type==='gdoc'&&!(i.fm||[]).some(function(f){return f.l==='Google Doc';}))return false;
+    if(W.type==='upload'&&i.kind!=='upload')return false;
+    if(W.type==='transcript'&&i.kind!=='transcript')return false;
+    if(q&&(i.name+' '+(i.desc||'')+' '+(i.who||'')+' '+(i.sum||'')+' '+v145WsFolderName(i.folder)).toLowerCase().indexOf(q)<0)return false;
+    return true;});
+  L.sort(W.sort==='old'?function(a,b){return String(a.at).localeCompare(String(b.at));}:W.sort==='az'?function(a,b){return a.name.localeCompare(b.name);}:function(a,b){return String(b.at).localeCompare(String(a.at));});
+  return L;
+}
+function v145WsDay(at){if(!at)return '';const d=new Date(at);return isNaN(d)?'':d.toLocaleDateString(undefined,{month:'short',day:'numeric'});}
+function v145WsHtml(){
+  const W=V145.ws,files=v145WsItems(),calls=v145WsCalls(),F=v145WsFolders(),cur=V145.ws.data&&V145.ws.data.lead?v136StageOf(V145.ws.data.lead):'';
+  const cnt=function(id){return {f:files.filter(function(i){return i.folder===id;}).length,c:calls.filter(function(i){return i.folder===id;}).length};};
+  const list=W.view==='calls'?calls:files,shown=v145WsShown(list);
+  const org=list.filter(function(i){return !i.folder;}).length,star=list.filter(function(i){return i.star;}).length;
+  const side='<nav class="v145-wsn" aria-label="Client folders">'+
+    [['all','All content',list.length],['star','Starred',star],['org','To organize',org]].map(function(x){
+      return '<button type="button" class="v145-wf'+(W.folder===x[0]?' on':'')+'" aria-pressed="'+(W.folder===x[0])+'" onclick="v145WsSet(\'folder\',\''+x[0]+'\')"><span>'+x[1]+'</span>'+(x[2]?'<i>'+x[2]+'</i>':'')+'</button>';}).join('')+
+    '<div class="v145-wfh"><span>Client folders</span><button type="button" class="nw-icon-btn" aria-label="New folder" onclick="v145WsNewFolder()">'+nwIc('plus',14)+'</button></div>'+
+    F.map(function(f){const n=cnt(f.id);return '<button type="button" class="v145-wf'+(W.folder===f.id?' on':'')+(n.f+n.c?'':' is-empty')+'" aria-pressed="'+(W.folder===f.id)+'" onclick="v145WsSet(\'folder\','+esc(JSON.stringify(f.id))+')"><span>'+esc(f.name)+'<small>'+nwPlural(n.f,'file')+' · '+nwPlural(n.c,'call')+'</small></span></button>';}).join('')+'</nav>';
+  const cards='<div class="v145-wsc">'+F.filter(function(f){return f.stage;}).map(function(f){const n=cnt(f.id);
+    return '<button type="button" class="v145-wcard'+(f.id===cur?' is-cur':'')+'" onclick="v145WsSet(\'folder\','+esc(JSON.stringify(f.id))+')">'+(f.id===cur?'<em>Current</em>':'')+'<b>'+esc(f.name)+'</b><small>'+nwPlural(n.f,'file')+' · '+nwPlural(n.c,'call')+'</small></button>';}).join('')+'</div>';
+  const fopts=function(sel){return '<option value="">To organize</option>'+F.map(function(f){return '<option value="'+esc(f.id)+'"'+(f.id===sel?' selected':'')+'>'+esc(f.name)+'</option>';}).join('');};
+  const row=function(i){
+    const fm=(i.fm||[]).map(function(f){return f.u&&/^https?:\/\//i.test(f.u)?'<a class="v145-fmt" href="'+esc(f.u)+'" target="_blank" rel="noopener">'+esc(f.l)+'</a>':f.open?'<button type="button" class="v145-fmt" onclick="'+esc(f.open)+'">'+esc(f.l)+'</button>':'<span class="v145-fmt">'+esc(f.l)+'</span>';}).join('');
+    const fold=i.folder?'<span class="v145-fchip">'+esc(v145WsFolderName(i.folder)||'Folder')+'</span>':(i.kind==='call'&&!i.filed||!i.folder?'<label class="v145-choose"><span class="nw-sr">Folder for '+esc(i.name)+'</span><select data-nofill="1" onchange="v145WsMove('+esc(JSON.stringify(i.key))+',this.value)">'+fopts('')+'</select></label>':'');
+    return '<div class="v145-wr" data-k="'+esc(i.key)+'">'+
+      (i.kind==='call'?'<div class="v145-wdate"><small>'+esc((new Date(i.at)).toLocaleDateString(undefined,{month:'short'}))+'</small><b>'+esc(String(new Date(i.at).getDate()||''))+'</b></div>':'<div class="v145-wico" aria-hidden="true">'+(i.kind==='transcript'?'≋':'▤')+'</div>')+
+      '<div class="v145-wm"><b>'+esc(i.name)+'</b><div class="v145-wsub">'+fm+
+        (i.kind==='call'?'<span>'+esc([i.mins?i.mins+' min':'',i.who,i.src].filter(Boolean).join(' · '))+'</span>':'<span>'+esc((i.src==='Uploaded'?'Uploaded'+(i.by?' by ':''):'')+i.by)+(i.hs?' · from HubSpot':'')+'</span>')+
+        (i.kind==='transcript'||i.kind==='upload'?(i.source?'<span class="v145-src" title="What this client’s stage runs read">Source</span>':''):'')+'</div>'+
+        ((i.desc||i.sum)?'<p>'+esc(String(i.desc||i.sum).slice(0,180))+'</p>':'')+'</div>'+
+      fold+'<span class="v145-wd">'+esc(v145WsDay(i.at))+'</span>'+
+      '<button type="button" class="nw-icon-btn v145-star'+(i.star?' on':'')+'" aria-pressed="'+i.star+'" aria-label="'+esc((i.star?'Unstar ':'Star ')+i.name)+'" onclick="v145WsStar('+esc(JSON.stringify(i.key))+')">'+(i.star?'★':'☆')+'</button>'+
+      '<button type="button" class="nw-icon-btn" aria-label="'+esc('Edit '+i.name)+'" onclick="v145WsEdit('+esc(JSON.stringify(i.key))+')">✎</button>'+
+      (i.kind==='call'&&i.id?'<button type="button" class="nw-icon-btn" aria-label="'+esc('Open '+i.name+' on Calls')+'" onclick="v145WsOpenCall('+esc(JSON.stringify(String(i.id)))+')">→</button>':'')+
+    '</div>';};
+  const orgCalls=W.view==='calls'?calls.filter(function(i){return !i.folder;}).length:0;
+  return '<div class="v145-wsh"><div class="v145-wtabs" role="tablist" aria-label="Workspace">'+
+      '<button type="button" role="tab" aria-selected="'+(W.view==='files')+'" class="'+(W.view==='files'?'on':'')+'" onclick="v145WsSet(\'view\',\'files\')">Files <i>'+files.length+'</i></button>'+
+      '<button type="button" role="tab" aria-selected="'+(W.view==='calls')+'" class="'+(W.view==='calls'?'on':'')+'" onclick="v145WsSet(\'view\',\'calls\')">Calls <i>'+calls.length+'</i></button></div>'+
+      '<span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost nw-btn-sm" onclick="v145WsNewFolder()">'+nwIc('plus',14)+'New folder</button>'+
+      '<button type="button" class="nw-btn nw-btn-primary nw-btn-sm" onclick="v145WsUpload()">'+nwIc('upload',14)+'Upload file</button></div>'+
+    '<div class="v145-wsb">'+side+'<div class="v145-wmain">'+
+      (orgCalls?'<div class="v145-wnote"><b>'+nwPlural(orgCalls,'call')+' '+(orgCalls===1?'needs':'need')+' a folder.</b> Choose one on each call; a client stage folder files the call under that stage.</div>':'')+
+      '<div class="v145-wtools"><label class="v145-wq"><span class="nw-sr">Search</span><input type="search" placeholder="'+(W.view==='calls'?'Search call titles, people or summaries…':'Search files by name or description…')+'" value="'+esc(W.q)+'" oninput="V145.ws.q=this.value;v145WsPaint(true)"></label>'+
+        (W.view==='files'?'<select data-nofill="1" aria-label="File type" onchange="v145WsSet(\'type\',this.value)">'+[['','All file types'],['pdf','PDF'],['gdoc','Google Doc'],['upload','Uploaded'],['transcript','Transcripts']].map(function(o){return '<option value="'+o[0]+'"'+(W.type===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select>':'')+
+        '<select data-nofill="1" aria-label="Sort" onchange="v145WsSet(\'sort\',this.value)">'+[['new','Newest first'],['old','Oldest first'],['az','Name A–Z']].map(function(o){return '<option value="'+o[0]+'"'+(W.sort===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select>'+
+        '<button type="button" class="nw-icon-btn" aria-pressed="'+W.grid+'" aria-label="Grid view" onclick="v145WsSet(\'grid\',!V145.ws.grid)">▦</button></div>'+
+      (W.folder==='all'?'<h4 class="v145-h">Stage folders</h4>'+cards:'')+
+      '<h4 class="v145-h">'+(W.view==='calls'?'Conversations':'Documents')+' <span>'+nwPlural(shown.length,W.view==='calls'?'item':'item')+'</span></h4>'+
+      '<div class="v145-wl'+(W.grid?' is-grid':'')+'">'+(shown.length?shown.map(row).join(''):'<p class="nw-muted nw-small v145-wempty">'+(W.q?'Nothing matches that search.':W.view==='calls'?'No calls here yet.':'No files here yet. Upload one, or pick another folder.')+'</p>')+'</div>'+
+    '</div></div>';
+}
+function v145WsPaint(keepFocus){
+  const box=document.querySelector('#main .v145-ws');if(!box)return;
+  const a=document.activeElement,wasQ=keepFocus&&a&&a.matches&&a.matches('.v145-wq input'),pos=wasQ?a.selectionStart:0;
+  box.innerHTML=v145WsHtml();
+  if(wasQ){const i=box.querySelector('.v145-wq input');if(i){i.focus();try{i.setSelectionRange(pos,pos);}catch(e){}}}
+  const h=document.querySelector('#main section[data-v145ws] > h2 .count');if(h)h.textContent=String(v145WsItems().length);
+}
+function v145WsSet(k,v){V145.ws[k]=v;if(k==='view'){V145.ws.type='';}v145WsPaint();}
+async function v145WsMove(key,folder){
+  const c=/^c:/.test(key)?v145WsCalls().find(function(i){return i.key===key;}):null;
+  try{
+    if(c&&c.id&&v136Key(folder)){await v137File(c.id,v145WsEmail(),folder);}
+    await v145WsPut(function(m){m.items[key]=Object.assign({},m.items[key]||{},{folder:folder});});
+    nwToast(folder?'Moved to '+v145WsFolderName(folder)+'.':'Moved to To organize.');
+  }catch(e){nwToast('Could not move it: '+(e.message||e));}
+  v145WsPaint();
+}
+async function v145WsStar(key){
+  const cur=!!(v145WsMine().items[key]||{}).star;
+  try{await v145WsPut(function(m){m.items[key]=Object.assign({},m.items[key]||{},{star:!cur});});}catch(e){nwToast('Could not save the star: '+(e.message||e));}
+  v145WsPaint();
+}
+function v145WsNewFolder(){
+  nwModal('v145WF','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Client workspace</div><h2>New folder</h2></div><button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v145-m"><label class="v145-f"><span>Folder name</span><input class="nw-input" id="v145WFName" maxlength="60" placeholder="e.g. Contracts" onkeydown="if(event.key===\'Enter\')v145WsFolderGo()"></label>'+
+    '<p class="v120-msg" id="v145WFMsg" role="status"></p><div class="nw-m-foot"><span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button><button type="button" class="nw-btn nw-btn-primary" onclick="v145WsFolderGo()">Add folder</button></div></div>');
+}
+async function v145WsFolderGo(){
+  const n=v145Name((document.getElementById('v145WFName')||{}).value);
+  if(!n)return v145Say('v145WFMsg','Give the folder a name.',true);
+  if(v145WsFolders().some(function(f){return f.name.toLowerCase()===n.toLowerCase();}))return v145Say('v145WFMsg','There is already a folder called '+n+'.',true);
+  const id=v145Id('wf');
+  try{await v145WsPut(function(m){m.folders.push({id:id,name:n});});}catch(e){return v145Say('v145WFMsg','Could not save: '+(e.message||e),true);}
+  nwModalClose();V145.ws.folder=id;v145WsPaint();nwToast('Folder added.');
+}
+function v145WsEdit(key){
+  const all=v145WsItems().concat(v145WsCalls()),i=all.find(function(x){return x.key===key;});if(!i)return;
+  const F=v145WsFolders(),up=i.kind==='upload'||i.kind==='transcript';
+  nwModal('v145WE','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Client workspace</div><h2>'+esc(i.name)+'</h2></div><button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v145-m"><label class="v145-f"><span>Name</span><input class="nw-input" id="v145WEName" maxlength="120" value="'+esc(i.name)+'"></label>'+
+    '<label class="v145-f"><span>Folder</span><select class="nw-input" id="v145WEFold" data-nofill="1"><option value="">To organize</option>'+F.map(function(f){return '<option value="'+esc(f.id)+'"'+(f.id===i.folder?' selected':'')+'>'+esc(f.name)+'</option>';}).join('')+'</select></label>'+
+    '<label class="v145-f"><span>Description</span><textarea class="nw-input" id="v145WEDesc" rows="3" maxlength="600">'+esc(i.desc||'')+'</textarea></label>'+
+    (up?'<label class="v145-ck1"><input type="checkbox" id="v145WESrc"'+(i.source?' checked':'')+'> Use it as a source: this client’s stage runs read it</label>':'')+
+    '<p class="v120-msg" id="v145WEMsg" role="status"></p><div class="nw-m-foot">'+(up?'<button type="button" class="nw-btn nw-btn-ghost v145-del" onclick="v145WsDel('+esc(JSON.stringify(key))+')">Delete</button>':'')+
+    '<span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button><button type="button" class="nw-btn nw-btn-primary" onclick="v145WsEditGo('+esc(JSON.stringify(key))+')">Save</button></div></div>');
+}
+async function v145WsEditGo(key){
+  const n=v145Txt((document.getElementById('v145WEName')||{}).value,120);if(!n)return v145Say('v145WEMsg','Give it a name.',true);
+  const f=(document.getElementById('v145WEFold')||{}).value||'',d=v145Txt((document.getElementById('v145WEDesc')||{}).value,600),s=document.getElementById('v145WESrc');
+  const c=/^c:/.test(key)?v145WsCalls().find(function(i){return i.key===key;}):null;
+  try{
+    if(c&&c.id&&v136Key(f))await v137File(c.id,v145WsEmail(),f);
+    await v145WsPut(function(m){m.items[key]=Object.assign({},m.items[key]||{},{name:n,folder:f,desc:d},s?{source:!!s.checked}:{});});
+  }catch(e){return v145Say('v145WEMsg','Could not save: '+(e.message||e),true);}
+  nwModalClose();v145WsPaint();nwToast('Saved.');
+}
+async function v145WsDel(key){
+  const i=v145WsItems().find(function(x){return x.key===key;});if(!i||!i.id)return;
+  if(!window.confirm('Delete '+i.name+'? The file is removed for the whole team.'))return;
+  nwModalClose();
+  const btn=document.createElement('button');
+  try{await v145WsPut(function(m){delete m.items[key];});}catch(e){}
+  await e1DeleteFile(i.id,i.path,btn);
+}
+/* Upload file: a file, or a transcript pasted in; a name, a folder, a description, and whether runs read it */
+function v145WsUpload(){
+  const F=v145WsFolders(),W=V145.ws,def=W.folder&&['all','star','org'].indexOf(W.folder)<0?W.folder:(V145.ws.data&&V145.ws.data.lead?v136StageOf(V145.ws.data.lead):'');
+  nwModal('v145WU','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Client workspace</div><h2>Add a client file</h2></div><button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v145-m"><div class="v145-wkind" role="radiogroup" aria-label="What are you adding?">'+
+      '<label><input type="radio" name="v145k" value="file" checked onchange="v145WsKind()"> A file</label><label><input type="radio" name="v145k" value="text" onchange="v145WsKind()"> A call transcript, pasted</label></div>'+
+    '<label class="v145-f v145-wfile"><span>File</span><small>PDF, Word, text or a picture, up to 25 MB</small><input type="file" id="v145WUFile" onchange="v145WsPick(this)"></label>'+
+    '<label class="v145-f v145-wtext" hidden><span>Transcript</span><textarea class="nw-input" id="v145WUText" rows="6" placeholder="Paste the transcript or your notes from the call"></textarea></label>'+
+    '<label class="v145-f"><span>Document name</span><input class="nw-input" id="v145WUName" maxlength="120" placeholder="A short, recognizable name"></label>'+
+    '<label class="v145-f"><span>Folder</span><select class="nw-input" id="v145WUFold" data-nofill="1"><option value="">To organize</option>'+F.map(function(f){return '<option value="'+esc(f.id)+'"'+(f.id===def?' selected':'')+'>'+esc(f.name)+'</option>';}).join('')+'</select></label>'+
+    '<label class="v145-f"><span>Description</span><textarea class="nw-input" id="v145WUDesc" rows="2" maxlength="600" placeholder="What it is and why it matters"></textarea></label>'+
+    '<label class="v145-ck1"><input type="checkbox" id="v145WUSrc" checked> Use it as a source: this client’s stage runs read it</label>'+
+    '<p class="v120-msg" id="v145WUMsg" role="status" aria-live="polite"></p>'+
+    '<div class="nw-m-foot"><span class="nw-grow"></span><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button><button type="button" class="nw-btn nw-btn-primary" id="v145WUGo" onclick="v145WsUploadGo(this)">'+nwIc('upload',15)+'Add file</button></div></div>');
+}
+function v145WsKind(){const t=(document.querySelector('#v145WU input[name=v145k]:checked')||{}).value==='text';
+  document.querySelector('#v145WU .v145-wfile').hidden=t;document.querySelector('#v145WU .v145-wtext').hidden=!t;}
+function v145WsPick(inp){const f=inp.files&&inp.files[0],n=document.getElementById('v145WUName');if(f&&n&&!n.value.trim())n.value=f.name.replace(/\.[a-z0-9]{1,5}$/i,'');}
+async function v145WsUploadGo(btn){
+  const say=function(t,e){v145Say('v145WUMsg',t,e);};
+  const text=(document.querySelector('#v145WU input[name=v145k]:checked')||{}).value==='text';
+  let file=text?null:((document.getElementById('v145WUFile')||{}).files||[])[0];
+  const pasted=v145Txt((document.getElementById('v145WUText')||{}).value,120000);
+  const name=v145Txt((document.getElementById('v145WUName')||{}).value,120),folder=(document.getElementById('v145WUFold')||{}).value||'';
+  const desc=v145Txt((document.getElementById('v145WUDesc')||{}).value,600),src=!!(document.getElementById('v145WUSrc')||{}).checked;
+  if(text&&pasted.length<40)return say('Paste the transcript first (a few lines at least).',true);
+  if(!text&&!file)return say('Choose a file first.',true);
+  if(!name)return say('Give it a name.',true);
+  if(file&&file.size>25*1024*1024)return say('Keep uploads under 25 MB.',true);
+  if(text)file=new Blob([pasted],{type:'text/plain'});
+  const email=v145WsEmail(),fname=text?(name.replace(/[^\w.\- ]+/g,'').trim()||'transcript')+'.txt':file.name;
+  const path=email+'/'+Date.now()+'-'+fname.replace(/[^\w.\-]+/g,'_');
+  btn.disabled=true;say('Uploading…');
+  try{
+    const res=await fetch(SUPABASE_URL+'/storage/v1/object/lead-files/'+path,{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+SUPABASE_ANON_KEY,'x-upsert':'true','Content-Type':text?'text/plain':(file.type||'application/octet-stream')},body:file});
+    if(!res.ok)throw new Error('Storage turned the upload away ('+res.status+').');
+    const url=SUPABASE_URL+'/storage/v1/object/public/lead-files/'+path;
+    const stAgent=(V136_STAGES.find(function(s){return s.key===folder&&!s.custom;})||{}).agent||'manual';
+    const row={lead_email:email,file_name:fname,file_url:url,file_path:path,stage:stAgent,note:desc||null,source:'upload',uploaded_by:whoAmI(),category:text?'transcript':null};
+    const made=await apSb('lead_files',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(row)});
+    const id=((made||[])[0]||{}).id;if(!id)throw new Error('The file was stored, but its row was not saved.');
+    await v145WsPut(function(m){m.items['f:'+id]={name:name,folder:folder,desc:desc,source:src};});
+    say('Reading its text…');
+    try{if(text)await e1SaveFileText(id,pasted);else if(isDocx(fname))await e1SaveFileText(id,await docxToText(await file.arrayBuffer()));else await e1IngestFile(id,url,fname);}catch(e){}
+    try{fetch(hsSyncHook(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fileUrl:url,fileName:fname,leadEmail:email,note:desc,uploadedBy:whoAmI()})}).catch(function(){});}catch(e){}
+  }catch(e){btn.disabled=false;return say(e.message||String(e),true);}
+  nwModalClose();nwToast((text?'Transcript':'File')+' added'+(folder?' to '+v145WsFolderName(folder):'')+'.');
+  try{Object.keys(cache).forEach(function(k){if(k.indexOf('lead_files')===0)delete cache[k];});}catch(e){}
+  renderE1Lead();
+}
+/* the lead page's Files section is the workspace */
+(function(){
+  const _f=e1FilesSection;
+  e1FilesSection=function(lead,outs,files,filesErr){
+    V145.ws.data={lead:lead,outs:outs||[],files:files||[],err:filesErr};
+    if(V145.ws.email!==String(lead&&lead.email||'').toLowerCase()){V145.ws.email=String(lead&&lead.email||'').toLowerCase();V145.ws.folder='all';V145.ws.q='';V145.ws.view='files';}
+    let h;try{h=v145WsHtml();}catch(e){return _f.apply(this,arguments);}
+    return '<section class="block" data-v145ws="1"><h2>Files <span class="count">'+v145WsItems().length+'</span></h2><div class="card v145-ws">'+
+      (filesErr?'<div class="notice">Uploads could not be read: '+esc(filesErr.message||String(filesErr))+'. Agent documents still show.</div>':'')+h+'</div></section>';
+  };
+  const _r=renderE1Lead;
+  renderE1Lead=function(){
+    const r=_r.apply(this,arguments);
+    Promise.resolve(r).then(async function(){await v145WsLoad(true);try{await v137CallsLoad();}catch(e){}v145WsPaint();}).catch(function(){});
+    return r;
+  };
+})();
+/* what a stage run reads: the workspace's sources, after the CRM record and the emails */
+async function v145WsSources(l){
+  const em=v136Emails(l).map(function(e){return String(e||'').toLowerCase();}).filter(Boolean);if(!em.length)return [];
+  let rows=[];try{rows=(await apSb('lead_files?select=id,file_name,file_text,category,created_at,lead_email&lead_email=in.('+em.map(function(e){return '"'+e+'"';}).join(',')+')&file_text=not.is.null&order=created_at.desc&limit=40'))||[];}catch(e){return [];}
+  let meta={};try{meta=((await v145WsLoad(true))||{})[String(l.email||'').toLowerCase()]||{};}catch(e){}
+  const items=meta.items||{};
+  return rows.filter(function(r){const m=items['f:'+r.id]||{};return m.source===true||(m.source!==false&&r.category==='transcript');})
+    .map(function(r){const m=items['f:'+r.id]||{};return {name:m.name||r.file_name,text:String(r.file_text||''),kind:r.category==='transcript'?'transcript':'file',at:r.created_at,desc:m.desc||''};})
+    .filter(function(x){return x.text.trim().length>=20;});
+}
+(function(){
+  const _g=v137Gather;
+  v137Gather=async function(l,s,withText){
+    const g=await _g.apply(this,arguments);
+    try{g.v145=await v145WsSources(l);}catch(e){g.v145=[];}
+    return g;
+  };
+  const _n=v137Note;
+  v137Note=function(g,typed){
+    let out=_n.apply(this,arguments);const L=(g&&g.v145)||[];if(!L.length)return out;
+    let left=8000;const parts=[];
+    L.forEach(function(x){if(left<300)return;const t=x.text.slice(0,Math.min(3000,left));parts.push((x.kind==='transcript'?'Transcript':'File')+': '+x.name+(x.desc?' ('+x.desc+')':'')+'\n'+t);left-=t.length;});
+    return (out?out+'\n\n':'')+'FILES AND TRANSCRIPTS ADDED TO THE CLIENT WORKSPACE\n'+parts.join('\n\n');
+  };
+  const _rh=v137ReadsHtml;
+  v137ReadsHtml=function(s,g){
+    let h=_rh.apply(this,arguments);const L=(g&&g.v145)||[];
+    if(L.length)h+='<div class="v145-rd">'+esc('From the client workspace: '+L.map(function(x){return x.name;}).slice(0,4).join(', ')+(L.length>4?' and '+(L.length-4)+' more':''))+'</div>';
+    return h;
+  };
+})();
+function v145WsOpenCall(id){apGo('calls');setTimeout(function(){try{v144CalOpen(id);}catch(e){}},900);}
 /*@@v145end*/
 </script>
 <script>
