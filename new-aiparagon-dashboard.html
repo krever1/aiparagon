@@ -57350,6 +57350,413 @@ async function v147Posts(m,org){
   if(typeof v97ReqLogAdd==='function'){const _l=v97ReqLogAdd;v97ReqLogAdd=function(o){if(o&&o.brief===V147_SENT)o=Object.assign({},o,{brief:null,own_content:V147.sending?V147.sending.m.title:'own content'});return _l.apply(this,arguments.length>1?[o].concat([].slice.call(arguments,1)):[o]);};}
 })();
 /*@@v147end*/
+</script>
+<style id="v148css">
+/* v148: Canvas · Make a deliverable */
+.v148-m .nw-field{margin-top:10px}
+.v148-seg{margin-bottom:4px}
+.v148-note{min-height:92px;resize:vertical}
+.v148-reads{margin-top:12px;padding:12px 14px;border:1px solid var(--nw-line,#e4e7ee);border-radius:10px;background:var(--nw-soft,#f7f8fb)}
+.v148-reads b{font-size:13px}
+.v148-reads ul{margin:6px 0 6px 18px;padding:0;font-size:13.5px}
+.v148-warn{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0;padding:10px 12px;border-radius:10px;background:#FFF6E0;color:#6b4a00;font-size:13.5px}
+.v148-warn span{flex:1 1 220px;min-width:0}
+.v148-pill{display:inline-flex;align-items:center;font-size:12px;padding:2px 8px;border-radius:999px;background:#FFF3D6;color:#7A5200}
+.v148-pill.is-ok{background:#E3F4EA;color:#1D6B3F}
+.v148-pill.is-run{background:#E8EEFB;color:#2B4C9B}
+.v148-doc{max-height:58vh;overflow:auto;padding:16px 18px;border:1px solid var(--nw-line,#e4e7ee);border-radius:10px;background:#fff;font-size:15px;line-height:1.55;overflow-wrap:anywhere}
+.v148-doc h3{font-size:16px;margin:16px 0 6px}
+.v148-doc h3:first-child{margin-top:0}
+.v148-doc ul,.v148-doc ol{margin:4px 0 8px 20px;padding:0}
+.v148-doc p{margin:4px 0 8px}
+.v148-h1{font-size:22px;margin:0 0 12px}
+.v148-ed{min-height:46vh;font:13.5px/1.5 "IBM Plex Mono",ui-monospace,monospace;resize:vertical}
+@media (max-width:600px){.v148-doc{max-height:none}}
+</style>
+<script id="v148js">
+/* ===================================================================
+   v148: Canvas · Make a deliverable. A meeting recap and next steps for
+   the client, made from a lead, a recorded call or an inquiry (a landing
+   page sign-up or a new HubSpot contact). Catalyst · Meeting Prep writes it
+   (kind recap) from the call's transcript and the team's notes, with the
+   lead's documents as background, and saves it as an agent_outputs row
+   (agent deliverable, run_id the lead's email, data.kind recap,
+   data.status draft or ready, data.call). Deliverables lists it; it opens
+   to read, edit, copy, save as PDF and mark ready for the client.
+   =================================================================== */
+const V148={src:'lead',lead:'',call:'',sig:'',ask:null,runs:{},rows:null,t:0,sign:null,edit:null,o:null,sure:0,
+  printer:function(w){w.focus();w.print();}};
+const V148_DOC='Meeting recap and next steps';
+const V148_ST={key:'recap',name:'Meeting recap',doc:V148_DOC};
+const V148_WAIT=10*60e3;
+try{const r=JSON.parse(localStorage.getItem('ap.v148.runs')||'{}');if(r&&typeof r==='object')V148.runs=r;}catch(e){}
+function v148RunsSave(){try{localStorage.setItem('ap.v148.runs',JSON.stringify(V148.runs));}catch(e){}}
+function v148Clip(s,n){s=String(s||'').replace(/\s+/g,' ').trim();return s.length>n?s.slice(0,n-1)+'…':s;}
+function v148LeadName(l){return (l&&(l.prospect_name||l.email))||'';}
+function v148Leads(){
+  return (v120Data().leads||[]).filter(function(l){return l&&l.email&&v137Low(l.email)!=='contact@deltaadvisory.com';})
+    .slice().sort(function(a,b){return v148LeadName(a).localeCompare(v148LeadName(b));});
+}
+/* recorded calls with someone from outside the team on them, newest first */
+function v148Calls(){
+  return (AP_FT.items||[]).filter(function(c){return apCmGuests(c).some(function(g){return g.email&&!V137_TEAM.test(String(g.email));});})
+    .slice().sort(function(a,b){return String(b.start||b.created_at||'').localeCompare(String(a.start||a.created_at||''));}).slice(0,40);
+}
+function v148CallLine(c){return [v137D(c.start||c.created_at),c.title||'A call',apFtMins(c)?apFtMins(c)+' min':''].filter(Boolean).join(' · ');}
+/* inquiries: landing page sign-ups (newest 40 with an email) and HubSpot contacts first seen in the last 14 days */
+async function v148SignLoad(){
+  if(V148.sign&&Date.now()-V148.signAt<60e3)return V148.sign;
+  let su=[];try{su=(await apSb('lp_signups?select=id,slug,name,email,company,job_title,answers,created_at&order=created_at.desc&limit=60'))||[];}catch(e){su=[];}
+  await v137Contacts();
+  const out=[],seen={},since=Date.now()-V137_DAYS*864e5;
+  su.forEach(function(s){const e=v137Low(s.email);if(!e||seen[e])return;seen[e]=1;
+    out.push({key:'su:'+s.id,kind:'su',email:e,name:s.name||e,company:s.company||'',title:s.job_title||'',when:s.created_at,page:s.slug||'',answers:s.answers});});
+  (V137.hs||[]).forEach(function(c){const e=v137Low(c.email);if(!e||seen[e]||V137_TEAM.test(e))return;
+    const t=Date.parse(c.first_seen||'');if(!(t>=since))return;seen[e]=1;
+    out.push({key:'hs:'+e,kind:'hs',email:e,name:v137Name(c),company:c.company||'',title:c.job_title||'',when:c.first_seen,c:c});});
+  out.sort(function(a,b){return String(b.when||'').localeCompare(String(a.when||''));});
+  V148.sign=out.slice(0,40);V148.signAt=Date.now();
+  return V148.sign;
+}
+function v148SignOf(k){return (V148.sign||[]).find(function(s){return s.key===k;})||null;}
+function v148Answers(a){
+  a=apJson(a);
+  return Object.keys(a).map(function(k){const v=a[k];const t=Array.isArray(v)?v.join(', '):typeof v==='object'&&v?JSON.stringify(v):String(v==null?'':v);
+    return t.trim()?k.replace(/[_-]+/g,' ')+': '+v148Clip(t,300):'';}).filter(Boolean).join('\n');
+}
+
+/* ---------- the dialog ---------- */
+async function v148Make(pre){
+  pre=pre||{};
+  V148.src=pre.src||V148.src||'lead';V148.lead=pre.lead||'';V148.call=pre.call||'';V148.sig=pre.sig||'';V148.sure=0;
+  v148Modal('<p class="nw-faint">Loading your leads and calls…</p>');
+  const r=await Promise.allSettled([v137CallsLoad(),v137Contacts(),v148SignLoad(),(v120Data().leads||[]).length?Promise.resolve():v120Reload()]);
+  V148.ftErr=r[0].status==='rejected'?((r[0].reason&&r[0].reason.message)||'Fathom could not be reached.'):'';
+  if(!document.getElementById('v148M'))return;
+  v148Paint();
+}
+function v148Modal(body){
+  nwModal('v148M','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Canvas · Make a deliverable</div><h2>'+esc(V148_DOC)+'</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v120-m v148-m" id="v148B">'+body+'</div>',true);
+}
+function v148Paint(){
+  const b=document.getElementById('v148B');if(!b)return;
+  const note=(document.getElementById('v148Note')||{}).value;if(note!=null)V148.note=note;
+  b.innerHTML=v148Body();
+}
+function v148Pick(){
+  const S=V148.src,out={l:null,call:null,sig:null,need:''};
+  if(S==='lead'){out.l=V148.lead?v120Lead(V148.lead):null;if(!out.l)out.need='lead';
+    else if(V148.call&&V148.call!=='none')out.call=apFtCall(V148.call);}
+  else if(S==='call'){out.call=V148.call?apFtCall(V148.call):null;
+    if(!out.call)out.need='call';else{out.l=v137LeadOfCall(out.call,v137FullLead);if(!out.l)out.need='client';}}
+  else{out.sig=v148SignOf(V148.sig);if(!out.sig)out.need='sig';
+    else{out.l=v137FullLead(out.sig.email);if(V148.call&&V148.call!=='none')out.call=apFtCall(V148.call);}}
+  return out;
+}
+function v148CallsFor(l,email){
+  if(l)return v137CallsOf(l).map(function(x){return x.c;});
+  const e=v137Low(email);if(!e)return [];
+  return (AP_FT.items||[]).filter(function(c){return apCmGuests(c).some(function(g){return v137Low(g.email)===e;});});
+}
+function v148Body(){
+  const S=V148.src,p=v148Pick();
+  const seg=[['lead','A lead'],['call','A recorded call'],['inquiry','An inquiry']].map(function(t){
+    return '<button type="button" role="tab" aria-selected="'+(S===t[0])+'" onclick="v148Src(\''+t[0]+'\')">'+esc(t[1])+'</button>';}).join('');
+  let pick='';
+  if(S==='lead'){
+    const L=v148Leads();
+    pick='<label class="nw-field"><span class="nw-lbl">The lead</span><select class="nw-input" id="v148Lead" data-nofill="1" onchange="V148.lead=this.value;V148.call=\'\';v148Paint()">'+
+      '<option value="">'+(L.length?'Pick a lead…':'No leads yet')+'</option>'+
+      L.map(function(l){return '<option value="'+esc(l.email)+'"'+(V148.lead===l.email?' selected':'')+'>'+esc(v148LeadName(l)+(l.company_name?' · '+l.company_name:''))+'</option>';}).join('')+'</select></label>'+
+      (p.l?v148CallSel(v148CallsFor(p.l)):'');
+  }else if(S==='call'){
+    const C=v148Calls();
+    pick=(V148.ftErr&&!C.length?'<p class="v120-msg err">'+esc('Fathom calls could not load: '+V148.ftErr)+'</p>':'')+
+      '<label class="nw-field"><span class="nw-lbl">The call</span><select class="nw-input" id="v148Call" data-nofill="1" onchange="V148.call=this.value;v148Paint()">'+
+      '<option value="">'+(C.length?'Pick a recorded call…':'No recorded calls with a client yet')+'</option>'+
+      C.map(function(c){return '<option value="'+esc(String(c.id))+'"'+(V148.call===String(c.id)?' selected':'')+'>'+esc(v148CallLine(c))+'</option>';}).join('')+'</select></label>';
+    if(p.need==='client'){
+      const g=apCmGuests(p.call).filter(function(x){return x.email&&!V137_TEAM.test(String(x.email));})[0]||{};
+      pick+='<div class="v148-warn">'+nwIc('info',16)+'<span>'+esc((g.name||g.email||'The client')+' is not a lead yet. Create the client record first, then make the recap.')+'</span>'+
+        '<button type="button" class="nw-btn nw-btn-sm" onclick="v148Client(\''+esc(String(p.call.id))+'\')">Create the client record</button></div>';
+    }else if(p.l)pick+='<p class="nw-small nw-muted">'+esc('For '+v148LeadName(p.l)+(p.l.company_name?', '+p.l.company_name:'')+'.')+'</p>';
+  }else{
+    const I=V148.sign||[];
+    pick='<label class="nw-field"><span class="nw-lbl">The inquiry</span><select class="nw-input" id="v148Sig" data-nofill="1" onchange="V148.sig=this.value;V148.call=\'\';v148Paint()">'+
+      '<option value="">'+(I.length?'Pick a sign-up or a new contact…':'No sign-ups or new HubSpot contacts yet')+'</option>'+
+      I.map(function(s){return '<option value="'+esc(s.key)+'"'+(V148.sig===s.key?' selected':'')+'>'+esc([s.name,s.company,s.kind==='su'?'Sign-up'+(s.page?' on /go/'+s.page:''):'New in HubSpot',v137D(s.when)].filter(Boolean).join(' · '))+'</option>';}).join('')+'</select></label>';
+    if(p.sig){
+      pick+='<p class="nw-small nw-muted">'+esc(p.l?'Already a lead: '+v148LeadName(p.l)+'.':'Not a lead yet. Making the recap adds '+p.sig.name+' to the Lead pipeline in '+(v136St('research')||{name:'Prospect research'}).name+'.')+'</p>'+
+        v148CallSel(v148CallsFor(p.l,p.sig.email));
+    }
+  }
+  const reads=v148Reads(p);
+  return '<div class="nw-seg v148-seg" role="tablist" aria-label="Start from">'+seg+'</div>'+pick+
+    '<label class="nw-field"><span class="nw-lbl">What was said, or anything to add (optional with a recorded call)</span>'+
+      '<textarea class="nw-input v148-note" id="v148Note" rows="4" maxlength="6000" placeholder="Decisions, who does what, dates, anything the recording missed.">'+esc(V148.note||'')+'</textarea></label>'+
+    '<div class="v148-reads"><b>Reads</b><ul>'+reads.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>'+
+      '<p class="nw-small nw-faint">It writes to the client: summary, what we discussed, what we agreed, next steps with who and when, what we need from you, open questions. Anything the meeting did not settle is marked TO CONFIRM. It lands as a draft on Deliverables for you to check before sending.</p></div>'+
+    '<p class="v120-msg" id="v148Msg" role="status" aria-live="polite"></p>'+
+    '<div class="nw-m-foot"><button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button><span class="nw-grow"></span>'+
+      '<button type="button" class="nw-btn nw-btn-primary" id="v148Go" onclick="v148Go()"'+(p.need?' disabled':'')+'>'+nwIc('sparkle',15)+'Write the recap</button></div>';
+}
+function v148CallSel(C){
+  return '<label class="nw-field"><span class="nw-lbl">The meeting</span><select class="nw-input" id="v148LCall" data-nofill="1" onchange="V148.call=this.value;v148Paint()">'+
+    C.map(function(c){return '<option value="'+esc(String(c.id))+'"'+(V148.call===String(c.id)?' selected':'')+'>'+esc(v148CallLine(c))+'</option>';}).join('')+
+    '<option value="none"'+(V148.call==='none'||!C.length?' selected':'')+'>No recording: use my notes</option></select></label>';
+}
+/* what the run reads, in words */
+function v148Reads(p){
+  const out=[];
+  let call=p.call;
+  if(!call&&p.l&&V148.call!=='none'&&V148.src!=='call'){const C=v148CallsFor(p.l,p.sig&&p.sig.email);call=C[0]||null;}
+  if(call)out.push('The transcript of '+v148CallLine(call));
+  out.push('Your notes, when you add some');
+  if(p.sig&&p.sig.kind==='su')out.push('The sign-up'+(p.sig.page?' on /go/'+p.sig.page:'')+(v148Answers(p.sig.answers)?' and its answers':''));
+  const c=p.l?v137Contact(p.l):(p.sig?(p.sig.c||(V137.hs||[]).find(function(x){return v137Low(x.email)===p.sig.email;})):null);
+  if(c)out.push('The CRM record in HubSpot');
+  if(p.l)out.push('The lead’s Catalyst documents, as background only (never quoted)');
+  out.push('Your house rules');
+  return out;
+}
+function v148Src(s){V148.src=s;V148.call='';V148.sure=0;v148Paint();}
+function v148Client(id){nwModalClose();v144AskClient(id);}
+
+/* ---------- the run ---------- */
+async function v148Go(){
+  const msg=document.getElementById('v148Msg'),btn=document.getElementById('v148Go');
+  const say=function(t,err){if(msg){msg.textContent=t;msg.classList.toggle('err',!!err);}};
+  const p=v148Pick();if(p.need)return;
+  /* the lead's own call when one was not picked in the list (the first option is picked by default) */
+  if(!p.call&&V148.call!=='none'&&V148.src!=='call'){const C=v148CallsFor(p.l,p.sig&&p.sig.email);if(C[0]&&!V148.call)p.call=C[0];}
+  const note=String((document.getElementById('v148Note')||{}).value||'').trim();V148.note=note;
+  if(!p.call&&note.length<20){say('Pick the recorded call, or write what was said in the meeting (a few lines at least).',true);return;}
+  let l=p.l;
+  if(l&&V148.runs[v137Low(l.email)]&&Date.now()-V148.runs[v137Low(l.email)].t0<V148_WAIT){say('A recap for '+v148LeadName(l)+' is being written. It lands on Deliverables in a minute or two.',true);return;}
+  if(btn)btn.disabled=true;
+  try{
+    if(!l&&p.sig){
+      say('Adding '+p.sig.name+' to the Lead pipeline…');
+      if(p.sig.kind==='hs')l=await v137AddLead(p.sig.c);
+      else l=await v148AddSignup(p.sig);
+    }
+    let tx='';
+    if(p.call){say('Reading the call…');
+      try{tx=apFtText(await apFtTranscript(p.call.id)).trim();}catch(e){tx='';}
+      if(!tx&&note.length<20){if(btn)btn.disabled=false;say('This call has no transcript in Fathom yet. Write what was said in the notes instead.',true);return;}}
+    say('Starting…');
+    const c=v137Contact(l)||(p.sig&&p.sig.c)||null;
+    const parts=[];
+    if(note)parts.push('NOTES FROM THE TEAM:\n'+note);
+    if(c)parts.push('CRM RECORD (HubSpot): '+v137CrmLine(c));
+    if(p.sig&&p.sig.kind==='su')parts.push('LANDING PAGE SIGN-UP'+(p.sig.page?' (/go/'+p.sig.page+')':'')+': '+[p.sig.name,p.sig.title,p.sig.company].filter(Boolean).join(' · ')+
+      (v148Answers(p.sig.answers)?'\n'+v148Answers(p.sig.answers):''));
+    if(tx)parts.push('CALL TRANSCRIPT ('+v148CallLine(p.call)+'):\n'+tx);
+    const body=Object.assign(v136PrepBody(l,V148_ST,parts.join('\n\n').slice(0,V137_BUDGET)),{from:'canvas',kind:'recap',
+      callId:p.call?String(p.call.id):'',callTitle:p.call?String(p.call.title||''):'',callDate:p.call?String(p.call.start||p.call.created_at||''):''});
+    const j=await v113Call(V136_HOOK,body,'Catalyst · Meeting Prep');
+    if(j&&j.ok===false){if(btn)btn.disabled=false;say(j.message||'It could not start. Try again in a minute.',true);return;}
+    V148.runs[v137Low(l.email)]={t0:Date.now(),by:apCfMe(),name:v148LeadName(l),call:p.call?String(p.call.title||''):''};v148RunsSave();
+    V148.note='';nwModalClose();
+    nwToast('Writing the meeting recap for '+v148LeadName(l)+'. It lands on Deliverables as a draft in a minute or two.');
+    V115.dl.f='all';V115.dl.t=0;
+    if(typeof nwOn==='function'&&nwOn('home.deliverables'))nwRepaint();
+    v148Poll();
+  }catch(e){if(btn)btn.disabled=false;say('It could not start: '+((e&&e.message)||e),true);}
+}
+/* a landing page sign-up as a lead in Prospect research */
+async function v148AddSignup(s){
+  const e=v137Low(s.email),now=new Date().toISOString();
+  const got=await apSb('e1_leads?select=email,stage&email=eq.'+encodeURIComponent(e));
+  if(got&&got.length){if(!got[0].stage)await apPatch('e1_leads','email=eq.'+encodeURIComponent(e),{stage:'research',updated_at:now});}
+  else await apPost('e1_leads',{email:e,prospect_name:s.name||null,prospect_title:s.title||null,company_name:s.company||null,
+    lead_source:'Landing page'+(s.page?' · '+s.page:''),stage:'research',updated_at:now});
+  try{await v120Reload();}catch(e2){}
+  return v120Lead(e)||{email:e,emails:[e],prospect_name:s.name||e,prospect_title:s.title||'',company_name:s.company||'',stage:'research'};
+}
+/* runs being written: checked every 8 seconds for up to 10 minutes */
+function v148Running(){
+  const now=Date.now(),out=[];
+  Object.keys(V148.runs).forEach(function(e){const r=V148.runs[e];if(!r||now-r.t0>V148_WAIT){delete V148.runs[e];return;}out.push(Object.assign({email:e},r));});
+  return out;
+}
+async function v148Poll(){
+  if(V148.timer)return;
+  const tick=async function(){
+    V148.timer=null;
+    const run=v148Running();v148RunsSave();
+    if(!run.length)return;
+    const since=new Date(Math.min.apply(null,run.map(function(r){return r.t0;}))-60e3).toISOString();
+    let got=[];
+    try{got=(await apSb('agent_outputs?select=id,run_id,created_at&agent=eq.deliverable&created_at=gt.'+encodeURIComponent(since)+'&order=created_at.desc&limit=40'))||[];}catch(e){got=[];}
+    let landed=null;
+    run.forEach(function(r){
+      const o=got.find(function(x){return v137Low(x.run_id)===r.email&&Date.parse(x.created_at)>=r.t0-60e3;});
+      if(o){delete V148.runs[r.email];landed=landed||{o:o,r:r};}
+    });
+    v148RunsSave();
+    if(landed){
+      V115.dl.t=0;
+      nwToast('The meeting recap for '+landed.r.name+' is ready to check.');
+      if(typeof nwOn==='function'&&nwOn('home.deliverables'))v115DlLoad(true).then(function(){if(nwOn('home.deliverables'))nwRepaint();}).catch(function(){});
+    }
+    if(v148Running().length)V148.timer=setTimeout(tick,8000);
+    else if(!landed&&typeof nwOn==='function'&&nwOn('home.deliverables'))nwRepaint();
+  };
+  V148.timer=setTimeout(tick,8000);
+}
+
+/* ---------- Deliverables: the recaps, the Canvas tab and the button ---------- */
+(function(){
+  const _l=v115DlLoad;
+  v115DlLoad=async function(force){
+    const D=await _l.apply(this,arguments);
+    if(!D||!D.rows)return D;
+    if(D.v148===D.t)return D;
+    let o=[];
+    try{o=(await apSb('agent_outputs?select=id,run_id,title,created_at,data&agent=eq.deliverable&order=created_at.desc&limit=300'))||[];}
+    catch(e){D.err=D.err||((e&&e.message)||String(e));}
+    const leads=(v120Data().leads||[]);
+    const rows=o.map(function(x){
+      const d=apJson(x.data),l=leads.find(function(y){return v136Emails(y).map(v137Low).indexOf(v137Low(x.run_id))>=0;})||null;
+      return {key:'dl:'+x.id,src:'canvas',title:x.title||V148_DOC,kind:'Canvas · Meeting recap',status:d.status==='ready'?'ready':'draft',
+        who:(l&&v148LeadName(l))||d.prospectName||x.run_id,org:(l&&l.company_name)||d.companyName||'',when:x.created_at,open:'v148Open('+nwJs(String(x.id))+')'};
+    });
+    D.rows=D.rows.filter(function(r){return r.src!=='canvas';}).concat(rows)
+      .sort(function(a,b){return String(b.when||'').localeCompare(String(a.when||''));});
+    D.v148=D.t;
+    return D;
+  };
+  const _r=v115DlRows;
+  v115DlRows=function(){
+    const D=V115.dl,q=String(D.q||'').trim().toLowerCase();
+    const run=(D.f==='all'||D.f==='canvas')?v148Running().filter(function(r){return !q||(r.name+' meeting recap').toLowerCase().indexOf(q)>=0;})
+      .map(function(r){return {key:'run:'+r.email,src:'canvas',running:true,title:V148_DOC,kind:'Canvas · Meeting recap',who:r.name,org:'',when:new Date(r.t0).toISOString()};}):[];
+    return run.concat(_r.apply(this,arguments));
+  };
+  const _w=v115DlRow;
+  v115DlRow=function(r){
+    if(r.src!=='canvas')return _w.apply(this,arguments);
+    return '<div class="nw-row v115-dl-row v148-row"><span class="nw-row-ic">'+nwIc('file',19)+'</span>'+
+      '<div class="nw-row-main"><b class="nw-row-title">'+esc(r.title)+'</b><span class="nw-row-prev">'+esc(r.who+(r.org?' · '+r.org:''))+'</span>'+
+        '<span class="nw-row-meta">'+nwTag(r.kind)+(r.running?'<span class="v148-pill is-run">Writing…</span>':'<span class="v148-pill'+(r.status==='ready'?' is-ok':'')+'">'+(r.status==='ready'?'Ready for the client':'Draft · check before sending')+'</span>')+
+        (r.when&&!r.running?nwTag(nwDay(r.when)):'')+'</span></div>'+
+      '<div class="nw-row-side">'+(r.running?'':'<button type="button" class="nw-btn nw-btn-sm" onclick="'+esc(r.open)+'">'+nwIc('arrowR',15)+'Open</button>')+'</div></div>';
+  };
+  v115DlHtml=function(){
+    const D=V115.dl,R=D.rows||[],run=v148Running();
+    const n1=R.filter(function(r){return r.src==='e1';}).length,n2=R.filter(function(r){return r.src==='call';}).length,n3=R.filter(function(r){return r.src==='canvas';}).length+run.length;
+    const head=nwHead({eyebrow:'Canvas · Client deliverables',title:'Deliverables',
+      status:D.rows?[[D.err?'bad':'good',D.err?(R.length?'Some could not load: ':'Could not load: ')+D.err:nwPlural(R.length,'document')]].concat(run.length?[['info',nwPlural(run.length,'recap')+' being written']]:[]):[['info','Loading']],
+      actions:'<button type="button" class="nw-btn nw-btn-primary" onclick="v148Make()">'+nwIc('plus',15)+'Make a deliverable</button>',
+      caps:[['file','Meeting recaps for your clients'],['users','Catalyst documents for each lead'],['msg','Write-ups from your calls']],
+      stats:D.rows?[nwStat(R.length,'documents',"v115DlF('all')"),nwStat(n3,'for clients',"v115DlF('canvas')"),nwStat(n1,'from Catalyst',"v115DlF('e1')"),nwStat(n2,'from calls',"v115DlF('call')")]:[]});
+    const tabs=[['all','All',R.length+run.length],['canvas','For clients',n3],['e1','Catalyst',n1],['call','Calls',n2]];
+    return '<div class="nw-content v115-dl">'+head+
+      '<div class="nw-toolbar"><div class="nw-seg" role="tablist" aria-label="Show">'+tabs.map(function(t){
+        return '<button type="button" role="tab" aria-selected="'+(D.f===t[0])+'" onclick="v115DlF(\''+t[0]+'\')">'+esc(t[1])+' <span class="nw-faint">'+t[2]+'</span></button>';}).join('')+'</div>'+
+        '<input type="search" class="nw-input v115-q" placeholder="Search documents or people" aria-label="Search documents" value="'+esc(D.q)+'" oninput="v115DlQ(this.value)"></div>'+
+      '<div id="v115DlList">'+(D.rows?v115DlListHtml():'<div class="nw-card"><p class="nw-faint">Loading documents…</p></div>')+'</div>'+
+      '<p class="nw-faint nw-small v115-note">'+nwIc('info',14)+'Make a deliverable writes a meeting recap and next steps for a client, from a lead, a recorded call or an inquiry. It lands here as a draft to check before sending.</p>'+
+    '</div>';
+  };
+  if(v148Running().length)setTimeout(v148Poll,1500);
+})();
+
+/* ---------- a recap: read, edit, copy, save as PDF, mark ready ---------- */
+async function v148Open(id){
+  id=String(id);V148.edit=null;V148.sure=0;
+  let o=null;
+  try{o=((await apSb('agent_outputs?select=*&id=eq.'+encodeURIComponent(id)))||[])[0]||null;}
+  catch(e){nwToast('Could not open it: '+((e&&e.message)||e));return;}
+  if(!o){nwToast('This recap is not on file any more.');return;}
+  V148.o=o;v148ReadPaint();
+}
+function v148Todo(md){return (String(md||'').match(/\[TO CONFIRM[^\]]*\]|\[FILL IN[^\]]*\]/gi)||[]).length;}
+function v148ReadPaint(){
+  const o=V148.o;if(!o)return;
+  const d=apJson(o.data),call=d.call||{},ready=d.status==='ready',todo=v148Todo(o.content_md);
+  const l=v120Lead(o.run_id)||v137FullLead(v137Low(o.run_id));
+  const meta=[(l&&v148LeadName(l))||d.prospectName||o.run_id,(l&&l.company_name)||d.companyName||'',call.title?'From '+call.title+(call.date?' ('+v137D(call.date)+')':''):'',
+    'Written '+v137D(o.created_at),d.edited?'edited by '+String(d.edited.by||'').split('@')[0]:''].filter(Boolean).join(' · ');
+  const body=V148.edit!=null
+    ?'<label class="nw-field"><span class="nw-lbl">The recap, in markdown (# title, ## sections, - bullets, 1. steps, **bold**)</span><textarea class="nw-input v148-ed" id="v148Ed" rows="18" maxlength="40000">'+esc(V148.edit)+'</textarea></label>'
+    :'<div class="v148-doc" id="v148Doc">'+v132Md(String(o.content_md||'').replace(/^#[ \t]+.+\n?/m,''))+'</div>';/* the title is the heading above */
+  const foot=V148.edit!=null
+    ?'<button type="button" class="nw-btn nw-btn-ghost" onclick="V148.edit=null;v148ReadPaint()">Cancel</button><span class="nw-grow"></span>'+
+      '<button type="button" class="nw-btn nw-btn-primary" id="v148Save" onclick="v148Save()">'+nwIc('check',15)+'Save changes</button>'
+    :'<button type="button" class="nw-btn nw-btn-ghost" onclick="v148EditOn()">'+nwIc('pen',15)+'Edit</button>'+
+      '<button type="button" class="nw-btn nw-btn-ghost" onclick="v148Copy()">'+nwIc('layers',15)+'Copy</button>'+
+      '<button type="button" class="nw-btn nw-btn-ghost" onclick="v148Print()">'+nwIc('file',15)+'Save as PDF</button>'+
+      (l?'<button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose();openE1Lead('+esc(nwJs(l.email))+')">'+nwIc('users',15)+'Open lead</button>':'')+
+      '<span class="nw-grow"></span>'+
+      '<button type="button" class="nw-btn'+(ready?' nw-btn-ghost':' nw-btn-primary')+'" id="v148Ready" onclick="v148Ready('+(ready?'false':'true')+')">'+(ready?'Back to draft':nwIc('check',15)+'Mark ready for the client')+'</button>';
+  nwModal('v148R','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Canvas · Meeting recap · '+(ready?'Ready for the client':'Draft')+'</div><h2>'+esc(o.title||V148_DOC)+'</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v148-m"><p class="nw-small nw-muted">'+esc(meta)+'</p>'+
+      (todo&&V148.edit==null?'<div class="v148-warn">'+nwIc('info',16)+'<span>'+esc(nwPlural(todo,'thing')+' marked TO CONFIRM. Settle '+(todo===1?'it':'them')+' (Edit) before sending.')+'</span></div>':'')+
+      body+'<p class="v120-msg" id="v148RMsg" role="status" aria-live="polite"></p>'+
+      '<div class="nw-m-foot">'+foot+'</div></div>',true);
+}
+function v148EditOn(){V148.edit=String(V148.o&&V148.o.content_md||'');v148ReadPaint();const t=document.getElementById('v148Ed');if(t)t.focus();}
+async function v148Save(){
+  const o=V148.o;if(!o)return;
+  const ta=document.getElementById('v148Ed'),md=String(ta?ta.value:'').replace(/\r\n?/g,'\n').trim(),msg=document.getElementById('v148RMsg'),btn=document.getElementById('v148Save');
+  if(md.length<40){if(msg){msg.textContent='The recap is too short to save.';msg.classList.add('err');}return;}
+  if(md===String(o.content_md||'').trim()){V148.edit=null;v148ReadPaint();nwToast('Nothing changed.');return;}
+  const h1=(md.match(/^#[ \t]+(.+)$/m)||[])[1];
+  const d=apJson(o.data),body={content_md:md,title:h1?h1.replace(/[*_`]/g,'').trim().slice(0,200):(o.title||V148_DOC),edited_by_human:true,
+    data:Object.assign({},d,{edited:{at:new Date().toISOString(),by:apCfMe()}})};
+  if(!o.snapshot)body.snapshot={content_md:o.content_md||null,title:o.title||null,written_at:o.created_at};
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  let rows;
+  try{rows=await apPatch('agent_outputs','id=eq.'+encodeURIComponent(o.id),body);}
+  catch(e){if(btn){btn.disabled=false;btn.textContent='Save changes';}if(msg){msg.textContent='Could not save it: '+((e&&e.message)||e);msg.classList.add('err');}return;}
+  if(!(rows||[]).length){if(btn){btn.disabled=false;btn.textContent='Save changes';}if(msg){msg.textContent='Supabase did not take the change. Try again, or sign in again.';msg.classList.add('err');}return;}
+  Object.assign(o,body);V148.edit=null;V115.dl.t=0;v148ReadPaint();
+  nwToast('Saved. Save as PDF prints this version.');
+  if(typeof nwOn==='function'&&nwOn('home.deliverables'))v115DlLoad(true).then(function(){if(nwOn('home.deliverables'))v115DlPaint();}).catch(function(){});
+}
+async function v148Ready(on){
+  const o=V148.o;if(!o)return;
+  const msg=document.getElementById('v148RMsg'),btn=document.getElementById('v148Ready'),todo=v148Todo(o.content_md);
+  if(on&&todo&&V148.sure!==o.id){V148.sure=o.id;if(msg){msg.textContent=nwPlural(todo,'thing')+' still marked TO CONFIRM. Click again to mark it ready anyway.';msg.classList.add('err');}return;}
+  const d=apJson(o.data),data=Object.assign({},d,{status:on?'ready':'draft',ready:on?{at:new Date().toISOString(),by:apCfMe()}:null});
+  if(btn)btn.disabled=true;
+  let rows;
+  try{rows=await apPatch('agent_outputs','id=eq.'+encodeURIComponent(o.id),{data:data});}
+  catch(e){if(btn)btn.disabled=false;if(msg){msg.textContent='Could not save it: '+((e&&e.message)||e);msg.classList.add('err');}return;}
+  if(!(rows||[]).length){if(btn)btn.disabled=false;if(msg){msg.textContent='Supabase did not take the change. Try again, or sign in again.';msg.classList.add('err');}return;}
+  o.data=data;V148.sure=0;V115.dl.t=0;v148ReadPaint();
+  nwToast(on?'Marked ready for the client.':'Back to draft.');
+  if(typeof nwOn==='function'&&nwOn('home.deliverables'))v115DlLoad(true).then(function(){if(nwOn('home.deliverables'))v115DlPaint();}).catch(function(){});
+}
+/* Copy: the recap as plain text, the markdown marks taken out */
+function v148Plain(md){
+  return String(md||'').replace(/\r\n?/g,'\n').split('\n').map(function(s){
+    return s.replace(/^#{1,6}\s+/,'').replace(/^[*•]\s+/,'- ').replace(/\*\*([^*]+)\*\*/g,'$1').replace(/(^|[^*])\*([^*\n]+)\*/g,'$1$2');}).join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+async function v148Copy(){
+  const o=V148.o;if(!o)return;const t=v148Plain(o.content_md);
+  try{await navigator.clipboard.writeText(t);nwToast('Copied. Paste it into your email.');}
+  catch(e){V148.copied=t;nwToast('Your browser did not allow copying. Use Edit, select the text and copy it.');}
+  V148.copied=t;
+}
+function v148Print(){
+  const o=V148.o;if(!o)return;
+  const w=window.open('','_blank');
+  if(!w){nwToast('Allow pop-ups for this site to save the PDF.');return;}
+  const css=((document.getElementById('v148css')||{}).textContent||'')+((document.getElementById('v132css')||{}).textContent||'');
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(o.title||V148_DOC)+'</title>'+
+    '<style>'+css+'@page{size:letter;margin:.8in .85in}html,body{margin:0;background:#fff;color:#1d2433;font:15px/1.55 "Instrument Sans",system-ui,sans-serif}'+
+    '.v148-doc{border:0;padding:0;max-height:none;overflow:visible}.v132-fill{background:#FFF3D6}</style></head><body>'+
+    '<div class="v148-doc"><h1 class="v148-h1">'+esc(o.title||V148_DOC)+'</h1>'+v132Md(String(o.content_md||'').replace(/^#[ \t]+.+\n?/m,''))+'</div></body></html>');
+  w.document.close();
+  try{V148.printer(w);}catch(e){}
+}
+/*@@v148end*/
 
 </script>
 <script>
