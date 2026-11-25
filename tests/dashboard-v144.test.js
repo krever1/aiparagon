@@ -247,6 +247,117 @@ const CG = call('fx-g', 48, 'Coffee chat', [['Gail Free', 'gail.free@gmail.com']
     await ctx.close();
   }
 
+  // 5. Feedback pinned to any part of a page, a list of it, and Approvals
+  if (want('feedback')) {
+    let { ctx, page, store } = await open('/dashboard/today');
+    const fb = page.locator('#v144Fb');
+    check('A Feedback button in the top bar', await fb.count() === 1 && await fb.isVisible());
+    await fb.click(); await page.waitForTimeout(500);
+    check('Feedback mode: the button is pressed and a bar says what to do', (await fb.getAttribute('aria-pressed')) === 'true' && /Click any part of the page/.test(await page.textContent('#v144FbBar')));
+    // a click on a button in the page leaves feedback instead of doing what the button does
+    const tour = page.locator('#main button:has-text("Take the tour")').first();
+    const tb = await tour.boundingBox();
+    await page.mouse.click(tb.x + tb.width / 2, tb.y + tb.height / 2); await page.waitForTimeout(500);
+    const pop = await page.evaluate(() => ({ pop: !!document.querySelector('.v144-fbpop textarea'), label: (document.querySelector('.v144-fbp-h small') || {}).textContent, tour: !!document.querySelector('.nw-modal') }));
+    check('In feedback mode a click opens the note box on that spot, and the button does not run', pop.pop && /Take the tour/.test(pop.label) && !pop.tour, JSON.stringify(pop));
+    await page.click('.v144-fbpop button:has-text("Save")'); await page.waitForTimeout(200);
+    check('An empty note is refused with why', /Say what should change/.test(await page.textContent('#v144FbErr')));
+    await page.fill('#v144FbTxt', 'Make the tour button easier to spot.');
+    await page.click('#v144FbSave'); await page.waitForTimeout(1200);
+    const row = store.db.dashboard_comments.find((r) => /tour button/.test(r.body || ''));
+    const a = row ? JSON.parse(row.anchor_text || '{}') : {};
+    check('Saved for the team: the page, the note, who, and where on the page', row && row.target_key === 'fb:today' && row.author === ME && /Take the tour/.test(a.label) && !!a.sel, JSON.stringify(row));
+    const pin = await page.evaluate(() => { const p = document.querySelector('.v144-pin'); const b = document.querySelector('#main button.nw-btn-ghost'); if (!p) return null; const r = p.getBoundingClientRect(); return { n: document.querySelectorAll('.v144-pin').length, x: r.left, y: r.top }; });
+    check('A numbered pin marks the spot', pin && pin.n === 1, JSON.stringify(pin));
+    check('The button counts the open feedback', (await page.textContent('#v144FbN')) === '1');
+    await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+    check('Esc leaves feedback mode, and the pins go', (await fb.getAttribute('aria-pressed')) === 'false' && await page.locator('.v144-pin').count() === 0 && await page.locator('#v144FbBar').count() === 0);
+    await page.evaluate(() => document.querySelector('#main button.nw-btn-ghost') && 0);
+    // after a reload the pin comes back on the same spot
+    await page.reload({ waitUntil: 'load' }); await H.settled(page, 'app'); await page.waitForTimeout(2000);
+    await page.locator('#v144Fb').click(); await page.waitForTimeout(900);
+    const back = await page.evaluate(() => { const p = document.querySelector('.v144-pin'), t = [...document.querySelectorAll('#main button')].find((b) => /Take the tour/.test(b.textContent)); if (!p || !t) return null; const a = p.getBoundingClientRect(), b = t.getBoundingClientRect(); return { inside: a.left + 11 >= b.left - 2 && a.left + 11 <= b.right + 2 && a.top + 11 >= b.top - 2 && a.top + 11 <= b.bottom + 2 }; });
+    check('After a reload the pin is back on the same button', back && back.inside, JSON.stringify(back));
+    // the list
+    await page.click('#v144FbBar button:has-text("All feedback")'); await page.waitForTimeout(800);
+    const list = await page.evaluate(() => (document.getElementById('v144FbL') || {}).innerText || '');
+    check('All feedback lists it under its page, with Go to it and Resolve', /Today/.test(list) && /tour button easier to spot/.test(list) && /Go to it/.test(list) && /Resolve/.test(list), list.slice(0, 300));
+    await page.keyboard.press('Escape'); await page.evaluate(() => nwModalClose()); await page.evaluate(() => v144FbToggle(false));
+    // Approvals: a comment that goes to the pin
+    await page.evaluate(() => apGo('approvals')); await page.waitForTimeout(1500);
+    await page.evaluate(async () => { try { await apLoadAll && apLoadAll(); } catch (e) {} });
+    const ap = await page.evaluate(() => [...document.querySelectorAll('#main .nw-row')].filter((r) => /^cmt:/.test(r.dataset.key)).map((r) => r.innerText.replace(/\s+/g, ' ')));
+    check('Approvals lists the feedback, saying where it was left', ap.some((t) => /Feedback from qa/.test(t) && /Today/.test(t) && /Go to it/.test(t)), JSON.stringify(ap));
+    const go = page.locator('#main .nw-row', { hasText: 'Feedback from qa' }).locator('button', { hasText: 'Go to it' });
+    if (await go.count()) { await go.first().click(); await page.waitForTimeout(2600); }
+    const there = await page.evaluate(() => ({ v: apCurrentView(), on: document.body.classList.contains('v144-fb-on'), pop: (document.querySelector('.v144-fbp-b') || {}).textContent }));
+    check('Go to it opens the page with the note showing on its pin', there.v === 'today' && there.on && /tour button/.test(there.pop || ''), JSON.stringify(there));
+    await page.click('.v144-fbpop button:has-text("Resolve")'); await page.waitForTimeout(1000);
+    const done = store.db.dashboard_comments.find((r) => /tour button/.test(r.body || ''));
+    check('Resolve: saved for the team, the pin and the count go', done.resolved === true && await page.locator('.v144-pin').count() === 0 && !(await page.isVisible('#v144FbN')), JSON.stringify(done));
+    await ctx.close();
+    // a lead's page keeps its own notes, and a phone shows the button
+    ({ ctx, page, store } = await open('/dashboard/lead-pipeline', { width: 390 }));
+    check('Feedback on a phone: the button shows', await page.locator('#v144Fb').isVisible());
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.evaluate((e) => openE1Lead(e), L1); await page.waitForTimeout(2500);
+    check('A lead\'s page has a key of its own', await page.evaluate(() => v144FbKey()) === 'fb:e1pipeline:' + L1);
+    await ctx.close();
+  }
+
+  // 6. Send to Notion from Tasks: a database the team picks, an entry per task and a follow-up
+  if (want('notion')) {
+    const DB1 = '11111111-1111-4111-8111-111111111111', DB2 = '22222222-2222-4222-8222-222222222222';
+    let share = false, fail = 0;
+    const adds = [];
+    const hook = (p, j) => {
+      if (p !== 'notion-proxy') return null;
+      if (j.action === 'databases') return { body: { object: 'list', action: 'databases', results: share ? [
+        { object: 'database', id: DB1, title: [{ plain_text: 'Engine 3: Digest Page' }] },
+        { object: 'database', id: DB2, title: [{ plain_text: 'Erica Tasks' }] }] : [] } };
+      if (j.action === 'add') {
+        if (fail && adds.length === fail) return { body: { object: 'error', code: 'notion_error', message: 'Notion is busy.' } };
+        adds.push(j); return { body: { object: 'list', action: 'add', results: [{ object: 'page', id: 'p' + adds.length }] } };
+      }
+      return null;
+    };
+    const more = (t) => { t.call_outputs.find((r) => r.call_id === 'fx-a').tasks.push({ id: 'tb', text: 'Book the follow-up demo', owner: 'Erica', due: '', done: false }); };
+    let { ctx, page, store, hooks } = await open('/dashboard/tasks', { hook, more });
+    const card = () => page.locator('#apTk .ap-cx-tk[data-id="fx-a"], #apTk [data-id="fx-a"]').first();
+    await card().locator('.v143-selbtn').click(); await page.waitForTimeout(200);
+    check('Tasks: Send to Notion sits next to Send to Asana', await card().locator('.v143-pickbar [data-a="notion"]').count() === 1);
+    await card().locator('.v143-pickbar [data-a="notion"]').click(); await page.waitForTimeout(900);
+    const none = await page.evaluate(() => (document.getElementById('v144NtM') || {}).innerText || '');
+    check('No database shared: it says how to share one, step by step', /shares no databases/.test(none) && /Connections/.test(none) && /Check again/.test(none), none.slice(0, 200));
+    share = true;
+    await page.click('#v144NtM button:has-text("Check again")'); await page.waitForTimeout(900);
+    const pickd = await page.evaluate(() => { const s = document.getElementById('v144NtDb'); return s ? { v: s.value, opts: [...s.options].map((o) => o.textContent) } : null; });
+    check('Once shared: the databases are listed, a tasks one picked first', pickd && pickd.opts.join() === 'Engine 3: Digest Page,Erica Tasks' && pickd.v === DB2, JSON.stringify(pickd));
+    const rows = await page.locator('#v144NtM .v144-nt-row[data-t]').count();
+    check('Every task of the call is listed, with the follow-up ticked', rows === 2 && await page.isChecked('#v144NtFu'));
+    await page.click('#v144NtGo'); await page.waitForTimeout(1500);
+    check('Each task goes as an entry named for the task and the call, then the follow-up', adds.length === 3 && adds[0].id === DB2 && adds[0].title === 'Send Robin the pilot plan · ' + CA.title && /^Follow-up: Intro call · Testwell \(/.test(adds[2].title), JSON.stringify(adds.map((a) => a.title)));
+    check('The requests carry the sign-in', hooks.filter((h) => h.p === 'notion-proxy').every((h) => h.b && h.b.auth));
+    const sent = setting(store, 'notion_sent') || {}, def = setting(store, 'notion_tasks_db') || {};
+    check('Kept for the team: what went where, and the database to use next time', sent['fx-a'] && sent['fx-a'].n === 3 && sent['fx-a'].name === 'Erica Tasks' && def.id === DB2, JSON.stringify([sent, def]));
+    await page.waitForTimeout(300);
+    await card().locator('.v143-pickbar [data-a="notion"]').click(); await page.waitForTimeout(900);
+    check('Sending the same call again says it went already', /Already sent 3 to “Erica Tasks”/.test(await page.textContent('#v144NtM')));
+    // nothing ticked is refused; a stop halfway says how many went and leaves the rest ticked
+    await page.locator('#v144NtM .v144-nt-row input').evaluateAll((xs) => xs.forEach((x) => { x.checked = false; }));
+    await page.click('#v144NtGo'); await page.waitForTimeout(300);
+    check('Nothing ticked is refused with why', /Tick at least one task/.test(await page.textContent('#v144NtErr')));
+    await page.locator('#v144NtM .v144-nt-row input').evaluateAll((xs) => xs.forEach((x) => { x.checked = true; }));
+    fail = adds.length + 1;
+    await page.click('#v144NtGo'); await page.waitForTimeout(1500);
+    const stop = await page.evaluate(() => ({ err: document.getElementById('v144NtErr').textContent, ticks: [...document.querySelectorAll('#v144NtM .v144-nt-row[data-t] input')].map((x) => x.checked), btn: document.getElementById('v144NtGo').textContent }));
+    check('Notion stopping halfway: says how many went, unticks those, offers the rest', /^1 sent, then Notion stopped: Notion is busy/.test(stop.err) && stop.ticks.join() === 'false,true' && /Send the rest/.test(stop.btn), JSON.stringify(stop));
+    fail = 0;
+    await page.click('#v144NtGo'); await page.waitForTimeout(1500);
+    check('Send the rest sends only what had not gone', adds.length === 6 && adds[4].title.startsWith('Book the follow-up demo') && /^Follow-up/.test(adds[5].title), JSON.stringify(adds.slice(3).map((a) => a.title)));
+    await ctx.close();
+  }
+
   check('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
   await browser.close();
   server.close();

@@ -54844,10 +54844,11 @@ function v143TkDecorate(){
     });
     const ul=card.querySelector('.ap-cx-tasks');
     if(ul){const bar=document.createElement('div');bar.className='v143-pickbar';
-      bar.innerHTML='<b></b><button type="button" class="rd-btn sm" data-a="all">All</button><button type="button" class="rd-btn sm" data-a="none">None</button><button type="button" class="rd-btn sm pri" data-a="asana">Send to Asana</button><button type="button" class="rd-btn sm" data-a="done">Done</button>';
+      bar.innerHTML='<b></b><button type="button" class="rd-btn sm" data-a="all">All</button><button type="button" class="rd-btn sm" data-a="none">None</button><button type="button" class="rd-btn sm pri" data-a="asana">Send to Asana</button><button type="button" class="rd-btn sm" data-a="notion">Send to Notion</button><button type="button" class="rd-btn sm" data-a="done">Done</button>';   /* v144: Send to Notion */
       bar.onclick=function(e){const a=e.target&&e.target.dataset&&e.target.dataset.a;if(!a)return;
         if(a==='all'||a==='none'){card.querySelectorAll('.v143-pk').forEach(function(x){x.checked=a==='all';const t=x.closest('li').dataset.tid;(V143T.sel[id]=V143T.sel[id]||{})[t]=x.checked;});v143TkBar(id,card);}
         if(a==='asana')apCxAsana(id,v143Picked(id));
+        if(a==='notion')v144Notion(id,v143Picked(id));   /* v144 */
         if(a==='done'){V143T.pick[id]=false;card.classList.remove('v143-picking');}};
       ul.insertAdjacentElement('afterend',bar);}
     if(V143T.pick[id]){card.classList.add('v143-picking');v143TkBar(id,card);}
@@ -55208,6 +55209,37 @@ function v143AsDisconnect(){
 .v144-hs-k{font:600 12px/1 var(--nw-body);letter-spacing:.04em;text-transform:uppercase;color:#0B6B3A}
 .v144-hs-k::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#12A150;margin-right:6px;vertical-align:1px}
 .v144-hs.is-err .v144-hs-k{color:#A33A2B}.v144-hs.is-err .v144-hs-k::before{background:#D0503A}
+/* v144 · feedback pins */
+.v144-fbw .rd-icon-btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2}
+.v144-fbb[aria-pressed="true"]{background:#0B1F3A;color:#fff}
+body.v144-fb-on #main,body.v144-fb-on #apChrome{cursor:crosshair}
+body.v144-fb-on .v144-fb-hl{outline:2px dashed #C9A227!important;outline-offset:2px}
+.v144-fbbar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9500;display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:calc(100vw - 24px);background:#0B1F3A;color:#fff;border-radius:12px;padding:10px 12px;box-shadow:0 10px 30px rgba(11,31,58,.3);font-size:13.5px}
+.v144-fbbar span{opacity:.9}
+.v144-fbbar .rd-btn{background:#fff;color:#0B1F3A}
+.v144-fbbar .rd-btn.pri{background:#C9A227;color:#0B1F3A;border-color:#C9A227}
+.v144-fbpop{position:absolute;z-index:9600;width:320px;max-width:calc(100vw - 16px);background:#fff;border:1px solid var(--nw-line,#EAECF0);border-radius:12px;box-shadow:0 12px 32px rgba(16,24,40,.18);padding:12px;cursor:auto}
+.v144-fbp-h{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+.v144-fbp-h small{font-size:12px;color:var(--nw-ink-3,#667085);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v144-fbpop textarea{width:100%;box-sizing:border-box;border:1px solid var(--nw-line,#D0D5DD);border-radius:8px;padding:8px;font:inherit;font-size:14px;resize:vertical}
+.v144-fbp-b{margin:0 0 8px;font-size:14px;white-space:pre-wrap}
+.v144-fbp-f{display:flex;align-items:center;gap:8px;margin-top:8px}
+.v144-fbp-f .v144-err{flex:1;color:#A33A2B;font-size:12.5px}
+.v144-pin{position:absolute;z-index:9400;width:22px;height:22px;border-radius:50% 50% 50% 0;background:#C9A227;color:#0B1F3A;border:2px solid #fff;font:700 11px/1 var(--nw-body);box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer;padding:0}
+.v144-fbl ul{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:6px}
+.v144-fbi{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;border:1px solid var(--nw-line,#EAECF0);border-radius:8px;padding:8px 10px}
+.v144-fbi div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.v144-fbi small{font-size:12px;color:var(--nw-ink-3,#667085)}
+.v144-fbi.is-done{opacity:.65}
+.v144-fbi-a{display:flex;gap:6px;flex:0 0 auto}
+.v144-fbd summary{cursor:pointer;font-size:13px;color:var(--nw-ink-3,#667085);margin:8px 0}
+@media(max-width:600px){.v144-fbi{flex-direction:column}.v144-fbbar span{display:none}}
+.v144-nt-was{background:var(--ap-amber-bg,#fff7e6);border-radius:8px;padding:8px 10px;font-size:13px;margin:0 0 10px}
+.v144-nt-row{display:flex;gap:8px;align-items:flex-start;padding:6px 0;font-size:14px;cursor:pointer}
+.v144-nt-row small{color:var(--muted,#6b7280)}
+.v144-nt-fu{border-top:1px solid var(--line,#e5e7eb);margin-top:6px;padding-top:10px}
+.v144-nt-miss{margin:6px 0 10px;font-size:13px}
+.v144-nt-miss summary{cursor:pointer;color:var(--accent-text,#1d4ed8)}
 .ap-tk-h .v144-mg{margin-left:auto;margin-right:10px;align-self:center}
 @media (max-width:600px){.v144-row{grid-template-columns:auto minmax(0,1fr) auto}.v144-row .v144-n{display:none}}
 </style>
@@ -55772,6 +55804,314 @@ async function v144HsLoad(email,force){
   };
 })();
 
+
+/* ---------- Part 5: feedback pinned to any part of a page ----------
+   Feedback in the top bar turns on comment mode: a click on any part of the page (a card, a button, a row)
+   opens a box to say what should change there. Each note is saved for the team in dashboard_comments
+   (target_key fb:<page>[:<lead email>], body the note, anchor_text {sel, label, x, y} so the pin finds its
+   place again), shows as a numbered pin on that spot while comment mode is on, and is listed in All
+   feedback (open first, by page) with Go to it and Resolve. Open feedback is also a comment on Approvals,
+   whose Open goes to the pin. */
+V144.fb={rows:null,on:false,at:0,draft:null};
+const V144_FB_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v6M9 10h6"/></svg>';
+function v144FbKey(){
+  const v=typeof apCurrentView==='function'?apCurrentView():'';
+  const lead=typeof state!=='undefined'&&state.engine==='e1'&&state.view==='e1lead'&&state.e1Lead?String(state.e1Lead).toLowerCase():'';
+  return 'fb:'+(v||'today')+(lead?':'+lead:'');
+}
+function v144FbWhere(key){
+  const p=String(key||'').split(':'),v=p[1]||'',lead=p.slice(2).join(':');
+  const L=lead&&typeof v120Lead==='function'?v120Lead(lead):null;
+  const head=(typeof NW_HEADS!=='undefined'&&NW_HEADS[v]&&NW_HEADS[v][1])||(typeof AP_VIEWS!=='undefined'&&AP_VIEWS[v]&&AP_VIEWS[v].title)||v;
+  return lead?((L&&L.prospect_name)||lead)+' · lead page':head;
+}
+function v144FbAnchor(r){try{const a=JSON.parse(r.anchor_text||'{}');return a&&typeof a==='object'?a:{};}catch(e){return {};}}
+async function v144FbLoad(force){
+  if(V144.fb.rows&&!force&&Date.now()-V144.fb.at<30e3)return V144.fb.rows;
+  try{V144.fb.rows=(await apSb('dashboard_comments?select=id,target_key,author,body,created_at,resolved,resolved_by,anchor_text&target_key=like.fb:*&order=created_at.desc&limit=300'))||[];}
+  catch(e){V144.fb.rows=V144.fb.rows||[];}
+  V144.fb.at=Date.now();v144FbBadge();return V144.fb.rows;
+}
+function v144FbOpenRows(key){return (V144.fb.rows||[]).filter(function(r){return !r.resolved&&(!key||r.target_key===key);});}
+function v144FbBadge(){
+  const b=document.getElementById('v144FbN');if(!b)return;
+  const n=v144FbOpenRows().length;b.textContent=n;b.style.display=n?'':'none';
+}
+/* the top bar button: comment mode, and the list */
+function v144FbButton(){
+  const bar=document.querySelector('.nw-topbar');if(!bar||document.getElementById('v144Fb'))return;
+  const w=document.createElement('span');w.style.position='relative';w.className='v144-fbw';
+  w.innerHTML='<button type="button" class="rd-icon-btn v144-fbb" id="v144Fb" aria-pressed="false" title="Leave feedback on any part of the page" aria-label="Feedback" onclick="v144FbToggle()">'+V144_FB_SVG+'<span class="bdg" id="v144FbN" style="display:none">0</span></button>';
+  const ask=bar.querySelector('.nw-ask');
+  const bell=[...bar.children].find(function(e){return e.tagName==='SPAN'&&e.querySelector('#rdNotifBdg');});
+  bar.insertBefore(w,bell||ask||null);
+  v144FbLoad().catch(function(){});
+}
+function v144FbBar(){
+  let b=document.getElementById('v144FbBar');
+  if(!V144.fb.on){if(b)b.remove();return;}
+  if(!b){b=document.createElement('div');b.id='v144FbBar';b.className='v144-fbbar';b.setAttribute('role','status');document.body.appendChild(b);}
+  const n=v144FbOpenRows(v144FbKey()).length,all=v144FbOpenRows().length;
+  b.innerHTML='<b>Feedback mode</b><span>Click any part of the page to say what should change there.'+(n?' '+n+' open here.':'')+'</span>'+
+    '<button type="button" class="rd-btn sm" onclick="v144FbList()">All feedback ('+all+')</button><button type="button" class="rd-btn sm pri" onclick="v144FbToggle(false)">Done</button>';
+}
+function v144FbToggle(on){
+  V144.fb.on=on==null?!V144.fb.on:!!on;
+  document.body.classList.toggle('v144-fb-on',V144.fb.on);
+  const b=document.getElementById('v144Fb');if(b)b.setAttribute('aria-pressed',String(V144.fb.on));
+  v144FbClose();
+  if(V144.fb.on)v144FbLoad(true).then(function(){v144FbBar();v144FbPins();});
+  v144FbBar();v144FbPins();
+}
+/* where a click landed: a short path to the element, and what it says */
+function v144FbIsUi(el){return !!(el&&el.closest&&el.closest('#v144FbBar,.v144-fbpop,.v144-pin,.nw-topbar,.nw-modal,.nw-scrim,.rd-prompt,.notif-pane,.v144-fbw'));}
+function v144FbTarget(el){
+  /* prefer something with meaning: a button, link, row, card or section */
+  const t=el.closest('button,a,[role=button],tr,li,.card,.nw-card,.ap-docc,.nw-row,section,label,h1,h2,h3,h4,p')||el;
+  return t.closest('#main,#apChrome,.nw-content')?t:el;
+}
+function v144FbPath(el){
+  const root=document.getElementById('view-app')||document.body,parts=[];let n=el;
+  for(let d=0;n&&n!==root&&n.nodeType===1&&d<12;d++){
+    if(n.id&&!/^\d/.test(n.id)&&document.querySelectorAll('#'+CSS.escape(n.id)).length===1){parts.unshift('#'+CSS.escape(n.id));break;}
+    const p=n.parentElement;if(!p)break;
+    const same=[].filter.call(p.children,function(c){return c.tagName===n.tagName;});
+    parts.unshift(n.tagName.toLowerCase()+(same.length>1?':nth-of-type('+(same.indexOf(n)+1)+')':''));
+    n=p;
+  }
+  return parts.join('>');
+}
+function v144FbLabel(el){
+  const t=(el.getAttribute('aria-label')||el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
+  return t.slice(0,90)||el.tagName.toLowerCase();
+}
+function v144FbFind(a){
+  let el=null;
+  if(a.sel){try{el=document.querySelector(a.sel);}catch(e){el=null;}}
+  const lab=String(a.label||'').slice(0,40);
+  if((!el||!el.offsetParent||(lab&&v144FbLabel(el).slice(0,40)!==lab))&&lab){
+    el=[...document.querySelectorAll('#main *,#apChrome *')].find(function(x){return x.offsetParent&&v144FbLabel(x).slice(0,40)===lab&&x.children.length<40;})||el;
+  }
+  return el&&el.offsetParent?el:null;
+}
+function v144FbClick(e){
+  if(!V144.fb.on||v144FbIsUi(e.target))return;
+  e.preventDefault();e.stopPropagation();
+  const el=v144FbTarget(e.target),r=el.getBoundingClientRect();
+  const a={sel:v144FbPath(el),label:v144FbLabel(el),x:r.width?Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)):0,y:r.height?Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)):0};
+  V144.fb.draft=a;
+  v144FbPop(e.clientX+window.scrollX,e.clientY+window.scrollY,a);
+}
+function v144FbHover(e){
+  if(!V144.fb.on)return;
+  document.querySelectorAll('.v144-fb-hl').forEach(function(x){x.classList.remove('v144-fb-hl');});
+  if(v144FbIsUi(e.target))return;
+  v144FbTarget(e.target).classList.add('v144-fb-hl');
+}
+function v144FbPop(x,y,a){
+  v144FbClose();
+  const p=document.createElement('div');p.className='v144-fbpop';p.setAttribute('role','dialog');p.setAttribute('aria-label','Leave feedback');
+  p.style.left=Math.max(8,Math.min(x,window.scrollX+document.documentElement.clientWidth-328))+'px';p.style.top=(y+10)+'px';
+  p.innerHTML='<div class="v144-fbp-h"><b>Feedback on this</b><small>'+esc(a.label)+'</small></div>'+
+    '<textarea id="v144FbTxt" rows="4" maxlength="1500" placeholder="What should change here?" aria-label="What should change here?"></textarea>'+
+    '<div class="v144-fbp-f"><span class="v144-err" id="v144FbErr"></span><button type="button" class="rd-btn sm" onclick="v144FbClose()">Cancel</button><button type="button" class="rd-btn sm pri" id="v144FbSave" onclick="v144FbSave()">Save</button></div>';
+  document.body.appendChild(p);
+  const t=document.getElementById('v144FbTxt');
+  t.addEventListener('keydown',function(ev){if(ev.key==='Escape'){ev.stopPropagation();v144FbClose();}if(ev.key==='Enter'&&(ev.metaKey||ev.ctrlKey))v144FbSave();});
+  setTimeout(function(){try{t.focus();}catch(e){}},30);
+}
+function v144FbClose(){document.querySelectorAll('.v144-fbpop').forEach(function(x){x.remove();});}
+async function v144FbSave(){
+  const t=document.getElementById('v144FbTxt'),err=document.getElementById('v144FbErr'),btn=document.getElementById('v144FbSave');
+  const body=String(t&&t.value||'').replace(/\s+$/,'').trim(),a=V144.fb.draft;
+  if(body.length<3){err.textContent='Say what should change.';return;}
+  if(!a)return;
+  btn.disabled=true;btn.textContent='Saving…';
+  const me=typeof apCfMe==='function'?apCfMe():(typeof AP_ME==='function'?AP_ME():'');
+  try{
+    const r=await apPost('dashboard_comments',{target_key:v144FbKey(),author:me,body:body.slice(0,1500),anchor_text:JSON.stringify(a)});
+    const row=Array.isArray(r)?r[0]:r;
+    (V144.fb.rows=V144.fb.rows||[]).unshift(Object.assign({id:'tmp-'+Date.now(),target_key:v144FbKey(),author:me,body:body,anchor_text:JSON.stringify(a),created_at:new Date().toISOString(),resolved:false},row||{}));
+  }catch(e){btn.disabled=false;btn.textContent='Save';err.textContent='Could not save it: '+((e&&e.message)||e);return;}
+  v144FbClose();V144.fb.draft=null;
+  nwToast('Feedback saved for the team. It shows on Approvals too.');
+  v144FbLoad(true).then(function(){v144FbBar();v144FbPins();try{if(typeof apRefresh==='function')apRefresh();}catch(e){}});
+  v144FbBadge();v144FbBar();v144FbPins();
+}
+/* the pins on this page */
+function v144FbPins(){
+  document.querySelectorAll('.v144-pin').forEach(function(x){x.remove();});
+  if(!V144.fb.on)return;
+  v144FbOpenRows(v144FbKey()).slice().reverse().forEach(function(r,i){
+    const a=v144FbAnchor(r),el=v144FbFind(a);if(!el)return;
+    const b=el.getBoundingClientRect(),pin=document.createElement('button');
+    pin.type='button';pin.className='v144-pin';pin.textContent=String(i+1);pin.dataset.id=r.id;
+    pin.title=(String(r.author||'').split('@')[0]||'Someone')+': '+r.body;pin.setAttribute('aria-label','Feedback '+(i+1)+': '+r.body);
+    pin.style.left=(window.scrollX+b.left+Math.min(b.width-12,Math.max(0,(a.x||0)*b.width))-11)+'px';
+    pin.style.top=(window.scrollY+b.top+Math.min(b.height-12,Math.max(0,(a.y||0)*b.height))-11)+'px';
+    pin.onclick=function(ev){ev.stopPropagation();v144FbShow(r.id);};
+    document.body.appendChild(pin);
+  });
+}
+function v144FbShow(id){
+  const r=(V144.fb.rows||[]).find(function(x){return String(x.id)===String(id);});if(!r)return;
+  const pin=document.querySelector('.v144-pin[data-id="'+CSS.escape(String(id))+'"]');
+  v144FbClose();
+  const p=document.createElement('div');p.className='v144-fbpop';p.setAttribute('role','dialog');p.setAttribute('aria-label','Feedback');
+  const at=pin?pin.getBoundingClientRect():{left:120,bottom:120};
+  p.style.left=Math.max(8,Math.min(window.scrollX+at.left,window.scrollX+document.documentElement.clientWidth-328))+'px';p.style.top=(window.scrollY+at.bottom+6)+'px';
+  p.innerHTML='<div class="v144-fbp-h"><b>'+esc(String(r.author||'Someone').split('@')[0])+'</b><small>'+esc(nwDay(r.created_at))+' · '+esc(v144FbAnchor(r).label||'')+'</small></div>'+
+    '<p class="v144-fbp-b">'+esc(r.body)+'</p><div class="v144-fbp-f"><span class="v144-err"></span><button type="button" class="rd-btn sm" onclick="v144FbClose()">Close</button>'+
+    '<button type="button" class="rd-btn sm pri" onclick="v144FbResolve(\''+esc(String(r.id))+'\',this)">Resolve</button></div>';
+  document.body.appendChild(p);
+}
+async function v144FbResolve(id,btn){
+  const r=(V144.fb.rows||[]).find(function(x){return String(x.id)===String(id);});if(!r)return;
+  if(btn){btn.disabled=true;btn.textContent='Resolving…';}
+  const who=(typeof AP_PROFILE!=='undefined'&&AP_PROFILE&&AP_PROFILE.contact_name)||(typeof apCfMe==='function'?apCfMe():'');
+  try{await apPatch('dashboard_comments','id=eq.'+encodeURIComponent(id),{resolved:true,resolved_by:who});r.resolved=true;r.resolved_by=who;}
+  catch(e){if(btn){btn.disabled=false;btn.textContent='Resolve';}toast('Could not resolve that: '+((e&&e.message)||e),false);return;}
+  try{const c=(typeof AP_COMMENTS!=='undefined'?AP_COMMENTS:[]).find(function(x){return String(x.id)===String(id);});if(c)c.resolved=true;}catch(e){}
+  v144FbClose();v144FbBadge();v144FbBar();v144FbPins();
+  if(document.getElementById('v144FbL'))v144FbList();
+  nwToast('Resolved.');
+}
+/* All feedback: open first, by page */
+async function v144FbList(){
+  await v144FbLoad(true);
+  const rows=V144.fb.rows||[],open=rows.filter(function(r){return !r.resolved;}),done=rows.filter(function(r){return r.resolved;}).slice(0,20);
+  const G={},order=[];open.forEach(function(r){if(!G[r.target_key]){G[r.target_key]=[];order.push(r.target_key);}G[r.target_key].push(r);});
+  const item=function(r){
+    const a=v144FbAnchor(r);
+    return '<li class="v144-fbi'+(r.resolved?' is-done':'')+'"><div><b>'+esc(r.body)+'</b><small>'+esc([String(r.author||'Someone').split('@')[0],nwDay(r.created_at),a.label?'on “'+a.label.slice(0,60)+'”':''].filter(Boolean).join(' · '))+
+      (r.resolved?' · resolved'+(r.resolved_by?' by '+esc(r.resolved_by):''):'')+'</small></div>'+
+      (r.resolved?'':'<span class="v144-fbi-a"><button type="button" class="rd-btn sm" onclick="v144FbGo(\''+esc(String(r.id))+'\')">Go to it</button><button type="button" class="rd-btn sm" onclick="v144FbResolve(\''+esc(String(r.id))+'\',this)">Resolve</button></span>')+'</li>';
+  };
+  nwModal('v144FbL','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Feedback</div><h2>All feedback</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v144-fbl">'+(open.length?order.map(function(k){return '<h3 class="v144-h">'+esc(v144FbWhere(k))+' <small>'+G[k].length+' open</small></h3><ul>'+G[k].map(item).join('')+'</ul>';}).join('')
+      :'<p class="nw-muted">No open feedback. Turn on Feedback in the top bar and click any part of a page to leave some.</p>')+
+      (done.length?'<details class="v144-fbd"><summary>Resolved ('+done.length+')</summary><ul>'+done.map(item).join('')+'</ul></details>':'')+'</div>');
+}
+async function v144FbGo(id){
+  const find=function(){return (V144.fb.rows||[]).find(function(x){return String(x.id)===String(id);});};
+  let r=find();if(!r||r.anchor_text==null){await v144FbLoad(true);r=find();}if(!r)return;
+  try{nwModalClose();}catch(e){}
+  const p=String(r.target_key).split(':'),v=p[1],lead=p.slice(2).join(':');
+  if(lead&&typeof openE1Lead==='function'){if(typeof apGo==='function')apGo('e1pipeline');openE1Lead(lead);}
+  else if(v&&typeof apGo==='function')apGo(v);
+  setTimeout(function(){
+    v144FbToggle(true);
+    setTimeout(function(){
+      const el=v144FbFind(v144FbAnchor(r));
+      if(el&&el.scrollIntoView)el.scrollIntoView({block:'center'});
+      setTimeout(function(){v144FbPins();v144FbShow(r.id);},250);
+    },400);
+  },900);
+}
+(function(){
+  document.addEventListener('click',v144FbClick,true);
+  document.addEventListener('mouseover',v144FbHover,true);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&V144.fb.on&&!document.querySelector('.v144-fbpop')&&!document.querySelector('.nw-modal'))v144FbToggle(false);});
+  window.addEventListener('resize',function(){if(V144.fb.on)v144FbPins();});
+  const _n=apNavSync;
+  apNavSync=function(){const r=_n.apply(this,arguments);try{v144FbButton();if(V144.fb.on){v144FbClose();setTimeout(function(){v144FbBar();v144FbPins();},500);}}catch(e){}return r;};
+  setTimeout(function(){try{v144FbButton();}catch(e){}},1500);
+  /* Approvals: a page's feedback opens where it was left */
+  const _a=nwApprovalAll;
+  nwApprovalAll=function(){
+    const all=_a.apply(this,arguments);
+    all.forEach(function(x){
+      if(x.kind!=='comment')return;
+      const c=(typeof AP_COMMENTS!=='undefined'?AP_COMMENTS:[]).find(function(y){return 'cmt:'+y.id===x.key;});
+      const tk=c?String(c.target_key||c.target||''):'';   /* the workspace's own list keeps it as target */
+      if(/^fb:/.test(tk)){x.title='Feedback from '+String(c.author||'someone').split('@')[0];x.review='v144FbGo('+nwJs(String(c.id))+')';x.reviewLabel='Go to it';
+        x.tags=[['Feedback'],[v144FbWhere(tk)]];}
+    });
+    return all;
+  };
+})();
+
+
+/* ---------- Part 6: Send to Notion (Tasks) ----------
+   Picked tasks go to a Notion database the team picks, one entry each, named for the task and the call,
+   plus a follow-up entry for the call if ticked. It goes through Dashboard · Notion Proxy (team sign-in;
+   its add takes a title only), so only databases shared with the n8n Notion connection can be picked.
+   The database last used is kept for the team (ai_settings notion_tasks_db), and what went where per call
+   (notion_sent), so a call says it was sent and a second send asks first. */
+V144.nt={dbs:null,sent:null,pick:''};
+async function v144NtLoad(){
+  const got=await apSb('ai_settings?select=key,value&key=in.(notion_tasks_db,notion_sent)');
+  const by={};(got||[]).forEach(function(r){by[r.key]=v96Json(r.value,{})||{};});
+  V144.nt.pick=String((by.notion_tasks_db||{}).id||'');V144.nt.sent=by.notion_sent||{};
+}
+function v144NtShareHelp(){
+  return '<ol class="v143-steps"><li><span class="k">1</span><div><b>Open the database in Notion</b><small>The one the tasks should go to.</small></div></li>'+
+    '<li><span class="k">2</span><div><b>⋯ → Connections → add the n8n connection</b><small>That lets the dashboard add entries to it. Nothing else in Notion is shared.</small></div></li>'+
+    '<li><span class="k">3</span><div><b>Come back and press Check again</b><small>The database then shows in the list here.</small></div></li></ol>';
+}
+async function v144Notion(id,only){
+  id=String(id);const o=apCo(id);if(!o)return;
+  const tasks=apCxArr(o.tasks),pick=Array.isArray(only)&&only.length?only:null;
+  apModal('v144NtM','<h3 class="ap-m89h">Send tasks to Notion</h3><div id="v144NtB"><div class="loading">Reading your Notion databases…</div></div>',700);
+  let dbs;
+  try{await v144NtLoad();dbs=(await apNt('databases')).filter(function(d){return d.object==='database'||!d.object;});V144.nt.dbs=dbs;}
+  catch(e){const b=document.getElementById('v144NtB');if(b)b.innerHTML='<p class="help">'+esc(/switched off|404/i.test(e.message||'')?'The Notion connection is switched off in n8n.':'Notion could not be read: '+(e.message||'no answer')+'.')+'</p><div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'v144NtM\')">Close</button></div>';return;}
+  const b=document.getElementById('v144NtB');if(!b)return;
+  if(!dbs.length){b.innerHTML='<p class="help">Notion shares no databases with the dashboard yet.</p>'+v144NtShareHelp()+
+    '<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'v144NtM\')">Close</button><button class="rd-btn pri" onclick="v144Notion(\''+esc(id)+'\','+esc(JSON.stringify(only||[]))+')">Check again</button></div>';return;}
+  const c=apFtCall(id)||{title:o.call_title||'the call',start:o.call_start};
+  const sent=V144.nt.sent[id];
+  const sorted=dbs.slice().sort(function(a,b){return apNtTitle(a).localeCompare(apNtTitle(b));});
+  const def=sorted.some(function(d){return d.id===V144.nt.pick;})?V144.nt.pick:(sorted.find(function(d){return /task/i.test(apNtTitle(d));})||{}).id||'';
+  b.innerHTML='<p class="help">Each ticked task becomes an entry in the database you pick, named for the task and the call.</p>'+
+    (sent?'<p class="v144-nt-was">Already sent '+esc(String(sent.n||0))+' to “'+esc(sent.name||'Notion')+'” on '+esc(apCxDay(sent.at))+(sent.by?' by '+esc(sent.by):'')+'. Sending again adds new entries.</p>':'')+
+    '<label class="f"><span>Database</span><select data-nofill="1" id="v144NtDb">'+(def?'':'<option value="">Pick a database…</option>')+
+      sorted.map(function(d){return '<option value="'+esc(d.id)+'"'+(d.id===def?' selected':'')+'>'+esc(apNtTitle(d))+'</option>';}).join('')+'</select></label>'+
+    '<details class="v144-nt-miss"><summary>Database not in the list?</summary>'+v144NtShareHelp()+'</details>'+
+    '<div class="v143-as-list">'+tasks.map(function(t){const on=pick?pick.indexOf(t.id)>=0:!t.done;
+      return '<label class="v144-nt-row" data-t="'+esc(t.id)+'"><input type="checkbox" '+(on?'checked':'')+'><span>'+esc(t.text)+(t.owner?' <small>· '+esc(t.owner)+'</small>':'')+'</span></label>';}).join('')+'</div>'+
+    '<label class="v144-nt-row v144-nt-fu"><input type="checkbox" id="v144NtFu" checked><span>Add a follow-up entry: “Follow-up: '+esc(c.title||'the call')+'”</span></label>'+
+    '<div class="ap-cf-err" id="v144NtErr"></div>'+
+    '<div class="ap-m89f"><button class="rd-btn" onclick="apModalClose(\'v144NtM\')">Cancel</button><button class="rd-btn pri" id="v144NtGo" onclick="v144NotionSend(\''+esc(id)+'\',this)">Send to Notion</button></div>';
+}
+function v144NtTitle(text,call){const s=String(text||'').trim()+(call?' · '+call:'');return s.length>300?s.slice(0,299)+'…':s;}
+async function v144NotionSend(id,btn){
+  const o=apCo(id);if(!o)return;
+  const err=document.getElementById('v144NtErr'),db=(document.getElementById('v144NtDb')||{}).value||'';err.classList.remove('on');
+  const say=function(m){err.textContent=m;err.classList.add('on');};
+  if(!db)return say('Pick a database first.');
+  const byId={};apCxArr(o.tasks).forEach(function(t){byId[t.id]=t;});
+  const picked=[].slice.call(document.querySelectorAll('#v144NtM .v144-nt-row[data-t]')).filter(function(r){return r.querySelector('input').checked;}).map(function(r){return byId[r.dataset.t];}).filter(function(t){return t&&t.text;});
+  const fu=!!(document.getElementById('v144NtFu')||{}).checked;
+  if(!picked.length&&!fu)return say('Tick at least one task, or the follow-up.');
+  const c=apFtCall(id)||{title:o.call_title||'the call',start:o.call_start},call=c.title||'the call';
+  const titles=picked.map(function(t){return v144NtTitle(t.text,call);});
+  if(fu)titles.push(v144NtTitle('Follow-up: '+call+(c.start?' ('+apCxDay(c.start)+')':''),''));
+  btn.disabled=true;let n=0;
+  for(const t of titles){
+    btn.textContent='Sending '+(n+1)+' of '+titles.length+'…';
+    try{const r=await apNt('add',{id:db,title:t});if(!r.length)throw new Error('Notion did not add it.');n++;}
+    catch(e){btn.disabled=false;btn.textContent='Send the rest';
+      say((n?n+' sent, then ':'')+'Notion stopped: '+(e.message||'no answer')+(n?' Send the rest picks up from there.':''));
+      if(n)v144NtMark(id,db,n);
+      [].slice.call(document.querySelectorAll('#v144NtM .v144-nt-row[data-t] input')).slice(0,Math.min(n,picked.length)).forEach(function(x){x.checked=false;});
+      if(n>picked.length){const f=document.getElementById('v144NtFu');if(f)f.checked=false;}
+      return;}
+  }
+  await v144NtMark(id,db,n);
+  apModalClose('v144NtM');
+  const name=apNtTitle((V144.nt.dbs||[]).find(function(d){return d.id===db;})||{object:'database'});
+  toast(n+' sent to Notion · '+name,true);
+}
+async function v144NtMark(id,db,n){
+  const name=apNtTitle((V144.nt.dbs||[]).find(function(d){return d.id===db;})||{object:'database'});
+  const rec={db:db,name:name,n:n,at:new Date().toISOString(),by:apCfMe()};
+  V144.nt.sent[id]=rec;V144.nt.pick=db;
+  try{await v104SetPatch('notion_sent',function(cur){const x={};x[id]=Object.assign({},rec,{n:((cur[id]||{}).db===db?(cur[id].n||0):0)+n});return x;});
+    await v96Set('notion_tasks_db',{id:db,name:name,by:rec.by,at:rec.at});}
+  catch(e){console.warn('v144 notion mark',e.message);}
+}
 /*@@v144end*/
 </script>
 <script>
