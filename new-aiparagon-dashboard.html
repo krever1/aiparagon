@@ -54188,7 +54188,7 @@ async function v137AskCall(id){
   const c=apFtCall(id);
   if(!c){nwToast('This call is not in the list from Fathom any more.');return;}
   const lead=v137LeadOfCall(c,v137FullLead);
-  if(!lead){nwToast('None of the people on this call is a lead on the Lead pipeline.');return;}
+  if(!lead)return v144AskClient(id);   /* v144: not a lead yet: ask to create the client record */
   const cur=v136StageOf(lead),nx=v137Next(cur),same=nx===cur,st=v136St(nx),cst=v136St(cur),name=lead.prospect_name||lead.email;
   const run=v120RunState(lead),p=v136Plan(lead,nx),m=apCm(id)||{};
   V137.ask={kind:'call',id:id,email:lead.email,cur:cur,s:nx};
@@ -55147,6 +55147,632 @@ function v143AsDisconnect(){
   ['pat','ws','project','filter'].forEach(function(k){aStore(k,'');});if(typeof aClearCache==='function')aClearCache();
   toast('Asana disconnected in this browser.');apRenderIntegrations();
 }
+</script>
+<style id="v144css">
+/* ===================== v144 · folders and call types ===================== */
+.v144-m{max-height:70vh;overflow:auto}
+.v144-h{font:600 14px/1.3 var(--nw-body);margin:16px 0 8px;color:var(--nw-ink,#101828)}
+.v144-list{display:grid;gap:6px}
+.v144-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:8px}
+.v144-row.v144-t{grid-template-columns:minmax(0,1fr) auto;padding-left:16px}
+.v144-row .nw-input{min-width:0;padding:7px 10px}
+.v144-row.is-del .nw-input,.v144-row.is-del .v144-fix{text-decoration:line-through;opacity:.55}
+.v144-row.is-new .nw-input{border-color:#C9A227}
+.v144-fix{display:flex;flex-direction:column;font-size:14px}
+.v144-fix small,.v144-n,.v144-own{font-size:12px;color:var(--nw-ink-3,#667085)}
+.v144-add{display:flex;gap:8px;margin-top:8px}
+.v144-add .nw-input{flex:1;min-width:0}
+.v144-grp{border-top:1px solid var(--nw-line,#EAECF0);padding:10px 0;display:grid;gap:6px}
+.v144-gl{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--nw-ink-3,#667085)}
+.v144-gl span{min-width:52px}
+.v144-gl .nw-input{flex:1;font-weight:600}
+.v144-del{flex:0 0 auto}
+/* v144 · the calls on a calendar */
+.v144-cal{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+.v144-ch{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.v144-ch h3{margin:0;font:600 18px/1.2 var(--nw-display,inherit);min-width:150px;text-align:center}
+.v144-cn{margin-left:auto;font-size:12.5px;color:var(--nw-ink-3,#667085)}
+.v144-more{font-size:13px;color:var(--nw-ink-3,#667085);margin:0 0 8px}
+.v144-wd,.v144-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.v144-wd span{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--nw-ink-3,#667085);padding:0 6px 4px}
+.v144-cd{min-height:84px;border:1px solid var(--nw-line,#EAECF0);border-radius:8px;background:#fff;padding:6px;display:flex;flex-direction:column;gap:3px;text-align:left;cursor:default;font:inherit;color:inherit;overflow:hidden}
+.v144-cd.is-pad{border:0;background:none}
+.v144-cd.has{cursor:pointer}
+.v144-cd.has:hover{border-color:#C9A227}
+.v144-cd.is-today .v144-dn{background:#0B1F3A;color:#fff;border-radius:999px;padding:0 6px}
+.v144-cd.is-on{border-color:#0B1F3A;box-shadow:0 0 0 2px rgba(201,162,39,.45)}
+.v144-dn{font-size:12.5px;font-weight:600;align-self:flex-start}
+.v144-cc{font-size:11.5px;line-height:1.3;background:#EEF2F7;border-radius:4px;padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v144-cc.ext{background:#FBF3DB}
+.v144-cm{font-size:11px;color:var(--nw-ink-3,#667085)}
+.v144-day{border:1px solid var(--nw-line,#EAECF0);border-radius:10px;padding:12px;background:#fff;position:sticky;top:12px}
+.v144-day h4{margin:0 0 8px;font-size:14px}
+.v144-day ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.v144-dc{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;border:1px solid var(--nw-line,#EAECF0);border-radius:8px;background:#fff;padding:8px 10px;font:inherit;color:inherit;cursor:pointer}
+.v144-dc:hover{border-color:#C9A227}
+.v144-dc small{font-size:12px;color:var(--nw-ink-3,#667085)}
+@media (max-width:1000px){.v144-cal{grid-template-columns:minmax(0,1fr)}.v144-day{position:static}}
+@media (max-width:600px){.v144-cd{min-height:52px;padding:4px}.v144-cc,.v144-cm{display:none}.v144-cd.has::after{content:'';width:6px;height:6px;border-radius:50%;background:#C9A227;margin-top:auto}.v144-ch h3{min-width:0;font-size:15px}}
+/* a page header on a phone: the title block keeps its own height (its 320px flex basis became a 320px tall gap in a column) */
+@media(max-width:860px){body.nw-on #apChrome .rd-head>div:first-child{flex:0 0 auto}}
+/* v144 · a client record from a call */
+.v144-c2{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
+.v144-chk{display:flex;align-items:center;gap:8px;font-size:14px;margin:6px 0}
+@media(max-width:600px){.v144-c2{grid-template-columns:minmax(0,1fr)}}
+/* v144 · HubSpot, live */
+.v144-hs{border:1px solid var(--nw-line,#EAECF0);border-radius:10px;background:#fff;padding:12px 14px;margin:0 0 12px}
+.v144-hs.is-err{border-color:#E9B8AE;background:#FFF8F6}
+.v144-hs-h{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.v144-hs-h small{color:var(--nw-ink-3,#667085);font-size:12px}
+.v144-hs-h .rd-btn{margin-left:auto}
+.v144-hs-k{font:600 12px/1 var(--nw-body);letter-spacing:.04em;text-transform:uppercase;color:#0B6B3A}
+.v144-hs-k::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#12A150;margin-right:6px;vertical-align:1px}
+.v144-hs.is-err .v144-hs-k{color:#A33A2B}.v144-hs.is-err .v144-hs-k::before{background:#D0503A}
+.ap-tk-h .v144-mg{margin-left:auto;margin-right:10px;align-self:center}
+@media (max-width:600px){.v144-row{grid-template-columns:auto minmax(0,1fr) auto}.v144-row .v144-n{display:none}}
+</style>
+<script id="v144js">
+/* ===================================================================
+   v144. Erica's notes of Nov 24, release 2.
+   Part 1: folders and call types the team can change (Tasks and Calls).
+   The folders are the client folders calls are filed in (v121Folder): a folder set on a call
+   (call_meta.folder), else its client, its lead's company or its guests' company. Rename writes the
+   new name on every call in the folder; Delete takes the folder off the calls it was set on (they go
+   back to being filed by their people); a folder added with no calls yet is kept for the team in
+   ai_settings call_folders. Call types: the built-in types and the buttons above them keep their
+   keys and take the team's names (ai_settings call_type_names, {key or cat:<button>: name}); the
+   team's own types (ai_settings call_types) can be renamed, which renames them on every call, or
+   deleted, which clears them from the calls (the AI's pick shows again).
+   =================================================================== */
+const V144={busy:false};
+const V144_ORIG={mt:{},cc:{}};
+Object.keys(AP_MT).forEach(function(k){V144_ORIG.mt[k]=AP_MT[k].l;});
+V121_CC.forEach(function(c){V144_ORIG.cc[c[0]]=c[1];});
+function v144Names(){const s=typeof AP_AISET!=='undefined'&&AP_AISET?AP_AISET.call_type_names:null;return s&&typeof s==='object'&&!Array.isArray(s)?s:{};}
+function v144Folders(){const s=typeof AP_AISET!=='undefined'&&AP_AISET?AP_AISET.call_folders:null;return (Array.isArray(s)?s:[]).map(function(x){return String(x||'').trim();}).filter(Boolean);}
+/* the team's names over the built-in ones */
+function v144Labels(){
+  const n=v144Names();
+  Object.keys(V144_ORIG.mt).forEach(function(k){if(AP_MT[k])AP_MT[k].l=String(n[k]||'').trim()||V144_ORIG.mt[k];});
+  V121_CC.forEach(function(c){c[1]=String(n['cat:'+c[0]]||'').trim()||V144_ORIG.cc[c[0]];});
+}
+(function(){
+  const _l=apAiSettingsLoad;
+  apAiSettingsLoad=async function(){const r=await _l.apply(this,arguments);try{v144Labels();}catch(e){}return r;};
+  const _f=apCxFolders;
+  apCxFolders=function(){
+    const L=_f.apply(this,arguments);
+    v144Folders().forEach(function(f){if(L.indexOf(f)<0)L.push(f);});
+    return L.sort(function(a,b){return a===V121_NONE?1:b===V121_NONE?-1:a.localeCompare(b);});
+  };
+})();
+function v144Clean(t,max){return String(t||'').replace(/\s+/g,' ').trim().slice(0,max||80);}
+function v144Bad(t){return /[<>{}\[\]\\]/.test(t);}
+/* every call the dashboard knows: Fathom's list, the team's details and the post-call actions */
+function v144CallIds(){
+  const s={};
+  (AP_FT.items||[]).forEach(function(c){s[String(c.id)]=1;});
+  Object.keys(AP_CX.meta||{}).forEach(function(k){s[String(k)]=1;});
+  Object.keys(AP_CX.out||{}).forEach(function(k){const o=AP_CX.out[k];if(o&&o.call_id!=null)s[String(o.call_id)]=1;});
+  return Object.keys(s);
+}
+function v144InFolder(f){return v144CallIds().filter(function(id){return v121Folder(id)===f;});}
+function v144Auto(f){return f===V121_IN||f===V121_NONE;}
+
+/* the window: folders, then the types under their buttons */
+async function v144Manage(){
+  try{if(typeof apAiSettingsLoad==='function')await apAiSettingsLoad(true);}catch(e){}
+  const F=apCxFolders(),mine=v121Custom();
+  const fRow=function(f){
+    const n=v144InFolder(f).length,auto=v144Auto(f);
+    return '<div class="v144-row" data-f="'+esc(f)+'">'+nwIc('folder',16)+
+      (auto?'<span class="v144-fix">'+esc(f)+'<small>Set on its own</small></span>'
+        :'<input class="nw-input" aria-label="'+esc('Folder name: '+f)+'" value="'+esc(f)+'" maxlength="80" data-was="'+esc(f)+'">')+
+      '<span class="v144-n">'+n+' call'+(n===1?'':'s')+'</span>'+
+      (auto?'':'<button type="button" class="nw-icon-btn v144-del" aria-label="'+esc('Delete the folder '+f)+'" title="Delete the folder" onclick="v144DelRow(this)">'+nwIc('x',16)+'</button>')+'</div>';
+  };
+  const tRow=function(k,own){
+    const lab=own?k:AP_MT[k].l;
+    return '<div class="v144-row v144-t" data-t="'+esc(k)+'"'+(own?' data-own="1"':'')+'>'+
+      '<input class="nw-input" aria-label="'+esc('Call type name: '+lab)+'" value="'+esc(lab)+'" maxlength="30" data-was="'+esc(lab)+'"'+(own?'':' placeholder="'+esc(V144_ORIG.mt[k]||lab)+'"')+'>'+
+      (own?'<button type="button" class="nw-icon-btn v144-del" aria-label="'+esc('Delete the type '+k)+'" title="Delete the type" onclick="v144DelRow(this)">'+nwIc('x',16)+'</button>':'<span class="v144-own">Built in</span>')+'</div>';
+  };
+  nwModal('v144M','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Touchpoint · Tasks and Calls</div><h2>Folders and call types</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v144-m"><p class="nw-muted nw-small">For the whole team, on Tasks and Calls. Renaming a folder or one of your types renames it on every call in it.</p>'+
+      '<h3 class="v144-h">Client folders</h3><div class="v144-list" id="v144Fs">'+F.map(fRow).join('')+'</div>'+
+      '<div class="v144-add"><input class="nw-input" id="v144NewF" maxlength="80" placeholder="New folder, e.g. Northwind Advisors" aria-label="New folder name" onkeydown="if(event.key===\'Enter\')v144AddFolder()">'+
+        '<button type="button" class="nw-btn nw-btn-ghost" onclick="v144AddFolder()">'+nwIc('plus',15)+'Add folder</button></div>'+
+      '<h3 class="v144-h">Call types</h3>'+
+      V121_CC.map(function(c){
+        return '<div class="v144-grp" data-c="'+esc(c[0])+'"><label class="v144-gl"><span>Button</span><input class="nw-input" aria-label="'+esc('Button name: '+c[1])+'" value="'+esc(c[1])+'" maxlength="30" data-was="'+esc(c[1])+'" placeholder="'+esc(V144_ORIG.cc[c[0]])+'"></label>'+
+          c[2].map(function(k){return tRow(k,false);}).join('')+'</div>';}).join('')+
+      '<div class="v144-grp" data-c="mine"><div class="v144-gl"><span>Your types</span></div><div id="v144Own">'+mine.map(function(k){return tRow(k,true);}).join('')+'</div>'+
+        '<div class="v144-add"><input class="nw-input" id="v144NewT" maxlength="30" placeholder="New type, e.g. Partner call" aria-label="New call type name" onkeydown="if(event.key===\'Enter\')v144AddType()">'+
+        '<button type="button" class="nw-btn nw-btn-ghost" onclick="v144AddType()">'+nwIc('plus',15)+'Add type</button></div></div>'+
+      '<p class="v120-msg" id="v144Msg" role="status" aria-live="polite"></p>'+
+      '<div class="nw-m-foot"><button type="button" class="nw-btn nw-btn-ghost" onclick="v144Reset()">Use the usual names</button><span class="nw-grow"></span>'+
+        '<button type="button" class="nw-btn nw-btn-ghost" onclick="nwModalClose()">Cancel</button>'+
+        '<button type="button" class="nw-btn nw-btn-primary" id="v144Go" onclick="v144Save()">'+nwIc('check',15)+'Save changes</button></div></div>');
+}
+function v144Say(t,err){const m=document.getElementById('v144Msg');if(m){m.textContent=t;m.classList.toggle('err',!!err);}}
+function v144DelRow(btn){
+  const r=btn.closest('.v144-row');if(!r)return;
+  const on=!r.classList.contains('is-del');r.classList.toggle('is-del',on);
+  btn.setAttribute('aria-label',(on?'Keep ':'Delete ')+(r.dataset.f?'the folder '+r.dataset.f:'the type '+r.dataset.t));
+  btn.title=on?'Keep it':(r.dataset.f?'Delete the folder':'Delete the type');
+  const i=r.querySelector('input');if(i)i.disabled=on;
+  v144Say(on?(r.dataset.f?'The folder goes when you save. Its calls are filed by the people on them again.':'The type goes when you save. Its calls show the AI’s pick again.'):'');
+}
+function v144Names2(sel){return [].slice.call(document.querySelectorAll(sel)).filter(function(r){return !r.classList.contains('is-del');}).map(function(r){const i=r.querySelector('input');return v144Clean(i?i.value:(r.dataset.f||r.dataset.t)).toLowerCase();});}
+function v144AddFolder(){
+  const i=document.getElementById('v144NewF');if(!i)return;const v=v144Clean(i.value,80);
+  if(v.length<2){v144Say('Give the folder a name, two letters or more.',true);return;}
+  if(v144Bad(v)){v144Say('Use letters, numbers and spaces in a folder name.',true);return;}
+  if(v144Names2('#v144Fs .v144-row').indexOf(v.toLowerCase())>=0){v144Say('There is a folder with that name already.',true);return;}
+  document.getElementById('v144Fs').insertAdjacentHTML('beforeend','<div class="v144-row is-new" data-f="'+esc(v)+'" data-new="1">'+nwIc('folder',16)+
+    '<input class="nw-input" aria-label="'+esc('Folder name: '+v)+'" value="'+esc(v)+'" maxlength="80" data-was="">'+
+    '<span class="v144-n">New</span><button type="button" class="nw-icon-btn v144-del" aria-label="'+esc('Delete the folder '+v)+'" onclick="this.closest(\'.v144-row\').remove()">'+nwIc('x',16)+'</button></div>');
+  i.value='';v144Say('Added. It is saved with the rest.');
+}
+function v144AddType(){
+  const i=document.getElementById('v144NewT');if(!i)return;const v=v144Clean(i.value,30),lo=v.toLowerCase();
+  if(v.length<2){v144Say('Give the type a name, two letters or more.',true);return;}
+  if(v144Bad(v)){v144Say('Use letters, numbers and spaces in a type name.',true);return;}
+  if(v144Names2('#v144M .v144-t').indexOf(lo)>=0||V121_CC.some(function(c){return c[1].toLowerCase()===lo;})||lo==='no type yet'){v144Say('That type is already in the list.',true);return;}
+  document.getElementById('v144Own').insertAdjacentHTML('beforeend','<div class="v144-row v144-t is-new" data-t="'+esc(v)+'" data-own="1" data-new="1">'+
+    '<input class="nw-input" aria-label="'+esc('Call type name: '+v)+'" value="'+esc(v)+'" maxlength="30" data-was="">'+
+    '<button type="button" class="nw-icon-btn v144-del" aria-label="'+esc('Delete the type '+v)+'" onclick="this.closest(\'.v144-row\').remove()">'+nwIc('x',16)+'</button></div>');
+  i.value='';v144Say('Added. It is saved with the rest.');
+}
+function v144Reset(){
+  document.querySelectorAll('#v144M .v144-t:not([data-own]) input').forEach(function(i){const k=i.closest('.v144-row').dataset.t;i.value=V144_ORIG.mt[k]||i.value;});
+  document.querySelectorAll('#v144M .v144-gl input').forEach(function(i){const k=i.closest('.v144-grp').dataset.c;i.value=V144_ORIG.cc[k]||i.value;});
+  v144Say('The built-in types and buttons have their usual names again. Save to keep it.');
+}
+async function v144Save(){
+  if(V144.busy)return;
+  const btn=document.getElementById('v144Go');
+  /* what changed */
+  const fRen=[],fDel=[],fNew=[],tRen=[],tDel=[],tNew=[],names={},seenF={},seenT={};let bad='';
+  document.querySelectorAll('#v144Fs .v144-row').forEach(function(r){
+    const f=r.dataset.f,i=r.querySelector('input');if(!i)return;
+    const v=v144Clean(i.value,80);
+    if(r.classList.contains('is-del')){if(!r.dataset.new)fDel.push(f);return;}
+    if(v.length<2||v144Bad(v)){bad=bad||'Each folder needs a name of two letters or more, in letters, numbers and spaces.';return;}
+    if(seenF[v.toLowerCase()]||v144Auto(v)){bad=bad||'Two folders cannot share a name ('+v+').';return;}
+    seenF[v.toLowerCase()]=1;
+    if(r.dataset.new)fNew.push(v);else if(v!==f)fRen.push([f,v]);
+  });
+  document.querySelectorAll('#v144M .v144-t').forEach(function(r){
+    const k=r.dataset.t,i=r.querySelector('input'),own=!!r.dataset.own;
+    const v=v144Clean(i.value,30);
+    if(r.classList.contains('is-del')){if(own&&!r.dataset.new)tDel.push(k);return;}
+    if(own&&(v.length<2||v144Bad(v))){bad=bad||'Each of your types needs a name of two letters or more.';return;}
+    if(v&&v144Bad(v)){bad=bad||'Use letters, numbers and spaces in a type name.';return;}
+    const shown=v||V144_ORIG.mt[k]||k;
+    if(seenT[shown.toLowerCase()]){bad=bad||'Two types cannot share a name ('+shown+').';return;}
+    seenT[shown.toLowerCase()]=1;
+    if(own){if(r.dataset.new)tNew.push(v);else if(v!==k)tRen.push([k,v]);}
+    else names[k]=v&&v!==V144_ORIG.mt[k]?v:'';
+  });
+  document.querySelectorAll('#v144M .v144-gl input').forEach(function(i){
+    const k=i.closest('.v144-grp').dataset.c,v=v144Clean(i.value,30);
+    if(v&&v144Bad(v)){bad=bad||'Use letters, numbers and spaces in a button name.';return;}
+    names['cat:'+k]=v&&v!==V144_ORIG.cc[k]?v:'';
+  });
+  if(bad){v144Say(bad,true);return;}
+  const oldNames=v144Names();
+  const namesChanged=Object.keys(names).some(function(k){return String(oldNames[k]||'')!==names[k];});
+  if(!fRen.length&&!fDel.length&&!fNew.length&&!tRen.length&&!tDel.length&&!tNew.length&&!namesChanged){nwModalClose();return;}
+  V144.busy=true;if(btn)btn.disabled=true;v144Say('Saving…');
+  let kept=0;
+  try{
+    /* folders: the calls in a renamed folder take its new name, a deleted folder comes off its calls */
+    for(const p of fRen){for(const id of v144InFolder(p[0]))await apCxSaveMeta(id,{folder:p[1]});}
+    for(const f of fDel){
+      for(const id of v144CallIds()){const m=apCm(id)||{};if(m.folder===f)await apCxSaveMeta(id,{folder:null});}
+      kept+=v144InFolder(f).length;
+    }
+    if(fRen.length||fDel.length||fNew.length){
+      const got=await apSb('ai_settings?select=value&key=eq.call_folders');
+      let L=(Array.isArray(((got||[])[0]||{}).value)?got[0].value:[]).map(String);
+      fRen.forEach(function(p){L=L.map(function(x){return x===p[0]?p[1]:x;});if(L.indexOf(p[1])<0&&v144InFolder(p[1]).length===0)L.push(p[1]);});
+      L=L.filter(function(x){return fDel.indexOf(x)<0;});
+      fNew.forEach(function(v){if(L.indexOf(v)<0)L.push(v);});
+      await v96Set('call_folders',L.filter(function(x,i,a){return a.indexOf(x)===i;}));
+    }
+    /* the team's own types: renamed or cleared on every call, then the list */
+    if(tRen.length||tDel.length||tNew.length){
+      for(const p of tRen){
+        await apPatch('call_meta','meeting_type=eq.'+encodeURIComponent(p[0]),{meeting_type:p[1],updated_at:new Date().toISOString(),updated_by:AP_ME()});
+        await apPatch('call_outputs','meeting_type=eq.'+encodeURIComponent(p[0]),{meeting_type:p[1]}).catch(function(){});
+        Object.keys(AP_CX.meta).forEach(function(k){if(AP_CX.meta[k].meeting_type===p[0])AP_CX.meta[k].meeting_type=p[1];});
+        Object.keys(AP_CX.out).forEach(function(k){if(AP_CX.out[k]&&AP_CX.out[k].meeting_type===p[0])AP_CX.out[k].meeting_type=p[1];});
+      }
+      for(const k of tDel){
+        await apPatch('call_meta','meeting_type=eq.'+encodeURIComponent(k),{meeting_type:null,updated_at:new Date().toISOString(),updated_by:AP_ME()});
+        Object.keys(AP_CX.meta).forEach(function(x){if(AP_CX.meta[x].meeting_type===k)AP_CX.meta[x].meeting_type=null;});
+      }
+      const got=await apSb('ai_settings?select=value&key=eq.call_types');
+      let L=(Array.isArray(((got||[])[0]||{}).value)?got[0].value:[]).map(String);
+      tRen.forEach(function(p){L=L.map(function(x){return x===p[0]?p[1]:x;});});
+      L=L.filter(function(x){return tDel.indexOf(x)<0;});
+      tNew.forEach(function(v){if(!L.some(function(x){return x.toLowerCase()===v.toLowerCase();}))L.push(v);});
+      await v96Set('call_types',L);
+    }
+    if(namesChanged)await v104SetPatch('call_type_names',function(){return names;});
+  }catch(e){
+    V144.busy=false;if(btn)btn.disabled=false;
+    v144Say('Could not save everything: '+(e.message||e)+'. What saved before it stays. Try again in a minute.',true);v144After();return;
+  }
+  V144.busy=false;nwModalClose();
+  v144Labels();
+  nwToast('Saved for the whole team.'+(kept?' '+kept+' call'+(kept===1?' is':'s are')+' still filed under a deleted folder by the people on '+(kept===1?'it':'them')+'; set a folder on '+(kept===1?'it':'them')+' to move '+(kept===1?'it':'them')+'.':''));
+  v144After();
+}
+function v144After(){
+  try{v144Labels();}catch(e){}
+  try{if(document.getElementById('apTk'))apTkPaint();}catch(e){}
+  try{apCxFiltersRefresh();}catch(e){}
+  try{document.querySelectorAll('.ap-tphost').forEach(function(h){if(h.querySelector('.ap-calls'))apCallsRows(h);});}catch(e){}
+  try{const d=document.querySelector('.ap-calls .detail');if(d&&d.dataset.id)apCxRepaint(d.dataset.id);}catch(e){}
+}
+/* the way in: Tasks' header and a folder's own pencil, and Calls' filter row */
+(function(){
+  const _tk=apTkHtml;
+  apTkHtml=function(){
+    let h=_tk.apply(this,arguments);
+    h=h.replace('<span class="ap-tk-n">','<button type="button" class="rd-btn sm v144-mg" onclick="v144Manage()">'+nwIc('pen',14)+'Folders and types</button><span class="ap-tk-n">');
+    return h;
+  };
+  const _f=apCxFilterHtml;
+  apCxFilterHtml=function(){return _f.apply(this,arguments)+'<button type="button" class="ap-cx-clear v144-mg" onclick="v144Manage()">Folders and types</button>';};
+})();
+
+
+/* ---------- Part 2: the calls on a calendar (Calls, a Calendar tab) ----------
+   A month at a time, like Calendly: each day says how many recordings it has and the first ones;
+   a click on a day lists that day's calls beside the month, and a call opens on the All tab.
+   Older months read older pages from Fathom (Load older calls) as they are asked for. */
+V144.cal={y:null,m:null,day:null};
+const V144_CAL_SVG='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
+function v144Ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function v144CallDay(c){const d=new Date(c.start||c.created_at);return isNaN(d)?'':v144Ymd(d);}
+function v144ByDay(){
+  const B={};(AP_FT.items||[]).forEach(function(c){const k=v144CallDay(c);if(!k)return;(B[k]=B[k]||[]).push(c);});
+  Object.keys(B).forEach(function(k){B[k].sort(function(a,b){return String(a.start).localeCompare(String(b.start));});});
+  return B;
+}
+function v144Oldest(){let o='';(AP_FT.items||[]).forEach(function(c){const k=v144CallDay(c);if(k&&(!o||k<o))o=k;});return o;}
+function v144Cal(h){
+  const C=V144.cal,now=new Date();
+  if(C.y==null){const s=AP_FT.items&&AP_FT.items[0]?new Date(AP_FT.items[0].start):now;C.y=(isNaN(s)?now:s).getFullYear();C.m=(isNaN(s)?now:s).getMonth();}
+  const first=new Date(C.y,C.m,1),days=new Date(C.y,C.m+1,0).getDate(),lead=(first.getDay()+6)%7;   /* weeks start on Monday */
+  const B=v144ByDay(),today=v144Ymd(now),label=first.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  const monthStart=v144Ymd(first),oldest=v144Oldest();
+  const more=!!AP_FT.cursor&&(!oldest||oldest>monthStart);
+  let n=0;Object.keys(B).forEach(function(k){if(k.slice(0,7)===monthStart.slice(0,7))n+=B[k].length;});
+  if(!C.day||C.day.slice(0,7)!==monthStart.slice(0,7)){
+    const withCalls=Object.keys(B).filter(function(k){return k.slice(0,7)===monthStart.slice(0,7);}).sort();
+    C.day=withCalls.indexOf(today)>=0?today:(withCalls.pop()||'');
+  }
+  let cells='';
+  for(let i=0;i<lead;i++)cells+='<div class="v144-cd is-pad" aria-hidden="true"></div>';
+  for(let d=1;d<=days;d++){
+    const k=v144Ymd(new Date(C.y,C.m,d)),L=B[k]||[];
+    const lab=new Date(C.y,C.m,d).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})+(L.length?', '+L.length+' call'+(L.length===1?'':'s'):', no calls');
+    cells+='<button type="button" class="v144-cd'+(L.length?' has':'')+(k===today?' is-today':'')+(k===C.day?' is-on':'')+'" data-d="'+k+'" aria-label="'+esc(lab)+'" aria-pressed="'+(k===C.day)+'" onclick="v144CalDay(this.dataset.d)"'+(L.length?'':' tabindex="-1"')+'>'+
+      '<span class="v144-dn">'+d+'</span>'+
+      L.slice(0,2).map(function(c){return '<span class="v144-cc'+(c.external?' ext':'')+'">'+esc(new Date(c.start).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})+' '+(apCm(c.id)&&apCm(c.id).title||c.title))+'</span>';}).join('')+
+      (L.length>2?'<span class="v144-cm">+'+(L.length-2)+' more</span>':'')+'</button>';
+  }
+  const dayL=C.day?(B[C.day]||[]):[];
+  const dayH=C.day?new Date(C.day+'T12:00:00').toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}):'';
+  h.innerHTML='<div class="v144-cal"><div class="v144-cm-w"><div class="v144-ch">'+
+      '<button type="button" class="rd-btn sm" aria-label="Previous month" onclick="v144CalGo(-1)">‹</button><h3>'+esc(label)+'</h3>'+
+      '<button type="button" class="rd-btn sm" aria-label="Next month" onclick="v144CalGo(1)"'+(C.y>now.getFullYear()||(C.y===now.getFullYear()&&C.m>=now.getMonth())?' disabled':'')+'>›</button>'+
+      '<span class="v144-cn">'+n+' call'+(n===1?'':'s')+'</span>'+
+      '<button type="button" class="rd-btn sm" onclick="v144CalToday()">Today</button></div>'+
+      (more?'<p class="v144-more">Older calls are still in Fathom. <button type="button" class="nw-link" onclick="v144CalMore(this)">Load older calls</button></p>':'')+
+      '<div class="v144-wd" aria-hidden="true">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(function(w){return '<span>'+w+'</span>';}).join('')+'</div>'+
+      '<div class="v144-grid" role="group" aria-label="'+esc(label)+'">'+cells+'</div></div>'+
+    '<aside class="v144-day" aria-live="polite">'+(C.day?'<h4>'+esc(dayH)+'</h4>'+(dayL.length?'<ul>'+dayL.map(function(c){
+        const g=apFtGuests(c),m=apFtMins(c),f=v121Folder(c.id);
+        return '<li><button type="button" class="v144-dc" onclick="v144CalOpen(\''+esc(String(c.id))+'\')">'+
+          '<b>'+esc(apCm(c.id)&&apCm(c.id).title||c.title)+(c.external?' <span class="ap-call-chip ext">Client</span>':'')+'</b>'+
+          '<small>'+esc(new Date(c.start).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})+(m?' · '+m+' min':'')+' · '+f)+'</small>'+
+          (g.length?'<small>'+esc(g.slice(0,3).map(function(i){return i.name||i.email;}).join(', ')+(g.length>3?' +'+(g.length-3):''))+'</small>':'')+'</button></li>';}).join('')+'</ul>'
+        :'<p class="nw-muted nw-small">No recordings that day.</p>')
+      :'<p class="nw-muted nw-small">Pick a day with calls to see its recordings.</p>')+'</aside></div>';
+}
+function v144CalHost(){return document.querySelector('.ap-tphost[data-v144cal]');}
+function v144CalPaint(){const h=v144CalHost();if(h)v144Cal(h);}
+function v144CalGo(step){
+  const C=V144.cal;let m=C.m+step,y=C.y;if(m<0){m=11;y--;}if(m>11){m=0;y++;}
+  C.y=y;C.m=m;C.day=null;v144CalPaint();
+}
+function v144CalToday(){const n=new Date();V144.cal={y:n.getFullYear(),m:n.getMonth(),day:v144Ymd(n)};v144CalPaint();}
+function v144CalDay(k){V144.cal.day=k;v144CalPaint();const b=document.querySelector('.v144-cd[data-d="'+k+'"]');if(b)try{b.focus();}catch(e){}}
+async function v144CalMore(btn){
+  if(btn){btn.disabled=true;btn.textContent='Loading…';}
+  const want=v144Ymd(new Date(V144.cal.y,V144.cal.m,1));
+  try{for(let i=0;i<6&&AP_FT.cursor;i++){await apFtMore();const o=v144Oldest();if(o&&o<=want)break;}}
+  catch(e){toast(e.message,false);}
+  try{apCallsCounts();apDemoRefreshStrip();}catch(e){}
+  v144CalPaint();
+}
+function v144CalOpen(id){
+  AP_FT.sel=id;AP_FT.seg='summary';
+  const o=window.__apDemo,t=o&&o.tabs.find(function(x){return x.key==='all';});
+  apTab('all');
+  if(t&&t._host)setTimeout(function(){try{apCallsRows(t._host);const r=t._host.querySelector('.ap-call-row[data-id="'+id+'"]');if(r&&r.scrollIntoView)r.scrollIntoView({block:'nearest'});}catch(e){}},30);
+}
+(function(){
+  const _d=apDemo;
+  apDemo=function(o){
+    if(o&&o.page==='calls'&&Array.isArray(o.tabs)&&o.tabs.some(function(t){return t.key==='all';})&&!o.tabs.some(function(t){return t.key==='cal';})){
+      o.tabs.push({key:'cal',label:'Calendar',render:function(h){h.dataset.v144cal='1';v144Cal(h);},onShow:function(){v144CalPaint();}});
+    }
+    return _d.apply(this,arguments);
+  };
+})();
+
+
+/* ---------- Part 3: calls filed under clients, and a client record for someone new ----------
+   A call with no folder set is filed by its people, in this order: a lead with a guest's email, a lead at
+   a guest's company (the same work email domain), a HubSpot contact's company, a folder the team already
+   has with the guest's company name. A recent call (14 days) with someone from outside who matches none
+   of those is new: Today and the bell ask whether to create a client record (Not a client sets it aside
+   for the team, ai_settings catalyst_inbox.calls). The same question replaces "None of the people on this
+   call is a lead" when a call is filed from a lead's Calls tab or the bell. */
+function v144Norm(t){return String(t||'').toLowerCase().replace(/&/g,' and ').replace(/\b(inc|llc|ltd|co|corp|corporation|company|group|the)\b/g,' ').replace(/[^a-z0-9]+/g,'');}
+function v144Dom(e){const d=String(e||'').toLowerCase().split('@')[1]||'';return d&&!V121_FREE.test(d)&&!/aiparagonconsulting\.com$/.test(d)?d:'';}
+/* the folders the team made: set on a call, or kept in call_folders */
+function v144KnownFolders(){
+  const s={};Object.keys(AP_CX.meta||{}).forEach(function(k){const f=AP_CX.meta[k].folder;if(f)s[f]=1;});
+  v144Folders().forEach(function(f){s[f]=1;});return Object.keys(s);
+}
+function v144AsFolder(name){
+  const n=v144Norm(name);if(!n)return '';
+  const hit=v144KnownFolders().find(function(f){return v144Norm(f)===n;});
+  return hit||String(name).trim();
+}
+function v144Leads(){
+  const L=(window._e1&&window._e1.leads)||(V137.L&&V137.L.list)||[];
+  return L.filter(function(l){return l&&l.email&&!/deltaadvisory\.com$/i.test(l.email);});
+}
+/* what files a call, from its people: {folder, how, lead} or null */
+function v144Match(id){
+  const ext=v121People(id).filter(v121Ext).filter(function(p){return p.email&&!V137_TEAM.test(String(p.email).toLowerCase());});
+  if(!ext.length)return null;
+  const leads=v144Leads(),hs=V137.hs||[],known=v144KnownFolders();
+  for(const p of ext){
+    const e=String(p.email).toLowerCase();
+    const l=leads.find(function(x){return v136Emails(x).map(v137Low).indexOf(e)>=0;});
+    if(l)return {folder:v144AsFolder(l.company_name||l.prospect_name||l.email),how:'lead',lead:l};
+  }
+  for(const p of ext){
+    const d=v144Dom(p.email);if(!d)continue;
+    const l=leads.find(function(x){return v136Emails(x).some(function(m){return v144Dom(m)===d;})&&x.company_name;});
+    if(l)return {folder:v144AsFolder(l.company_name),how:'domain',lead:l};
+  }
+  for(const p of ext){
+    const c=hs.find(function(x){return v137Low(x.email)===String(p.email).toLowerCase();});
+    if(c&&c.company)return {folder:v144AsFolder(c.company),how:'contact',contact:c};
+  }
+  for(const p of ext){
+    const co=v121Co(p.email);if(!co)continue;
+    const f=known.find(function(x){return v144Norm(x)===v144Norm(co);});
+    if(f)return {folder:f,how:'folder'};
+  }
+  return null;
+}
+(function(){
+  const _f=v121Folder;
+  v121Folder=function(id){
+    const m=apCm(id)||{};
+    if(m.folder||m.client)return _f.apply(this,arguments);
+    try{const x=v144Match(id);if(x)return x.folder;}catch(e){}
+    const f=_f.apply(this,arguments);
+    return v144Auto(f)?f:v144AsFolder(f);
+  };
+})();
+/* calls with someone new on them */
+function v144Aside(){return (V137.inbox&&V137.inbox.calls)||{};}
+function v144NewCalls(){
+  const aside=v144Aside(),crm={};(V137.items||[]).forEach(function(x){if(x.kind==='crm')crm[x.email]=1;});
+  const out=[];
+  (AP_FT.items||[]).forEach(function(c){
+    const at=c.start||c.created_at;if(!v137Recent(at))return;
+    const id=String(c.id),m=apCm(id)||{};
+    if(m.folder||m.client||m.lead_stage||aside[id])return;
+    const ext=v121People(id).filter(v121Ext).filter(function(p){return p.email&&!V137_TEAM.test(String(p.email).toLowerCase());});
+    if(!ext.length||ext.some(function(p){return crm[String(p.email).toLowerCase()];}))return;
+    if(v144Match(id))return;
+    out.push({kind:'client',key:'v144:client:'+id,id:id,c:c,p:ext[0],at:at});
+  });
+  return out;
+}
+(function(){
+  const _l=v137Load;
+  v137Load=async function(){
+    const r=await _l.apply(this,arguments);
+    try{
+      const keep=(V137.items||[]).filter(function(x){return x.kind!=='client';}),add=v144NewCalls();
+      V137.items=keep.concat(add).sort(function(a,b){return String(b.at).localeCompare(String(a.at));});
+    }catch(e){console.warn('v144 new calls',e&&e.message);}
+    return V137.items;
+  };
+  const _t=v137ItemText;
+  v137ItemText=function(x){
+    if(x.kind!=='client')return _t.apply(this,arguments);
+    const p=x.p||{},co=v121Co(p.email);
+    return {t:'New contact on a call: '+(p.name||p.email)+(co?', '+co:'')+(v137D(x.at)?' on '+v137D(x.at):''),s:'Create a client record for them?',b:'Create client'};
+  };
+  const _o=v137Open;
+  v137Open=function(key){if(/^v144:client:/.test(key))return v144AskClient(key.slice(12));return _o.apply(this,arguments);};
+})();
+
+/* the question: who, the folder, and whether to write the prospect brief now */
+async function v144AskClient(id){
+  id=String(id);
+  try{await Promise.all([v137Contacts(),v136LoadNames(),v137SetupLoad(),v137InboxLoad()]);}catch(e){}
+  const c=apFtCall(id);
+  if(!c){nwToast('This call is not in the list from Fathom any more.');return;}
+  const ext=v121People(id).filter(v121Ext).filter(function(p){return p.email&&!V137_TEAM.test(String(p.email).toLowerCase());});
+  if(!ext.length){nwToast('Only the AI Paragon team is on this call, so there is no client to add.');return;}
+  const p=ext[0],hs=(V137.hs||[]).find(function(x){return v137Low(x.email)===String(p.email).toLowerCase();})||null;
+  const co=(hs&&hs.company)||v121Co(p.email)||'',folder=co||p.name||p.email,mins=apFtMins(c),st=v136St('research');
+  V144.ask={id:id,ext:ext};
+  const meta=[v137D(c.start||c.created_at),mins?mins+' min':'',c.title||''].filter(Boolean).join(' · ');
+  nwModal('v144C','<div class="nw-m-head"><div class="nw-m-titles"><div class="nw-kicker">Catalyst · New contact on a call</div><h2>'+esc('Create a client record for '+(p.name||p.email)+'?')+'</h2></div>'+
+      '<button type="button" class="nw-icon-btn" onclick="nwModalClose()" aria-label="Close">'+nwIc('x',18)+'</button></div>'+
+    '<div class="nw-m-body v120-m">'+
+      '<p class="nw-muted nw-small">'+esc(meta)+'</p>'+
+      '<p>'+esc((p.name||p.email)+' is not a lead yet, and no client folder matches the people on this call. A client record puts them on the Lead pipeline in '+st.name+' and files this call in their folder.')+'</p>'+
+      (ext.length>1?'<label class="nw-field"><span class="nw-lbl">Who is the client</span><select class="nw-input" id="v144CWho" data-nofill="1" onchange="v144ClientWho(this.value)">'+
+        ext.map(function(x,i){return '<option value="'+i+'">'+esc((x.name||x.email)+' · '+x.email)+'</option>';}).join('')+'</select></label>':'')+
+      '<div class="v144-c2"><label class="nw-field"><span class="nw-lbl">Name</span><input class="nw-input" id="v144CName" maxlength="120" value="'+esc(p.name||'')+'"></label>'+
+      '<label class="nw-field"><span class="nw-lbl">Email</span><input class="nw-input" id="v144CEmail" maxlength="200" value="'+esc(p.email||'')+'"></label>'+
+      '<label class="nw-field"><span class="nw-lbl">Company</span><input class="nw-input" id="v144CCo" maxlength="120" value="'+esc(co)+'" oninput="v144ClientCo(this.value)"></label>'+
+      '<label class="nw-field"><span class="nw-lbl">Client folder</span><input class="nw-input" id="v144CFolder" maxlength="80" value="'+esc(folder)+'" data-auto="1" oninput="this.dataset.auto=\'\'"></label></div>'+
+      '<label class="v144-chk"><input type="checkbox" id="v144CRun"> Write the pre-meeting prospect brief now</label>'+
+      '<p class="v120-msg" id="v144CMsg" role="status" aria-live="polite"></p>'+
+      '<div class="nw-m-foot"><button type="button" class="nw-btn nw-btn-ghost" onclick="v144ClientGo(\'skip\')">Not a client</button><span class="nw-grow"></span>'+
+        '<button type="button" class="nw-btn nw-btn-ghost" onclick="v144ClientGo(\'file\')">Just file the call</button>'+
+        '<button type="button" class="nw-btn nw-btn-primary" id="v144CGo" onclick="v144ClientGo(\'add\')">'+nwIc('check',15)+'Create client record</button></div>'+
+    '</div>');
+}
+function v144ClientWho(i){
+  const a=V144.ask,p=a&&a.ext[+i];if(!p)return;
+  const hs=(V137.hs||[]).find(function(x){return v137Low(x.email)===String(p.email).toLowerCase();})||null,co=(hs&&hs.company)||v121Co(p.email)||'';
+  document.getElementById('v144CName').value=p.name||'';document.getElementById('v144CEmail').value=p.email||'';
+  document.getElementById('v144CCo').value=co;v144ClientCo(co||p.name||p.email);
+}
+function v144ClientCo(v){const f=document.getElementById('v144CFolder');if(f&&f.dataset.auto)f.value=v;}
+async function v144ClientGo(action){
+  const a=V144.ask;if(!a)return;
+  const btns=[...document.querySelectorAll('#v144C .nw-m-foot button')],msg=document.getElementById('v144CMsg');
+  const say=function(t,err){if(msg){msg.textContent=t;msg.classList.toggle('err',!!err);}};
+  const busy=function(b){btns.forEach(function(x){x.disabled=b;});};
+  const val=function(i){return v144Clean((document.getElementById(i)||{}).value,200);};
+  const name=val('v144CName'),email=val('v144CEmail').toLowerCase(),co=val('v144CCo'),folder=v144Clean(val('v144CFolder'),80),run=!!(document.getElementById('v144CRun')||{}).checked;
+  if(action==='skip'){
+    busy(true);say('Setting it aside…');
+    try{
+      const v={by:apCfMe(),at:new Date().toISOString()};
+      V137.inbox=V137.inbox||{};V137.inbox.calls=Object.assign({},V137.inbox.calls||{});V137.inbox.calls[a.id]=v;
+      await v104SetPatch('catalyst_inbox',function(cur){const calls=Object.assign({},cur.calls||{});calls[a.id]=v;return {calls:calls};});
+    }catch(e){busy(false);say('Could not save it: '+((e&&e.message)||e),true);return;}
+    V144.ask=null;nwModalClose();nwToast('Set aside. The call stays on Calls.');v137Refresh();return;
+  }
+  if(folder.length<2||v144Bad(folder)){say('Give the client folder a name, two letters or more, in letters, numbers and spaces.',true);return;}
+  if(action==='add'){
+    if(!name){say('Add the client’s name.',true);return;}
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){say('Add the client’s email address. It is how the dashboard knows their calls.',true);return;}
+  }
+  busy(true);say(action==='add'?'Creating the client record…':'Filing the call…');
+  let l=null;
+  try{
+    if(action==='add'){
+      const now=new Date().toISOString(),got=await apSb('e1_leads?select=email,stage&email=eq.'+encodeURIComponent(email));
+      if(got&&got.length){if(!got[0].stage)await apPatch('e1_leads','email=eq.'+encodeURIComponent(email),{stage:'research',updated_at:now});}
+      else await apPost('e1_leads',{email:email,prospect_name:name,company_name:co||null,lead_source:'Call',stage:'research',updated_at:now});
+      try{await v120Reload();}catch(e){}
+      l=v120Lead(email)||{email:email,emails:[email],prospect_name:name,company_name:co,stage:'research'};
+      await apCxSaveMeta(a.id,{folder:folder,lead_email:email,lead_stage:'research'});
+    }else await apCxSaveMeta(a.id,{folder:folder});
+    if(v144KnownFolders().indexOf(folder)<0||!v144Folders().some(function(f){return f===folder;})){
+      const g=await apSb('ai_settings?select=value&key=eq.call_folders');
+      const L=(Array.isArray(((g||[])[0]||{}).value)?g[0].value:[]).map(String);
+      if(L.indexOf(folder)<0){L.push(folder);await v96Set('call_folders',L);}
+    }
+  }catch(e){busy(false);say('Could not save it: '+((e&&e.message)||e)+'. Try again in a minute.',true);return;}
+  if(action==='add'&&run){
+    try{const hs=(V137.hs||[]).find(function(x){return v137Low(x.email)===email;})||null;
+      await v137Start(l,'research','',{s:'research',set:v137Setup('research'),calls:[],crm:hs,intake:true});}
+    catch(e){busy(false);say('Created, but the prospect brief could not start: '+((e&&e.message)||e)+'. Run it from the Lead pipeline.',true);v137Refresh();v144After();return;}
+  }
+  V144.ask=null;nwModalClose();
+  nwToast(action==='add'?(run?'Created. The prospect brief shows on the Lead pipeline when it is done.':'Created. '+name+' is on the Lead pipeline, and the call is filed under '+folder+'.'):'Filed under '+folder+'.');
+  try{v120Paint();}catch(e){}
+  v137Refresh();v144After();
+}
+
+
+/* ---------- Part 4: a lead's HubSpot tab, read live ----------
+   The tab showed the copy the sync makes every six hours. Now it asks HubSpot for the contact when it opens
+   (Dashboard · HubSpot Contact Proxy, /catalyst-hubspot-contact, team sign-in only, reads only) and shows
+   what HubSpot has right now: who, where, the stage, the notes and deals, the last contact and emails.
+   Refresh asks again. When HubSpot can't be read the tab says why and keeps the last synced copy. */
+const V144_HS_HOOK='https://n8n.aiparagonconsulting.com/webhook/catalyst-hubspot-contact';
+V144.hs={};
+const V144_HS_LABEL={lifecyclestage:{subscriber:'Subscriber',lead:'Lead',marketingqualifiedlead:'Marketing qualified lead',salesqualifiedlead:'Sales qualified lead',opportunity:'Opportunity',customer:'Customer',evangelist:'Evangelist',other:'Other'}};
+function v144HsDate(v){
+  if(!v)return '';const n=/^\d+$/.test(String(v))?Number(v):Date.parse(v);if(!n)return '';
+  const d=new Date(n);return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:d.getFullYear()===new Date().getFullYear()?undefined:'numeric'});
+}
+function v144HsWord(v){return String(v||'').replace(/_/g,' ').toLowerCase().replace(/^\w/,function(c){return c.toUpperCase();});}
+function v144HsHtml(r,email){
+  if(!r)return '<div class="v144-hs" role="status"><span class="v144-hs-k">Live from HubSpot</span><p class="nw-muted nw-small">Reading HubSpot…</p></div>';
+  const head='<div class="v144-hs-h"><span class="v144-hs-k">Live from HubSpot</span><small>'+esc(r.err?'':'read '+(r.at?nwAgoMin(r.at):'just now'))+'</small>'+
+    '<button type="button" class="rd-btn sm" onclick="v144HsLoad('+esc(nwJs(email))+',true)">Refresh</button></div>';
+  if(r.err)return '<div class="v144-hs is-err">'+head+'<p class="nw-small">'+esc(r.err)+' The details below are the last copy the sync made.</p></div>';
+  if(!r.found)return '<div class="v144-hs">'+head+'<p class="nw-small">HubSpot has no contact with '+esc(email)+'. Add them in HubSpot, or check the email on the lead.</p></div>';
+  const c=r.contact||{},row=function(l,v){return v?'<div class="ap-kv"><span>'+esc(l)+'</span><b>'+esc(v)+'</b></div>':'';};
+  const name=[c.firstname,c.lastname].filter(Boolean).join(' ');
+  const where=[c.city,c.state,c.country].filter(Boolean).join(', ');
+  const life=(V144_HS_LABEL.lifecyclestage[c.lifecyclestage]||v144HsWord(c.lifecyclestage));
+  const site=c.website?(/^https?:/i.test(c.website)?c.website:'https://'+c.website):'';
+  return '<div class="v144-hs">'+head+'<div class="ap-kvs">'+
+    row('name',name)+row('email',c.email)+row('company',c.company)+row('title',c.jobtitle)+row('phone',c.phone)+row('mobile',c.mobilephone)+
+    (site&&/^https?:\/\/[^\s"'<>]+$/i.test(site)?'<div class="ap-kv"><span>website</span><a href="'+esc(site)+'" target="_blank" rel="noopener">'+esc(c.website)+' ↗</a></div>':'')+
+    row('location',where)+row('lifecycle',life)+row('lead status',v144HsWord(c.hs_lead_status))+row('source',v144HsWord(c.hs_analytics_source))+
+    row('notes',c.num_notes)+row('deals',c.num_associated_deals)+row('last contacted',v144HsDate(c.notes_last_contacted))+
+    row('next activity',v144HsDate(c.notes_next_activity_date))+row('last email sent',v144HsDate(c.hs_email_last_send_date))+
+    row('last reply',v144HsDate(c.hs_email_last_reply_date))+row('in HubSpot since',v144HsDate(c.createdate))+row('changed in HubSpot',v144HsDate(c.lastmodifieddate))+
+    '</div></div>';
+}
+function v144HsSec(){
+  if(typeof state==='undefined'||state.view!=='e1lead')return null;
+  const main=document.getElementById('main');if(!main)return null;
+  return [...main.querySelectorAll(':scope > section.block')].find(function(s){const h=s.querySelector(':scope > h2');return h&&/^\s*HubSpot\b/.test(h.textContent);})||null;
+}
+function v144HsPaint(email){
+  const sec=v144HsSec();if(!sec)return;
+  let box=sec.querySelector('.v144-hs-w');
+  if(!box){box=document.createElement('div');box.className='v144-hs-w';const h=sec.querySelector(':scope > h2');if(h)h.after(box);else sec.prepend(box);}
+  box.innerHTML=v144HsHtml(V144.hs[email],email);
+}
+async function v144HsLoad(email,force){
+  email=String(email||'').toLowerCase();if(!email)return;
+  const had=V144.hs[email];
+  if(had&&!force&&!had.err&&Date.now()-Date.parse(had.at||0)<60e3){v144HsPaint(email);return;}
+  if(force||!had)V144.hs[email]=null;
+  v144HsPaint(email);
+  let r;
+  try{
+    const j=await apProxy(V144_HS_HOOK,{email:email},'HubSpot Contact');
+    if(!j||j.ok===false)r={err:(j&&j.message)||'HubSpot did not answer.'};
+    else r={found:!!j.found,contact:j.contact||{},id:j.id||'',at:j.at||new Date().toISOString()};
+  }catch(e){r={err:(e&&e.message)||'HubSpot could not be reached.'};}
+  V144.hs[email]=r;
+  if(state&&state.view==='e1lead'&&String(state.e1Lead||'').toLowerCase()===email)v144HsPaint(email);
+}
+(function(){
+  const _r=renderE1Lead;
+  renderE1Lead=function(){
+    const r=_r.apply(this,arguments);
+    Promise.resolve(r).then(function(){
+      const em=typeof state!=='undefined'?String(state.e1Lead||'').toLowerCase():'';
+      if(em&&em!=='contact@deltaadvisory.com'&&v144HsSec())v144HsLoad(em,false);
+    }).catch(function(){});
+    return r;
+  };
+})();
+
+/*@@v144end*/
 </script>
 <script>
 /* ===================================================================
