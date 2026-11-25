@@ -85,7 +85,7 @@ const KEYS = ['research', 'consultation', 'assessment', 'proposal', 'onboarding'
     check('no card offers the next stage\'s document', !(await txt(page, '#v120Board')).match(/Run (consultation|assessment|interview|follow)/i), await txt(page, '#v120Board'));
     check('the help line says what moving a lead does', /Move a lead to the stage it is in\. Catalyst writes that stage’s prep, and asks before it runs anything\./.test(await txt(page, '#v120Board .v120-help')), await txt(page, '#v120Board .v120-help'));
     const tb = await tabs(page);
-    check('the list\'s tabs are the stages, with counts', JSON.stringify(tb) === JSON.stringify(['Board', 'All 3', 'Prospect research 2', 'Discovery consultation 0', 'Assessment 0', 'Proposal 1', 'Onboarding 0', 'Client review 0']), JSON.stringify(tb));
+    check('the list\'s tabs are the stages, with counts', JSON.stringify(tb) === JSON.stringify(['Client Stages', 'All 3', 'Prospect research 2', 'Discovery consultation 0', 'Assessment 0', 'Proposal 1', 'Onboarding 0', 'Client review 0']), JSON.stringify(tb));
     const st = await txt(page, '#apStrip');
     check('the strip counts leads, the sales stages and clients', /3\s*Leads/.test(st) && /3\s*In the sales stages/.test(st) && /0\s*Clients/.test(st), st);
     await page.click(card(L2) + ' .v136-ok'); await wait(page, 2200);
@@ -115,7 +115,7 @@ const KEYS = ['research', 'consultation', 'assessment', 'proposal', 'onboarding'
     let b = await board(page);
     check('the card is in Discovery consultation, writing the guide, and cannot be dragged meanwhile', where(b, 'Robin Test') === 'consultation' && docOf(b, 'Robin Test') === 'Writing the consultation guide' &&
       b.find((c) => c.s === 'consultation').cards[0].drag === null, JSON.stringify(b.map((c) => [c.s, c.cards])));
-    check('the tab counts follow', JSON.stringify(await tabs(page)) === JSON.stringify(['Board', 'All 3', 'Prospect research 1', 'Discovery consultation 1', 'Assessment 0', 'Proposal 1', 'Onboarding 0', 'Client review 0']), JSON.stringify(await tabs(page)));
+    check('the tab counts follow', JSON.stringify(await tabs(page)) === JSON.stringify(['Client Stages', 'All 3', 'Prospect research 1', 'Discovery consultation 1', 'Assessment 0', 'Proposal 1', 'Onboarding 0', 'Client review 0']), JSON.stringify(await tabs(page)));
     check('the run is kept with the workspace, by stage', await page.evaluate((e) => !!(RD.e1run && RD.e1run[e] && RD.e1run[e].s === 'consultation'), L2));
     store.db.agent_outputs.push(out(L2, 'interview_script'));
     await page.evaluate(async () => { await v120Reload(); v120Paint(); }); await wait(page, 400);
@@ -241,11 +241,12 @@ const KEYS = ['research', 'consultation', 'assessment', 'proposal', 'onboarding'
   {
     const { ctx, page, store } = await open();
     await page.click('#v120Board .v136-rn'); await wait(page, 600);
-    const inputs = await page.$$eval('#v136R input[data-k]', (els) => els.map((e) => e.dataset.k + '=' + e.value));
-    check('Rename stages lists the six, with their names', JSON.stringify(inputs) === JSON.stringify(KEYS.map((k, i) => k + '=' + NAMES[i])), JSON.stringify(inputs));
-    await page.fill('#v136R input[data-k="research"]', 'First look');
-    await page.fill('#v136R input[data-k="review"]', '  Quarterly   review ');
-    await page.click('#v136RGo'); await wait(page, 1200);
+    // v145: Rename stages is Edit stages (Client stages: add, rename, reorder, delete)
+    const inputs = await page.$$eval('#v145Sl .v145-sr[data-k] input', (els) => els.map((e) => e.closest('.v145-sr').dataset.k + '=' + e.value));
+    check('Edit stages lists the six, with their names', JSON.stringify(inputs) === JSON.stringify(KEYS.map((k, i) => k + '=' + NAMES[i])), JSON.stringify(inputs));
+    await page.fill('#v145Sl .v145-sr[data-k="research"] input', 'First look');
+    await page.fill('#v145Sl .v145-sr[data-k="review"] input', '  Quarterly   review ');
+    await page.click('#v145Go'); await wait(page, 1500);
     const w = store.writes.filter((x) => x.table === 'ai_settings' && JSON.stringify(x.body).indexOf('catalyst_stages') >= 0).map((x) => Array.isArray(x.body) ? x.body[0] : x.body);
     const v = w.length ? (typeof w[w.length - 1].value === 'string' ? JSON.parse(w[w.length - 1].value) : w[w.length - 1].value) : {};
     check('saving stores the team\'s names, tidied, and nothing for the ones unchanged', v.research && v.research.name === 'First look' && v.review && v.review.name === 'Quarterly review' && v.consultation && v.consultation.name === '', JSON.stringify(v));
@@ -255,9 +256,9 @@ const KEYS = ['research', 'consultation', 'assessment', 'proposal', 'onboarding'
     check('and the question too', ((await ask(page)) || {}).h === 'Move Sam Sample to Quarterly review?', JSON.stringify(await ask(page)));
     await page.evaluate(() => nwModalClose());
     await page.click('#v120Board .v136-rn'); await wait(page, 600);
-    await page.click('#v136R button:has-text("Use the usual names")'); await wait(page, 200);
-    check('Use the usual names puts them back in the boxes', (await page.$eval('#v136R input[data-k="research"]', (e) => e.value)) === 'Prospect research');
-    await page.click('#v136RGo'); await wait(page, 1200);
+    await page.click('#v145S button:has-text("Use the usual names")'); await wait(page, 200);
+    check('Use the usual names puts them back in the boxes', (await page.$eval('#v145Sl .v145-sr[data-k="research"] input', (e) => e.value)) === 'Prospect research');
+    await page.click('#v145Go'); await wait(page, 1500);
     check('and saving them shows them again', (await board(page))[0].name === 'Prospect research', (await board(page))[0].name);
     await ctx.close();
   }
@@ -274,8 +275,8 @@ const KEYS = ['research', 'consultation', 'assessment', 'proposal', 'onboarding'
     check('a stage tab lists the leads in that stage', JSON.stringify(pr) === '["Pat QA"]', JSON.stringify(pr));
     await page.evaluate(() => apGo('e1overview')); await wait(page, 2200);
     const ov = await page.evaluate(() => ({ h: (document.querySelector('#main section[data-tp="agents"] h2') || {}).textContent || '',
-      cards: [...document.querySelectorAll('#main .ap-a5s .ap-a3')].map((c) => c.querySelector('.kind').textContent + ' / ' + c.querySelector('.nm').textContent + ' / ' + c.querySelector('.ft').textContent.trim()) }));
-    check('the overview shows the six meetings and what each writes', ov.h === 'Six meetings, prep for each' && JSON.stringify(ov.cards) === JSON.stringify([
+      cards: [...document.querySelectorAll('#main .ap-a5s .ap-a3:not(.v145-new)')].map((c) => c.querySelector('.kind').textContent + ' / ' + c.querySelector('.nm').textContent + ' / ' + c.querySelector('.ft').textContent.trim()) }));
+    check('the overview shows the six meetings and what each writes', ov.h === 'Meeting types, prep for each' && JSON.stringify(ov.cards) === JSON.stringify([
       'Prospect research / Pre-meeting prospect brief / 2 leads in this stage', 'Discovery consultation / Consultation guide / 0 leads in this stage', 'Assessment / Assessment report / 0 leads in this stage',
       'Proposal / Proposal presentation / 1 lead in this stage', 'Onboarding / Onboarding plan / 0 leads in this stage', 'Client review / Client review brief / 0 leads in this stage']), JSON.stringify(ov));
     await page.evaluate((e) => openE1Lead(e), L1); await wait(page, 2400);
@@ -317,8 +318,8 @@ const KEYS = ['research', 'consultation', 'assessment', 'proposal', 'onboarding'
       btn: (() => { const b = document.querySelector('#v120Board .v136-rn').getBoundingClientRect(); return b.right <= 390 && b.width > 0; })() }));
     check('on a phone the stages stack, Rename stages fits, with no sideways scroll', g.cols === 1 && g.sw <= 390 && g.btn, JSON.stringify(g));
     await page.click('#v120Board .v136-rn'); await wait(page, 500);
-    const d = await page.evaluate(() => { const m = document.querySelector('#v136R'); const r = m.getBoundingClientRect(); return { right: Math.round(r.right), sw: document.documentElement.scrollWidth }; });
-    check('and the rename dialog fits too', d.right <= 390 && d.sw <= 390, JSON.stringify(d));
+    const d = await page.evaluate(() => { const m = document.querySelector('#v145S'); const r = m.getBoundingClientRect(); return { right: Math.round(r.right), sw: document.documentElement.scrollWidth }; });
+    check('and the Client stages dialog fits too', d.right <= 390 && d.sw <= 390, JSON.stringify(d));
     await ctx.close();
   }
 

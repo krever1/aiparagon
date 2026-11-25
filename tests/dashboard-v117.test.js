@@ -98,7 +98,7 @@ function tables() {
     const tb = await tabs(page);
     check('the stage tabs put every lead in one of them (Prospect research for nothing run yet)',
       /* v120: the board comes first, with no count */
-      JSON.stringify(tb) === JSON.stringify(['Board', 'All 3', 'Prospect research 2', 'Discovery consultation 0', 'Assessment 0', 'Proposal 1', 'Onboarding 0', 'Client review 0']), JSON.stringify(tb));
+      JSON.stringify(tb) === JSON.stringify(['Client Stages', 'All 3', 'Prospect research 2', 'Discovery consultation 0', 'Assessment 0', 'Proposal 1', 'Onboarding 0', 'Client review 0']), JSON.stringify(tb));
     const rowsOf = () => txt(page, '#apE1List tbody');
     await tab(page, 'Prospect research'); await wait(page, 700);
     let t = await txt(page, '#apE1List'), rows = await rowsOf();
