@@ -232,6 +232,8 @@ const J = (v) => (typeof v === 'string' ? JSON.parse(v) : v);
     check('missing industries are asked of the agent once, with the ads to read', ih.length === 1 && JSON.parse(ih[0].b).advertisers.some((a) => a.name === 'Ledgerline' && a.site === 'ledgerline.example' && a.ads.length === 2), String(ih.length));
     const ai = (store.db.ai_settings.find((r) => r.key === 'ad_industries_ai') || {}).value || {};
     check('the agent’s industries are kept apart from the ones set by hand', ai.ledgerline === 'Agent says Ledgerline' && !store.db.ai_settings.some((r) => r.key === 'ad_industries'), JSON.stringify(ai));
+    // the agent's answer comes back after the page draws; under load it can land after the checks above (seen Nov 26)
+    await page.waitForFunction(() => typeof v96Ind === 'function' && v96Ind('Cobalt CRM') === 'Agent says Cobalt CRM', null, { timeout: 8000 }).catch(() => {});
     check('an industry set by hand wins', await ev(page, () => { AP_AISET.ad_industries = { ledgerline: 'Finance software' }; return v96Ind('Ledgerline') === 'Finance software' && v96Ind('Cobalt CRM') === 'Agent says Cobalt CRM'; }));
     await page.click('.nw-tabs button[data-tab="all"]'); await wait(page, 500);
     check('ads from the Notion swipe file say so', /From Notion/.test(await ev(page, () => document.getElementById('nwAdsPanel').textContent)));
