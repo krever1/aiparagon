@@ -362,6 +362,8 @@ export default class Vapi {
     await page.waitForTimeout(800);
     await page.evaluate(() => { CLIENTS.push({ id: 'qa-v2', uci: '4023998', name: 'Morgan Vale', init: 'M.V.', home: 'Cedar House' }); closeAll(); });
     check('the Voice Guard copy loads in its own script block, and the page can build the engine from it', await page.evaluate(() => typeof vgEngine === 'function' && typeof vgEngine().check === 'function' && /^function vgEngine\(\)/.test(vgEngine.toString())));
+    // v12.52.1 (Nov 26): the copy has the rulebook's QA pass 2 rules
+    check('the copy counts digits in a repeat and takes accented letters as letters', await page.evaluate(() => { const E = vgEngine(); const rep = E.scriptCheck('Client 1 has a visit at 10:30 on Monday. Client 2 has a visit at 1:00 on Monday.', {}).filter((f) => f.what === 'repeat').length; const same = E.scriptCheck('Client 1 has a visit on Monday. Client 1 has a visit on Monday.', {}).filter((f) => f.what === 'repeat').length; const sym = E.scriptCheck('Thanks, Nguyễn, I have you down for Monday.', {}).filter((f) => f.what === 'symbol').length; return rep === 0 && same === 1 && sym === 0; }));
     await openAsk(page);
 
     // a clean conversation: nothing is sent, and the switch shows the result
