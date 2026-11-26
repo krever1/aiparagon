@@ -58438,12 +58438,15 @@ function v153TypeName(t){t=String(t||'');if(!t)return '';try{if(AP_MT[t]&&AP_MT[
   /* every change made in the workspace is logged on its item (v153 on) */
   const _p=v145WsPut;
   v145WsPut=function(fn){
+    /* what each item shows now (its derived name, folder, description and source), so a save that writes the same values logs nothing */
+    /* a move files a call before it saves, which already changes where it shows: those take the snapshot from before the filing (V153.pre) */
+    const shown=V153.pre||v153Snap();V153.pre=null;
     return _p.call(this,function(m){
       const before=JSON.parse(JSON.stringify(m.items||{}));
       fn(m);
       const by=v153Who(),at=new Date().toISOString();
       Object.keys(m.items||{}).forEach(function(k){
-        const a=before[k]||{},b=m.items[k]||{},say=[];
+        const a=Object.assign({},shown[k]||{},before[k]||{}),b=m.items[k]||{},say=[];
         /* an upload's own entry, made with it, is not a change */
         const made=!before[k]&&b.source!==undefined&&b.name!==undefined;
         if(made)return;
@@ -58459,6 +58462,10 @@ function v153TypeName(t){t=String(t||'');if(!t)return '';try{if(AP_MT[t]&&AP_MT[
       });
     });
   };
+})();
+function v153Snap(){const o={};try{v153All().forEach(function(i){o[i.key]={name:i.name,folder:i.folder||'',desc:i.desc||'',star:!!i.star,source:i.source};});}catch(e){}return o;}
+(function(){
+  ['v145WsMove','v145WsEditGo'].forEach(function(n){const f=window[n];if(typeof f!=='function')return;window[n]=function(){V153.pre=v153Snap();return f.apply(this,arguments);};});
 })();
 /* ---------- the preview panel ---------- */
 function v153Open(key,tab){
@@ -58683,14 +58690,18 @@ function v153SgCount(){const n=(V153.sg||[]).filter(function(s){return s.on&&s.f
 async function v153SgGo(){
   const pick=(V153.sg||[]).filter(function(s){return s.on&&s.folder;});if(!pick.length)return;
   const b=document.getElementById('v153SGo');if(b)b.disabled=true;
-  const email=v145WsEmail(),done=[];
+  const email=v145WsEmail(),done=[],pre=v153Snap();
   try{
     for(const s of pick){
       if(s.kind==='call'&&s.id&&v136Key(s.folder))await v137File(s.id,email,s.folder);
       done.push({key:s.key,folder:s.folder,stage:s.kind==='call'&&s.id?((apCm(s.id)||{}).lead_stage||''):null});
     }
-    await v145WsPut(function(m){done.forEach(function(d){m.items[d.key]=Object.assign({},m.items[d.key]||{},{folder:d.folder},d.stage!=null?{stage:d.stage}:{});});});
-  }catch(e){if(b)b.disabled=false;v145Say('v153SMsg','Filed '+done.length+' of '+pick.length+', then it stopped: '+(e.message||e),true);v145WsPaint();return;}
+    V153.pre=pre;await v145WsPut(function(m){done.forEach(function(d){m.items[d.key]=Object.assign({},m.items[d.key]||{},{folder:d.folder},d.stage!=null?{stage:d.stage}:{});});});
+  }catch(e){
+    /* a stop halfway keeps the folders of the calls already filed, and unticks them, so filing again sends only the rest */
+    try{if(done.length){V153.pre=pre;}if(done.length)await v145WsPut(function(m){done.forEach(function(d){m.items[d.key]=Object.assign({},m.items[d.key]||{},{folder:d.folder},d.stage!=null?{stage:d.stage}:{});});});}catch(e2){}
+    done.forEach(function(d){const s=(V153.sg||[]).find(function(x){return x.key===d.key;});if(s)s.on=false;const n=(V153.sg||[]).indexOf(s);const c=document.getElementById('v153Sk'+n);if(c)c.checked=false;});
+    if(b)b.disabled=false;v153SgCount();v145Say('v153SMsg','Filed '+done.length+' of '+pick.length+', then it stopped: '+(e.message||e)+' File again to send the rest.',true);v145WsPaint();return;}
   nwModalClose();nwToast('Filed '+nwPlural(done.length,'call')+'.');v145WsPaint();
 }
 /*@@v153end*/

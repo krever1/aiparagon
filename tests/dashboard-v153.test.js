@@ -100,6 +100,9 @@ const CALLS = [call('c-prop', 'Proposal walkthrough', '2026-11-20T17:00:00Z', 27
     check('…kept on the item for the team', log.length === 4 && log.every((l) => l.at && l.by && l.what), JSON.stringify(log));
     await page.keyboard.press('Escape'); await wait(page, 300);
     check('Esc closes the panel', await page.locator('#v153D').count() === 0);
+    await page.click('#main .v145-wr:has-text("Proposal presentation") button[aria-label^="Edit"]'); await page.waitForSelector('#v145WE'); await wait(page, 200);
+    await page.click('#v145WE button:has-text("Save")'); await wait(page, 900);
+    check('Saving the Edit window with nothing changed logs nothing', !((ws(store)['a:growth_plan'] || {}).log || []).length, JSON.stringify(ws(store)['a:growth_plan']));
     await ctx.close();
   }
 
@@ -164,6 +167,23 @@ const CALLS = [call('c-prop', 'Proposal walkthrough', '2026-11-20T17:00:00Z', 27
     const w = ws(store);
     check('…and the workspace keeps the folders, logged', w['c:c-prop'].folder === 'proposal' && w['c:c-intro'].folder === 'consultation' && !w['c:c-type'] && /Moved to Proposal/.test(JSON.stringify(w['c:c-prop'].log)), JSON.stringify(w));
     check('The message and the banner follow', /Filed 2 calls/.test(await txt(page, '#nwToast')) && /1 call needs a folder/.test(await txt(page, '#main .v145-wnote')));
+    await ctx.close();
+  }
+
+  // 4b. A filing that stops halfway keeps what went, and filing again sends only the rest
+  if (want('stop')) {
+    const { ctx, page, store } = await open();
+    await page.click('#main .v145-wtabs button:has-text("Calls")'); await wait(page, 500);
+    await page.click('#main .v145-wnote button:has-text("Review suggestions")'); await page.waitForSelector('#v153S'); await wait(page, 300);
+    await page.evaluate(() => { const f = v137File; let n = 0; window.v137File = function () { if (++n === 2) return Promise.reject(new Error('Supabase is busy.')); return f.apply(this, arguments); }; v137File = window.v137File; });
+    await page.click('#v153SGo'); await wait(page, 1500);
+    const msg = await txt(page, '#v153SMsg');
+    check('A stop halfway says how many went', /Filed 1 of 3, then it stopped: Supabase is busy\. File again to send the rest\./.test(msg), msg);
+    const w = ws(store), kept = Object.keys(w).filter((k) => /^c:/.test(k) && w[k].folder);
+    check('…keeps the folder of the call it filed, and unticks it', kept.length === 1 && /File 2 calls/.test(await txt(page, '#v153SGo')), JSON.stringify(w) + ' ' + await txt(page, '#v153SGo'));
+    await page.click('#v153SGo'); await wait(page, 1500);
+    const w2 = ws(store);
+    check('Filing again sends only the rest', ['c:c-prop', 'c:c-intro', 'c:c-type'].every((k) => w2[k] && w2[k].folder) && /Filed 2 calls/.test(await txt(page, '#nwToast')), JSON.stringify(w2));
     await ctx.close();
   }
 
